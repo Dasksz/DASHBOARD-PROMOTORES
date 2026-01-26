@@ -11597,40 +11597,37 @@ const supervisorGroups = new Map();
             });
         }
 
-        function toggleSidebar() {
-            const sideMenu = document.getElementById('side-menu');
-            const sidebarOverlay = document.getElementById('sidebar-overlay');
-
-            if (sideMenu) {
-                sideMenu.classList.toggle('-translate-x-full');
-                if (sidebarOverlay) {
-                    if (sideMenu.classList.contains('-translate-x-full')) {
-                        sidebarOverlay.classList.add('hidden');
-                    } else {
-                        sidebarOverlay.classList.remove('hidden');
-                    }
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenu) {
+                if (mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.remove('hidden');
+                    setTimeout(() => mobileMenu.classList.add('open'), 10);
+                } else {
+                    mobileMenu.classList.remove('open');
+                    setTimeout(() => mobileMenu.classList.add('hidden'), 300);
                 }
             }
         }
 
         async function navigateTo(view) {
-            const sideMenu = document.getElementById('side-menu');
-            const sidebarOverlay = document.getElementById('sidebar-overlay');
-
-            if (sideMenu) sideMenu.classList.add('-translate-x-full');
-            if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenu && mobileMenu.classList.contains('open')) {
+                toggleMobileMenu();
+            }
 
             const viewNameMap = {
-                dashboard: 'Dashboard',
+                dashboard: 'Visão Geral',
                 pedidos: 'Pedidos',
                 comparativo: 'Comparativo',
                 estoque: 'Estoque',
                 cobertura: 'Cobertura',
-                cidades: 'Cidades',
+                cidades: 'Geolocalização',
                 semanal: 'Semanal',
                 'inovacoes-mes': 'Inovações',
                 mix: 'Mix',
-                'meta-realizado': 'Meta Vs. Realizado'
+                'meta-realizado': 'Meta Vs. Realizado',
+                'goals': 'Metas'
             };
             const friendlyName = viewNameMap[view] || 'a página';
 
@@ -11638,22 +11635,28 @@ const supervisorGroups = new Map();
 
             // This function now runs after the loader is visible
             const updateContent = () => {
-                [mainDashboard, cityView, weeklyView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view')].forEach(el => {
+                [mainDashboard, cityView, weeklyView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page')].forEach(el => {
                     if(el) el.classList.add('hidden');
                 });
 
                 document.querySelectorAll('.nav-link').forEach(link => {
-                    link.classList.remove('bg-slate-700', 'text-white');
-                    const icon = link.querySelector('svg');
-                    if(icon) icon.classList.remove('text-white');
+                    link.classList.remove('active-nav');
                 });
 
                 const activeLink = document.querySelector(`.nav-link[data-target="${view}"]`);
                 if (activeLink) {
-                    activeLink.classList.add('bg-slate-700', 'text-white');
-                    const icon = activeLink.querySelector('svg');
-                    if(icon) icon.classList.add('text-white');
+                    activeLink.classList.add('active-nav');
                 }
+                // Also update mobile active state
+                document.querySelectorAll('.mobile-nav-link').forEach(link => {
+                    if (link.dataset.target === view) {
+                        link.classList.add('bg-blue-600', 'text-white');
+                        link.classList.remove('bg-slate-800', 'text-slate-300');
+                    } else {
+                        link.classList.remove('bg-blue-600', 'text-white');
+                        link.classList.add('bg-slate-800', 'text-slate-300');
+                    }
+                });
 
                 switch(view) {
                     case 'dashboard':
@@ -12041,14 +12044,11 @@ const supervisorGroups = new Map();
                         return;
                     }
                     adminModal.classList.remove('hidden');
-                    // Close sidebar on mobile if open
-                    const sideMenu = document.getElementById('side-menu');
-                    const sidebarOverlay = document.getElementById('sidebar-overlay');
-                    if (sideMenu) {
-                        sideMenu.classList.remove('translate-x-0');
-                        sideMenu.classList.add('-translate-x-full');
+                    // Close mobile menu if open
+                    const mobileMenu = document.getElementById('mobile-menu');
+                    if (mobileMenu && mobileMenu.classList.contains('open')) {
+                        toggleMobileMenu();
                     }
-                    if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
                 });
             }
             if (adminCloseBtn) {
@@ -12100,24 +12100,27 @@ const supervisorGroups = new Map();
                 if (viewState[view]) viewState[view].dirty = true;
             };
 
-            document.querySelectorAll('.sidebar-toggle').forEach(btn => btn.addEventListener('click', toggleSidebar));
-            const closeSidebarBtn = document.getElementById('close-sidebar-btn');
-            if(closeSidebarBtn) closeSidebarBtn.addEventListener('click', toggleSidebar);
-            const sidebarOverlay = document.getElementById('sidebar-overlay');
-            if(sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+            const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+            if (mobileMenuToggle) mobileMenuToggle.addEventListener('click', toggleMobileMenu);
 
-            document.querySelectorAll('.nav-link').forEach(link => {
+            const handleNavClick = (e) => {
+                const target = e.currentTarget.dataset.target;
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('ir_para', target);
+                    window.open(url.toString(), '_blank');
+                } else {
+                    navigateTo(target);
+                }
+            };
+
+            document.querySelectorAll('.nav-link').forEach(link => link.addEventListener('click', handleNavClick));
+
+            document.querySelectorAll('.mobile-nav-link').forEach(link => {
                 link.addEventListener('click', (e) => {
-                    const target = e.currentTarget.dataset.target;
-
-                    if (e.ctrlKey || e.metaKey) {
-                        e.preventDefault();
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('ir_para', target);
-                        window.open(url.toString(), '_blank');
-                    } else {
-                        navigateTo(target);
-                    }
+                    handleNavClick(e);
+                    toggleMobileMenu();
                 });
             });
 
