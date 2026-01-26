@@ -235,13 +235,6 @@
                                         </button>
                                     </li>
                                 </ul>
-                                <div class="flex items-center">
-                                    <label class="theme-switch" for="checkbox-theme">
-                                        <input type="checkbox" id="checkbox-theme" />
-                                        <div class="slider round"></div>
-                                    </label>
-                                    <span class="text-sm font-medium">Tema</span>
-                                </div>
                             </div>
                         </aside>
                         <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden glass-effect"></div>
@@ -385,56 +378,7 @@
                                     <div id="tableView" class="hidden">
                                         <div class="overflow-x-auto bg-[#1d2347] rounded-lg border border-slate-700 shadow-sm" style="max-height: 60vh;">
                                             <table class="min-w-full text-sm text-left text-slate-300">
-                                                <thead class="text-xs text-slate-400 uppercase sticky-header"> <!-- Sticky header já estilizado no <style>
-    :root {
-        --bg-main: #0d1126;
-        --bg-card: #1d2347;
-        --bg-header: #1e2a5a;
-        --text-primary: #cbd5e1; /* slate-300 */
-        --text-heading: #ffffff;
-        --border-color: #334155; /* slate-700 */
-    }
-
-    html.light {
-        --bg-main: #f1f5f9; /* slate-100 */
-        --bg-card: #ffffff;
-        --bg-header: #3b82f6; /* blue-500 */
-        --text-primary: #1e293b; /* slate-800 */
-        --text-heading: #0f172a; /* slate-900 */
-        --border-color: #cbd5e1; /* slate-300 */
-    }
-
-    body { background-color: var(--bg-main); color: var(--text-primary); transition: background-color 0.3s, color 0.3s; }
-    .kpi-card, .bg-\[\#1d2347\] { background-color: var(--bg-card) !important; border-color: var(--border-color) !important; }
-    .bg-\[\#0d1126\] { background-color: var(--bg-main) !important; }
-    header.bg-gradient-to-r { background: var(--bg-header) !important; }
-
-    /* Light Mode Specific Overrides for Text */
-    html.light .text-white { color: var(--text-heading) !important; }
-    html.light .text-slate-300 { color: var(--text-primary) !important; }
-    html.light .text-slate-400 { color: #64748b !important; } /* slate-500 */
-
-    /* Fix Buttons with White Text in Light Mode (Override the global .text-white rule) */
-    html.light button.text-white,
-    html.light .metric-btn.text-white,
-    html.light .bg-green-600.text-white,
-    html.light .bg-red-600.text-white,
-    html.light .bg-blue-600.text-white,
-    html.light .bg-teal-500.text-white,
-    html.light .bg-indigo-600.text-white,
-    html.light .bg-orange-500.text-white {
-        color: #ffffff !important;
-    }
-
-    /* Theme Toggle Switch */
-    .theme-switch-wrapper { display: flex; align-items: center; margin-top: auto; padding: 1rem; border-top: 1px solid var(--border-color); }
-    .theme-switch { display: inline-block; height: 24px; position: relative; width: 48px; margin-right: 10px; }
-    .theme-switch input { display: none; }
-    .slider { background-color: #ccc; bottom: 0; cursor: pointer; left: 0; position: absolute; right: 0; top: 0; transition: .4s; border-radius: 34px; }
-    .slider:before { background-color: #fff; bottom: 4px; content: ""; height: 16px; left: 4px; position: absolute; transition: .4s; width: 16px; border-radius: 50%; }
-    input:checked + .slider { background-color: #38b2ac; }
-    input:checked + .slider:before { transform: translateX(24px); }
- -->
+                                                <thead class="text-xs text-slate-400 uppercase sticky-header">
                                                     <tr><th class="px-4 py-3">Nº Pedido</th><th class="px-4 py-3">Cód. Cliente</th><th class="px-4 py-3">Vendedor</th><th class="px-4 py-3">Fornecedor</th><th class="px-4 py-3">Data Pedido</th><th class="px-4 py-3">Data Fat.</th><th class="px-4 py-3 text-right">Peso Total</th><th class="px-4 py-3 text-right">Faturamento Total</th><th class="px-4 py-3 text-center">Posição</th></tr>
                                                 </thead>
                                                 <tbody id="report-table-body" class="divide-y divide-slate-700"></tbody>

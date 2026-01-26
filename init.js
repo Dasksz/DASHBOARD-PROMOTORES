@@ -787,42 +787,6 @@
         });
 
 
-        // Theme Switcher Logic
-        const themeCheckbox = document.getElementById('checkbox-theme');
-        const htmlElement = document.documentElement;
-
-        // Load saved theme
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        if (savedTheme === 'light') {
-            htmlElement.classList.add('light');
-            if(themeCheckbox) themeCheckbox.checked = true;
-        }
-
-        if(themeCheckbox) {
-            themeCheckbox.addEventListener('change', function() {
-                if(this.checked) {
-                    htmlElement.classList.add('light');
-                    localStorage.setItem('theme', 'light');
-                } else {
-                    htmlElement.classList.remove('light');
-                    localStorage.setItem('theme', 'dark');
-                }
-
-                // Force Chart.js update if charts exist (optional but good practice)
-                if (typeof charts !== 'undefined') {
-                    if (typeof updateDashboard === 'function') {
-                        updateDashboard();
-                    } else {
-                        // Tenta atualizar os gráficos diretamente se updateDashboard não estiver acessível
-                        try {
-                            Object.values(charts).forEach(chart => chart.update());
-                        } catch (e) {
-                            console.warn("Could not update charts on theme change", e);
-                        }
-                    }
-                }
-            });
-        }
 
 
         // Admin Modal Logic (Moved to app.js to handle access control)
