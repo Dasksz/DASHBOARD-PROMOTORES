@@ -741,8 +741,8 @@
                         ultimaCompra: uc ? uc.getTime() : null,
                         dataCadastro: dc ? dc.getTime() : null,
                         bloqueio: String(getVal(client, ['Bloqueio', 'BLOQUEIO', 'Status']) || '').trim().toUpperCase(),
-                        inscricaoEstadual: String(getVal(client, ['Insc. Est. / Produtor', 'Inscricao Estadual', 'IE', 'INSCRICAO']) || 'N/A'),
-                        promotor: String(getVal(client, ['PROMOTOR', 'COD PROMOTOR', 'COD_PROMOTOR', 'Promotor']) || '')
+                        inscricaoEstadual: String(getVal(client, ['Insc. Est. / Produtor', 'Inscricao Estadual', 'IE', 'INSCRICAO']) || 'N/A')
+                        // promotor: Removed - managed via separate table data_client_promoters
                     };
                     if (clientRcaOverrides.has(codCli)) clientData.rcas.unshift(clientRcaOverrides.get(codCli));
                     clientMap.set(codCli, clientData);

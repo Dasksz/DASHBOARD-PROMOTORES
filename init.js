@@ -447,7 +447,7 @@
                 });
             };
 
-            let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, hierarchy;
+            let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, hierarchy, clientPromoters;
 
             let clientCoordinates;
 
@@ -463,6 +463,8 @@
                 innovations = cachedData.innovations;
                 metadata = metadataRemoteRaw || cachedData.metadata;
                 orders = cachedData.orders;
+                // Try to load promoters from cache if exists (backward compat)
+                clientPromoters = cachedData.clientPromoters || [];
 
                 // Refresh Coordinates specifically (Background Update for Cache)
                 // This ensures that even if main data is cached, we get the latest geocoding results
@@ -482,13 +484,30 @@
                     console.warn("[Cache] Falha ao atualizar coordenadas:", e);
                     clientCoordinates = cachedData.clientCoordinates || [];
                 }
+
+                // Refresh Promoters if missing or stale? For now, we trust cache or reload if needed.
+                // But since we just added this feature, cache might be empty for promoters.
+                if (!clientPromoters || clientPromoters.length === 0) {
+                     try {
+                        console.log("[Cache] Buscando promotores (feature nova)...");
+                        const freshPromoters = await fetchAll('data_client_promoters', null, null, 'object', 'client_code');
+                        clientPromoters = freshPromoters;
+                        cachedData.clientPromoters = freshPromoters;
+                        saveToCache('dashboardData', cachedData).catch(e => console.warn("Background cache save failed (Promoters)", e));
+                     } catch(e) {
+                        console.warn("[Cache] Falha ao buscar promotores:", e);
+                     }
+                }
+
             } else {
                 const colsDetailed = 'id,pedido,codcli,nome,superv,codsupervisor,produto,descricao,fornecedor,observacaofor,codfor,codusur,qtvenda,vlvenda,vlbonific,totpesoliq,dtped,dtsaida,posicao,estoqueunit,tipovenda,filial,qtvenda_embalagem_master';
-                const colsClients = 'id,codigo_cliente,rca1,rca2,rcas,cidade,nomecliente,bairro,razaosocial,fantasia,cnpj_cpf,endereco,numero,cep,telefone,email,ramo,ultimacompra,datacadastro,bloqueio,inscricaoestadual,promotor';
+                // Remove 'promotor' from clients fetch columns if it was there, or keep it if deprecated column still exists in DB but is empty.
+                // We will rely on the separate table now.
+                const colsClients = 'id,codigo_cliente,rca1,rca2,rcas,cidade,nomecliente,bairro,razaosocial,fantasia,cnpj_cpf,endereco,numero,cep,telefone,email,ramo,ultimacompra,datacadastro,bloqueio,inscricaoestadual';
                 const colsStock = 'id,product_code,filial,stock_qty';
                 const colsOrders = 'id,pedido,codcli,cliente_nome,cidade,nome,superv,fornecedores_str,dtped,dtsaida,posicao,vlvenda,totpesoliq,filial,tipovenda,fornecedores_list,codfors_list';
 
-                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched] = await Promise.all([
+                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched] = await Promise.all([
                     fetchAll('data_detailed', colsDetailed, 'sales', 'columnar', 'id'),
                     fetchAll('data_history', colsDetailed, 'history', 'columnar', 'id'),
                     fetchAll('data_clients', colsClients, 'clients', 'columnar', 'id'),
@@ -499,7 +518,8 @@
                     fetchAll('data_metadata', null, null, 'object', 'key'),
                     fetchAll('data_orders', colsOrders, 'orders', 'object', 'id'),
                     fetchAll('data_client_coordinates', null, null, 'object', 'client_code'),
-                    fetchAll('data_hierarchy', null, null, 'object', 'id')
+                    fetchAll('data_hierarchy', null, null, 'object', 'id'),
+                    fetchAll('data_client_promoters', null, null, 'object', 'client_code')
                 ]);
 
                 detailed = detailedUpper;
@@ -513,10 +533,11 @@
                 orders = ordersUpper;
                 clientCoordinates = clientCoordinatesFetched;
                 hierarchy = hierarchyFetched;
+                clientPromoters = clientPromotersFetched;
 
                 // Salvar no Cache
                 const dataToCache = {
-                    detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy
+                    detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters
                 };
 
                 // Salvar de forma assíncrona sem travar UI
@@ -524,6 +545,40 @@
             }
 
             loaderText.textContent = 'Processando...';
+
+            // --- MERGE PROMOTERS INTO CLIENTS ---
+            // Build Map of Promoter Codes
+            const promoterMap = new Map();
+            if (clientPromoters && clientPromoters.length > 0) {
+                clientPromoters.forEach(p => {
+                    if (p.client_code && p.promoter_code) {
+                        promoterMap.set(String(p.client_code).trim(), String(p.promoter_code).trim());
+                    }
+                });
+            }
+
+            // Inject into Clients Columnar Data
+            if (clients && clients.values) {
+                // Ensure PROMOTOR column exists in values/columns
+                if (!clients.columns.includes('PROMOTOR')) {
+                    clients.columns.push('PROMOTOR');
+                    clients.values['PROMOTOR'] = new Array(clients.length).fill('');
+                }
+
+                const clientCodes = clients.values['CODIGO_CLIENTE'] || clients.values['Código'];
+                const promoterValues = clients.values['PROMOTOR'];
+
+                if (clientCodes) {
+                    for (let i = 0; i < clients.length; i++) {
+                        const code = String(clientCodes[i]).trim();
+                        const promoter = promoterMap.get(code);
+                        if (promoter) {
+                            promoterValues[i] = promoter;
+                        }
+                    }
+                }
+            }
+            // ------------------------------------
 
             // Reconstruct Helper Maps
             const productDetailsMap = {};
