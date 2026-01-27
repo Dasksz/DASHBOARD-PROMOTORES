@@ -92,8 +92,7 @@ create table if not exists public.data_clients (
   ultimacompra timestamp with time zone,
   datacadastro timestamp with time zone,
   bloqueio text,
-  inscricaoestadual text,
-  promotor text -- Coluna para vínculo com promotor
+  inscricaoestadual text
 );
 
 -- 1.4 Tabela de Pedidos Agregados
@@ -192,6 +191,12 @@ create table if not exists public.data_hierarchy (
   nome_promotor text
 );
 
+-- 1.14 Tabela de Vínculo Cliente-Promotor
+create table if not exists public.data_client_promoters (
+  client_code text primary key,
+  promoter_code text
+);
+
 -- Ensure columns exist (Idempotency for older schemas)
 do $$
 BEGIN
@@ -201,7 +206,7 @@ BEGIN
     ALTER TABLE public.data_orders ADD COLUMN IF NOT EXISTS fornecedores_list text[];
     ALTER TABLE public.data_orders ADD COLUMN IF NOT EXISTS codfors_list text[];
     ALTER TABLE public.data_product_details ADD COLUMN IF NOT EXISTS pasta text;
-    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS promotor text;
+    -- promotor column removed from data_clients in new schema
 END $$;
 
 -- ==============================================================================
@@ -392,7 +397,8 @@ BEGIN
             'data_orders',
             'data_product_details',
             'data_stock',
-            'data_hierarchy'
+            'data_hierarchy',
+            'data_client_promoters'
         )
     LOOP
         -- Cleanup

@@ -1,7 +1,6 @@
--- Atualizacao em massa dos promotores na tabela data_clients
-UPDATE public.data_clients AS c
-SET promotor = v.promotor
-FROM (VALUES
+-- Carga inicial da tabela de vinculo data_client_promoters
+INSERT INTO public.data_client_promoters (client_code, promoter_code)
+VALUES
     ('355', 'promotor1'),
     ('1997', 'promotor1'),
     ('1219', 'promotor1'),
@@ -99,5 +98,5 @@ FROM (VALUES
     ('9502', 'promotor4'),
     ('9500', 'promotor4'),
     ('9434', 'promotor4')
-) AS v(codigo_cliente, promotor)
-WHERE c.codigo_cliente = v.codigo_cliente;
+ON CONFLICT (client_code) DO UPDATE
+SET promoter_code = EXCLUDED.promoter_code;
