@@ -633,91 +633,106 @@
             let filteredClients = clients;
             let filteredOrders = orders;
 
-            if (role && role !== 'adm' && hierarchy && hierarchy.length > 0) {
-                // Resolve allowed promoters
-                const allowedPromoters = new Set();
-                const normalizedRole = role.trim().toLowerCase();
+            if (role && role !== 'adm') {
+                if (!hierarchy || hierarchy.length === 0) {
+                     console.warn(`[Access Control] Role '${role}' is not admin, but Hierarchy Data is missing. Enforcing empty view for security.`);
+                     // Return empty data if hierarchy not loaded to prevent data leakage
+                     filteredClients = { columns: clients.columns, values: {}, length: 0 };
+                     clients.columns.forEach(c => filteredClients.values[c] = []);
 
-                hierarchy.forEach(h => {
-                    const coord = (h.cod_coord || '').trim().toLowerCase();
-                    const cocoord = (h.cod_cocoord || '').trim().toLowerCase();
-                    const promotor = (h.cod_promotor || '').trim().toLowerCase();
+                     filteredDetailed = { columns: detailed.columns, values: {}, length: 0 };
+                     detailed.columns.forEach(c => filteredDetailed.values[c] = []);
 
-                    // If user is coordinator, allow all promoters under them
-                    if (coord === normalizedRole) allowedPromoters.add(promotor);
-                    // If user is co-coordinator
-                    else if (cocoord === normalizedRole) allowedPromoters.add(promotor);
-                    // If user is promoter
-                    else if (promotor === normalizedRole) allowedPromoters.add(promotor);
-                });
+                     filteredHistory = { columns: history.columns, values: {}, length: 0 };
+                     history.columns.forEach(c => filteredHistory.values[c] = []);
 
-                if (allowedPromoters.size > 0) {
-                    console.log(`[Access Control] Filtering for role '${role}'. Allowed Promoters: ${allowedPromoters.size}`);
-
-                    // 1. Filter Clients (Columnar)
-                    const promotorCol = clients.values['PROMOTOR'] || [];
-                    const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
-                    const allowedClientCodes = new Set();
-
-                    // Rebuild Clients Columnar
-                    const newClientsValues = {};
-                    clients.columns.forEach(c => newClientsValues[c] = []);
-                    let newClientsLen = 0;
-
-                    for(let i=0; i<clients.length; i++) {
-                        const p = String(promotorCol[i] || '').trim().toLowerCase();
-                        if (allowedPromoters.has(p)) {
-                            allowedClientCodes.add(clientCodesCol[i]);
-                            clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
-                            newClientsLen++;
-                        }
-                    }
-                    filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
-
-                    // 2. Filter Detailed (Columnar)
-                    // Check CODCLI against allowedClientCodes
-                    const detCodCliCol = detailed.values['CODCLI'] || [];
-                    const newDetailedValues = {};
-                    detailed.columns.forEach(c => newDetailedValues[c] = []);
-                    let newDetailedLen = 0;
-
-                    for(let i=0; i<detailed.length; i++) {
-                        if (allowedClientCodes.has(detCodCliCol[i])) {
-                            detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c][i]));
-                            newDetailedLen++;
-                        }
-                    }
-                    filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
-
-                    // 3. Filter History (Columnar)
-                    const histCodCliCol = history.values['CODCLI'] || [];
-                    const newHistoryValues = {};
-                    history.columns.forEach(c => newHistoryValues[c] = []);
-                    let newHistoryLen = 0;
-
-                    for(let i=0; i<history.length; i++) {
-                        if (allowedClientCodes.has(histCodCliCol[i])) {
-                            history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
-                            newHistoryLen++;
-                        }
-                    }
-                    filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
-
-                    // 4. Filter Orders (Array of Objects)
-                    filteredOrders = orders.filter(o => allowedClientCodes.has(o.codcli));
+                     filteredOrders = [];
                 } else {
-                    console.warn(`[Access Control] Role '${role}' not found in hierarchy or has no promoters. Showing empty view.`);
-                    // Return empty data if role not found in hierarchy but isn't admin
-                    filteredClients = { columns: clients.columns, values: {}, length: 0 };
-                    clients.columns.forEach(c => filteredClients.values[c] = []);
+                    // Resolve allowed promoters
+                    const allowedPromoters = new Set();
+                    const normalizedRole = role.trim().toLowerCase();
 
-                    filteredDetailed = { columns: detailed.columns, values: {}, length: 0 };
-                    detailed.columns.forEach(c => filteredDetailed.values[c] = []);
+                    hierarchy.forEach(h => {
+                        const coord = (h.cod_coord || '').trim().toLowerCase();
+                        const cocoord = (h.cod_cocoord || '').trim().toLowerCase();
+                        const promotor = (h.cod_promotor || '').trim().toLowerCase();
 
-                    filteredHistory = { columns: history.columns, values: {}, length: 0 };
-                    history.columns.forEach(c => filteredHistory.values[c] = []);
+                        // If user is coordinator, allow all promoters under them
+                        if (coord === normalizedRole) allowedPromoters.add(promotor);
+                        // If user is co-coordinator
+                        else if (cocoord === normalizedRole) allowedPromoters.add(promotor);
+                        // If user is promoter
+                        else if (promotor === normalizedRole) allowedPromoters.add(promotor);
+                    });
 
-                    filteredOrders = [];
+                    if (allowedPromoters.size > 0) {
+                        console.log(`[Access Control] Filtering for role '${role}'. Allowed Promoters: ${allowedPromoters.size}`);
+
+                        // 1. Filter Clients (Columnar)
+                        const promotorCol = clients.values['PROMOTOR'] || [];
+                        const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
+                        const allowedClientCodes = new Set();
+
+                        // Rebuild Clients Columnar
+                        const newClientsValues = {};
+                        clients.columns.forEach(c => newClientsValues[c] = []);
+                        let newClientsLen = 0;
+
+                        for(let i=0; i<clients.length; i++) {
+                            const p = String(promotorCol[i] || '').trim().toLowerCase();
+                            if (allowedPromoters.has(p)) {
+                                allowedClientCodes.add(clientCodesCol[i]);
+                                clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
+                                newClientsLen++;
+                            }
+                        }
+                        filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
+
+                        // 2. Filter Detailed (Columnar)
+                        // Check CODCLI against allowedClientCodes
+                        const detCodCliCol = detailed.values['CODCLI'] || [];
+                        const newDetailedValues = {};
+                        detailed.columns.forEach(c => newDetailedValues[c] = []);
+                        let newDetailedLen = 0;
+
+                        for(let i=0; i<detailed.length; i++) {
+                            if (allowedClientCodes.has(detCodCliCol[i])) {
+                                detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c][i]));
+                                newDetailedLen++;
+                            }
+                        }
+                        filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
+
+                        // 3. Filter History (Columnar)
+                        const histCodCliCol = history.values['CODCLI'] || [];
+                        const newHistoryValues = {};
+                        history.columns.forEach(c => newHistoryValues[c] = []);
+                        let newHistoryLen = 0;
+
+                        for(let i=0; i<history.length; i++) {
+                            if (allowedClientCodes.has(histCodCliCol[i])) {
+                                history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
+                                newHistoryLen++;
+                            }
+                        }
+                        filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
+
+                        // 4. Filter Orders (Array of Objects)
+                        filteredOrders = orders.filter(o => allowedClientCodes.has(o.codcli));
+                    } else {
+                        console.warn(`[Access Control] Role '${role}' not found in hierarchy or has no promoters. Showing empty view.`);
+                        // Return empty data if role not found in hierarchy but isn't admin
+                        filteredClients = { columns: clients.columns, values: {}, length: 0 };
+                        clients.columns.forEach(c => filteredClients.values[c] = []);
+
+                        filteredDetailed = { columns: detailed.columns, values: {}, length: 0 };
+                        detailed.columns.forEach(c => filteredDetailed.values[c] = []);
+
+                        filteredHistory = { columns: history.columns, values: {}, length: 0 };
+                        history.columns.forEach(c => filteredHistory.values[c] = []);
+
+                        filteredOrders = [];
+                    }
                 }
             }
 
