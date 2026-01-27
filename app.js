@@ -11983,6 +11983,10 @@ const supervisorGroups = new Map();
                     await clearTable('data_active_products', 'code');
                     await uploadBatchParallel('data_active_products', data.active_products, false);
                 }
+                if (data.hierarchy && data.hierarchy.length > 0) {
+                    await clearTable('data_hierarchy');
+                    await uploadBatchParallel('data_hierarchy', data.hierarchy, false);
+                }
                 if (data.metadata && data.metadata.length > 0) {
                     // Update last_update timestamp
                     const now = new Date();
@@ -12103,9 +12107,10 @@ const supervisorGroups = new Map();
                     const productsFile = document.getElementById('products-file-input').files[0];
                     const historyFile = document.getElementById('history-file-input').files[0];
                     const innovationsFile = document.getElementById('innovations-file-input').files[0];
+                    const hierarchyFile = document.getElementById('hierarchy-file-input').files[0];
 
-                    if (!salesFile && !historyFile) {
-                        alert("Pelo menos o arquivo de Vendas ou Histórico é necessário.");
+                    if (!salesFile && !historyFile && !hierarchyFile) {
+                        alert("Pelo menos um arquivo (Vendas, Histórico ou Hierarquia) é necessário.");
                         return;
                     }
 
@@ -12115,7 +12120,7 @@ const supervisorGroups = new Map();
                     document.getElementById('status-container').classList.remove('hidden');
                     document.getElementById('status-text').textContent = "Processando arquivos...";
 
-                    worker.postMessage({ salesFile, clientsFile, productsFile, historyFile, innovationsFile });
+                    worker.postMessage({ salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile });
 
                     worker.onmessage = (e) => {
                         const { type, data, status, percentage, message } = e.data;
