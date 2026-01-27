@@ -199,11 +199,11 @@ create or replace function public.is_admin () RETURNS boolean as $$
 BEGIN
   -- Service Role always admin
   IF (select auth.role()) = 'service_role' THEN RETURN true; END IF;
-
+  
   -- Check profiles table for 'adm' role
   RETURN EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = (select auth.uid())
+    SELECT 1 FROM public.profiles 
+    WHERE id = (select auth.uid()) 
     AND role = 'adm'
   );
 END;
@@ -217,8 +217,8 @@ BEGIN
   IF (select auth.role()) = 'service_role' THEN RETURN true; END IF;
 
   RETURN EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = (select auth.uid())
+    SELECT 1 FROM public.profiles 
+    WHERE id = (select auth.uid()) 
     AND status = 'aprovado'
   );
 END;
@@ -236,8 +236,8 @@ BEGIN
 
   -- Whitelist validation
   IF table_name NOT IN (
-    'data_detailed', 'data_history', 'data_clients', 'data_orders',
-    'data_product_details', 'data_active_products', 'data_stock',
+    'data_detailed', 'data_history', 'data_clients', 'data_orders', 
+    'data_product_details', 'data_active_products', 'data_stock', 
     'data_innovations', 'data_metadata', 'goals_distribution'
   ) THEN
     RAISE EXCEPTION 'Invalid table name.';
@@ -286,17 +286,17 @@ do $$
 DECLARE
     t text;
 BEGIN
-    FOR t IN
-        SELECT table_name FROM information_schema.tables
-        WHERE table_schema = 'public'
+    FOR t IN 
+        SELECT table_name FROM information_schema.tables 
+        WHERE table_schema = 'public' 
         AND (table_name LIKE 'data_%' OR table_name = 'goals_distribution' OR table_name = 'profiles')
     LOOP
         EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', t);
-
+        
         -- Revoke public permissions for security
         EXECUTE format('REVOKE ALL ON public.%I FROM anon;', t);
         EXECUTE format('REVOKE ALL ON public.%I FROM authenticated;', t);
-
+        
         -- Grant minimal permissions to authenticated (RLS will handle access)
         EXECUTE format('GRANT SELECT ON public.%I TO authenticated;', t);
         EXECUTE format('GRANT INSERT, UPDATE, DELETE ON public.%I TO authenticated;', t);
@@ -365,9 +365,9 @@ do $$
 DECLARE
     t text;
 BEGIN
-    FOR t IN
-        SELECT table_name FROM information_schema.tables
-        WHERE table_schema = 'public'
+    FOR t IN 
+        SELECT table_name FROM information_schema.tables 
+        WHERE table_schema = 'public' 
         AND table_name IN (
             'data_active_products',
             'data_clients',
@@ -394,7 +394,7 @@ BEGIN
         EXECUTE format('DROP POLICY IF EXISTS "Enable read access for all users" ON public.%I;', t);
         EXECUTE format('DROP POLICY IF EXISTS "Enable insert/update for authenticated users" ON public.%I;', t);
         EXECUTE format('DROP POLICY IF EXISTS "Acesso leitura aprovados" ON public.%I;', t);
-
+        
         -- Create New Standardized Policies
         EXECUTE format('CREATE POLICY "Acesso Leitura Unificado" ON public.%I FOR SELECT TO authenticated USING (public.is_admin() OR public.is_approved());', t);
         EXECUTE format('CREATE POLICY "Acesso Escrita Admin (Insert)" ON public.%I FOR INSERT TO authenticated WITH CHECK (public.is_admin());', t);
