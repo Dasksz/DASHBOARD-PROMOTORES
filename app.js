@@ -7920,6 +7920,7 @@ const supervisorGroups = new Map();
         }
 
         function updateSellerFilter(supervisors, dropdown, filterText, selectedArray, dataSource, skipRender = false) {
+            if (!dropdown || !filterText) return selectedArray;
             const forbidden = ['NOME', 'VENDEDOR', 'SUPERV', 'CODUSUR', 'CODCLI', 'SUPERVISOR', 'INATIVOS'];
             let sellersToShow;
             if (supervisors && supervisors.length > 0) {
@@ -7948,6 +7949,7 @@ const supervisorGroups = new Map();
         }
 
         function updateTipoVendaFilter(dropdown, filterText, selectedArray, dataSource, skipRender = false) {
+            if (!dropdown || !filterText) return selectedArray;
             // Collect unique types from data source
             const forbidden = ['TIPOVENDA', 'TIPO VENDA', 'TIPO', 'CODUSUR', 'CODCLI', 'SUPERV', 'NOME'];
             const uniqueTypes = new Set(dataSource.map(item => item.TIPOVENDA).filter(t => t && !forbidden.includes(t.toUpperCase())));
@@ -7980,6 +7982,7 @@ const supervisorGroups = new Map();
         }
 
         function updateRedeFilter(dropdown, buttonTextElement, selectedArray, dataSource, baseText = 'Com Rede') {
+            if (!dropdown || !buttonTextElement) return selectedArray;
             const forbidden = ['RAMO', 'RAMO DE ATIVIDADE', 'RAMO_ATIVIDADE', 'DESCRICAO', 'ATIVIDADE'];
             const redesToShow = [...new Set(dataSource.map(item => item.ramo).filter(r => r && r !== 'N/A' && !forbidden.includes(r.toUpperCase())))].sort();
             const validSelected = selectedArray.filter(rede => redesToShow.includes(rede));
@@ -8766,6 +8769,7 @@ const supervisorGroups = new Map();
         }
 
         function updateSupplierFilter(dropdown, filterText, selectedArray, dataSource, filterType = 'comparison', skipRender = false) {
+            if (!dropdown || !filterText) return selectedArray;
             const forbidden = ['CODFOR', 'FORNECEDOR', 'COD FOR', 'NOME DO FORNECEDOR', 'FORNECEDOR_NOME'];
             const suppliers = new Map();
             dataSource.forEach(s => {
