@@ -201,6 +201,56 @@
             }
         }
 
+        // Helper class to combine two datasets (e.g. Sales + History) without full materialization via Spread
+        class CombinedDataset {
+            constructor(d1, d2) {
+                this.d1 = d1;
+                this.d2 = d2;
+                this.length = d1.length + d2.length;
+            }
+            get(i) {
+                if (i < this.d1.length) return this.d1.get(i);
+                return this.d2.get(i - this.d1.length);
+            }
+            filter(callback) {
+                // Returns standard Array, but processed separately to avoid huge intermediate allocations
+                const res = [];
+                for (let i = 0; i < this.d1.length; i++) {
+                    const item = this.d1.get(i);
+                    if (callback(item, i)) res.push(item);
+                }
+                for (let i = 0; i < this.d2.length; i++) {
+                    const item = this.d2.get(i);
+                    if (callback(item, i + this.d1.length)) res.push(item);
+                }
+                return res;
+            }
+            map(callback) {
+                const res = new Array(this.length);
+                let idx = 0;
+                for (let i = 0; i < this.d1.length; i++) res[idx++] = callback(this.d1.get(i), i);
+                for (let i = 0; i < this.d2.length; i++) res[idx++] = callback(this.d2.get(i), i + this.d1.length);
+                return res;
+            }
+            forEach(callback) {
+                for (let i = 0; i < this.d1.length; i++) callback(this.d1.get(i), i);
+                for (let i = 0; i < this.d2.length; i++) callback(this.d2.get(i), i + this.d1.length);
+            }
+            [Symbol.iterator]() {
+                let index = 0;
+                const self = this;
+                return {
+                    next: () => {
+                        if (index < self.length) {
+                            return { value: self.get(index++), done: false };
+                        } else {
+                            return { done: true };
+                        }
+                    }
+                };
+            }
+        }
+
         function parseDate(dateString) {
             if (!dateString) return null;
 
@@ -13984,7 +14034,7 @@ const supervisorGroups = new Map();
 
         // Initial Population for Goals Filters
         selectedGoalsGvSupervisors = updateSupervisorFilter(goalsGvSupervisorFilterDropdown, goalsGvSupervisorFilterText, selectedGoalsGvSupervisors, allSalesData);
-        selectedGoalsGvSellers = updateSellerFilter(selectedGoalsGvSupervisors, goalsGvSellerFilterDropdown, goalsGvSellerFilterText, selectedGoalsGvSellers, [...allSalesData, ...allHistoryData]);
+        selectedGoalsGvSellers = updateSellerFilter(selectedGoalsGvSupervisors, goalsGvSellerFilterDropdown, goalsGvSellerFilterText, selectedGoalsGvSellers, new CombinedDataset(allSalesData, allHistoryData));
         // Initialize SV Supervisor filter just in case
         selectedGoalsSvSupervisors = updateSupervisorFilter(goalsSvSupervisorFilterDropdown, goalsSvSupervisorFilterText, selectedGoalsSvSupervisors, allSalesData);
         // Initialize Summary Supervisor Filter
@@ -13995,10 +14045,10 @@ const supervisorGroups = new Map();
 
         // Initialize Meta Vs Realizado Filters
         selectedMetaRealizadoSupervisors = updateSupervisorFilter(document.getElementById('meta-realizado-supervisor-filter-dropdown'), document.getElementById('meta-realizado-supervisor-filter-text'), selectedMetaRealizadoSupervisors, allSalesData);
-        updateSellerFilter(selectedMetaRealizadoSupervisors, document.getElementById('meta-realizado-vendedor-filter-dropdown'), document.getElementById('meta-realizado-vendedor-filter-text'), selectedMetaRealizadoSellers, [...allSalesData, ...allHistoryData]);
+        updateSellerFilter(selectedMetaRealizadoSupervisors, document.getElementById('meta-realizado-vendedor-filter-dropdown'), document.getElementById('meta-realizado-vendedor-filter-text'), selectedMetaRealizadoSellers, new CombinedDataset(allSalesData, allHistoryData));
 
         // Fix: Pre-filter Suppliers for Meta Realizado (Only PEPSICO)
-        const pepsicoSuppliersSource = [...allSalesData, ...allHistoryData].filter(s => {
+        const pepsicoSuppliersSource = new CombinedDataset(allSalesData, allHistoryData).filter(s => {
             let rowPasta = s.OBSERVACAOFOR;
             if (!rowPasta || rowPasta === '0' || rowPasta === '00' || rowPasta === 'N/A') {
                  const rawFornecedor = String(s.FORNECEDOR || '').toUpperCase();
@@ -14013,7 +14063,7 @@ const supervisorGroups = new Map();
         updateStockSellerFilter();
         updateStockSupplierFilter();
         updateStockProductFilter();
-        updateStockCitySuggestions([...allSalesData, ...allHistoryData]);
+        updateStockCitySuggestions(new CombinedDataset(allSalesData, allHistoryData));
 
         initializeRedeFilters();
         setupEventListeners();
