@@ -12041,19 +12041,19 @@ const supervisorGroups = new Map();
 
                 navContainer.addEventListener('mousedown', (e) => {
                     isDown = true;
-                    navContainer.classList.add('active:cursor-grabbing');
+                    navContainer.classList.add('cursor-grabbing');
                     startX = e.pageX - navContainer.offsetLeft;
                     scrollLeft = navContainer.scrollLeft;
                 });
 
                 navContainer.addEventListener('mouseleave', () => {
                     isDown = false;
-                    navContainer.classList.remove('active:cursor-grabbing');
+                    navContainer.classList.remove('cursor-grabbing');
                 });
 
                 navContainer.addEventListener('mouseup', () => {
                     isDown = false;
-                    navContainer.classList.remove('active:cursor-grabbing');
+                    navContainer.classList.remove('cursor-grabbing');
                 });
 
                 navContainer.addEventListener('mousemove', (e) => {
