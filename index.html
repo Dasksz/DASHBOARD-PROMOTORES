@@ -41,6 +41,10 @@
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Critical CSS to prevent FOUC */
+        .hidden { display: none; }
+    </style>
 </head>
 <body class="bg-[#020617] text-slate-300 antialiased overflow-x-hidden">
 
@@ -49,7 +53,7 @@
     <div class="gatekeeper-card p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center relative overflow-hidden">
         <div class="absolute inset-0 bg-white/5 backdrop-blur-sm z-0"></div>
         <div class="relative z-10">
-            <img src="logo.png" alt="Logo" class="w-32 h-32 mx-auto mb-6 object-contain drop-shadow-lg">
+            <img src="logo.png" alt="Logo" class="w-32 h-32 mx-auto mb-6 object-contain drop-shadow-lg" style="width: 8rem; height: 8rem;">
             <h1 class="text-3xl font-extrabold text-white mb-2 tracking-tight">PRIME</h1>
             <p class="text-slate-400 mb-8 text-sm">Distribuição & Logística</p>
             <button id="login-button" class="w-full bg-white text-slate-900 font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-3">
@@ -72,7 +76,7 @@
 <!-- Tela Pendente -->
 <div id="tela-pendente" class="flex-center-overlay z-[2000] hidden bg-[#020617]">
     <div class="gatekeeper-card p-8 rounded-2xl shadow-xl max-w-sm w-full text-center">
-        <img src="logo.png" alt="Logo" class="w-24 h-24 mx-auto mb-4 object-contain">
+        <img src="logo.png" alt="Logo" class="w-24 h-24 mx-auto mb-4 object-contain" style="width: 6rem; height: 6rem;">
         <h1 class="text-xl font-bold text-white">Acesso Restrito</h1>
         <div class="flex flex-col items-center justify-center my-6">
             <div class="spinner-orange mb-3 w-8 h-8"></div>
@@ -83,9 +87,9 @@
 </div>
 
 <!-- Loader Geral (Overlay) -->
-<div id="loader" class="hidden">
-    <div id="loader-spinner" class="spinner-orange w-10 h-10 border-4"></div>
-    <p id="loader-text" class="text-slate-300 mt-4 font-medium tracking-wide">Processando...</p>
+<div id="loader" class="hidden fixed inset-0 z-[3000] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm">
+    <div id="loader-spinner" class="spinner-orange w-12 h-12 border-4 border-t-brand-red animate-spin"></div>
+    <p id="loader-text" class="text-white mt-4 text-lg font-medium tracking-wide animate-pulse">Processando...</p>
 </div>
 
 <!-- Admin Uploader Modal -->
@@ -143,12 +147,12 @@
 <nav id="top-navbar" class="glass-nav fixed top-0 w-full z-50 px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
     <!-- Logo & Brand -->
     <div class="flex items-center gap-4">
-        <img src="logo.png" alt="Prime Logo" class="h-8 w-auto">
+        <img src="logo.png" alt="Prime Logo" class="h-8 w-auto" style="height: 2rem; width: auto;">
         <span class="hidden md:block text-lg font-bold text-white tracking-tight">PRIME <span class="text-slate-400 font-normal text-sm">| Distribuição</span></span>
     </div>
 
     <!-- Desktop Navigation -->
-    <div class="hidden xl:flex items-center gap-1 overflow-x-auto no-scrollbar max-w-4xl px-2">
+    <div class="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar max-w-4xl px-2">
         <button data-target="dashboard" class="nav-link active-nav px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Visão Geral</button>
         <button data-target="pedidos" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Pedidos</button>
         <button data-target="comparativo" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Comparativo</button>
@@ -168,16 +172,16 @@
         <button id="open-admin-btn" class="p-2 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-white/5" title="Admin Upload">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
         </button>
-
+        
         <!-- Mobile Menu Toggle -->
-        <button id="mobile-menu-toggle" class="xl:hidden p-2 text-slate-300 hover:text-white">
+        <button id="mobile-menu-toggle" class="lg:hidden p-2 text-slate-300 hover:text-white">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
     </div>
 </nav>
 
 <!-- Mobile Menu Dropdown -->
-<div id="mobile-menu" class="fixed top-16 left-0 w-full bg-[#0f172a] border-b border-slate-700 z-40 hidden xl:hidden shadow-xl">
+<div id="mobile-menu" class="fixed top-16 left-0 w-full bg-[#0f172a] border-b border-slate-700 z-40 hidden lg:hidden shadow-xl">
     <div class="grid grid-cols-2 gap-2 p-4">
         <button data-target="dashboard" class="mobile-nav-link p-3 rounded-lg bg-slate-800 text-slate-300 text-sm font-medium text-center hover:bg-slate-700">Visão Geral</button>
         <button data-target="pedidos" class="mobile-nav-link p-3 rounded-lg bg-slate-800 text-slate-300 text-sm font-medium text-center hover:bg-slate-700">Pedidos</button>
@@ -204,7 +208,7 @@
     <!-- MAIN DASHBOARD -->
     <div id="main-dashboard" class="animate-fade-in-up">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
-
+            
             <!-- Hero Section -->
             <div class="hero-section mb-8 p-8 flex flex-col md:flex-row justify-between items-center shadow-2xl">
                 <div class="z-10 text-center md:text-left">
@@ -309,7 +313,7 @@
                         <button id="clear-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg transition-colors border border-slate-600">Limpar Filtros</button>
                     </div>
                 </div>
-
+                
                 <!-- Secondary Filters Row -->
                 <div class="flex flex-wrap gap-4 items-end mt-4 pt-4 border-t border-slate-800/50">
                      <div class="relative flex-1 min-w-[200px]">
@@ -420,7 +424,7 @@
 
     <!-- OTHER VIEWS (Initially Hidden) -->
     <!-- Note: Keeping structures similar but updating headers/classes -->
-
+    
     <!-- CITY VIEW -->
     <div id="city-view" class="hidden animate-fade-in-up">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
@@ -434,7 +438,7 @@
                     Alternar Mapa
                 </button>
             </header>
-
+            
             <div id="city-view-content">
                 <!-- Filters (Restyling minimal needed as classes are utility based, but ensure containers match) -->
                 <!-- Simplified filters block for brevity, ensuring ID matches -->
@@ -456,7 +460,7 @@
                             </div>
                             <div id="city-rede-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                         </div>
-
+                        
                         <!-- Supervisor -->
                         <div class="relative">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
@@ -558,7 +562,7 @@
     <div id="weekly-view" class="hidden container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl animate-fade-in-up">
         <!-- Content injected by app.js logic, ensure IDs match -->
         <header class="mb-8 border-b border-slate-800 pb-4"><h1 class="text-3xl font-bold text-white">Acompanhamento Semanal</h1></header>
-
+        
         <!-- Filters Block -->
         <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
              <div class="flex flex-wrap gap-4 items-center justify-between">
@@ -568,7 +572,7 @@
                 </div>
                 <button id="clear-weekly-filters-btn" class="bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold py-2 px-4 rounded-lg">Limpar</button>
              </div>
-
+             
              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                 <!-- Supervisor & Seller filters (Hidden logic needs these IDs) -->
                 <div class="relative">
@@ -621,7 +625,7 @@
                 <button data-fornecedor="PEPSICO" class="fornecedor-btn active bg-blue-600 px-6 py-2 rounded-lg text-white font-bold">PEPSICO</button>
                 <button data-fornecedor="MULTIMARCAS" class="fornecedor-btn bg-slate-800 px-6 py-2 rounded-lg text-slate-400">MULTIMARCAS</button>
             </div>
-
+            
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <!-- Essential ID Placeholders for JS -->
                 <button id="comparison-supervisor-filter-btn" class="bg-slate-800 p-2 rounded text-slate-300 text-sm"><span id="comparison-supervisor-filter-text">Supervisor</span></button><div id="comparison-supervisor-filter-dropdown" class="hidden"></div>
@@ -629,12 +633,12 @@
                 <button id="comparison-supplier-filter-btn" class="hidden"></button><div id="comparison-supplier-filter-dropdown" class="hidden"></div>
                 <input id="comparison-city-filter" class="bg-slate-800 p-2 rounded text-white text-sm" placeholder="Cidade..."><div id="comparison-city-suggestions" class="hidden"></div>
             </div>
-
+            
             <!-- Hidden Helpers -->
             <button id="comparison-product-filter-btn" class="hidden"></button><span id="comparison-product-filter-text" class="hidden"></span><div id="comparison-product-filter-dropdown" class="hidden"></div>
             <select id="comparison-filial-filter" class="hidden"><option value="ambas">Ambas</option></select>
             <button id="comparison-tipo-venda-filter-btn" class="hidden"></button><span id="comparison-tipo-venda-filter-text" class="hidden"></span><div id="comparison-tipo-venda-filter-dropdown" class="hidden"></div>
-
+            
             <div class="flex justify-end gap-2 mt-4">
                 <button id="comparison-tendency-toggle" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded-lg">Calcular Tendência</button>
                 <button id="comparison-holiday-picker-btn" class="bg-slate-700 text-white py-2 px-4 rounded-lg">Feriados</button>
@@ -654,11 +658,11 @@
             </div>
             <!-- Metrics toggles hidden in layout but needed for JS -->
             <div id="comparison-monthly-metric-container" class="hidden"><button id="toggle-monthly-fat-btn"></button><button id="toggle-monthly-clients-btn"></button></div>
-
+            
             <div id="weeklyComparisonChartContainer" class="relative h-96"></div>
             <div id="monthlyComparisonChartContainer" class="relative h-96 hidden"></div>
         </div>
-
+        
         <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
             <h2 class="text-lg font-bold text-white mb-4 text-center">Faturamento por Dia da Semana</h2>
             <div id="dailyWeeklyComparisonChartContainer" class="relative h-96"></div>
@@ -688,7 +692,7 @@
             <button id="stock-tipo-venda-filter-btn"><span id="stock-tipo-venda-filter-text"></span></button><div id="stock-tipo-venda-filter-dropdown"></div>
             <button id="clear-stock-filters-btn"></button>
         </div>
-
+        
         <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-6">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-lg font-bold text-white">Geral</h2>
@@ -710,7 +714,7 @@
                 <table class="min-w-full text-sm text-left text-slate-300"><tbody id="stock-analysis-table-body"></tbody></table>
             </div>
         </div>
-
+        
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800"><h3 class="text-white font-bold mb-2">Crescimento</h3><tbody id="growth-table-body"></tbody></div>
             <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800"><h3 class="text-white font-bold mb-2">Queda</h3><tbody id="decline-table-body"></tbody></div>
