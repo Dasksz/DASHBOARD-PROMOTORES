@@ -7,7 +7,8 @@
             sales: ['CODCLI', 'PEDIDO', 'CODUSUR', 'CODSUPERVISOR', 'DTPED', 'DTSAIDA', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX'],
             clients: [], // Validation relaxed to support variable headers (aliases handled in processing)
             products: ['Código', 'Qtde embalagem master(Compra)', 'Descrição', 'Nome do fornecedor', 'Fornecedor', 'Dt.Cadastro'],
-            history: ['CODCLI', 'NOME', 'SUPERV', 'PEDIDO', 'CODUSUR', 'CODSUPERVISOR', 'DTPED', 'DTSAIDA', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'POSICAO', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX']
+            history: ['CODCLI', 'NOME', 'SUPERV', 'PEDIDO', 'CODUSUR', 'CODSUPERVISOR', 'DTPED', 'DTSAIDA', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'POSICAO', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX'],
+            hierarchy: ['COD COORD.', 'COORDENADOR', 'COD CO-COORD.', 'CO-COORDENADOR', 'COD PROMOTOR', 'PROMOTOR']
         };
 
         const columnFormats = {
@@ -48,6 +49,9 @@
                 'FILIAL': 'number',
                 'ESTOQUEUNIT': 'number',
                 'ESTOQUECX': 'number'
+            },
+            hierarchy: {
+                // All text, no validation needed besides existence
             }
         };
 
@@ -570,16 +574,17 @@
         }
 
         self.onmessage = async (event) => {
-            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile } = event.data;
+            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile } = event.data;
 
             try {
                 self.postMessage({ type: 'progress', status: 'Lendo arquivos...', percentage: 10 });
-                const [salesDataRaw, clientsDataRaw, productsDataRaw, historyDataRaw, innovationsDataRaw] = await Promise.all([
+                const [salesDataRaw, clientsDataRaw, productsDataRaw, historyDataRaw, innovationsDataRaw, hierarchyDataRaw] = await Promise.all([
                     readFile(salesFile, 'sales'),
                     readFile(clientsFile, 'clients'),
                     readFile(productsFile, 'products'),
                     readFile(historyFile, 'history'),
-                    readFile(innovationsFile, 'innovations')
+                    readFile(innovationsFile, 'innovations'),
+                    readFile(hierarchyFile, 'hierarchy')
                 ]);
 
 
@@ -736,7 +741,8 @@
                         ultimaCompra: uc ? uc.getTime() : null,
                         dataCadastro: dc ? dc.getTime() : null,
                         bloqueio: String(getVal(client, ['Bloqueio', 'BLOQUEIO', 'Status']) || '').trim().toUpperCase(),
-                        inscricaoEstadual: String(getVal(client, ['Insc. Est. / Produtor', 'Inscricao Estadual', 'IE', 'INSCRICAO']) || 'N/A')
+                        inscricaoEstadual: String(getVal(client, ['Insc. Est. / Produtor', 'Inscricao Estadual', 'IE', 'INSCRICAO']) || 'N/A'),
+                        promotor: String(getVal(client, ['PROMOTOR', 'COD PROMOTOR', 'COD_PROMOTOR', 'Promotor']) || '')
                     };
                     if (clientRcaOverrides.has(codCli)) clientData.rcas.unshift(clientRcaOverrides.get(codCli));
                     clientMap.set(codCli, clientData);
@@ -963,6 +969,15 @@
                 finalMetadata.push({ key: 'last_update', value: new Date().toISOString() });
                 finalMetadata.push({ key: 'last_sale_date', value: String(maxTs) });
 
+                const finalHierarchyData = hierarchyDataRaw.map(item => ({
+                    cod_coord: String(item['COD COORD.'] || '').trim(),
+                    nome_coord: String(item['COORDENADOR'] || '').trim(),
+                    cod_cocoord: String(item['COD CO-COORD.'] || '').trim(),
+                    nome_cocoord: String(item['CO-COORDENADOR'] || '').trim(),
+                    cod_promotor: String(item['COD PROMOTOR'] || '').trim(),
+                    nome_promotor: String(item['PROMOTOR'] || '').trim()
+                })).filter(h => h.cod_coord || h.cod_promotor);
+
                 self.postMessage({ type: 'progress', status: 'Pronto!', percentage: 100 });
 
                 self.postMessage({
@@ -975,6 +990,7 @@
                         // Upload Support Arrays
                         stock: finalStockData,
                         innovations: finalInnovationsData,
+                        hierarchy: finalHierarchyData,
                         product_details: finalProductDetailsData,
                         active_products: finalActiveProductsData,
                         metadata: finalMetadata,

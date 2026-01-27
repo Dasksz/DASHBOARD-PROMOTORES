@@ -92,7 +92,8 @@ create table if not exists public.data_clients (
   ultimacompra timestamp with time zone,
   datacadastro timestamp with time zone,
   bloqueio text,
-  inscricaoestadual text
+  inscricaoestadual text,
+  promotor text -- Coluna para vínculo com promotor
 );
 
 -- 1.4 Tabela de Pedidos Agregados
@@ -180,6 +181,17 @@ create table if not exists public.data_client_coordinates (
   updated_at timestamp with time zone default now()
 );
 
+-- 1.13 Tabela de Hierarquia de Equipe
+create table if not exists public.data_hierarchy (
+  id uuid default uuid_generate_v4 () primary key,
+  cod_coord text,
+  nome_coord text,
+  cod_cocoord text,
+  nome_cocoord text,
+  cod_promotor text,
+  nome_promotor text
+);
+
 -- Ensure columns exist (Idempotency for older schemas)
 do $$
 BEGIN
@@ -189,6 +201,7 @@ BEGIN
     ALTER TABLE public.data_orders ADD COLUMN IF NOT EXISTS fornecedores_list text[];
     ALTER TABLE public.data_orders ADD COLUMN IF NOT EXISTS codfors_list text[];
     ALTER TABLE public.data_product_details ADD COLUMN IF NOT EXISTS pasta text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS promotor text;
 END $$;
 
 -- ==============================================================================
@@ -238,7 +251,7 @@ BEGIN
   IF table_name NOT IN (
     'data_detailed', 'data_history', 'data_clients', 'data_orders', 
     'data_product_details', 'data_active_products', 'data_stock', 
-    'data_innovations', 'data_metadata', 'goals_distribution'
+    'data_innovations', 'data_metadata', 'goals_distribution', 'data_hierarchy'
   ) THEN
     RAISE EXCEPTION 'Invalid table name.';
   END IF;
@@ -378,7 +391,8 @@ BEGIN
             'data_metadata',
             'data_orders',
             'data_product_details',
-            'data_stock'
+            'data_stock',
+            'data_hierarchy'
         )
     LOOP
         -- Cleanup

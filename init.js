@@ -23,6 +23,7 @@
                     if (newKey === 'ENDERECO') newKey = 'Endereço Comercial';
                     if (newKey === 'TELEFONE') newKey = 'Telefone Comercial';
                     if (newKey === 'DESCRICAO') newKey = 'Descricao'; // For Client
+                    if (newKey === 'PROMOTOR') newKey = 'promotor'; // Ensure promotor matches local access key
                 }
 
                 // For Sales/History (Already match mostly, just need verify)
@@ -153,7 +154,8 @@
                 'CNPJ_CPF': 'CNPJ/CPF',
                 'ENDERECO': 'Endereço Comercial',
                 'TELEFONE': 'Telefone Comercial',
-                'RCAS': 'rcas'
+                'RCAS': 'rcas',
+                'PROMOTOR': 'promotor'
             };
 
             const parseCSVToObjects = (text, type) => {
@@ -445,7 +447,7 @@
                 });
             };
 
-            let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders;
+            let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, hierarchy;
 
             let clientCoordinates;
 
@@ -482,11 +484,11 @@
                 }
             } else {
                 const colsDetailed = 'id,pedido,codcli,nome,superv,codsupervisor,produto,descricao,fornecedor,observacaofor,codfor,codusur,qtvenda,vlvenda,vlbonific,totpesoliq,dtped,dtsaida,posicao,estoqueunit,tipovenda,filial,qtvenda_embalagem_master';
-                const colsClients = 'id,codigo_cliente,rca1,rca2,rcas,cidade,nomecliente,bairro,razaosocial,fantasia,cnpj_cpf,endereco,numero,cep,telefone,email,ramo,ultimacompra,datacadastro,bloqueio,inscricaoestadual';
+                const colsClients = 'id,codigo_cliente,rca1,rca2,rcas,cidade,nomecliente,bairro,razaosocial,fantasia,cnpj_cpf,endereco,numero,cep,telefone,email,ramo,ultimacompra,datacadastro,bloqueio,inscricaoestadual,promotor';
                 const colsStock = 'id,product_code,filial,stock_qty';
                 const colsOrders = 'id,pedido,codcli,cliente_nome,cidade,nome,superv,fornecedores_str,dtped,dtsaida,posicao,vlvenda,totpesoliq,filial,tipovenda,fornecedores_list,codfors_list';
 
-                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched] = await Promise.all([
+                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched] = await Promise.all([
                     fetchAll('data_detailed', colsDetailed, 'sales', 'columnar', 'id'),
                     fetchAll('data_history', colsDetailed, 'history', 'columnar', 'id'),
                     fetchAll('data_clients', colsClients, 'clients', 'columnar', 'id'),
@@ -496,7 +498,8 @@
                     fetchAll('data_innovations', null, null, 'object', 'id'),
                     fetchAll('data_metadata', null, null, 'object', 'key'),
                     fetchAll('data_orders', colsOrders, 'orders', 'object', 'id'),
-                    fetchAll('data_client_coordinates', null, null, 'object', 'client_code')
+                    fetchAll('data_client_coordinates', null, null, 'object', 'client_code'),
+                    fetchAll('data_hierarchy', null, null, 'object', 'id')
                 ]);
 
                 detailed = detailedUpper;
@@ -509,10 +512,11 @@
                 metadata = metadataFetched;
                 orders = ordersUpper;
                 clientCoordinates = clientCoordinatesFetched;
+                hierarchy = hierarchyFetched;
 
                 // Salvar no Cache
                 const dataToCache = {
-                    detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates
+                    detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy
                 };
 
                 // Salvar de forma assíncrona sem travar UI
@@ -566,11 +570,107 @@
             }
             if (lastSale === 0) lastSale = Date.now();
 
+            // --- FILTERING LOGIC ---
+            // If user is not 'adm', filter data based on hierarchy
+            const role = window.userRole;
+            let filteredDetailed = detailed;
+            let filteredHistory = history;
+            let filteredClients = clients;
+            let filteredOrders = orders;
+
+            if (role && role !== 'adm' && hierarchy && hierarchy.length > 0) {
+                // Resolve allowed promoters
+                const allowedPromoters = new Set();
+                const normalizedRole = role.trim().toLowerCase();
+
+                hierarchy.forEach(h => {
+                    const coord = (h.cod_coord || '').trim().toLowerCase();
+                    const cocoord = (h.cod_cocoord || '').trim().toLowerCase();
+                    const promotor = (h.cod_promotor || '').trim().toLowerCase();
+
+                    // If user is coordinator, allow all promoters under them
+                    if (coord === normalizedRole) allowedPromoters.add(promotor);
+                    // If user is co-coordinator
+                    else if (cocoord === normalizedRole) allowedPromoters.add(promotor);
+                    // If user is promoter
+                    else if (promotor === normalizedRole) allowedPromoters.add(promotor);
+                });
+
+                if (allowedPromoters.size > 0) {
+                    console.log(`[Access Control] Filtering for role '${role}'. Allowed Promoters: ${allowedPromoters.size}`);
+
+                    // 1. Filter Clients (Columnar)
+                    const promotorCol = clients.values['PROMOTOR'] || [];
+                    const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
+                    const allowedClientCodes = new Set();
+
+                    // Rebuild Clients Columnar
+                    const newClientsValues = {};
+                    clients.columns.forEach(c => newClientsValues[c] = []);
+                    let newClientsLen = 0;
+
+                    for(let i=0; i<clients.length; i++) {
+                        const p = String(promotorCol[i] || '').trim().toLowerCase();
+                        if (allowedPromoters.has(p)) {
+                            allowedClientCodes.add(clientCodesCol[i]);
+                            clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
+                            newClientsLen++;
+                        }
+                    }
+                    filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
+
+                    // 2. Filter Detailed (Columnar)
+                    // Check CODCLI against allowedClientCodes
+                    const detCodCliCol = detailed.values['CODCLI'] || [];
+                    const newDetailedValues = {};
+                    detailed.columns.forEach(c => newDetailedValues[c] = []);
+                    let newDetailedLen = 0;
+
+                    for(let i=0; i<detailed.length; i++) {
+                        if (allowedClientCodes.has(detCodCliCol[i])) {
+                            detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c][i]));
+                            newDetailedLen++;
+                        }
+                    }
+                    filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
+
+                    // 3. Filter History (Columnar)
+                    const histCodCliCol = history.values['CODCLI'] || [];
+                    const newHistoryValues = {};
+                    history.columns.forEach(c => newHistoryValues[c] = []);
+                    let newHistoryLen = 0;
+
+                    for(let i=0; i<history.length; i++) {
+                        if (allowedClientCodes.has(histCodCliCol[i])) {
+                            history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
+                            newHistoryLen++;
+                        }
+                    }
+                    filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
+
+                    // 4. Filter Orders (Array of Objects)
+                    filteredOrders = orders.filter(o => allowedClientCodes.has(o.codcli));
+                } else {
+                    console.warn(`[Access Control] Role '${role}' not found in hierarchy or has no promoters. Showing empty view.`);
+                    // Return empty data if role not found in hierarchy but isn't admin
+                    filteredClients = { columns: clients.columns, values: {}, length: 0 };
+                    clients.columns.forEach(c => filteredClients.values[c] = []);
+
+                    filteredDetailed = { columns: detailed.columns, values: {}, length: 0 };
+                    detailed.columns.forEach(c => filteredDetailed.values[c] = []);
+
+                    filteredHistory = { columns: history.columns, values: {}, length: 0 };
+                    history.columns.forEach(c => filteredHistory.values[c] = []);
+
+                    filteredOrders = [];
+                }
+            }
+
             const embeddedData = {
-                detailed: detailed,
-                history: history,
-                clients: clients,
-                byOrder: orders,
+                detailed: filteredDetailed,
+                history: filteredHistory,
+                clients: filteredClients,
+                byOrder: filteredOrders,
                 stockMap05: stockMap05,
                 stockMap08: stockMap08,
                 innovationsMonth: innovations,
