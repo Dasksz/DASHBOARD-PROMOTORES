@@ -33,7 +33,7 @@
                     if (newKey === 'DTPED' || newKey === 'DTSAIDA' || newKey === 'Data da Última Compra' || newKey === 'Data e Hora de Cadastro') {
                          // Ensure it's a valid date string or timestamp
                          newItem[newKey] = item[key];
-                    } else if (newKey === 'QTVENDA' || newKey === 'VLVENDA' || newKey === 'VLBONIFIC' || newKey === 'TOTPESOLIQ' || newKey === 'ESTOQUECX' || newKey === 'ESTOQUEUNIT' || newKey === 'PEDIDO') {
+                    } else if (newKey === 'QTVENDA' || newKey === 'VLVENDA' || newKey === 'VLBONIFIC' || newKey === 'TOTPESOLIQ' || newKey === 'ESTOQUECX' || newKey === 'ESTOQUEUNIT') {
                          // Force numeric conversion for sales metrics
                          const val = Number(item[key]);
                          newItem[newKey] = isNaN(val) ? 0 : val;
@@ -61,7 +61,7 @@
             loaderText.textContent = 'Verificando dados...';
 
             // --- IndexedDB Cache Logic ---
-            const DB_NAME = 'PrimeDashboardDB';
+            const DB_NAME = 'PrimeDashboardDB_V2';
             const STORE_NAME = 'data_store';
             const DB_VERSION = 1;
 
@@ -245,7 +245,7 @@
                             let val = lineValues[j];
 
                             if (type === 'sales' || type === 'history') {
-                                if (['QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUECX', 'ESTOQUEUNIT', 'QTVENDA_EMBALAGEM_MASTER', 'PEDIDO'].includes(header)) {
+                                if (['QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUECX', 'ESTOQUEUNIT', 'QTVENDA_EMBALAGEM_MASTER'].includes(header)) {
                                     val = val === '' ? 0 : Number(val);
                                 }
                             }
