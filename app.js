@@ -12032,6 +12032,39 @@ const supervisorGroups = new Map();
             }
         }
         function setupEventListeners() {
+            // Drag-to-Scroll for Desktop Nav
+            const navContainer = document.getElementById('desktop-nav-container');
+            if (navContainer) {
+                let isDown = false;
+                let startX;
+                let scrollLeft;
+
+                navContainer.addEventListener('mousedown', (e) => {
+                    isDown = true;
+                    navContainer.classList.add('active:cursor-grabbing');
+                    startX = e.pageX - navContainer.offsetLeft;
+                    scrollLeft = navContainer.scrollLeft;
+                });
+
+                navContainer.addEventListener('mouseleave', () => {
+                    isDown = false;
+                    navContainer.classList.remove('active:cursor-grabbing');
+                });
+
+                navContainer.addEventListener('mouseup', () => {
+                    isDown = false;
+                    navContainer.classList.remove('active:cursor-grabbing');
+                });
+
+                navContainer.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const x = e.pageX - navContainer.offsetLeft;
+                    const walk = (x - startX) * 2; // Scroll-fast
+                    navContainer.scrollLeft = scrollLeft - walk;
+                });
+            }
+
             // Uploader Logic
             const openAdminBtn = document.getElementById('open-admin-btn');
             const adminModal = document.getElementById('admin-uploader-modal');
