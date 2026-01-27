@@ -9656,6 +9656,7 @@ const supervisorGroups = new Map();
         }
 
         function updateProductFilter(dropdown, filterText, selectedArray, dataSource, filterType = 'comparison', skipRender = false) {
+            if (!dropdown) return selectedArray;
             const forbidden = ['PRODUTO', 'DESCRICAO', 'CODIGO', 'CÓDIGO', 'DESCRIÇÃO'];
             const searchInput = dropdown.querySelector('input[type="text"]');
             const listContainer = dropdown.querySelector('div[id$="-list"]');
@@ -9676,7 +9677,7 @@ const supervisorGroups = new Map();
                   )
                 : products;
 
-            if (!skipRender) {
+            if (!skipRender && listContainer) {
                 const htmlParts = [];
                 for (let i = 0; i < filteredProducts.length; i++) {
                     const [code, name] = filteredProducts[i];
