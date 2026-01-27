@@ -870,6 +870,87 @@
             <h1 class="text-3xl font-bold text-white">Inovações (Mês Atual)</h1>
             <button id="export-innovations-month-pdf-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Exportar PDF</button>
         </header>
+
+        <!-- Filters Block -->
+        <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Supervisor -->
+                <div class="relative">
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
+                    <button id="innovations-month-supervisor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="innovations-month-supervisor-filter-text">Todos</span></button>
+                    <div id="innovations-month-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+                <!-- Vendedor -->
+                <div class="relative">
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
+                    <button id="innovations-month-vendedor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="innovations-month-vendedor-filter-text">Todos</span></button>
+                    <div id="innovations-month-vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+                <!-- Cidade -->
+                <div class="relative">
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
+                    <input id="innovations-month-city-filter" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Buscar...">
+                    <div id="innovations-month-city-suggestions" class="hidden absolute z-30 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+                 <!-- Tipo Venda -->
+                 <div class="relative">
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Tipo Venda</label>
+                    <button id="innovations-month-tipo-venda-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="innovations-month-tipo-venda-filter-text">Todos</span></button>
+                    <div id="innovations-month-tipo-venda-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-4 items-end mt-4 justify-between">
+                 <!-- Category Filter -->
+                 <div class="relative flex-1 min-w-[200px]">
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Categoria</label>
+                    <select id="innovations-month-category-filter" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg p-2.5">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                 <!-- Filial -->
+                 <div class="flex-1 min-w-[150px]">
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Filial</label>
+                    <select id="innovations-month-filial-filter" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg p-2.5"><option value="ambas">Ambas</option><option value="05">05</option><option value="08">08</option></select>
+                </div>
+                <div class="flex gap-2 items-end">
+                    <button id="clear-innovations-month-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg">Limpar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPIs Block -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg text-center">
+                <p class="text-xs text-slate-500 uppercase font-bold">Clientes Ativos</p>
+                <div id="innovations-month-active-clients-kpi" class="text-2xl font-bold text-white">0</div>
+            </div>
+            <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg text-center">
+                <p id="innovations-month-top-coverage-title" class="text-xs text-slate-500 uppercase font-bold">Top Cobertura</p>
+                <div id="innovations-month-top-coverage-kpi" class="text-sm text-white truncate font-bold"></div>
+                <div class="flex justify-center gap-2 mt-1 text-xs text-slate-400">
+                    <span id="innovations-month-top-coverage-count-kpi">0</span>
+                    <span>|</span>
+                    <span id="innovations-month-top-coverage-value-kpi">R$ 0</span>
+                </div>
+            </div>
+            <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg text-center">
+                <p class="text-xs text-slate-500 uppercase font-bold">Seleção (Valor)</p>
+                <h3 id="innovations-month-selection-coverage-value-kpi" class="text-2xl font-bold text-green-400">R$ 0,00</h3>
+                <p id="innovations-month-selection-coverage-value-kpi-previous" class="text-xs text-slate-400 mt-1">Anterior: R$ 0,00</p>
+            </div>
+            <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg text-center">
+                <p class="text-xs text-slate-500 uppercase font-bold">Seleção (Qtde)</p>
+                <h3 id="innovations-month-selection-coverage-count-kpi" class="text-2xl font-bold text-blue-400">0</h3>
+                <p id="innovations-month-selection-coverage-count-kpi-previous" class="text-xs text-slate-400 mt-1">Anterior: 0</p>
+            </div>
+        </div>
+        <div class="hidden">
+             <div id="innovations-month-bonus-coverage-value-kpi"></div>
+             <div id="innovations-month-bonus-coverage-count-kpi"></div>
+             <div id="innovations-month-bonus-coverage-value-kpi-previous"></div>
+             <div id="innovations-month-bonus-coverage-count-kpi-previous"></div>
+        </div>
+
         <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
             <div id="innovations-month-chartContainer" class="relative h-96 w-full"></div>
         </div>
