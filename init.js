@@ -299,7 +299,8 @@
             const fetchAll = async (table, columns = null, type = null, format = 'object', pkCol = 'id') => {
                 // Config
                 // Keyset Pagination for reliability
-                const pageSize = 20000;
+                // Adjusted to 1000 to match Supabase API default limit and ensure pagination loop triggers correctly
+                const pageSize = 1000;
 
                 let result = format === 'columnar' ? { columns: [], values: {}, length: 0 } : [];
                 let hasMore = true;
