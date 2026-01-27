@@ -635,7 +635,11 @@
             </div>
             
             <!-- Hidden Helpers -->
-            <button id="comparison-product-filter-btn" class="hidden"></button><span id="comparison-product-filter-text" class="hidden"></span><div id="comparison-product-filter-dropdown" class="hidden"></div>
+            <button id="comparison-product-filter-btn" class="hidden"></button><span id="comparison-product-filter-text" class="hidden"></span>
+            <div id="comparison-product-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2 max-h-60 overflow-y-auto custom-scrollbar">
+                <input type="text" id="comparison-product-search-input" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2 mb-2" placeholder="Buscar produto...">
+                <div id="comparison-product-list" class="space-y-1"></div>
+            </div>
             <select id="comparison-filial-filter" class="hidden"><option value="ambas">Ambas</option></select>
             <button id="comparison-tipo-venda-filter-btn" class="hidden"></button><span id="comparison-tipo-venda-filter-text" class="hidden"></span><div id="comparison-tipo-venda-filter-dropdown" class="hidden"></div>
             
