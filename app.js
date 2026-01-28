@@ -1054,7 +1054,7 @@
                     // If no supervisor assigned, it usually falls into "Sem Supervisor".
                     // Here, if no hierarchy, we assume strict filter excludes it UNLESS no filters are applied at all?
                     // Let's assume strict filtering: If I select a Coordinator, I want their clients. If client has no coord, exclude.
-                    continue;
+                    continue; 
                 }
 
                 // Check Coord
@@ -1097,7 +1097,7 @@
                 let parentCoords = state.coords;
                 // If no parent selected, and ADM, show ALL. If restricted, show allowed.
                 // If restricted, state.coords might be empty initially, but user context implies restriction.
-
+                
                 let allowedCoords = parentCoords;
                 if (allowedCoords.size === 0) {
                     if (userHierarchyContext.role === 'adm') {
@@ -1129,7 +1129,7 @@
             } else if (level === 'promotor') {
                 // Show Promotors belonging to selected CoCoords
                 let parentCoCoords = state.cocoords;
-
+                
                 let allowedCoCoords = parentCoCoords;
                 if (allowedCoCoords.size === 0) {
                     // Need to resolve relevant CoCoords from relevant Coords
@@ -1144,7 +1144,7 @@
                         const children = optimizedData.cocoordsByCoord.get(c);
                         if(children) children.forEach(child => validCoCoords.add(child));
                     });
-
+                    
                     // Filter by User Context
                     if (userHierarchyContext.role === 'cocoord' || userHierarchyContext.role === 'promotor') {
                          if (userHierarchyContext.cocoord) {
@@ -1191,7 +1191,7 @@
                 `;
             });
             target.dd.innerHTML = html;
-
+            
             // Update Text Label
             let label = 'Todos';
             if (level === 'coord') label = 'Coordenador';
@@ -1236,10 +1236,10 @@
                             const val = e.target.value;
                             const set = state[level + 's'];
                             if (e.target.checked) set.add(val); else set.delete(val);
-
+                            
                             // Update Button Text
                             updateHierarchyDropdown(viewPrefix, level); // Re-render self? No, just text. But re-rendering handles text.
-
+                            
                             // Cascade Clear
                             if (nextLevel) {
                                 state[nextLevel + 's'].clear();
@@ -1264,7 +1264,7 @@
             updateHierarchyDropdown(viewPrefix, 'coord');
             updateHierarchyDropdown(viewPrefix, 'cocoord');
             updateHierarchyDropdown(viewPrefix, 'promotor');
-
+            
             // Auto-select for restricted users?
             // If I am Coord, my Coord ID is userHierarchyContext.coord.
             // Should I pre-select it?
@@ -1272,12 +1272,12 @@
             // If I DON'T pre-select it (empty set), `getHierarchyFilteredClients` applies it anyway via context.
             // Visually, it's better if it shows "My Name" instead of "Coordenador" (which implies All/None).
             // So yes, let's pre-select.
-
+            
             if (userHierarchyContext.role !== 'adm') {
                 if (userHierarchyContext.coord) state.coords.add(userHierarchyContext.coord);
                 if (userHierarchyContext.cocoord) state.cocoords.add(userHierarchyContext.cocoord);
                 if (userHierarchyContext.promotor) state.promotors.add(userHierarchyContext.promotor);
-
+                
                 // Refresh UI to show checkmarks and text
                 updateHierarchyDropdown(viewPrefix, 'coord');
                 updateHierarchyDropdown(viewPrefix, 'cocoord');
@@ -8178,7 +8178,7 @@ const supervisorGroups = new Map();
                 let chartData = summary.vendasPorCoord;
                 let chartTitle = 'Performance por Coordenador';
                 const mainState = hierarchyState['main'];
-
+                
                 if (mainState.cocoords.size > 0) {
                     chartData = summary.vendasPorPromotor;
                     chartTitle = 'Performance por Promotor';
@@ -8189,7 +8189,7 @@ const supervisorGroups = new Map();
 
                 const totalForPercentage = Object.values(chartData).reduce((a, b) => a + b, 0);
                 const personChartTooltipOptions = { plugins: { tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; const value = context.parsed.y; if (value !== null) { label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); if (totalForPercentage > 0) { const percentage = ((value / totalForPercentage) * 100).toFixed(2); label += ` (${percentage}%)`; } } return label; } } } } };
-
+                
                 salesByPersonTitle.textContent = chartTitle;
                 createChart('salesByPersonChart', 'bar', Object.keys(chartData).map(getFirstName), Object.values(chartData), personChartTooltipOptions);
 
@@ -8204,9 +8204,6 @@ const supervisorGroups = new Map();
             }
         }
 
-            else filterText.textContent = `${selectedArray.length} vendedores selecionados`;
-            return selectedArray;
-        }
 
         function updateTipoVendaFilter(dropdown, filterText, selectedArray, dataSource, skipRender = false) {
             if (!dropdown || !filterText) return selectedArray;
@@ -9747,7 +9744,7 @@ const supervisorGroups = new Map();
                     clients = clients.filter(c => !c.ramo || c.ramo === 'N/A');
                 }
             }
-
+            
             const clientCodes = new Set(clients.map(c => c['Código'] || c['codigo_cliente']));
 
             const filters = {
@@ -9921,7 +9918,7 @@ const supervisorGroups = new Map();
                     }
                 }
             }
-
+            
             const clientCodes = new Set(clients.map(c => c['Código'] || c['codigo_cliente']));
 
             const filters = {
@@ -13771,7 +13768,7 @@ const supervisorGroups = new Map();
                 }
                 return;
             }
-
+            
             // Fallback: Default to ADM (UI allows all, but Data is filtered by init.js)
             userHierarchyContext.role = 'adm';
         }
