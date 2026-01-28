@@ -12839,9 +12839,7 @@ const supervisorGroups = new Map();
             innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
 
             const debouncedUpdateInnovationsMonth = debounce(updateInnovations, 400);
-
-                }
-            });
+            }
 
             innovationsMonthCityFilter.addEventListener('input', (e) => {
                 e.target.value = e.target.value.replace(/[0-9]/g, '');
@@ -13229,7 +13227,6 @@ const supervisorGroups = new Map();
             clearGoalsGvFiltersBtn.addEventListener('click', () => { resetGoalsGvFilters(); markDirty('goals'); });
 
             // SV Filters
-            });
 
             document.getElementById('goals-prev-page-btn').addEventListener('click', () => {
                 if (goalsTableState.currentPage > 1) {
@@ -13263,8 +13260,6 @@ const supervisorGroups = new Map();
             const debouncedUpdateMetaRealizado = debounce(updateMetaRealizado, 400);
 
             // Supervisor Filter
-                }
-            });
 
             // Supplier Filter
             const metaRealizadoSupplierFilterBtn = document.getElementById('meta-realizado-supplier-filter-btn');
@@ -13710,7 +13705,7 @@ const supervisorGroups = new Map();
 
         calculateHistoricalBests(); // <-- MOVIDA PARA CIMA
         // Initialize Hierarchy Filters
-        setupHierarchyFilters('main', updateAllFilters);
+        setupHierarchyFilters('main', updateDashboard);
         setupHierarchyFilters('city', updateCityView);
         setupHierarchyFilters('weekly', updateWeeklyView);
         setupHierarchyFilters('comparison', updateComparisonView);
