@@ -12505,6 +12505,43 @@ const supervisorGroups = new Map();
                 }
             });
 
+            const resetComparisonFilters = () => {
+                selectedComparisonTiposVenda = [];
+                currentComparisonFornecedor = '';
+                selectedComparisonSuppliers = [];
+                comparisonRedeGroupFilter = '';
+                selectedComparisonRedes = [];
+
+                if (comparisonCityFilter) comparisonCityFilter.value = '';
+
+                if (comparisonTipoVendaFilterDropdown) {
+                    comparisonTipoVendaFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    updateTipoVendaFilter(comparisonTipoVendaFilterDropdown, comparisonTipoVendaFilterText, selectedComparisonTiposVenda, [...allSalesData, ...allHistoryData]);
+                }
+
+                if (comparisonSupplierFilterDropdown) {
+                    comparisonSupplierFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    updateSupplierFilter(comparisonSupplierFilterDropdown, comparisonSupplierFilterText, selectedComparisonSuppliers, supplierOptionsData, 'comparison');
+                }
+
+                if (comparisonRedeFilterDropdown) {
+                    comparisonRedeFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                }
+
+                if (comparisonRedeGroupContainer) {
+                    comparisonRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    const defaultBtn = comparisonRedeGroupContainer.querySelector('button[data-group=""]');
+                    if (defaultBtn) defaultBtn.classList.add('active');
+                    updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
+                }
+
+                if (comparisonFornecedorToggleContainer) {
+                    comparisonFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active'));
+                }
+
+                handleComparisonFilterChange();
+            };
+
             clearComparisonFiltersBtn.addEventListener('click', resetComparisonFilters);
 
             const handleProductFilterChange = (e, selectedArray) => {
