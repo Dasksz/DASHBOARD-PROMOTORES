@@ -1665,9 +1665,7 @@
         const fornecedorToggleContainerEl = document.getElementById('fornecedor-toggle-container');
 
         const citySupervisorFilter = document.getElementById('city-supervisor-filter');
-        const cityVendedorFilterBtn = document.getElementById('city-vendedor-filter-btn');
         const cityVendedorFilterText = document.getElementById('city-vendedor-filter-text');
-        const cityVendedorFilterDropdown = document.getElementById('city-vendedor-filter-dropdown');
         const citySupplierFilterBtn = document.getElementById('city-supplier-filter-btn');
         const citySupplierFilterText = document.getElementById('city-supplier-filter-text');
         const citySupplierFilterDropdown = document.getElementById('city-supplier-filter-dropdown');
@@ -1699,20 +1697,14 @@
         const cityTipoVendaFilterText = document.getElementById('city-tipo-venda-filter-text');
         const cityTipoVendaFilterDropdown = document.getElementById('city-tipo-venda-filter-dropdown');
 
-        const weeklySupervisorFilterBtn = document.getElementById('weekly-supervisor-filter-btn');
         const weeklySupervisorFilterText = document.getElementById('weekly-supervisor-filter-text');
-        const weeklySupervisorFilterDropdown = document.getElementById('weekly-supervisor-filter-dropdown');
-        const weeklyVendedorFilterBtn = document.getElementById('weekly-vendedor-filter-btn');
         const weeklyVendedorFilterText = document.getElementById('weekly-vendedor-filter-text');
-        const weeklyVendedorFilterDropdown = document.getElementById('weekly-vendedor-filter-dropdown');
         const clearWeeklyFiltersBtn = document.getElementById('clear-weekly-filters-btn');
         const totalMesSemanalEl = document.getElementById('total-mes-semanal');
         const weeklyFornecedorToggleContainer = document.getElementById('weekly-fornecedor-toggle-container');
 
         const comparisonSupervisorFilter = document.getElementById('comparison-supervisor-filter');
-        const comparisonVendedorFilterBtn = document.getElementById('comparison-vendedor-filter-btn');
         const comparisonVendedorFilterText = document.getElementById('comparison-vendedor-filter-text');
-        const comparisonVendedorFilterDropdown = document.getElementById('comparison-vendedor-filter-dropdown');
         const comparisonFornecedorToggleContainer = document.getElementById('comparison-fornecedor-toggle-container');
         const comparisonFilialFilter = document.getElementById('comparison-filial-filter');
 
@@ -1751,9 +1743,7 @@
         const stockRedeFilterDropdown = document.getElementById('stock-rede-filter-dropdown');
         const stockFornecedorToggleContainer = document.getElementById('stock-fornecedor-toggle-container');
         const stockSupervisorFilter = document.getElementById('stock-supervisor-filter');
-        const stockVendedorFilterBtn = document.getElementById('stock-vendedor-filter-btn');
         const stockVendedorFilterText = document.getElementById('stock-vendedor-filter-text');
-        const stockVendedorFilterDropdown = document.getElementById('stock-vendedor-filter-dropdown');
         const stockSupplierFilterBtn = document.getElementById('stock-supplier-filter-btn');
         const stockSupplierFilterText = document.getElementById('stock-supplier-filter-text');
         const stockSupplierFilterDropdown = document.getElementById('stock-supplier-filter-dropdown');
@@ -1778,9 +1768,7 @@
         const innovationsMonthTableBody = document.getElementById('innovations-month-table-body');
         const innovationsMonthCategoryFilter = document.getElementById('innovations-month-category-filter');
         const innovationsMonthSupervisorFilter = document.getElementById('innovations-month-supervisor-filter');
-        const innovationsMonthVendedorFilterBtn = document.getElementById('innovations-month-vendedor-filter-btn');
         const innovationsMonthVendedorFilterText = document.getElementById('innovations-month-vendedor-filter-text');
-        const innovationsMonthVendedorFilterDropdown = document.getElementById('innovations-month-vendedor-filter-dropdown');
         const innovationsMonthCityFilter = document.getElementById('innovations-month-city-filter');
         const innovationsMonthCitySuggestions = document.getElementById('innovations-month-city-suggestions');
         const clearInnovationsMonthFiltersBtn = document.getElementById('clear-innovations-month-filters-btn');
@@ -1806,9 +1794,7 @@
         const viewCoverageBtn = document.getElementById('viewCoverageBtn');
         const backToMainFromCoverageBtn = document.getElementById('back-to-main-from-coverage-btn');
         const coverageSupervisorFilter = document.getElementById('coverage-supervisor-filter');
-        const coverageVendedorFilterBtn = document.getElementById('coverage-vendedor-filter-btn');
         const coverageVendedorFilterText = document.getElementById('coverage-vendedor-filter-text');
-        const coverageVendedorFilterDropdown = document.getElementById('coverage-vendedor-filter-dropdown');
         const coverageSupplierFilterBtn = document.getElementById('coverage-supplier-filter-btn');
         const coverageSupplierFilterText = document.getElementById('coverage-supplier-filter-text');
         const coverageSupplierFilterDropdown = document.getElementById('coverage-supplier-filter-dropdown');
@@ -1839,20 +1825,14 @@
         const goalsGvTableBody = document.getElementById('goals-gv-table-body');
         const goalsGvTotalValueEl = document.getElementById('goals-gv-total-value');
 
-        const goalsGvSupervisorFilterBtn = document.getElementById('goals-gv-supervisor-filter-btn');
         const goalsGvSupervisorFilterText = document.getElementById('goals-gv-supervisor-filter-text');
-        const goalsGvSupervisorFilterDropdown = document.getElementById('goals-gv-supervisor-filter-dropdown');
 
-        const goalsGvSellerFilterBtn = document.getElementById('goals-gv-seller-filter-btn');
         const goalsGvSellerFilterText = document.getElementById('goals-gv-seller-filter-text');
-        const goalsGvSellerFilterDropdown = document.getElementById('goals-gv-seller-filter-dropdown');
 
         const goalsGvCodcliFilter = document.getElementById('goals-gv-codcli-filter');
         const clearGoalsGvFiltersBtn = document.getElementById('clear-goals-gv-filters-btn');
 
-        const goalsSvSupervisorFilterBtn = document.getElementById('goals-sv-supervisor-filter-btn');
         const goalsSvSupervisorFilterText = document.getElementById('goals-sv-supervisor-filter-text');
-        const goalsSvSupervisorFilterDropdown = document.getElementById('goals-sv-supervisor-filter-dropdown');
 
 
         const modal = document.getElementById('order-details-modal');
@@ -12495,29 +12475,21 @@ const supervisorGroups = new Map();
                 if (!vendedorFilterBtn.contains(e.target) && !vendedorFilterDropdown.contains(e.target)) vendedorFilterDropdown.classList.add('hidden');
                 if (!tipoVendaFilterBtn.contains(e.target) && !tipoVendaFilterDropdown.contains(e.target)) tipoVendaFilterDropdown.classList.add('hidden');
 
-                if (!citySupervisorFilterBtn.contains(e.target) && !citySupervisorFilterDropdown.contains(e.target)) citySupervisorFilterDropdown.classList.add('hidden');
-                if (!cityVendedorFilterBtn.contains(e.target) && !cityVendedorFilterDropdown.contains(e.target)) cityVendedorFilterDropdown.classList.add('hidden');
                 if (!citySupplierFilterBtn.contains(e.target) && !citySupplierFilterDropdown.contains(e.target)) citySupplierFilterDropdown.classList.add('hidden');
                 if (!cityTipoVendaFilterBtn.contains(e.target) && !cityTipoVendaFilterDropdown.contains(e.target)) cityTipoVendaFilterDropdown.classList.add('hidden');
                 if (!cityComRedeBtn.contains(e.target) && !cityRedeFilterDropdown.contains(e.target)) cityRedeFilterDropdown.classList.add('hidden');
                 if (!mainComRedeBtn.contains(e.target) && !mainRedeFilterDropdown.contains(e.target)) mainRedeFilterDropdown.classList.add('hidden');
 
-                if (!comparisonSupervisorFilterBtn.contains(e.target) && !comparisonSupervisorFilterDropdown.contains(e.target)) comparisonSupervisorFilterDropdown.classList.add('hidden');
                 if (!comparisonComRedeBtn.contains(e.target) && !comparisonRedeFilterDropdown.contains(e.target)) comparisonRedeFilterDropdown.classList.add('hidden');
-                if (!comparisonVendedorFilterBtn.contains(e.target) && !comparisonVendedorFilterDropdown.contains(e.target)) comparisonVendedorFilterDropdown.classList.add('hidden');
                 if (!comparisonTipoVendaFilterBtn.contains(e.target) && !comparisonTipoVendaFilterDropdown.contains(e.target)) comparisonTipoVendaFilterDropdown.classList.add('hidden');
                 if (!comparisonSupplierFilterBtn.contains(e.target) && !comparisonSupplierFilterDropdown.contains(e.target)) comparisonSupplierFilterDropdown.classList.add('hidden');
                 if (!comparisonProductFilterBtn.contains(e.target) && !comparisonProductFilterDropdown.contains(e.target)) comparisonProductFilterDropdown.classList.add('hidden');
 
-                if (!stockSupervisorFilterBtn.contains(e.target) && !stockSupervisorFilterDropdown.contains(e.target)) stockSupervisorFilterDropdown.classList.add('hidden');
                 if (!stockComRedeBtn.contains(e.target) && !stockRedeFilterDropdown.contains(e.target)) stockRedeFilterDropdown.classList.add('hidden');
-                if (!stockVendedorFilterBtn.contains(e.target) && !stockVendedorFilterDropdown.contains(e.target)) stockVendedorFilterDropdown.classList.add('hidden');
                 if (!stockSupplierFilterBtn.contains(e.target) && !stockSupplierFilterDropdown.contains(e.target)) stockSupplierFilterDropdown.classList.add('hidden');
                 if (!stockProductFilterBtn.contains(e.target) && !stockProductFilterDropdown.contains(e.target)) stockProductFilterDropdown.classList.add('hidden');
                 if (!stockTipoVendaFilterBtn.contains(e.target) && !stockTipoVendaFilterDropdown.contains(e.target)) stockTipoVendaFilterDropdown.classList.add('hidden');
 
-                if (!innovationsMonthSupervisorFilterBtn.contains(e.target) && !innovationsMonthSupervisorFilterDropdown.contains(e.target)) innovationsMonthSupervisorFilterDropdown.classList.add('hidden');
-                if (!coverageSupervisorFilterBtn.contains(e.target) && !coverageSupervisorFilterDropdown.contains(e.target)) coverageSupervisorFilterDropdown.classList.add('hidden');
 
                 if (e.target.closest('[data-pedido-id]')) { e.preventDefault(); openModal(e.target.closest('[data-pedido-id]').dataset.pedidoId); }
                 if (e.target.closest('[data-codcli]')) { e.preventDefault(); openClientModal(e.target.closest('[data-codcli]').dataset.codcli); }
@@ -12549,11 +12521,6 @@ const supervisorGroups = new Map();
                 });
             });
 
-            weeklySupervisorFilterBtn.addEventListener('click', () => weeklySupervisorFilterDropdown.classList.toggle('hidden'));
-                    updateWeekly();
-                }
-            });
-
             clearWeeklyFiltersBtn.addEventListener('click', () => { resetWeeklyFilters(); markDirty('semanal'); });
 
             // --- Comparison View Filters ---
@@ -12565,9 +12532,6 @@ const supervisorGroups = new Map();
 
             const handleComparisonFilterChange = updateComparison;
 
-            const comparisonSupervisorFilterBtn = document.getElementById('comparison-supervisor-filter-btn');
-            const comparisonSupervisorFilterDropdown = document.getElementById('comparison-supervisor-filter-dropdown');
-            comparisonSupervisorFilterBtn.addEventListener('click', () => comparisonSupervisorFilterDropdown.classList.toggle('hidden'));
             comparisonTipoVendaFilterBtn.addEventListener('click', () => comparisonTipoVendaFilterDropdown.classList.toggle('hidden'));
             comparisonTipoVendaFilterDropdown.addEventListener('change', (e) => {
                 if (e.target.type === 'checkbox') {
@@ -12698,8 +12662,6 @@ const supervisorGroups = new Map();
             clearStockFiltersBtn.addEventListener('click', resetStockFilters);
             stockFornecedorToggleContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { const fornecedor = e.target.dataset.fornecedor; if (currentStockFornecedor === fornecedor) { currentStockFornecedor = ''; e.target.classList.remove('active'); } else { currentStockFornecedor = fornecedor; stockFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); } handleStockFilterChange(); } });
 
-            const stockSupervisorFilterBtn = document.getElementById('stock-supervisor-filter-btn');
-            const stockSupervisorFilterDropdown = document.getElementById('stock-supervisor-filter-dropdown');
             stockSupplierFilterBtn.addEventListener('click', () => stockSupplierFilterDropdown.classList.toggle('hidden'));
             stockSupplierFilterDropdown.addEventListener('change', (e) => { if (e.target.dataset.filterType === 'stock' && e.target.type === 'checkbox') { const { value, checked } = e.target; if (checked) { if(!selectedStockSuppliers.includes(value)) selectedStockSuppliers.push(value); } else { selectedStockSuppliers = selectedStockSuppliers.filter(s => s !== value); } handleStockFilterChange({ skipFilter: 'supplier' }); } });
 
@@ -12878,8 +12840,6 @@ const supervisorGroups = new Map();
 
             const debouncedUpdateInnovationsMonth = debounce(updateInnovations, 400);
 
-            const innovationsMonthSupervisorFilterBtn = document.getElementById('innovations-month-supervisor-filter-btn');
-            const innovationsMonthSupervisorFilterDropdown = document.getElementById('innovations-month-supervisor-filter-dropdown');
                 }
             });
 
@@ -13196,25 +13156,7 @@ const supervisorGroups = new Map();
             // SV Sub-tabs Logic and Toggle Logic REMOVED (Replaced by Single Table View)
 
             // GV Filters
-            const goalsSummarySellerFilterDropdown = document.getElementById('goals-summary-seller-filter-dropdown');
             const clearGoalsSummaryFiltersBtn = document.getElementById('clear-goals-summary-filters-btn');
-
-            if (goalsSummarySupervisorFilterBtn && goalsSummarySupervisorFilterDropdown) {
-            }
-
-            // Close dropdowns on outside click
-            document.addEventListener('click', (e) => {
-                if (goalsSummarySupervisorFilterBtn && goalsSummarySupervisorFilterDropdown) {
-                    if (!goalsSummarySupervisorFilterBtn.contains(e.target) && !goalsSummarySupervisorFilterDropdown.contains(e.target)) {
-                        goalsSummarySupervisorFilterDropdown.classList.add('hidden');
-                    }
-                }
-                if (goalsSummarySellerFilterBtn && goalsSummarySellerFilterDropdown) {
-                    if (!goalsSummarySellerFilterBtn.contains(e.target) && !goalsSummarySellerFilterDropdown.contains(e.target)) {
-                        goalsSummarySellerFilterDropdown.classList.add('hidden');
-                    }
-                }
-            });
 
             const btnDistributeFat = document.getElementById('btn-distribute-fat');
             if (btnDistributeFat) {
@@ -13321,7 +13263,6 @@ const supervisorGroups = new Map();
             const debouncedUpdateMetaRealizado = debounce(updateMetaRealizado, 400);
 
             // Supervisor Filter
-            const metaRealizadoSupervisorFilterBtn = document.getElementById('meta-realizado-supervisor-filter-btn');
                 }
             });
 
@@ -13443,8 +13384,6 @@ const supervisorGroups = new Map();
 
             // Close Dropdowns on Click Outside
             document.addEventListener('click', (e) => {
-                if (!metaRealizadoSupervisorFilterBtn.contains(e.target) && !metaRealizadoSupervisorFilterDropdown.contains(e.target)) metaRealizadoSupervisorFilterDropdown.classList.add('hidden');
-                if (!metaRealizadoSellerFilterBtn.contains(e.target) && !metaRealizadoSellerFilterDropdown.contains(e.target)) metaRealizadoSellerFilterDropdown.classList.add('hidden');
                 if (!metaRealizadoSupplierFilterBtn.contains(e.target) && !metaRealizadoSupplierFilterDropdown.contains(e.target)) metaRealizadoSupplierFilterDropdown.classList.add('hidden');
             });
 
@@ -13590,8 +13529,6 @@ const supervisorGroups = new Map();
 
             coverageFilialFilter.addEventListener('change', updateCoverage);
 
-            const coverageSupervisorFilterBtn = document.getElementById('coverage-supervisor-filter-btn');
-            const coverageSupervisorFilterDropdown = document.getElementById('coverage-supervisor-filter-dropdown');
                 const { clients } = getCoverageFilteredData({ excludeFilter: 'city' });
                 coverageCitySuggestions.classList.remove('manual-hide');
                 updateCitySuggestions(coverageCityFilter, coverageCitySuggestions, clients);
@@ -13632,7 +13569,6 @@ const supervisorGroups = new Map();
 
             clearCoverageFiltersBtn.addEventListener('click', () => { resetCoverageFilters(); markDirty('cobertura'); });
 
-            coverageVendedorFilterBtn.addEventListener('click', () => coverageVendedorFilterDropdown.classList.toggle('hidden'));
             coverageSupplierFilterBtn.addEventListener('click', () => coverageSupplierFilterDropdown.classList.toggle('hidden'));
             coverageSupplierFilterDropdown.addEventListener('change', (e) => {
                 if (e.target.type === 'checkbox' && e.target.dataset.filterType === 'coverage') {
@@ -13685,9 +13621,7 @@ const supervisorGroups = new Map();
 
 
             document.addEventListener('click', (e) => {
-                if (!innovationsMonthVendedorFilterBtn.contains(e.target) && !innovationsMonthVendedorFilterDropdown.contains(e.target)) innovationsMonthVendedorFilterDropdown.classList.add('hidden');
                 if (!innovationsMonthTipoVendaFilterBtn.contains(e.target) && !innovationsMonthTipoVendaFilterDropdown.contains(e.target)) innovationsMonthTipoVendaFilterDropdown.classList.add('hidden');
-                if (!coverageVendedorFilterBtn.contains(e.target) && !coverageVendedorFilterDropdown.contains(e.target)) coverageVendedorFilterDropdown.classList.add('hidden');
                 if (!coverageSupplierFilterBtn.contains(e.target) && !coverageSupplierFilterDropdown.contains(e.target)) coverageSupplierFilterDropdown.classList.add('hidden');
                 if (!coverageProductFilterBtn.contains(e.target) && !coverageProductFilterDropdown.contains(e.target)) coverageProductFilterDropdown.classList.add('hidden');
                 if (!coverageTipoVendaFilterBtn.contains(e.target) && !coverageTipoVendaFilterDropdown.contains(e.target)) coverageTipoVendaFilterDropdown.classList.add('hidden');
