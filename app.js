@@ -8204,9 +8204,6 @@ const supervisorGroups = new Map();
             }
         }
 
-            else filterText.textContent = `${selectedArray.length} vendedores selecionados`;
-            return selectedArray;
-        }
 
         function updateTipoVendaFilter(dropdown, filterText, selectedArray, dataSource, skipRender = false) {
             if (!dropdown || !filterText) return selectedArray;
