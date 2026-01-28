@@ -13705,7 +13705,7 @@ const supervisorGroups = new Map();
 
         calculateHistoricalBests(); // <-- MOVIDA PARA CIMA
         // Initialize Hierarchy Filters
-        setupHierarchyFilters('main', updateAllFilters);
+        setupHierarchyFilters('main', updateDashboard);
         setupHierarchyFilters('city', updateCityView);
         setupHierarchyFilters('weekly', updateWeeklyView);
         setupHierarchyFilters('comparison', updateComparisonView);
