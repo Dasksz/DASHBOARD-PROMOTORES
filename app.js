@@ -1069,6 +1069,29 @@
             return result;
         }
 
+        function updateFilterButtonText(element, selectedSet, defaultLabel) {
+            if (!element) return;
+            if (selectedSet.size === 0) {
+                element.textContent = defaultLabel;
+            } else if (selectedSet.size === 1) {
+                // Find the label for the single selected value?
+                // We don't have the label map easily accessible here without passing it.
+                // For simplicity, showing count or generic text.
+                // Or if we want the label, we'd need to lookup in optimizedData maps.
+                // Let's iterate the set to get the value.
+                const val = selectedSet.values().next().value;
+                // Try to resolve name
+                let name = val;
+                if (optimizedData.coordMap.has(val)) name = optimizedData.coordMap.get(val);
+                else if (optimizedData.cocoordMap.has(val)) name = optimizedData.cocoordMap.get(val);
+                else if (optimizedData.promotorMap.has(val)) name = optimizedData.promotorMap.get(val);
+
+                element.textContent = name;
+            } else {
+                element.textContent = `${selectedSet.size} selecionados`;
+            }
+        }
+
         function updateHierarchyDropdown(viewPrefix, level) {
             const state = hierarchyState[viewPrefix];
             const els = {
