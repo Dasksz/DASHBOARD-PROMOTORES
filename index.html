@@ -300,21 +300,30 @@
                     </div>
 
                     <div class="relative flex-1 min-w-[200px]">
-                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
-                        <button id="supervisor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500 hover:bg-slate-750 transition-colors">
-                            <span id="supervisor-filter-text">Todos</span>
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
+                        <button id="main-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500 hover:bg-slate-750 transition-colors">
+                            <span id="main-coord-filter-text">Todos</span>
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
-                        <div id="supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
+                        <div id="main-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                     </div>
 
                     <div class="relative flex-1 min-w-[200px]">
-                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
-                        <button id="vendedor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500 hover:bg-slate-750 transition-colors">
-                            <span id="vendedor-filter-text">Todos</span>
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
+                        <button id="main-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500 hover:bg-slate-750 transition-colors">
+                            <span id="main-cocoord-filter-text">Todos</span>
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
-                        <div id="vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
+                        <div id="main-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
+                    </div>
+
+                    <div class="relative flex-1 min-w-[200px]">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
+                        <button id="main-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500 hover:bg-slate-750 transition-colors">
+                            <span id="main-promotor-filter-text">Todos</span>
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="main-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                     </div>
 
                     <div class="flex-1 min-w-[200px]">
@@ -469,24 +478,34 @@
                             <div id="city-rede-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                         </div>
                         
-                        <!-- Supervisor -->
+                        <!-- Coordenador -->
                         <div class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
-                            <button id="city-supervisor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
-                                <span id="city-supervisor-filter-text">Todos</span>
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
+                            <button id="city-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
+                                <span id="city-coord-filter-text">Todos</span>
                                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
-                            <div id="city-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
+                            <div id="city-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                         </div>
 
-                        <!-- Vendedor -->
+                        <!-- Co-Coordenador -->
                         <div class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
-                            <button id="city-vendedor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
-                                <span id="city-vendedor-filter-text">Todos</span>
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
+                            <button id="city-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
+                                <span id="city-cocoord-filter-text">Todos</span>
                                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
-                            <div id="city-vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
+                            <div id="city-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
+                        </div>
+
+                        <!-- Promotor -->
+                        <div class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
+                            <button id="city-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
+                                <span id="city-promotor-filter-text">Todos</span>
+                                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div id="city-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                         </div>
 
                         <!-- Cidade Input -->
@@ -581,15 +600,21 @@
                 <button id="clear-weekly-filters-btn" class="bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold py-2 px-4 rounded-lg">Limpar</button>
              </div>
              
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                <!-- Supervisor & Seller filters (Hidden logic needs these IDs) -->
+             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <!-- Coordenador -->
                 <div class="relative">
-                    <button id="weekly-supervisor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-supervisor-filter-text">Supervisor: Todos</span></button>
-                    <div id="weekly-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    <button id="weekly-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-coord-filter-text">Coordenador: Todos</span></button>
+                    <div id="weekly-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
+                <!-- Co-Coordenador -->
                 <div class="relative">
-                    <button id="weekly-vendedor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-vendedor-filter-text">Vendedor: Todos</span></button>
-                    <div id="weekly-vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    <button id="weekly-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-cocoord-filter-text">Co-Coord: Todos</span></button>
+                    <div id="weekly-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+                <!-- Promotor -->
+                <div class="relative">
+                    <button id="weekly-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-promotor-filter-text">Promotor: Todos</span></button>
+                    <div id="weekly-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
              </div>
         </div>
@@ -635,11 +660,28 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <!-- Essential ID Placeholders for JS -->
-                <button id="comparison-supervisor-filter-btn" class="bg-slate-800 p-2 rounded text-slate-300 text-sm"><span id="comparison-supervisor-filter-text">Supervisor</span></button><div id="comparison-supervisor-filter-dropdown" class="hidden"></div>
-                <button id="comparison-vendedor-filter-btn" class="bg-slate-800 p-2 rounded text-slate-300 text-sm"><span id="comparison-vendedor-filter-text">Vendedor</span></button><div id="comparison-vendedor-filter-dropdown" class="hidden"></div>
+                <!-- Coordenador -->
+                <div class="relative">
+                    <button id="comparison-coord-filter-btn" class="w-full bg-slate-800 p-2 rounded text-slate-300 text-sm flex justify-between items-center"><span id="comparison-coord-filter-text">Coordenador</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <div id="comparison-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+                <!-- Co-Coordenador -->
+                <div class="relative">
+                    <button id="comparison-cocoord-filter-btn" class="w-full bg-slate-800 p-2 rounded text-slate-300 text-sm flex justify-between items-center"><span id="comparison-cocoord-filter-text">Co-Coordenador</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <div id="comparison-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+                <!-- Promotor -->
+                <div class="relative">
+                    <button id="comparison-promotor-filter-btn" class="w-full bg-slate-800 p-2 rounded text-slate-300 text-sm flex justify-between items-center"><span id="comparison-promotor-filter-text">Promotor</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <div id="comparison-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+
+                <!-- City (Visual) & Hidden Supplier -->
+                <div class="relative">
+                    <input id="comparison-city-filter" class="w-full bg-slate-800 p-2 rounded text-white text-sm" placeholder="Cidade...">
+                    <div id="comparison-city-suggestions" class="hidden absolute z-30 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
                 <button id="comparison-supplier-filter-btn" class="hidden"><span id="comparison-supplier-filter-text">Todos</span></button><div id="comparison-supplier-filter-dropdown" class="hidden"></div>
-                <input id="comparison-city-filter" class="bg-slate-800 p-2 rounded text-white text-sm" placeholder="Cidade..."><div id="comparison-city-suggestions" class="hidden"></div>
             </div>
             
             <!-- Hidden Helpers -->
@@ -712,24 +754,33 @@
                     <button data-fornecedor="MULTIMARCAS" class="fornecedor-btn flex-1 py-2 text-sm font-medium text-slate-400 rounded-md">MULTIMARCAS</button>
                 </div>
 
-                <!-- Supervisor -->
+                <!-- Coordenador -->
                 <div class="relative flex-1 min-w-[200px]">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
-                    <button id="stock-supervisor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
-                        <span id="stock-supervisor-filter-text">Todos</span>
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
+                    <button id="stock-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
+                        <span id="stock-coord-filter-text">Todos</span>
                     </button>
-                    <div id="stock-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    <div id="stock-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
             </div>
 
             <div class="flex flex-wrap gap-4 items-end mt-4">
-                 <!-- Vendedor -->
+                 <!-- Co-Coordenador -->
                  <div class="relative flex-1 min-w-[200px]">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
-                    <button id="stock-vendedor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
-                        <span id="stock-vendedor-filter-text">Todos</span>
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
+                    <button id="stock-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
+                        <span id="stock-cocoord-filter-text">Todos</span>
                     </button>
-                    <div id="stock-vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    <div id="stock-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+
+                 <!-- Promotor -->
+                 <div class="relative flex-1 min-w-[200px]">
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
+                    <button id="stock-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
+                        <span id="stock-promotor-filter-text">Todos</span>
+                    </button>
+                    <div id="stock-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
 
                 <!-- Supplier -->
@@ -824,8 +875,9 @@
             <button id="goals-category-pepsico-btn"></button><button id="goals-category-elmachips-btn"></button><button id="goals-category-foods-btn"></button><button id="goals-category-summary-btn"></button>
             <div id="goals-sub-tabs-container"><div id="goals-sub-tabs-pepsico"></div><div id="goals-sub-tabs-elmachips"></div><div id="goals-sub-tabs-foods"></div></div>
             <div id="goals-summary-content">
-                <div id="goals-summary-supervisor-filter-wrapper"><button id="goals-summary-supervisor-filter-btn"><span id="goals-summary-supervisor-filter-text"></span></button><div id="goals-summary-supervisor-filter-dropdown"></div></div>
-                <div id="goals-summary-seller-filter-wrapper"><button id="goals-summary-seller-filter-btn"><span id="goals-summary-seller-filter-text"></span></button><div id="goals-summary-seller-filter-dropdown"></div></div>
+                <div id="goals-summary-coord-filter-wrapper"><button id="goals-summary-coord-filter-btn"><span id="goals-summary-coord-filter-text"></span></button><div id="goals-summary-coord-filter-dropdown"></div></div>
+                <div id="goals-summary-cocoord-filter-wrapper"><button id="goals-summary-cocoord-filter-btn"><span id="goals-summary-cocoord-filter-text"></span></button><div id="goals-summary-cocoord-filter-dropdown"></div></div>
+                <div id="goals-summary-promotor-filter-wrapper"><button id="goals-summary-promotor-filter-btn"><span id="goals-summary-promotor-filter-text"></span></button><div id="goals-summary-promotor-filter-dropdown"></div></div>
                 <button id="clear-goals-summary-filters-btn"></button>
                 <div id="summary-total-fat"></div><div id="summary-total-vol"></div><div id="summary-total-pos"></div><div id="summary-mix-salty"></div><div id="summary-mix-foods"></div>
                 <div id="goals-summary-grid"></div>
@@ -838,13 +890,16 @@
                 <div id="card-mix-foods"><input id="goal-global-mix-foods"><button id="btn-distribute-mix-foods"></button></div>
                 <div id="goals-dist-summary"></div>
             </div>
-            <div id="goals-gv-supervisor-filter-wrapper"><button id="goals-gv-supervisor-filter-btn"><span id="goals-gv-supervisor-filter-text"></span></button><div id="goals-gv-supervisor-filter-dropdown"></div></div>
-            <div id="goals-gv-seller-filter-wrapper"><button id="goals-gv-seller-filter-btn"><span id="goals-gv-seller-filter-text"></span></button><div id="goals-gv-seller-filter-dropdown"></div></div>
+            <div id="goals-gv-coord-filter-wrapper"><button id="goals-gv-coord-filter-btn"><span id="goals-gv-coord-filter-text"></span></button><div id="goals-gv-coord-filter-dropdown"></div></div>
+            <div id="goals-gv-cocoord-filter-wrapper"><button id="goals-gv-cocoord-filter-btn"><span id="goals-gv-cocoord-filter-text"></span></button><div id="goals-gv-cocoord-filter-dropdown"></div></div>
+            <div id="goals-gv-promotor-filter-wrapper"><button id="goals-gv-promotor-filter-btn"><span id="goals-gv-promotor-filter-text"></span></button><div id="goals-gv-promotor-filter-dropdown"></div></div>
             <input id="goals-gv-codcli-filter"><button id="clear-goals-gv-filters-btn"></button>
             <div id="goals-table-container"><tbody id="goals-gv-table-body"></tbody><div id="goals-pagination-controls"><button id="goals-gv-export-pdf-btn"></button><button id="goals-gv-export-xlsx-btn"></button><button id="goals-prev-page-btn"></button><span id="goals-page-info-text"></span><button id="goals-next-page-btn"></button></div></div>
         </div>
         <div id="goals-sv-content">
-            <button id="goals-sv-supervisor-filter-btn"><span id="goals-sv-supervisor-filter-text"></span></button><div id="goals-sv-supervisor-filter-dropdown"></div>
+            <button id="goals-sv-coord-filter-btn"><span id="goals-sv-coord-filter-text">Coord</span></button><div id="goals-sv-coord-filter-dropdown"></div>
+            <button id="goals-sv-cocoord-filter-btn"><span id="goals-sv-cocoord-filter-text">Co-Coord</span></button><div id="goals-sv-cocoord-filter-dropdown"></div>
+            <button id="goals-sv-promotor-filter-btn"><span id="goals-sv-promotor-filter-text">Promotor</span></button><div id="goals-sv-promotor-filter-dropdown"></div>
             <button id="goals-sv-import-btn"></button><button id="goals-sv-export-xlsx-btn"></button>
             <div id="goals-sv-table-container"><table id="goals-sv-main-table"><tbody id="goals-sv-table-body"></tbody></table></div>
         </div>
@@ -885,18 +940,24 @@
 
         <!-- Filters Block -->
         <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- Supervisor -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <!-- Coordenador -->
                 <div class="relative">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
-                    <button id="innovations-month-supervisor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="innovations-month-supervisor-filter-text">Todos</span></button>
-                    <div id="innovations-month-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
+                    <button id="innovations-month-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="innovations-month-coord-filter-text">Todos</span></button>
+                    <div id="innovations-month-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
-                <!-- Vendedor -->
+                <!-- Co-Coordenador -->
                 <div class="relative">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
-                    <button id="innovations-month-vendedor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="innovations-month-vendedor-filter-text">Todos</span></button>
-                    <div id="innovations-month-vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
+                    <button id="innovations-month-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="innovations-month-cocoord-filter-text">Todos</span></button>
+                    <div id="innovations-month-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+                <!-- Promotor -->
+                <div class="relative">
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
+                    <button id="innovations-month-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="innovations-month-promotor-filter-text">Todos</span></button>
+                    <div id="innovations-month-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <!-- Cidade -->
                 <div class="relative">
@@ -993,15 +1054,23 @@
                     </div>
                     <div id="mix-rede-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
+                <!-- Coordenador -->
                 <div class="relative flex-1 min-w-[200px]">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
-                    <button id="mix-supervisor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-supervisor-filter-text">Todos</span></button>
-                    <div id="mix-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
+                    <button id="mix-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-coord-filter-text">Todos</span></button>
+                    <div id="mix-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
+                <!-- Co-Coordenador -->
                 <div class="relative flex-1 min-w-[200px]">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
-                    <button id="mix-vendedor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-vendedor-filter-text">Todos</span></button>
-                    <div id="mix-vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
+                    <button id="mix-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-cocoord-filter-text">Todos</span></button>
+                    <div id="mix-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+                <!-- Promotor -->
+                <div class="relative flex-1 min-w-[200px]">
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
+                    <button id="mix-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-promotor-filter-text">Todos</span></button>
+                    <div id="mix-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
             </div>
             <div class="flex flex-wrap gap-4 items-end mt-4">
@@ -1084,15 +1153,23 @@
 
         <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="flex flex-wrap gap-4 items-end">
+                <!-- Coordenador -->
                 <div class="relative flex-1 min-w-[200px]">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
-                    <button id="meta-realizado-supervisor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-supervisor-filter-text">Todos</span></button>
-                    <div id="meta-realizado-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
+                    <button id="meta-realizado-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-coord-filter-text">Todos</span></button>
+                    <div id="meta-realizado-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
+                <!-- Co-Coordenador -->
                 <div class="relative flex-1 min-w-[200px]">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
-                    <button id="meta-realizado-vendedor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-vendedor-filter-text">Todos</span></button>
-                    <div id="meta-realizado-vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
+                    <button id="meta-realizado-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-cocoord-filter-text">Todos</span></button>
+                    <div id="meta-realizado-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+                <!-- Promotor -->
+                <div class="relative flex-1 min-w-[200px]">
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
+                    <button id="meta-realizado-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-promotor-filter-text">Todos</span></button>
+                    <div id="meta-realizado-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <div class="relative flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Fornecedor</label>
@@ -1165,16 +1242,21 @@
         </header>
 
         <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div class="relative">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
-                    <button id="coverage-supervisor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-supervisor-filter-text">Todos</span></button>
-                    <div id="coverage-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
+                    <button id="coverage-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-coord-filter-text">Todos</span></button>
+                    <div id="coverage-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <div class="relative">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
-                    <button id="coverage-vendedor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-vendedor-filter-text">Todos</span></button>
-                    <div id="coverage-vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
+                    <button id="coverage-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-cocoord-filter-text">Todos</span></button>
+                    <div id="coverage-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                </div>
+                <div class="relative">
+                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
+                    <button id="coverage-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-promotor-filter-text">Todos</span></button>
+                    <div id="coverage-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <div class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Fornecedor</label>
