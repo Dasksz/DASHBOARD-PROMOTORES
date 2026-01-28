@@ -13226,7 +13226,6 @@ const supervisorGroups = new Map();
             clearGoalsGvFiltersBtn.addEventListener('click', () => { resetGoalsGvFilters(); markDirty('goals'); });
 
             // SV Filters
-            });
 
             document.getElementById('goals-prev-page-btn').addEventListener('click', () => {
                 if (goalsTableState.currentPage > 1) {
@@ -13260,8 +13259,6 @@ const supervisorGroups = new Map();
             const debouncedUpdateMetaRealizado = debounce(updateMetaRealizado, 400);
 
             // Supervisor Filter
-                }
-            });
 
             // Supplier Filter
             const metaRealizadoSupplierFilterBtn = document.getElementById('meta-realizado-supplier-filter-btn');
