@@ -13393,7 +13393,14 @@ const supervisorGroups = new Map();
                 handleMixFilterChange();
             };
 
-            document.getElementById('mix-supervisor-filter-btn').addEventListener('click', (e) => {
+            const mixSupervisorBtn = document.getElementById('mix-supervisor-filter-btn');
+            if (mixSupervisorBtn) {
+                mixSupervisorBtn.addEventListener('click', () => {
+                    const dropdown = document.getElementById('mix-supervisor-filter-dropdown');
+                    if(dropdown) dropdown.classList.toggle('hidden');
+                });
+            }
+
             document.getElementById('mix-tipo-venda-filter-btn').addEventListener('click', (e) => {
                 document.getElementById('mix-tipo-venda-filter-dropdown').classList.toggle('hidden');
             });
@@ -13493,8 +13500,13 @@ const supervisorGroups = new Map();
 
             document.addEventListener('click', (e) => {
                 // Close Mix Dropdowns
-                if (!document.getElementById('mix-supervisor-filter-btn').contains(e.target) && !document.getElementById('mix-supervisor-filter-dropdown').contains(e.target)) document.getElementById('mix-supervisor-filter-dropdown').classList.add('hidden');
-                if (!document.getElementById('mix-vendedor-filter-btn').contains(e.target) && !document.getElementById('mix-vendedor-filter-dropdown').contains(e.target)) document.getElementById('mix-vendedor-filter-dropdown').classList.add('hidden');
+                const mixSupBtn = document.getElementById('mix-supervisor-filter-btn');
+                const mixSupDropdown = document.getElementById('mix-supervisor-filter-dropdown');
+                if (mixSupBtn && mixSupDropdown && !mixSupBtn.contains(e.target) && !mixSupDropdown.contains(e.target)) mixSupDropdown.classList.add('hidden');
+
+                const mixVendBtn = document.getElementById('mix-vendedor-filter-btn');
+                const mixVendDropdown = document.getElementById('mix-vendedor-filter-dropdown');
+                if (mixVendBtn && mixVendDropdown && !mixVendBtn.contains(e.target) && !mixVendDropdown.contains(e.target)) mixVendDropdown.classList.add('hidden');
                 if (!document.getElementById('mix-tipo-venda-filter-btn').contains(e.target) && !document.getElementById('mix-tipo-venda-filter-dropdown').contains(e.target)) document.getElementById('mix-tipo-venda-filter-dropdown').classList.add('hidden');
                 if (!document.getElementById('mix-com-rede-btn').contains(e.target) && !document.getElementById('mix-rede-filter-dropdown').contains(e.target)) document.getElementById('mix-rede-filter-dropdown').classList.add('hidden');
 
@@ -13511,6 +13523,7 @@ const supervisorGroups = new Map();
             const debouncedHandleCoverageChange = debounce(updateCoverage, 400);
 
             coverageFilialFilter.addEventListener('change', updateCoverage);
+            if (coverageCityFilter) coverageCityFilter.addEventListener('input', (e) => { e.target.value = e.target.value.replace(/[0-9]/g, '');
 
                 const { clients } = getCoverageFilteredData({ excludeFilter: 'city' });
                 coverageCitySuggestions.classList.remove('manual-hide');
