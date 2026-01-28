@@ -10914,7 +10914,7 @@ const supervisorGroups = new Map();
             const innovationsByClientLegend = document.getElementById('innovations-by-client-legend');
 
             categoryLegendForExport = chartLabels.map((name, index) => `${index + 1} - ${name}`);
-            innovationsByClientLegend.innerHTML = `<strong>Legenda:</strong> ${categoryLegendForExport.join('; ')}`;
+            if (innovationsByClientLegend) innovationsByClientLegend.innerHTML = `<strong>Legenda:</strong> ${categoryLegendForExport.join('; ')}`;
 
             let tableHeadHTML = `
                 <tr>
@@ -10928,7 +10928,7 @@ const supervisorGroups = new Map();
                 tableHeadHTML += `<th class="px-2 py-2 text-center">${index + 1}</th>`;
             });
             tableHeadHTML += `</tr>`;
-            innovationsByClientTableHead.innerHTML = tableHeadHTML;
+            if (innovationsByClientTableHead) innovationsByClientTableHead.innerHTML = tableHeadHTML;
 
             // Build Client Status List
             // Optimized: Iterate Active Clients and check sets in categoryResults
@@ -10994,7 +10994,7 @@ const supervisorGroups = new Map();
                     });
                     tableBodyHTML += `</tr>`;
                 });
-                innovationsByClientTableBody.innerHTML = tableBodyHTML;
+                if (innovationsByClientTableBody) innovationsByClientTableBody.innerHTML = tableBodyHTML;
 
                 // Update Pagination Controls
                 const prevBtn = document.getElementById('innovations-prev-page-btn');
@@ -12595,6 +12595,59 @@ const supervisorGroups = new Map();
             });
 
             stockFilialFilter.addEventListener('change', handleStockFilterChange);
+            const resetStockFilters = () => {
+                selectedStockSuppliers = [];
+                selectedStockProducts = [];
+                selectedStockTiposVenda = [];
+                stockRedeGroupFilter = '';
+                selectedStockRedes = [];
+                stockTrendFilter = 'all';
+                currentStockFornecedor = '';
+
+                if (stockCityFilter) stockCityFilter.value = '';
+
+                // Reset Trend Buttons
+                document.querySelectorAll('.stock-trend-btn').forEach(btn => btn.classList.remove('active'));
+                const allTrendBtn = document.querySelector('.stock-trend-btn[data-trend="all"]');
+                if (allTrendBtn) allTrendBtn.classList.add('active');
+
+                // Reset Rede Group
+                if (stockRedeGroupContainer) {
+                    stockRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    const defaultGroupBtn = stockRedeGroupContainer.querySelector('button[data-group=""]');
+                    if (defaultGroupBtn) defaultGroupBtn.classList.add('active');
+                }
+
+                // Reset Fornecedor Toggle
+                if (stockFornecedorToggleContainer) {
+                    stockFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active'));
+                }
+
+                // Reset Dropdowns
+                if (stockSupplierFilterDropdown) {
+                    stockSupplierFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    updateSupplierFilter(stockSupplierFilterDropdown, stockSupplierFilterText, selectedStockSuppliers, [...allSalesData, ...allHistoryData], 'stock');
+                }
+                if (stockProductFilterDropdown) {
+                    stockProductFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    updateProductFilter(stockProductFilterDropdown, stockProductFilterText, selectedStockProducts, [...allSalesData, ...allHistoryData], 'stock');
+                }
+                if (stockTipoVendaFilterDropdown) {
+                    stockTipoVendaFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    updateTipoVendaFilter(stockTipoVendaFilterDropdown, stockTipoVendaFilterText, selectedStockTiposVenda, [...allSalesData, ...allHistoryData]);
+                }
+                if (stockRedeFilterDropdown) {
+                    stockRedeFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    updateRedeFilter(stockRedeFilterDropdown, stockComRedeBtnText, selectedStockRedes, allClientsData, 'Com Rede');
+                }
+
+                // Reset Working Days
+                customWorkingDaysStock = maxWorkingDaysStock;
+                const daysInput = document.getElementById('stock-working-days-input');
+                if (daysInput) daysInput.value = customWorkingDaysStock;
+
+                handleStockFilterChange();
+            };
             clearStockFiltersBtn.addEventListener('click', resetStockFilters);
             stockFornecedorToggleContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { const fornecedor = e.target.dataset.fornecedor; if (currentStockFornecedor === fornecedor) { currentStockFornecedor = ''; e.target.classList.remove('active'); } else { currentStockFornecedor = fornecedor; stockFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); } handleStockFilterChange(); } });
 
