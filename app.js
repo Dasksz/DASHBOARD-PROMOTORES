@@ -2796,7 +2796,7 @@
             }
 
             let fileNameParam = 'geral';
-            if (selectedMixSellers.length === 1) {
+            if (hierarchyState['mix'] && hierarchyState['mix'].promotors.size === 1) {
             } else if (city) {
                 fileNameParam = city;
             }
@@ -3372,39 +3372,10 @@
         }
 
         function getGoalsFilteredData() {
-            const sellersSet = new Set(selectedGoalsGvSellers);
-            const supervisorsSet = new Set(selectedGoalsGvSupervisors);
             const codCli = goalsGvCodcliFilter.value.trim();
 
-            let clients = allClientsData;
-
-            // Apply "Active" Filter logic
-            clients = clients.filter(c => isActiveClient(c));
-
-            // Filter by Supervisor
-            if (supervisorsSet.size > 0) {
-                const rcasSet = new Set();
-                supervisorsSet.forEach(sup => {
-                    (optimizedData.rcasBySupervisor.get(sup) || []).forEach(rca => rcasSet.add(rca));
-                });
-                clients = clients.filter(c => {
-                    const clientRcas = (c.rcas && Array.isArray(c.rcas)) ? c.rcas : [];
-                    return clientRcas.some(r => rcasSet.has(r));
-                });
-            }
-
-            // Filter by Seller
-            if (sellersSet.size > 0) {
-                const rcasSet = new Set();
-                sellersSet.forEach(name => {
-                    const code = optimizedData.rcaCodeByName.get(name);
-                    if(code) rcasSet.add(code);
-                });
-                clients = clients.filter(c => {
-                    const clientRcas = (c.rcas && Array.isArray(c.rcas)) ? c.rcas : [];
-                    return clientRcas.some(r => rcasSet.has(r));
-                });
-            }
+            // Apply Hierarchy Filter + "Active" Filter logic
+            let clients = getHierarchyFilteredClients('goals-gv', allClientsData).filter(c => isActiveClient(c));
 
             // Filter by Client Code
             if (codCli) {
@@ -3544,8 +3515,7 @@
         }
 
         function getMetaRealizadoFilteredData() {
-            const supervisorsSet = new Set(selectedMetaRealizadoSupervisors);
-            const sellersSet = new Set(selectedMetaRealizadoSellers);
+            // New Hierarchy:
             const suppliersSet = new Set(selectedMetaRealizadoSuppliers);
             const pasta = currentMetaRealizadoPasta;
 
@@ -3582,7 +3552,8 @@
             }
 
             // 1. Clients Filter
-            let clients = allClientsData.filter(c => {
+            // Apply Hierarchy Logic + "Active" Filter logic
+            let clients = getHierarchyFilteredClients('meta-realizado', allClientsData).filter(c => {
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 // Same active logic as Goals
@@ -3591,29 +3562,6 @@
                 if (rca1 === '') return false;
                 return true;
             });
-
-            if (supervisorsSet.size > 0) {
-                const rcasSet = new Set();
-                supervisorsSet.forEach(sup => {
-                    (optimizedData.rcasBySupervisor.get(sup) || []).forEach(rca => rcasSet.add(rca));
-                });
-                clients = clients.filter(c => {
-                    const clientRcas = (c.rcas && Array.isArray(c.rcas)) ? c.rcas : [];
-                    return clientRcas.some(r => rcasSet.has(r));
-                });
-            }
-
-            if (sellersSet.size > 0) {
-                const rcasSet = new Set();
-                sellersSet.forEach(name => {
-                    const code = optimizedData.rcaCodeByName.get(name);
-                    if (code) rcasSet.add(code);
-                });
-                clients = clients.filter(c => {
-                    const clientRcas = (c.rcas && Array.isArray(c.rcas)) ? c.rcas : [];
-                    return clientRcas.some(r => rcasSet.has(r));
-                });
-            }
 
             // Implement Supplier Filter Logic (Virtual IDs for Foods) - Step 7
             // Filter clients if supplier filter is active?
@@ -4232,16 +4180,13 @@
         }
 
         function getMetaRealizadoClientsData(weeks) {
-            const supervisorsSet = new Set(selectedMetaRealizadoSupervisors);
-            const sellersSet = new Set(selectedMetaRealizadoSellers);
-            // Suppliers already filtered in getMetaRealizadoFilteredData logic for Sellers,
-            // but we need to re-apply logic for Client List generation.
-            // Actually, we can reuse similar filtering logic.
+            // New Hierarchy Logic
             const suppliersSet = new Set(selectedMetaRealizadoSuppliers);
             const pasta = currentMetaRealizadoPasta;
 
             // 1. Identify Target Clients (Active/Americanas/etc + Filtered)
-            let clients = allClientsData.filter(c => {
+            // Apply Hierarchy Logic + "Active" Filter logic
+            let clients = getHierarchyFilteredClients('meta-realizado', allClientsData).filter(c => {
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 if (isAmericanas) return true;
@@ -4249,30 +4194,6 @@
                 if (rca1 === '') return false;
                 return true;
             });
-
-            // Apply Filters (Supervisor/Seller)
-            if (supervisorsSet.size > 0) {
-                const rcasSet = new Set();
-                supervisorsSet.forEach(sup => {
-                    (optimizedData.rcasBySupervisor.get(sup) || []).forEach(rca => rcasSet.add(rca));
-                });
-                clients = clients.filter(c => {
-                    const clientRcas = (c.rcas && Array.isArray(c.rcas)) ? c.rcas : [];
-                    return clientRcas.some(r => rcasSet.has(r));
-                });
-            }
-
-            if (sellersSet.size > 0) {
-                const rcasSet = new Set();
-                sellersSet.forEach(name => {
-                    const code = optimizedData.rcaCodeByName.get(name);
-                    if (code) rcasSet.add(code);
-                });
-                clients = clients.filter(c => {
-                    const clientRcas = (c.rcas && Array.isArray(c.rcas)) ? c.rcas : [];
-                    return clientRcas.some(r => rcasSet.has(r));
-                });
-            }
 
             // Optimization: Create Set of Client Codes
             const allowedClientCodes = new Set(clients.map(c => String(c['Código'] || c['codigo_cliente'])));
@@ -4698,7 +4619,7 @@
             if (!container) return;
 
             // 1. Identify active sellers in the current summary filter
-            let filteredSummaryClients = allClientsData;
+            let filteredSummaryClients = getHierarchyFilteredClients('goals-summary', allClientsData);
 
             // Apply "Active" Filter logic
             filteredSummaryClients = filteredSummaryClients.filter(c => {
@@ -4709,28 +4630,6 @@
                 if (rca1 === '') return false;
                 return true;
             });
-
-            if (selectedGoalsSummarySupervisors.length > 0) {
-                const supervisorsSet = new Set(selectedGoalsSummarySupervisors);
-                const rcasSet = new Set();
-                supervisorsSet.forEach(sup => {
-                    (optimizedData.rcasBySupervisor.get(sup) || []).forEach(rca => rcasSet.add(rca));
-                });
-                filteredSummaryClients = filteredSummaryClients.filter(c => c.rcas.some(r => rcasSet.has(r)));
-            }
-
-            // Apply Seller Filter
-            if (selectedGoalsSummarySellers.length > 0) {
-                const sellersSet = new Set(selectedGoalsSummarySellers);
-                // selectedGoalsSummarySellers contains Names.
-                // Map names to codes to filter clients.rcas
-                const sellerCodes = new Set();
-                sellersSet.forEach(name => {
-                    const code = optimizedData.rcaCodeByName.get(name);
-                    if (code) sellerCodes.add(code);
-                });
-                filteredSummaryClients = filteredSummaryClients.filter(c => c.rcas.some(r => sellerCodes.has(r)));
-            }
 
             // Calculate Metrics based on filtered clients
             // Since getMetricsForSupervisors only handles supervisor list, we need to rebuild metrics from scratch for arbitrary client list?
@@ -5369,9 +5268,8 @@
         }
 
         function getFilterDescription() {
-            if (selectedGoalsGvSupervisors.length > 0) {
-            }
-            if (selectedGoalsGvSellers.length > 0) {
+            if (hierarchyState['goals-gv'] && (hierarchyState['goals-gv'].coords.size > 0 || hierarchyState['goals-gv'].promotors.size > 0)) {
+                 // return 'filtro hierarquia';
             }
             if (goalsGvCodcliFilter.value) {
                 return `Cliente "${goalsGvCodcliFilter.value}"`;
@@ -5510,11 +5408,7 @@
             });
 
             let nameParam = '';
-            if (selectedGoalsGvSellers && selectedGoalsGvSellers.length > 0) {
-                if (firstName) nameParam = '_' + firstName.toUpperCase();
-            } else if (selectedGoalsGvSupervisors && selectedGoalsGvSupervisors.length > 0) {
-                if (firstName) nameParam = '_' + firstName.toUpperCase();
-            }
+            // Simplified name param for now
 
             const safeFileNameParam = currentGoalsSupplier.replace(/[^a-z0-9]/gi, '_').toUpperCase();
             doc.save(`Metas_GV_${safeFileNameParam}${nameParam}.pdf`);
@@ -5618,11 +5512,7 @@
             XLSX.utils.book_append_sheet(wb, ws_flat, "Metas GV");
 
             let nameParam = '';
-            if (selectedGoalsGvSellers && selectedGoalsGvSellers.length > 0) {
-                if (firstName) nameParam = '_' + firstName.toUpperCase();
-            } else if (selectedGoalsGvSupervisors && selectedGoalsGvSupervisors.length > 0) {
-                if (firstName) nameParam = '_' + firstName.toUpperCase();
-            }
+            // Simplified name param for now
 
             const safeFileNameParam = currentGoalsSupplier.replace(/[^a-z0-9]/gi, '_').toUpperCase();
             XLSX.writeFile(wb, `Metas_GV_${safeFileNameParam}${nameParam}.xlsx`);
@@ -5856,7 +5746,10 @@
             if (quarterMonths.length === 0) identifyQuarterMonths();
 
             // Calculate Metrics for Current View (Supervisor Filter)
-            const displayMetrics = getMetricsForSupervisors(selectedGoalsGvSupervisors);
+            // Use hierarchy state to filter clients for metrics calculation
+            let filteredMetricsClients = getHierarchyFilteredClients('goals-gv', allClientsData);
+            filteredMetricsClients = filteredMetricsClients.filter(c => isActiveClient(c));
+            const displayMetrics = calculateMetricsForClients(filteredMetricsClients);
 
             // Update Header (Dynamic) - Same as before
             const thead = document.querySelector('#goals-table-container table thead');
@@ -6060,7 +5953,7 @@
                 const goalMixInput = document.getElementById('goal-global-mix');
                 const btnDistributeMix = document.getElementById('btn-distribute-mix');
                 const naturalTotalPos = clientMetrics.reduce((sum, item) => sum + item.metaPos, 0);
-                const isSingleSeller = selectedGoalsGvSellers.length === 1;
+                const isSingleSeller = hierarchyState['goals-gv'] && hierarchyState['goals-gv'].promotors.size === 1;
 
                 if (goalMixInput) {
                     const newMixInput = goalMixInput.cloneNode(true);
@@ -6281,8 +6174,8 @@
 
                     // Bugfix: If table is empty (e.g. no active clients) but we have a specific seller filter,
                     // use the filter to prevent getElmaTargetBase from returning global counts (empty set bypass).
-                    if (visibleSellersSet.size === 0 && selectedGoalsGvSellers.length > 0) {
-                         visibleSellersSet = new Set(selectedGoalsGvSellers);
+                    if (visibleSellersSet.size === 0 && hierarchyState['goals-gv'] && hierarchyState['goals-gv'].promotors.size > 0) {
+                         visibleSellersSet = new Set(hierarchyState['goals-gv'].promotors);
                     }
 
                     const elmaTargetBase = getElmaTargetBase(displayMetrics, goalsPosAdjustments, visibleSellersSet);
@@ -6351,9 +6244,8 @@
         }
 
         function getGoalsSvFilteredData() {
-            const supervisorsSet = new Set(selectedGoalsSvSupervisors);
-
-            let clients = allClientsData;
+            // Apply Hierarchy Logic
+            let clients = getHierarchyFilteredClients('goals-sv', allClientsData);
 
             clients = clients.filter(c => {
                 const rca1 = String(c.rca1 || '').trim();
@@ -7180,26 +7072,7 @@ const supervisorGroups = new Map();
             const { clients, sales, history } = getCoverageFilteredData();
             const productsToAnalyze = [...new Set([...sales.map(s => s.PRODUTO), ...history.map(s => s.PRODUTO)])];
 
-            const sellers = selectedCoverageSellers;
-            const sellerRcaCodes = new Set();
-            if (sellers.length > 0) {
-                sellers.forEach(sellerName => {
-                    const rcaCode = optimizedData.rcaCodeByName.get(sellerName);
-                    if (rcaCode) sellerRcaCodes.add(rcaCode);
-                });
-            } else if (selectedCoverageSupervisors.length > 0) {
-                selectedCoverageSupervisors.forEach(sup => {
-                    (optimizedData.rcasBySupervisor.get(sup) || []).forEach(rca => sellerRcaCodes.add(rca));
-                });
-            }
-
-            const activeClientsForCoverage = clients.filter(c => {
-                const codcli = c['Código'];
-                const rca1 = String(c.rca1 || '').trim();
-
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(codcli));
-            });
+            const activeClientsForCoverage = clients;
             const activeClientsCount = activeClientsForCoverage.length;
             const activeClientCodes = new Set(activeClientsForCoverage.map(c => c['Código']));
 
@@ -8840,10 +8713,7 @@ const supervisorGroups = new Map();
 
             // --- "AMERICANAS" Exclusion Logic ---
             // If "AMERICANAS" is NOT explicitly selected in the vendor filter, exclude it from ranking charts.
-            // Assuming "AMERICANAS" appears as a Vendor name in sales data (d.NOME) or Client name?
-            // Usually AMERICANAS is a client, but sometimes mapped as a dummy vendor or huge account.
-            // The prompt says "o vendedor 'AMERICANAS'". So we check d.NOME.
-            const americanasSelected = selectedWeeklySellers.some(s => s.toUpperCase().includes('AMERICANAS'));
+            const americanasSelected = hierarchyState['weekly'].promotors.has('1001');
             if (!americanasSelected) {
                 dataForRankings = dataForRankings.filter(d => !d.NOME.toUpperCase().includes('AMERICANAS'));
             }
@@ -10618,6 +10488,7 @@ const supervisorGroups = new Map();
                 });
 
                 const renderProductTable = (bodyElement, data, showVariation = true) => {
+                if (!bodyElement) return;
                     bodyElement.innerHTML = data.map(p => {
                         const variation = p.monthlyAvgSale > 0 ? ((p.currentMonthSalesQty - p.monthlyAvgSale) / p.monthlyAvgSale) * 100 : (p.currentMonthSalesQty > 0 ? Infinity : 0);
                         const colorClass = variation > 0 ? 'text-green-400' : (variation < 0 ? 'text-red-400' : 'text-slate-400');
@@ -10719,18 +10590,6 @@ const supervisorGroups = new Map();
 
             const { clients: filteredClients } = getInnovationsMonthFilteredData();
 
-            const sellers = selectedInnovationsMonthSellers;
-            const sellerRcaCodes = new Set();
-            if (sellers.length > 0) {
-                sellers.forEach(sellerName => {
-                    const rcaCode = optimizedData.rcaCodeByName.get(sellerName);
-                    if (rcaCode) sellerRcaCodes.add(rcaCode);
-                });
-            } else if (selectedInnovationsSupervisors.length > 0) {
-                selectedInnovationsSupervisors.forEach(sup => {
-                    (optimizedData.rcasBySupervisor.get(sup) || []).forEach(rca => sellerRcaCodes.add(rca));
-                });
-            }
 
             const activeClients = filteredClients.filter(c => {
                 const codcli = c['Código'];
@@ -10794,21 +10653,6 @@ const supervisorGroups = new Map();
                         const category = globalProductToCategoryMap ? globalProductToCategoryMap.get(prodCode) : null;
                         if (!category) return; // Should not happen if innovation data is consistent
 
-                        // Check RCA Filter
-                        let soldBySelected = false;
-                        if (sellerRcaCodes.size === 0) {
-                            soldBySelected = true;
-                        } else {
-                            // Check intersection of rcas and sellerRcaCodes
-                            for (const rca of rcas) {
-                                if (sellerRcaCodes.has(rca)) {
-                                    soldBySelected = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!soldBySelected) return;
 
                         const targetSetField = isCurrent ? 'current' : 'previous';
 
@@ -11354,7 +11198,7 @@ const supervisorGroups = new Map();
             }
 
             let fileNameParam = 'geral';
-            if (selectedInnovationsMonthSellers.length === 1) {
+            if (hierarchyState['innovations-month'] && hierarchyState['innovations-month'].promotors.size === 1) {
             } else if (cidade) {
                 fileNameParam = cidade;
             }
@@ -11476,7 +11320,7 @@ const supervisorGroups = new Map();
             }
 
             let fileNameParam = 'geral';
-            if (selectedCoverageSellers.length === 1) {
+            if (hierarchyState['coverage'] && hierarchyState['coverage'].promotors.size === 1) {
             } else if (cidade) {
                 fileNameParam = cidade;
             }
@@ -11603,7 +11447,7 @@ const supervisorGroups = new Map();
             for(let i = 1; i <= pageCount; i++) { doc.setPage(i); doc.setFontSize(9); doc.setTextColor(10); doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' }); }
 
             let fileNameParam = 'geral';
-            if (selectedCitySellers.length === 1) {
+            if (hierarchyState['city'] && hierarchyState['city'].promotors.size === 1) {
             } else if (city) {
                 fileNameParam = city;
             }
@@ -12269,160 +12113,188 @@ const supervisorGroups = new Map();
 
             const supervisorFilterBtn = document.getElementById('supervisor-filter-btn');
             const supervisorFilterDropdown = document.getElementById('supervisor-filter-dropdown');
-            supervisorFilterBtn.addEventListener('click', () => supervisorFilterDropdown.classList.toggle('hidden'));
-            supervisorFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    mainTableState.currentPage = 1;
-                    updateDashboard();
-                }
-            });
+            if (supervisorFilterBtn && supervisorFilterDropdown) {
+                supervisorFilterBtn.addEventListener('click', () => supervisorFilterDropdown.classList.toggle('hidden'));
+                supervisorFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        mainTableState.currentPage = 1;
+                        updateDashboard();
+                    }
+                });
+            }
 
             const fornecedorFilterBtn = document.getElementById('fornecedor-filter-btn');
             const fornecedorFilterDropdown = document.getElementById('fornecedor-filter-dropdown');
-            fornecedorFilterBtn.addEventListener('click', () => fornecedorFilterDropdown.classList.toggle('hidden'));
-            fornecedorFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) selectedMainSuppliers.push(value);
-                    else selectedMainSuppliers = selectedMainSuppliers.filter(s => s !== value);
+            if (fornecedorFilterBtn && fornecedorFilterDropdown) {
+                fornecedorFilterBtn.addEventListener('click', () => fornecedorFilterDropdown.classList.toggle('hidden'));
+                fornecedorFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) selectedMainSuppliers.push(value);
+                        else selectedMainSuppliers = selectedMainSuppliers.filter(s => s !== value);
 
-                    let supplierDataSource = [...allSalesData, ...allHistoryData];
-                    if (currentFornecedor) {
-                        supplierDataSource = supplierDataSource.filter(s => s.OBSERVACAOFOR === currentFornecedor);
+                        let supplierDataSource = [...allSalesData, ...allHistoryData];
+                        if (currentFornecedor) {
+                            supplierDataSource = supplierDataSource.filter(s => s.OBSERVACAOFOR === currentFornecedor);
+                        }
+                        selectedMainSuppliers = updateSupplierFilter(fornecedorFilterDropdown, document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, supplierDataSource, 'main');
+                        mainTableState.currentPage = 1;
+                        updateDashboard();
                     }
-                    selectedMainSuppliers = updateSupplierFilter(fornecedorFilterDropdown, document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, supplierDataSource, 'main');
-                    mainTableState.currentPage = 1;
-                    updateDashboard();
-                }
-            });
+                });
+            }
 
-            vendedorFilterBtn.addEventListener('click', () => vendedorFilterDropdown.classList.toggle('hidden'));
-            vendedorFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    mainTableState.currentPage = 1;
-                    updateDashboard();
-                }
-            });
+            if (vendedorFilterBtn && vendedorFilterDropdown) {
+                vendedorFilterBtn.addEventListener('click', () => vendedorFilterDropdown.classList.toggle('hidden'));
+                vendedorFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        mainTableState.currentPage = 1;
+                        updateDashboard();
+                    }
+                });
+            }
 
-            tipoVendaFilterBtn.addEventListener('click', () => tipoVendaFilterDropdown.classList.toggle('hidden'));
-            tipoVendaFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) selectedTiposVenda.push(value);
-                    else selectedTiposVenda = selectedTiposVenda.filter(s => s !== value);
-                    selectedTiposVenda = updateTipoVendaFilter(tipoVendaFilterDropdown, tipoVendaFilterText, selectedTiposVenda, allSalesData);
-                    mainTableState.currentPage = 1;
-                    updateDashboard();
-                }
-            });
+            if (tipoVendaFilterBtn && tipoVendaFilterDropdown) {
+                tipoVendaFilterBtn.addEventListener('click', () => tipoVendaFilterDropdown.classList.toggle('hidden'));
+                tipoVendaFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) selectedTiposVenda.push(value);
+                        else selectedTiposVenda = selectedTiposVenda.filter(s => s !== value);
+                        selectedTiposVenda = updateTipoVendaFilter(tipoVendaFilterDropdown, tipoVendaFilterText, selectedTiposVenda, allSalesData);
+                        mainTableState.currentPage = 1;
+                        updateDashboard();
+                    }
+                });
+            }
 
-            posicaoFilter.addEventListener('change', () => { mainTableState.currentPage = 1; updateDashboard(); });
+            if (posicaoFilter) posicaoFilter.addEventListener('change', () => { mainTableState.currentPage = 1; updateDashboard(); });
             const debouncedUpdateDashboard = debounce(updateDashboard, 400);
-            codcliFilter.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/[^0-9]/g, '');
-                mainTableState.currentPage = 1;
-                debouncedUpdateDashboard();
-            });
-            clearFiltersBtn.addEventListener('click', () => { resetMainFilters(); markDirty('dashboard'); markDirty('pedidos'); });
+            if (codcliFilter) {
+                codcliFilter.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                    mainTableState.currentPage = 1;
+                    debouncedUpdateDashboard();
+                });
+            }
+            if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', () => { resetMainFilters(); markDirty('dashboard'); markDirty('pedidos'); });
 
-            prevPageBtn.addEventListener('click', () => {
-                if (mainTableState.currentPage > 1) {
-                    mainTableState.currentPage--;
-                    renderTable(mainTableState.filteredData);
-                }
-            });
-            nextPageBtn.addEventListener('click', () => {
-                if (mainTableState.currentPage < mainTableState.totalPages) {
-                    mainTableState.currentPage++;
-                    renderTable(mainTableState.filteredData);
-                }
-            });
-
-            mainComRedeBtn.addEventListener('click', () => mainRedeFilterDropdown.classList.toggle('hidden'));
-            mainRedeGroupContainer.addEventListener('click', (e) => {
-                if(e.target.closest('button')) {
-                    const button = e.target.closest('button');
-                    mainRedeGroupFilter = button.dataset.group;
-                    mainRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    button.classList.add('active');
-                    if (mainRedeGroupFilter !== 'com_rede') {
-                        mainRedeFilterDropdown.classList.add('hidden');
-                        selectedMainRedes = [];
+            if (prevPageBtn) {
+                prevPageBtn.addEventListener('click', () => {
+                    if (mainTableState.currentPage > 1) {
+                        mainTableState.currentPage--;
+                        renderTable(mainTableState.filteredData);
                     }
-                    updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
-                    mainTableState.currentPage = 1;
-                    updateDashboard();
-                }
-            });
-            mainRedeFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) selectedMainRedes.push(value);
-                    else selectedMainRedes = selectedMainRedes.filter(r => r !== value);
-                    selectedMainRedes = updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
-                    mainTableState.currentPage = 1;
-                    updateDashboard();
-                }
-            });
+                });
+            }
+            if (nextPageBtn) {
+                nextPageBtn.addEventListener('click', () => {
+                    if (mainTableState.currentPage < mainTableState.totalPages) {
+                        mainTableState.currentPage++;
+                        renderTable(mainTableState.filteredData);
+                    }
+                });
+            }
+
+            if (mainComRedeBtn) mainComRedeBtn.addEventListener('click', () => mainRedeFilterDropdown.classList.toggle('hidden'));
+            if (mainRedeGroupContainer) {
+                mainRedeGroupContainer.addEventListener('click', (e) => {
+                    if(e.target.closest('button')) {
+                        const button = e.target.closest('button');
+                        mainRedeGroupFilter = button.dataset.group;
+                        mainRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                        button.classList.add('active');
+                        if (mainRedeGroupFilter !== 'com_rede') {
+                            mainRedeFilterDropdown.classList.add('hidden');
+                            selectedMainRedes = [];
+                        }
+                        updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
+                        mainTableState.currentPage = 1;
+                        updateDashboard();
+                    }
+                });
+            }
+            if (mainRedeFilterDropdown) {
+                mainRedeFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) selectedMainRedes.push(value);
+                        else selectedMainRedes = selectedMainRedes.filter(r => r !== value);
+                        selectedMainRedes = updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
+                        mainTableState.currentPage = 1;
+                        updateDashboard();
+                    }
+                });
+            }
 
             // --- City View Filters ---
             const updateCity = () => {
                 markDirty('cidades');
-            citySupplierFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox' && e.target.dataset.filterType === 'city') {
-                    const { value, checked } = e.target;
-                    if (checked) {
-                        if (!selectedCitySuppliers.includes(value)) selectedCitySuppliers.push(value);
-                    } else {
-                        selectedCitySuppliers = selectedCitySuppliers.filter(s => s !== value);
+                handleCityFilterChange();
+            };
+            if (citySupplierFilterDropdown) {
+                citySupplierFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox' && e.target.dataset.filterType === 'city') {
+                        const { value, checked } = e.target;
+                        if (checked) {
+                            if (!selectedCitySuppliers.includes(value)) selectedCitySuppliers.push(value);
+                        } else {
+                            selectedCitySuppliers = selectedCitySuppliers.filter(s => s !== value);
+                        }
+                        handleCityFilterChange({ skipFilter: 'supplier' });
                     }
-                    handleCityFilterChange({ skipFilter: 'supplier' });
-                }
-            });
+                });
+            }
 
-            cityTipoVendaFilterBtn.addEventListener('click', () => cityTipoVendaFilterDropdown.classList.toggle('hidden'));
-            cityTipoVendaFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) {
-                        if (!selectedCityTiposVenda.includes(value)) selectedCityTiposVenda.push(value);
-                    } else {
-                        selectedCityTiposVenda = selectedCityTiposVenda.filter(s => s !== value);
+            if (cityTipoVendaFilterBtn && cityTipoVendaFilterDropdown) {
+                cityTipoVendaFilterBtn.addEventListener('click', () => cityTipoVendaFilterDropdown.classList.toggle('hidden'));
+                cityTipoVendaFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) {
+                            if (!selectedCityTiposVenda.includes(value)) selectedCityTiposVenda.push(value);
+                        } else {
+                            selectedCityTiposVenda = selectedCityTiposVenda.filter(s => s !== value);
+                        }
+                        handleCityFilterChange({ skipFilter: 'tipoVenda' });
                     }
-                    handleCityFilterChange({ skipFilter: 'tipoVenda' });
-                }
-            });
+                });
+            }
 
-            cityComRedeBtn.addEventListener('click', () => cityRedeFilterDropdown.classList.toggle('hidden'));
-            cityRedeGroupContainer.addEventListener('click', (e) => {
-                if(e.target.closest('button')) {
-                    const button = e.target.closest('button');
-                    cityRedeGroupFilter = button.dataset.group;
-                    cityRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    button.classList.add('active');
+            if (cityComRedeBtn) cityComRedeBtn.addEventListener('click', () => cityRedeFilterDropdown.classList.toggle('hidden'));
+            if (cityRedeGroupContainer) {
+                cityRedeGroupContainer.addEventListener('click', (e) => {
+                    if(e.target.closest('button')) {
+                        const button = e.target.closest('button');
+                        cityRedeGroupFilter = button.dataset.group;
+                        cityRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                        button.classList.add('active');
 
-                    if (cityRedeGroupFilter !== 'com_rede') {
-                        cityRedeFilterDropdown.classList.add('hidden');
-                        selectedCityRedes = [];
+                        if (cityRedeGroupFilter !== 'com_rede') {
+                            cityRedeFilterDropdown.classList.add('hidden');
+                            selectedCityRedes = [];
+                        }
+                        handleCityFilterChange();
                     }
-                    handleCityFilterChange();
-                }
-            });
-            cityRedeFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) selectedCityRedes.push(value);
-                    else selectedCityRedes = selectedCityRedes.filter(r => r !== value);
+                });
+            }
+            if (cityRedeFilterDropdown) {
+                cityRedeFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) selectedCityRedes.push(value);
+                        else selectedCityRedes = selectedCityRedes.filter(r => r !== value);
 
-                    cityRedeGroupFilter = 'com_rede';
-                    cityRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    cityComRedeBtn.classList.add('active');
+                        cityRedeGroupFilter = 'com_rede';
+                        cityRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                        cityComRedeBtn.classList.add('active');
 
-                    handleCityFilterChange({ skipFilter: 'rede' });
-                }
-            });
+                        handleCityFilterChange({ skipFilter: 'rede' });
+                    }
+                });
+            }
 
             const toggleCityMapBtn = document.getElementById('toggle-city-map-btn');
             if (toggleCityMapBtn) {
@@ -12462,65 +12334,69 @@ const supervisorGroups = new Map();
                 });
             }
 
-            clearCityFiltersBtn.addEventListener('click', () => { resetCityFilters(); markDirty('cidades'); });
+            if (clearCityFiltersBtn) clearCityFiltersBtn.addEventListener('click', () => { resetCityFilters(); markDirty('cidades'); });
             const debouncedUpdateCity = debounce(updateCity, 400);
-            cityCodCliFilter.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/[^0-9]/g, '');
-                debouncedUpdateCity();
-            });
+            if (cityCodCliFilter) {
+                cityCodCliFilter.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                    debouncedUpdateCity();
+                });
+            }
 
             const debouncedCitySearch = debounce(() => {
                 const { clients } = getCityFilteredData({ excludeFilter: 'city' });
                 updateCitySuggestions(cityNameFilter, citySuggestions, clients);
             }, 300);
 
-            cityNameFilter.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/[0-9]/g, '');
-                debouncedCitySearch();
-            });
-            cityNameFilter.addEventListener('focus', () => {
-                const { clients } = getCityFilteredData({ excludeFilter: 'city' });
-                citySuggestions.classList.remove('manual-hide');
-                updateCitySuggestions(cityNameFilter, citySuggestions, clients);
-            });
-            cityNameFilter.addEventListener('blur', () => setTimeout(() => citySuggestions.classList.add('hidden'), 150));
-            cityNameFilter.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    citySuggestions.classList.add('hidden', 'manual-hide');
-                    handleCityFilterChange();
-                    e.target.blur();
-                }
-            });
+            if (cityNameFilter) {
+                cityNameFilter.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/[0-9]/g, '');
+                    debouncedCitySearch();
+                });
+                cityNameFilter.addEventListener('focus', () => {
+                    const { clients } = getCityFilteredData({ excludeFilter: 'city' });
+                    citySuggestions.classList.remove('manual-hide');
+                    updateCitySuggestions(cityNameFilter, citySuggestions, clients);
+                });
+                cityNameFilter.addEventListener('blur', () => setTimeout(() => citySuggestions.classList.add('hidden'), 150));
+                cityNameFilter.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        citySuggestions.classList.add('hidden', 'manual-hide');
+                        handleCityFilterChange();
+                        e.target.blur();
+                    }
+                });
+            }
 
             document.addEventListener('click', (e) => {
-                if (!supervisorFilterBtn.contains(e.target) && !supervisorFilterDropdown.contains(e.target)) supervisorFilterDropdown.classList.add('hidden');
-                if (!fornecedorFilterBtn.contains(e.target) && !fornecedorFilterDropdown.contains(e.target)) fornecedorFilterDropdown.classList.add('hidden');
-                if (!vendedorFilterBtn.contains(e.target) && !vendedorFilterDropdown.contains(e.target)) vendedorFilterDropdown.classList.add('hidden');
-                if (!tipoVendaFilterBtn.contains(e.target) && !tipoVendaFilterDropdown.contains(e.target)) tipoVendaFilterDropdown.classList.add('hidden');
+                if (supervisorFilterBtn && supervisorFilterDropdown && !supervisorFilterBtn.contains(e.target) && !supervisorFilterDropdown.contains(e.target)) supervisorFilterDropdown.classList.add('hidden');
+                if (fornecedorFilterBtn && fornecedorFilterDropdown && !fornecedorFilterBtn.contains(e.target) && !fornecedorFilterDropdown.contains(e.target)) fornecedorFilterDropdown.classList.add('hidden');
+                if (vendedorFilterBtn && vendedorFilterDropdown && !vendedorFilterBtn.contains(e.target) && !vendedorFilterDropdown.contains(e.target)) vendedorFilterDropdown.classList.add('hidden');
+                if (tipoVendaFilterBtn && tipoVendaFilterDropdown && !tipoVendaFilterBtn.contains(e.target) && !tipoVendaFilterDropdown.contains(e.target)) tipoVendaFilterDropdown.classList.add('hidden');
 
-                if (!citySupplierFilterBtn.contains(e.target) && !citySupplierFilterDropdown.contains(e.target)) citySupplierFilterDropdown.classList.add('hidden');
-                if (!cityTipoVendaFilterBtn.contains(e.target) && !cityTipoVendaFilterDropdown.contains(e.target)) cityTipoVendaFilterDropdown.classList.add('hidden');
-                if (!cityComRedeBtn.contains(e.target) && !cityRedeFilterDropdown.contains(e.target)) cityRedeFilterDropdown.classList.add('hidden');
-                if (!mainComRedeBtn.contains(e.target) && !mainRedeFilterDropdown.contains(e.target)) mainRedeFilterDropdown.classList.add('hidden');
+                if (citySupplierFilterBtn && citySupplierFilterDropdown && !citySupplierFilterBtn.contains(e.target) && !citySupplierFilterDropdown.contains(e.target)) citySupplierFilterDropdown.classList.add('hidden');
+                if (cityTipoVendaFilterBtn && cityTipoVendaFilterDropdown && !cityTipoVendaFilterBtn.contains(e.target) && !cityTipoVendaFilterDropdown.contains(e.target)) cityTipoVendaFilterDropdown.classList.add('hidden');
+                if (cityComRedeBtn && cityRedeFilterDropdown && !cityComRedeBtn.contains(e.target) && !cityRedeFilterDropdown.contains(e.target)) cityRedeFilterDropdown.classList.add('hidden');
+                if (mainComRedeBtn && mainRedeFilterDropdown && !mainComRedeBtn.contains(e.target) && !mainRedeFilterDropdown.contains(e.target)) mainRedeFilterDropdown.classList.add('hidden');
 
-                if (!comparisonComRedeBtn.contains(e.target) && !comparisonRedeFilterDropdown.contains(e.target)) comparisonRedeFilterDropdown.classList.add('hidden');
-                if (!comparisonTipoVendaFilterBtn.contains(e.target) && !comparisonTipoVendaFilterDropdown.contains(e.target)) comparisonTipoVendaFilterDropdown.classList.add('hidden');
-                if (!comparisonSupplierFilterBtn.contains(e.target) && !comparisonSupplierFilterDropdown.contains(e.target)) comparisonSupplierFilterDropdown.classList.add('hidden');
-                if (!comparisonProductFilterBtn.contains(e.target) && !comparisonProductFilterDropdown.contains(e.target)) comparisonProductFilterDropdown.classList.add('hidden');
+                if (comparisonComRedeBtn && comparisonRedeFilterDropdown && !comparisonComRedeBtn.contains(e.target) && !comparisonRedeFilterDropdown.contains(e.target)) comparisonRedeFilterDropdown.classList.add('hidden');
+                if (comparisonTipoVendaFilterBtn && comparisonTipoVendaFilterDropdown && !comparisonTipoVendaFilterBtn.contains(e.target) && !comparisonTipoVendaFilterDropdown.contains(e.target)) comparisonTipoVendaFilterDropdown.classList.add('hidden');
+                if (comparisonSupplierFilterBtn && comparisonSupplierFilterDropdown && !comparisonSupplierFilterBtn.contains(e.target) && !comparisonSupplierFilterDropdown.contains(e.target)) comparisonSupplierFilterDropdown.classList.add('hidden');
+                if (comparisonProductFilterBtn && comparisonProductFilterDropdown && !comparisonProductFilterBtn.contains(e.target) && !comparisonProductFilterDropdown.contains(e.target)) comparisonProductFilterDropdown.classList.add('hidden');
 
-                if (!stockComRedeBtn.contains(e.target) && !stockRedeFilterDropdown.contains(e.target)) stockRedeFilterDropdown.classList.add('hidden');
-                if (!stockSupplierFilterBtn.contains(e.target) && !stockSupplierFilterDropdown.contains(e.target)) stockSupplierFilterDropdown.classList.add('hidden');
-                if (!stockProductFilterBtn.contains(e.target) && !stockProductFilterDropdown.contains(e.target)) stockProductFilterDropdown.classList.add('hidden');
-                if (!stockTipoVendaFilterBtn.contains(e.target) && !stockTipoVendaFilterDropdown.contains(e.target)) stockTipoVendaFilterDropdown.classList.add('hidden');
+                if (stockComRedeBtn && stockRedeFilterDropdown && !stockComRedeBtn.contains(e.target) && !stockRedeFilterDropdown.contains(e.target)) stockRedeFilterDropdown.classList.add('hidden');
+                if (stockSupplierFilterBtn && stockSupplierFilterDropdown && !stockSupplierFilterBtn.contains(e.target) && !stockSupplierFilterDropdown.contains(e.target)) stockSupplierFilterDropdown.classList.add('hidden');
+                if (stockProductFilterBtn && stockProductFilterDropdown && !stockProductFilterBtn.contains(e.target) && !stockProductFilterDropdown.contains(e.target)) stockProductFilterDropdown.classList.add('hidden');
+                if (stockTipoVendaFilterBtn && stockTipoVendaFilterDropdown && !stockTipoVendaFilterBtn.contains(e.target) && !stockTipoVendaFilterDropdown.contains(e.target)) stockTipoVendaFilterDropdown.classList.add('hidden');
 
 
                 if (e.target.closest('[data-pedido-id]')) { e.preventDefault(); openModal(e.target.closest('[data-pedido-id]').dataset.pedidoId); }
                 if (e.target.closest('[data-codcli]')) { e.preventDefault(); openClientModal(e.target.closest('[data-codcli]').dataset.codcli); }
-                if (e.target.closest('#city-suggestions > div')) { cityNameFilter.value = e.target.textContent; citySuggestions.classList.add('hidden'); updateCityView(); }
-                if (e.target.closest('#comparison-city-suggestions > div')) { comparisonCityFilter.value = e.target.textContent; comparisonCitySuggestions.classList.add('hidden'); updateAllComparisonFilters(); updateComparisonView(); }
-                else if (!comparisonCityFilter.contains(e.target)) comparisonCitySuggestions.classList.add('hidden');
-                if (e.target.closest('#stock-city-suggestions > div')) { stockCityFilter.value = e.target.textContent; stockCitySuggestions.classList.add('hidden'); handleStockFilterChange(); }
-                else if (!stockCityFilter.contains(e.target)) stockCitySuggestions.classList.add('hidden');
+                if (e.target.closest('#city-suggestions > div')) { if(cityNameFilter) cityNameFilter.value = e.target.textContent; citySuggestions.classList.add('hidden'); updateCityView(); }
+                if (e.target.closest('#comparison-city-suggestions > div')) { if(comparisonCityFilter) comparisonCityFilter.value = e.target.textContent; comparisonCitySuggestions.classList.add('hidden'); updateAllComparisonFilters(); updateComparisonView(); }
+                else if (comparisonCityFilter && !comparisonCityFilter.contains(e.target)) comparisonCitySuggestions.classList.add('hidden');
+                if (e.target.closest('#stock-city-suggestions > div')) { if(stockCityFilter) stockCityFilter.value = e.target.textContent; stockCitySuggestions.classList.add('hidden'); handleStockFilterChange(); }
+                else if (stockCityFilter && !stockCityFilter.contains(e.target)) stockCitySuggestions.classList.add('hidden');
             });
 
             fornecedorToggleContainerEl.querySelectorAll('.fornecedor-btn').forEach(btn => {
@@ -15141,7 +15017,7 @@ const supervisorGroups = new Map();
             }
 
             let fileNameParam = 'geral';
-            if (selectedMetaRealizadoSellers.length === 1) {
+            if (hierarchyState['meta-realizado'] && hierarchyState['meta-realizado'].promotors.size === 1) {
             }
             const safeFileNameParam = fileNameParam.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             doc.save(`meta_vs_realizado_${safeFileNameParam}_${new Date().toISOString().slice(0,10)}.pdf`);
