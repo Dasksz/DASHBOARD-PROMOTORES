@@ -12111,6 +12111,17 @@ const supervisorGroups = new Map();
                 alert('Erro durante o upload: ' + msg);
             }
         }
+        // Helper to mark dirty states
+        const markDirty = (view) => {
+            if (viewState[view]) viewState[view].dirty = true;
+        };
+
+        // --- Dashboard/Pedidos Filters ---
+        const updateDashboard = () => {
+            markDirty('dashboard'); markDirty('pedidos');
+            updateAllVisuals();
+        };
+
         function setupEventListeners() {
             // Drag-to-Scroll for Desktop Nav
             const navContainer = document.getElementById('desktop-nav-container');
@@ -12209,11 +12220,6 @@ const supervisorGroups = new Map();
                 });
             }
 
-            // Helper to mark dirty states
-            const markDirty = (view) => {
-                if (viewState[view]) viewState[view].dirty = true;
-            };
-
             const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
             if (mobileMenuToggle) mobileMenuToggle.addEventListener('click', toggleMobileMenu);
 
@@ -12237,12 +12243,6 @@ const supervisorGroups = new Map();
                     toggleMobileMenu();
                 });
             });
-
-            // --- Dashboard/Pedidos Filters ---
-            const updateDashboard = () => {
-                markDirty('dashboard'); markDirty('pedidos');
-                updateAllVisuals();
-            };
 
             const supervisorFilterBtn = document.getElementById('supervisor-filter-btn');
             const supervisorFilterDropdown = document.getElementById('supervisor-filter-dropdown');
