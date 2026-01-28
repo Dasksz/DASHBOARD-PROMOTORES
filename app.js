@@ -12542,7 +12542,7 @@ const supervisorGroups = new Map();
                 handleComparisonFilterChange();
             };
 
-            clearComparisonFiltersBtn.addEventListener('click', resetComparisonFilters);
+            if (clearComparisonFiltersBtn) clearComparisonFiltersBtn.addEventListener('click', resetComparisonFilters);
 
             const handleProductFilterChange = (e, selectedArray) => {
                  if (e.target.type === 'checkbox') {
@@ -12558,43 +12558,51 @@ const supervisorGroups = new Map();
                 return false;
             }
 
-            comparisonProductFilterBtn.addEventListener('click', () => {
-                updateComparisonProductFilter();
-                comparisonProductFilterDropdown.classList.toggle('hidden');
-            });
+            if (comparisonProductFilterBtn) {
+                comparisonProductFilterBtn.addEventListener('click', () => {
+                    updateComparisonProductFilter();
+                    if(comparisonProductFilterDropdown) comparisonProductFilterDropdown.classList.toggle('hidden');
+                });
+            }
 
             const debouncedComparisonProductSearch = debounce(updateComparisonProductFilter, 250);
-            comparisonProductFilterDropdown.addEventListener('input', (e) => {
-                if (e.target.id === 'comparison-product-search-input') {
-                    debouncedComparisonProductSearch();
-                }
-            });
-            comparisonProductFilterDropdown.addEventListener('change', (e) => {
-                if(e.target.dataset.filterType === 'comparison' && handleProductFilterChange(e, selectedComparisonProducts)) {
-                    handleComparisonFilterChange();
-                    updateComparisonProductFilter();
-                }
-            });
-            stockProductFilterBtn.addEventListener('click', () => {
-                updateStockProductFilter();
-                stockProductFilterDropdown.classList.toggle('hidden');
-            });
+            if (comparisonProductFilterDropdown) {
+                comparisonProductFilterDropdown.addEventListener('input', (e) => {
+                    if (e.target.id === 'comparison-product-search-input') {
+                        debouncedComparisonProductSearch();
+                    }
+                });
+                comparisonProductFilterDropdown.addEventListener('change', (e) => {
+                    if(e.target.dataset.filterType === 'comparison' && handleProductFilterChange(e, selectedComparisonProducts)) {
+                        handleComparisonFilterChange();
+                        updateComparisonProductFilter();
+                    }
+                });
+            }
+            if (stockProductFilterBtn) {
+                stockProductFilterBtn.addEventListener('click', () => {
+                    updateStockProductFilter();
+                    if(stockProductFilterDropdown) stockProductFilterDropdown.classList.toggle('hidden');
+                });
+            }
 
             const debouncedStockProductSearch = debounce(updateStockProductFilter, 250);
-            stockProductFilterDropdown.addEventListener('input', (e) => {
-                if (e.target.id === 'stock-product-search-input') {
-                    debouncedStockProductSearch();
-                }
-            });
+            if (stockProductFilterDropdown) {
+                stockProductFilterDropdown.addEventListener('input', (e) => {
+                    if (e.target.id === 'stock-product-search-input') {
+                        debouncedStockProductSearch();
+                    }
+                });
 
-            stockProductFilterDropdown.addEventListener('change', (e) => {
-                if(e.target.dataset.filterType === 'stock' && handleProductFilterChange(e, selectedStockProducts)) {
-                    handleStockFilterChange();
-                    updateStockProductFilter();
-                }
-            });
+                stockProductFilterDropdown.addEventListener('change', (e) => {
+                    if(e.target.dataset.filterType === 'stock' && handleProductFilterChange(e, selectedStockProducts)) {
+                        handleStockFilterChange();
+                        updateStockProductFilter();
+                    }
+                });
+            }
 
-            stockFilialFilter.addEventListener('change', handleStockFilterChange);
+            if (stockFilialFilter) stockFilialFilter.addEventListener('change', handleStockFilterChange);
             const resetStockFilters = () => {
                 selectedStockSuppliers = [];
                 selectedStockProducts = [];
@@ -12648,16 +12656,27 @@ const supervisorGroups = new Map();
 
                 handleStockFilterChange();
             };
-            clearStockFiltersBtn.addEventListener('click', resetStockFilters);
-            stockFornecedorToggleContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { const fornecedor = e.target.dataset.fornecedor; if (currentStockFornecedor === fornecedor) { currentStockFornecedor = ''; e.target.classList.remove('active'); } else { currentStockFornecedor = fornecedor; stockFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); } handleStockFilterChange(); } });
+            if (clearStockFiltersBtn) clearStockFiltersBtn.addEventListener('click', resetStockFilters);
+            if (stockFornecedorToggleContainer) stockFornecedorToggleContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { const fornecedor = e.target.dataset.fornecedor; if (currentStockFornecedor === fornecedor) { currentStockFornecedor = ''; e.target.classList.remove('active'); } else { currentStockFornecedor = fornecedor; stockFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); } handleStockFilterChange(); } });
 
-            stockSupplierFilterBtn.addEventListener('click', () => stockSupplierFilterDropdown.classList.toggle('hidden'));
-            stockSupplierFilterDropdown.addEventListener('change', (e) => { if (e.target.dataset.filterType === 'stock' && e.target.type === 'checkbox') { const { value, checked } = e.target; if (checked) { if(!selectedStockSuppliers.includes(value)) selectedStockSuppliers.push(value); } else { selectedStockSuppliers = selectedStockSuppliers.filter(s => s !== value); } handleStockFilterChange({ skipFilter: 'supplier' }); } });
+            if (stockSupplierFilterBtn) {
+                stockSupplierFilterBtn.addEventListener('click', () => {
+                    if (stockSupplierFilterDropdown) stockSupplierFilterDropdown.classList.toggle('hidden');
+                });
+            }
+            if (stockSupplierFilterDropdown) {
+                stockSupplierFilterDropdown.addEventListener('change', (e) => { if (e.target.dataset.filterType === 'stock' && e.target.type === 'checkbox') { const { value, checked } = e.target; if (checked) { if(!selectedStockSuppliers.includes(value)) selectedStockSuppliers.push(value); } else { selectedStockSuppliers = selectedStockSuppliers.filter(s => s !== value); } handleStockFilterChange({ skipFilter: 'supplier' }); } });
+            }
 
-            stockTipoVendaFilterBtn.addEventListener('click', () => stockTipoVendaFilterDropdown.classList.toggle('hidden'));
-            stockTipoVendaFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
+            if (stockTipoVendaFilterBtn) {
+                stockTipoVendaFilterBtn.addEventListener('click', () => {
+                    if (stockTipoVendaFilterDropdown) stockTipoVendaFilterDropdown.classList.toggle('hidden');
+                });
+            }
+            if (stockTipoVendaFilterDropdown) {
+                stockTipoVendaFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
                     if (checked) {
                         if (!selectedStockTiposVenda.includes(value)) selectedStockTiposVenda.push(value);
                     } else {
@@ -12825,54 +12844,62 @@ const supervisorGroups = new Map();
                 updateInnovationsMonthView();
             };
 
-            innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
+            if (innovationsMonthCategoryFilter) innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
 
             const debouncedUpdateInnovationsMonth = debounce(updateInnovations, 400);
 
-            innovationsMonthCityFilter.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/[0-9]/g, '');
-                const cityDataSource = getInnovationsMonthFilteredData({ excludeFilter: 'city' }).clients;
-                innovationsMonthCitySuggestions.classList.remove('manual-hide');
-                updateCitySuggestions(innovationsMonthCityFilter, innovationsMonthCitySuggestions, cityDataSource);
-            });
-            innovationsMonthCityFilter.addEventListener('focus', () => {
-                const cityDataSource = getInnovationsMonthFilteredData({ excludeFilter: 'city' }).clients;
-                innovationsMonthCitySuggestions.classList.remove('manual-hide');
-                updateCitySuggestions(innovationsMonthCityFilter, innovationsMonthCitySuggestions, cityDataSource);
-            });
-            innovationsMonthCityFilter.addEventListener('blur', () => setTimeout(() => innovationsMonthCitySuggestions.classList.add('hidden'), 150));
-            innovationsMonthCityFilter.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    innovationsMonthCitySuggestions.classList.add('hidden', 'manual-hide');
-                    debouncedUpdateInnovationsMonth();
-                    e.target.blur();
-                }
-            });
-            innovationsMonthCitySuggestions.addEventListener('click', (e) => {
-                if (e.target.tagName === 'DIV') {
-                    innovationsMonthCityFilter.value = e.target.textContent;
-                    innovationsMonthCitySuggestions.classList.add('hidden');
-                    debouncedUpdateInnovationsMonth();
-                }
-            });
-
-            innovationsMonthFilialFilter.addEventListener('change', debouncedUpdateInnovationsMonth);
-            clearInnovationsMonthFiltersBtn.addEventListener('click', () => { resetInnovationsMonthFilters(); markDirty('inovacoes'); });
-            exportInnovationsMonthPdfBtn.addEventListener('click', exportInnovationsMonthPDF);
-
-            innovationsMonthTipoVendaFilterBtn.addEventListener('click', () => innovationsMonthTipoVendaFilterDropdown.classList.toggle('hidden'));
-            innovationsMonthTipoVendaFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) {
-                        if (!selectedInnovationsMonthTiposVenda.includes(value)) selectedInnovationsMonthTiposVenda.push(value);
-                    } else {
-                        selectedInnovationsMonthTiposVenda = selectedInnovationsMonthTiposVenda.filter(s => s !== value);
+            if (innovationsMonthCityFilter && innovationsMonthCitySuggestions) {
+                innovationsMonthCityFilter.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/[0-9]/g, '');
+                    const cityDataSource = getInnovationsMonthFilteredData({ excludeFilter: 'city' }).clients;
+                    innovationsMonthCitySuggestions.classList.remove('manual-hide');
+                    updateCitySuggestions(innovationsMonthCityFilter, innovationsMonthCitySuggestions, cityDataSource);
+                });
+                innovationsMonthCityFilter.addEventListener('focus', () => {
+                    const cityDataSource = getInnovationsMonthFilteredData({ excludeFilter: 'city' }).clients;
+                    innovationsMonthCitySuggestions.classList.remove('manual-hide');
+                    updateCitySuggestions(innovationsMonthCityFilter, innovationsMonthCitySuggestions, cityDataSource);
+                });
+                innovationsMonthCityFilter.addEventListener('blur', () => setTimeout(() => innovationsMonthCitySuggestions.classList.add('hidden'), 150));
+                innovationsMonthCityFilter.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        innovationsMonthCitySuggestions.classList.add('hidden', 'manual-hide');
+                        debouncedUpdateInnovationsMonth();
+                        e.target.blur();
                     }
-                    selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, [...allSalesData, ...allHistoryData]);
-                    debouncedUpdateInnovationsMonth();
-                }
-            });
+                });
+                innovationsMonthCitySuggestions.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'DIV') {
+                        innovationsMonthCityFilter.value = e.target.textContent;
+                        innovationsMonthCitySuggestions.classList.add('hidden');
+                        debouncedUpdateInnovationsMonth();
+                    }
+                });
+            }
+
+            if (innovationsMonthFilialFilter) innovationsMonthFilialFilter.addEventListener('change', debouncedUpdateInnovationsMonth);
+            if (clearInnovationsMonthFiltersBtn) clearInnovationsMonthFiltersBtn.addEventListener('click', () => { resetInnovationsMonthFilters(); markDirty('inovacoes'); });
+            if (exportInnovationsMonthPdfBtn) exportInnovationsMonthPdfBtn.addEventListener('click', exportInnovationsMonthPDF);
+
+            if (innovationsMonthTipoVendaFilterBtn) {
+                innovationsMonthTipoVendaFilterBtn.addEventListener('click', () => {
+                    if (innovationsMonthTipoVendaFilterDropdown) innovationsMonthTipoVendaFilterDropdown.classList.toggle('hidden');
+                });
+            }
+            if (innovationsMonthTipoVendaFilterDropdown) {
+                innovationsMonthTipoVendaFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) {
+                            if (!selectedInnovationsMonthTiposVenda.includes(value)) selectedInnovationsMonthTiposVenda.push(value);
+                        } else {
+                            selectedInnovationsMonthTiposVenda = selectedInnovationsMonthTiposVenda.filter(s => s !== value);
+                        }
+                        selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, [...allSalesData, ...allHistoryData]);
+                        debouncedUpdateInnovationsMonth();
+                    }
+                });
+            }
 
 
             document.getElementById('export-coverage-pdf-btn').addEventListener('click', exportCoveragePDF);
@@ -13401,102 +13428,141 @@ const supervisorGroups = new Map();
                 });
             }
 
-            document.getElementById('mix-tipo-venda-filter-btn').addEventListener('click', (e) => {
-                document.getElementById('mix-tipo-venda-filter-dropdown').classList.toggle('hidden');
-            });
-            document.getElementById('mix-tipo-venda-filter-dropdown').addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) selectedMixTiposVenda.push(value);
-                    else selectedMixTiposVenda = selectedMixTiposVenda.filter(s => s !== value);
-                    handleMixFilterChange({ skipFilter: 'tipoVenda' });
-                    markDirty('mix');
-                }
-            });
+            const mixTipoVendaBtn = document.getElementById('mix-tipo-venda-filter-btn');
+            if (mixTipoVendaBtn) {
+                mixTipoVendaBtn.addEventListener('click', (e) => {
+                    const dd = document.getElementById('mix-tipo-venda-filter-dropdown');
+                    if (dd) dd.classList.toggle('hidden');
+                });
+            }
 
-            document.getElementById('mix-filial-filter').addEventListener('change', updateMix);
+            const mixTipoVendaDropdown = document.getElementById('mix-tipo-venda-filter-dropdown');
+            if (mixTipoVendaDropdown) {
+                mixTipoVendaDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) selectedMixTiposVenda.push(value);
+                        else selectedMixTiposVenda = selectedMixTiposVenda.filter(s => s !== value);
+                        handleMixFilterChange({ skipFilter: 'tipoVenda' });
+                        markDirty('mix');
+                    }
+                });
+            }
+
+            const mixFilialFilter = document.getElementById('mix-filial-filter');
+            if (mixFilialFilter) mixFilialFilter.addEventListener('change', updateMix);
 
             const mixCityFilter = document.getElementById('mix-city-filter');
             const mixCitySuggestions = document.getElementById('mix-city-suggestions');
 
-            mixCityFilter.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/[0-9]/g, '');
-                const { clients } = getMixFilteredData({ excludeFilter: 'city' });
-                mixCitySuggestions.classList.remove('manual-hide');
-                updateCitySuggestions(mixCityFilter, mixCitySuggestions, clients);
-            });
-            mixCityFilter.addEventListener('focus', () => {
-                const { clients } = getMixFilteredData({ excludeFilter: 'city' });
-                mixCitySuggestions.classList.remove('manual-hide');
-                updateCitySuggestions(mixCityFilter, mixCitySuggestions, clients);
-            });
-            mixCityFilter.addEventListener('blur', () => setTimeout(() => mixCitySuggestions.classList.add('hidden'), 150));
-            mixCityFilter.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    mixCitySuggestions.classList.add('hidden', 'manual-hide');
-                    updateMix();
-                    e.target.blur();
-                }
-            });
-            mixCitySuggestions.addEventListener('click', (e) => {
-                if (e.target.tagName === 'DIV') {
-                    mixCityFilter.value = e.target.textContent;
-                    mixCitySuggestions.classList.add('hidden');
-                    updateMix();
-                }
-            });
-
-            document.getElementById('mix-com-rede-btn').addEventListener('click', () => {
-                document.getElementById('mix-rede-filter-dropdown').classList.toggle('hidden');
-            });
-            document.getElementById('mix-rede-group-container').addEventListener('click', (e) => {
-                if(e.target.closest('button')) {
-                    const button = e.target.closest('button');
-                    mixRedeGroupFilter = button.dataset.group;
-                    document.getElementById('mix-rede-group-container').querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    button.classList.add('active');
-                    if (mixRedeGroupFilter !== 'com_rede') {
-                        document.getElementById('mix-rede-filter-dropdown').classList.add('hidden');
-                        selectedMixRedes = [];
+            if (mixCityFilter && mixCitySuggestions) {
+                mixCityFilter.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/[0-9]/g, '');
+                    const { clients } = getMixFilteredData({ excludeFilter: 'city' });
+                    mixCitySuggestions.classList.remove('manual-hide');
+                    updateCitySuggestions(mixCityFilter, mixCitySuggestions, clients);
+                });
+                mixCityFilter.addEventListener('focus', () => {
+                    const { clients } = getMixFilteredData({ excludeFilter: 'city' });
+                    mixCitySuggestions.classList.remove('manual-hide');
+                    updateCitySuggestions(mixCityFilter, mixCitySuggestions, clients);
+                });
+                mixCityFilter.addEventListener('blur', () => setTimeout(() => mixCitySuggestions.classList.add('hidden'), 150));
+                mixCityFilter.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        mixCitySuggestions.classList.add('hidden', 'manual-hide');
+                        updateMix();
+                        e.target.blur();
                     }
-                    handleMixFilterChange();
-                }
-            });
-            document.getElementById('mix-rede-filter-dropdown').addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) selectedMixRedes.push(value);
-                    else selectedMixRedes = selectedMixRedes.filter(r => r !== value);
+                });
+                mixCitySuggestions.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'DIV') {
+                        mixCityFilter.value = e.target.textContent;
+                        mixCitySuggestions.classList.add('hidden');
+                        updateMix();
+                    }
+                });
+            }
 
-                    mixRedeGroupFilter = 'com_rede';
-                    document.getElementById('mix-rede-group-container').querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    document.getElementById('mix-com-rede-btn').classList.add('active');
+            const mixComRedeBtn = document.getElementById('mix-com-rede-btn');
+            if (mixComRedeBtn) {
+                mixComRedeBtn.addEventListener('click', () => {
+                    const dd = document.getElementById('mix-rede-filter-dropdown');
+                    if (dd) dd.classList.toggle('hidden');
+                });
+            }
 
-                    handleMixFilterChange({ skipFilter: 'rede' });
-                }
-            });
+            const mixRedeGroupContainer = document.getElementById('mix-rede-group-container');
+            if (mixRedeGroupContainer) {
+                mixRedeGroupContainer.addEventListener('click', (e) => {
+                    if(e.target.closest('button')) {
+                        const button = e.target.closest('button');
+                        mixRedeGroupFilter = button.dataset.group;
+                        document.getElementById('mix-rede-group-container').querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                        button.classList.add('active');
+                        if (mixRedeGroupFilter !== 'com_rede') {
+                            const dd = document.getElementById('mix-rede-filter-dropdown');
+                            if (dd) dd.classList.add('hidden');
+                            selectedMixRedes = [];
+                        }
+                        handleMixFilterChange();
+                    }
+                });
+            }
 
-            document.getElementById('clear-mix-filters-btn').addEventListener('click', () => { resetMixFilters(); markDirty('mix'); });
-            document.getElementById('export-mix-pdf-btn').addEventListener('click', exportMixPDF);
+            const mixRedeFilterDropdown = document.getElementById('mix-rede-filter-dropdown');
+            if (mixRedeFilterDropdown) {
+                mixRedeFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) selectedMixRedes.push(value);
+                        else selectedMixRedes = selectedMixRedes.filter(r => r !== value);
 
-            document.getElementById('mix-kpi-toggle').addEventListener('change', (e) => {
-                mixKpiMode = e.target.checked ? 'atendidos' : 'total';
-                markDirty('mix');
-                updateMixView();
-            });
+                        mixRedeGroupFilter = 'com_rede';
+                        const container = document.getElementById('mix-rede-group-container');
+                        if (container) container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                        const btn = document.getElementById('mix-com-rede-btn');
+                        if (btn) btn.classList.add('active');
 
-            document.getElementById('mix-prev-page-btn').addEventListener('click', () => {
-                if (mixTableState.currentPage > 1) {
-                    mixTableState.currentPage--;
+                        handleMixFilterChange({ skipFilter: 'rede' });
+                    }
+                });
+            }
+
+            const clearMixFiltersBtn = document.getElementById('clear-mix-filters-btn');
+            if (clearMixFiltersBtn) clearMixFiltersBtn.addEventListener('click', () => { resetMixFilters(); markDirty('mix'); });
+
+            const exportMixPdfBtn = document.getElementById('export-mix-pdf-btn');
+            if (exportMixPdfBtn) exportMixPdfBtn.addEventListener('click', exportMixPDF);
+
+            const mixKpiToggle = document.getElementById('mix-kpi-toggle');
+            if (mixKpiToggle) {
+                mixKpiToggle.addEventListener('change', (e) => {
+                    mixKpiMode = e.target.checked ? 'atendidos' : 'total';
+                    markDirty('mix');
                     updateMixView();
-                }
-            });
-            document.getElementById('mix-next-page-btn').addEventListener('click', () => {
-                if (mixTableState.currentPage < mixTableState.totalPages) {
-                    mixTableState.currentPage++;
-                    updateMixView();
-                }
-            });
+                });
+            }
+
+            const mixPrevPageBtn = document.getElementById('mix-prev-page-btn');
+            if (mixPrevPageBtn) {
+                mixPrevPageBtn.addEventListener('click', () => {
+                    if (mixTableState.currentPage > 1) {
+                        mixTableState.currentPage--;
+                        updateMixView();
+                    }
+                });
+            }
+
+            const mixNextPageBtn = document.getElementById('mix-next-page-btn');
+            if (mixNextPageBtn) {
+                mixNextPageBtn.addEventListener('click', () => {
+                    if (mixTableState.currentPage < mixTableState.totalPages) {
+                        mixTableState.currentPage++;
+                        updateMixView();
+                    }
+                });
+            }
 
             document.addEventListener('click', (e) => {
                 // Close Mix Dropdowns
@@ -13522,87 +13588,105 @@ const supervisorGroups = new Map();
 
             const debouncedHandleCoverageChange = debounce(updateCoverage, 400);
 
-            coverageFilialFilter.addEventListener('change', updateCoverage);
-            if (coverageCityFilter) coverageCityFilter.addEventListener('input', (e) => { e.target.value = e.target.value.replace(/[0-9]/g, '');
-
-                const { clients } = getCoverageFilteredData({ excludeFilter: 'city' });
-                coverageCitySuggestions.classList.remove('manual-hide');
-                updateCitySuggestions(coverageCityFilter, coverageCitySuggestions, clients);
-            });
-            coverageCityFilter.addEventListener('focus', () => {
-                const { clients } = getCoverageFilteredData({ excludeFilter: 'city' });
-                coverageCitySuggestions.classList.remove('manual-hide');
-                updateCitySuggestions(coverageCityFilter, coverageCitySuggestions, clients);
-            });
-            coverageCityFilter.addEventListener('blur', () => setTimeout(() => coverageCitySuggestions.classList.add('hidden'), 150));
-            coverageCityFilter.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    coverageCitySuggestions.classList.add('hidden', 'manual-hide');
-                    updateCoverage();
-                    e.target.blur();
-                }
-            });
-            coverageCitySuggestions.addEventListener('click', (e) => {
-                if (e.target.tagName === 'DIV') {
-                    coverageCityFilter.value = e.target.textContent;
-                    coverageCitySuggestions.classList.add('hidden');
-                    updateCoverage();
-                }
-            });
-
-            coverageTipoVendaFilterBtn.addEventListener('click', () => coverageTipoVendaFilterDropdown.classList.toggle('hidden'));
-            coverageTipoVendaFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) {
-                        if (!selectedCoverageTiposVenda.includes(value)) selectedCoverageTiposVenda.push(value);
-                    } else {
-                        selectedCoverageTiposVenda = selectedCoverageTiposVenda.filter(s => s !== value);
+            if (coverageFilialFilter) coverageFilialFilter.addEventListener('change', updateCoverage);
+            
+            if (coverageCityFilter && coverageCitySuggestions) {
+                coverageCityFilter.addEventListener('input', (e) => { e.target.value = e.target.value.replace(/[0-9]/g, '');
+                    const { clients } = getCoverageFilteredData({ excludeFilter: 'city' });
+                    coverageCitySuggestions.classList.remove('manual-hide');
+                    updateCitySuggestions(coverageCityFilter, coverageCitySuggestions, clients);
+                });
+                coverageCityFilter.addEventListener('focus', () => {
+                    const { clients } = getCoverageFilteredData({ excludeFilter: 'city' });
+                    coverageCitySuggestions.classList.remove('manual-hide');
+                    updateCitySuggestions(coverageCityFilter, coverageCitySuggestions, clients);
+                });
+                coverageCityFilter.addEventListener('blur', () => setTimeout(() => coverageCitySuggestions.classList.add('hidden'), 150));
+                coverageCityFilter.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        coverageCitySuggestions.classList.add('hidden', 'manual-hide');
+                        updateCoverage();
+                        e.target.blur();
                     }
-                    updateCoverage();
-                }
-            });
-
-            clearCoverageFiltersBtn.addEventListener('click', () => { resetCoverageFilters(); markDirty('cobertura'); });
-
-            coverageSupplierFilterBtn.addEventListener('click', () => coverageSupplierFilterDropdown.classList.toggle('hidden'));
-            coverageSupplierFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox' && e.target.dataset.filterType === 'coverage') {
-                    const { value, checked } = e.target;
-                    if (checked) {
-                        if (!selectedCoverageSuppliers.includes(value)) selectedCoverageSuppliers.push(value);
-                    } else {
-                        selectedCoverageSuppliers = selectedCoverageSuppliers.filter(s => s !== value);
+                });
+                coverageCitySuggestions.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'DIV') {
+                        coverageCityFilter.value = e.target.textContent;
+                        coverageCitySuggestions.classList.add('hidden');
+                        updateCoverage();
                     }
+                });
+            }
 
-                    markDirty('cobertura');
-                    handleCoverageFilterChange({ skipFilter: 'supplier' });
-                }
-            });
+            if (coverageTipoVendaFilterBtn) {
+                coverageTipoVendaFilterBtn.addEventListener('click', () => {
+                   if (coverageTipoVendaFilterDropdown) coverageTipoVendaFilterDropdown.classList.toggle('hidden');
+                });
+            }
+            if (coverageTipoVendaFilterDropdown) {
+                coverageTipoVendaFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) {
+                            if (!selectedCoverageTiposVenda.includes(value)) selectedCoverageTiposVenda.push(value);
+                        } else {
+                            selectedCoverageTiposVenda = selectedCoverageTiposVenda.filter(s => s !== value);
+                        }
+                        updateCoverage();
+                    }
+                });
+            }
 
-            coverageProductFilterBtn.addEventListener('click', () => {
-                const { sales, history } = getCoverageFilteredData({ excludeFilter: 'product' });
-                selectedCoverageProducts = updateProductFilter(coverageProductFilterDropdown, coverageProductFilterText, selectedCoverageProducts, [...sales, ...history], 'coverage');
-                coverageProductFilterDropdown.classList.toggle('hidden');
-            });
+            if (clearCoverageFiltersBtn) clearCoverageFiltersBtn.addEventListener('click', () => { resetCoverageFilters(); markDirty('cobertura'); });
+
+            if (coverageSupplierFilterBtn) {
+                coverageSupplierFilterBtn.addEventListener('click', () => {
+                    if(coverageSupplierFilterDropdown) coverageSupplierFilterDropdown.classList.toggle('hidden');
+                });
+            }
+            if (coverageSupplierFilterDropdown) {
+                coverageSupplierFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox' && e.target.dataset.filterType === 'coverage') {
+                        const { value, checked } = e.target;
+                        if (checked) {
+                            if (!selectedCoverageSuppliers.includes(value)) selectedCoverageSuppliers.push(value);
+                        } else {
+                            selectedCoverageSuppliers = selectedCoverageSuppliers.filter(s => s !== value);
+                        }
+
+                        markDirty('cobertura');
+                        handleCoverageFilterChange({ skipFilter: 'supplier' });
+                    }
+                });
+            }
+
+            if (coverageProductFilterBtn) {
+                coverageProductFilterBtn.addEventListener('click', () => {
+                    const { sales, history } = getCoverageFilteredData({ excludeFilter: 'product' });
+                    selectedCoverageProducts = updateProductFilter(coverageProductFilterDropdown, coverageProductFilterText, selectedCoverageProducts, [...sales, ...history], 'coverage');
+                    if (coverageProductFilterDropdown) coverageProductFilterDropdown.classList.toggle('hidden');
+                });
+            }
 
             const debouncedCoverageProductUpdate = debounce(() => {
                  const { sales, history } = getCoverageFilteredData({ excludeFilter: 'product' });
                  selectedCoverageProducts = updateProductFilter(coverageProductFilterDropdown, coverageProductFilterText, selectedCoverageProducts, [...sales, ...history], 'coverage');
             }, 250);
 
-            coverageProductFilterDropdown.addEventListener('input', (e) => {
-                if (e.target.id === 'coverage-product-search-input') {
-                    debouncedCoverageProductUpdate();
-                }
-            });
+            if (coverageProductFilterDropdown) {
+                coverageProductFilterDropdown.addEventListener('input', (e) => {
+                    if (e.target.id === 'coverage-product-search-input') {
+                        debouncedCoverageProductUpdate();
+                    }
+                });
 
-            coverageProductFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.dataset.filterType === 'coverage' && handleProductFilterChange(e, selectedCoverageProducts)) {
-                    markDirty('cobertura');
-                    handleCoverageFilterChange({ skipFilter: 'product' });
-                }
-            });
+                coverageProductFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.dataset.filterType === 'coverage' && handleProductFilterChange(e, selectedCoverageProducts)) {
+                        markDirty('cobertura');
+                        handleCoverageFilterChange({ skipFilter: 'product' });
+                    }
+                });
+            }
 
             const coverageUnitPriceInput = document.getElementById('coverage-unit-price-filter');
             if (coverageUnitPriceInput) {
@@ -13617,10 +13701,10 @@ const supervisorGroups = new Map();
 
 
             document.addEventListener('click', (e) => {
-                if (!innovationsMonthTipoVendaFilterBtn.contains(e.target) && !innovationsMonthTipoVendaFilterDropdown.contains(e.target)) innovationsMonthTipoVendaFilterDropdown.classList.add('hidden');
-                if (!coverageSupplierFilterBtn.contains(e.target) && !coverageSupplierFilterDropdown.contains(e.target)) coverageSupplierFilterDropdown.classList.add('hidden');
-                if (!coverageProductFilterBtn.contains(e.target) && !coverageProductFilterDropdown.contains(e.target)) coverageProductFilterDropdown.classList.add('hidden');
-                if (!coverageTipoVendaFilterBtn.contains(e.target) && !coverageTipoVendaFilterDropdown.contains(e.target)) coverageTipoVendaFilterDropdown.classList.add('hidden');
+                if (innovationsMonthTipoVendaFilterBtn && innovationsMonthTipoVendaFilterDropdown && !innovationsMonthTipoVendaFilterBtn.contains(e.target) && !innovationsMonthTipoVendaFilterDropdown.contains(e.target)) innovationsMonthTipoVendaFilterDropdown.classList.add('hidden');
+                if (coverageSupplierFilterBtn && coverageSupplierFilterDropdown && !coverageSupplierFilterBtn.contains(e.target) && !coverageSupplierFilterDropdown.contains(e.target)) coverageSupplierFilterDropdown.classList.add('hidden');
+                if (coverageProductFilterBtn && coverageProductFilterDropdown && !coverageProductFilterBtn.contains(e.target) && !coverageProductFilterDropdown.contains(e.target)) coverageProductFilterDropdown.classList.add('hidden');
+                if (coverageTipoVendaFilterBtn && coverageTipoVendaFilterDropdown && !coverageTipoVendaFilterBtn.contains(e.target) && !coverageTipoVendaFilterDropdown.contains(e.target)) coverageTipoVendaFilterDropdown.classList.add('hidden');
             });
 
             const stockWorkingDaysInput = document.getElementById('stock-working-days-input');
@@ -13658,6 +13742,7 @@ const supervisorGroups = new Map();
                     handleStockFilterChange();
                 });
             });
+}
         }
 
         initializeOptimizedDataStructures();
