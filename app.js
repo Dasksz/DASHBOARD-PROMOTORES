@@ -3519,6 +3519,50 @@
             const suppliersSet = new Set(selectedMetaRealizadoSuppliers);
             const pasta = currentMetaRealizadoPasta;
 
+            // --- Fix: Define supervisorsSet and sellersSet ---
+            const supervisorsSet = new Set();
+            const sellersSet = new Set();
+
+            const hState = hierarchyState['meta-realizado'];
+            if (hState) {
+                const validCodes = new Set();
+
+                // 1. Promotors (Leaf)
+                if (hState.promotors.size > 0) {
+                    hState.promotors.forEach(p => validCodes.add(p));
+                }
+                // 2. CoCoords
+                else if (hState.cocoords.size > 0) {
+                     hState.cocoords.forEach(cc => {
+                         const children = optimizedData.promotorsByCocoord.get(cc);
+                         if (children) children.forEach(p => validCodes.add(p));
+                     });
+                }
+                // 3. Coords
+                else if (hState.coords.size > 0) {
+                    hState.coords.forEach(c => {
+                         const cocoords = optimizedData.cocoordsByCoord.get(c);
+                         if (cocoords) {
+                             cocoords.forEach(cc => {
+                                 const children = optimizedData.promotorsByCocoord.get(cc);
+                                 if (children) children.forEach(p => validCodes.add(p));
+                             });
+                         }
+                    });
+                }
+
+                // Map Codes to Names
+                if (validCodes.size > 0) {
+                    validCodes.forEach(code => {
+                        const name = optimizedData.promotorMap.get(code);
+                        if (name) sellersSet.add(name);
+                         // Also try mapping via rcaNameByCode if the code is RCA code (fallback)
+                        const rcaName = optimizedData.rcaNameByCode.get(code);
+                        if (rcaName) sellersSet.add(rcaName);
+                    });
+                }
+            }
+
             // Determine Goal Keys based on Pasta (Moved to top level scope)
             let goalKeys = [];
 
@@ -13539,18 +13583,20 @@ const supervisorGroups = new Map();
 
             document.addEventListener('click', (e) => {
                 // Close Mix Dropdowns
-                const mixSupBtn = document.getElementById('mix-supervisor-filter-btn');
-                const mixSupDropdown = document.getElementById('mix-supervisor-filter-dropdown');
-                if (mixSupBtn && mixSupDropdown && !mixSupBtn.contains(e.target) && !mixSupDropdown.contains(e.target)) mixSupDropdown.classList.add('hidden');
+                const safeClose = (btnId, ddId) => {
+                    const btn = document.getElementById(btnId);
+                    const dd = document.getElementById(ddId);
+                    if (btn && dd && !btn.contains(e.target) && !dd.contains(e.target)) {
+                        dd.classList.add('hidden');
+                    }
+                };
 
-                const mixVendBtn = document.getElementById('mix-vendedor-filter-btn');
-                const mixVendDropdown = document.getElementById('mix-vendedor-filter-dropdown');
-                if (mixVendBtn && mixVendDropdown && !mixVendBtn.contains(e.target) && !mixVendDropdown.contains(e.target)) mixVendDropdown.classList.add('hidden');
-                if (!document.getElementById('mix-tipo-venda-filter-btn').contains(e.target) && !document.getElementById('mix-tipo-venda-filter-dropdown').contains(e.target)) document.getElementById('mix-tipo-venda-filter-dropdown').classList.add('hidden');
-                if (!document.getElementById('mix-com-rede-btn').contains(e.target) && !document.getElementById('mix-rede-filter-dropdown').contains(e.target)) document.getElementById('mix-rede-filter-dropdown').classList.add('hidden');
-
-                if (!document.getElementById('weekly-supervisor-filter-btn').contains(e.target) && !document.getElementById('weekly-supervisor-filter-dropdown').contains(e.target)) document.getElementById('weekly-supervisor-filter-dropdown').classList.add('hidden');
-                if (!document.getElementById('weekly-vendedor-filter-btn').contains(e.target) && !document.getElementById('weekly-vendedor-filter-dropdown').contains(e.target)) document.getElementById('weekly-vendedor-filter-dropdown').classList.add('hidden');
+                safeClose('mix-supervisor-filter-btn', 'mix-supervisor-filter-dropdown');
+                safeClose('mix-vendedor-filter-btn', 'mix-vendedor-filter-dropdown');
+                safeClose('mix-tipo-venda-filter-btn', 'mix-tipo-venda-filter-dropdown');
+                safeClose('mix-com-rede-btn', 'mix-rede-filter-dropdown');
+                safeClose('weekly-supervisor-filter-btn', 'weekly-supervisor-filter-dropdown');
+                safeClose('weekly-vendedor-filter-btn', 'weekly-vendedor-filter-dropdown');
             });
 
             // --- Coverage View Filters ---
