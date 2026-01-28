@@ -12840,9 +12840,6 @@ const supervisorGroups = new Map();
 
             const debouncedUpdateInnovationsMonth = debounce(updateInnovations, 400);
 
-                }
-            });
-
             innovationsMonthCityFilter.addEventListener('input', (e) => {
                 e.target.value = e.target.value.replace(/[0-9]/g, '');
                 const cityDataSource = getInnovationsMonthFilteredData({ excludeFilter: 'city' }).clients;
