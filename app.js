@@ -1362,12 +1362,22 @@
             if (embeddedData.hierarchy) {
                 console.log(`[DEBUG] Processing Hierarchy. Rows: ${embeddedData.hierarchy.length}`);
                 embeddedData.hierarchy.forEach(h => {
-                    const coordCode = String(h.cod_coord || '').trim().toUpperCase();
-                    const coordName = (h.nome_coord || coordCode).toUpperCase();
-                    const cocoordCode = String(h.cod_cocoord || '').trim().toUpperCase();
-                    const cocoordName = (h.nome_cocoord || cocoordCode).toUpperCase();
-                    const promotorCode = String(h.cod_promotor || '').trim().toUpperCase();
-                    const promotorName = (h.nome_promotor || promotorCode).toUpperCase();
+                    // Robust key access (Handle lowercase/uppercase/mapped variations)
+                    const getVal = (keys) => {
+                        for (const k of keys) {
+                            if (h[k] !== undefined && h[k] !== null) return String(h[k]);
+                        }
+                        return '';
+                    };
+
+                    const coordCode = getVal(['cod_coord', 'COD_COORD', 'COD COORD.']).trim().toUpperCase();
+                    const coordName = (getVal(['nome_coord', 'NOME_COORD', 'COORDENADOR']) || coordCode).toUpperCase();
+                    
+                    const cocoordCode = getVal(['cod_cocoord', 'COD_COCOORD', 'COD CO-COORD.']).trim().toUpperCase();
+                    const cocoordName = (getVal(['nome_cocoord', 'NOME_COCOORD', 'CO-COORDENADOR']) || cocoordCode).toUpperCase();
+                    
+                    const promotorCode = getVal(['cod_promotor', 'COD_PROMOTOR', 'COD PROMOTOR']).trim().toUpperCase();
+                    const promotorName = (getVal(['nome_promotor', 'NOME_PROMOTOR', 'PROMOTOR']) || promotorCode).toUpperCase();
 
                     if (coordCode) {
                         optimizedData.coordMap.set(coordCode, coordName);
@@ -15606,6 +15616,11 @@ const supervisorGroups = new Map();
                 report += `Pedidos Agregados: ${aggregatedOrders ? aggregatedOrders.length : 'N/A'}\n`;
                 
                 report += `\n--- 3. HIERARQUIA ---\n`;
+                const hierRaw = embeddedData.hierarchy;
+                report += `Raw Data Length: ${hierRaw ? hierRaw.length : 'N/A (Null)'}\n`;
+                if (hierRaw && hierRaw.length > 0) {
+                    report += `Sample Keys (First Item): ${JSON.stringify(Object.keys(hierRaw[0]))}\n`;
+                }
                 report += `Nós na Árvore de Hierarquia: ${optimizedData.hierarchyMap ? optimizedData.hierarchyMap.size : 'N/A'}\n`;
                 report += `Clientes Mapeados (Client->Promotor): ${optimizedData.clientHierarchyMap ? optimizedData.clientHierarchyMap.size : 'N/A'}\n`;
                 report += `Coordenadores Únicos: ${optimizedData.coordMap ? optimizedData.coordMap.size : 'N/A'}\n`;
