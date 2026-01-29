@@ -119,26 +119,20 @@
 
                 // Also check if working days matches, just in case
                 // If remote date is valid and same as cached, use cache
-                if (!isNaN(remoteDate) && remoteDate <= cachedDate) {
+                // Verificando também se hierarchy existe (Correção de Bug)
+                if (!isNaN(remoteDate) && remoteDate <= cachedDate && cachedData.hierarchy) {
                     console.log("Usando cache do IndexedDB (Versão atualizada)");
                     useCache = true;
                 } else {
-                    console.log("Cache desatualizado. Baixando novos dados...");
+                    console.log("Cache desatualizado ou incompleto. Baixando novos dados...");
                 }
             }
 
             if (useCache) {
-                 const { detailed, history, clients, products, activeProds, stock, innovations, metadata, orders } = cachedData;
-                 // Proceed with cached data
-                 // Need to reconstruct Helper Maps if they are not in cache or reconstructable
-
-                 // Reconstruct objects from cached data for processing...
-                 // Skipping fetchAll steps
-
                  loaderText.textContent = 'Processando cache...';
+            } else {
+                 loaderText.textContent = 'Buscando dados...';
             }
-
-            loaderText.textContent = 'Buscando dados...';
 
             // Shared client map for both parsers
             const clientMap = {
@@ -462,6 +456,7 @@
                 innovations = cachedData.innovations;
                 metadata = metadataRemoteRaw || cachedData.metadata;
                 orders = cachedData.orders;
+                hierarchy = cachedData.hierarchy;
                 // Try to load promoters from cache if exists (backward compat)
                 clientPromoters = cachedData.clientPromoters || [];
 
