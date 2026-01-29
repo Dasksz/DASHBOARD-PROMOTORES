@@ -560,13 +560,21 @@
 
             loaderText.textContent = 'Processando...';
 
+            // Normalize Client Promoters Keys (Ensure consistency with Clients)
+            if (clientPromoters && clientPromoters.length > 0) {
+                 clientPromoters.forEach(p => {
+                     if (p.client_code) p.client_code = normalizeKey(p.client_code);
+                 });
+            }
+
             // --- MERGE PROMOTERS INTO CLIENTS ---
             // Build Map of Promoter Codes
             const promoterMap = new Map();
             if (clientPromoters && clientPromoters.length > 0) {
                 clientPromoters.forEach(p => {
                     if (p.client_code && p.promoter_code) {
-                        promoterMap.set(String(p.client_code).trim(), String(p.promoter_code).trim());
+                        // Normalize key to match client data
+                        promoterMap.set(normalizeKey(p.client_code), String(p.promoter_code).trim());
                     }
                 });
             }
