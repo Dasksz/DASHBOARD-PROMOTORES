@@ -431,7 +431,13 @@
             // Robust check: Handle both Array and Object (if keys are used)
             const coords = Array.isArray(embeddedData.clientCoordinates) ? embeddedData.clientCoordinates : Object.values(embeddedData.clientCoordinates);
             coords.forEach(c => {
-                clientCoordinatesMap.set(String(c.client_code), {
+                let code = String(c.client_code).trim();
+                // Normalize keys (remove leading zeros)
+                if (/^\d+$/.test(code)) {
+                    code = String(parseInt(code, 10));
+                }
+
+                clientCoordinatesMap.set(code, {
                     lat: parseFloat(c.lat),
                     lng: parseFloat(c.lng),
                     address: c.address
@@ -1387,7 +1393,12 @@
 
             if (embeddedData.clientPromoters) {
                 embeddedData.clientPromoters.forEach(cp => {
-                    const clientCode = String(cp.client_code).trim();
+                    let clientCode = String(cp.client_code).trim();
+                    // Normalize client code to match dataset (remove leading zeros)
+                    if (/^\d+$/.test(clientCode)) {
+                        clientCode = String(parseInt(clientCode, 10));
+                    }
+
                     const promotorCode = String(cp.promoter_code).trim().toUpperCase();
                     const hierarchyNode = optimizedData.hierarchyMap.get(promotorCode);
                     if (hierarchyNode) {
