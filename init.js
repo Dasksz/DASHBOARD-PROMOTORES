@@ -1,6 +1,17 @@
     const SUPABASE_URL = 'https://dldsocponbjthqxhmttj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZHNvY3BvbmJqdGhxeGhtdHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzgzMzgsImV4cCI6MjA4NTAxNDMzOH0.IGxUEd977uIdhWvMzjDM8ygfISB_Frcf_2air8e3aOs';
 
+            // Helper to normalize keys (remove leading zeros)
+            function normalizeKey(key) {
+                if (!key) return '';
+                const s = String(key).trim();
+                // Remove leading zeros if it's a numeric string
+                if (/^\d+$/.test(s)) {
+                    return String(parseInt(s, 10));
+                }
+                return s;
+            }
+
     // Helper to UPPERCASE keys
     function mapKeysToUpper(data, type) {
         if (!data || data.length === 0) return [];
@@ -173,6 +184,11 @@
                         if (type === 'clients' && clientMap[header]) header = clientMap[header];
                         if (type === 'orders' && ['VLVENDA', 'TOTPESOLIQ', 'VLBONIFIC', 'QTVENDA'].includes(header)) val = val === '' ? 0 : Number(val);
 
+                        // Normalize Client IDs
+                        if (header === 'CODCLI' || header === 'CODIGO_CLIENTE' || header === 'Código') {
+                             val = normalizeKey(val);
+                        }
+
                         if (val && typeof val === 'string' && val.startsWith('{') && val.endsWith('}')) {
                             val = val.slice(1, -1).split(',').map(s => s.replace(/^"|"$/g, ''));
                         }
@@ -244,6 +260,11 @@
                                     val = val === '' ? 0 : Number(val);
                                 }
                             }
+                            // Normalize Client IDs
+                            if (header === 'CODCLI' || header === 'CODIGO_CLIENTE' || header === 'Código') {
+                                 val = normalizeKey(val);
+                            }
+
                             if (type === 'stock' && header === 'STOCK_QTY') val = val === '' ? 0 : Number(val);
                             if (type === 'clients' && header === 'rcas') {
                                 if (typeof val === 'string') {
@@ -690,12 +711,13 @@
                         for(let i=0; i<clients.length; i++) {
                             const p = String(promotorCol[i] || '').trim().toLowerCase();
                             if (allowedPromoters.has(p)) {
-                                allowedClientCodes.add(clientCodesCol[i]);
+                                allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
                                 clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
                                 newClientsLen++;
                             }
                         }
                         console.log(`[Access Control] Client Filter Results: ${newClientsLen} matches out of ${clients.length} clients.`);
+                        console.log(`[Access Control] Allowed Client IDs (Sample):`, Array.from(allowedClientCodes).slice(0, 5));
                         filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
 
                         // 2. Filter Detailed (Columnar)
@@ -706,11 +728,12 @@
                         let newDetailedLen = 0;
 
                         for(let i=0; i<detailed.length; i++) {
-                            if (allowedClientCodes.has(detCodCliCol[i])) {
+                            if (allowedClientCodes.has(normalizeKey(detCodCliCol[i]))) {
                                 detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c][i]));
                                 newDetailedLen++;
                             }
                         }
+                        console.log(`[Access Control] Detailed Sales Filter Results: ${newDetailedLen} matches out of ${detailed.length} rows.`);
                         filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
 
                         // 3. Filter History (Columnar)
@@ -720,15 +743,16 @@
                         let newHistoryLen = 0;
 
                         for(let i=0; i<history.length; i++) {
-                            if (allowedClientCodes.has(histCodCliCol[i])) {
+                            if (allowedClientCodes.has(normalizeKey(histCodCliCol[i]))) {
                                 history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
                                 newHistoryLen++;
                             }
                         }
+                        console.log(`[Access Control] History Sales Filter Results: ${newHistoryLen} matches out of ${history.length} rows.`);
                         filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
 
                         // 4. Filter Orders (Array of Objects)
-                        filteredOrders = orders.filter(o => allowedClientCodes.has(o.codcli));
+                        filteredOrders = orders.filter(o => allowedClientCodes.has(normalizeKey(o.codcli)));
                     } else {
                         console.warn(`[Access Control] Role '${role}' not found in hierarchy or has no promoters. Showing empty view.`);
                         // Return empty data if role not found in hierarchy but isn't admin
