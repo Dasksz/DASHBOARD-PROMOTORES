@@ -789,6 +789,8 @@
                 activeProductCodes: activeProductCodes,
                 productDetails: productDetailsMap,
                 metadata: metadata,
+                hierarchy: hierarchy,
+                clientPromoters: clientPromoters,
                 clientCoordinates: clientCoordinates,
                 passedWorkingDaysCurrentMonth: 1,
                 isColumnar: true
