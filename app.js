@@ -15486,4 +15486,85 @@ const supervisorGroups = new Map();
                 if (modal) modal.classList.remove('hidden');
             });
 
+            // --- SYSTEM DIAGNOSIS TOOL ---
+            const diagnosisBtn = document.getElementById('system-diagnosis-btn');
+            const diagnosisModal = document.getElementById('diagnosis-modal');
+            const diagnosisCloseBtn = document.getElementById('diagnosis-close-btn');
+            const diagnosisCopyBtn = document.getElementById('diagnosis-copy-btn');
+            const diagnosisContent = document.getElementById('diagnosis-content');
+
+            if (diagnosisBtn && diagnosisModal) {
+                diagnosisBtn.addEventListener('click', () => {
+                    const report = generateSystemDiagnosis();
+                    diagnosisContent.textContent = report;
+                    diagnosisModal.classList.remove('hidden');
+                });
+
+                diagnosisCloseBtn.addEventListener('click', () => diagnosisModal.classList.add('hidden'));
+                
+                diagnosisCopyBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(diagnosisContent.textContent).then(() => {
+                        const originalText = diagnosisCopyBtn.innerHTML;
+                        diagnosisCopyBtn.innerHTML = `<span class="text-green-300 font-bold">Copiado!</span>`;
+                        setTimeout(() => diagnosisCopyBtn.innerHTML = originalText, 2000);
+                    });
+                });
+            }
+
+            function generateSystemDiagnosis() {
+                const now = new Date();
+                let report = `=== RELATÓRIO DE DIAGNÓSTICO DO SISTEMA ===\n`;
+                report += `Data: ${now.toLocaleString()}\n`;
+                report += `User Agent: ${navigator.userAgent}\n\n`;
+
+                report += `--- 1. CONTEXTO DO USUÁRIO ---\n`;
+                report += `Role (Window): ${window.userRole}\n`;
+                report += `Contexto Resolvido: ${JSON.stringify(userHierarchyContext, null, 2)}\n\n`;
+
+                report += `--- 2. ESTRUTURA DE DADOS ---\n`;
+                report += `Clientes Totais (Bruto): ${allClientsData ? allClientsData.length : 'N/A'}\n`;
+                report += `Vendas Detalhadas (Bruto): ${allSalesData ? allSalesData.length : 'N/A'}\n`;
+                report += `Histórico (Bruto): ${allHistoryData ? allHistoryData.length : 'N/A'}\n`;
+                report += `Pedidos Agregados: ${aggregatedOrders ? aggregatedOrders.length : 'N/A'}\n`;
+                
+                report += `\n--- 3. HIERARQUIA ---\n`;
+                report += `Nós na Árvore de Hierarquia: ${optimizedData.hierarchyMap ? optimizedData.hierarchyMap.size : 'N/A'}\n`;
+                report += `Clientes Mapeados (Client->Promotor): ${optimizedData.clientHierarchyMap ? optimizedData.clientHierarchyMap.size : 'N/A'}\n`;
+                report += `Coordenadores Únicos: ${optimizedData.coordMap ? optimizedData.coordMap.size : 'N/A'}\n`;
+                
+                report += `\n--- 4. FILTROS ATIVOS (MAIN) ---\n`;
+                const mainState = hierarchyState['main'];
+                report += `Coords Selecionados: ${mainState ? Array.from(mainState.coords).join(', ') : 'N/A'}\n`;
+                report += `CoCoords Selecionados: ${mainState ? Array.from(mainState.cocoords).join(', ') : 'N/A'}\n`;
+                report += `Promotores Selecionados: ${mainState ? Array.from(mainState.promotors).join(', ') : 'N/A'}\n`;
+                
+                report += `\n--- 5. TESTE DE FILTRAGEM (Simulação) ---\n`;
+                try {
+                    const filteredClients = getHierarchyFilteredClients('main', allClientsData);
+                    report += `Clientes Após Filtro de Hierarquia: ${filteredClients.length}\n`;
+                    
+                    if (filteredClients.length === 0) {
+                        report += `[ALERTA] Filtro retornou 0 clientes. Verifique se o usuário '${window.userRole}' está mapeado na hierarquia.\n`;
+                    } else {
+                        // Sample check
+                        const sampleClient = filteredClients[0];
+                        const cod = String(sampleClient['Código'] || sampleClient['codigo_cliente']);
+                        const node = optimizedData.clientHierarchyMap.get(normalizeKey(cod));
+                        report += `Exemplo Cliente Aprovado: ${cod} (${sampleClient.fantasia || sampleClient.razaoSocial})\n`;
+                        report += ` -> Mapeado para: ${node ? JSON.stringify(node.promotor) : 'SEM NÓ (Erro?)'}\n`;
+                    }
+                } catch (e) {
+                    report += `Erro ao simular filtro: ${e.message}\n`;
+                }
+
+                report += `\n--- 6. VALIDAÇÃO DE CHAVES ---\n`;
+                if (allClientsData && allClientsData.length > 0) {
+                    const c = allClientsData instanceof ColumnarDataset ? allClientsData.get(0) : allClientsData[0];
+                    report += `Exemplo Chave Cliente (Raw): '${c['Código'] || c['codigo_cliente']}'\n`;
+                    report += `Exemplo Chave Cliente (Normalized): '${normalizeKey(c['Código'] || c['codigo_cliente'])}'\n`;
+                }
+                
+                return report;
+            }
+
 })();
