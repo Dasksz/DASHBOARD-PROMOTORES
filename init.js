@@ -565,15 +565,28 @@
 
                 const clientCodes = clients.values['CODIGO_CLIENTE'] || clients.values['Código'];
                 const promoterValues = clients.values['PROMOTOR'];
+                // Fallback: Use RCA 1 if Promotor is missing (Legacy Support)
+                const rcaValues = clients.values['RCA 1'] || clients.values['RCA1'];
+
+                console.log(`[Init] Merging Promoters. Map Size: ${promoterMap.size}. Clients: ${clients.length}`);
 
                 if (clientCodes) {
+                    let updatedCount = 0;
+                    let fallbackCount = 0;
                     for (let i = 0; i < clients.length; i++) {
                         const code = String(clientCodes[i]).trim();
                         const promoter = promoterMap.get(code);
+                        
                         if (promoter) {
                             promoterValues[i] = promoter;
+                            updatedCount++;
+                        } else if ((!promoterValues[i] || promoterValues[i] === '') && rcaValues && rcaValues[i]) {
+                             // Fallback to RCA 1 if explicit Promotor is empty
+                             promoterValues[i] = String(rcaValues[i]).trim();
+                             fallbackCount++;
                         }
                     }
+                    console.log(`[Init] Merge Complete. Updated from New Table: ${updatedCount}. Fallback to RCA1: ${fallbackCount}.`);
                 }
             }
             // ------------------------------------
@@ -665,9 +678,12 @@
 
                     if (allowedPromoters.size > 0) {
                         console.log(`[Access Control] Filtering for role '${role}'. Allowed Promoters: ${allowedPromoters.size}`);
+                        console.log(`[Access Control] Allowed Promoters Sample:`, Array.from(allowedPromoters).slice(0, 5));
 
                         // 1. Filter Clients (Columnar)
                         const promotorCol = clients.values['PROMOTOR'] || [];
+                        console.log(`[Access Control] Clients Promotor Col Sample (First 5):`, promotorCol.slice(0, 5));
+                        
                         const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
                         const allowedClientCodes = new Set();
 
@@ -684,6 +700,7 @@
                                 newClientsLen++;
                             }
                         }
+                        console.log(`[Access Control] Client Filter Results: ${newClientsLen} matches out of ${clients.length} clients.`);
                         filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
 
                         // 2. Filter Detailed (Columnar)
