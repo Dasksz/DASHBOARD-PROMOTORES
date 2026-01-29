@@ -4318,8 +4318,6 @@
 
             // B. Populate Sales (Iterate ALL Sales to catch those without Meta)
             // Filter Logic matches 'getMetaRealizadoFilteredData'
-            const currentMonthIndex = lastSaleDate.getUTCMonth();
-            const currentYear = lastSaleDate.getUTCFullYear();
 
             // Helper for week index (Copied from getMetaRealizadoFilteredData scope, need to redefine or reuse)
             const getWeekIndex = (date) => {
