@@ -292,7 +292,7 @@ export function sanitizeData(data) {
 
 export function initializeOptimizedDataStructures(embeddedData) {
     console.log("[Data] Initializing optimized structures...");
-
+    
     // Reset Structures
     state.sellerDetailsMap.clear();
     const sellerLastSaleDateMap = new Map();
@@ -300,15 +300,140 @@ export function initializeOptimizedDataStructures(embeddedData) {
     let americanasCodCli = null;
 
     // Load Basic Data
-    if (embeddedData.isColumnar) {
-        state.allSalesData = new ColumnarDataset(embeddedData.detailed);
-        state.allHistoryData = new ColumnarDataset(embeddedData.history);
-        state.allClientsData = new ColumnarDataset(embeddedData.clients);
-    } else {
-        state.allSalesData = sanitizeData(embeddedData.detailed);
-        state.allHistoryData = sanitizeData(embeddedData.history);
-        state.allClientsData = embeddedData.clients;
+    let loadedSales = embeddedData.isColumnar ? new ColumnarDataset(embeddedData.detailed) : sanitizeData(embeddedData.detailed);
+    let loadedHistory = embeddedData.isColumnar ? new ColumnarDataset(embeddedData.history) : sanitizeData(embeddedData.history);
+    let loadedClients = embeddedData.isColumnar ? new ColumnarDataset(embeddedData.clients) : embeddedData.clients;
+    let loadedOrders = embeddedData.byOrder || [];
+
+    // --- SECURITY: Apply Role-Based Data Filtering ---
+    const role = window.userRole;
+    if (role && role !== 'adm') {
+        const hierarchy = embeddedData.hierarchy || [];
+        
+        if (!hierarchy || hierarchy.length === 0) {
+             console.warn(`[Access Control] Role '${role}' is not admin, but Hierarchy Data is missing. Enforcing empty view.`);
+             // Clear all data
+             if (embeddedData.isColumnar) {
+                 loadedSales = new ColumnarDataset({ columns: loadedSales.columns, values: {}, length: 0 });
+                 loadedHistory = new ColumnarDataset({ columns: loadedHistory.columns, values: {}, length: 0 });
+                 loadedClients = new ColumnarDataset({ columns: loadedClients.columns, values: {}, length: 0 });
+             } else {
+                 loadedSales = [];
+                 loadedHistory = [];
+                 loadedClients = [];
+             }
+             loadedOrders = [];
+        } else {
+            const allowedPromoters = new Set();
+            const normalizedRole = role.trim().toLowerCase();
+
+            hierarchy.forEach(h => {
+                // Robust key access logic replicated from init.js
+                const getVal = (item, keys) => {
+                    for (const k of keys) {
+                        if (item[k] !== undefined && item[k] !== null) return String(item[k]);
+                    }
+                    return '';
+                };
+                
+                const coord = getVal(h, ['cod_coord', 'COD_COORD', 'COD COORD.']).trim().toLowerCase();
+                const cocoord = getVal(h, ['cod_cocoord', 'COD_COCOORD', 'COD CO-COORD.']).trim().toLowerCase();
+                const promotor = getVal(h, ['cod_promotor', 'COD_PROMOTOR', 'COD PROMOTOR']).trim().toLowerCase();
+
+                if (coord === normalizedRole) allowedPromoters.add(promotor);
+                else if (cocoord === normalizedRole) allowedPromoters.add(promotor);
+                else if (promotor === normalizedRole) allowedPromoters.add(promotor);
+            });
+
+            if (allowedPromoters.size > 0) {
+                console.log(`[Access Control] Filtering for role '${role}'. Allowed Promoters: ${allowedPromoters.size}`);
+                
+                const allowedClientCodes = new Set();
+
+                // 1. Filter Clients
+                if (embeddedData.isColumnar) {
+                    const promotorCol = loadedClients._data['PROMOTOR'] || [];
+                    const clientCodesCol = loadedClients._data['CODIGO_CLIENTE'] || loadedClients._data['Código'] || [];
+                    const newValues = {};
+                    loadedClients.columns.forEach(c => newValues[c] = []);
+                    let newLen = 0;
+
+                    for(let i=0; i<loadedClients.length; i++) {
+                        const p = String(promotorCol[i] || '').trim().toLowerCase();
+                        if (allowedPromoters.has(p)) {
+                            allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
+                            loadedClients.columns.forEach(c => newValues[c].push(loadedClients._data[c][i]));
+                            newLen++;
+                        }
+                    }
+                    loadedClients = new ColumnarDataset({ columns: loadedClients.columns, values: newValues, length: newLen });
+                } else {
+                    loadedClients = loadedClients.filter(c => {
+                        const p = String(c.PROMOTOR || '').trim().toLowerCase();
+                        if (allowedPromoters.has(p)) {
+                            allowedClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+                            return true;
+                        }
+                        return false;
+                    });
+                }
+
+                // 2. Filter Sales
+                if (embeddedData.isColumnar) {
+                    const codCliCol = loadedSales._data['CODCLI'] || [];
+                    const newValues = {};
+                    loadedSales.columns.forEach(c => newValues[c] = []);
+                    let newLen = 0;
+                    for(let i=0; i<loadedSales.length; i++) {
+                        if (allowedClientCodes.has(normalizeKey(codCliCol[i]))) {
+                            loadedSales.columns.forEach(c => newValues[c].push(loadedSales._data[c][i]));
+                            newLen++;
+                        }
+                    }
+                    loadedSales = new ColumnarDataset({ columns: loadedSales.columns, values: newValues, length: newLen });
+                } else {
+                    loadedSales = loadedSales.filter(s => allowedClientCodes.has(normalizeKey(s.CODCLI)));
+                }
+
+                // 3. Filter History
+                if (embeddedData.isColumnar) {
+                    const codCliCol = loadedHistory._data['CODCLI'] || [];
+                    const newValues = {};
+                    loadedHistory.columns.forEach(c => newValues[c] = []);
+                    let newLen = 0;
+                    for(let i=0; i<loadedHistory.length; i++) {
+                        if (allowedClientCodes.has(normalizeKey(codCliCol[i]))) {
+                            loadedHistory.columns.forEach(c => newValues[c].push(loadedHistory._data[c][i]));
+                            newLen++;
+                        }
+                    }
+                    loadedHistory = new ColumnarDataset({ columns: loadedHistory.columns, values: newValues, length: newLen });
+                } else {
+                    loadedHistory = loadedHistory.filter(s => allowedClientCodes.has(normalizeKey(s.CODCLI)));
+                }
+
+                // 4. Filter Orders
+                loadedOrders = loadedOrders.filter(o => allowedClientCodes.has(normalizeKey(o.codcli)));
+
+            } else {
+                console.warn(`[Access Control] Role '${role}' has no promoters. Showing empty view.`);
+                if (embeddedData.isColumnar) {
+                     loadedSales = new ColumnarDataset({ columns: loadedSales.columns, values: {}, length: 0 });
+                     loadedHistory = new ColumnarDataset({ columns: loadedHistory.columns, values: {}, length: 0 });
+                     loadedClients = new ColumnarDataset({ columns: loadedClients.columns, values: {}, length: 0 });
+                } else {
+                     loadedSales = [];
+                     loadedHistory = [];
+                     loadedClients = [];
+                }
+                loadedOrders = [];
+            }
+        }
     }
+
+    state.allSalesData = loadedSales;
+    state.allHistoryData = loadedHistory;
+    state.allClientsData = loadedClients;
 
     // Populate State with Embedded Data
     state.clientCoordinates = embeddedData.clientCoordinates || [];
@@ -317,7 +442,7 @@ export function initializeOptimizedDataStructures(embeddedData) {
     state.clientPromoters = embeddedData.clientPromoters || [];
     state.stockMap05 = embeddedData.stockMap05 || {};
     state.stockMap08 = embeddedData.stockMap08 || {};
-    state.aggregatedOrders = embeddedData.byOrder || [];
+    state.aggregatedOrders = loadedOrders;
     state.innovationsMonthData = embeddedData.innovationsMonth || [];
     state.passedWorkingDaysCurrentMonth = embeddedData.passedWorkingDaysCurrentMonth || 1;
 
@@ -332,6 +457,7 @@ export function initializeOptimizedDataStructures(embeddedData) {
     // --- 1. Process History for Supervisors & Sellers ---
     for (let i = 0; i < state.allHistoryData.length; i++) {
         const s = getHistory(i);
+        if (!s) continue; // Safety check
         const codUsur = s.CODUSUR;
         if (codUsur && s.NOME !== 'INATIVOS' && s.NOME !== 'AMERICANAS') {
             const dt = parseDate(s.DTPED);
@@ -347,7 +473,7 @@ export function initializeOptimizedDataStructures(embeddedData) {
 
     // --- 2. Process Clients ---
     state.optimizedData.searchIndices.clients = new Array(state.allClientsData.length);
-
+    
     for (let i = 0; i < state.allClientsData.length; i++) {
         const client = getClient(i);
         const codCli = normalizeKey(client['Código'] || client['codigo_cliente']);
@@ -473,7 +599,7 @@ export function initializeOptimizedDataStructures(embeddedData) {
             const id = i;
             const supervisor = getVal(i, 'SUPERV') || 'N/A';
             const rca = getVal(i, 'NOME') || 'N/A';
-
+            
             let pasta = getVal(i, 'OBSERVACAOFOR');
             if (!pasta || pasta === '0' || pasta === '00' || pasta === 'N/A') {
                 const rawFornecedor = String(getVal(i, 'FORNECEDOR') || '').toUpperCase();
@@ -571,6 +697,7 @@ export function initializeOptimizedDataStructures(embeddedData) {
     let maxDateTs = 0;
     for(let i=0; i<state.allSalesData.length; i++) {
         const s = getSales(i);
+        if (!s) continue;
         let ts = 0;
         if (typeof s.DTPED === 'number' && s.DTPED > 1000000) {
              ts = s.DTPED;
@@ -596,14 +723,14 @@ export function calculateHistoricalBests() {
             const d = parseDate(s.DTPED);
             if (!d) continue;
             const dateKey = d.toISOString().split('T')[0];
-
+            
             if (!salesByDay.has(dateKey)) salesByDay.set(dateKey, 0);
             salesByDay.set(dateKey, salesByDay.get(dateKey) + (Number(s.VLVENDA) || 0));
         }
     };
 
     process(state.allHistoryData);
-
+    
     let max = 0;
     salesByDay.forEach(val => { if (val > max) max = val; });
     state.historicalBests.day = max;
