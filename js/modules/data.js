@@ -457,6 +457,7 @@ export function initializeOptimizedDataStructures(embeddedData) {
     // --- 1. Process History for Supervisors & Sellers ---
     for (let i = 0; i < state.allHistoryData.length; i++) {
         const s = getHistory(i);
+        if (!s) continue; // Safety check
         const codUsur = s.CODUSUR;
         if (codUsur && s.NOME !== 'INATIVOS' && s.NOME !== 'AMERICANAS') {
             const dt = parseDate(s.DTPED);
@@ -696,6 +697,7 @@ export function initializeOptimizedDataStructures(embeddedData) {
     let maxDateTs = 0;
     for(let i=0; i<state.allSalesData.length; i++) {
         const s = getSales(i);
+        if (!s) continue;
         let ts = 0;
         if (typeof s.DTPED === 'number' && s.DTPED > 1000000) {
              ts = s.DTPED;
