@@ -299,21 +299,29 @@ export function initializeOptimizedDataStructures(embeddedData) {
     const clientToCurrentSellerMap = new Map();
     let americanasCodCli = null;
 
+    // --- AUTO-DETECT DATA FORMAT ---
+    // Sometimes 'isColumnar' flag is missing in cached data, but data is actually columnar.
+    let isColumnar = embeddedData.isColumnar;
+    if (!isColumnar && embeddedData.clients && embeddedData.clients.columns && embeddedData.clients.values) {
+        console.warn("[Data] 'isColumnar' flag missing but columnar data detected. Enabling Columnar Mode.");
+        isColumnar = true;
+    }
+
     // Load Basic Data
-    let loadedSales = embeddedData.isColumnar ? new ColumnarDataset(embeddedData.detailed) : sanitizeData(embeddedData.detailed);
-    let loadedHistory = embeddedData.isColumnar ? new ColumnarDataset(embeddedData.history) : sanitizeData(embeddedData.history);
-    let loadedClients = embeddedData.isColumnar ? new ColumnarDataset(embeddedData.clients) : embeddedData.clients;
+    let loadedSales = isColumnar ? new ColumnarDataset(embeddedData.detailed) : sanitizeData(embeddedData.detailed);
+    let loadedHistory = isColumnar ? new ColumnarDataset(embeddedData.history) : sanitizeData(embeddedData.history);
+    let loadedClients = isColumnar ? new ColumnarDataset(embeddedData.clients) : embeddedData.clients;
     let loadedOrders = embeddedData.byOrder || [];
 
     // --- SECURITY: Apply Role-Based Data Filtering ---
     const role = window.userRole;
-    if (role && role !== 'adm') {
+    if (role && role.toLowerCase() !== 'adm') {
         const hierarchy = embeddedData.hierarchy || [];
         
         if (!hierarchy || hierarchy.length === 0) {
              console.warn(`[Access Control] Role '${role}' is not admin, but Hierarchy Data is missing. Enforcing empty view.`);
              // Clear all data
-             if (embeddedData.isColumnar) {
+             if (isColumnar) {
                  loadedSales = new ColumnarDataset({ columns: loadedSales.columns, values: {}, length: 0 });
                  loadedHistory = new ColumnarDataset({ columns: loadedHistory.columns, values: {}, length: 0 });
                  loadedClients = new ColumnarDataset({ columns: loadedClients.columns, values: {}, length: 0 });
@@ -351,7 +359,7 @@ export function initializeOptimizedDataStructures(embeddedData) {
                 const allowedClientCodes = new Set();
 
                 // 1. Filter Clients
-                if (embeddedData.isColumnar) {
+                if (isColumnar) {
                     const promotorCol = loadedClients._data['PROMOTOR'] || [];
                     const clientCodesCol = loadedClients._data['CODIGO_CLIENTE'] || loadedClients._data['Código'] || [];
                     const newValues = {};
@@ -379,7 +387,7 @@ export function initializeOptimizedDataStructures(embeddedData) {
                 }
 
                 // 2. Filter Sales
-                if (embeddedData.isColumnar) {
+                if (isColumnar) {
                     const codCliCol = loadedSales._data['CODCLI'] || [];
                     const newValues = {};
                     loadedSales.columns.forEach(c => newValues[c] = []);
@@ -396,7 +404,7 @@ export function initializeOptimizedDataStructures(embeddedData) {
                 }
 
                 // 3. Filter History
-                if (embeddedData.isColumnar) {
+                if (isColumnar) {
                     const codCliCol = loadedHistory._data['CODCLI'] || [];
                     const newValues = {};
                     loadedHistory.columns.forEach(c => newValues[c] = []);
@@ -417,7 +425,7 @@ export function initializeOptimizedDataStructures(embeddedData) {
 
             } else {
                 console.warn(`[Access Control] Role '${role}' has no promoters. Showing empty view.`);
-                if (embeddedData.isColumnar) {
+                if (isColumnar) {
                      loadedSales = new ColumnarDataset({ columns: loadedSales.columns, values: {}, length: 0 });
                      loadedHistory = new ColumnarDataset({ columns: loadedHistory.columns, values: {}, length: 0 });
                      loadedClients = new ColumnarDataset({ columns: loadedClients.columns, values: {}, length: 0 });
