@@ -489,3 +489,10 @@ BEGIN
                        func_record.schema_name, func_record.function_name, func_record.args);
     END LOOP;
 END $$;
+
+-- 6. METADATA DEFAULTS
+-- Initialize 'senha_modal'
+INSERT INTO public.data_metadata (key, value)
+VALUES ('senha_modal', '123456')
+ON CONFLICT (key) DO NOTHING;
+
