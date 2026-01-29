@@ -28,6 +28,7 @@ export function initViewLogic() {
         const allSalesData = state.allSalesData;
         const allHistoryData = state.allHistoryData;
         const allClientsData = state.allClientsData;
+        const sellerDetailsMap = state.sellerDetailsMap;
 
         const aggregatedOrders = state.aggregatedOrders;
         const stockData05 = state.stockData05;
@@ -3156,7 +3157,7 @@ export function initViewLogic() {
             // --- Fix: Define Filter Sets from Hierarchy State ---
             const supervisorsSet = new Set();
             const sellersSet = new Set();
-
+            
             const hState = hierarchyState['meta-realizado'];
             if (hState) {
                 // If Coords selected, filter by them
@@ -7044,7 +7045,7 @@ const supervisorGroups = new Map();
                 let chartData = summary.vendasPorCoord;
                 let chartTitle = 'Performance por Coordenador';
                 const mainState = hierarchyState['main'];
-
+                
                 if (mainState.cocoords.size > 0) {
                     chartData = summary.vendasPorPromotor;
                     chartTitle = 'Performance por Promotor';
@@ -7055,7 +7056,7 @@ const supervisorGroups = new Map();
 
                 const totalForPercentage = Object.values(chartData).reduce((a, b) => a + b, 0);
                 const personChartTooltipOptions = { plugins: { tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; const value = context.parsed.y; if (value !== null) { label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); if (totalForPercentage > 0) { const percentage = ((value / totalForPercentage) * 100).toFixed(2); label += ` (${percentage}%)`; } } return label; } } } } };
-
+                
                 salesByPersonTitle.textContent = chartTitle;
                 createChart('salesByPersonChart', 'bar', Object.keys(chartData).map(getFirstName), Object.values(chartData), personChartTooltipOptions);
 
@@ -8607,7 +8608,7 @@ const supervisorGroups = new Map();
                     clients = clients.filter(c => !c.ramo || c.ramo === 'N/A');
                 }
             }
-
+            
             const clientCodes = new Set(clients.map(c => c['Código'] || c['codigo_cliente']));
 
             const filters = {
@@ -8781,7 +8782,7 @@ const supervisorGroups = new Map();
                     }
                 }
             }
-
+            
             const clientCodes = new Set(clients.map(c => c['Código'] || c['codigo_cliente']));
 
             const filters = {
@@ -11042,7 +11043,7 @@ const supervisorGroups = new Map();
                     const entry = state.metadata.find(m => m.key === 'senha_modal');
                     if (entry && entry.value) storedPwd = entry.value;
                 }
-
+                
                 if (input === storedPwd) {
                     openAdminModal();
                 } else {
@@ -11102,7 +11103,7 @@ const supervisorGroups = new Map();
                     }
 
                     // Initialize Worker
-                    const worker = new Worker('worker.js');
+                    const worker = new Worker('js/worker.js');
 
                     document.getElementById('status-container').classList.remove('hidden');
                     document.getElementById('status-text').textContent = "Processando arquivos...";
@@ -11141,7 +11142,7 @@ const supervisorGroups = new Map();
             };
 
             document.querySelectorAll('.nav-link').forEach(link => link.addEventListener('click', handleNavClick));
-
+            
             document.querySelectorAll('.mobile-nav-link').forEach(link => {
                 link.addEventListener('click', (e) => {
                     handleNavClick(e);
@@ -14419,7 +14420,7 @@ const supervisorGroups = new Map();
                 });
 
                 diagnosisCloseBtn.addEventListener('click', () => diagnosisModal.classList.add('hidden'));
-
+                
                 diagnosisCopyBtn.addEventListener('click', () => {
                     navigator.clipboard.writeText(diagnosisContent.textContent).then(() => {
                         const originalText = diagnosisCopyBtn.innerHTML;
@@ -14444,27 +14445,27 @@ const supervisorGroups = new Map();
                 report += `Vendas Detalhadas (Bruto): ${allSalesData ? allSalesData.length : 'N/A'}\n`;
                 report += `Histórico (Bruto): ${allHistoryData ? allHistoryData.length : 'N/A'}\n`;
                 report += `Pedidos Agregados: ${aggregatedOrders ? aggregatedOrders.length : 'N/A'}\n`;
-
+                
                 // Embedded Hierarchy access removed, using state
                 report += `\n--- 3. HIERARQUIA ---\n`;
                 // const hierRaw = embeddedData.hierarchy; // Removed
                 // report += `Raw Data Length: ${hierRaw ? hierRaw.length : 'N/A (Null)'}\n`;
-
+                
                 report += `Nós na Árvore de Hierarquia: ${optimizedData.hierarchyMap ? optimizedData.hierarchyMap.size : 'N/A'}\n`;
                 report += `Clientes Mapeados (Client->Promotor): ${optimizedData.clientHierarchyMap ? optimizedData.clientHierarchyMap.size : 'N/A'}\n`;
                 report += `Coordenadores Únicos: ${optimizedData.coordMap ? optimizedData.coordMap.size : 'N/A'}\n`;
-
+                
                 report += `\n--- 4. FILTROS ATIVOS (MAIN) ---\n`;
                 const mainState = hierarchyState['main'];
                 report += `Coords Selecionados: ${mainState ? Array.from(mainState.coords).join(', ') : 'N/A'}\n`;
                 report += `CoCoords Selecionados: ${mainState ? Array.from(mainState.cocoords).join(', ') : 'N/A'}\n`;
                 report += `Promotores Selecionados: ${mainState ? Array.from(mainState.promotors).join(', ') : 'N/A'}\n`;
-
+                
                 report += `\n--- 5. TESTE DE FILTRAGEM (Simulação) ---\n`;
                 try {
                     const filteredClients = getHierarchyFilteredClients('main', allClientsData);
                     report += `Clientes Após Filtro de Hierarquia: ${filteredClients.length}\n`;
-
+                    
                     if (filteredClients.length === 0) {
                         report += `[ALERTA] Filtro retornou 0 clientes. Verifique se o usuário '${window.userRole}' está mapeado na hierarquia.\n`;
                     } else {
