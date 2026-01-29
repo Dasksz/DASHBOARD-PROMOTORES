@@ -12738,7 +12738,7 @@ const supervisorGroups = new Map();
             });
         }
 
-        initializeOptimizedDataStructures();
+        // initializeOptimizedDataStructures(); // Removed redundant call causing crash
 
         // --- USER CONTEXT RESOLUTION ---
         let userHierarchyContext = { role: 'adm', coord: null, cocoord: null, promotor: null };
