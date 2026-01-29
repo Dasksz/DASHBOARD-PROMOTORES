@@ -4318,8 +4318,6 @@
 
             // B. Populate Sales (Iterate ALL Sales to catch those without Meta)
             // Filter Logic matches 'getMetaRealizadoFilteredData'
-            const currentMonthIndex = lastSaleDate.getUTCMonth();
-            const currentYear = lastSaleDate.getUTCFullYear();
 
             // Helper for week index (Copied from getMetaRealizadoFilteredData scope, need to redefine or reuse)
             const getWeekIndex = (date) => {
@@ -15581,7 +15579,7 @@ const supervisorGroups = new Map();
                 });
 
                 diagnosisCloseBtn.addEventListener('click', () => diagnosisModal.classList.add('hidden'));
-                
+
                 diagnosisCopyBtn.addEventListener('click', () => {
                     navigator.clipboard.writeText(diagnosisContent.textContent).then(() => {
                         const originalText = diagnosisCopyBtn.innerHTML;
@@ -15606,23 +15604,23 @@ const supervisorGroups = new Map();
                 report += `Vendas Detalhadas (Bruto): ${allSalesData ? allSalesData.length : 'N/A'}\n`;
                 report += `Histórico (Bruto): ${allHistoryData ? allHistoryData.length : 'N/A'}\n`;
                 report += `Pedidos Agregados: ${aggregatedOrders ? aggregatedOrders.length : 'N/A'}\n`;
-                
+
                 report += `\n--- 3. HIERARQUIA ---\n`;
                 report += `Nós na Árvore de Hierarquia: ${optimizedData.hierarchyMap ? optimizedData.hierarchyMap.size : 'N/A'}\n`;
                 report += `Clientes Mapeados (Client->Promotor): ${optimizedData.clientHierarchyMap ? optimizedData.clientHierarchyMap.size : 'N/A'}\n`;
                 report += `Coordenadores Únicos: ${optimizedData.coordMap ? optimizedData.coordMap.size : 'N/A'}\n`;
-                
+
                 report += `\n--- 4. FILTROS ATIVOS (MAIN) ---\n`;
                 const mainState = hierarchyState['main'];
                 report += `Coords Selecionados: ${mainState ? Array.from(mainState.coords).join(', ') : 'N/A'}\n`;
                 report += `CoCoords Selecionados: ${mainState ? Array.from(mainState.cocoords).join(', ') : 'N/A'}\n`;
                 report += `Promotores Selecionados: ${mainState ? Array.from(mainState.promotors).join(', ') : 'N/A'}\n`;
-                
+
                 report += `\n--- 5. TESTE DE FILTRAGEM (Simulação) ---\n`;
                 try {
                     const filteredClients = getHierarchyFilteredClients('main', allClientsData);
                     report += `Clientes Após Filtro de Hierarquia: ${filteredClients.length}\n`;
-                    
+
                     if (filteredClients.length === 0) {
                         report += `[ALERTA] Filtro retornou 0 clientes. Verifique se o usuário '${window.userRole}' está mapeado na hierarquia.\n`;
                     } else {
@@ -15643,7 +15641,7 @@ const supervisorGroups = new Map();
                     report += `Exemplo Chave Cliente (Raw): '${c['Código'] || c['codigo_cliente']}'\n`;
                     report += `Exemplo Chave Cliente (Normalized): '${normalizeKey(c['Código'] || c['codigo_cliente'])}'\n`;
                 }
-                
+
                 return report;
             }
 
