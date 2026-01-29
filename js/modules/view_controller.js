@@ -544,8 +544,6 @@ export function initViewLogic() {
             });
         }
 
-        let sellerDetailsMap = new Map();
-
         // --- HIERARCHY FILTER SYSTEM ---
         const hierarchyState = {}; // Map<viewPrefix, { coords: Set, cocoords: Set, promotors: Set }>
 
