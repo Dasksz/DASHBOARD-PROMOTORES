@@ -2,6 +2,16 @@
         const embeddedData = window.embeddedData;
         let metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [] };
 
+        // Helper to normalize keys (remove leading zeros) to ensure consistent joins
+        const normalizeKey = (key) => {
+            if (!key) return '';
+            const s = String(key).trim();
+            if (/^\d+$/.test(s)) {
+                return String(parseInt(s, 10));
+            }
+            return s;
+        };
+
         // --- OPTIMIZATION: Lazy Columnar Accessor with Write-Back Support ---
         class ColumnarDataset {
             constructor(columnarData) {
@@ -332,7 +342,7 @@
         // Init Client Map manually since map() might be slower on Columnar
         for(let i=0; i<allClientsData.length; i++) {
             const c = allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i];
-            clientMapForKPIs.set(String(c['Código'] || c['codigo_cliente']), c);
+            clientMapForKPIs.set(normalizeKey(c['Código'] || c['codigo_cliente']), c);
         }
 
         const activeProductCodesFromCadastro = new Set(embeddedData.activeProductCodes || []);
@@ -1049,7 +1059,7 @@
             const len = sourceClients.length;
             for(let i=0; i<len; i++) {
                 const client = isColumnar ? sourceClients.get(i) : sourceClients[i];
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(client['Código'] || client['codigo_cliente']);
                 const node = optimizedData.clientHierarchyMap.get(codCli);
 
                 if (!node) {
@@ -1413,7 +1423,7 @@
 
             for (let i = 0; i < allClientsData.length; i++) {
                 const client = getClient(i); // Hydrate object for processing
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(client['Código'] || client['codigo_cliente']);
 
                 // Sanitize: Skip header rows if present
                 if (!codCli || codCli === 'Código' || codCli === 'codigo_cliente' || codCli === 'CODCLI' || codCli === 'CODIGO') continue;
@@ -9617,15 +9627,15 @@ const supervisorGroups = new Map();
                  // Use iteration if values() unavailable
                  if (Array.isArray(dataset)) {
                      for(let i=0; i<dataset.length; i++) {
-                         if(filters.clientCodes.has(dataset[i].CODCLI)) allData.push(dataset[i]);
+                         if(filters.clientCodes.has(normalizeKey(dataset[i].CODCLI))) allData.push(dataset[i]);
                      }
                  } else if (dataset.values && typeof dataset.values === 'function') {
                      const vals = dataset.values();
-                     for(let i=0; i<vals.length; i++) if(filters.clientCodes.has(vals[i].CODCLI)) allData.push(vals[i]);
+                     for(let i=0; i<vals.length; i++) if(filters.clientCodes.has(normalizeKey(vals[i].CODCLI))) allData.push(vals[i]);
                  } else {
                      for(let i=0; i<dataset.length; i++) {
                          const item = getItem(i);
-                         if(filters.clientCodes.has(item.CODCLI)) allData.push(item);
+                         if(filters.clientCodes.has(normalizeKey(item.CODCLI))) allData.push(item);
                      }
                  }
                  return allData;
@@ -9641,7 +9651,7 @@ const supervisorGroups = new Map();
             const result = [];
             for (const id of resultIds) {
                 const item = getItem(id);
-                if (!filters.clientCodes || filters.clientCodes.has(item.CODCLI)) {
+                if (!filters.clientCodes || filters.clientCodes.has(normalizeKey(item.CODCLI))) {
                     result.push(item);
                 }
             }
