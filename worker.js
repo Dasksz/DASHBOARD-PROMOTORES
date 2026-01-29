@@ -970,13 +970,6 @@
                 finalMetadata.push({ key: 'last_sale_date', value: String(maxTs) });
 
                 // Preserve 'senha_modal' from existing metadata (if available in raw metadata array)
-                // Note: Worker receives 'metadata' in event.data? No, it processes files.
-                // However, we can inject existing metadata via postMessage if needed, but easier is to handle merge in app.js
-                // BUT, to be safe here, we can add a placeholder or rely on app.js not to overwrite blindly.
-                // Actually, app.js likely does a truncate + insert for metadata.
-                // Let's modify app.js to merge instead.
-                // Reverting worker.js change strategy.
-
                 const finalHierarchyData = hierarchyDataRaw.map(item => ({
                     cod_coord: String(item['COD COORD.'] || '').trim(),
                     nome_coord: String(item['COORDENADOR'] || '').trim(),
