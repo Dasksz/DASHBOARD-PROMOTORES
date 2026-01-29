@@ -4249,8 +4249,33 @@
 
         function getMetaRealizadoClientsData(weeks) {
             // New Hierarchy Logic
+            const currentMonthIndex = lastSaleDate.getUTCMonth();
+            const currentYear = lastSaleDate.getUTCFullYear();
             const suppliersSet = new Set(selectedMetaRealizadoSuppliers);
             const pasta = currentMetaRealizadoPasta;
+
+            // --- Fix: Define Filter Sets from Hierarchy State ---
+            const supervisorsSet = new Set();
+            const sellersSet = new Set();
+            
+            const hState = hierarchyState['meta-realizado'];
+            if (hState) {
+                // If Coords selected, filter by them
+                if (hState.coords.size > 0) {
+                    hState.coords.forEach(c => {
+                        const name = optimizedData.coordMap.get(c);
+                        if(name) supervisorsSet.add(name);
+                    });
+                }
+                // If Promotors selected (Sellers), filter by them
+                if (hState.promotors.size > 0) {
+                    hState.promotors.forEach(p => {
+                        const name = optimizedData.promotorMap.get(p);
+                        if(name) sellersSet.add(name);
+                    });
+                }
+            }
+            // ----------------------------------------------------
 
             // 1. Identify Target Clients (Active/Americanas/etc + Filtered)
             // Apply Hierarchy Logic + "Active" Filter logic
@@ -12005,7 +12030,7 @@ const supervisorGroups = new Map();
 
                     // --- PRESERVE MANUAL KEYS ---
                     try {
-                        const keysToPreserve = ['groq_api_key'];
+                        const keysToPreserve = ['groq_api_key', 'senha_modal'];
                         const { data: currentMetadata } = await window.supabaseClient
                             .from('data_metadata')
                             .select('*')
@@ -12096,18 +12121,66 @@ const supervisorGroups = new Map();
             const adminModal = document.getElementById('admin-uploader-modal');
             const adminCloseBtn = document.getElementById('admin-modal-close-btn');
 
+            // Password Modal Elements
+            const pwdModal = document.getElementById('admin-password-modal');
+            const pwdInput = document.getElementById('admin-password-input');
+            const pwdConfirm = document.getElementById('admin-password-confirm-btn');
+            const pwdCancel = document.getElementById('admin-password-cancel-btn');
+
+            const openAdminModal = () => {
+                if (pwdModal) pwdModal.classList.add('hidden');
+                if (adminModal) adminModal.classList.remove('hidden');
+                // Close mobile menu if open
+                const mobileMenu = document.getElementById('mobile-menu');
+                if (mobileMenu && mobileMenu.classList.contains('open')) {
+                    toggleMobileMenu(); // Assuming this function exists in scope
+                }
+            };
+
+            const checkPassword = () => {
+                const input = pwdInput.value;
+                // Find password in metadata
+                let storedPwd = 'admin'; // Default fallback
+                if (embeddedData.metadata && Array.isArray(embeddedData.metadata)) {
+                    const entry = embeddedData.metadata.find(m => m.key === 'senha_modal');
+                    if (entry && entry.value) storedPwd = entry.value;
+                }
+                
+                if (input === storedPwd) {
+                    openAdminModal();
+                } else {
+                    alert('Senha incorreta.');
+                    pwdInput.value = '';
+                    pwdInput.focus();
+                }
+            };
+
             if (openAdminBtn) {
                 openAdminBtn.addEventListener('click', () => {
-                    if (window.userRole !== 'adm') {
-                        alert('Apenas usuários com permissão "adm" podem acessar o Uploader.');
-                        return;
+                    if (window.userRole === 'adm') {
+                        openAdminModal();
+                    } else {
+                        // Show Password Prompt
+                        if (pwdModal) {
+                            pwdInput.value = '';
+                            pwdModal.classList.remove('hidden');
+                            pwdInput.focus();
+                        }
                     }
-                    adminModal.classList.remove('hidden');
-                    // Close mobile menu if open
-                    const mobileMenu = document.getElementById('mobile-menu');
-                    if (mobileMenu && mobileMenu.classList.contains('open')) {
-                        toggleMobileMenu();
-                    }
+                });
+            }
+
+            if (pwdConfirm) {
+                pwdConfirm.addEventListener('click', checkPassword);
+            }
+            if (pwdCancel) {
+                pwdCancel.addEventListener('click', () => {
+                    if (pwdModal) pwdModal.classList.add('hidden');
+                });
+            }
+            if (pwdInput) {
+                pwdInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') checkPassword();
                 });
             }
             if (adminCloseBtn) {
