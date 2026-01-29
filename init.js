@@ -782,6 +782,66 @@
                 }
             }
 
+            // --- DEBUG DIAGNOSTIC PANEL ---
+            try {
+                console.group("DEBUG SCHEMA CHECK");
+                console.log("User Role:", window.userRole);
+                const hSample = hierarchy && hierarchy.length > 0 ? hierarchy[0] : {};
+                console.log("Hierarchy First Row Keys:", Object.keys(hSample));
+                console.log("Hierarchy First Row:", hSample);
+
+                const cpSample = clientPromoters && clientPromoters.length > 0 ? clientPromoters[0] : {};
+                console.log("ClientPromoters First Row Keys:", Object.keys(cpSample));
+                console.log("ClientPromoters First Row:", cpSample);
+
+                // Check what the Hierarchy thinks the Promoters are
+                const hPromoters = new Set();
+                if(hierarchy) hierarchy.forEach(h => {
+                    if(h.cod_promotor) hPromoters.add(h.cod_promotor);
+                });
+                console.log("Hierarchy Unique Promoters (First 5):", Array.from(hPromoters).slice(0, 5));
+
+                console.groupEnd();
+
+                // Inject UI - On Demand Only
+                window.showDebugPanel = function() {
+                    const debugDiv = document.createElement('div');
+                    debugDiv.id = 'debug-diagnostic-panel';
+                    debugDiv.style.position = 'fixed';
+                    debugDiv.style.top = '60px';
+                    debugDiv.style.right = '10px';
+                    debugDiv.style.width = '300px';
+                    debugDiv.style.maxHeight = '80vh';
+                    debugDiv.style.overflowY = 'auto';
+                    debugDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
+                    debugDiv.style.color = '#00ff00';
+                    debugDiv.style.fontFamily = 'monospace';
+                    debugDiv.style.fontSize = '11px';
+                    debugDiv.style.padding = '10px';
+                    debugDiv.style.zIndex = '10000';
+                    debugDiv.style.border = '1px solid #00ff00';
+                    debugDiv.style.borderRadius = '5px';
+                    debugDiv.innerHTML = `
+                        <h3 style="margin-top:0; border-bottom:1px solid #fff;">DIAGNOSTICO DE DADOS</h3>
+                        <p><strong>User Role:</strong> ${window.userRole}</p>
+                        <hr>
+                        <p><strong>Hierarchy[0] Keys:</strong><br>${Object.keys(hSample).join(', ')}</p>
+                        <p><strong>Hierarchy[0] Values:</strong><br>${JSON.stringify(hSample, null, 2)}</p>
+                        <hr>
+                        <p><strong>ClientPromoters[0] Keys:</strong><br>${Object.keys(cpSample).join(', ')}</p>
+                        <p><strong>ClientPromoters[0] Values:</strong><br>${JSON.stringify(cpSample, null, 2)}</p>
+                        <hr>
+                        <button onclick="this.parentElement.remove()" style="background:red;color:white;border:none;padding:5px;width:100%;">FECHAR DEBUG</button>
+                    `;
+                    document.body.appendChild(debugDiv);
+                    console.log("Debug Panel Injected.");
+                };
+                console.log("To view debug panel, type: showDebugPanel()");
+            } catch (eDebug) {
+                console.error("Debug injection failed:", eDebug);
+            }
+            // -----------------------------
+
             window.embeddedData = embeddedData;
             window.isDataLoaded = true;
 
