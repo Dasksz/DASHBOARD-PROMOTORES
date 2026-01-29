@@ -1048,6 +1048,13 @@
 
                 if (!node) {
                     missingNodeCount++;
+                    // FIX: Allow Orphans for Admins if no filters are active
+                    if (userHierarchyContext.role === 'adm') {
+                        const hasFilters = effectiveCoords.size > 0 || effectiveCoCoords.size > 0 || effectivePromotors.size > 0;
+                        if (!hasFilters) {
+                            result.push(client);
+                        }
+                    }
                     continue; 
                 }
 
