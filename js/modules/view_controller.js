@@ -28,6 +28,7 @@ export function initViewLogic() {
         const allSalesData = state.allSalesData;
         const allHistoryData = state.allHistoryData;
         const allClientsData = state.allClientsData;
+        const sellerDetailsMap = state.sellerDetailsMap;
 
         const aggregatedOrders = state.aggregatedOrders;
         const stockData05 = state.stockData05;
