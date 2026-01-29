@@ -1009,36 +1009,15 @@
 
         function getHierarchyFilteredClients(viewPrefix, sourceClients = allClientsData) {
             const state = hierarchyState[viewPrefix];
-            if (!state) return sourceClients; // Should not happen
+            if (!state) return sourceClients;
 
             const { coords, cocoords, promotors } = state;
-            // If no filters active, return all (subject to User Context, which is pre-filtered? No, User Context restricts dropdowns, so active filters will reflect restrictions)
-            // Actually, if user is restricted, the dropdowns are initialized with their restrictions selected?
-            // Or we just strictly filter here using User Context AND Selection.
-            // Let's rely on Selection (which we force-init for restricted users).
-
-            // Optimization: If sets are empty, implies "All Available" (which might be restricted by context)
-            // But wait, if I am Admin, empty set means All.
-            // If I am Coord, empty set means All My Team.
-            // Logic:
-            // 1. Filter by Coord Set (if not empty)
-            // 2. Filter by CoCoord Set (if not empty)
-            // 3. Filter by Promotor Set (if not empty)
-
-            // However, we need to handle the "All" case.
-            // If I am Coord, and I select nothing, I should see my whole team.
-            // If I am Coord, and I select one CoCoord, I see only that.
-
-            // The dropdown initialization will handle what is *available* to select.
-            // If the user selects nothing, `state.coords` is empty.
-            // We need to fallback to `userHierarchyContext`.
 
             let effectiveCoords = new Set(coords);
             let effectiveCoCoords = new Set(cocoords);
             let effectivePromotors = new Set(promotors);
 
             // Apply User Context Constraints implicitly?
-            // If user is Coord, they effectively filter by themselves always.
             if (userHierarchyContext.role === 'coord') effectiveCoords.add(userHierarchyContext.coord);
             if (userHierarchyContext.role === 'cocoord') {
                 effectiveCoords.add(userHierarchyContext.coord);
@@ -1050,26 +1029,25 @@
                 effectivePromotors.add(userHierarchyContext.promotor);
             }
 
-            // Filtering
-            // We use 'allClientsData' (or source) and check 'clientHierarchyMap'
-            // Support ColumnarDataset? 'sourceClients' might be one.
             const isColumnar = sourceClients instanceof ColumnarDataset;
             const result = [];
-
             const len = sourceClients.length;
+
+            if (viewPrefix === 'main') {
+                 console.log(`[DEBUG] Filtering Clients for view 'main'. Total Clients: ${len}`);
+                 console.log(`[DEBUG] Effective Coords: ${Array.from(effectiveCoords).join(', ')}`);
+                 console.log(`[DEBUG] User Context Role: ${userHierarchyContext.role}`);
+            }
+
+            let missingNodeCount = 0;
+
             for(let i=0; i<len; i++) {
                 const client = isColumnar ? sourceClients.get(i) : sourceClients[i];
                 const codCli = normalizeKey(client['Código'] || client['codigo_cliente']);
                 const node = optimizedData.clientHierarchyMap.get(codCli);
 
                 if (!node) {
-                    // Client has no promotor.
-                    // If filters are active, usually exclude?
-                    // Or if "All" is selected?
-                    // User requirement: "filters... supervisor... seller".
-                    // If no supervisor assigned, it usually falls into "Sem Supervisor".
-                    // Here, if no hierarchy, we assume strict filter excludes it UNLESS no filters are applied at all?
-                    // Let's assume strict filtering: If I select a Coordinator, I want their clients. If client has no coord, exclude.
+                    missingNodeCount++;
                     continue; 
                 }
 
@@ -1081,6 +1059,10 @@
                 if (effectivePromotors.size > 0 && !effectivePromotors.has(node.promotor.code)) continue;
 
                 result.push(client);
+            }
+
+            if (viewPrefix === 'main') {
+                 console.log(`[DEBUG] Filter Result: ${result.length} clients kept. (Missing Node: ${missingNodeCount})`);
             }
             return result;
         }
@@ -1325,6 +1307,7 @@
         }
 
         function initializeOptimizedDataStructures() {
+            console.log("[DEBUG] Starting initializeOptimizedDataStructures");
             sellerDetailsMap = new Map();
             const sellerLastSaleDateMap = new Map(); // Track latest date per seller
             const clientToCurrentSellerMap = new Map();
@@ -1370,6 +1353,7 @@
             optimizedData.promotorsByCocoord = new Map(); // CoCoord Code -> Set<Promotor Code>
 
             if (embeddedData.hierarchy) {
+                console.log(`[DEBUG] Processing Hierarchy. Rows: ${embeddedData.hierarchy.length}`);
                 embeddedData.hierarchy.forEach(h => {
                     const coordCode = String(h.cod_coord || '').trim().toUpperCase();
                     const coordName = (h.nome_coord || coordCode).toUpperCase();
@@ -1402,6 +1386,9 @@
             }
 
             if (embeddedData.clientPromoters) {
+                console.log(`[DEBUG] Processing Client Promoters. Rows: ${embeddedData.clientPromoters.length}`);
+                let matchCount = 0;
+                let sampleLogged = false;
                 embeddedData.clientPromoters.forEach(cp => {
                     let clientCode = String(cp.client_code).trim();
                     // Normalize client code to match dataset (remove leading zeros)
@@ -1413,9 +1400,18 @@
                     const hierarchyNode = optimizedData.hierarchyMap.get(promotorCode);
                     if (hierarchyNode) {
                         optimizedData.clientHierarchyMap.set(clientCode, hierarchyNode);
+                        matchCount++;
+                    } else if (!sampleLogged) {
+                        console.warn(`[DEBUG] Hierarchy Node Not Found for Promotor: ${promotorCode} (Client: ${clientCode})`);
+                        sampleLogged = true;
                     }
                 });
+                console.log(`[DEBUG] Client Promoters Merged: ${matchCount}/${embeddedData.clientPromoters.length}`);
+            } else {
+                console.warn("[DEBUG] embeddedData.clientPromoters is missing or empty.");
             }
+            console.log(`[DEBUG] Final Hierarchy Map Size: ${optimizedData.hierarchyMap.size}`);
+            console.log(`[DEBUG] Final Client Hierarchy Map Size: ${optimizedData.clientHierarchyMap.size}`);
             // --- HIERARCHY LOGIC END ---
 
             // Access via accessor method for potential ColumnarDataset
@@ -13773,8 +13769,11 @@ const supervisorGroups = new Map();
 
         function resolveUserContext() {
             const role = (window.userRole || '').trim().toUpperCase();
+            console.log(`[DEBUG] Resolving User Context for Role: '${role}'`);
+
             if (role === 'ADM' || role === 'ADMIN') {
                 userHierarchyContext.role = 'adm';
+                console.log(`[DEBUG] Role identified as ADM`);
                 return;
             }
 
@@ -13782,6 +13781,7 @@ const supervisorGroups = new Map();
             if (optimizedData.coordMap.has(role)) {
                 userHierarchyContext.role = 'coord';
                 userHierarchyContext.coord = role;
+                console.log(`[DEBUG] Role identified as COORD: ${role}`);
                 return;
             }
 
@@ -13790,6 +13790,7 @@ const supervisorGroups = new Map();
                 userHierarchyContext.role = 'cocoord';
                 userHierarchyContext.cocoord = role;
                 userHierarchyContext.coord = optimizedData.coordsByCocoord.get(role);
+                console.log(`[DEBUG] Role identified as COCOORD: ${role}`);
                 return;
             }
 
@@ -13802,11 +13803,14 @@ const supervisorGroups = new Map();
                     userHierarchyContext.cocoord = node.cocoord.code;
                     userHierarchyContext.coord = node.coord.code;
                 }
+                console.log(`[DEBUG] Role identified as PROMOTOR: ${role}`);
                 return;
             }
             
             // Fallback: Default to ADM (UI allows all, but Data is filtered by init.js)
             userHierarchyContext.role = 'adm';
+            console.warn(`[DEBUG] Role '${role}' not found in Hierarchy Maps. Defaulting to ADM context (Data filtered by Init).`);
+            console.log("Available Coords:", Array.from(optimizedData.coordMap.keys()));
         }
         resolveUserContext();
 
