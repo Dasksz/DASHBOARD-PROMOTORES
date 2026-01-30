@@ -1687,14 +1687,11 @@
 
         const mainDashboard = document.getElementById('main-dashboard');
         const cityView = document.getElementById('city-view');
-        const weeklyView = document.getElementById('weekly-view');
         const comparisonView = document.getElementById('comparison-view');
         const stockView = document.getElementById('stock-view');
 
-        const showWeeklyBtn = document.getElementById('show-weekly-btn');
         const showCityBtn = document.getElementById('show-city-btn');
         const backToMainFromCityBtn = document.getElementById('back-to-main-from-city-btn');
-        const backToMainFromWeeklyBtn = document.getElementById('back-to-main-from-weekly-btn');
         const backToMainFromComparisonBtn = document.getElementById('back-to-main-from-comparison-btn');
         const backToMainFromStockBtn = document.getElementById('back-to-main-from-stock-btn');
 
@@ -1767,12 +1764,6 @@
         const cityTipoVendaFilterBtn = document.getElementById('city-tipo-venda-filter-btn');
         const cityTipoVendaFilterText = document.getElementById('city-tipo-venda-filter-text');
         const cityTipoVendaFilterDropdown = document.getElementById('city-tipo-venda-filter-dropdown');
-
-        const weeklySupervisorFilterText = document.getElementById('weekly-supervisor-filter-text');
-        const weeklyVendedorFilterText = document.getElementById('weekly-vendedor-filter-text');
-        const clearWeeklyFiltersBtn = document.getElementById('clear-weekly-filters-btn');
-        const totalMesSemanalEl = document.getElementById('total-mes-semanal');
-        const weeklyFornecedorToggleContainer = document.getElementById('weekly-fornecedor-toggle-container');
 
         const comparisonSupervisorFilter = document.getElementById('comparison-supervisor-filter');
         const comparisonVendedorFilterText = document.getElementById('comparison-vendedor-filter-text');
@@ -1937,7 +1928,6 @@
             estoque: { dirty: true },
             cobertura: { dirty: true },
             cidades: { dirty: true },
-            semanal: { dirty: true },
             inovacoes: { dirty: true, cache: null, lastTypesKey: '' },
             mix: { dirty: true },
             goals: { dirty: true },
@@ -1956,7 +1946,6 @@
         let charts = {};
         let currentProductMetric = 'faturamento';
         let currentFornecedor = '';
-        let currentWeeklyFornecedor = '';
         let currentComparisonFornecedor = '';
         let currentStockFornecedor = '';
         let useTendencyComparison = false;
@@ -1969,9 +1958,6 @@
         let selectedCityCoords = [];
         let selectedCityCoCoords = [];
         let selectedCityPromotors = [];
-        let selectedWeeklyCoords = [];
-        let selectedWeeklyCoCoords = [];
-        let selectedWeeklyPromotors = [];
         let selectedComparisonCoords = [];
         let selectedComparisonCoCoords = [];
         let selectedComparisonPromotors = [];
@@ -8742,211 +8728,6 @@ const supervisorGroups = new Map();
             historicalBests = bestDayByWeekdayBySupervisor;
         }
 
-        function populateWeeklyFilters() {
-        }
-
-        function updateWeeklyView() {
-            let dataForGeneralCharts;
-
-            const filteredClients = getHierarchyFilteredClients('weekly', allClientsData);
-            const clientCodes = new Set(filteredClients.map(c => String(c['Código'] || c['codigo_cliente'])));
-
-            // Use the generic filtering helper which supports multiple selections
-            const filters = {
-                clientCodes: clientCodes,
-                pasta: currentWeeklyFornecedor || null
-            };
-
-            // If we have filters, use optimized lookup
-            if (filters.clientCodes || filters.pasta) {
-                dataForGeneralCharts = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters);
-            } else {
-                dataForGeneralCharts = allSalesData;
-            }
-
-            const currentMonth = lastSaleDate.getUTCMonth(); const currentYear = lastSaleDate.getUTCFullYear();
-            const monthSales = dataForGeneralCharts.filter(d => { if (!d.DTPED) return false; const saleDate = parseDate(d.DTPED); return saleDate && saleDate.getUTCMonth() === currentMonth && saleDate.getUTCFullYear() === currentYear; });
-            const totalMes = monthSales.reduce((sum, item) => sum + item.VLVENDA, 0);
-            totalMesSemanalEl.textContent = totalMes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-            // --- NEW WORKING WEEK BUCKET LOGIC ---
-            const currentMonthWeeks = getWorkingMonthWeeks(currentYear, currentMonth);
-            const salesByWeekAndDay = {};
-            const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-
-            // Initialize buckets for all determined working weeks
-            currentMonthWeeks.forEach((w, i) => {
-                salesByWeekAndDay[w.id] = {};
-                // Only care about Mon-Fri for the chart bars
-                // Mon=1, Fri=5
-                for(let d=1; d<=5; d++) {
-                    salesByWeekAndDay[w.id][dayNames[d]] = 0;
-                }
-            });
-
-            monthSales.forEach(sale => {
-                const saleDate = parseDate(sale.DTPED);
-                if (!saleDate) return;
-
-                // Determine bucket
-                const wIdx = currentMonthWeeks.findIndex(w => saleDate >= w.start && saleDate <= w.end);
-
-                if (wIdx !== -1) {
-                    const weekId = currentMonthWeeks[wIdx].id;
-                    const dayName = dayNames[saleDate.getUTCDay()];
-
-                    // Only accumulate to daily breakdown if it's a Weekday (Mon-Fri)
-                    // If Saturday/Sunday, it contributes to TOTAL (already calculated) but doesn't appear in chart bars.
-                    // However, user said "somado no total". totalMes already has it.
-                    // Chart is "Faturamento Mensal por Dia da Semana". Bars are Mon-Fri.
-                    // Sat/Sun sales are effectively hidden from the bars.
-
-                    if (salesByWeekAndDay[weekId] && salesByWeekAndDay[weekId][dayName] !== undefined) {
-                        salesByWeekAndDay[weekId][dayName] += sale.VLVENDA;
-                    }
-                }
-            });
-
-            const weekLabels = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
-            const weekNumbers = Object.keys(salesByWeekAndDay).sort((a,b) => parseInt(a) - parseInt(b));
-            const professionalPalette = ['#14b8a6', '#6366f1', '#ec4899', '#f97316', '#8b5cf6'];
-            const currentMonthDatasets = weekNumbers.map((weekNum, index) => ({ label: `Semana ${weekNum}`, data: weekLabels.map(day => salesByWeekAndDay[weekNum][day] || 0), backgroundColor: professionalPalette[index % professionalPalette.length] }));
-            // Note: Calculate "Melhor Dia Mês Anterior" dynamically based on current filters
-            const historicalDataForChart = [0, 0, 0, 0, 0];
-
-            // 1. Get Filtered History Data
-            let historyDataForCalculation;
-            if (filters.supervisor || filters.seller || filters.pasta) {
-                historyDataForCalculation = getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters);
-            } else {
-                historyDataForCalculation = allHistoryData;
-            }
-
-            // 2. Determine Previous Month Range
-            let prevMonth = currentMonth - 1;
-            let prevYear = currentYear;
-            if (prevMonth < 0) { prevMonth = 11; prevYear--; }
-
-            // 3. Aggregate Sales by Date for the Previous Month
-            const prevMonthSalesByDate = {}; // 'YYYY-MM-DD' -> Total
-
-            // Optimize iteration if it's a columnar dataset proxy (although array methods work)
-            for (let i = 0; i < historyDataForCalculation.length; i++) {
-                const sale = historyDataForCalculation instanceof ColumnarDataset ? historyDataForCalculation.get(i) : historyDataForCalculation[i];
-                const d = parseDate(sale.DTPED);
-                if (d && d.getUTCMonth() === prevMonth && d.getUTCFullYear() === prevYear) {
-                    const dateStr = d.toISOString().split('T')[0];
-                    if (!prevMonthSalesByDate[dateStr]) prevMonthSalesByDate[dateStr] = 0;
-                    prevMonthSalesByDate[dateStr] += (sale.VLVENDA || 0);
-                }
-            }
-
-            // 4. Find Best Total for Each Weekday
-            const bestsByWeekday = {}; // 1..5 -> maxTotal
-            for (const dateStr in prevMonthSalesByDate) {
-                const d = new Date(dateStr + 'T00:00:00Z'); // Ensure UTC parsing
-                const dayOfWeek = d.getUTCDay();
-                if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                    const total = prevMonthSalesByDate[dateStr];
-                    if (!bestsByWeekday[dayOfWeek] || total > bestsByWeekday[dayOfWeek]) {
-                        bestsByWeekday[dayOfWeek] = total;
-                    }
-                }
-            }
-
-            // 5. Populate Chart Data
-            historicalDataForChart[0] = bestsByWeekday[1] || 0; // Mon
-            historicalDataForChart[1] = bestsByWeekday[2] || 0; // Tue
-            historicalDataForChart[2] = bestsByWeekday[3] || 0; // Wed
-            historicalDataForChart[3] = bestsByWeekday[4] || 0; // Thu
-            historicalDataForChart[4] = bestsByWeekday[5] || 0; // Fri
-            const historicalDataset = { type: 'line', label: 'Melhor Dia Mês Anterior', data: historicalDataForChart, borderColor: '#f59e0b', backgroundColor: 'transparent', pointBackgroundColor: '#f59e0b', pointRadius: 4, tension: 0.1, borderWidth: 2, yAxisID: 'y', datalabels: { display: false } };
-            const finalDatasets = [...currentMonthDatasets, historicalDataset];
-            const weeklyChartOptions = { plugins: { legend: { display: true, onClick: (e, legendItem, legend) => { const index = legendItem.datasetIndex; const ci = legend.chart; if (ci.isDatasetVisible(index)) { ci.hide(index); legendItem.hidden = true; } else { ci.show(index); legendItem.hidden = false; } let newTotal = 0; ci.data.datasets.forEach((dataset, i) => { if (ci.isDatasetVisible(i) && dataset.type !== 'line') newTotal += dataset.data.reduce((acc, val) => acc + val, 0); }); totalMesSemanalEl.textContent = newTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); } } } };
-            createChart('weeklySalesChart', 'bar', weekLabels, finalDatasets, weeklyChartOptions);
-            const weeklySummaryTableBody = document.getElementById('weekly-summary-table-body');
-            if (weeklySummaryTableBody) {
-                weeklySummaryTableBody.innerHTML = ''; let grandTotal = 0;
-                Object.keys(salesByWeekAndDay).sort((a,b) => parseInt(a) - parseInt(b)).forEach(weekNum => { const weekTotal = Object.values(salesByWeekAndDay[weekNum]).reduce((a, b) => a + b, 0); grandTotal += weekTotal; weeklySummaryTableBody.innerHTML += `<tr class="hover:bg-slate-700"><td class="px-4 py-2">Semana ${weekNum}</td><td class="px-4 py-2 text-right">${weekTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`; });
-                weeklySummaryTableBody.innerHTML += `<tr class="font-bold bg-slate-700/50"><td class="px-4 py-2">Total do Mês</td><td class="px-4 py-2 text-right">${grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`;
-            }
-            let dataForRankings = dataForGeneralCharts.filter(d => d.SUPERV !== 'BALCAO');
-
-            // --- "AMERICANAS" Exclusion Logic ---
-            // If "AMERICANAS" is NOT explicitly selected in the vendor filter, exclude it from ranking charts.
-            const americanasSelected = hierarchyState['weekly'].promotors.has('1001');
-            if (!americanasSelected) {
-                dataForRankings = dataForRankings.filter(d => !d.NOME.toUpperCase().includes('AMERICANAS'));
-            }
-            // ------------------------------------
-
-            const positivacaoMap = new Map(); // Map<Seller, Map<Client, Value>>
-            dataForRankings.forEach(d => {
-                if (!d.NOME || !d.CODCLI) return;
-                if (!positivacaoMap.has(d.NOME)) positivacaoMap.set(d.NOME, new Map());
-                const clientMap = positivacaoMap.get(d.NOME);
-                clientMap.set(d.CODCLI, (clientMap.get(d.CODCLI) || 0) + d.VLVENDA);
-            });
-
-            const positivacaoRank = [];
-            positivacaoMap.forEach((clientMap, seller) => {
-                let activeCount = 0;
-                clientMap.forEach(val => { if (val >= 1) activeCount++; });
-                positivacaoRank.push({ vendedor: seller, total: activeCount });
-            });
-            positivacaoRank.sort((a, b) => b.total - a.total).splice(10); // Keep top 10
-
-            if (positivacaoRank.length > 0) createChart('positivacaoChart', 'bar', positivacaoRank.map(r => getFirstName(r.vendedor)), positivacaoRank.map(r => r.total));
-            else showNoDataMessage('positivacaoChart', 'Sem dados para o ranking.');
-            const salesBySeller = {}; dataForRankings.forEach(d => { if (!d.NOME) return; salesBySeller[d.NOME] = (salesBySeller[d.NOME] || 0) + d.VLVENDA; });
-            const topSellersRank = Object.entries(salesBySeller).sort(([, a], [, b]) => b - a).slice(0, 10);
-            if (topSellersRank.length > 0) createChart('topSellersChart', 'bar', topSellersRank.map(r => getFirstName(r[0])), topSellersRank.map(r => r[1]));
-            else showNoDataMessage('topSellersChart', 'Sem dados para o ranking.');
-            // --- OPTIMIZATION: Mix Rank Calculation ---
-            // Calculate mix map: Map<Seller, Map<Client, Map<Description, Value>>>
-            const sellerClientMixMap = new Map();
-            const targetSuppliers = new Set(['707', '708']); // Aligned with Comparison Page
-
-            dataForRankings.forEach(d => {
-                const vendedor = d.NOME;
-                if (!vendedor || vendedor === 'VD HIAGO') return;
-
-                // Rule: Aligned with Comparison Page (Strict Pepsico)
-                if (!targetSuppliers.has(String(d.CODFOR))) return;
-
-                if (!d.CODCLI || !d.DESCRICAO) return;
-
-                if (!sellerClientMixMap.has(vendedor)) sellerClientMixMap.set(vendedor, new Map());
-                const clientMap = sellerClientMixMap.get(vendedor);
-
-                if (!clientMap.has(d.CODCLI)) clientMap.set(d.CODCLI, new Map());
-                const prodMap = clientMap.get(d.CODCLI);
-                prodMap.set(d.DESCRICAO, (prodMap.get(d.DESCRICAO) || 0) + d.VLVENDA);
-            });
-
-            const mixRank = [];
-            for (const [vendedor, clientMap] of sellerClientMixMap.entries()) {
-                const mixValues = [];
-                for (const prodMap of clientMap.values()) {
-                    let positiveProducts = 0;
-                    prodMap.forEach(val => { if (val >= 1) positiveProducts++; });
-                    if (positiveProducts > 0) mixValues.push(positiveProducts);
-                }
-
-                if (mixValues.length > 0) {
-                    const avgMix = mixValues.reduce((a, b) => a + b, 0) / mixValues.length;
-                    mixRank.push({ vendedor, avgMix });
-                } else {
-                     mixRank.push({ vendedor, avgMix: 0 });
-                }
-            }
-
-            mixRank.sort((a, b) => b.avgMix - a.avgMix);
-            const top10Mix = mixRank.slice(0, 10);
-
-            if(top10Mix.length > 0 && top10Mix.some(r => r.avgMix > 0)) createChart('mixChart', 'bar', top10Mix.map(r => getFirstName(r.vendedor)), top10Mix.map(r => r.avgMix));
-            else showNoDataMessage('mixChart', 'Sem dados para o ranking.');
-        }
 
         function updateSupplierFilter(dropdown, filterText, selectedArray, dataSource, filterType = 'comparison', skipRender = false) {
             if (!dropdown || !filterText) return selectedArray;
@@ -11733,7 +11514,6 @@ const supervisorGroups = new Map();
                 estoque: 'Estoque',
                 cobertura: 'Cobertura',
                 cidades: 'Geolocalização',
-                semanal: 'Semanal',
                 'inovacoes-mes': 'Inovações',
                 mix: 'Mix',
                 'meta-realizado': 'Meta Vs. Realizado',
@@ -11745,7 +11525,7 @@ const supervisorGroups = new Map();
 
             // This function now runs after the loader is visible
             const updateContent = () => {
-                [mainDashboard, cityView, weeklyView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page')].forEach(el => {
+                [mainDashboard, cityView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page')].forEach(el => {
                     if(el) el.classList.add('hidden');
                 });
 
@@ -11820,14 +11600,6 @@ const supervisorGroups = new Map();
                             updateAllCityFilters();
                             updateCityView();
                             viewState.cidades.dirty = false;
-                        }
-                        break;
-                    case 'semanal':
-                        weeklyView.classList.remove('hidden');
-                        if (viewState.semanal.dirty) {
-                            populateWeeklyFilters();
-                            updateWeeklyView();
-                            viewState.semanal.dirty = false;
                         }
                         break;
                     case 'inovacoes-mes':
@@ -12618,22 +12390,6 @@ const supervisorGroups = new Map();
                 });
             });
 
-            const updateWeekly = () => {
-                markDirty('semanal');
-                updateWeeklyView();
-            };
-
-            weeklyFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const fornecedor = btn.dataset.fornecedor;
-                    if (currentWeeklyFornecedor === fornecedor) { currentWeeklyFornecedor = ''; btn.classList.remove('active'); } else { currentWeeklyFornecedor = fornecedor; weeklyFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
-                    updateWeekly();
-                });
-            });
-
-            clearWeeklyFiltersBtn.addEventListener('click', () => { resetWeeklyFilters(); markDirty('semanal'); });
-
-            // --- Comparison View Filters ---
             const updateComparison = () => {
                 markDirty('comparativo');
                 updateAllComparisonFilters();
@@ -13778,8 +13534,6 @@ const supervisorGroups = new Map();
                 safeClose('mix-vendedor-filter-btn', 'mix-vendedor-filter-dropdown');
                 safeClose('mix-tipo-venda-filter-btn', 'mix-tipo-venda-filter-dropdown');
                 safeClose('mix-com-rede-btn', 'mix-rede-filter-dropdown');
-                safeClose('weekly-supervisor-filter-btn', 'weekly-supervisor-filter-dropdown');
-                safeClose('weekly-vendedor-filter-btn', 'weekly-vendedor-filter-dropdown');
             });
 
             // --- Coverage View Filters ---
@@ -13989,7 +13743,6 @@ const supervisorGroups = new Map();
         // Initialize Hierarchy Filters
         setupHierarchyFilters('main', updateDashboard);
         setupHierarchyFilters('city', updateCityView);
-        setupHierarchyFilters('weekly', updateWeeklyView);
         setupHierarchyFilters('comparison', updateComparisonView);
         setupHierarchyFilters('stock', updateStockView);
         setupHierarchyFilters('innovations-month', updateInnovationsMonthView);
@@ -15435,7 +15188,7 @@ const supervisorGroups = new Map();
                 // Therefore, I should hide the *siblings* (dashboard, goals-view, etc) explicitly, NOT the wrapper.
 
                 // Hide all main views
-                ['main-dashboard', 'city-view', 'weekly-view', 'comparison-view', 'stock-view', 'coverage-view', 'goals-view', 'meta-realizado-view', 'mix-view', 'innovations-month-view'].forEach(id => {
+                ['main-dashboard', 'city-view', 'comparison-view', 'stock-view', 'coverage-view', 'goals-view', 'meta-realizado-view', 'mix-view', 'innovations-month-view'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.classList.add('hidden');
                 });
