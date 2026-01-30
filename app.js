@@ -1635,9 +1635,9 @@
             // Process Aggregated Orders (Remap only)
             for(let i = 0; i < aggregatedOrders.length; i++) {
                 const sale = aggregatedOrders[i];
-                // Convert to Date if number
-                if (sale.DTPED && !(sale.DTPED instanceof Date)) sale.DTPED = new Date(sale.DTPED);
-                if (sale.DTSAIDA && !(sale.DTSAIDA instanceof Date)) sale.DTSAIDA = new Date(sale.DTSAIDA);
+                // Convert to Date using robust parser
+                sale.DTPED = parseDate(sale.DTPED);
+                sale.DTSAIDA = parseDate(sale.DTSAIDA);
 
                 if (sale.CODCLI !== americanasCodCli) {
                     const currentSellerCode = clientToCurrentSellerMap.get(sale.CODCLI);
@@ -1665,8 +1665,8 @@
         }
 
         aggregatedOrders.sort((a, b) => {
-            const dateA = parseDate(a.DTPED);
-            const dateB = parseDate(b.DTPED);
+            const dateA = a.DTPED;
+            const dateB = b.DTPED;
             if (!dateA) return 1;
             if (!dateB) return -1;
             return dateB - dateA;
