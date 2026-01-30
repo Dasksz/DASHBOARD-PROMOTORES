@@ -292,6 +292,11 @@ export function sanitizeData(data) {
 
 export function initializeOptimizedDataStructures(embeddedData) {
     console.log("[Data] Initializing optimized structures...");
+
+    if (!embeddedData) {
+        console.error("[Data] initializeOptimizedDataStructures called with null/undefined data.");
+        return;
+    }
     
     // Reset Structures
     state.sellerDetailsMap.clear();
