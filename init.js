@@ -1,0 +1,1188 @@
+    const SUPABASE_URL = 'https://dldsocponbjthqxhmttj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZHNvY3BvbmJqdGhxeGhtdHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzgzMzgsImV4cCI6MjA4NTAxNDMzOH0.IGxUEd977uIdhWvMzjDM8ygfISB_Frcf_2air8e3aOs';
+
+            // Helper to normalize keys (remove leading zeros)
+            function normalizeKey(key) {
+                if (!key) return '';
+                const s = String(key).trim();
+                // Remove leading zeros if it's a numeric string
+                if (/^\d+$/.test(s)) {
+                    return String(parseInt(s, 10));
+                }
+                return s;
+            }
+
+    // Helper to UPPERCASE keys
+    function mapKeysToUpper(data, type) {
+        if (!data || data.length === 0) return [];
+        return data.map(item => {
+            const newItem = {};
+            for (const key in item) {
+                // Mapeamentos específicos se necessário, ou apenas Upper
+                let newKey = key.toUpperCase();
+                // Ajustes finos para corresponder exatamente ao que o script espera
+                if (type === 'clients') {
+                    if (newKey === 'CODIGO_CLIENTE') newKey = 'Código'; // Special case for Clients
+                    if (newKey === 'RCA1') newKey = 'RCA 1';
+                    if (newKey === 'RCA2') newKey = 'RCA 2';
+                    if (newKey === 'NOMECLIENTE') newKey = 'Cliente';
+                    if (newKey === 'RAZAOSOCIAL') newKey = 'razaoSocial'; // Fix: Separate key
+                    if (newKey === 'ULTIMACOMPRA') newKey = 'Data da Última Compra';
+                    if (newKey === 'DATACADASTRO') newKey = 'Data e Hora de Cadastro';
+                    if (newKey === 'INSCRICAOESTADUAL') newKey = 'Insc. Est. / Produtor';
+                    if (newKey === 'CNPJ_CPF') newKey = 'CNPJ/CPF';
+                    if (newKey === 'ENDERECO') newKey = 'Endereço Comercial';
+                    if (newKey === 'TELEFONE') newKey = 'Telefone Comercial';
+                    if (newKey === 'DESCRICAO') newKey = 'Descricao'; // For Client
+                }
+
+                // For Sales/History (Already match mostly, just need verify)
+                if (newKey === 'CLIENTE_NOME') newKey = 'CLIENTE_NOME'; // Keep as is if script uses it
+
+                // Validação de tipos
+                if (item[key] !== null) {
+                    if (newKey === 'DTPED' || newKey === 'DTSAIDA' || newKey === 'Data da Última Compra' || newKey === 'Data e Hora de Cadastro') {
+                         // Ensure it's a valid date string or timestamp
+                         newItem[newKey] = item[key];
+                    } else if (newKey === 'QTVENDA' || newKey === 'VLVENDA' || newKey === 'VLBONIFIC' || newKey === 'TOTPESOLIQ' || newKey === 'ESTOQUECX' || newKey === 'ESTOQUEUNIT') {
+                         // Force numeric conversion for sales metrics
+                         const val = Number(item[key]);
+                         newItem[newKey] = isNaN(val) ? 0 : val;
+                    } else if (newKey === 'FILIAL') {
+                         newItem[newKey] = String(item[key]);
+                    } else {
+                         newItem[newKey] = item[key];
+                    }
+                } else {
+                     newItem[newKey] = item[key];
+                }
+            }
+            return newItem;
+        });
+    }
+
+    async function carregarDadosDoSupabase(supabaseClient) {
+        isAppReady = true;
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loader-text');
+        const dashboardView = document.getElementById('main-dashboard');
+
+        try {
+            loader.classList.remove('hidden');
+            loaderText.textContent = 'Verificando dados...';
+
+            // --- IndexedDB Cache Logic ---
+            const DB_NAME = 'PrimeDashboardDB_V2';
+            const STORE_NAME = 'data_store';
+            const DB_VERSION = 1;
+
+            const initDB = () => {
+                return idb.openDB(DB_NAME, DB_VERSION, {
+                    upgrade(db) {
+                        if (!db.objectStoreNames.contains(STORE_NAME)) {
+                            db.createObjectStore(STORE_NAME);
+                        }
+                    },
+                });
+            };
+
+            const getFromCache = async (key) => {
+                try {
+                    const db = await initDB();
+                    return await db.get(STORE_NAME, key);
+                } catch (e) {
+                    console.warn('Erro ao ler cache:', e);
+                    return null;
+                }
+            };
+
+            const saveToCache = async (key, value) => {
+                try {
+                    const db = await initDB();
+                    await db.put(STORE_NAME, value, key);
+                } catch (e) {
+                    console.warn('Erro ao salvar cache:', e);
+                }
+            };
+
+            // 1. Fetch Metadata from Supabase first (lightweight)
+            let metadataRemote = null;
+            let metadataRemoteRaw = null;
+            try {
+                const { data, error } = await supabaseClient.from('data_metadata').select('*');
+                if (!error && data && data.length > 0) {
+                    metadataRemoteRaw = data;
+                    metadataRemote = {};
+                    data.forEach(item => metadataRemote[item.key] = item.value);
+                }
+            } catch (e) {
+                console.warn('Erro ao buscar metadados:', e);
+            }
+
+            // 2. Check Cache
+            let cachedData = await getFromCache('dashboardData');
+            let useCache = false;
+
+            if (cachedData && metadataRemote) {
+                // Check if remote last_update is same as cached
+                const remoteDate = new Date(metadataRemote.last_update).getTime();
+                const cachedDate = new Date(cachedData.metadata ? cachedData.metadata.find(m=>m.key==='last_update')?.value : 0).getTime();
+
+                // Also check if working days matches, just in case
+                // If remote date is valid and same as cached, use cache
+                // Verificando também se hierarchy existe (Correção de Bug)
+                if (!isNaN(remoteDate) && remoteDate <= cachedDate && cachedData.hierarchy) {
+                    console.log("Usando cache do IndexedDB (Versão atualizada)");
+                    useCache = true;
+                } else {
+                    console.log("Cache desatualizado ou incompleto. Baixando novos dados...");
+                }
+            }
+
+            if (useCache) {
+                 loaderText.textContent = 'Processando cache...';
+            } else {
+                 loaderText.textContent = 'Buscando dados...';
+            }
+
+            // Shared client map for both parsers
+            const clientMap = {
+                'CODIGO_CLIENTE': 'Código',
+                'RCA1': 'RCA 1',
+                'RCA2': 'RCA 2',
+                'NOMECLIENTE': 'Cliente',
+                'RAZAOSOCIAL': 'razaoSocial',
+                'ULTIMACOMPRA': 'Data da Última Compra',
+                'DATACADASTRO': 'Data e Hora de Cadastro',
+                'INSCRICAOESTADUAL': 'Insc. Est. / Produtor',
+                'CNPJ_CPF': 'CNPJ/CPF',
+                'ENDERECO': 'Endereço Comercial',
+                'TELEFONE': 'Telefone Comercial',
+                'RCAS': 'rcas',
+                'PROMOTOR': 'PROMOTOR'
+            };
+
+            const parseCSVToObjects = (text, type) => {
+                const result = [];
+                let headers = null;
+                let currentVal = '';
+                let currentLine = [];
+                let inQuote = false;
+
+                const pushLine = (lineValues) => {
+                    if (!headers) {
+                        headers = lineValues;
+                        return;
+                    }
+                    if (lineValues.length !== headers.length) return;
+
+                    const obj = {};
+                    for (let j = 0; j < headers.length; j++) {
+                        let header = headers[j].trim().toUpperCase();
+                        let val = lineValues[j];
+
+                        if (type === 'clients' && clientMap[header]) header = clientMap[header];
+                        if (type === 'orders' && ['VLVENDA', 'TOTPESOLIQ', 'VLBONIFIC', 'QTVENDA'].includes(header)) val = val === '' ? 0 : Number(val);
+
+                        // Normalize Client IDs
+                        if (header === 'CODCLI' || header === 'CODIGO_CLIENTE' || header === 'Código') {
+                             val = normalizeKey(val);
+                        }
+
+                        if (val && typeof val === 'string' && val.startsWith('{') && val.endsWith('}')) {
+                            val = val.slice(1, -1).split(',').map(s => s.replace(/^"|"$/g, ''));
+                        }
+
+                        obj[header] = val;
+                    }
+                    result.push(obj);
+                };
+
+                for (let i = 0; i < text.length; i++) {
+                    const char = text[i];
+                    if (inQuote) {
+                        if (char === '"') {
+                            if (i + 1 < text.length && text[i + 1] === '"') { currentVal += '"'; i++; }
+                            else { inQuote = false; }
+                        } else { currentVal += char; }
+                    } else {
+                        if (char === '"') { inQuote = true; }
+                        else if (char === ',') { currentLine.push(currentVal); currentVal = ''; }
+                        else if (char === '\n' || char === '\r') {
+                            if (char === '\r' && i + 1 < text.length && text[i+1] === '\n') i++;
+                            currentLine.push(currentVal); currentVal = '';
+                            pushLine(currentLine); currentLine = [];
+                        } else { currentVal += char; }
+                    }
+                }
+                if (currentLine.length > 0 || currentVal !== '') { currentLine.push(currentVal); pushLine(currentLine); }
+                return result;
+            };
+
+            const parseCSVToColumnar = (text, type, existingColumnar = null) => {
+                const columnar = existingColumnar || { columns: [], values: {}, length: 0 };
+                const hasExistingColumns = columnar.columns.length > 0;
+                let headers = hasExistingColumns ? columnar.columns : null;
+
+                let currentVal = '';
+                let currentLine = [];
+                let inQuote = false;
+
+                // If we already have columns, the first line of this chunk is a repeated header, so we skip it.
+                // If we don't, the first line IS the header.
+                let skipFirstLine = hasExistingColumns;
+                let isFirstLine = true;
+
+                const pushLine = (lineValues) => {
+                    if (lineValues.length === 0 || (lineValues.length === 1 && lineValues[0] === '')) return;
+
+                    if (isFirstLine) {
+                        isFirstLine = false;
+                        if (skipFirstLine) return; // Skip repeated header
+
+                        headers = lineValues.map(h => {
+                            let header = h.trim().toUpperCase();
+                            if (type === 'clients' && clientMap[header]) header = clientMap[header];
+                            return header;
+                        });
+                        columnar.columns = headers;
+                        headers.forEach(h => { if (!columnar.values[h]) columnar.values[h] = []; });
+                        return;
+                    }
+
+                    if (headers && lineValues.length === headers.length) {
+                        for (let j = 0; j < headers.length; j++) {
+                            const header = headers[j];
+                            let val = lineValues[j];
+
+                            if (type === 'sales' || type === 'history') {
+                                if (['QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUECX', 'ESTOQUEUNIT', 'QTVENDA_EMBALAGEM_MASTER'].includes(header)) {
+                                    val = val === '' ? 0 : Number(val);
+                                }
+                            }
+                            // Normalize Client IDs
+                            if (header === 'CODCLI' || header === 'CODIGO_CLIENTE' || header === 'Código') {
+                                 val = normalizeKey(val);
+                            }
+
+                            if (type === 'stock' && header === 'STOCK_QTY') val = val === '' ? 0 : Number(val);
+                            if (type === 'clients' && header === 'rcas') {
+                                if (typeof val === 'string') {
+                                    val = val.trim();
+                                    if (val.startsWith('{')) {
+                                        val = val.slice(1, -1).split(',').map(s => s.replace(/^"|"$/g, ''));
+                                    } else if (val.startsWith('[')) {
+                                        try { val = JSON.parse(val); } catch(e) { val = [val]; }
+                                    } else if (val === '') {
+                                        val = [];
+                                    } else {
+                                        val = [val];
+                                    }
+                                } else if (!val) {
+                                    val = [];
+                                } else if (!Array.isArray(val)) {
+                                    val = [val];
+                                }
+                            }
+
+                            columnar.values[header].push(val);
+                        }
+                        columnar.length++;
+                    }
+                };
+
+                for (let i = 0; i < text.length; i++) {
+                    const char = text[i];
+                    if (inQuote) {
+                        if (char === '"') {
+                            if (i + 1 < text.length && text[i + 1] === '"') { currentVal += '"'; i++; }
+                            else { inQuote = false; }
+                        } else { currentVal += char; }
+                    } else {
+                        if (char === '"') { inQuote = true; }
+                        else if (char === ',') { currentLine.push(currentVal); currentVal = ''; }
+                        else if (char === '\n' || char === '\r') {
+                            if (char === '\r' && i + 1 < text.length && text[i+1] === '\n') i++;
+                            currentLine.push(currentVal); currentVal = '';
+                            pushLine(currentLine); currentLine = [];
+                        } else { currentVal += char; }
+                    }
+                }
+                if (currentLine.length > 0 || currentVal !== '') { currentLine.push(currentVal); pushLine(currentLine); }
+                return columnar;
+            };
+
+            const fetchAll = async (table, columns = null, type = null, format = 'object', pkCol = 'id') => {
+                // Config
+                // Keyset Pagination for reliability
+                // Adjusted to 20000 to match Supabase API default limit and ensure pagination loop triggers correctly
+                const pageSize = 20000;
+
+                let result = format === 'columnar' ? { columns: [], values: {}, length: 0 } : [];
+                let hasMore = true;
+                let lastId = null;
+                let pageIndex = 0;
+
+                // Track progress for UI
+                const reportProgress = () => {
+                    const fetched = format === 'columnar' ? result.length : result.length;
+                    console.log(`[${table}] Fetched rows: ${fetched}`);
+                };
+
+                return new Promise((resolve, reject) => {
+                    const processNextPage = async () => {
+                        const fetchWithRetry = async (attempt = 1) => {
+                            try {
+                                const query = supabaseClient.from(table).select(columns || '*').order(pkCol, { ascending: true }).limit(pageSize);
+                                if (lastId !== null) {
+                                    query.gt(pkCol, lastId);
+                                }
+
+                                const promise = columns ? query.csv() : query;
+
+                                // Timeout wrapper (20 seconds)
+                                const timeoutPromise = new Promise((_, reject) =>
+                                    setTimeout(() => reject(new Error('Request timed out')), 30000)
+                                );
+
+                                const response = await Promise.race([promise, timeoutPromise]);
+
+                                if (response.error) throw response.error;
+                                return response.data;
+                            } catch (err) {
+                                if (attempt < 4) { // Retry up to 3 times (1+3=4 total attempts)
+                                    const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+                                    console.warn(`Retrying page ${pageIndex} of ${table} (Attempt ${attempt})... Error: ${err.message}`);
+                                    await new Promise(r => setTimeout(r, delay));
+                                    return fetchWithRetry(attempt + 1);
+                                }
+                                throw err;
+                            }
+                        };
+
+                        try {
+                            const data = await fetchWithRetry();
+                            let chunkLength = 0;
+                            let newObjects = [];
+                            let newColumnar = null;
+
+                            if (columns) {
+                                if (!data || data.length < 5) {
+                                    hasMore = false; // CSV string empty or just header
+                                } else {
+                                    if (format === 'columnar') {
+                                        const preLen = result.length;
+                                        result = parseCSVToColumnar(data, type, result);
+                                        chunkLength = result.length - preLen;
+                                        if (chunkLength === 0) hasMore = false;
+                                    } else {
+                                        newObjects = parseCSVToObjects(data, type);
+                                        chunkLength = newObjects.length;
+                                        result = result.concat(newObjects);
+                                        if (chunkLength === 0) hasMore = false;
+                                    }
+                                }
+                            } else {
+                                if (!data || data.length === 0) {
+                                    hasMore = false;
+                                } else {
+                                    chunkLength = data.length;
+                                    result = result.concat(data);
+                                }
+                            }
+
+                            if (chunkLength < pageSize) {
+                                hasMore = false;
+                            }
+
+                            // Extract lastId for next cursor
+                            if (hasMore) {
+                                if (columns) {
+                                    // Need to find the ID in the processed result
+                                    // Note: parseCSVToColumnar/Objects uppercases keys.
+                                    // We need to look for 'ID' or 'CODE' or whatever pkCol corresponds to
+                                    // But pkCol is raw DB column name (lowercase).
+                                    // CSV header is uppercase.
+                                    // Mapped keys might be different (e.g. clients).
+                                    // Best bet: use the raw PK column name uppercase, unless mapped.
+
+                                    let lookupKey = pkCol.toUpperCase();
+                                    // Handle Client Map special cases if ID was mapped? No, ID is usually ID.
+                                    // Check init.js clientMap: no ID mapping there.
+
+                                    if (format === 'columnar') {
+                                        const colData = result.values[lookupKey];
+                                        if (colData && colData.length > 0) {
+                                            lastId = colData[colData.length - 1];
+                                        } else {
+                                            // Fallback: maybe it wasn't uppercased?
+                                            // Or maybe it's missing. If missing, we can't continue safely.
+                                            console.warn(`Could not find PK column ${lookupKey} in columnar data. Stopping.`);
+                                            hasMore = false;
+                                        }
+                                    } else {
+                                        // Object format
+                                        const lastItem = result[result.length - 1];
+                                        if (lastItem && lastItem[lookupKey] !== undefined) {
+                                            lastId = lastItem[lookupKey];
+                                        } else {
+                                            // Try lowercase
+                                            if (lastItem && lastItem[pkCol] !== undefined) {
+                                                 lastId = lastItem[pkCol];
+                                            } else {
+                                                console.warn(`Could not find PK column ${lookupKey} in object data. Stopping.`);
+                                                hasMore = false;
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // JSON response
+                                    const lastItem = result[result.length - 1];
+                                    lastId = lastItem[pkCol];
+                                }
+                            }
+
+                            pageIndex++;
+                            reportProgress();
+
+                            if (hasMore) {
+                                processNextPage();
+                            } else {
+                                resolve(result);
+                            }
+
+                        } catch (err) {
+                            console.error(`Failed to fetch page ${pageIndex} of ${table}:`, err);
+                            resolve(result); // Return partial result
+                        }
+                    };
+
+                    processNextPage();
+                });
+            };
+
+            let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, hierarchy, clientPromoters;
+
+            let clientCoordinates;
+
+            if (useCache) {
+                // Se usamos cache, os dados já foram carregados do IndexedDB na variável cachedData
+                // Precisamos extraí-los para as variáveis que o resto do script espera
+                detailed = cachedData.detailed;
+                history = cachedData.history;
+                clients = cachedData.clients;
+                products = cachedData.products;
+                activeProds = cachedData.activeProds;
+                stock = cachedData.stock;
+                innovations = cachedData.innovations;
+                metadata = metadataRemoteRaw || cachedData.metadata;
+                orders = cachedData.orders;
+                hierarchy = cachedData.hierarchy;
+                // Try to load promoters from cache if exists (backward compat)
+                clientPromoters = cachedData.clientPromoters || [];
+
+                // Refresh Coordinates specifically (Background Update for Cache)
+                // This ensures that even if main data is cached, we get the latest geocoding results
+                try {
+                    const freshCoords = await fetchAll('data_client_coordinates', null, null, 'object', 'client_code');
+                    if (freshCoords && freshCoords.length > 0) {
+                        clientCoordinates = freshCoords;
+                        // Update the cache object for next time
+                        cachedData.clientCoordinates = freshCoords;
+                        // Fire-and-forget save
+                        saveToCache('dashboardData', cachedData).catch(e => console.warn("Background cache save failed", e));
+                        console.log(`[Cache] Coordenadas atualizadas: ${freshCoords.length}`);
+                    } else {
+                        clientCoordinates = cachedData.clientCoordinates || [];
+                    }
+                } catch (e) {
+                    console.warn("[Cache] Falha ao atualizar coordenadas:", e);
+                    clientCoordinates = cachedData.clientCoordinates || [];
+                }
+
+                // Refresh Promoters if missing or stale? For now, we trust cache or reload if needed.
+                // But since we just added this feature, cache might be empty for promoters.
+                if (!clientPromoters || clientPromoters.length === 0) {
+                     try {
+                        console.log("[Cache] Buscando promotores (feature nova)...");
+                        const freshPromoters = await fetchAll('data_client_promoters', null, null, 'object', 'client_code');
+                        clientPromoters = freshPromoters;
+                        cachedData.clientPromoters = freshPromoters;
+                        saveToCache('dashboardData', cachedData).catch(e => console.warn("Background cache save failed (Promoters)", e));
+                     } catch(e) {
+                        console.warn("[Cache] Falha ao buscar promotores:", e);
+                     }
+                }
+
+            } else {
+                const colsDetailed = 'id,pedido,codcli,nome,superv,codsupervisor,produto,descricao,fornecedor,observacaofor,codfor,codusur,qtvenda,vlvenda,vlbonific,totpesoliq,dtped,dtsaida,posicao,estoqueunit,tipovenda,filial,qtvenda_embalagem_master';
+                // Restore 'promotor' as fallback if not in separate table
+                const colsClients = 'id,codigo_cliente,rca1,rca2,rcas,cidade,nomecliente,bairro,razaosocial,fantasia,cnpj_cpf,endereco,numero,cep,telefone,email,ramo,ultimacompra,datacadastro,bloqueio,inscricaoestadual,promotor';
+                const colsStock = 'id,product_code,filial,stock_qty';
+                const colsOrders = 'id,pedido,codcli,cliente_nome,cidade,nome,superv,fornecedores_str,dtped,dtsaida,posicao,vlvenda,totpesoliq,filial,tipovenda,fornecedores_list,codfors_list';
+
+                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched] = await Promise.all([
+                    fetchAll('data_detailed', colsDetailed, 'sales', 'columnar', 'id'),
+                    fetchAll('data_history', colsDetailed, 'history', 'columnar', 'id'),
+                    fetchAll('data_clients', colsClients, 'clients', 'columnar', 'id'),
+                    fetchAll('data_product_details', null, null, 'object', 'code'),
+                    fetchAll('data_active_products', null, null, 'object', 'code'),
+                    fetchAll('data_stock', colsStock, 'stock', 'columnar', 'id'),
+                    fetchAll('data_innovations', null, null, 'object', 'id'),
+                    fetchAll('data_metadata', null, null, 'object', 'key'),
+                    fetchAll('data_orders', colsOrders, 'orders', 'object', 'id'),
+                    fetchAll('data_client_coordinates', null, null, 'object', 'client_code'),
+                    fetchAll('data_hierarchy', null, null, 'object', 'id'),
+                    fetchAll('data_client_promoters', null, null, 'object', 'client_code')
+                ]);
+
+                detailed = detailedUpper;
+                history = historyUpper;
+                clients = clientsUpper;
+                products = productsFetched;
+                activeProds = activeProdsFetched;
+                stock = stockFetched;
+                innovations = innovationsFetched;
+                metadata = metadataFetched;
+                orders = ordersUpper;
+                clientCoordinates = clientCoordinatesFetched;
+                hierarchy = hierarchyFetched;
+                clientPromoters = clientPromotersFetched;
+
+                // Salvar no Cache
+                const dataToCache = {
+                    detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters
+                };
+
+                // Salvar de forma assíncrona sem travar UI
+                saveToCache('dashboardData', dataToCache).then(() => console.log('Dados salvos no cache IndexedDB.'));
+            }
+
+            loaderText.textContent = 'Processando...';
+
+            // Normalize Client Promoters Keys (Ensure consistency with Clients)
+            if (clientPromoters && clientPromoters.length > 0) {
+                 clientPromoters.forEach(p => {
+                     if (p.client_code) p.client_code = normalizeKey(p.client_code);
+                 });
+            }
+
+            // --- MERGE PROMOTERS INTO CLIENTS ---
+            // Build Map of Promoter Codes
+            const promoterMap = new Map();
+            if (clientPromoters && clientPromoters.length > 0) {
+                clientPromoters.forEach(p => {
+                    if (p.client_code && p.promoter_code) {
+                        // Normalize key to match client data
+                        promoterMap.set(normalizeKey(p.client_code), String(p.promoter_code).trim());
+                    }
+                });
+            }
+
+            // Inject into Clients Columnar Data
+            if (clients && clients.values) {
+                // Ensure PROMOTOR column exists in values/columns
+                if (!clients.columns.includes('PROMOTOR')) {
+                    clients.columns.push('PROMOTOR');
+                    clients.values['PROMOTOR'] = new Array(clients.length).fill('');
+                }
+
+                const clientCodes = clients.values['CODIGO_CLIENTE'] || clients.values['Código'];
+                const promoterValues = clients.values['PROMOTOR'];
+                // Fallback: Use RCA 1 if Promotor is missing (Legacy Support)
+                const rcaValues = clients.values['RCA 1'] || clients.values['RCA1'];
+
+                console.log(`[Init] Merging Promoters. Map Size: ${promoterMap.size}. Clients: ${clients.length}`);
+
+                if (clientCodes) {
+                    let updatedCount = 0;
+                    let fallbackCount = 0;
+                    for (let i = 0; i < clients.length; i++) {
+                        const code = String(clientCodes[i]).trim();
+                        const promoter = promoterMap.get(code);
+                        
+                        if (promoter) {
+                            promoterValues[i] = promoter;
+                            updatedCount++;
+                        } else if ((!promoterValues[i] || promoterValues[i] === '') && rcaValues && rcaValues[i]) {
+                             // Fallback to RCA 1 if explicit Promotor is empty
+                             promoterValues[i] = String(rcaValues[i]).trim();
+                             fallbackCount++;
+                        }
+                    }
+                    console.log(`[Init] Merge Complete. Updated from New Table: ${updatedCount}. Fallback to RCA1: ${fallbackCount}.`);
+                }
+            }
+            // ------------------------------------
+
+            // Reconstruct Helper Maps
+            const productDetailsMap = {};
+            if (products && products.length) {
+                products.forEach(p => {
+                    productDetailsMap[p.code] = {
+                        descricao: p.descricao,
+                        fornecedor: p.fornecedor,
+                        codfor: p.codfor,
+                        dtCadastro: p.dtcadastro ? new Date(p.dtcadastro).getTime() : null,
+                        ...p
+                    };
+                });
+            }
+
+            const activeProductCodes = activeProds.map(p => p.code);
+
+            const stockMap05 = {};
+            const stockMap08 = {};
+            if (stock && stock.values) {
+                const pCodes = stock.values['PRODUCT_CODE'];
+                const filials = stock.values['FILIAL'];
+                const qtys = stock.values['STOCK_QTY'];
+                const len = stock.length;
+                for(let i = 0; i < len; i++) {
+                    const code = pCodes[i];
+                    const fil = filials[i];
+                    const qty = qtys[i];
+                    if (fil === '05') stockMap05[code] = qty;
+                    if (fil === '08') stockMap08[code] = qty;
+                }
+            }
+
+            // Calculate Last Sale Date (Columnar optimized)
+            let lastSale = 0;
+            if (detailed.values && detailed.values['DTPED']) {
+                const dtpeds = detailed.values['DTPED'];
+                const len = dtpeds.length;
+                for(let i=0; i<len; i++) {
+                    if (dtpeds[i] > lastSale) lastSale = dtpeds[i];
+                }
+            } else if (Array.isArray(detailed) && detailed.length > 0) {
+                 lastSale = detailed.reduce((max, p) => p.DTPED > max ? p.DTPED : max, 0);
+            }
+            if (lastSale === 0) lastSale = Date.now();
+
+            // --- FILTERING LOGIC ---
+            // If user is not 'adm', filter data based on hierarchy
+            const role = window.userRole;
+            let filteredDetailed = detailed;
+            let filteredHistory = history;
+            let filteredClients = clients;
+            let filteredOrders = orders;
+
+            if (role && role !== 'adm') {
+                if (!hierarchy || hierarchy.length === 0) {
+                     console.warn(`[Access Control] Role '${role}' is not admin, but Hierarchy Data is missing. Enforcing empty view for security.`);
+                     // Return empty data if hierarchy not loaded to prevent data leakage
+                     filteredClients = { columns: clients.columns, values: {}, length: 0 };
+                     clients.columns.forEach(c => filteredClients.values[c] = []);
+
+                     filteredDetailed = { columns: detailed.columns, values: {}, length: 0 };
+                     detailed.columns.forEach(c => filteredDetailed.values[c] = []);
+
+                     filteredHistory = { columns: history.columns, values: {}, length: 0 };
+                     history.columns.forEach(c => filteredHistory.values[c] = []);
+
+                     filteredOrders = [];
+                } else {
+                    // Resolve allowed promoters
+                    const allowedPromoters = new Set();
+                    const normalizedRole = role.trim().toLowerCase();
+
+                    hierarchy.forEach(h => {
+                        const coord = (h.cod_coord || '').trim().toLowerCase();
+                        const cocoord = (h.cod_cocoord || '').trim().toLowerCase();
+                        const promotor = (h.cod_promotor || '').trim().toLowerCase();
+
+                        // If user is coordinator, allow all promoters under them
+                        if (coord === normalizedRole) allowedPromoters.add(promotor);
+                        // If user is co-coordinator
+                        else if (cocoord === normalizedRole) allowedPromoters.add(promotor);
+                        // If user is promoter
+                        else if (promotor === normalizedRole) allowedPromoters.add(promotor);
+                    });
+
+                    if (allowedPromoters.size > 0) {
+                        console.log(`[Access Control] Filtering for role '${role}'. Allowed Promoters: ${allowedPromoters.size}`);
+                        console.log(`[Access Control] Allowed Promoters Sample:`, Array.from(allowedPromoters).slice(0, 5));
+
+                        // 1. Filter Clients (Columnar)
+                        const promotorCol = clients.values['PROMOTOR'] || [];
+                        console.log(`[Access Control] Clients Promotor Col Sample (First 5):`, promotorCol.slice(0, 5));
+                        
+                        const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
+                        const allowedClientCodes = new Set();
+
+                        // Rebuild Clients Columnar
+                        const newClientsValues = {};
+                        clients.columns.forEach(c => newClientsValues[c] = []);
+                        let newClientsLen = 0;
+
+                        for(let i=0; i<clients.length; i++) {
+                            const p = String(promotorCol[i] || '').trim().toLowerCase();
+                            if (allowedPromoters.has(p)) {
+                                allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
+                                clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
+                                newClientsLen++;
+                            }
+                        }
+                        console.log(`[Access Control] Client Filter Results: ${newClientsLen} matches out of ${clients.length} clients.`);
+                        console.log(`[Access Control] Allowed Client IDs (Sample):`, Array.from(allowedClientCodes).slice(0, 5));
+                        filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
+
+                        // 2. Filter Detailed (Columnar)
+                        // Check CODCLI against allowedClientCodes
+                        const detCodCliCol = detailed.values['CODCLI'] || [];
+                        const newDetailedValues = {};
+                        detailed.columns.forEach(c => newDetailedValues[c] = []);
+                        let newDetailedLen = 0;
+
+                        for(let i=0; i<detailed.length; i++) {
+                            if (allowedClientCodes.has(normalizeKey(detCodCliCol[i]))) {
+                                detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c][i]));
+                                newDetailedLen++;
+                            }
+                        }
+                        console.log(`[Access Control] Detailed Sales Filter Results: ${newDetailedLen} matches out of ${detailed.length} rows.`);
+                        filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
+
+                        // 3. Filter History (Columnar)
+                        const histCodCliCol = history.values['CODCLI'] || [];
+                        const newHistoryValues = {};
+                        history.columns.forEach(c => newHistoryValues[c] = []);
+                        let newHistoryLen = 0;
+
+                        for(let i=0; i<history.length; i++) {
+                            if (allowedClientCodes.has(normalizeKey(histCodCliCol[i]))) {
+                                history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
+                                newHistoryLen++;
+                            }
+                        }
+                        console.log(`[Access Control] History Sales Filter Results: ${newHistoryLen} matches out of ${history.length} rows.`);
+                        filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
+
+                        // 4. Filter Orders (Array of Objects)
+                        filteredOrders = orders.filter(o => allowedClientCodes.has(normalizeKey(o.codcli)));
+                    } else {
+                        console.warn(`[Access Control] Role '${role}' not found in hierarchy or has no promoters. Showing empty view.`);
+                        // Return empty data if role not found in hierarchy but isn't admin
+                        filteredClients = { columns: clients.columns, values: {}, length: 0 };
+                        clients.columns.forEach(c => filteredClients.values[c] = []);
+
+                        filteredDetailed = { columns: detailed.columns, values: {}, length: 0 };
+                        detailed.columns.forEach(c => filteredDetailed.values[c] = []);
+
+                        filteredHistory = { columns: history.columns, values: {}, length: 0 };
+                        history.columns.forEach(c => filteredHistory.values[c] = []);
+
+                        filteredOrders = [];
+                    }
+                }
+            }
+
+            const embeddedData = {
+                detailed: filteredDetailed,
+                history: filteredHistory,
+                clients: filteredClients,
+                byOrder: filteredOrders,
+                stockMap05: stockMap05,
+                stockMap08: stockMap08,
+                innovationsMonth: innovations,
+                activeProductCodes: activeProductCodes,
+                productDetails: productDetailsMap,
+                metadata: metadata,
+                hierarchy: hierarchy,
+                clientPromoters: clientPromoters,
+                clientCoordinates: clientCoordinates,
+                passedWorkingDaysCurrentMonth: 1,
+                isColumnar: true
+            };
+
+            // Update Generation Date UI
+            const lastUpdateText = document.getElementById('last-update-text');
+            if (lastUpdateText) {
+                let displayDate = lastSale;
+
+                // Try to get from metadata first (Actual Upload Time)
+                if (embeddedData.metadata && Array.isArray(embeddedData.metadata)) {
+                    const metaUpdate = embeddedData.metadata.find(m => m.key === 'last_update');
+                    if (metaUpdate && metaUpdate.value) {
+                        displayDate = metaUpdate.value;
+                    }
+                }
+
+                const dateObj = new Date(displayDate);
+                if (!isNaN(dateObj.getTime())) {
+                    const formattedDate = dateObj.toLocaleString('pt-BR');
+                    lastUpdateText.textContent = `Dados atualizados em: ${formattedDate}`;
+                }
+            }
+
+            window.embeddedData = embeddedData;
+            window.isDataLoaded = true;
+
+            // Inject Logic
+            const scriptEl = document.createElement('script');
+            scriptEl.src = 'app.js?v=' + Date.now();
+            scriptEl.onload = () => {
+                loader.classList.add('hidden');
+                document.getElementById('content-wrapper').classList.remove('hidden');
+            };
+            document.body.appendChild(scriptEl);
+
+        } catch (e) {
+            console.error(e);
+            loaderText.textContent = 'Erro: ' + e.message;
+        }
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const { createClient } = supabase;
+        const supabaseClient = window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Gatekeeper Logic
+        const loginButton = document.getElementById('login-button');
+        const telaLogin = document.getElementById('tela-login');
+        const telaLoading = document.getElementById('tela-loading');
+        const telaPendente = document.getElementById('tela-pendente');
+
+        // Logout Button Logic for Pending Screen
+        const logoutButtonPendente = document.getElementById('logout-button-pendente');
+        if (logoutButtonPendente) {
+            logoutButtonPendente.addEventListener('click', async () => {
+                const { error } = await supabaseClient.auth.signOut();
+                if (error) console.error('Erro ao sair:', error);
+                window.location.reload();
+            });
+        }
+
+        loginButton.addEventListener('click', async () => {
+            await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin + window.location.pathname }
+            });
+        });
+
+        let isCheckingProfile = false;
+        let isAppReady = false;
+
+        async function verifyUserProfile(session) {
+            if (window.isDataLoaded) {
+                const telaLoading = document.getElementById('tela-loading');
+                const telaLogin = document.getElementById('tela-login');
+                if (telaLoading) telaLoading.classList.add('hidden');
+                if (telaLogin) telaLogin.classList.add('hidden');
+                return;
+            }
+
+            if (isCheckingProfile || !session) return;
+            isCheckingProfile = true;
+
+            // Only Reset UI to Loading State if App is NOT Ready (Initial Load)
+            if (!isAppReady) {
+                telaLogin.classList.add('hidden');
+                telaPendente.classList.add('hidden');
+                const card = document.getElementById('loading-card-content');
+                if (card) {
+                    card.innerHTML = `
+                        <h2 style="margin-top: 0; font-size: 1.5rem; font-weight: 600;">Carregando...</h2>
+                        <p style="color: #a0aec0;">Verificando credenciais.</p>
+                        <p style="color: #4a5568; font-size: 0.75rem; margin-top: 1rem;">v5.2.1</p>
+                    `;
+                }
+                telaLoading.classList.remove('hidden');
+            }
+
+            try {
+                // Check Profile with Timeout - 15s
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Tempo limite de conexão excedido. Verifique sua internet.')), 15000));
+                const profilePromise = supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+
+                const { data: profile, error } = await Promise.race([profilePromise, timeout]);
+
+                if (error) {
+                    if (error.code !== 'PGRST116') {
+                        throw error;
+                    }
+                }
+
+                if (profile && profile.status === 'aprovado') {
+                    // Store user role globally
+                    window.userRole = profile.role;
+
+                    if (!isAppReady) {
+                        telaLoading.classList.add('hidden');
+                        carregarDadosDoSupabase(supabaseClient);
+                    }
+                    // If App is Ready, we do nothing - keep dashboard active.
+                } else {
+                    // Profile not approved - Enforce Block
+                    telaLoading.classList.add('hidden');
+                    telaPendente.classList.remove('hidden');
+
+                    // Update Pending Message based on specific status
+                    const statusMsg = document.getElementById('pendente-status-msg');
+                    if (statusMsg) {
+                        if (profile && profile.status === 'bloqueado') {
+                            statusMsg.textContent = "Acesso Bloqueado pelo Administrador";
+                            statusMsg.style.color = "#e53e3e"; // Red
+                        } else {
+                            statusMsg.textContent = "Aguardando Liberação";
+                            statusMsg.style.color = "#FF9933"; // Orange
+                        }
+                    }
+
+                    // Hide dashboard content just in case
+                    const contentWrapper = document.getElementById('content-wrapper');
+                    if(contentWrapper) contentWrapper.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error("Error checking profile:", err);
+
+                // If App is Ready (Silent Check), suppress error screen.
+                if (isAppReady) {
+                    console.warn("Background profile check failed. Keeping session active.");
+                    // Optionally show a toast here in future.
+                } else {
+                    // Initial Load Failed - Show Error Screen
+                    const card = document.getElementById('loading-card-content');
+                    if (card) {
+                        card.innerHTML = `
+                            <h2 style="margin-top: 0; font-size: 1.5rem; font-weight: 600; color: #fc8181;">Erro de Conexão</h2>
+                            <p style="color: #a0aec0; margin-bottom: 1.5rem;">${err.message || 'Não foi possível verificar suas credenciais.'}</p>
+                            <button id="retry-connection-btn" class="gatekeeper-btn" style="background-color: #2d3748; border-color: #4a5568;">
+                                Tentar Novamente
+                            </button>
+                            <p style="color: #4a5568; font-size: 0.75rem; margin-top: 1rem;">v5.2.1</p>
+                        `;
+                        // Re-bind retry button
+                        const retryBtn = document.getElementById('retry-connection-btn');
+                        if(retryBtn) {
+                            retryBtn.addEventListener('click', () => {
+                                isCheckingProfile = false; // Reset flag to allow retry
+                                verifyUserProfile(session);
+                            });
+                        }
+                    } else {
+                        alert("Erro de conexão: " + err.message);
+                        telaLoading.classList.add('hidden');
+                        telaPendente.classList.remove('hidden');
+                    }
+                }
+            } finally {
+                isCheckingProfile = false;
+            }
+        }
+
+        // Visibility Change Listener for Reconnection
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible') {
+                const errorCard = document.getElementById('loading-card-content');
+                // Check if we are showing the connection error screen
+                if (errorCard && errorCard.innerHTML.includes('Erro de Conexão')) {
+                    console.log('Tab became visible and error screen detected. Attempting seamless reconnection...');
+
+                    const { data } = await supabaseClient.auth.getSession();
+                    if (data && data.session) {
+                        // Force retry without reload
+                        isCheckingProfile = false; // Reset flag to allow auto-retry
+                        verifyUserProfile(data.session);
+                    } else {
+                        // No session? Reload to login
+                        window.location.reload();
+                    }
+                }
+            }
+        });
+
+        // Auth State Listener
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
+                verifyUserProfile(session);
+            } else {
+                telaLogin.classList.remove('hidden');
+            }
+        });
+
+
+
+
+        // Admin Modal Logic (Moved to app.js to handle access control)
+        const adminBtn = document.getElementById('open-admin-btn');
+        if (adminBtn) {
+            // Logic moved to app.js
+        }
+
+        // Save Goals Logic
+        const saveBtn = document.getElementById('save-goals-btn');
+        const clearBtn = document.getElementById('clear-goals-btn');
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async () => {
+                if (window.userRole !== 'adm') {
+                    alert('Apenas usuários com permissão "adm" podem salvar metas.');
+                    return;
+                }
+
+                const statusText = document.getElementById('save-goals-btn');
+                const originalText = statusText.innerHTML;
+                statusText.disabled = true;
+                statusText.innerHTML = 'Salvando...';
+
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (!session) {
+                        throw new Error('Usuário não autenticado.');
+                    }
+                    await saveGoalsToSupabase(session.access_token);
+                } catch (error) {
+                    console.error(error);
+                    alert('Erro ao salvar metas: ' + error.message);
+                } finally {
+                    statusText.disabled = false;
+                    statusText.innerHTML = originalText;
+                }
+            });
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', async () => {
+                if (window.userRole !== 'adm') {
+                    alert('Apenas usuários com permissão "adm" podem apagar metas.');
+                    return;
+                }
+
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (!session) {
+                        throw new Error('Usuário não autenticado.');
+                    }
+                    await clearGoalsFromSupabase(session.access_token);
+                } catch (error) {
+                    console.error(error);
+                    alert('Erro ao limpar metas: ' + error.message);
+                }
+            });
+        }
+
+        async function saveGoalsToSupabase(authToken) {
+            // Collect Goals Data from Global Window Scope (Populated by app.js)
+            const globalClientGoals = window.globalClientGoals;
+            const goalsTargets = window.goalsTargets;
+
+            if (typeof globalClientGoals === 'undefined' || !globalClientGoals) {
+                throw new Error('Dados de metas não disponíveis (globalClientGoals undefined).');
+            }
+
+            const monthKey = new Date().toISOString().slice(0, 7); // YYYY-MM
+
+            // Convert Map to JSON-friendly format
+            const goalsObj = {};
+            globalClientGoals.forEach((val, key) => {
+                goalsObj[key] = Object.fromEntries(val);
+            });
+
+            // Convert goalsSellerTargets to Object
+            let sellerTargetsObj = {};
+            // Try accessing directly or via window
+            const targetsMap = (typeof goalsSellerTargets !== 'undefined') ? goalsSellerTargets : (window.goalsSellerTargets || new Map());
+
+            targetsMap.forEach((val, key) => {
+                sellerTargetsObj[key] = val;
+            });
+
+            const payload = {
+                month_key: monthKey,
+                supplier: 'ALL', // Global snapshot
+                brand: 'GENERAL', // Fix for Unique Constraint
+                goals_data: {
+                    clients: goalsObj,
+                    targets: goalsTargets,
+                    seller_targets: sellerTargetsObj
+                },
+                updated_at: new Date().toISOString()
+            };
+
+            // Use FETCH directly to allow service_role key without "Forbidden" error in browser
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/goals_distribution?on_conflict=month_key,supplier,brand`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'resolution=merge-duplicates' // upsert behavior
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Erro Supabase (${response.status}): ${errorText}`);
+            }
+
+            alert('Metas salvas com sucesso!');
+        }
+
+        async function clearGoalsFromSupabase(authToken) {
+            const btn = document.getElementById('clear-goals-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Limpando...';
+            btn.disabled = true;
+
+            const monthKey = new Date().toISOString().slice(0, 7);
+
+            try {
+                // DELETE via REST
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/goals_distribution?month_key=eq.${monthKey}&supplier=eq.ALL&brand=eq.GENERAL`, {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro ao limpar metas (${response.status}): ${errorText}`);
+                }
+
+                // Limpar estado local
+                if(typeof globalClientGoals !== 'undefined') globalClientGoals.clear();
+                if(typeof goalsTargets !== 'undefined') {
+                    for(let k in goalsTargets) goalsTargets[k] = { fat: 0, vol: 0 };
+                }
+
+                // Atualizar UI Input fields
+                const elFat = document.getElementById('goal-global-fat');
+                const elVol = document.getElementById('goal-global-vol');
+                const elMix = document.getElementById('goal-global-mix');
+                const elMixSalty = document.getElementById('goal-global-mix-salty');
+                const elMixFoods = document.getElementById('goal-global-mix-foods');
+
+                if(elFat) elFat.value = '0,00';
+                if(elVol) elVol.value = '0,000';
+                if(elMix) elMix.value = '0';
+                if(elMixSalty) elMixSalty.value = '0';
+                if(elMixFoods) elMixFoods.value = '0';
+
+                // Re-calcular métricas e atualizar tabela (que usará os defaults ou zero)
+                // Precisamos chamar updateGoals(), mas ele está dentro do scopo do module script principal
+                // ou acessível via window se exposto.
+                // VERIFICAÇÃO: updateGoals está definido dentro do scopo 'DOMContentLoaded'.
+                // Precisamos expor ou disparar um evento.
+                // Vou disparar um evento customizado 'goalsCleared' e ouvir no scopo principal.
+                document.dispatchEvent(new CustomEvent('goalsCleared'));
+
+                alert('Metas limpas com sucesso!');
+            } catch (err) {
+                console.error('Erro ao limpar metas:', err);
+                alert('Erro ao limpar metas: ' + err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Attach listener for Clear Button - This needs to be inside the DOMContentLoaded where authentication happens or keys are available
+        // But `clearGoalsFromSupabase` needs access to URL/KEY.
+        // Wait, `saveGoalsToSupabase` uses `SUPABASE_URL` which is defined in the script scope above.
+        // I will hook the button click in the authentication handler block (where save-goals-btn is handled).
+    });
