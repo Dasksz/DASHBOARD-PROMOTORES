@@ -2453,7 +2453,10 @@
                 return true;
             });
 
-            const clientCodes = new Set(clients.map(c => c['Código']));
+            const clientCodes = new Set();
+            for (const c of clients) {
+                clientCodes.add(c['Código']);
+            }
 
             const filters = {
                 city: city,
