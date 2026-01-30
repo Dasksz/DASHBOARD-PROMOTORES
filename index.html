@@ -170,7 +170,6 @@
         <button data-target="estoque" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Estoque</button>
         <button data-target="cobertura" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Cobertura</button>
         <button data-target="cidades" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Geo</button>
-        <button data-target="semanal" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Semanal</button>
         <button data-target="mix" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Mix</button>
         <button data-target="inovacoes-mes" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Inovações</button>
         <button data-target="goals" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Metas</button>
@@ -200,7 +199,6 @@
         <button data-target="estoque" class="mobile-nav-link p-3 rounded-lg bg-slate-800 text-slate-300 text-sm font-medium text-center hover:bg-slate-700">Estoque</button>
         <button data-target="cobertura" class="mobile-nav-link p-3 rounded-lg bg-slate-800 text-slate-300 text-sm font-medium text-center hover:bg-slate-700">Cobertura</button>
         <button data-target="cidades" class="mobile-nav-link p-3 rounded-lg bg-slate-800 text-slate-300 text-sm font-medium text-center hover:bg-slate-700">Geo Mapa</button>
-        <button data-target="semanal" class="mobile-nav-link p-3 rounded-lg bg-slate-800 text-slate-300 text-sm font-medium text-center hover:bg-slate-700">Semanal</button>
         <button data-target="mix" class="mobile-nav-link p-3 rounded-lg bg-slate-800 text-slate-300 text-sm font-medium text-center hover:bg-slate-700">Mix</button>
         <button data-target="inovacoes-mes" class="mobile-nav-link p-3 rounded-lg bg-slate-800 text-slate-300 text-sm font-medium text-center hover:bg-slate-700">Inovações</button>
         <button data-target="goals" class="mobile-nav-link p-3 rounded-lg bg-slate-800 text-slate-300 text-sm font-medium text-center hover:bg-slate-700">Metas</button>
@@ -591,65 +589,8 @@
         </div>
     </div>
 
-    <!-- WEEKLY VIEW, COMPARISON, STOCK, ETC will follow the same pattern of removing sidebar dependency and updating container classes -->
-    <!-- Placeholder containers for compatibility with app.js -->
-    <div id="weekly-view" class="hidden container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl animate-fade-in-up">
-        <!-- Content injected by app.js logic, ensure IDs match -->
-        <header class="mb-8 border-b border-slate-800 pb-4"><h1 class="text-3xl font-bold text-white">Acompanhamento Semanal</h1></header>
-        
-        <!-- Filters Block -->
-        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
-             <div class="flex flex-wrap gap-4 items-center justify-between">
-                <div id="weekly-fornecedor-toggle-container" class="flex bg-slate-800 p-1 rounded-lg">
-                    <button data-fornecedor="PEPSICO" class="fornecedor-btn active px-4 py-2 text-sm font-bold bg-blue-600 text-white rounded-md">PEPSICO</button>
-                    <button data-fornecedor="MULTIMARCAS" class="fornecedor-btn px-4 py-2 text-sm font-medium text-slate-400 hover:text-white rounded-md">MULTIMARCAS</button>
-                </div>
-                <button id="clear-weekly-filters-btn" class="bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold py-2 px-4 rounded-lg">Limpar</button>
-             </div>
-             
-             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <!-- Coordenador -->
-                <div class="relative">
-                    <button id="weekly-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-coord-filter-text">Coordenador: Todos</span></button>
-                    <div id="weekly-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
-                </div>
-                <!-- Co-Coordenador -->
-                <div class="relative">
-                    <button id="weekly-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-cocoord-filter-text">Co-Coord: Todos</span></button>
-                    <div id="weekly-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
-                </div>
-                <!-- Promotor -->
-                <div class="relative">
-                    <button id="weekly-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-promotor-filter-text">Promotor: Todos</span></button>
-                    <div id="weekly-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
-                </div>
-             </div>
-        </div>
-
-        <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-white">Evolução Semanal</h2>
-                <div class="text-right"><p class="text-xs text-slate-500">Total Mês</p><p id="total-mes-semanal" class="text-2xl font-bold text-green-400">R$ 0,00</p></div>
-            </div>
-            <div id="weeklySalesChartContainer" class="relative h-96"></div>
-            <div class="mt-6 overflow-x-auto"><table class="min-w-full text-sm text-left text-slate-300"><tbody id="weekly-summary-table-body" class="divide-y divide-slate-800"></tbody></table></div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg">
-                <h2 class="text-lg font-bold text-white mb-4 text-center">Ranking Positivação</h2>
-                <div id="positivacaoChartContainer" class="relative h-80"></div>
-            </div>
-            <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg">
-                <h2 class="text-lg font-bold text-white mb-4 text-center">Mix de Produtos</h2>
-                <div id="mixChartContainer" class="relative h-80"></div>
-            </div>
-        </div>
-        <div class="mt-8 bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg">
-            <h2 class="text-lg font-bold text-white mb-4 text-center">Top 10 Vendedores</h2>
-            <div id="topSellersChartContainer" class="relative h-80"></div>
-        </div>
-    </div>
+    <!-- WEEKLY VIEW REMOVED -->
+    <!-- COMPARISON VIEW -->
 
     <!-- COMPARISON VIEW -->
     <div id="comparison-view" class="hidden container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl animate-fade-in-up">
