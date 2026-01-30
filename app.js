@@ -2411,37 +2411,46 @@
             // New Hierarchy Logic
             let clients = getHierarchyFilteredClients('mix', allClientsData);
 
-            if (excludeFilter !== 'rede') {
-                 if (mixRedeGroupFilter === 'com_rede') {
-                    clients = clients.filter(c => c.ramo && c.ramo !== 'N/A');
-                    if (selectedMixRedes.length > 0) {
-                        const redeSet = new Set(selectedMixRedes);
-                        clients = clients.filter(c => redeSet.has(c.ramo));
-                    }
-                } else if (mixRedeGroupFilter === 'sem_rede') {
-                    clients = clients.filter(c => !c.ramo || c.ramo === 'N/A');
-                }
-            }
+            // OPTIMIZATION: Combine filters into a single pass
+            const checkRede = excludeFilter !== 'rede';
+            const isComRede = mixRedeGroupFilter === 'com_rede';
+            const isSemRede = mixRedeGroupFilter === 'sem_rede';
+            const redeSet = (isComRede && selectedMixRedes.length > 0) ? new Set(selectedMixRedes) : null;
 
-            if (filial !== 'ambas') {
-                clients = clients.filter(c => clientLastBranch.get(c['Código']) === filial);
-            }
+            const checkFilial = filial !== 'ambas';
+            const checkCity = excludeFilter !== 'city' && !!city;
 
             // Removed Supervisor/Seller checks
+            // if (excludeFilter !== 'supplier' && selectedCitySuppliers.length > 0) { ... }
 
-            if (excludeFilter !== 'supplier' && selectedCitySuppliers.length > 0) {
-                 // No filtering of clients list based on supplier for now.
-            }
-
-            if (excludeFilter !== 'city' && city) {
-                clients = clients.filter(c => c.cidade && c.cidade.toLowerCase() === city);
-            }
-
-            // Include only active or Americanas or not RCA 53
             clients = clients.filter(c => {
+                // 1. Rede Logic
+                if (checkRede) {
+                    if (isComRede) {
+                        if (!c.ramo || c.ramo === 'N/A') return false;
+                        if (redeSet && !redeSet.has(c.ramo)) return false;
+                    } else if (isSemRede) {
+                        if (c.ramo && c.ramo !== 'N/A') return false;
+                    }
+                }
+
+                // 2. Filial Logic
+                if (checkFilial) {
+                    if (clientLastBranch.get(c['Código']) !== filial) return false;
+                }
+
+                // 3. City Logic
+                if (checkCity) {
+                    if (!c.cidade || c.cidade.toLowerCase() !== city) return false;
+                }
+
+                // 4. Active Logic
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(c['Código']));
+                // Keep if Americanas OR Not 53 OR Has Sales
+                if (!isAmericanas && rca1 === '53' && !clientsWithSalesThisMonth.has(c['Código'])) return false;
+
+                return true;
             });
 
             const clientCodes = new Set(clients.map(c => c['Código']));
