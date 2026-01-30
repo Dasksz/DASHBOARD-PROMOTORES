@@ -677,7 +677,10 @@
             console.log("[GeoSync] Iniciando verificação de coordenadas em segundo plano...");
 
             const activeClientsList = getActiveClientsData();
-            const activeClientCodes = new Set(activeClientsList.map(c => String(c['Código'] || c['codigo_cliente'])));
+            const activeClientCodes = new Set();
+            for (const c of activeClientsList) {
+                activeClientCodes.add(String(c['Código'] || c['codigo_cliente']));
+            }
 
             // 1. Cleanup Orphans
             const orphanedCodes = [];
