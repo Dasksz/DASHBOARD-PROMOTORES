@@ -758,74 +758,77 @@
             }
 
             const chartId = 'metaRealizadoPosChartInstance';
-            if (charts[chartId]) {
-                charts[chartId].destroy();
-            }
 
             // Aggregate Totals for Positivação
             const totalGoal = data.reduce((sum, d) => sum + (d.posGoal || 0), 0);
             const totalReal = data.reduce((sum, d) => sum + (d.posRealized || 0), 0);
 
-            charts[chartId] = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: ['Positivação'],
-                    datasets: [
-                        {
-                            label: 'Meta',
-                            data: [totalGoal],
-                            backgroundColor: '#a855f7', // Purple
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.8
-                        },
-                        {
-                            label: 'Realizado',
-                            data: [totalReal],
-                            backgroundColor: '#22c55e', // Green
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.8
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    layout: {
-                        padding: {
-                            top: 50
-                        }
+            if (charts[chartId]) {
+                charts[chartId].data.datasets[0].data = [totalGoal];
+                charts[chartId].data.datasets[1].data = [totalReal];
+                charts[chartId].update('none');
+            } else {
+                charts[chartId] = new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Positivação'],
+                        datasets: [
+                            {
+                                label: 'Meta',
+                                data: [totalGoal],
+                                backgroundColor: '#a855f7', // Purple
+                                barPercentage: 0.6,
+                                categoryPercentage: 0.8
+                            },
+                            {
+                                label: 'Realizado',
+                                data: [totalReal],
+                                backgroundColor: '#22c55e', // Green
+                                barPercentage: 0.6,
+                                categoryPercentage: 0.8
+                            }
+                        ]
                     },
-                    plugins: {
-                        legend: { position: 'top', labels: { color: '#cbd5e1' } },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y} Clientes`;
-                                }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: {
+                            padding: {
+                                top: 50
                             }
                         },
-                        datalabels: {
-                            color: '#fff',
-                            anchor: 'end',
-                            align: 'top',
-                            formatter: (value) => value,
-                            font: { weight: 'bold' }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grace: '10%',
-                            grid: { color: '#334155' },
-                            ticks: { color: '#94a3b8' }
+                        plugins: {
+                            legend: { position: 'top', labels: { color: '#cbd5e1' } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y} Clientes`;
+                                    }
+                                }
+                            },
+                            datalabels: {
+                                color: '#fff',
+                                anchor: 'end',
+                                align: 'top',
+                                formatter: (value) => value,
+                                font: { weight: 'bold' }
+                            }
                         },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#94a3b8' }
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grace: '10%',
+                                grid: { color: '#334155' },
+                                ticks: { color: '#94a3b8' }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#94a3b8' }
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
         }
 
@@ -2526,6 +2529,19 @@
                 .replace(/'/g, "&#039;");
         }
 
+        function getSkeletonRows(cols, rows = 5) {
+            let html = '';
+            for (let i = 0; i < rows; i++) {
+                html += `<tr class="border-b border-slate-800/50">`;
+                for (let j = 0; j < cols; j++) {
+                    // Empty data-label for skeleton to prevent "null" text on mobile, just shows bar
+                    html += `<td class="p-4" data-label=""><div class="skeleton h-4 w-full"></div></td>`;
+                }
+                html += `</tr>`;
+            }
+            return html;
+        }
+
         function updateMixView() {
             mixRenderId++;
             const currentRenderId = mixRenderId;
@@ -2534,7 +2550,7 @@
             // const activeClientCodes = new Set(clients.map(c => c['Código'])); // Not used if iterating clients array
 
             // Show Loading
-            document.getElementById('mix-table-body').innerHTML = '<tr><td colspan="13" class="text-center p-8"><svg class="animate-spin h-8 w-8 text-teal-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></td></tr>';
+            document.getElementById('mix-table-body').innerHTML = getSkeletonRows(13, 10);
 
             // 1. Agregar Valor Líquido por Produto por Cliente (Sync - O(Sales))
             const clientProductNetValues = new Map(); // Map<CODCLI, Map<PRODUTO, NetValue>>
@@ -2724,15 +2740,15 @@
                 const xIcon = `<svg class="w-3 h-3 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
 
                 let tableHTML = pageData.map(row => {
-                    let saltyCols = MIX_SALTY_CATEGORIES.map(b => `<td class="px-1 py-2 text-center border-l border-slate-500">${row.brands.has(b) ? checkIcon : xIcon}</td>`).join('');
-                    let foodsCols = MIX_FOODS_CATEGORIES.map(b => `<td class="px-1 py-2 text-center border-l border-slate-500">${row.brands.has(b) ? checkIcon : xIcon}</td>`).join('');
+                    let saltyCols = MIX_SALTY_CATEGORIES.map(b => `<td data-label="${b}" class="px-1 py-2 text-center border-l border-slate-500">${row.brands.has(b) ? checkIcon : xIcon}</td>`).join('');
+                    let foodsCols = MIX_FOODS_CATEGORIES.map(b => `<td data-label="${b}" class="px-1 py-2 text-center border-l border-slate-500">${row.brands.has(b) ? checkIcon : xIcon}</td>`).join('');
 
                     return `
                     <tr class="hover:bg-slate-700/50 border-b border-slate-500 last:border-0">
-                        <td class="px-2 py-2 font-medium text-slate-300 text-xs">${escapeHtml(row.codcli)}</td>
-                        <td class="px-2 py-2 text-xs truncate max-w-[150px]" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</td>
-                        <td class="px-2 py-2 text-xs text-slate-300 truncate max-w-[100px]">${escapeHtml(row.city)}</td>
-                        <td class="px-2 py-2 text-xs text-slate-400 truncate max-w-[100px]">${escapeHtml(getFirstName(row.vendedor))}</td>
+                        <td data-label="Cód" class="px-2 py-2 font-medium text-slate-300 text-xs">${escapeHtml(row.codcli)}</td>
+                        <td data-label="Cliente" class="px-2 py-2 text-xs truncate max-w-[150px]" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</td>
+                        <td data-label="Cidade" class="px-2 py-2 text-xs text-slate-300 truncate max-w-[100px]">${escapeHtml(row.city)}</td>
+                        <td data-label="Vendedor" class="px-2 py-2 text-xs text-slate-400 truncate max-w-[100px]">${escapeHtml(getFirstName(row.vendedor))}</td>
                         ${saltyCols}
                         ${foodsCols}
                     </tr>
@@ -4091,9 +4107,6 @@
             }
 
             const chartId = 'metaRealizadoChartInstance';
-            if (charts[chartId]) {
-                charts[chartId].destroy();
-            }
 
             // Aggregate totals for the chart (Total Meta vs Total Realizado)
             const totalMeta = data.reduce((sum, d) => sum + d.metaTotal, 0);
@@ -4113,74 +4126,88 @@
                 return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             };
 
-            charts[chartId] = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: ['Total'],
-                    datasets: [
-                        {
-                            label: 'Meta',
-                            data: [displayTotalMeta],
-                            backgroundColor: '#14b8a6', // Teal
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.8
-                        },
-                        {
-                            label: 'Realizado',
-                            data: [displayTotalReal],
-                            backgroundColor: '#f59e0b', // Amber/Yellow
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.8
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    layout: {
-                        padding: {
-                            top: 50
-                        }
+            if (charts[chartId]) {
+                charts[chartId].data.datasets[0].data = [displayTotalMeta];
+                charts[chartId].data.datasets[1].data = [displayTotalReal];
+                // Update formatters closure
+                charts[chartId].options.plugins.tooltip.callbacks.label = function(context) {
+                    let label = context.dataset.label || '';
+                    if (label) label += ': ';
+                    if (context.parsed.y !== null) label += formatValue(context.parsed.y);
+                    return label;
+                };
+                charts[chartId].options.plugins.datalabels.formatter = formatValue;
+                charts[chartId].update('none');
+            } else {
+                charts[chartId] = new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Total'],
+                        datasets: [
+                            {
+                                label: 'Meta',
+                                data: [displayTotalMeta],
+                                backgroundColor: '#14b8a6', // Teal
+                                barPercentage: 0.6,
+                                categoryPercentage: 0.8
+                            },
+                            {
+                                label: 'Realizado',
+                                data: [displayTotalReal],
+                                backgroundColor: '#f59e0b', // Amber/Yellow
+                                barPercentage: 0.6,
+                                categoryPercentage: 0.8
+                            }
+                        ]
                     },
-                    plugins: {
-                        legend: { position: 'top', labels: { color: '#cbd5e1' } },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed.y !== null) {
-                                        label += formatValue(context.parsed.y);
-                                    }
-                                    return label;
-                                }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: {
+                            padding: {
+                                top: 50
                             }
                         },
-                        datalabels: {
-                            display: true,
-                            color: '#fff',
-                            anchor: 'end',
-                            align: 'top',
-                            formatter: formatValue,
-                            font: { weight: 'bold' }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grace: '10%',
-                            grid: { color: '#334155' },
-                            ticks: { color: '#94a3b8' }
+                        plugins: {
+                            legend: { position: 'top', labels: { color: '#cbd5e1' } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += formatValue(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            },
+                            datalabels: {
+                                display: true,
+                                color: '#fff',
+                                anchor: 'end',
+                                align: 'top',
+                                formatter: formatValue,
+                                font: { weight: 'bold' }
+                            }
                         },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#94a3b8' }
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grace: '10%',
+                                grid: { color: '#334155' },
+                                ticks: { color: '#94a3b8' }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#94a3b8' }
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
         }
 
         let metaRealizadoClientsTableState = {
@@ -5884,7 +5911,7 @@
             }
 
             const filteredClients = getGoalsFilteredData();
-            goalsGvTableBody.innerHTML = '<tr><td colspan="15" class="text-center p-8"><svg class="animate-spin h-8 w-8 text-teal-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></td></tr>';
+            goalsGvTableBody.innerHTML = getSkeletonRows(15, 10);
 
             // Cache Key for Global Totals
             const cacheKey = currentGoalsSupplier + (currentGoalsBrand ? `_${currentGoalsBrand}` : '');
@@ -6541,7 +6568,7 @@
 
             const baseCategories = svColumns.filter(c => c.type === 'standard' && !c.isAgg);
             const mainTable = document.getElementById('goals-sv-main-table');
-            if (mainTable) mainTable.innerHTML = '<tbody><tr><td class="text-center p-8"><svg class="animate-spin h-8 w-8 text-teal-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></td></tr></tbody>';
+            if (mainTable) mainTable.innerHTML = `<tbody>${getSkeletonRows(12, 10)}</tbody>`;
 
             // Ensure Global Totals are cached (Sync operation, but fast enough for initialization)
             baseCategories.forEach(cat => {
@@ -7203,7 +7230,7 @@ const supervisorGroups = new Map();
             coverageActiveClientsKpi.textContent = activeClientsCount.toLocaleString('pt-BR');
 
             // Show Loading State in Table
-            coverageTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8"><div class="flex justify-center items-center"><svg class="animate-spin h-8 w-8 text-teal-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-slate-400">Calculando cobertura...</span></div></td></tr>';
+            coverageTableBody.innerHTML = getSkeletonRows(8, 10);
 
             if (productsToAnalyze.length === 0) {
                 coverageSelectionCoverageValueKpi.textContent = '0%';
@@ -7467,14 +7494,14 @@ const supervisorGroups = new Map();
 
                     return `
                         <tr class="hover:bg-slate-700/50">
-                            <td class="px-2 py-1.5 text-xs">${item.descricao}</td>
-                            <td class="px-2 py-1.5 text-xs text-right">${item.stockQty.toLocaleString('pt-BR')}</td>
-                            <td class="px-2 py-1.5 text-xs text-right">${item.boxesSoldPreviousMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
-                            <td class="px-2 py-1.5 text-xs text-right">${item.boxesSoldCurrentMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
-                            <td class="px-2 py-1.5 text-xs text-right">${boxesVariationContent}</td>
-                            <td class="px-2 py-1.5 text-xs text-right">${item.clientsPreviousCount.toLocaleString('pt-BR')}</td>
-                            <td class="px-2 py-1.5 text-xs text-right">${item.clientsCurrentCount.toLocaleString('pt-BR')}</td>
-                            <td class="px-2 py-1.5 text-xs text-right">${pdvVariationContent}</td>
+                            <td data-label="Produto" class="px-2 py-1.5 text-xs">${item.descricao}</td>
+                            <td data-label="Estoque" class="px-2 py-1.5 text-xs text-right">${item.stockQty.toLocaleString('pt-BR')}</td>
+                            <td data-label="Vol Ant (Cx)" class="px-2 py-1.5 text-xs text-right">${item.boxesSoldPreviousMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
+                            <td data-label="Vol Atual (Cx)" class="px-2 py-1.5 text-xs text-right">${item.boxesSoldCurrentMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
+                            <td data-label="Var Vol" class="px-2 py-1.5 text-xs text-right">${boxesVariationContent}</td>
+                            <td data-label="PDV Ant" class="px-2 py-1.5 text-xs text-right">${item.clientsPreviousCount.toLocaleString('pt-BR')}</td>
+                            <td data-label="PDV Atual" class="px-2 py-1.5 text-xs text-right">${item.clientsCurrentCount.toLocaleString('pt-BR')}</td>
+                            <td data-label="Var PDV" class="px-2 py-1.5 text-xs text-right">${pdvVariationContent}</td>
                         </tr>
                     `;
                 }).join('');
@@ -7728,7 +7755,8 @@ const supervisorGroups = new Map();
             const tickColor = isLightMode ? '#475569' : '#94a3b8'; // slate-600 vs slate-400
             const gridColor = isLightMode ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
 
-            const professionalPalette = ['#14b8a6', '#6366f1', '#ec4899', '#f97316', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#22c55e'];
+            // Semantic Palette: Green (Success), Blue (Good), Purple (Neutral/Meta), Amber (Warning), Red (Danger)
+            const professionalPalette = ['#22c55e', '#3b82f6', '#a855f7', '#f59e0b', '#ef4444', '#64748b', '#06b6d4', '#ec4899'];
 
             let finalDatasets;
             if (Array.isArray(chartData) && chartData.length > 0 && typeof chartData[0] === 'object' && chartData[0].hasOwnProperty('label')) {
@@ -7770,7 +7798,7 @@ const supervisorGroups = new Map();
                 charts[canvasId].data.datasets = finalDatasets;
                 // 2. Substituir as opções antigas pelas novas, em vez de tentar um merge
                 charts[canvasId].options = options;
-                charts[canvasId].update();
+                charts[canvasId].update('none');
                 return;
             }
 
@@ -7854,48 +7882,57 @@ const supervisorGroups = new Map();
 
                 const tdPedido = document.createElement('td');
                 tdPedido.className = "px-4 py-2";
+                tdPedido.dataset.label = 'Nº Pedido';
                 tdPedido.appendChild(createLink(row.PEDIDO, 'pedidoId', row.PEDIDO));
                 tr.appendChild(tdPedido);
 
                 const tdCodCli = document.createElement('td');
                 tdCodCli.className = "px-4 py-2";
+                tdCodCli.dataset.label = 'Cliente';
                 tdCodCli.appendChild(createLink(row.CODCLI, 'codcli', row.CODCLI));
                 tr.appendChild(tdCodCli);
 
                 const tdVendedor = document.createElement('td');
                 tdVendedor.className = "px-4 py-2";
-                tdVendedor.textContent = getFirstName(row.NOME); // textContent escapes
+                tdVendedor.dataset.label = 'Vendedor';
+                tdVendedor.textContent = getFirstName(row.NOME);
                 tr.appendChild(tdVendedor);
 
                 const tdForn = document.createElement('td');
                 tdForn.className = "px-4 py-2";
-                tdForn.textContent = row.FORNECEDORES_STR || ''; // textContent escapes
+                tdForn.dataset.label = 'Fornecedor';
+                tdForn.textContent = row.FORNECEDORES_STR || '';
                 tr.appendChild(tdForn);
 
                 const tdDtPed = document.createElement('td');
                 tdDtPed.className = "px-4 py-2";
+                tdDtPed.dataset.label = 'Data Pedido';
                 tdDtPed.textContent = formatDate(row.DTPED);
                 tr.appendChild(tdDtPed);
 
                 const tdDtSaida = document.createElement('td');
                 tdDtSaida.className = "px-4 py-2";
+                tdDtSaida.dataset.label = 'Data Saída';
                 tdDtSaida.textContent = formatDate(row.DTSAIDA);
                 tr.appendChild(tdDtSaida);
 
                 const tdPeso = document.createElement('td');
                 tdPeso.className = "px-4 py-2 text-right";
+                tdPeso.dataset.label = 'Peso';
                 tdPeso.textContent = (Number(row.TOTPESOLIQ) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' Kg';
                 tr.appendChild(tdPeso);
 
                 const tdValor = document.createElement('td');
                 tdValor.className = "px-4 py-2 text-right";
+                tdValor.dataset.label = 'Total';
                 tdValor.textContent = (Number(row.VLVENDA) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 tr.appendChild(tdValor);
 
                 const tdPosicao = document.createElement('td');
                 tdPosicao.className = "px-4 py-2 text-center";
+                tdPosicao.dataset.label = 'Status';
                 const badge = getPosicaoBadge(row.POSICAO);
-                if (typeof badge === 'string') tdPosicao.textContent = badge; // Change innerHTML to textContent if string
+                if (typeof badge === 'string') tdPosicao.textContent = badge;
                 else tdPosicao.appendChild(badge);
                 tr.appendChild(tdPosicao);
 
@@ -8474,8 +8511,8 @@ const supervisorGroups = new Map();
             });
 
             // Show Loading
-            cityActiveDetailTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8"><svg class="animate-spin h-8 w-8 text-teal-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></td></tr>';
-            cityInactiveDetailTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8"><svg class="animate-spin h-8 w-8 text-teal-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></td></tr>';
+            cityActiveDetailTableBody.innerHTML = getSkeletonRows(6, 5);
+            cityInactiveDetailTableBody.innerHTML = getSkeletonRows(6, 5);
 
             const activeClientsList = [];
             const inactiveClientsList = [];
@@ -9973,15 +10010,13 @@ const supervisorGroups = new Map();
             const currentRenderId = comparisonRenderId;
             const { currentSales, historySales } = getComparisonFilteredData();
 
-            // Show Loading State on Charts
+            // Show Loading State on Charts (only if no chart exists)
             const chartContainers = ['weeklyComparisonChart', 'monthlyComparisonChart', 'dailyWeeklyComparisonChart'];
             chartContainers.forEach(id => {
-                if (charts[id]) {
-                    charts[id].destroy();
-                    delete charts[id];
+                if (!charts[id]) {
+                    const el = document.getElementById(id + 'Container');
+                    if(el) el.innerHTML = '<div class="flex h-full items-center justify-center"><svg class="animate-spin h-8 w-8 text-teal-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
                 }
-                const el = document.getElementById(id + 'Container');
-                if(el) el.innerHTML = '<div class="flex h-full items-center justify-center"><svg class="animate-spin h-8 w-8 text-teal-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
             });
 
             const currentYear = lastSaleDate.getUTCFullYear();
@@ -10451,7 +10486,7 @@ const supervisorGroups = new Map();
             }
 
             // Show Loading
-            stockAnalysisTableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8"><div class="flex justify-center items-center"><svg class="animate-spin h-8 w-8 text-teal-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-slate-400">Calculando estoque e tendências...</span></div></td></tr>';
+            stockAnalysisTableBody.innerHTML = getSkeletonRows(6, 10);
 
             // Convert to array for chunking
             const productsArray = Array.from(productsWithFilteredActivity);
@@ -11681,7 +11716,11 @@ const supervisorGroups = new Map();
             }
         }
 
-        async function navigateTo(view) {
+        function navigateTo(view) {
+            window.location.hash = view;
+        }
+
+        async function renderView(view) {
             const mobileMenu = document.getElementById('mobile-menu');
             if (mobileMenu && mobileMenu.classList.contains('open')) {
                 toggleMobileMenu();
@@ -12650,11 +12689,15 @@ const supervisorGroups = new Map();
                 }
             });
 
-            comparisonCityFilter.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/[0-9]/g, '');
+            const debouncedComparisonCityUpdate = debounce(() => {
                 const { currentSales, historySales } = getComparisonFilteredData({ excludeFilter: 'city' });
                 comparisonCitySuggestions.classList.remove('manual-hide');
                 updateComparisonCitySuggestions([...currentSales, ...historySales]);
+            }, 300);
+
+            comparisonCityFilter.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[0-9]/g, '');
+                debouncedComparisonCityUpdate();
             });
             comparisonCityFilter.addEventListener('focus', () => {
                 const { currentSales, historySales } = getComparisonFilteredData({ excludeFilter: 'city' });
@@ -12840,11 +12883,15 @@ const supervisorGroups = new Map();
                 }
             });
 
-            stockCityFilter.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/[0-9]/g, '');
+            const debouncedStockCityUpdate = debounce(() => {
                 const cityData = getStockFilteredData({ excludeFilter: 'city' });
                 stockCitySuggestions.classList.remove('manual-hide');
                 updateStockCitySuggestions([...cityData.sales, ...cityData.history]);
+            }, 300);
+
+            stockCityFilter.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[0-9]/g, '');
+                debouncedStockCityUpdate();
             });
             stockCityFilter.addEventListener('focus', () => {
                 const cityData = getStockFilteredData({ excludeFilter: 'city' });
@@ -13001,11 +13048,15 @@ const supervisorGroups = new Map();
 
             const debouncedUpdateInnovationsMonth = debounce(updateInnovations, 400);
 
-            innovationsMonthCityFilter.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/[0-9]/g, '');
+            const debouncedInnovationsCityUpdate = debounce(() => {
                 const cityDataSource = getInnovationsMonthFilteredData({ excludeFilter: 'city' }).clients;
                 innovationsMonthCitySuggestions.classList.remove('manual-hide');
                 updateCitySuggestions(innovationsMonthCityFilter, innovationsMonthCitySuggestions, cityDataSource);
+            }, 300);
+
+            innovationsMonthCityFilter.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[0-9]/g, '');
+                debouncedInnovationsCityUpdate();
             });
             innovationsMonthCityFilter.addEventListener('focus', () => {
                 const cityDataSource = getInnovationsMonthFilteredData({ excludeFilter: 'city' }).clients;
@@ -13601,11 +13652,15 @@ const supervisorGroups = new Map();
             const mixCitySuggestions = document.getElementById('mix-city-suggestions');
 
             if (mixCityFilter && mixCitySuggestions) {
-                mixCityFilter.addEventListener('input', (e) => {
-                    e.target.value = e.target.value.replace(/[0-9]/g, '');
+                const debouncedMixCityUpdate = debounce(() => {
                     const { clients } = getMixFilteredData({ excludeFilter: 'city' });
                     mixCitySuggestions.classList.remove('manual-hide');
                     updateCitySuggestions(mixCityFilter, mixCitySuggestions, clients);
+                }, 300);
+
+                mixCityFilter.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/[0-9]/g, '');
+                    debouncedMixCityUpdate();
                 });
                 mixCityFilter.addEventListener('focus', () => {
                     const { clients } = getMixFilteredData({ excludeFilter: 'city' });
@@ -13736,11 +13791,16 @@ const supervisorGroups = new Map();
             const debouncedHandleCoverageChange = debounce(updateCoverage, 400);
 
             coverageFilialFilter.addEventListener('change', updateCoverage);
-            if (coverageCityFilter) coverageCityFilter.addEventListener('input', (e) => { e.target.value = e.target.value.replace(/[0-9]/g, '');
 
+            const debouncedCoverageCityUpdate = debounce(() => {
                 const { clients } = getCoverageFilteredData({ excludeFilter: 'city' });
                 coverageCitySuggestions.classList.remove('manual-hide');
                 updateCitySuggestions(coverageCityFilter, coverageCitySuggestions, clients);
+            }, 300);
+
+            if (coverageCityFilter) coverageCityFilter.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[0-9]/g, '');
+                debouncedCoverageCityUpdate();
             });
             coverageCityFilter.addEventListener('focus', () => {
                 const { clients } = getCoverageFilteredData({ excludeFilter: 'city' });
@@ -14002,13 +14062,20 @@ const supervisorGroups = new Map();
         }
         // ----------------------------------------
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const targetPage = urlParams.get('ir_para');
+        window.addEventListener('hashchange', () => {
+            const view = window.location.hash.substring(1) || 'dashboard';
+            renderView(view);
+        });
 
-        if (targetPage) {
-            navigateTo(targetPage);
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetParam = urlParams.get('ir_para');
+        const hash = window.location.hash.substring(1);
+        const targetPage = hash || targetParam || 'dashboard';
+
+        if (window.location.hash.substring(1) === targetPage) {
+            renderView(targetPage);
         } else {
-            navigateTo('dashboard');
+            window.location.hash = targetPage;
         }
         renderTable(aggregatedOrders);
 
@@ -15500,53 +15567,56 @@ const supervisorGroups = new Map();
                 const diffColor = diff >= 0 ? '#22c55e' : '#ef4444';
 
                 if (window.aiFullPageChartInstance) {
-                    window.aiFullPageChartInstance.destroy();
-                }
-
-                window.aiFullPageChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Meta Atual', 'Nova Proposta'],
-                        datasets: [{
-                            label: 'Faturamento Total (R$)',
-                            data: [totalCurrent, totalProposed],
-                            backgroundColor: ['#64748b', diffColor],
-                            borderRadius: 6,
-                            barPercentage: 0.5
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            title: {
-                                display: true,
-                                text: `Comparativo Global de Faturamento (Diferença: ${diff > 0 ? '+' : ''}${diff.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})})`,
-                                color: '#fff',
-                                font: { size: 16 }
-                            },
-                            datalabels: {
-                                color: '#fff',
-                                anchor: 'end',
-                                align: 'top',
-                                formatter: (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-                                font: { weight: 'bold' }
-                            }
+                    window.aiFullPageChartInstance.data.datasets[0].data = [totalCurrent, totalProposed];
+                    window.aiFullPageChartInstance.data.datasets[0].backgroundColor = ['#64748b', diffColor];
+                    window.aiFullPageChartInstance.options.plugins.title.text = `Comparativo Global de Faturamento (Diferença: ${diff > 0 ? '+' : ''}${diff.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})})`;
+                    window.aiFullPageChartInstance.update('none');
+                } else {
+                    window.aiFullPageChartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Meta Atual', 'Nova Proposta'],
+                            datasets: [{
+                                label: 'Faturamento Total (R$)',
+                                data: [totalCurrent, totalProposed],
+                                backgroundColor: ['#64748b', diffColor],
+                                borderRadius: 6,
+                                barPercentage: 0.5
+                            }]
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                grid: { color: '#334155' },
-                                ticks: { color: '#94a3b8' }
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                title: {
+                                    display: true,
+                                    text: `Comparativo Global de Faturamento (Diferença: ${diff > 0 ? '+' : ''}${diff.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})})`,
+                                    color: '#fff',
+                                    font: { size: 16 }
+                                },
+                                datalabels: {
+                                    color: '#fff',
+                                    anchor: 'end',
+                                    align: 'top',
+                                    formatter: (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                                    font: { weight: 'bold' }
+                                }
                             },
-                            x: {
-                                grid: { display: false },
-                                ticks: { color: '#fff', font: { size: 14, weight: 'bold' } }
+                            scales: {
+                                y: {
+                                    beginAtZero: false,
+                                    grid: { color: '#334155' },
+                                    ticks: { color: '#94a3b8' }
+                                },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { color: '#fff', font: { size: 14, weight: 'bold' } }
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
             }
 
             // Export to HTML Function

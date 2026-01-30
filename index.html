@@ -290,7 +290,7 @@
             </div>
 
             <!-- Filters -->
-            <div id="main-filters" class="mb-8 p-6 bg-[#0f172a] rounded-2xl shadow-lg border border-slate-800/50">
+            <div id="main-filters" class="sticky-filters mb-8 p-6 bg-[#0f172a] rounded-2xl shadow-lg border border-slate-800/50">
                 <div class="flex flex-wrap gap-4 items-end">
                     <!-- Rede Filter -->
                     <div id="main-rede-filter-wrapper" class="relative flex-1 min-w-[200px]">
@@ -466,7 +466,7 @@
             <div id="city-view-content">
                 <!-- Filters (Restyling minimal needed as classes are utility based, but ensure containers match) -->
                 <!-- Simplified filters block for brevity, ensuring ID matches -->
-                <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+                <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
                      <!-- ... Filters Content (Copied from original but wrapper IDs preserved) ... -->
                      <!-- To save tokens, I will trust the JS to populate the dropdowns/inputs if IDs match.
                           I need to make sure the structure is there. -->
@@ -598,7 +598,7 @@
         <header class="mb-8 border-b border-slate-800 pb-4"><h1 class="text-3xl font-bold text-white">Acompanhamento Semanal</h1></header>
         
         <!-- Filters Block -->
-        <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
              <div class="flex flex-wrap gap-4 items-center justify-between">
                 <div id="weekly-fornecedor-toggle-container" class="flex bg-slate-800 p-1 rounded-lg">
                     <button data-fornecedor="PEPSICO" class="fornecedor-btn active px-4 py-2 text-sm font-bold bg-blue-600 text-white rounded-md">PEPSICO</button>
@@ -656,7 +656,7 @@
         <header class="mb-8 border-b border-slate-800 pb-4"><h1 class="text-3xl font-bold text-white">Comparativo Mensal</h1></header>
         <!-- Retaining IDs for JS logic: comparison-rede-group-container, comparison-com-rede-btn, etc. -->
         <!-- Simplified block for structure -->
-        <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
             <div id="comparison-rede-filter-wrapper" class="hidden"> <!-- Hidden but present for JS refs -->
                 <div id="comparison-rede-group-container"><button data-group="" class="active"></button><button id="comparison-com-rede-btn" data-group="com_rede"><span id="comparison-com-rede-btn-text"></span></button><button data-group="sem_rede"></button></div>
                 <div id="comparison-rede-filter-dropdown"></div>
@@ -742,7 +742,7 @@
         <header class="mb-8 border-b border-slate-800 pb-4"><h1 class="text-3xl font-bold text-white">Análise de Estoque</h1></header>
         
         <!-- Stock Filters -->
-        <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="flex flex-wrap gap-4 items-end">
                  <!-- Rede -->
                  <div id="stock-rede-filter-wrapper" class="relative flex-1 min-w-[200px]">
@@ -983,7 +983,7 @@
         </header>
 
         <!-- Filters Block -->
-        <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <!-- Coordenador -->
                 <div class="relative">
@@ -1087,7 +1087,7 @@
             <button id="export-mix-pdf-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Exportar PDF</button>
         </header>
 
-        <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="flex flex-wrap gap-4 items-end">
                 <div id="mix-rede-filter-wrapper" class="relative flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
@@ -1195,7 +1195,7 @@
             <button id="export-meta-realizado-pdf-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Exportar PDF</button>
         </header>
 
-        <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="flex flex-wrap gap-4 items-end">
                 <!-- Coordenador -->
                 <div class="relative flex-1 min-w-[200px]">
@@ -1285,7 +1285,7 @@
             <button id="export-coverage-pdf-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Exportar PDF</button>
         </header>
 
-        <div class="mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>

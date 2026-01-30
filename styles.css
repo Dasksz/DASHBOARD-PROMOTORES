@@ -208,3 +208,94 @@
         max-height: 500px;
         opacity: 1;
     }
+
+    /* SKELETON SCREENS */
+    .skeleton {
+        background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 4px;
+    }
+
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    /* Sticky Filters */
+    .sticky-filters {
+        position: sticky;
+        top: 4rem; /* Below top navbar (h-16) */
+        z-index: 30; /* Below dropdowns (z-40/50) */
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--border-color);
+        /* Adjustments to look good when stuck */
+        margin-top: -1rem; /* Pull up slightly if needed */
+        margin-left: -1.5rem; /* Counteract container padding if needed, but container has padding */
+        margin-right: -1.5rem;
+        padding: 1.5rem;
+        border-radius: 0 0 1rem 1rem; /* Rounded bottom */
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    @media (max-width: 1024px) {
+        .sticky-filters {
+            position: relative; /* Disable on mobile if too tall? */
+            top: 0;
+            margin: 0 0 1.5rem 0;
+            border-radius: 1rem;
+        }
+    }
+
+    /* Mobile Tables */
+    @media (max-width: 768px) {
+        table, thead, tbody, th, td, tr {
+            display: block;
+        }
+        thead {
+            display: none; /* Hide headers */
+        }
+        tr {
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background-color: var(--bg-card);
+            overflow: hidden;
+        }
+        td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            text-align: right;
+            min-height: 3rem; /* Ensure height for empty cells */
+        }
+        td:last-child {
+            border-bottom: none;
+        }
+        td::before {
+            content: attr(data-label);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            color: #94a3b8; /* slate-400 */
+            margin-right: 1rem;
+            text-align: left;
+            flex: 1; /* Allow label to take space */
+        }
+        /* Exceptions for specific cells if needed */
+        td .badge, td .status-indicator {
+            margin-left: auto;
+        }
+    }
+
+    /* Performance & Accessibility */
+    @media (max-width: 768px), (prefers-reduced-motion: reduce) {
+        .glass-nav, .modal-overlay, .gatekeeper-card, .sticky-filters {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background-color: rgba(15, 23, 42, 0.98) !important;
+        }
+    }
