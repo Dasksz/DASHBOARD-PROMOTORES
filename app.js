@@ -704,6 +704,13 @@
 
             // 2. Queue All Missing
             let queuedCount = 0;
+
+            // Optimization: Use Set for O(1) lookup
+            const queuedClientCodes = new Set();
+            nominatimQueue.forEach(item => {
+                queuedClientCodes.add(String(item.client['Código'] || item.client['codigo_cliente']));
+            });
+
             activeClientsList.forEach(client => {
                 const code = String(client['Código'] || client['codigo_cliente']);
                 if (clientCoordinatesMap.has(code)) return;
@@ -724,8 +731,9 @@
 
                 if (cidade && cidade !== 'N/A') {
                     // Check for duplicates
-                    if (!nominatimQueue.some(item => String(item.client['Código'] || item.client['codigo_cliente']) === code)) {
+                    if (!queuedClientCodes.has(code)) {
                         nominatimQueue.push({ client, level: 0 });
+                        queuedClientCodes.add(code);
                         queuedCount++;
                     }
                 }
