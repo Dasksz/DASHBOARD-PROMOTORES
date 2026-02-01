@@ -10057,10 +10057,11 @@ const supervisorGroups = new Map();
 
             // Only update dropdown if empty or number of items changed significantly (simplistic check)
             if (innovationsMonthCategoryFilter.options.length <= 1 && allCategories.length > 0) {
-                innovationsMonthCategoryFilter.innerHTML = '<option value="">Todas as Categorias</option>';
+                let optionsHtml = '<option value="">Todas as Categorias</option>';
                 allCategories.forEach(cat => {
-                    innovationsMonthCategoryFilter.innerHTML += `<option value="${cat}">${cat}</option>`;
+                    optionsHtml += `<option value="${cat}">${cat}</option>`;
                 });
+                innovationsMonthCategoryFilter.innerHTML = optionsHtml;
                 if (allCategories.includes(currentFilterValue)) {
                     innovationsMonthCategoryFilter.value = currentFilterValue;
                 }
