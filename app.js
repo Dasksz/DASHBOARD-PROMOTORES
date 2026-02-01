@@ -1670,6 +1670,7 @@
             setTimeout(() => {
                 const maxDaysLabel = document.getElementById('max-working-days-label');
                 if (maxDaysLabel) maxDaysLabel.textContent = `(Máx: ${maxWorkingDaysStock})`;
+                const daysInput = document.getElementById('stock-working-days-input');
                 if(daysInput) daysInput.value = customWorkingDaysStock;
             }, 0);
         }
@@ -1687,10 +1688,12 @@
         const mainDashboard = document.getElementById('main-dashboard');
         const cityView = document.getElementById('city-view');
         const comparisonView = document.getElementById('comparison-view');
+        const stockView = document.getElementById('stock-view');
 
         const showCityBtn = document.getElementById('show-city-btn');
         const backToMainFromCityBtn = document.getElementById('back-to-main-from-city-btn');
         const backToMainFromComparisonBtn = document.getElementById('back-to-main-from-comparison-btn');
+        const backToMainFromStockBtn = document.getElementById('back-to-main-from-stock-btn');
 
         const totalVendasEl = document.getElementById('total-vendas');
         const totalPesoEl = document.getElementById('total-peso');
@@ -1702,6 +1705,7 @@
         const viewChartBtn = document.getElementById('viewChartBtn');
         const viewTableBtn = document.getElementById('viewTableBtn');
         const viewComparisonBtn = document.getElementById('viewComparisonBtn');
+        const viewStockBtn = document.getElementById('viewStockBtn');
         const chartView = document.getElementById('chartView');
         const tableView = document.getElementById('tableView');
         const faturamentoBtn = document.getElementById('faturamentoBtn');
@@ -1794,8 +1798,6 @@
         const weeklyComparisonChartContainer = document.getElementById('weeklyComparisonChartContainer');
         const monthlyComparisonChartContainer = document.getElementById('monthlyComparisonChartContainer');
 
-        const growthTableBody = document.getElementById('growth-table-body');
-        const declineTableBody = document.getElementById('decline-table-body');
         const newProductsTableBody = document.getElementById('new-products-table-body');
         const lostProductsTableBody = document.getElementById('lost-products-table-body');
 
@@ -1920,7 +1922,6 @@
         let currentProductMetric = 'faturamento';
         let currentFornecedor = '';
         let currentComparisonFornecedor = '';
-        let currentStockFornecedor = '';
         let useTendencyComparison = false;
         let comparisonChartType = 'weekly';
         let comparisonMonthlyMetric = 'faturamento';
@@ -1934,9 +1935,6 @@
         let selectedComparisonCoords = [];
         let selectedComparisonCoCoords = [];
         let selectedComparisonPromotors = [];
-        let selectedStockCoords = [];
-        let selectedStockCoCoords = [];
-        let selectedStockPromotors = [];
         let selectedInnovationsCoords = [];
         let selectedInnovationsCoCoords = [];
         let selectedInnovationsPromotors = [];
@@ -1964,9 +1962,6 @@
         var selectedCitySuppliers = [];
         let selectedComparisonSuppliers = [];
         let selectedComparisonProducts = [];
-        let selectedStockSuppliers = [];
-        let selectedStockProducts = [];
-        let selectedStockTiposVenda = [];
         let selectedCoverageTiposVenda = [];
         let selectedComparisonTiposVenda = [];
         let selectedCityTiposVenda = [];
@@ -1976,7 +1971,6 @@
         let selectedMainRedes = [];
         let selectedCityRedes = [];
         let selectedComparisonRedes = [];
-        let selectedStockRedes = [];
 
         let mainRedeGroupFilter = '';
         let cityRedeGroupFilter = '';
@@ -9295,34 +9289,6 @@ const supervisorGroups = new Map();
             return kpiValues.reduce((a, b) => a + b, 0) / QUARTERLY_DIVISOR;
         }
 
-        function calculateStockMonthlyAverage(historySales) {
-            // Function groupSalesByMonth is defined above in the scope
-            const salesByMonth = groupSalesByMonth(historySales);
-            let sortedMonths = Object.keys(salesByMonth).sort();
-
-            if (sortedMonths.length > 0) {
-                const firstMonthKey = sortedMonths[0];
-                const firstSaleInFirstMonth = salesByMonth[firstMonthKey].reduce((earliest, sale) => {
-                    const saleDate = parseDate(sale.DTPED);
-                    return (!earliest || (saleDate && saleDate < earliest)) ? saleDate : earliest;
-                }, null);
-
-                if (firstSaleInFirstMonth && firstSaleInFirstMonth.getUTCDate() > 20) {
-                    sortedMonths.shift();
-                }
-            }
-
-            const monthsToAverage = sortedMonths.slice(-3);
-
-            const kpiValues = monthsToAverage.map(monthKey => {
-                const salesForMonth = salesByMonth[monthKey];
-                return salesForMonth.reduce((sum, s) => sum + (s.QTVENDA_EMBALAGEM_MASTER || 0), 0);
-            });
-
-            if (kpiValues.length === 0) return 0;
-            return kpiValues.reduce((a, b) => a + b, 0) / kpiValues.length;
-        }
-
         const getFilteredDataFromIndices = (indices, dataset, filters, excludeFilter = null) => {
             const isExcluded = (f) => excludeFilter === f || (Array.isArray(excludeFilter) && excludeFilter.includes(f));
             const setsToIntersect = [];
@@ -9628,43 +9594,8 @@ const supervisorGroups = new Map();
             selectedComparisonProducts = updateProductFilter(comparisonProductFilterDropdown, comparisonProductFilterText, selectedComparisonProducts, [...currentSales, ...historySales], 'comparison');
         }
 
-        function updateStockProductFilter(skipRender = false) {
-            const data = getStockFilteredData({excludeFilter: 'product'});
-            selectedStockProducts = updateProductFilter(stockProductFilterDropdown, stockProductFilterText, selectedStockProducts, [...data.sales, ...data.history], 'stock', skipRender);
-        }
-
-        function updateStockSupplierFilter(skipRender = false) {
-            const data = getStockFilteredData({excludeFilter: 'supplier'});
-            selectedStockSuppliers = updateSupplierFilter(stockSupplierFilterDropdown, stockSupplierFilterText, selectedStockSuppliers, [...data.sales, ...data.history], 'stock', skipRender);
-        }
-
-        function updateStockSellerFilter(skipRender = false) {
-            const data = getStockFilteredData({excludeFilter: 'seller'});
-        }
-
-        function updateStockCitySuggestions(dataSource) {
-            const forbidden = ['CIDADE', 'MUNICIPIO', 'CIDADE_CLIENTE', 'NOME DA CIDADE', 'CITY'];
-            const inputValue = stockCityFilter.value.toLowerCase();
-            // Optimized Lookup
-            const allAvailableCities = [...new Set(dataSource.map(item => {
-                if (item.CIDADE) return item.CIDADE;
-                if (item.CODCLI) {
-                    const c = clientMapForKPIs.get(String(item.CODCLI));
-                    if (c) return c.cidade || c['Nome da Cidade'];
-                }
-                return 'N/A';
-            }).filter(c => c && c !== 'N/A' && !forbidden.includes(c.toUpperCase())))].sort();
-            const filteredCities = inputValue ? allAvailableCities.filter(c => c.toLowerCase().includes(inputValue)) : allAvailableCities;
-            if (filteredCities.length > 0 && document.activeElement === stockCityFilter) {
-                stockCitySuggestions.innerHTML = filteredCities.map(c => `<div class="p-2 hover:bg-slate-600 cursor-pointer">${c}</div>`).join('');
-                stockCitySuggestions.classList.remove('hidden');
-            } else {
-                stockCitySuggestions.classList.add('hidden');
-            }
-        }
-
         function getActiveStockMap(filial) {
-            const filterValue = filial || stockFilialFilter.value;
+            const filterValue = filial || 'ambas';
             if (filterValue === '05') {
                 return stockData05;
             }
@@ -9677,6 +9608,7 @@ const supervisorGroups = new Map();
             });
             return combinedStock;
         }
+
 
         function updateComparisonView() {
             comparisonRenderId++;
@@ -10067,6 +9999,8 @@ const supervisorGroups = new Map();
                 }, () => currentRenderId !== comparisonRenderId); // Cancel check
             }, () => currentRenderId !== comparisonRenderId); // Cancel check
         }
+
+
 
         function getInnovationsMonthFilteredData(options = {}) {
             const { excludeFilter = null } = options;
@@ -12150,6 +12084,8 @@ const supervisorGroups = new Map();
                     updateComparisonProductFilter();
                 }
             });
+
+
             comparisonTendencyToggle.addEventListener('click', () => {
                 useTendencyComparison = !useTendencyComparison;
                 comparisonTendencyToggle.textContent = useTendencyComparison ? 'Ver Dados Reais' : 'Calcular Tendência';
@@ -13104,41 +13040,6 @@ const supervisorGroups = new Map();
                 if (!coverageTipoVendaFilterBtn.contains(e.target) && !coverageTipoVendaFilterDropdown.contains(e.target)) coverageTipoVendaFilterDropdown.classList.add('hidden');
             });
 
-            const stockWorkingDaysInput = document.getElementById('stock-working-days-input');
-            if (stockWorkingDaysInput) {
-                stockWorkingDaysInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const value = parseInt(e.target.value);
-                        if (!isNaN(value) && value > 0 && value <= maxWorkingDaysStock) {
-                            customWorkingDaysStock = value;
-                        } else {
-                             e.target.value = customWorkingDaysStock;
-                        }
-                        handleStockFilterChange();
-                        e.target.blur(); // <-- ADICIONADO: Remove o foco do input após pressionar Enter
-                    }
-                });
-                stockWorkingDaysInput.addEventListener('blur', (e) => {
-                    const value = parseInt(e.target.value);
-                     if (isNaN(value) || value <= 0 || value > maxWorkingDaysStock) {
-                         e.target.value = customWorkingDaysStock;
-                    } else if (value !== customWorkingDaysStock) {
-
-                        customWorkingDaysStock = value;
-                        handleStockFilterChange();
-                    }
-                });
-            }
-
-            document.querySelectorAll('.stock-trend-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    stockTrendFilter = btn.dataset.trend;
-                    document.querySelectorAll('.stock-trend-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    handleStockFilterChange();
-                });
-            });
         }
 
         initializeOptimizedDataStructures();
@@ -13198,7 +13099,6 @@ const supervisorGroups = new Map();
         setupHierarchyFilters('main', updateDashboard);
         setupHierarchyFilters('city', updateCityView);
         setupHierarchyFilters('comparison', updateComparisonView);
-        setupHierarchyFilters('stock', updateStockView);
         setupHierarchyFilters('innovations-month', updateInnovationsMonthView);
         setupHierarchyFilters('mix', updateMixView);
         setupHierarchyFilters('meta-realizado', updateMetaRealizadoView);
@@ -13214,7 +13114,6 @@ const supervisorGroups = new Map();
         updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
         updateRedeFilter(cityRedeFilterDropdown, cityComRedeBtnText, selectedCityRedes, allClientsData);
         updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
-        updateRedeFilter(stockRedeFilterDropdown, stockComRedeBtnText, selectedStockRedes, allClientsData, 'Com Rede');
 
         // Fix: Pre-filter Suppliers for Meta Realizado (Only PEPSICO)
         const pepsicoSuppliersSource = [...allSalesData, ...allHistoryData].filter(s => {
