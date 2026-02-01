@@ -13128,10 +13128,6 @@ const supervisorGroups = new Map();
 
         updateAllComparisonFilters();
 
-        updateStockSellerFilter();
-        updateStockSupplierFilter();
-        updateStockProductFilter();
-        updateStockCitySuggestions([...allSalesData, ...allHistoryData]);
 
         initializeRedeFilters();
         setupEventListeners();
