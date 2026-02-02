@@ -13402,20 +13402,140 @@ const supervisorGroups = new Map();
 
             console.log(`[Parser] Linhas encontradas: ${rows.length}`);
 
+            // Helper: Parse Value (Moved up for availability)
+            const parseImportValue = (rawStr) => {
+                if (!rawStr) return NaN;
+                let clean = String(rawStr).trim().toUpperCase().replace(/[^0-9,.-]/g, '');
+                if (!clean) return NaN;
+
+                const dotIdx = clean.lastIndexOf('.');
+                const commaIdx = clean.lastIndexOf(',');
+
+                if (dotIdx > -1 && commaIdx > -1) {
+                    if (dotIdx > commaIdx) clean = clean.replace(/,/g, '');
+                    else clean = clean.replace(/\./g, '').replace(',', '.');
+                } else if (commaIdx > -1) {
+                    if (/,\d{3}$/.test(clean)) clean = clean.replace(/,/g, '');
+                    else clean = clean.replace(',', '.');
+                } else if (dotIdx > -1) {
+                    if (/\.\d{3}$/.test(clean)) clean = clean.replace(/\./g, '');
+                }
+                return parseFloat(clean);
+            };
+
+            // Helper: Normalize Category
+            const normalizeGoalCategory = (catKey) => {
+                if (!catKey) return null;
+                catKey = catKey.toUpperCase();
+                if (catKey.includes('NÃO EXTRUSADOS') || catKey.includes('NAO EXTRUSADOS')) return '708';
+                if (catKey.includes('EXTRUSADOS')) return '707';
+                if (catKey.includes('TORCIDA')) return '752';
+                if (catKey.includes('TODDYNHO')) return '1119_TODDYNHO';
+                if (catKey.includes('TODDY')) return '1119_TODDY';
+                if (catKey.includes('QUAKER') || catKey.includes('KEROCOCO')) return '1119_QUAKER_KEROCOCO';
+                if (catKey === 'KG ELMA' || catKey === 'KG_ELMA') return 'tonelada_elma';
+                if (catKey === 'KG FOODS' || catKey === 'KG_FOODS') return 'tonelada_foods';
+                if (catKey === 'TOTAL ELMA' || catKey === 'TOTAL_ELMA') return 'total_elma';
+                if (catKey === 'TOTAL FOODS' || catKey === 'TOTAL_FOODS') return 'total_foods';
+                if (catKey === 'MIX SALTY' || catKey === 'MIX_SALTY') return 'mix_salty';
+                if (catKey === 'MIX FOODS' || catKey === 'MIX_FOODS') return 'mix_foods';
+                if (catKey === 'PEPSICO_ALL_POS' || catKey === 'PEPSICO_ALL' || catKey === 'GERAL') return 'pepsico_all';
+
+                const validIds = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO', 'tonelada_elma', 'tonelada_foods', 'total_elma', 'total_foods', 'mix_salty', 'mix_foods', 'pepsico_all'];
+                if (validIds.includes(catKey.toLowerCase())) return catKey.toLowerCase();
+                return null;
+            };
+
+            // Helper: Normalize Metric
+            const normalizeGoalMetric = (metricKey) => {
+                if (!metricKey) return null;
+                metricKey = metricKey.toUpperCase();
+                if (metricKey === 'FATURAMENTO' || metricKey === 'MÉDIA TRIM.' || metricKey === 'FAT' || metricKey === 'R$' || metricKey === 'VALOR') return 'FAT';
+                if (metricKey === 'POSITIVAÇÃO' || metricKey === 'POSITIVACAO' || metricKey.includes('POSITIVA') || metricKey === 'POS') return 'POS';
+                if (metricKey === 'TONELADA' || metricKey === 'META KG' || metricKey === 'VOL' || metricKey === 'KG' || metricKey === 'VOLUME') return 'VOL';
+                if (metricKey === 'META MIX' || metricKey === 'MIX' || metricKey === 'QTD') return 'MIX';
+                return null;
+            };
+
+            // Helper: Resolve Seller
+            const resolveSeller = (rawName) => {
+                if (!rawName) return null;
+                const upperName = rawName.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+
+                if (upperName === 'BALCAO' || upperName === 'BALCÃO' || upperName.includes('TOTAL') || upperName.includes('SUPERVISOR') || upperName.includes('GERAL')) return null;
+                if (optimizedData.rcasBySupervisor.has(upperName) || optimizedData.rcasBySupervisor.has(rawName)) return null;
+
+                if (!isNaN(parseImportValue(rawName))) {
+                     const codeStr = String(parseImportValue(rawName));
+                     if (optimizedData.rcaNameByCode.has(codeStr)) return optimizedData.rcaNameByCode.get(codeStr);
+                }
+
+                for (const [sysName, sysCode] of optimizedData.rcaCodeByName) {
+                     const sysUpper = sysName.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+                     if (sysUpper === upperName) return sysName;
+                }
+                return rawName;
+            };
+
             // 2. Identify Header Rows
             // We look for 3 consecutive rows that might be the header structure
-            // Row A: Categories (EXTRUSADOS, ETC)
-            // Row B: Metrics (FATURAMENTO, ETC)
-            // Row C: Submetrics (META, AJUSTE)
             let startRow = 0;
             if (rows.length >= 3) {
                 // Standard logic: Rows 0, 1, 2
                 startRow = 0;
             } else {
                 console.warn("[Parser] Menos de 3 linhas. Tentando modo simplificado...");
-                // TODO: Implement simplified mode for single-row updates if needed
-                // For now, abort to avoid garbage data
-                return null;
+                const simplifiedUpdates = [];
+
+                rows.forEach((row, rowIndex) => {
+                    const cols = row.map(c => c ? c.trim() : '').filter(c => c !== '');
+                    if (cols.length < 3) {
+                         console.warn(`[Parser-Simples] Linha ${rowIndex+1} ignorada: Menos de 3 colunas válidas.`);
+                         return;
+                    }
+
+                    const sellerName = resolveSeller(cols[0]);
+                    if (!sellerName) return;
+
+                    let catId = null;
+                    let metricId = null;
+                    let value = NaN;
+
+                    // Try 4 Columns: Seller | Category | Metric | Value
+                    if (cols.length >= 4) {
+                        catId = normalizeGoalCategory(cols[1]);
+                        metricId = normalizeGoalMetric(cols[2]);
+                        value = parseImportValue(cols[3]);
+                    }
+                    // Try 3 Columns: Seller | Category | Value (Infer Metric)
+                    else if (cols.length === 3) {
+                        catId = normalizeGoalCategory(cols[1]);
+                        value = parseImportValue(cols[2]);
+
+                        if (catId) {
+                            if (catId.startsWith('mix_')) metricId = 'MIX';
+                            else if (catId.startsWith('tonelada_')) metricId = 'VOL';
+                            else if (catId.startsWith('total_') || catId === 'pepsico_all') metricId = 'POS';
+                            // Ambiguous: 707, 708... could be FAT or POS.
+                            // If Value is small (< 200), maybe POS? If large, FAT? Dangerous.
+                            // Default to FAT for 707/etc?
+                            else if (['707','708','752','1119_TODDYNHO','1119_TODDY','1119_QUAKER_KEROCOCO'].includes(catId)) {
+                                metricId = 'FAT'; // Default assumption for simplified input
+                            }
+                        }
+                    }
+
+                    if (sellerName && catId && metricId && !isNaN(value)) {
+                        let type = 'rev';
+                        if (metricId === 'VOL') type = 'vol';
+                        if (metricId === 'POS') type = 'pos';
+                        if (metricId === 'MIX') type = 'mix';
+
+                        simplifiedUpdates.push({ type, seller: sellerName, category: catId, val: value });
+                    }
+                });
+
+                return simplifiedUpdates.length > 0 ? simplifiedUpdates : null;
             }
 
             const header0 = rows[startRow].map(h => h ? h.trim().toUpperCase() : '');
@@ -13440,26 +13560,13 @@ const supervisorGroups = new Map();
                     if (subMetric === 'AJ.' || subMetric === 'AJ') subMetric = 'AJUSTE';
 
                     let catKey = currentCategory;
-                    // Normalize Category Names to IDs (Fuzzy Matching)
-                    if (catKey.includes('NÃO EXTRUSADOS') || catKey.includes('NAO EXTRUSADOS')) catKey = '708';
-                    else if (catKey.includes('EXTRUSADOS')) catKey = '707';
-                    else if (catKey.includes('TORCIDA')) catKey = '752';
-                    else if (catKey.includes('TODDYNHO')) catKey = '1119_TODDYNHO';
-                    else if (catKey.includes('TODDY')) catKey = '1119_TODDY';
-                    else if (catKey.includes('QUAKER') || catKey.includes('KEROCOCO')) catKey = '1119_QUAKER_KEROCOCO';
-                    else if (catKey === 'KG ELMA') catKey = 'tonelada_elma';
-                    else if (catKey === 'KG FOODS') catKey = 'tonelada_foods';
-                    else if (catKey === 'TOTAL ELMA') catKey = 'total_elma';
-                    else if (catKey === 'TOTAL FOODS') catKey = 'total_foods';
-                    else if (catKey === 'MIX SALTY') catKey = 'mix_salty';
-                    else if (catKey === 'MIX FOODS') catKey = 'mix_foods';
-                    else if (catKey === 'PEPSICO_ALL_POS' || catKey === 'PEPSICO_ALL' || catKey === 'GERAL') catKey = 'pepsico_all';
+                    // Normalize Category Names to IDs (Reuse helper if possible or keep logic)
+                    const normalizedCat = normalizeGoalCategory(catKey);
+                    if (normalizedCat) catKey = normalizedCat;
 
                     let metricKey = 'OTHER';
-                    if (currentMetric === 'FATURAMENTO' || currentMetric === 'MÉDIA TRIM.') metricKey = 'FAT';
-                    else if (currentMetric === 'POSITIVAÇÃO' || currentMetric === 'POSITIVACAO' || currentMetric.includes('POSITIVA')) metricKey = 'POS';
-                    else if (currentMetric === 'TONELADA' || currentMetric === 'META KG') metricKey = 'VOL';
-                    else if (currentMetric === 'META MIX' || currentMetric === 'MIX' || currentMetric === 'QTD') metricKey = 'MIX';
+                    const normalizedMetric = normalizeGoalMetric(currentMetric);
+                    if (normalizedMetric) metricKey = normalizedMetric;
 
                     const key = `${catKey}_${metricKey}_${subMetric}`;
                     colMap[key] = i;
@@ -13468,26 +13575,6 @@ const supervisorGroups = new Map();
 
             const updates = [];
             const processedSellers = new Set();
-
-            const parseImportValue = (rawStr) => {
-                if (!rawStr) return NaN;
-                let clean = String(rawStr).trim().toUpperCase().replace(/[^0-9,.-]/g, '');
-                if (!clean) return NaN;
-
-                const dotIdx = clean.lastIndexOf('.');
-                const commaIdx = clean.lastIndexOf(',');
-
-                if (dotIdx > -1 && commaIdx > -1) {
-                    if (dotIdx > commaIdx) clean = clean.replace(/,/g, '');
-                    else clean = clean.replace(/\./g, '').replace(',', '.');
-                } else if (commaIdx > -1) {
-                    if (/,\d{3}$/.test(clean)) clean = clean.replace(/,/g, '');
-                    else clean = clean.replace(',', '.');
-                } else if (dotIdx > -1) {
-                    if (/\.\d{3}$/.test(clean)) clean = clean.replace(/\./g, '');
-                }
-                return parseFloat(clean);
-            };
 
             const dataStartRow = startRow + 3;
             // Identify Vendor Column Index (Name)
