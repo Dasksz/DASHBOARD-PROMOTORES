@@ -4018,7 +4018,7 @@
 
                 let cells = `
                     <td class="px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 bg-[#1d2347] z-30 truncate" title="${row.name}">${getFirstName(row.name)}</td>
-                    <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs">${metaTotalStr}</td>
+                    <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs" title="Meta Contratual Mensal">${metaTotalStr}</td>
                     <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs">${realTotalStr}</td>
                 `;
 
@@ -4496,7 +4496,7 @@
                         <td class="px-3 py-2 text-xs font-medium text-slate-200 border-r border-b border-slate-700 truncate" title="${escapeHtml(row.razaoSocial)}">${escapeHtml(row.razaoSocial)}</td>
                         <td class="px-3 py-2 text-xs text-slate-400 border-r border-b border-slate-700 truncate">${escapeHtml(getFirstName(row.vendedor))}</td>
                         <td class="px-3 py-2 text-xs text-slate-400 border-r border-b border-slate-700 truncate">${escapeHtml(row.cidade)}</td>
-                        <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs">${metaTotalStr}</td>
+                        <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs" title="Meta Contratual Mensal">${metaTotalStr}</td>
                         <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs">${realTotalStr}</td>
                     `;
 
@@ -13237,7 +13237,7 @@ const supervisorGroups = new Map();
             weeks.forEach((week, i) => {
                 // Determine if week is fully past
                 // A week is "past" if its END date is strictly BEFORE the currentDate (ignoring time)
-                // Note: user said "check if first week passed... then redistribute difference".
+                // Logic: "Check if first week passed... then redistribute difference".
                 // If we are IN week 2, week 1 is past.
                 // Assuming lastSaleDate represents "today".
 
@@ -13246,24 +13246,21 @@ const supervisorGroups = new Map();
                 let originalWeekGoal = dailyGoal * week.workingDays;
 
                 if (isPast) {
-                    // Week is closed. The goal is fixed? No, the user says:
-                    // "case in the first week the goal that was 40k wasn't hit (realized 30k), the 10k missing must be reassigned"
-                    // This implies the "Goal" for the past week stays as original or realized?
-                    // Usually in these reports, you show the original goal for past weeks, and the *future* weeks get adjusted.
-                    // Or does the user want to see the "gap" moved?
-                    // "the 10.000 missing must be reassigned to other weeks"
-                    // This means the TARGET for future weeks increases. The displayed Goal for past week usually remains static (Original) so you can see the failure.
-                    // HOWEVER, if I change the future goals, the sum of all displayed goals will be Total Goal.
-                    // If I show Original Goal for W1 (40k) and Realized (30k), I have a deficit of 10k.
-                    // If I add 10k to W2, W3, W4...
-                    // The sum of displayed goals would be: 40k (W1) + (Original W2 + share of 10k) + ... = Total Goal + 10k.
-                    // This is mathmatically wrong if "Meta Total" column shows the fixed monthly target.
-                    // BUT, dynamic planning often works this way: "To hit the month, now I need to do X".
-                    // The user said: "as colunas onde mostram as metas por semana fossem dinâmicas de acordo com o realizado"
-
-                    // Let's assume:
-                    // Displayed Goal for Past Week = Original Proportional Goal (so you can see the variance).
-                    // Displayed Goal for Future Week = Original + Redistribution.
+                    // Week is closed.
+                    // User Requirement: "case in the first week the goal that was 40k wasn't hit (realized 30k), the 10k missing must be reassigned"
+                    //
+                    // Implementation:
+                    // 1. Past Weeks: Display Original Goal (to show variance/failure).
+                    // 2. Future Weeks: Display Adjusted Goal (Original + Share of Deficit).
+                    //
+                    // Mathematical Note:
+                    // Because we display Original Goal for past weeks (instead of Realized), the sum of displayed goals
+                    // will NOT equal the Total Monthly Goal if there is any deficit/surplus.
+                    // Sum(Displayed) = Total Goal + (Original Past - Realized Past).
+                    //
+                    // However, the Dynamic Planning Invariant holds:
+                    // Realized Past + Future Adjusted Goals = Total Monthly Goal.
+                    // This ensures the seller knows exactly what is needed in future weeks to hit the contract target.
 
                     adjustedGoals[i] = originalWeekGoal;
                     const realized = realizedByWeek[i] || 0;
