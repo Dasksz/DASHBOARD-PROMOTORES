@@ -11970,8 +11970,6 @@ const supervisorGroups = new Map();
                 if (e.target.closest('#city-suggestions > div')) { if(cityNameFilter) cityNameFilter.value = e.target.textContent; citySuggestions.classList.add('hidden'); updateCityView(); }
                 if (e.target.closest('#comparison-city-suggestions > div')) { if(comparisonCityFilter) comparisonCityFilter.value = e.target.textContent; comparisonCitySuggestions.classList.add('hidden'); updateAllComparisonFilters(); updateComparisonView(); }
                 else if (comparisonCityFilter && !comparisonCityFilter.contains(e.target)) comparisonCitySuggestions.classList.add('hidden');
-                if (e.target.closest('#stock-city-suggestions > div')) { if(stockCityFilter) stockCityFilter.value = e.target.textContent; stockCitySuggestions.classList.add('hidden'); handleStockFilterChange(); }
-                else if (stockCityFilter && !stockCityFilter.contains(e.target)) stockCitySuggestions.classList.add('hidden');
             });
 
             fornecedorToggleContainerEl.querySelectorAll('.fornecedor-btn').forEach(btn => {
