@@ -9992,6 +9992,20 @@ const supervisorGroups = new Map();
                         showNoDataMessage('dailyWeeklyComparisonChart', 'Sem dados para exibir.');
                     }
 
+                    // Weekly Summary Table (Optimized)
+                    const weeklySummaryTableBody = document.getElementById('weeklySummaryTableBody');
+                    if (weeklySummaryTableBody) {
+                         let grandTotal = 0;
+                         const weekKeys = Object.keys(salesByWeekAndDay).sort((a,b) => parseInt(a) - parseInt(b));
+                         const rowsHTML = weekKeys.map(weekNum => {
+                             const weekTotal = Object.values(salesByWeekAndDay[weekNum]).reduce((a, b) => a + b, 0);
+                             grandTotal += weekTotal;
+                             return `<tr class="hover:bg-slate-700"><td class="px-4 py-2">Semana ${weekNum}</td><td class="px-4 py-2 text-right">${weekTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`;
+                         }).join('');
+
+                         weeklySummaryTableBody.innerHTML = rowsHTML + `<tr class="font-bold bg-slate-700/50"><td class="px-4 py-2">Total do Mês</td><td class="px-4 py-2 text-right">${grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`;
+                    }
+
                     // Supervisor Table
                     const supervisorTableBody = document.getElementById('supervisorComparisonTableBody');
                     const supRows = Object.entries(m.charts.supervisorData).map(([sup, data]) => { const variation = data.history > 0 ? ((data.current - data.history) / data.history) * 100 : (data.current > 0 ? 100 : 0); const colorClass = variation > 0 ? 'text-green-400' : variation < 0 ? 'text-red-400' : 'text-slate-400'; return `<tr class="hover:bg-slate-700"><td class="px-4 py-2">${sup}</td><td class="px-4 py-2 text-right">${data.history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-4 py-2 text-right">${data.current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-4 py-2 text-right ${colorClass}">${variation.toFixed(2)}%</td></tr>`; }).join('');
