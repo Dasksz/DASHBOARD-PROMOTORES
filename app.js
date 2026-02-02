@@ -10112,7 +10112,34 @@ const supervisorGroups = new Map();
 
                 // Optimized Map Building (2 passes instead of 4)
                 mapsCurrent = buildInnovationSalesMaps(allSalesData, mainTypes, bonusTypes);
-                mapsPrevious = buildInnovationSalesMaps(allHistoryData, mainTypes, bonusTypes);
+
+                // Filter History for Previous Month Only (Current Month - 1)
+                const currentYear = lastSaleDate.getUTCFullYear();
+                const currentMonth = lastSaleDate.getUTCMonth();
+                // Start of Prev Month
+                const prevMonthDate = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+                const startTs = prevMonthDate.getTime();
+                // End of Prev Month (Start of Current Month)
+                const currentMonthStartDate = new Date(Date.UTC(currentYear, currentMonth, 1));
+                const endTs = currentMonthStartDate.getTime();
+
+                const previousMonthData = allHistoryData.filter(item => {
+                    const val = item.DTPED;
+                    let ts = 0;
+                    if (typeof val === 'number') {
+                        if (val < 100000) {
+                             ts = Math.round((val - 25569) * 86400 * 1000);
+                        } else {
+                             ts = val;
+                        }
+                    } else {
+                        const d = parseDate(val);
+                        if(d) ts = d.getTime();
+                    }
+                    return ts >= startTs && ts < endTs;
+                });
+
+                mapsPrevious = buildInnovationSalesMaps(previousMonthData, mainTypes, bonusTypes);
 
                 viewState.inovacoes.lastTypesKey = currentSelectionKey;
                 viewState.inovacoes.cache = { mapsCurrent, mapsPrevious };
