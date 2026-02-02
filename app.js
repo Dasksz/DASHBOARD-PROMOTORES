@@ -8249,27 +8249,44 @@ const supervisorGroups = new Map();
         }
 
         function resetMainFilters() {
-            selectedStockSuppliers = [];
-            selectedStockProducts = [];
-            selectedStockTiposVenda = [];
-            stockRedeGroupFilter = '';
-            selectedStockRedes = [];
-            stockTrendFilter = 'all';
+            selectedMainSuppliers = [];
+            selectedTiposVenda = [];
+            selectedMainRedes = [];
+            mainRedeGroupFilter = '';
 
-            document.querySelectorAll('.stock-trend-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelector('.stock-trend-btn[data-trend="all"]').classList.add('active');
+            selectedMainSuppliers = updateSupplierFilter(document.getElementById('fornecedor-filter-dropdown'), document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, [...allSalesData, ...allHistoryData], 'main');
+            updateTipoVendaFilter(tipoVendaFilterDropdown, tipoVendaFilterText, selectedTiposVenda, allSalesData);
+            updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
 
-            stockRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-            stockRedeGroupContainer.querySelector('button[data-group=""]').classList.add('active');
-            updateRedeFilter(stockRedeFilterDropdown, stockComRedeBtnText, selectedStockRedes, allClientsData, 'Com Rede');
+            if (mainRedeGroupContainer) {
+                mainRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                const defaultBtn = mainRedeGroupContainer.querySelector('button[data-group=""]');
+                if (defaultBtn) defaultBtn.classList.add('active');
+                if (mainRedeFilterDropdown) mainRedeFilterDropdown.classList.add('hidden');
+            }
 
-            document.querySelectorAll('#stock-fornecedor-toggle-container .fornecedor-btn').forEach(b => b.classList.remove('active'));
+            const fornecedorToggleContainerEl = document.getElementById('fornecedor-toggle-container');
+            if (fornecedorToggleContainerEl) {
+                fornecedorToggleContainerEl.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active'));
+            }
 
-            customWorkingDaysStock = maxWorkingDaysStock;
-            const daysInput = document.getElementById('stock-working-days-input');
-            if(daysInput) daysInput.value = customWorkingDaysStock;
+            if (hierarchyState['main']) {
+                hierarchyState['main'].coords.clear();
+                hierarchyState['main'].cocoords.clear();
+                hierarchyState['main'].promotors.clear();
 
-            handleStockFilterChange();
+                if (userHierarchyContext.role !== 'adm') {
+                    if (userHierarchyContext.coord) hierarchyState['main'].coords.add(userHierarchyContext.coord);
+                    if (userHierarchyContext.cocoord) hierarchyState['main'].cocoords.add(userHierarchyContext.cocoord);
+                    if (userHierarchyContext.promotor) hierarchyState['main'].promotors.add(userHierarchyContext.promotor);
+                }
+
+                updateHierarchyDropdown('main', 'coord');
+                updateHierarchyDropdown('main', 'cocoord');
+                updateHierarchyDropdown('main', 'promotor');
+            }
+
+            updateDashboard();
         }
 
 
@@ -11946,11 +11963,6 @@ const supervisorGroups = new Map();
                 if (comparisonTipoVendaFilterBtn && comparisonTipoVendaFilterDropdown && !comparisonTipoVendaFilterBtn.contains(e.target) && !comparisonTipoVendaFilterDropdown.contains(e.target)) comparisonTipoVendaFilterDropdown.classList.add('hidden');
                 if (comparisonSupplierFilterBtn && comparisonSupplierFilterDropdown && !comparisonSupplierFilterBtn.contains(e.target) && !comparisonSupplierFilterDropdown.contains(e.target)) comparisonSupplierFilterDropdown.classList.add('hidden');
                 if (comparisonProductFilterBtn && comparisonProductFilterDropdown && !comparisonProductFilterBtn.contains(e.target) && !comparisonProductFilterDropdown.contains(e.target)) comparisonProductFilterDropdown.classList.add('hidden');
-
-                if (stockComRedeBtn && stockRedeFilterDropdown && !stockComRedeBtn.contains(e.target) && !stockRedeFilterDropdown.contains(e.target)) stockRedeFilterDropdown.classList.add('hidden');
-                if (stockSupplierFilterBtn && stockSupplierFilterDropdown && !stockSupplierFilterBtn.contains(e.target) && !stockSupplierFilterDropdown.contains(e.target)) stockSupplierFilterDropdown.classList.add('hidden');
-                if (stockProductFilterBtn && stockProductFilterDropdown && !stockProductFilterBtn.contains(e.target) && !stockProductFilterDropdown.contains(e.target)) stockProductFilterDropdown.classList.add('hidden');
-                if (stockTipoVendaFilterBtn && stockTipoVendaFilterDropdown && !stockTipoVendaFilterBtn.contains(e.target) && !stockTipoVendaFilterDropdown.contains(e.target)) stockTipoVendaFilterDropdown.classList.add('hidden');
 
 
                 if (e.target.closest('[data-pedido-id]')) { e.preventDefault(); openModal(e.target.closest('[data-pedido-id]').dataset.pedidoId); }
