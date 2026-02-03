@@ -15157,10 +15157,92 @@ const supervisorGroups = new Map();
         renderWalletTable();
     }
     
-    function selectWalletPromoter(code, name) {
+    async function selectWalletPromoter(code, name) {
         walletState.selectedPromoter = code;
         const txt = document.getElementById('wallet-promoter-select-text');
         if(txt) txt.textContent = `${code} - ${name}`;
+        
+        // --- Fetch Missing Clients Logic ---
+        if (code) {
+            const targetPromoter = String(code).trim().toUpperCase();
+            const clientCodes = [];
+            
+            // 1. Identify all clients linked to this promoter in the map
+            if (embeddedData.clientPromoters) {
+                embeddedData.clientPromoters.forEach(cp => {
+                    if (cp.promoter_code && String(cp.promoter_code).trim().toUpperCase() === targetPromoter) {
+                        clientCodes.push(normalizeKey(cp.client_code));
+                    }
+                });
+            }
+            
+            if (clientCodes.length > 0) {
+                // 2. Identify which are missing from local embeddedData.clients
+                const dataset = embeddedData.clients;
+                const existingCodes = new Set();
+                
+                if (dataset instanceof ColumnarDataset) {
+                    const col = dataset.values['Código'] || dataset.values['CODIGO_CLIENTE'] || [];
+                    for(let i=0; i<dataset.length; i++) existingCodes.add(normalizeKey(col[i]));
+                } else {
+                    dataset.forEach(c => existingCodes.add(normalizeKey(c['Código'] || c['codigo_cliente'])));
+                }
+                
+                const missing = clientCodes.filter(c => !existingCodes.has(c));
+                
+                if (missing.length > 0) {
+                    const badge = document.getElementById('wallet-count-badge');
+                    if(badge) badge.textContent = '...';
+                    
+                    try {
+                        // 3. Fetch missing clients
+                        const { data, error } = await window.supabaseClient
+                            .from('data_clients')
+                            .select('*')
+                            .in('codigo_cliente', missing);
+                            
+                        if (!error && data && data.length > 0) {
+                            // 4. Inject into embeddedData.clients
+                            data.forEach(newClient => {
+                                // Double check uniqueness before push (race condition)
+                                if (existingCodes.has(normalizeKey(newClient.codigo_cliente))) return;
+                                
+                                const mapped = {
+                                     'Código': newClient.codigo_cliente,
+                                     'Fantasia': newClient.fantasia,
+                                     'Razão Social': newClient.razaosocial,
+                                     'CNPJ/CPF': newClient.cnpj_cpf,
+                                     'Cidade': newClient.cidade,
+                                     'PROMOTOR': code // Use the selected promoter code
+                                 };
+                                 
+                                 if (dataset instanceof ColumnarDataset) {
+                                     dataset.columns.forEach(col => {
+                                         let val = '';
+                                         const c = col.toUpperCase();
+                                         if(c === 'CÓDIGO' || c === 'CODIGO_CLIENTE') val = newClient.codigo_cliente;
+                                         else if(c === 'FANTASIA' || c === 'NOMECLIENTE') val = newClient.fantasia;
+                                         else if(c === 'RAZÃO SOCIAL' || c === 'RAZAOSOCIAL' || c === 'RAZAO') val = newClient.razaosocial;
+                                         else if(c === 'CNPJ/CPF' || c === 'CNPJ') val = newClient.cnpj_cpf;
+                                         else if(c === 'CIDADE') val = newClient.cidade;
+                                         else if(c === 'PROMOTOR') val = code;
+                                         
+                                         if(dataset.values[col]) dataset.values[col].push(val);
+                                     });
+                                     dataset.length++;
+                                 } else {
+                                     dataset.push(mapped);
+                                 }
+                                 existingCodes.add(normalizeKey(newClient.codigo_cliente));
+                            });
+                        }
+                    } catch (e) {
+                        console.error("Erro ao buscar clientes faltantes:", e);
+                    }
+                }
+            }
+        }
+        
         renderWalletTable();
     }
     
