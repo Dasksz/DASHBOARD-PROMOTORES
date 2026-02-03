@@ -15181,9 +15181,16 @@ const supervisorGroups = new Map();
 
         const dataset = embeddedData.clients;
         const clientPromoterMap = new Map();
+        
+        // Normalize selected promoter for comparison
+        const targetPromoter = String(promoter).trim().toUpperCase();
+
         if (embeddedData.clientPromoters) {
              embeddedData.clientPromoters.forEach(cp => {
-                 clientPromoterMap.set(normalizeKey(cp.client_code), String(cp.promoter_code).trim());
+                 // Store normalized promoter code in map
+                 if (cp.promoter_code) {
+                    clientPromoterMap.set(normalizeKey(cp.client_code), String(cp.promoter_code).trim().toUpperCase());
+                 }
              });
         }
         
@@ -15199,7 +15206,8 @@ const supervisorGroups = new Map();
              const code = normalizeKey(row['Código'] || row['codigo_cliente']);
              const linkedPromoter = clientPromoterMap.get(code);
              
-             if (linkedPromoter === promoter) {
+             // Compare normalized values
+             if (linkedPromoter === targetPromoter) {
                  count++;
                  const tr = document.createElement('tr');
                  tr.className = 'hover:bg-slate-800/50 transition-colors border-b border-slate-800/50';
@@ -15379,6 +15387,9 @@ const supervisorGroups = new Map();
          txt.textContent = '...';
          
          try {
+             // Safety check for embeddedData
+             if (!embeddedData.clientPromoters) embeddedData.clientPromoters = [];
+
              if (action === 'upsert') {
                  const { error } = await window.supabaseClient.from('data_client_promoters')
                     .upsert({ client_code: clientCode, promoter_code: promoter }, { onConflict: 'client_code' });
