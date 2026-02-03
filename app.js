@@ -15167,10 +15167,37 @@ const supervisorGroups = new Map();
         renderWalletTable();
     }
     
-    async function selectWalletPromoter(code, name) {
+    window.selectWalletPromoter = async function(code, name) {
         walletState.selectedPromoter = code;
         const txt = document.getElementById('wallet-promoter-select-text');
-        if(txt) txt.textContent = `${code} - ${name}`;
+        const btn = document.getElementById('wallet-promoter-select-btn');
+        
+        if (code) {
+             if(txt) txt.textContent = `${code} - ${name}`;
+             
+             // Inject Clear Icon if not exists
+             let clearIcon = document.getElementById('wallet-promoter-clear-icon');
+             if (!clearIcon && btn) {
+                 clearIcon = document.createElement('div');
+                 clearIcon.id = 'wallet-promoter-clear-icon';
+                 clearIcon.className = 'p-1 hover:bg-slate-700 rounded-full cursor-pointer mr-2 transition-colors';
+                 clearIcon.innerHTML = `<svg class="w-4 h-4 text-slate-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+                 
+                 clearIcon.onclick = (e) => {
+                     e.stopPropagation();
+                     selectWalletPromoter(null, null);
+                 };
+                 
+                 // Insert before the arrow icon
+                 const arrow = btn.querySelector('svg:not(#wallet-promoter-clear-icon svg)');
+                 if (arrow) btn.insertBefore(clearIcon, arrow);
+                 else btn.appendChild(clearIcon);
+             }
+        } else {
+             if(txt) txt.textContent = 'Selecione...';
+             const clearIcon = document.getElementById('wallet-promoter-clear-icon');
+             if (clearIcon) clearIcon.remove();
+        }
         
         // --- Fetch Missing Clients Logic ---
         if (code) {
@@ -15275,12 +15302,6 @@ const supervisorGroups = new Map();
         if (!tbody) return;
         tbody.innerHTML = '';
         
-        if (!promoter) {
-            empty.classList.remove('hidden');
-            if (badge) badge.textContent = '0';
-            return;
-        }
-
         const dataset = embeddedData.clients;
         const isColumnar = dataset && dataset.values && dataset.columns;
         const len = dataset.length || 0;
@@ -15326,8 +15347,8 @@ const supervisorGroups = new Map();
              const code = normalizeKey(rowCode);
              const linkedPromoter = clientPromoterMap.get(code);
              
-             // Compare normalized values
-             if (linkedPromoter === targetPromoter) {
+             // Compare normalized values OR show all if no promoter selected
+             if (!promoter || linkedPromoter === targetPromoter) {
                  count++;
                  const tr = document.createElement('tr');
                  tr.className = 'hover:bg-slate-800/50 transition-colors border-b border-slate-800/50';
@@ -15461,7 +15482,7 @@ const supervisorGroups = new Map();
                  statusArea.className = 'mt-4 p-4 rounded-lg bg-green-500/10 border border-green-500/30';
                  statusTitle.textContent = 'Cliente na Carteira';
                  statusTitle.className = 'text-sm font-bold text-green-400 mb-1';
-                 statusMsg.textContent = 'Este cliente já está na base selecionada.';
+                 statusMsg.textContent = 'Este cliente já pertence à carteira selecionada.';
                  
                  btnText.textContent = 'Remover';
                  btn.className = 'px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2';
