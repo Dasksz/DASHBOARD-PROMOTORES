@@ -511,6 +511,7 @@
                         saveToCache('dashboardData', cachedData).catch(e => console.warn("Background cache save failed (Promoters)", e));
                      } catch(e) {
                         console.warn("[Cache] Falha ao buscar promotores:", e);
+                        clientPromoters = []; // Fallback to avoid crash
                      }
                 }
 
@@ -521,6 +522,7 @@
                 const colsStock = 'id,product_code,filial,stock_qty';
                 const colsOrders = 'id,pedido,codcli,cliente_nome,cidade,nome,superv,fornecedores_str,dtped,dtsaida,posicao,vlvenda,totpesoliq,filial,tipovenda,fornecedores_list,codfors_list';
 
+                // Always fetch promoters to ensure feature works even for first-time load
                 const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched] = await Promise.all([
                     fetchAll('data_detailed', colsDetailed, 'sales', 'columnar', 'id'),
                     fetchAll('data_history', colsDetailed, 'history', 'columnar', 'id'),
