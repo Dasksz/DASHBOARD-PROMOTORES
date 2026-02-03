@@ -15194,6 +15194,8 @@ const supervisorGroups = new Map();
 
         for(let i=0; i<len; i++) {
              const row = (dataset instanceof ColumnarDataset) ? dataset.get(i) : dataset[i];
+             if (!row) continue;
+
              const code = normalizeKey(row['Código'] || row['codigo_cliente']);
              const linkedPromoter = clientPromoterMap.get(code);
 
