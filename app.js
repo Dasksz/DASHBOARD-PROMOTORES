@@ -15106,6 +15106,7 @@ const supervisorGroups = new Map();
              const role = (window.userRole || '').trim().toUpperCase();
              const hierarchy = embeddedData.hierarchy || [];
              const myPromoters = new Set();
+             let isManager = (role === 'ADM');
 
              hierarchy.forEach(h => {
                  const c = (h.cod_coord||'').trim().toUpperCase();
@@ -15114,6 +15115,7 @@ const supervisorGroups = new Map();
                  const pName = h.nome_promotor || p;
 
                  if (role === 'ADM' || c === role || cc === role) {
+                     if (role !== 'ADM') isManager = true;
                      if (p) myPromoters.add(JSON.stringify({ code: p, name: pName }));
                  } else if (p === role) {
                      myPromoters.add(JSON.stringify({ code: p, name: pName }));
@@ -15121,6 +15123,14 @@ const supervisorGroups = new Map();
             });
 
             walletState.promoters = Array.from(myPromoters).map(s => JSON.parse(s)).sort((a,b) => a.name.localeCompare(b.name));
+            walletState.canEdit = isManager;
+
+            // UI Toggle based on permission
+            const searchContainer = document.getElementById('wallet-search-container');
+            if (searchContainer) {
+                if (walletState.canEdit) searchContainer.classList.remove('hidden');
+                else searchContainer.classList.add('hidden');
+            }
 
             // Build Dropdown
             const dropdown = document.getElementById('wallet-promoter-dropdown');
@@ -15180,11 +15190,13 @@ const supervisorGroups = new Map();
                 // 2. Identify which are missing from local embeddedData.clients
                 const dataset = embeddedData.clients;
                 const existingCodes = new Set();
+                const isColumnar = dataset && dataset.values && dataset.columns;
 
-                if (dataset instanceof ColumnarDataset) {
+                if (isColumnar) {
                     const col = dataset.values['Código'] || dataset.values['CODIGO_CLIENTE'] || [];
-                    for(let i=0; i<dataset.length; i++) existingCodes.add(normalizeKey(col[i]));
-                } else {
+                    const len = dataset.length || col.length || 0;
+                    for(let i=0; i<len; i++) existingCodes.add(normalizeKey(col[i]));
+                } else if (Array.isArray(dataset)) {
                     dataset.forEach(c => existingCodes.add(normalizeKey(c['Código'] || c['codigo_cliente'])));
                 }
 
@@ -15216,21 +15228,22 @@ const supervisorGroups = new Map();
                                      'PROMOTOR': code // Use the selected promoter code
                                  };
 
-                                 if (dataset instanceof ColumnarDataset) {
-                                     dataset.columns.forEach(col => {
+                                 if (isColumnar) {
+                                     dataset.columns.forEach(colName => {
                                          let val = '';
-                                         const c = col.toUpperCase();
+                                         const c = colName.toUpperCase();
                                          if(c === 'CÓDIGO' || c === 'CODIGO_CLIENTE') val = newClient.codigo_cliente;
                                          else if(c === 'FANTASIA' || c === 'NOMECLIENTE') val = newClient.fantasia;
                                          else if(c === 'RAZÃO SOCIAL' || c === 'RAZAOSOCIAL' || c === 'RAZAO') val = newClient.razaosocial;
                                          else if(c === 'CNPJ/CPF' || c === 'CNPJ') val = newClient.cnpj_cpf;
                                          else if(c === 'CIDADE') val = newClient.cidade;
                                          else if(c === 'PROMOTOR') val = code;
+                                         else if(c === 'RCA1' || c === 'RCA 1') val = newClient.rca1;
 
-                                         if(dataset.values[col]) dataset.values[col].push(val);
+                                         if(dataset.values[colName]) dataset.values[colName].push(val);
                                      });
                                      dataset.length++;
-                                 } else {
+                                 } else if (Array.isArray(dataset)) {
                                      dataset.push(mapped);
                                  }
                                  existingCodes.add(normalizeKey(newClient.codigo_cliente));
@@ -15252,6 +15265,13 @@ const supervisorGroups = new Map();
         const empty = document.getElementById('wallet-empty-state');
         const badge = document.getElementById('wallet-count-badge');
 
+        // Toggle Action Header
+        const actionHeader = document.getElementById('wallet-table-action-header');
+        if (actionHeader) {
+            if (walletState.canEdit) actionHeader.classList.remove('hidden');
+            else actionHeader.classList.add('hidden');
+        }
+
         if (!tbody) return;
         tbody.innerHTML = '';
 
@@ -15262,6 +15282,9 @@ const supervisorGroups = new Map();
         }
 
         const dataset = embeddedData.clients;
+        const isColumnar = dataset && dataset.values && dataset.columns;
+        const len = dataset.length || 0;
+
         const clientPromoterMap = new Map();
 
         // Normalize selected promoter for comparison
@@ -15279,13 +15302,28 @@ const supervisorGroups = new Map();
         let count = 0;
         const fragment = document.createDocumentFragment();
 
-        const len = (dataset instanceof ColumnarDataset) ? dataset.length : dataset.length;
-
         for(let i=0; i<len; i++) {
-             const row = (dataset instanceof ColumnarDataset) ? dataset.get(i) : dataset[i];
-             if (!row) continue;
+             let rowCode, rowFantasia, rowRazao, rowCnpj;
 
-             const code = normalizeKey(row['Código'] || row['codigo_cliente']);
+             if (isColumnar) {
+                 rowCode = dataset.values['Código']?.[i] || dataset.values['CODIGO_CLIENTE']?.[i];
+                 rowFantasia = dataset.values['Fantasia']?.[i] || dataset.values['NOMECLIENTE']?.[i];
+                 rowRazao = dataset.values['Razão Social']?.[i] || dataset.values['RAZAOSOCIAL']?.[i];
+                 rowCnpj = dataset.values['CNPJ/CPF']?.[i] || dataset.values['CNPJ']?.[i];
+             } else if (Array.isArray(dataset)) {
+                 const item = dataset[i];
+                 if (!item) continue;
+                 rowCode = item['Código'] || item['codigo_cliente'];
+                 rowFantasia = item['Fantasia'] || item['fantasia'];
+                 rowRazao = item['Razão Social'] || item['razaosocial'];
+                 rowCnpj = item['CNPJ/CPF'] || item['cnpj_cpf'];
+             } else {
+                 continue;
+             }
+
+             if (!rowCode) continue;
+
+             const code = normalizeKey(rowCode);
              const linkedPromoter = clientPromoterMap.get(code);
 
              // Compare normalized values
@@ -15296,20 +15334,21 @@ const supervisorGroups = new Map();
                  tr.innerHTML = `
                     <td class="px-6 py-4 font-mono text-xs text-slate-400">${code}</td>
                     <td class="px-6 py-4">
-                        <div class="text-sm font-bold text-white">${row['Fantasia'] || row['fantasia'] || 'N/A'}</div>
-                        <div class="text-xs text-slate-500">${row['Razão Social'] || row['razaosocial'] || ''}</div>
+                        <div class="text-sm font-bold text-white">${rowFantasia || 'N/A'}</div>
+                        <div class="text-xs text-slate-500">${rowRazao || ''}</div>
                     </td>
-                    <td class="px-6 py-4 text-xs text-slate-400">${row['CNPJ/CPF'] || row['cnpj_cpf'] || ''}</td>
+                    <td class="px-6 py-4 text-xs text-slate-400">${rowCnpj || ''}</td>
                     <td class="px-6 py-4 text-center">
                          <button class="p-2 text-blue-400 hover:text-white hover:bg-blue-600 rounded-lg transition-all" onclick="openWalletClientModal('${code}')">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                          </button>
                     </td>
+                    ${walletState.canEdit ? `
                     <td class="px-6 py-4 text-center">
                         <button class="text-red-500 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-colors" onclick="handleWalletAction('${code}', 'remove')">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
-                    </td>
+                    </td>` : ''}
                  `;
                  fragment.appendChild(tr);
              }
