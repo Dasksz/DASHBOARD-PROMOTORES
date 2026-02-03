@@ -15005,15 +15005,15 @@ const supervisorGroups = new Map();
     function initWalletView() {
         if (isWalletInitialized) return;
         isWalletInitialized = true;
-
+        
         const role = (window.userRole || '').trim().toUpperCase();
-
+        
         // Setup User Menu
         const userMenuBtn = document.getElementById('user-menu-btn');
         const userMenuDropdown = document.getElementById('user-menu-dropdown');
         const userMenuWalletBtn = document.getElementById('user-menu-wallet-btn');
         const userMenuLogoutBtn = document.getElementById('user-menu-logout-btn');
-
+        
         if (userMenuBtn) {
             // Update User Info in Menu
             const nameEl = document.getElementById('user-menu-name');
@@ -15022,8 +15022,8 @@ const supervisorGroups = new Map();
                  roleEl.textContent = role;
                  // Try find name
                  const h = embeddedData.hierarchy || [];
-                 const me = h.find(x =>
-                    (x.cod_coord && x.cod_coord.trim().toUpperCase() === role) ||
+                 const me = h.find(x => 
+                    (x.cod_coord && x.cod_coord.trim().toUpperCase() === role) || 
                     (x.cod_cocoord && x.cod_cocoord.trim().toUpperCase() === role) ||
                     (x.cod_promotor && x.cod_promotor.trim().toUpperCase() === role)
                  );
@@ -15038,42 +15038,42 @@ const supervisorGroups = new Map();
                 e.stopPropagation();
                 userMenuDropdown.classList.toggle('hidden');
             });
-
+            
             document.addEventListener('click', (e) => {
                 if (!userMenuBtn.contains(e.target) && !userMenuDropdown.contains(e.target)) {
                     userMenuDropdown.classList.add('hidden');
                 }
             });
-
+            
             userMenuWalletBtn.addEventListener('click', () => {
                 userMenuDropdown.classList.add('hidden');
                 navigateTo('wallet');
             });
-
+            
             userMenuLogoutBtn.addEventListener('click', async () => {
                  const { error } = await window.supabaseClient.auth.signOut();
                  if (!error) window.location.reload();
             });
         }
-
+        
         // Setup Wallet Controls
         const selectBtn = document.getElementById('wallet-promoter-select-btn');
         const dropdown = document.getElementById('wallet-promoter-dropdown');
-
+        
         if (selectBtn) {
             selectBtn.addEventListener('click', (e) => {
                 if (walletState.promoters.length <= 1) return;
                 e.stopPropagation();
                 dropdown.classList.toggle('hidden');
             });
-
+            
             document.addEventListener('click', (e) => {
                 if (!selectBtn.contains(e.target) && !dropdown.contains(e.target)) {
                     dropdown.classList.add('hidden');
                 }
             });
         }
-
+        
         // Search
         const searchInput = document.getElementById('wallet-client-search');
         let debounce;
@@ -15090,7 +15090,7 @@ const supervisorGroups = new Map();
                 }
             });
         }
-
+        
         // Modal Actions
         const modalCancel = document.getElementById('wallet-modal-cancel-btn');
         const modalClose = document.getElementById('wallet-modal-close-btn');
@@ -15100,7 +15100,7 @@ const supervisorGroups = new Map();
 
     window.renderWalletView = function() {
         initWalletView();
-
+        
         // Populate Promoters if empty
         if (walletState.promoters.length === 0) {
              const role = (window.userRole || '').trim().toUpperCase();
@@ -15119,9 +15119,9 @@ const supervisorGroups = new Map();
                      myPromoters.add(JSON.stringify({ code: p, name: pName }));
                  }
             });
-
+            
             walletState.promoters = Array.from(myPromoters).map(s => JSON.parse(s)).sort((a,b) => a.name.localeCompare(b.name));
-
+            
             // Build Dropdown
             const dropdown = document.getElementById('wallet-promoter-dropdown');
             if (dropdown) {
@@ -15137,7 +15137,7 @@ const supervisorGroups = new Map();
                      dropdown.appendChild(div);
                 });
             }
-
+            
             // Auto Select
             if (walletState.promoters.length === 1) {
                 selectWalletPromoter(walletState.promoters[0].code, walletState.promoters[0].name);
@@ -15153,26 +15153,26 @@ const supervisorGroups = new Map();
                  }
             }
         }
-
+        
         renderWalletTable();
     }
-
+    
     function selectWalletPromoter(code, name) {
         walletState.selectedPromoter = code;
         const txt = document.getElementById('wallet-promoter-select-text');
         if(txt) txt.textContent = `${code} - ${name}`;
         renderWalletTable();
     }
-
+    
     function renderWalletTable() {
         const promoter = walletState.selectedPromoter;
         const tbody = document.getElementById('wallet-table-body');
         const empty = document.getElementById('wallet-empty-state');
         const badge = document.getElementById('wallet-count-badge');
-
+        
         if (!tbody) return;
         tbody.innerHTML = '';
-
+        
         if (!promoter) {
             empty.classList.remove('hidden');
             if (badge) badge.textContent = '0';
@@ -15186,17 +15186,19 @@ const supervisorGroups = new Map();
                  clientPromoterMap.set(normalizeKey(cp.client_code), String(cp.promoter_code).trim());
              });
         }
-
+        
         let count = 0;
         const fragment = document.createDocumentFragment();
-
+        
         const len = (dataset instanceof ColumnarDataset) ? dataset.length : dataset.length;
-
+        
         for(let i=0; i<len; i++) {
              const row = (dataset instanceof ColumnarDataset) ? dataset.get(i) : dataset[i];
+             if (!row) continue;
+             
              const code = normalizeKey(row['Código'] || row['codigo_cliente']);
              const linkedPromoter = clientPromoterMap.get(code);
-
+             
              if (linkedPromoter === promoter) {
                  count++;
                  const tr = document.createElement('tr');
@@ -15222,24 +15224,24 @@ const supervisorGroups = new Map();
                  fragment.appendChild(tr);
              }
         }
-
+        
         tbody.appendChild(fragment);
         if (badge) badge.textContent = count;
-
+        
         if (count === 0) empty.classList.remove('hidden');
         else empty.classList.add('hidden');
     }
-
+    
     async function handleWalletSearch(query) {
         const sugg = document.getElementById('wallet-search-suggestions');
         if (!query || query.length < 3) {
             sugg.classList.add('hidden');
             return;
         }
-
+        
         const cleanQ = query.replace(/[^a-zA-Z0-9]/g, '');
         let filter = `codigo_cliente.ilike.%${query}%,fantasia.ilike.%${query}%,razaosocial.ilike.%${query}%,cnpj_cpf.ilike.%${query}%`;
-
+        
         if (cleanQ.length > 0 && cleanQ !== query) {
              filter += `,cnpj_cpf.ilike.%${cleanQ}%,codigo_cliente.ilike.%${cleanQ}%`;
         }
@@ -15249,12 +15251,12 @@ const supervisorGroups = new Map();
             .select('*')
             .or(filter)
             .limit(10);
-
+            
         if (error || !data || data.length === 0) {
             sugg.classList.add('hidden');
             return;
         }
-
+        
         sugg.innerHTML = '';
         data.forEach(c => {
             const div = document.createElement('div');
@@ -15280,7 +15282,7 @@ const supervisorGroups = new Map();
         });
         sugg.classList.remove('hidden');
     }
-
+    
     window.openWalletClientModal = async function(clientCode, clientData = null) {
         let client = clientData;
         if (!client) {
@@ -15288,40 +15290,40 @@ const supervisorGroups = new Map();
              client = data;
         }
         if (!client) return;
-
+        
         const modal = document.getElementById('wallet-client-modal');
         document.getElementById('wallet-modal-code').textContent = client.codigo_cliente;
         document.getElementById('wallet-modal-cnpj').textContent = client.cnpj_cpf;
         document.getElementById('wallet-modal-razao').textContent = client.razaosocial;
         document.getElementById('wallet-modal-fantasia').textContent = client.fantasia;
         document.getElementById('wallet-modal-city').textContent = client.cidade;
-
+        
         const statusArea = document.getElementById('wallet-modal-status-area');
         const statusTitle = document.getElementById('wallet-modal-status-title');
         const statusMsg = document.getElementById('wallet-modal-status-msg');
         const btn = document.getElementById('wallet-modal-action-btn');
         const btnText = document.getElementById('wallet-modal-action-text');
-
+        
         let currentOwner = null;
         if (embeddedData.clientPromoters) {
              const match = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === normalizeKey(client.codigo_cliente));
              if (match) currentOwner = match.promoter_code;
         }
-
+        
         const myPromoter = walletState.selectedPromoter;
         const role = (window.userRole || '').trim().toUpperCase();
-
+        
         statusArea.classList.remove('hidden');
         btn.onclick = null;
-
+        
         let isPromoterOnly = true;
         const h = embeddedData.hierarchy || [];
-        const me = h.find(x =>
-            (x.cod_coord && x.cod_coord.trim().toUpperCase() === role) ||
+        const me = h.find(x => 
+            (x.cod_coord && x.cod_coord.trim().toUpperCase() === role) || 
             (x.cod_cocoord && x.cod_cocoord.trim().toUpperCase() === role)
         );
         if (me || role === 'ADM') isPromoterOnly = false;
-
+        
         if (!myPromoter) {
             btn.classList.add('hidden');
         } else {
@@ -15331,61 +15333,61 @@ const supervisorGroups = new Map();
                  statusTitle.textContent = 'Cliente na Carteira';
                  statusTitle.className = 'text-sm font-bold text-green-400 mb-1';
                  statusMsg.textContent = 'Este cliente já está na base selecionada.';
-
+                 
                  btnText.textContent = 'Remover';
                  btn.className = 'px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2';
                  btn.onclick = () => handleWalletAction(client.codigo_cliente, 'remove');
-
+                 
              } else if (currentOwner) {
                  statusArea.className = 'mt-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30';
                  statusTitle.textContent = 'Conflito';
                  statusTitle.className = 'text-sm font-bold text-orange-400 mb-1';
                  statusMsg.textContent = `Pertence a: ${currentOwner}. Transferir?`;
-
+                 
                  btnText.textContent = 'Transferir';
                  btn.className = 'px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2';
                  btn.onclick = () => handleWalletAction(client.codigo_cliente, 'upsert');
-
+                 
              } else {
                  statusArea.className = 'mt-4 p-4 rounded-lg bg-slate-700 border border-slate-600';
                  statusTitle.textContent = 'Disponível';
                  statusTitle.className = 'text-sm font-bold text-slate-300 mb-1';
                  statusMsg.textContent = 'Sem vínculo atual.';
-
+                 
                  btnText.textContent = 'Adicionar';
                  btn.className = 'px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2';
                  btn.onclick = () => handleWalletAction(client.codigo_cliente, 'upsert');
              }
         }
-
+        
         if (isPromoterOnly) {
              btn.classList.add('hidden');
              statusMsg.textContent += ' (Modo Leitura)';
         }
-
+        
         modal.classList.remove('hidden');
     }
-
+    
     window.handleWalletAction = async function(clientCode, action) {
          const promoter = walletState.selectedPromoter;
          if (!promoter) return;
-
+         
          const btn = document.getElementById('wallet-modal-action-btn');
          const txt = document.getElementById('wallet-modal-action-text');
          const oldTxt = txt.textContent;
          btn.disabled = true;
          txt.textContent = '...';
-
+         
          try {
              if (action === 'upsert') {
                  const { error } = await window.supabaseClient.from('data_client_promoters')
                     .upsert({ client_code: clientCode, promoter_code: promoter }, { onConflict: 'client_code' });
                  if(error) throw error;
-
+                 
                  const idx = embeddedData.clientPromoters.findIndex(cp => normalizeKey(cp.client_code) === normalizeKey(clientCode));
                  if(idx >= 0) embeddedData.clientPromoters[idx].promoter_code = promoter;
                  else embeddedData.clientPromoters.push({ client_code: clientCode, promoter_code: promoter });
-
+                 
                  // Ensure client exists in local dataset (for display)
                  const dataset = embeddedData.clients;
                  let exists = false;
@@ -15395,7 +15397,7 @@ const supervisorGroups = new Map();
                  } else {
                      if (dataset.find(c => normalizeKey(c['Código'] || c['codigo_cliente']) === normalizeKey(clientCode))) exists = true;
                  }
-
+                 
                  if (!exists) {
                      // Fetch and inject
                      const { data: newClient } = await window.supabaseClient.from('data_clients').select('*').eq('codigo_cliente', clientCode).single();
@@ -15408,7 +15410,7 @@ const supervisorGroups = new Map();
                              'Cidade': newClient.cidade,
                              'PROMOTOR': promoter
                          };
-
+                         
                          if (dataset instanceof ColumnarDataset) {
                              dataset.columns.forEach(col => {
                                  let val = '';
@@ -15418,7 +15420,7 @@ const supervisorGroups = new Map();
                                  else if(c === 'RAZÃO SOCIAL' || c === 'RAZAOSOCIAL' || c === 'RAZAO') val = newClient.razaosocial;
                                  else if(c === 'CNPJ/CPF' || c === 'CNPJ') val = newClient.cnpj_cpf;
                                  else if(c === 'CIDADE') val = newClient.cidade;
-
+                                 
                                  if(dataset.values[col]) dataset.values[col].push(val);
                              });
                              dataset.length++;
@@ -15427,18 +15429,18 @@ const supervisorGroups = new Map();
                          }
                      }
                  }
-
+                 
              } else {
                  const { error } = await window.supabaseClient.from('data_client_promoters').delete().eq('client_code', clientCode);
                  if(error) throw error;
-
+                 
                  const idx = embeddedData.clientPromoters.findIndex(cp => normalizeKey(cp.client_code) === normalizeKey(clientCode));
                  if(idx >= 0) embeddedData.clientPromoters.splice(idx, 1);
              }
-
+             
              document.getElementById('wallet-client-modal').classList.add('hidden');
              renderWalletTable();
-
+             
          } catch (e) {
              console.error(e);
              alert('Erro: ' + e.message);
@@ -15447,7 +15449,7 @@ const supervisorGroups = new Map();
              txt.textContent = oldTxt;
          }
     }
-
+    
     // Auto-init User Menu on load if ready (for Navbar)
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         initWalletView();
