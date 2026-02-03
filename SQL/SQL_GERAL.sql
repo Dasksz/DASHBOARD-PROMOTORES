@@ -423,6 +423,18 @@ BEGIN
     END LOOP;
 END $$;
 
+-- 4.2.1 Special Policy for data_client_promoters (Allow Write for Approved Users)
+-- We explicitly drop the Admin-only policies created in the loop above for this specific table
+DROP POLICY IF EXISTS "Acesso Escrita Admin (Insert)" ON public.data_client_promoters;
+DROP POLICY IF EXISTS "Acesso Escrita Admin (Update)" ON public.data_client_promoters;
+DROP POLICY IF EXISTS "Acesso Escrita Admin (Delete)" ON public.data_client_promoters;
+
+-- Create permissive policies for Coordinators/Co-coordinators (Approved Users)
+-- This allows them to manage the client portfolio
+CREATE POLICY "Acesso Escrita Aprovados (Insert)" ON public.data_client_promoters FOR INSERT TO authenticated WITH CHECK (public.is_approved());
+CREATE POLICY "Acesso Escrita Aprovados (Update)" ON public.data_client_promoters FOR UPDATE TO authenticated USING (public.is_approved()) WITH CHECK (public.is_approved());
+CREATE POLICY "Acesso Escrita Aprovados (Delete)" ON public.data_client_promoters FOR DELETE TO authenticated USING (public.is_approved());
+
 -- 4.3 Goals Distribution Policies
 -- Cleanup
 drop policy IF exists "Goals Write Admin" on public.goals_distribution;
