@@ -15306,17 +15306,17 @@ const supervisorGroups = new Map();
              let rowCode, rowFantasia, rowRazao, rowCnpj;
 
              if (isColumnar) {
-                 rowCode = dataset.values['Código']?.[i] || dataset.values['CODIGO_CLIENTE']?.[i];
-                 rowFantasia = dataset.values['Fantasia']?.[i] || dataset.values['NOMECLIENTE']?.[i];
-                 rowRazao = dataset.values['Razão Social']?.[i] || dataset.values['RAZAOSOCIAL']?.[i];
-                 rowCnpj = dataset.values['CNPJ/CPF']?.[i] || dataset.values['CNPJ']?.[i];
+                 rowCode = dataset.values['Código']?.[i] || dataset.values['CODIGO_CLIENTE']?.[i] || dataset.values['codigo_cliente']?.[i];
+                 rowFantasia = dataset.values['Fantasia']?.[i] || dataset.values['FANTASIA']?.[i] || dataset.values['fantasia']?.[i] || dataset.values['NOMECLIENTE']?.[i] || dataset.values['nomeCliente']?.[i];
+                 rowRazao = dataset.values['Razão Social']?.[i] || dataset.values['RAZAOSOCIAL']?.[i] || dataset.values['razaoSocial']?.[i];
+                 rowCnpj = dataset.values['CNPJ/CPF']?.[i] || dataset.values['CNPJ']?.[i] || dataset.values['cnpj_cpf']?.[i];
              } else if (Array.isArray(dataset)) {
                  const item = dataset[i];
                  if (!item) continue;
-                 rowCode = item['Código'] || item['codigo_cliente'];
-                 rowFantasia = item['Fantasia'] || item['fantasia'];
-                 rowRazao = item['Razão Social'] || item['razaosocial'];
-                 rowCnpj = item['CNPJ/CPF'] || item['cnpj_cpf'];
+                 rowCode = item['Código'] || item['codigo_cliente'] || item['CODIGO_CLIENTE'];
+                 rowFantasia = item['Fantasia'] || item['fantasia'] || item['FANTASIA'] || item['nomeCliente'] || item['NOMECLIENTE'];
+                 rowRazao = item['Razão Social'] || item['razaosocial'] || item['razaoSocial'] || item['RAZAOSOCIAL'];
+                 rowCnpj = item['CNPJ/CPF'] || item['cnpj_cpf'] || item['CNPJ'];
              } else {
                  continue; 
              }
