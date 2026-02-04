@@ -15446,7 +15446,9 @@ const supervisorGroups = new Map();
         document.getElementById('wallet-modal-cnpj').textContent = client.cnpj_cpf;
         document.getElementById('wallet-modal-razao').textContent = client.razaosocial;
         document.getElementById('wallet-modal-fantasia').textContent = client.fantasia;
-        document.getElementById('wallet-modal-city').textContent = client.cidade;
+        const bairro = client.bairro || client.BAIRRO || '';
+        const cidade = client.cidade || client.CIDADE || '';
+        document.getElementById('wallet-modal-city').textContent = (bairro && bairro !== 'N/A') ? `${bairro} - ${cidade}` : cidade;
         
         const statusArea = document.getElementById('wallet-modal-status-area');
         const statusTitle = document.getElementById('wallet-modal-status-title');
