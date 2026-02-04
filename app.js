@@ -15463,6 +15463,10 @@ const supervisorGroups = new Map();
         const myPromoter = walletState.selectedPromoter;
         const role = (window.userRole || '').trim().toUpperCase();
         
+        // Normalize for comparison
+        const normCurrent = currentOwner ? String(currentOwner).trim().toUpperCase() : null;
+        const normMy = myPromoter ? String(myPromoter).trim().toUpperCase() : null;
+
         statusArea.classList.remove('hidden');
         btn.onclick = null;
         
@@ -15478,7 +15482,7 @@ const supervisorGroups = new Map();
             btn.classList.add('hidden');
         } else {
              btn.classList.remove('hidden');
-             if (currentOwner === myPromoter) {
+             if (normCurrent && normMy && normCurrent === normMy) {
                  statusArea.className = 'mt-4 p-4 rounded-lg bg-green-500/10 border border-green-500/30';
                  statusTitle.textContent = 'Cliente na Carteira';
                  statusTitle.className = 'text-sm font-bold text-green-400 mb-1';
