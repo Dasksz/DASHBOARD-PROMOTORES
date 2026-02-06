@@ -827,6 +827,8 @@
             scriptEl.onload = () => {
                 loader.classList.add('hidden');
                 document.getElementById('content-wrapper').classList.remove('hidden');
+                const topNav = document.getElementById('top-navbar');
+                if (topNav) topNav.classList.remove('hidden');
             };
             document.body.appendChild(scriptEl);
 
