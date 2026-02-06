@@ -1944,7 +1944,7 @@
 
         let charts = {};
         let currentProductMetric = 'faturamento';
-        let currentFornecedor = 'PEPSICO';
+        let currentFornecedor = '';
         let currentComparisonFornecedor = 'PEPSICO';
         let useTendencyComparison = false;
         let comparisonChartType = 'weekly';
@@ -8290,6 +8290,10 @@ const supervisorGroups = new Map();
             }
 
             const fornecedorToggleContainerEl = document.getElementById('fornecedor-toggle-container');
+            if (fornecedorToggleContainerEl) {
+                fornecedorToggleContainerEl.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active'));
+            }
+            currentFornecedor = '';
 
             if (hierarchyState['main']) {
                 hierarchyState['main'].coords.clear();
