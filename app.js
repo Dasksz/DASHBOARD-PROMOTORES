@@ -12005,6 +12005,15 @@ const supervisorGroups = new Map();
                 btn.addEventListener('click', () => {
                     const fornecedor = btn.dataset.fornecedor;
                     if (currentFornecedor === fornecedor) { currentFornecedor = ''; btn.classList.remove('active'); } else { currentFornecedor = fornecedor; fornecedorToggleContainerEl.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+
+                    // Update Supplier Filter Options
+                    let supplierDataSource = [...allSalesData, ...allHistoryData];
+                    if (currentFornecedor) {
+                        supplierDataSource = supplierDataSource.filter(s => s.OBSERVACAOFOR === currentFornecedor);
+                    }
+                    selectedMainSuppliers = updateSupplierFilter(fornecedorFilterDropdown, document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, supplierDataSource, 'main');
+                    mainTableState.currentPage = 1;
+
                     updateDashboard();
                 });
             });
