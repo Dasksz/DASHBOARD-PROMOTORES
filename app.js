@@ -13281,6 +13281,7 @@ const supervisorGroups = new Map();
 
         initializeRedeFilters();
         setupEventListeners();
+        initFloatingFilters();
 
         // Assegura que os dados históricos estão prontos antes da primeira renderização
         calculateHistoricalBests();
@@ -15002,6 +15003,69 @@ const supervisorGroups = new Map();
                 const modal = document.getElementById('import-goals-modal');
                 if (modal) modal.classList.remove('hidden');
             });
+
+        function initFloatingFilters() {
+            const toggleBtn = document.getElementById('floating-filters-toggle');
+            const sentinels = document.querySelectorAll('.filter-wrapper-sentinel');
+
+            if (!toggleBtn || sentinels.length === 0) return;
+
+            // Scroll Logic to Show/Hide Button and Auto-Dock
+            window.addEventListener('scroll', () => {
+                let visibleSentinel = null;
+                // Find the sentinel in the currently visible view
+                for (const s of sentinels) {
+                    if (s.offsetParent !== null) {
+                        visibleSentinel = s;
+                        break;
+                    }
+                }
+
+                if (visibleSentinel) {
+                    const rect = visibleSentinel.getBoundingClientRect();
+                    // Threshold: When the bottom of the sentinel passes the top navigation area (approx 80px)
+                    const isPassed = rect.bottom < 80;
+
+                    if (isPassed) {
+                        toggleBtn.classList.remove('hidden');
+                    } else {
+                        toggleBtn.classList.add('hidden');
+
+                        // Auto-dock if scrolled back up
+                        const filters = visibleSentinel.querySelector('.sticky-filters');
+                        if (filters && filters.classList.contains('filters-overlay-mode')) {
+                            filters.classList.remove('filters-overlay-mode');
+                            toggleBtn.innerHTML = '<span class="text-lg leading-none mb-0.5">+</span><span>Filtros</span>';
+                        }
+                    }
+                } else {
+                    toggleBtn.classList.add('hidden');
+                }
+            }, { passive: true });
+
+            // Click Handler
+            toggleBtn.addEventListener('click', () => {
+                let visibleFilters = null;
+                // Find visible filters inside visible sentinel
+                for (const s of sentinels) {
+                    if (s.offsetParent !== null) {
+                        visibleFilters = s.querySelector('.sticky-filters');
+                        break;
+                    }
+                }
+
+                if (visibleFilters) {
+                    visibleFilters.classList.toggle('filters-overlay-mode');
+                    const isActive = visibleFilters.classList.contains('filters-overlay-mode');
+
+                    if (isActive) {
+                        toggleBtn.innerHTML = '<span class="text-lg leading-none mb-0.5">-</span><span>Filtros</span>';
+                    } else {
+                        toggleBtn.innerHTML = '<span class="text-lg leading-none mb-0.5">+</span><span>Filtros</span>';
+                    }
+                }
+            });
+        }
 
             // --- SYSTEM DIAGNOSIS TOOL ---
             const diagnosisBtn = document.getElementById('system-diagnosis-btn');
