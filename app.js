@@ -338,11 +338,35 @@
         const stockData05 = new Map(Object.entries(embeddedData.stockMap05 || {}));
         const stockData08 = new Map(Object.entries(embeddedData.stockMap08 || {}));
         const innovationsMonthData = embeddedData.innovationsMonth;
-        const clientMapForKPIs = new Map();
-        // Init Client Map manually since map() might be slower on Columnar
-        for(let i=0; i<allClientsData.length; i++) {
-            const c = allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i];
-            clientMapForKPIs.set(normalizeKey(c['Código'] || c['codigo_cliente']), c);
+        let clientMapForKPIs;
+        if (allClientsData instanceof ColumnarDataset) {
+            clientMapForKPIs = new IndexMap(allClientsData);
+            // Optimization: Try to access raw column to avoid Proxy creation loop.
+            // Accessing private _data is necessary for performance here to bypass the get() Proxy overhead.
+            const rawData = allClientsData._data;
+            let idCol = null;
+            if (rawData) {
+                if (rawData['Código']) idCol = rawData['Código'];
+                else if (rawData['codigo_cliente']) idCol = rawData['codigo_cliente'];
+            }
+
+            // Check if idCol is an Array or TypedArray (has length and integer indexing)
+            if (idCol && typeof idCol.length === 'number') {
+                for (let i = 0; i < allClientsData.length; i++) {
+                    clientMapForKPIs.set(normalizeKey(idCol[i]), i);
+                }
+            } else {
+                for (let i = 0; i < allClientsData.length; i++) {
+                    const c = allClientsData.get(i);
+                    clientMapForKPIs.set(normalizeKey(c['Código'] || c['codigo_cliente']), i);
+                }
+            }
+        } else {
+            clientMapForKPIs = new Map();
+            for (let i = 0; i < allClientsData.length; i++) {
+                const c = allClientsData[i];
+                clientMapForKPIs.set(normalizeKey(c['Código'] || c['codigo_cliente']), c);
+            }
         }
 
         const activeProductCodesFromCadastro = new Set(embeddedData.activeProductCodes || []);
