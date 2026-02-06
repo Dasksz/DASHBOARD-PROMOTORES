@@ -11147,6 +11147,15 @@ const supervisorGroups = new Map();
             window.location.hash = view;
         }
 
+        function showViewElement(el) {
+            if (!el) return;
+            el.classList.remove('hidden');
+            el.classList.add('animate-fade-in-up');
+            setTimeout(() => {
+                el.classList.remove('animate-fade-in-up');
+            }, 700);
+        }
+
         async function renderView(view) {
             const mobileMenu = document.getElementById('mobile-menu');
             if (mobileMenu && mobileMenu.classList.contains('open')) {
@@ -11196,11 +11205,11 @@ const supervisorGroups = new Map();
 
                 switch(view) {
                     case 'wallet':
-                        document.getElementById('wallet-view').classList.remove('hidden');
+                        showViewElement(document.getElementById('wallet-view'));
                         if (typeof renderWalletView === 'function') renderWalletView();
                         break;
                     case 'dashboard':
-                        mainDashboard.classList.remove('hidden');
+                        showViewElement(mainDashboard);
                         chartView.classList.remove('hidden');
                         tableView.classList.add('hidden');
                         tablePaginationControls.classList.add('hidden');
@@ -11210,7 +11219,7 @@ const supervisorGroups = new Map();
                         }
                         break;
                     case 'pedidos':
-                        mainDashboard.classList.remove('hidden');
+                        showViewElement(mainDashboard);
                         chartView.classList.add('hidden');
                         tableView.classList.remove('hidden');
                         tablePaginationControls.classList.remove('hidden');
@@ -11220,7 +11229,7 @@ const supervisorGroups = new Map();
                         }
                         break;
                     case 'comparativo':
-                        comparisonView.classList.remove('hidden');
+                        showViewElement(comparisonView);
                         if (viewState.comparativo.dirty) {
                             updateAllComparisonFilters();
                             updateComparisonView();
@@ -11228,14 +11237,14 @@ const supervisorGroups = new Map();
                         }
                         break;
                     case 'estoque':
-                        stockView.classList.remove('hidden');
+                        if (stockView) showViewElement(stockView);
                         if (viewState.estoque.dirty) {
                             handleStockFilterChange();
                             viewState.estoque.dirty = false;
                         }
                         break;
                     case 'cobertura':
-                        coverageView.classList.remove('hidden');
+                        showViewElement(coverageView);
                         if (viewState.cobertura.dirty) {
                             updateAllCoverageFilters();
                             updateCoverageView();
@@ -11243,7 +11252,7 @@ const supervisorGroups = new Map();
                         }
                         break;
                     case 'cidades':
-                        cityView.classList.remove('hidden');
+                        showViewElement(cityView);
                         // Always trigger background sync if admin
                         syncGlobalCoordinates();
                         if (viewState.cidades.dirty) {
@@ -11253,7 +11262,7 @@ const supervisorGroups = new Map();
                         }
                         break;
                     case 'inovacoes-mes':
-                        innovationsMonthView.classList.remove('hidden');
+                        showViewElement(innovationsMonthView);
                         if (viewState.inovacoes.dirty) {
                             selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, [...allSalesData, ...allHistoryData]);
                             updateInnovationsMonthView();
@@ -11261,7 +11270,7 @@ const supervisorGroups = new Map();
                         }
                         break;
                     case 'mix':
-                        document.getElementById('mix-view').classList.remove('hidden');
+                        showViewElement(document.getElementById('mix-view'));
                         if (viewState.mix.dirty) {
                             updateAllMixFilters();
                             updateMixView();
@@ -11269,14 +11278,14 @@ const supervisorGroups = new Map();
                         }
                         break;
                     case 'goals':
-                        goalsView.classList.remove('hidden');
+                        showViewElement(goalsView);
                         if (viewState.goals.dirty) {
                             updateGoalsView();
                             viewState.goals.dirty = false;
                         }
                         break;
                     case 'meta-realizado':
-                        document.getElementById('meta-realizado-view').classList.remove('hidden');
+                        showViewElement(document.getElementById('meta-realizado-view'));
                         if (viewState.metaRealizado.dirty) {
                             // Initial filter logic if needed, similar to other views
 
