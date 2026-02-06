@@ -237,6 +237,12 @@
         </div>
     </div>
 
+    <!-- Floating Filters Button (Initially Hidden) -->
+    <button id="floating-filters-toggle" class="hidden">
+        <span class="text-lg leading-none mb-0.5">+</span>
+        <span>Filtros</span>
+    </button>
+
     <!-- MAIN DASHBOARD -->
     <div id="main-dashboard" class="animate-fade-in-up">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
@@ -305,6 +311,7 @@
             </div>
 
             <!-- Filters -->
+            <div class="filter-wrapper-sentinel">
             <div id="main-filters" class="sticky-filters mb-8 p-6 bg-[#0f172a] rounded-2xl shadow-lg border border-slate-800/50">
                 <div class="flex flex-wrap gap-4 items-end">
                     <!-- Rede Filter -->
@@ -385,6 +392,7 @@
                         </select>
                     </div>
                 </div>
+            </div>
             </div>
 
             <main id="app-container">
@@ -481,6 +489,7 @@
             <div id="city-view-content">
                 <!-- Filters (Restyling minimal needed as classes are utility based, but ensure containers match) -->
                 <!-- Simplified filters block for brevity, ensuring ID matches -->
+                <div class="filter-wrapper-sentinel">
                 <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
                      <!-- ... Filters Content (Copied from original but wrapper IDs preserved) ... -->
                      <!-- To save tokens, I will trust the JS to populate the dropdowns/inputs if IDs match.
@@ -549,6 +558,7 @@
                         <input id="city-codcli-filter">
                      </div>
                 </div>
+                </div>
 
                 <div id="city-map-container" class="hidden bg-[#0f172a] p-1 rounded-2xl shadow-lg border border-slate-800 h-[600px] relative z-0 mb-8">
                     <div id="leaflet-map" class="w-full h-full rounded-xl z-0"></div>
@@ -614,6 +624,7 @@
         <header class="mb-8 border-b border-slate-800 pb-4"><h1 class="text-3xl font-bold text-white">Comparativo Mensal</h1></header>
         <!-- Retaining IDs for JS logic: comparison-rede-group-container, comparison-com-rede-btn, etc. -->
         <!-- Simplified block for structure -->
+        <div class="filter-wrapper-sentinel">
         <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
             <div id="comparison-fornecedor-toggle-container" class="flex justify-center gap-4 mb-6">
                 <button data-fornecedor="PEPSICO" class="fornecedor-btn active px-6 py-2 rounded-lg transition-all">PEPSICO</button>
@@ -713,6 +724,7 @@
                 <button id="comparison-holiday-picker-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2.5 px-4 rounded-lg transition-colors">Feriados</button>
                 <button id="clear-comparison-filters-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2.5 px-4 rounded-lg transition-colors">Limpar</button>
             </div>
+        </div>
         </div>
 
         <div id="comparison-kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"></div>
@@ -927,6 +939,7 @@
         </header>
 
         <!-- Filters Block -->
+        <div class="filter-wrapper-sentinel">
         <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <!-- Coordenador -->
@@ -977,6 +990,7 @@
                     <button id="clear-innovations-month-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg">Limpar</button>
                 </div>
             </div>
+        </div>
         </div>
 
         <!-- KPIs Block -->
@@ -1031,6 +1045,7 @@
             <button id="export-mix-pdf-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Exportar PDF</button>
         </header>
 
+        <div class="filter-wrapper-sentinel">
         <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="flex flex-wrap gap-4 items-end">
                 <div id="mix-rede-filter-wrapper" class="relative flex-1 min-w-[200px]">
@@ -1080,6 +1095,7 @@
                     <button id="clear-mix-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg">Limpar</button>
                 </div>
             </div>
+        </div>
         </div>
 
         <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg mb-8">
@@ -1139,6 +1155,7 @@
             <button id="export-meta-realizado-pdf-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Exportar PDF</button>
         </header>
 
+        <div class="filter-wrapper-sentinel">
         <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="flex flex-wrap gap-4 items-end">
                 <!-- Coordenador -->
@@ -1172,6 +1189,7 @@
                 </div>
                 <button id="clear-meta-realizado-filters-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg">Limpar</button>
             </div>
+        </div>
         </div>
 
         <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
@@ -1229,6 +1247,7 @@
             <button id="export-coverage-pdf-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Exportar PDF</button>
         </header>
 
+        <div class="filter-wrapper-sentinel">
         <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div id="coverage-coord-filter-wrapper" class="relative">
@@ -1279,6 +1298,7 @@
                 <button id="coverage-tipo-venda-filter-btn"><span id="coverage-tipo-venda-filter-text"></span></button><div id="coverage-tipo-venda-filter-dropdown"></div>
                 <input id="coverage-unit-price-filter">
             </div>
+        </div>
         </div>
 
         <!-- KPIs -->
@@ -1355,6 +1375,7 @@
         </header>
 
         <!-- Controls Section -->
+        <div class="filter-wrapper-sentinel">
         <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
              <div class="flex flex-col md:flex-row gap-6">
                 <!-- Promoter Selector (For Coords) -->
@@ -1386,6 +1407,7 @@
                     </div>
                 </div>
              </div>
+        </div>
         </div>
 
         <!-- Portfolio Table -->
