@@ -459,6 +459,8 @@
         let currentFilteredSalesMap = new Map();
         let currentClientMixStatus = new Map(); // Map<ClientCode, {elma: bool, foods: bool}>
         let areMarkersGenerated = false;
+        let cityMapJobId = 0;
+        let isCityMapCalculating = false;
 
         // Load cached coordinates from embeddedData
         if (embeddedData.clientCoordinates) {
@@ -886,44 +888,19 @@
             const { clients, sales } = getCityFilteredData();
             if (!clients || clients.length === 0) return;
 
+            const jobId = ++cityMapJobId;
+            isCityMapCalculating = true;
+
             // Cache for Async Marker Generation
             currentFilteredClients = clients;
             areMarkersGenerated = false;
             if (clientMarkersLayer) clientMarkersLayer.clearLayers();
 
-            // Cache Sales & Mix Status
-            currentFilteredSalesMap.clear();
-            currentClientMixStatus.clear();
-            if (sales) {
-                sales.forEach(s => {
-                    const cod = s.CODCLI;
-                    const val = Number(s.VLVENDA) || 0;
-                    currentFilteredSalesMap.set(cod, (currentFilteredSalesMap.get(cod) || 0) + val);
-
-                    // Mix Logic
-                    let mix = currentClientMixStatus.get(cod);
-                    if (!mix) {
-                        mix = { elma: false, foods: false };
-                        currentClientMixStatus.set(cod, mix);
-                    }
-
-                    const codFor = String(s.CODFOR);
-                    // Elma: 707, 708, 752
-                    if (codFor === '707' || codFor === '708' || codFor === '752') {
-                        mix.elma = true;
-                    }
-                    // Foods: 1119
-                    else if (codFor === '1119') {
-                        mix.foods = true;
-                    }
-                });
-            }
-
             const heatData = [];
             const missingCoordsClients = [];
             const validBounds = [];
 
-            // Heatmap Loop (Sync - Fast)
+            // Heatmap Loop (Sync - Fast) - Update UI immediately
             clients.forEach(client => {
                 const codCli = String(client['Código'] || client['codigo_cliente']);
                 const coords = clientCoordinatesMap.get(codCli);
@@ -946,8 +923,55 @@
                 leafletMap.fitBounds(validBounds);
             }
 
-            // Trigger Marker Logic
-            updateMarkersVisibility();
+            // Sales Aggregation (Async Chunked)
+            const tempSalesMap = new Map();
+            const tempMixStatus = new Map();
+
+            if (sales) {
+                runAsyncChunked(sales, (s) => {
+                    const cod = s.CODCLI;
+                    const val = Number(s.VLVENDA) || 0;
+                    tempSalesMap.set(cod, (tempSalesMap.get(cod) || 0) + val);
+
+                    // Mix Logic
+                    let mix = tempMixStatus.get(cod);
+                    if (!mix) {
+                        mix = { elma: false, foods: false };
+                        tempMixStatus.set(cod, mix);
+                    }
+
+                    const codFor = String(s.CODFOR);
+                    // Elma: 707, 708, 752
+                    if (codFor === '707' || codFor === '708' || codFor === '752') {
+                        mix.elma = true;
+                    }
+                    // Foods: 1119
+                    else if (codFor === '1119') {
+                        mix.foods = true;
+                    }
+                }, () => {
+                    // On Complete
+                    if (jobId !== cityMapJobId) return; // Cancelled by newer request
+
+                    currentFilteredSalesMap = tempSalesMap;
+                    currentClientMixStatus = tempMixStatus;
+                    areMarkersGenerated = false;
+                    isCityMapCalculating = false;
+
+                    // Trigger Marker Logic (Now that data is ready)
+                    updateMarkersVisibility();
+
+                }, () => jobId !== cityMapJobId); // isCancelled check
+            } else {
+                // No sales, clear maps
+                if (jobId === cityMapJobId) {
+                    currentFilteredSalesMap = new Map();
+                    currentClientMixStatus = new Map();
+                    areMarkersGenerated = false;
+                    isCityMapCalculating = false;
+                    updateMarkersVisibility();
+                }
+            }
         }
 
         function updateMarkersVisibility() {
@@ -966,7 +990,7 @@
         }
 
         function generateMarkersAsync() {
-            if (areMarkersGenerated) return;
+            if (areMarkersGenerated || isCityMapCalculating) return;
 
             // Use local reference to avoid race conditions if filter changes mid-process
             const clientsToProcess = currentFilteredClients;
