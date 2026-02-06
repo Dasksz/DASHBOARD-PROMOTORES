@@ -13163,6 +13163,39 @@ const supervisorGroups = new Map();
         // --- USER CONTEXT RESOLUTION ---
         let userHierarchyContext = { role: 'adm', coord: null, cocoord: null, promotor: null };
 
+        function applyHierarchyVisibilityRules() {
+            const role = (userHierarchyContext.role || '').toLowerCase();
+            // Views to apply logic to (excluding 'goals' and 'wallet' as requested)
+            const views = ['main', 'city', 'comparison', 'innovations-month', 'mix', 'coverage'];
+
+            views.forEach(prefix => {
+                const coordWrapper = document.getElementById(`${prefix}-coord-filter-wrapper`);
+                const cocoordWrapper = document.getElementById(`${prefix}-cocoord-filter-wrapper`);
+                const promotorWrapper = document.getElementById(`${prefix}-promotor-filter-wrapper`);
+
+                // Reset visibility first (Show All)
+                if (coordWrapper) coordWrapper.classList.remove('hidden');
+                if (cocoordWrapper) cocoordWrapper.classList.remove('hidden');
+                if (promotorWrapper) promotorWrapper.classList.remove('hidden');
+
+                if (role === 'adm') {
+                    // Show all
+                } else if (role === 'coord') {
+                    // Hide Coord filter
+                    if (coordWrapper) coordWrapper.classList.add('hidden');
+                } else if (role === 'cocoord') {
+                    // Hide Coord and CoCoord
+                    if (coordWrapper) coordWrapper.classList.add('hidden');
+                    if (cocoordWrapper) cocoordWrapper.classList.add('hidden');
+                } else if (role === 'promotor') {
+                    // Hide All
+                    if (coordWrapper) coordWrapper.classList.add('hidden');
+                    if (cocoordWrapper) cocoordWrapper.classList.add('hidden');
+                    if (promotorWrapper) promotorWrapper.classList.add('hidden');
+                }
+            });
+        }
+
         function resolveUserContext() {
             const role = (window.userRole || '').trim().toUpperCase();
             console.log(`[DEBUG] Resolving User Context for Role: '${role}'`);
@@ -13209,6 +13242,7 @@ const supervisorGroups = new Map();
             console.log("Available Coords:", Array.from(optimizedData.coordMap.keys()));
         }
         resolveUserContext();
+        applyHierarchyVisibilityRules();
 
         calculateHistoricalBests(); // <-- MOVIDA PARA CIMA
         // Initialize Hierarchy Filters
