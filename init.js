@@ -915,7 +915,10 @@
                     const welcomeEl = document.getElementById('welcome-header');
                     if (welcomeEl) {
                         const userName = session.user.user_metadata.full_name || session.user.user_metadata.name || session.user.email;
-                        welcomeEl.innerHTML = `Olá, ${userName}<br>Bem-vindo ao Prime Analytics`;
+                        welcomeEl.innerHTML = `
+                            <span class="block text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-1 text-glow">Olá, ${userName}</span>
+                            <span class="block text-lg md:text-xl text-blue-200 font-medium tracking-wide opacity-90">Bem-vindo ao Prime Analytics</span>
+                        `;
                     }
 
                     if (!isAppReady) {
