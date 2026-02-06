@@ -911,6 +911,13 @@
                     // Store user role globally
                     window.userRole = profile.role;
 
+                    // Update Welcome Message
+                    const welcomeEl = document.getElementById('welcome-header');
+                    if (welcomeEl) {
+                        const userName = session.user.user_metadata.full_name || session.user.user_metadata.name || session.user.email;
+                        welcomeEl.innerHTML = `Olá, ${userName}<br>Bem-vindo ao Prime Analytics`;
+                    }
+
                     if (!isAppReady) {
                         telaLoading.classList.add('hidden');
                         carregarDadosDoSupabase(supabaseClient);
