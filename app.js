@@ -15572,10 +15572,10 @@ const supervisorGroups = new Map();
                  else embeddedData.clientPromoters.push({ client_code: clientCode, promoter_code: promoter });
                  
                  // Ensure client exists in local dataset (for display)
-                 const dataset = embeddedData.clients;
+                 const dataset = allClientsData;
                  let exists = false;
                  if (dataset instanceof ColumnarDataset) {
-                     const col = dataset.values['Código'] || dataset.values['CODIGO_CLIENTE'];
+                     const col = dataset._data['Código'] || dataset._data['CODIGO_CLIENTE'];
                      if (col && col.includes(normalizeKey(clientCode))) exists = true;
                  } else {
                      if (dataset.find(c => normalizeKey(c['Código'] || c['codigo_cliente']) === normalizeKey(clientCode))) exists = true;
