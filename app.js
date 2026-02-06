@@ -1944,8 +1944,8 @@
 
         let charts = {};
         let currentProductMetric = 'faturamento';
-        let currentFornecedor = '';
-        let currentComparisonFornecedor = '';
+        let currentFornecedor = 'PEPSICO';
+        let currentComparisonFornecedor = 'PEPSICO';
         let useTendencyComparison = false;
         let comparisonChartType = 'weekly';
         let comparisonMonthlyMetric = 'faturamento';
@@ -8290,9 +8290,6 @@ const supervisorGroups = new Map();
             }
 
             const fornecedorToggleContainerEl = document.getElementById('fornecedor-toggle-container');
-            if (fornecedorToggleContainerEl) {
-                fornecedorToggleContainerEl.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active'));
-            }
 
             if (hierarchyState['main']) {
                 hierarchyState['main'].coords.clear();
@@ -12096,7 +12093,7 @@ const supervisorGroups = new Map();
 
             const resetComparisonFilters = () => {
                 selectedComparisonTiposVenda = [];
-                currentComparisonFornecedor = '';
+                currentComparisonFornecedor = 'PEPSICO';
                 selectedComparisonSuppliers = [];
                 comparisonRedeGroupFilter = '';
                 selectedComparisonRedes = [];
@@ -12126,6 +12123,8 @@ const supervisorGroups = new Map();
 
                 if (comparisonFornecedorToggleContainer) {
                     comparisonFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active'));
+                    const pepsicoBtn = comparisonFornecedorToggleContainer.querySelector('button[data-fornecedor="PEPSICO"]');
+                    if (pepsicoBtn) pepsicoBtn.classList.add('active');
                 }
 
                 handleComparisonFilterChange();
