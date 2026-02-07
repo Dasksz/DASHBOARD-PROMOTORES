@@ -389,3 +389,20 @@
 #comparison-fornecedor-toggle-container .fornecedor-btn:not(.active):hover {
     background-color: #334155; /* hover:bg-slate-700 approx */
 }
+
+/* Dynamic Button Styling for Group Toggles (Rede) */
+.group-btn {
+    transition: all 0.2s ease;
+}
+.group-btn.active {
+    background-color: #2563eb !important; /* bg-blue-600 */
+    color: #ffffff !important; /* text-white */
+}
+.group-btn:not(.active) {
+    background-color: transparent;
+    color: #94a3b8; /* text-slate-400 */
+}
+.group-btn:not(.active):hover {
+    color: #ffffff; /* hover:text-white */
+    background-color: rgba(51, 65, 85, 0.5); /* hover:bg-slate-700/50 */
+}
