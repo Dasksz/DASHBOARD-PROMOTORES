@@ -2381,39 +2381,6 @@
             return new Date(d.getTime() + userTimezoneOffset).toLocaleDateString('pt-BR');
         }
 
-        function buildInnovationSalesMaps(salesData, mainTypes, bonusTypes) {
-            const mainMap = new Map(); // Map<CODCLI, Map<PRODUTO, Set<CODUSUR>>>
-            const bonusMap = new Map();
-            const mainSet = new Set(mainTypes);
-            const bonusSet = new Set(bonusTypes);
-
-            salesData.forEach(sale => {
-                const isMain = mainSet.has(sale.TIPOVENDA);
-                const isBonus = bonusSet.has(sale.TIPOVENDA);
-
-                if (!isMain && !isBonus) return;
-
-                const codCli = sale.CODCLI;
-                const prod = sale.PRODUTO;
-                const rca = sale.CODUSUR;
-
-                if (isMain) {
-                    if (!mainMap.has(codCli)) mainMap.set(codCli, new Map());
-                    const clientMap = mainMap.get(codCli);
-                    if (!clientMap.has(prod)) clientMap.set(prod, new Set());
-                    clientMap.get(prod).add(rca);
-                }
-
-                if (isBonus) {
-                    if (!bonusMap.has(codCli)) bonusMap.set(codCli, new Map());
-                    const clientMap = bonusMap.get(codCli);
-                    if (!clientMap.has(prod)) clientMap.set(prod, new Set());
-                    clientMap.get(prod).add(rca);
-                }
-            });
-            return { mainMap, bonusMap };
-        }
-
         // --- MIX VIEW LOGIC ---
         const MIX_SALTY_CATEGORIES = ['CHEETOS', 'DORITOS', 'FANDANGOS', 'RUFFLES', 'TORCIDA'];
         const MIX_FOODS_CATEGORIES = ['TODDYNHO', 'TODDY ', 'QUAKER', 'KEROCOCO'];
@@ -4313,276 +4280,114 @@
             renderMetaRealizadoClientsTable(clientsData, weeks);
         }
 
-        function getMetaRealizadoClientsData(weeks) {
-            // New Hierarchy Logic
-            const currentMonthIndex = lastSaleDate.getUTCMonth();
-            const currentYear = lastSaleDate.getUTCFullYear();
-            const suppliersSet = new Set(selectedMetaRealizadoSuppliers);
-            const pasta = currentMetaRealizadoPasta;
+        function renderMetaRealizadoFromRPC(data) {
+            if (!data) return;
+            const sellers = data.sellers || []; // [{code, total_val, total_vol, weekly_data}]
+            const weeksMeta = data.weeks_meta || []; // [{week_index, start_date, end_date}]
 
-            // --- Fix: Define Filter Sets from Hierarchy State ---
-            const supervisorsSet = new Set();
-            const sellersSet = new Set();
-            
-            const hState = hierarchyState['meta-realizado'];
-            if (hState) {
-                // If Coords selected, filter by them
-                if (hState.coords.size > 0) {
-                    hState.coords.forEach(c => {
-                        const name = optimizedData.coordMap.get(c);
-                        if(name) supervisorsSet.add(name);
-                    });
-                }
-                // If Promotors selected (Sellers), filter by them
-                if (hState.promotors.size > 0) {
-                    hState.promotors.forEach(p => {
-                        const name = optimizedData.promotorMap.get(p);
-                        if(name) sellersSet.add(name);
-                    });
-                }
-            }
-            // ----------------------------------------------------
-
-            // 1. Identify Target Clients (Active/Americanas/etc + Filtered)
-            // Apply Hierarchy Logic + "Active" Filter logic
-            let clients = getHierarchyFilteredClients('meta-realizado', allClientsData).filter(c => {
-                const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                if (isAmericanas) return true;
-                if (rca1 === '53') return false;
-                if (rca1 === '') return false;
-                return true;
+            // 1. Reconstruct weeks structure for UI (add isPast logic)
+            // Note: weeksMeta from RPC has raw dates.
+            const weeks = weeksMeta.map(w => {
+                const end = new Date(w.end_date); // Ensure JS Date
+                const isPast = end < lastSaleDate; // Global lastSaleDate
+                return {
+                    start: new Date(w.start_date),
+                    end: end,
+                    workingDays: w.working_days || 5, // Fallback if calc fails
+                    isPast: isPast
+                };
             });
 
-            // Optimization: Create Set of Client Codes
-            const allowedClientCodes = new Set(clients.map(c => String(c['Código'] || c['codigo_cliente'])));
+            let totalWorkingDays = weeks.reduce((sum, w) => sum + w.workingDays, 0);
+            if (totalWorkingDays === 0) totalWorkingDays = 1;
 
-            // 2. Aggregate Data per Client
-            const clientMap = new Map(); // Map<CodCli, { clientObj, goal: 0, salesTotal: 0, salesWeeks: [] }>
+            const rowData = [];
+            const metric = currentMetaRealizadoMetric; // 'valor' or 'peso'
 
-            // Determine Goal Keys based on Pasta (Copy logic)
-            let goalKeys = [];
-            if (pasta === 'PEPSICO') goalKeys = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
-            else if (pasta === 'ELMA') goalKeys = ['707', '708', '752'];
-            else if (pasta === 'FOODS') goalKeys = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+            // 2. Process Sellers
+            sellers.forEach(s => {
+                const name = optimizedData.rcaNameByCode.get(s.code) || s.code;
 
-            // A. Populate Goals
-            clients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
-                if (!clientMap.has(codCli)) {
-                    clientMap.set(codCli, { clientObj: client, goal: 0, salesTotal: 0, salesWeeks: new Array(weeks.length).fill(0) });
-                }
-                const entry = clientMap.get(codCli);
+                // Determine Realized Values
+                const realizedTotal = metric === 'valor' ? s.total_val : s.total_vol;
+                const realizedWeeks = new Array(weeks.length).fill(0);
 
-                if (globalClientGoals.has(codCli)) {
-                    const cGoals = globalClientGoals.get(codCli);
-                    goalKeys.forEach(k => {
-                        if (cGoals.has(k)) entry.goal += (cGoals.get(k).fat || 0);
+                if (s.weekly_data) {
+                    s.weekly_data.forEach(wd => {
+                        if (wd.week >= 0 && wd.week < weeks.length) {
+                            realizedWeeks[wd.week] = metric === 'valor' ? wd.val : wd.vol;
+                        }
                     });
                 }
-            });
 
-            // B. Populate Sales (Iterate ALL Sales to catch those without Meta)
-            // Filter Logic matches 'getMetaRealizadoFilteredData'
+                // Determine Goal (Meta) from Local State
+                let goalCategory = 'pepsico_all';
+                if (currentMetaRealizadoPasta === 'ELMA') goalCategory = 'total_elma';
+                else if (currentMetaRealizadoPasta === 'FOODS') goalCategory = 'total_foods';
 
-            // Helper for week index (Copied from getMetaRealizadoFilteredData scope, need to redefine or reuse)
-            const getWeekIndex = (date) => {
-                const d = typeof date === 'number' ? new Date(date) : parseDate(date);
-                if (!d) return -1;
-                for(let i=0; i<weeks.length; i++) {
-                    if (d >= weeks[i].start && d <= weeks[i].end) return i;
-                }
-                return -1;
-            };
+                const metaTotal = getSellerCurrentGoal(name, goalCategory, metric === 'valor' ? 'rev' : 'vol');
 
-            for(let i=0; i<allSalesData.length; i++) {
-                const s = allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i];
-                const d = typeof s.DTPED === 'number' ? new Date(s.DTPED) : parseDate(s.DTPED);
-
-                // Basic Filters
-                if (!d || d.getUTCMonth() !== currentMonthIndex || d.getUTCFullYear() !== currentYear) continue;
-                const tipo = String(s.TIPOVENDA);
-                if (tipo === '5' || tipo === '11') continue;
-
-                // Pasta Filter
-                let rowPasta = s.OBSERVACAOFOR;
-                if (!rowPasta || rowPasta === '0' || rowPasta === '00' || rowPasta === 'N/A') {
-                     const rawFornecedor = String(s.FORNECEDOR || '').toUpperCase();
-                     rowPasta = rawFornecedor.includes('PEPSICO') ? 'PEPSICO' : 'MULTIMARCAS';
-                }
-                if (rowPasta !== 'PEPSICO') continue;
-
-                const codFor = String(s.CODFOR);
-                if (pasta === 'ELMA' && !['707', '708', '752'].includes(codFor)) continue;
-                if (pasta === 'FOODS' && codFor !== '1119') continue;
-
-                // Supervisor/Seller/Supplier Filter on SALE row
-                if (supervisorsSet.size > 0 && !supervisorsSet.has(s.SUPERV)) continue;
-                if (sellersSet.size > 0 && !sellersSet.has(s.NOME)) continue;
-                if (suppliersSet.size > 0 && !suppliersSet.has(s.CODFOR)) continue;
-
-                const codCli = String(s.CODCLI);
-                // Check if client is in allowed list (Active/Filtered)
-                // Note: User said "todos os clientes que possuírem metas OU vendas".
-                // If a client has sales but was filtered out by "Active" check (e.g. Inactive RCA), should they appear?
-                // Usually yes, sales override status.
-                // However, we are filtering by Supervisor/Seller above.
-
-                // Logic: If I filtered by Supervisor X, and Sale is by Supervisor X, I include it.
-                // But do I include the Client Object?
-                // If the client wasn't in 'clients' array (e.g. RCA 53?), we might miss metadata.
-                // We should fetch client metadata from allClientsData map if missing.
-
-                if (!clientMap.has(codCli)) {
-                    // Try to find client object
-                    const clientObj = clientMapForKPIs.get(codCli) || { 'Código': codCli, nomeCliente: 'DESCONHECIDO', cidade: 'N/A', rca1: 'N/A' };
-                    // If we apply STRICT Supervisor/Seller filter, we should check if this sale matches.
-                    // We already checked sale attributes above. So this sale is valid for the view.
-                    clientMap.set(codCli, { clientObj: clientObj, goal: 0, salesTotal: 0, salesWeeks: new Array(weeks.length).fill(0) });
-                }
-
-                const entry = clientMap.get(codCli);
-                const val = Number(s.VLVENDA) || 0;
-                const weekIdx = getWeekIndex(d);
-
-                entry.salesTotal += val;
-                if (weekIdx !== -1) entry.salesWeeks[weekIdx] += val;
-            }
-
-            // 3. Transform to Array and Calculate Dynamic Goals
-            const results = [];
-            clientMap.forEach((data, codCli) => {
-                // Filter out if No Goal AND No Sales (Clean up empty active clients)
-                if (data.goal === 0 && data.salesTotal === 0) return;
-
-                const adjustedGoals = calculateAdjustedWeeklyGoals(data.goal, data.salesWeeks, weeks);
+                // Calculate Dynamic Distribution (Client-Side Math on Server Data)
+                const adjustedGoals = calculateAdjustedWeeklyGoals(metaTotal, realizedWeeks, weeks);
 
                 const weekData = weeks.map((w, i) => {
-                    const isPast = w.end < lastSaleDate;
-                    return { meta: adjustedGoals[i], real: data.salesWeeks[i], isPast: isPast };
+                    return {
+                        meta: adjustedGoals[i],
+                        real: realizedWeeks[i],
+                        isPast: w.isPast
+                    };
                 });
 
-                // Resolve Vendor Name
-                let vendorName = 'N/A';
-                const rcaCode = (data.clientObj.rcas && data.clientObj.rcas.length > 0) ? data.clientObj.rcas[0] : (data.clientObj.rca1 || 'N/A');
-                if (rcaCode !== 'N/A') {
-                    vendorName = optimizedData.rcaNameByCode.get(String(rcaCode)) || rcaCode;
-                }
+                rowData.push({
+                    name: name,
+                    metaTotal: metaTotal,
+                    realTotal: realizedTotal,
+                    weekData: weekData,
+                    posGoal: 0,
+                    posRealized: 0
+                });
+            });
 
-                let nomeExibicao = data.clientObj.nomeCliente || data.clientObj.razaoSocial || 'N/A';
-                if (nomeExibicao.toUpperCase().includes('AMERICANAS')) {
-                    const fantasia = data.clientObj.fantasia || data.clientObj.FANTASIA || data.clientObj['Nome Fantasia'];
-                    if (fantasia) {
-                        nomeExibicao = fantasia;
+            // Sort
+            rowData.sort((a, b) => b.metaTotal - a.metaTotal);
+
+            // Render
+            renderMetaRealizadoTable(rowData, weeks, totalWorkingDays);
+            renderMetaRealizadoChart(rowData);
+        }
+
+        function updateMetaRealizadoView() {
+            if (embeddedData.isServerMode) {
+                // Manual Filter Collection for this specific view (uses different IDs sometimes)
+                const localFilters = {};
+                const filialF = document.getElementById('meta-realizado-filial-filter');
+                if(filialF && filialF.value !== 'ambas') localFilters.p_filial = [filialF.value];
+
+                const cityF = document.getElementById('meta-realizado-city-filter');
+                if(cityF && cityF.value) localFilters.p_cidade = [cityF.value];
+
+                if (selectedMetaRealizadoSuppliers.length > 0) localFilters.p_fornecedor = selectedMetaRealizadoSuppliers;
+
+                // Hierarchy
+                const hState = hierarchyState['meta-realizado'];
+                if (hState) {
+                    if (hState.promotors.size > 0) {
+                        const names = [];
+                        hState.promotors.forEach(c => { const n = optimizedData.promotorMap.get(c); if(n) names.push(n); });
+                        if(names.length > 0) localFilters.p_vendedor = names;
                     }
                 }
 
-                results.push({
-                    codcli: codCli,
-                    razaoSocial: nomeExibicao,
-                    cidade: data.clientObj.cidade || 'N/A',
-                    vendedor: vendorName,
-                    metaTotal: data.goal,
-                    realTotal: data.salesTotal,
-                    weekData: weekData
-                });
-            });
-
-            // Sort: High Potential? High Sales?
-            // Default: Meta Descending, then Sales Descending
-            results.sort((a, b) => b.metaTotal - a.metaTotal || b.realTotal - a.realTotal);
-
-            return results;
-        }
-
-        function renderMetaRealizadoClientsTable(data, weeks) {
-            const tableHead = document.getElementById('meta-realizado-clients-table-head');
-            const tableBody = document.getElementById('meta-realizado-clients-table-body');
-            const controls = document.getElementById('meta-realizado-clients-pagination-controls');
-            const infoText = document.getElementById('meta-realizado-clients-page-info-text');
-            const prevBtn = document.getElementById('meta-realizado-clients-prev-page-btn');
-            const nextBtn = document.getElementById('meta-realizado-clients-next-page-btn');
-
-            // 1. Build Headers (Same logic as Seller Table but with Client Info)
-            let headerHTML = `
-                <tr>
-                    <th rowspan="2" class="px-2 py-2 text-center bg-[#161e3d] border-r border-b border-slate-700 w-16">CÓD</th>
-                    <th rowspan="2" class="px-3 py-2 text-left bg-[#161e3d] border-r border-b border-slate-700 min-w-[200px]">CLIENTE</th>
-                    <th rowspan="2" class="px-3 py-2 text-left bg-[#161e3d] border-r border-b border-slate-700 w-32">VENDEDOR</th>
-                    <th rowspan="2" class="px-3 py-2 text-left bg-[#161e3d] border-r border-b border-slate-700 w-32">CIDADE</th>
-                    <th colspan="2" class="px-2 py-1 text-center bg-blue-900/30 text-blue-400 border-r border-slate-700 border-b-0">GERAL</th>
-            `;
-
-            weeks.forEach((week, i) => {
-                headerHTML += `<th colspan="2" class="px-2 py-1 text-center border-r border-slate-700 border-b-0 text-slate-300">SEMANA ${i + 1}</th>`;
-            });
-            headerHTML += `</tr><tr>`;
-
-            headerHTML += `
-                <th class="px-2 py-2 text-right bg-blue-900/20 text-blue-300 border-r border-b border-slate-700/50 text-[10px]">META</th>
-                <th class="px-2 py-2 text-right bg-blue-900/20 text-blue-100 font-bold border-r border-b border-slate-700 text-[10px]">REALIZADO</th>
-            `;
-
-            weeks.forEach(() => {
-                headerHTML += `
-                    <th class="px-2 py-2 text-right border-r border-b border-slate-700/50 text-slate-400 text-[10px]">META</th>
-                    <th class="px-2 py-2 text-right border-r border-b border-slate-700 text-white font-bold text-[10px]">REAL.</th>
-                `;
-            });
-            headerHTML += `</tr>`;
-
-            tableHead.innerHTML = headerHTML;
-
-            // 2. Pagination Logic
-            const startIndex = (metaRealizadoClientsTableState.currentPage - 1) * metaRealizadoClientsTableState.itemsPerPage;
-            const endIndex = startIndex + metaRealizadoClientsTableState.itemsPerPage;
-            const pageData = metaRealizadoClientsTableState.filteredData.slice(startIndex, endIndex);
-
-            // 3. Build Body
-            if (pageData.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="${6 + (weeks.length * 2)}" class="px-4 py-8 text-center text-slate-500">Nenhum cliente encontrado com os filtros atuais.</td></tr>`;
-            } else {
-                const rowsHTML = pageData.map(row => {
-                    const metaTotalStr = row.metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    const realTotalStr = row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-                    let cells = `
-                        <td class="px-2 py-2 text-center text-slate-400 text-xs border-r border-b border-slate-700">${row.codcli}</td>
-                        <td class="px-3 py-2 text-xs font-medium text-slate-200 border-r border-b border-slate-700 truncate" title="${escapeHtml(row.razaoSocial)}">${escapeHtml(row.razaoSocial)}</td>
-                        <td class="px-3 py-2 text-xs text-slate-400 border-r border-b border-slate-700 truncate">${escapeHtml(getFirstName(row.vendedor))}</td>
-                        <td class="px-3 py-2 text-xs text-slate-400 border-r border-b border-slate-700 truncate">${escapeHtml(row.cidade)}</td>
-                        <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs" title="Meta Contratual Mensal">${metaTotalStr}</td>
-                        <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs">${realTotalStr}</td>
-                    `;
-
-                    row.weekData.forEach(w => {
-                        const wMetaStr = w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                        const wRealStr = w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                        const realClass = w.real >= w.meta && w.meta > 0 ? 'text-green-400' : 'text-slate-300';
-                        const metaClass = w.isPast ? 'text-red-500' : 'text-slate-400';
-
-                        cells += `
-                            <td class="px-2 py-3 text-right ${metaClass} text-xs border-r border-b border-slate-700">${wMetaStr}</td>
-                            <td class="px-2 py-3 text-right ${realClass} text-xs font-medium border-r border-b border-slate-700">${wRealStr}</td>
-                        `;
+                // Call Advanced RPC
+                window.supabaseClient.rpc('get_meta_realizado_advanced', localFilters)
+                    .then(({ data, error }) => {
+                        if (error) console.error(error);
+                        else renderMetaRealizadoFromRPC(data);
                     });
-
-                    return `<tr class="hover:bg-slate-700/30 transition-colors">${cells}</tr>`;
-                }).join('');
-                tableBody.innerHTML = rowsHTML;
+                return;
             }
 
-            // 4. Update Pagination Controls
-            if (metaRealizadoClientsTableState.filteredData.length > 0) {
-                infoText.textContent = `Página ${metaRealizadoClientsTableState.currentPage} de ${metaRealizadoClientsTableState.totalPages} (Total: ${metaRealizadoClientsTableState.filteredData.length} clientes)`;
-                prevBtn.disabled = metaRealizadoClientsTableState.currentPage === 1;
-                nextBtn.disabled = metaRealizadoClientsTableState.currentPage === metaRealizadoClientsTableState.totalPages;
-                controls.classList.remove('hidden');
-            } else {
-                controls.classList.add('hidden');
-            }
         }
-
         function calculateMetricsForClients(clientsList) {
             // Helper to init metrics structure
             const createMetric = () => ({
@@ -8633,9 +8438,21 @@ const supervisorGroups = new Map();
             const codcliFilter = document.getElementById('codcli-filter');
             if (codcliFilter) codcliFilter.value = '';
 
-            selectedMainSuppliers = updateSupplierFilter(document.getElementById('fornecedor-filter-dropdown'), document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, [...allSalesData, ...allHistoryData], 'main');
-            updateTipoVendaFilter(tipoVendaFilterDropdown, tipoVendaFilterText, selectedTiposVenda, allSalesData);
-            updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
+            // Reset UI Text directly
+            const supplierText = document.getElementById('fornecedor-filter-text');
+            if (supplierText) supplierText.textContent = 'Fornecedor';
+
+            if (tipoVendaFilterText) tipoVendaFilterText.textContent = 'Tipo Venda';
+            if (mainComRedeBtnText) mainComRedeBtnText.textContent = 'Rede';
+
+            // Uncheck boxes
+            const uncheck = (id) => {
+                const dd = document.getElementById(id);
+                if (dd) dd.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            };
+            uncheck('fornecedor-filter-dropdown');
+            uncheck('tipo-venda-filter-dropdown');
+            uncheck('main-rede-filter-dropdown');
 
             if (mainRedeGroupContainer) {
                 mainRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -10648,547 +10465,155 @@ const supervisorGroups = new Map();
 
 
 
-        function getInnovationsMonthFilteredData(options = {}) {
-            const { excludeFilter = null } = options;
-
-            const city = innovationsMonthCityFilter.value.trim().toLowerCase();
-            const filial = innovationsMonthFilialFilter.value;
-
-            let clients = getHierarchyFilteredClients('innovations-month', allClientsData);
-
-            if (filial !== 'ambas') {
-                clients = clients.filter(c => clientLastBranch.get(c['Código']) === filial);
-            }
-
-            if (excludeFilter !== 'city' && city) {
-                clients = clients.filter(c => c.cidade && c.cidade.toLowerCase() === city);
-            }
-
-            return { clients };
-        }
-
         function resetInnovationsMonthFilters() {
             innovationsMonthCityFilter.value = '';
             innovationsMonthFilialFilter.value = 'ambas';
             innovationsMonthCategoryFilter.value = '';
             selectedInnovationsMonthTiposVenda = [];
 
-            selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, [...allSalesData, ...allHistoryData]);
+            if (innovationsMonthTipoVendaFilterText) innovationsMonthTipoVendaFilterText.textContent = 'Todos';
+            // Uncheck all checkboxes in dropdown if exists
+            if (innovationsMonthTipoVendaFilterDropdown) {
+                innovationsMonthTipoVendaFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            }
+
             updateInnovationsMonthView();
         }
 
-        function updateInnovationsMonthView() {
-            const selectedCategory = innovationsMonthCategoryFilter.value;
+        function renderInnovationsFromRPC(data) {
+            if (!data) return;
+            const kpis = data.kpis || {};
+            const rows = data.rows || [];
 
-            // Initialize Global Categories if not already done (Optimization)
-            if (!globalInnovationCategories && innovationsMonthData && innovationsMonthData.length > 0) {
-                globalInnovationCategories = {};
-                globalProductToCategoryMap = new Map();
-                innovationsMonthData.forEach(item => {
-                    const categoryName = item.Inovacoes || item.inovacoes || item.INOVACOES;
-                    if (!categoryName) return;
-                    if (!globalInnovationCategories[categoryName]) {
-                        globalInnovationCategories[categoryName] = { productCodes: new Set(), products: [] };
-                    }
-                    const productCode = String(item.Codigo || item.codigo || item.CODIGO).trim();
-                    globalInnovationCategories[categoryName].productCodes.add(productCode);
-                    globalInnovationCategories[categoryName].products.push({ ...item, Codigo: productCode, Inovacoes: categoryName });
-                    globalProductToCategoryMap.set(productCode, categoryName);
-                });
-            }
+            // 1. Update KPIs
+            if (innovationsMonthActiveClientsKpi) innovationsMonthActiveClientsKpi.textContent = kpis.active_clients || 0;
 
-            const categories = globalInnovationCategories || {};
-            const currentFilterValue = innovationsMonthCategoryFilter.value;
-            const allCategories = Object.keys(categories).sort();
+            if (innovationsMonthTopCoverageKpi) innovationsMonthTopCoverageKpi.textContent = kpis.top_coverage?.product || '-';
+            if (innovationsMonthTopCoverageValueKpi) innovationsMonthTopCoverageValueKpi.textContent = (kpis.top_coverage?.value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            if (innovationsMonthTopCoverageCountKpi) innovationsMonthTopCoverageCountKpi.textContent = kpis.top_coverage?.count || 0;
 
-            // Only update dropdown if empty or number of items changed significantly (simplistic check)
-            if (innovationsMonthCategoryFilter.options.length <= 1 && allCategories.length > 0) {
-                let optionsHtml = '<option value="">Todas as Categorias</option>';
-                allCategories.forEach(cat => {
-                    optionsHtml += `<option value="${cat}">${cat}</option>`;
-                });
-                innovationsMonthCategoryFilter.innerHTML = optionsHtml;
-                if (allCategories.includes(currentFilterValue)) {
-                    innovationsMonthCategoryFilter.value = currentFilterValue;
-                }
-            }
+            if (innovationsMonthSelectionCoverageValueKpi) innovationsMonthSelectionCoverageValueKpi.textContent = (kpis.selection_coverage?.value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            if (innovationsMonthSelectionCoverageCountKpi) innovationsMonthSelectionCoverageCountKpi.textContent = kpis.selection_coverage?.count || 0;
 
-            const { clients: filteredClients } = getInnovationsMonthFilteredData();
+            if (innovationsMonthBonusCoverageValueKpi) innovationsMonthBonusCoverageValueKpi.textContent = (kpis.bonus_coverage?.value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            if (innovationsMonthBonusCoverageCountKpi) innovationsMonthBonusCoverageCountKpi.textContent = kpis.bonus_coverage?.count || 0;
 
-
-            const activeClients = filteredClients.filter(c => {
-                const codcli = c['Código'];
-                const rca1 = String(c.rca1 || '').trim();
-                if (rca1 === '306' || rca1 === '300') return false;
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(codcli));
-            });
-            const activeClientsCount = activeClients.length;
-            const activeClientCodes = new Set(activeClients.map(c => c['Código']));
-
-            // --- OPTIMIZED AGGREGATION LOGIC ---
-
-            // Determine types to use
-            const availableTypes = new Set([...allSalesData.map(s => s.TIPOVENDA), ...allHistoryData.map(s => s.TIPOVENDA)]);
-            let currentSelection = selectedInnovationsMonthTiposVenda.length > 0 ? selectedInnovationsMonthTiposVenda : Array.from(availableTypes);
-            const currentSelectionKey = currentSelection.slice().sort().join(',');
-
-            // Caching Strategy: Reuse maps if Tipo Venda selection hasn't changed
-            let mapsCurrent, mapsPrevious;
-            if (viewState.inovacoes.lastTypesKey === currentSelectionKey && viewState.inovacoes.cache) {
-                mapsCurrent = viewState.inovacoes.cache.mapsCurrent;
-                mapsPrevious = viewState.inovacoes.cache.mapsPrevious;
-            } else {
-                const mainTypes = currentSelection.filter(t => t !== '5' && t !== '11');
-                const bonusTypes = currentSelection.filter(t => t === '5' || t === '11');
-
-                // Optimized Map Building (2 passes instead of 4)
-                mapsCurrent = buildInnovationSalesMaps(allSalesData, mainTypes, bonusTypes);
-
-                // Filter History for Previous Month Only (Current Month - 1)
-                const currentYear = lastSaleDate.getUTCFullYear();
-                const currentMonth = lastSaleDate.getUTCMonth();
-                // Start of Prev Month
-                const prevMonthDate = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
-                const startTs = prevMonthDate.getTime();
-                // End of Prev Month (Start of Current Month)
-                const currentMonthStartDate = new Date(Date.UTC(currentYear, currentMonth, 1));
-                const endTs = currentMonthStartDate.getTime();
-
-                const previousMonthData = allHistoryData.filter(item => {
-                    const val = item.DTPED;
-                    let ts = 0;
-                    if (typeof val === 'number') {
-                        if (val < 100000) {
-                             ts = Math.round((val - 25569) * 86400 * 1000);
-                        } else {
-                             ts = val;
-                        }
-                    } else {
-                        const d = parseDate(val);
-                        if(d) ts = d.getTime();
-                    }
-                    return ts >= startTs && ts < endTs;
-                });
-
-                mapsPrevious = buildInnovationSalesMaps(previousMonthData, mainTypes, bonusTypes);
-
-                viewState.inovacoes.lastTypesKey = currentSelectionKey;
-                viewState.inovacoes.cache = { mapsCurrent, mapsPrevious };
-            }
-
-            // Structures to hold results
-            // categoryResults[catName] = { current: Set<CodCli>, previous: Set<CodCli>, bonusCurrent: Set<CodCli>, bonusPrevious: Set<CodCli> }
-            // productResults[prodCode] = { current: Set<CodCli> } -> For Top Item Logic
-            const categoryResults = {};
-            const productResults = {};
-
-            for (const cat in categories) {
-                categoryResults[cat] = {
-                    current: new Set(),
-                    previous: new Set(),
-                    bonusCurrent: new Set(),
-                    bonusPrevious: new Set()
-                };
-                categories[cat].productCodes.forEach(p => {
-                    productResults[p] = { current: new Set(), previous: new Set() };
-                });
-            }
-
-            // Helper to process maps and populate sets
-            const processMap = (salesMap, isCurrent, isBonus) => {
-                salesMap.forEach((productsMap, codCli) => {
-                    // Only count if client is in the filtered active list
-                    if (!activeClientCodes.has(codCli)) return;
-
-                    productsMap.forEach((rcas, prodCode) => {
-                        const category = globalProductToCategoryMap ? globalProductToCategoryMap.get(prodCode) : null;
-                        if (!category) return; // Should not happen if innovation data is consistent
-
-
-                        const targetSetField = isCurrent ? 'current' : 'previous';
-
-                        // Add to Category Set (Normal or Bonus)
-                        if (categoryResults[category]) {
-                            if (isBonus) {
-                                categoryResults[category][isCurrent ? 'bonusCurrent' : 'bonusPrevious'].add(codCli);
-                            } else {
-                                categoryResults[category][targetSetField].add(codCli);
-                            }
-                        }
-
-                        // Add to Product Set (For Top Item Logic)
-                        if (productResults[prodCode]) {
-                            productResults[prodCode][targetSetField].add(codCli);
-                        }
-                    });
-                });
-            };
-
-            // Process all 4 maps efficiently (Looping over Sales, not all Clients)
-            processMap(mapsCurrent.mainMap, true, false);
-            processMap(mapsCurrent.bonusMap, true, true);
-            processMap(mapsPrevious.mainMap, false, false);
-            processMap(mapsPrevious.bonusMap, false, true);
-
-            // Consolidate Results
-            const categoryAnalysis = {};
-            let topCoverageItem = { name: '-', coverage: 0, clients: 0 };
-
-            // Consolidate Product Results for Top Item
-            // We need to merge Main and Bonus for product coverage if needed,
-            // but `processMap` populated `productResults` separately for main/bonus?
-            // Wait, `processMap` handles Main and Bonus calls sequentially.
-            // `productResults[prodCode].current` is a Set.
-            // If we call processMap for Main, it adds clients.
-            // If we call processMap for Bonus, it adds clients to SAME Set.
-            // So `productResults` automatically handles the UNION of Main and Bonus coverage per product.
-
-            if (selectedCategory && categories[selectedCategory]) {
-                categories[selectedCategory].products.forEach(product => {
-                    const pCode = String(product.Codigo).trim();
-                    if (productResults[pCode]) {
-                        const count = productResults[pCode].current.size;
-                        const coverage = activeClientsCount > 0 ? (count / activeClientsCount) * 100 : 0;
-                        if (coverage > topCoverageItem.coverage) {
-                            topCoverageItem = { name: `(${pCode}) ${product.produto || product.Produto}`, coverage, clients: count };
-                        }
-                    }
-                });
-            } else {
-                // Top Category Logic
-                for (const cat in categoryResults) {
-                    const set = categoryResults[cat].current; // Main coverage
-                    // Wait, original logic: "gotItCurrent" if sales OR bonus.
-                    // My categoryResults structure separates them. I need to union them for the metric?
-                    // Original logic:
-                    // clientsWhoGotAnyVisibleProductCurrent.add(codcli) if (Sales OR Bonus) of ANY product in category.
-
-                    // Let's create a Union Set for the category coverage metric
-                    const unionSet = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
-                    const count = unionSet.size;
-                    const coverage = activeClientsCount > 0 ? (count / activeClientsCount) * 100 : 0;
-
-                    if (coverage > topCoverageItem.coverage) {
-                        topCoverageItem = { name: cat, coverage, clients: count };
-                    }
-                }
-            }
-
-            // Calculate Global KPIs (Union of all categories selected)
-            const clientsWhoGotAnyVisibleProductCurrent = new Set();
-            const clientsWhoGotAnyVisibleProductPrevious = new Set();
-            const clientsWhoGotBonusAnyVisibleProductCurrent = new Set();
-            const clientsWhoGotBonusAnyVisibleProductPrevious = new Set();
-
-            for (const cat in categoryResults) {
-                if (selectedCategory && cat !== selectedCategory) continue;
-
-                // Merge sets into global KPI sets
-                categoryResults[cat].current.forEach(c => clientsWhoGotAnyVisibleProductCurrent.add(c));
-                categoryResults[cat].previous.forEach(c => clientsWhoGotAnyVisibleProductPrevious.add(c));
-                categoryResults[cat].bonusCurrent.forEach(c => clientsWhoGotBonusAnyVisibleProductCurrent.add(c));
-                categoryResults[cat].bonusPrevious.forEach(c => clientsWhoGotBonusAnyVisibleProductPrevious.add(c));
-
-                // Prepare Analysis Object for Chart/Table
-                const currentUnion = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
-                const previousUnion = new Set([...categoryResults[cat].previous, ...categoryResults[cat].bonusPrevious]);
-
-                // NOTE: The chart/table in original code used "coverageCurrent" derived from
-                // (clientsCurrentCount / activeClientsCount).
-                // clientsCurrentCount was incremented if (Sales OR Bonus).
-
-                const countCurr = currentUnion.size;
-                const countPrev = previousUnion.size;
-
-                const covCurr = activeClientsCount > 0 ? (countCurr / activeClientsCount) * 100 : 0;
-                const covPrev = activeClientsCount > 0 ? (countPrev / activeClientsCount) * 100 : 0;
-                const varPct = covPrev > 0 ? ((covCurr - covPrev) / covPrev) * 100 : (covCurr > 0 ? Infinity : 0);
-
-                categoryAnalysis[cat] = {
-                    coverageCurrent: covCurr,
-                    coveragePrevious: covPrev,
-                    variation: varPct,
-                    clientsCount: countCurr,
-                    clientsPreviousCount: countPrev
-                };
-            }
-
-            // Total KPI calculations (Union of Sets)
-            // Note: Original code did:
-            // clientsWhoGotAnyVisibleProductCurrent -> Sales
-            // clientsWhoGotBonusAnyVisibleProductCurrent -> Bonus
-            // It kept them separate for the KPI cards at the top.
-            // "Innovations Month Selection Coverage" -> Sales
-            // "Innovations Month Bonus Coverage" -> Bonus
-
-            const selectionCoveredCountCurrent = clientsWhoGotAnyVisibleProductCurrent.size;
-            const selectionCoveragePercentCurrent = activeClientsCount > 0 ? (selectionCoveredCountCurrent / activeClientsCount) * 100 : 0;
-            const selectionCoveredCountPrevious = clientsWhoGotAnyVisibleProductPrevious.size;
-            const selectionCoveragePercentPrevious = activeClientsCount > 0 ? (selectionCoveredCountPrevious / activeClientsCount) * 100 : 0;
-
-            const bonusCoveredCountCurrent = clientsWhoGotBonusAnyVisibleProductCurrent.size;
-            const bonusCoveragePercentCurrent = activeClientsCount > 0 ? (bonusCoveredCountCurrent / activeClientsCount) * 100 : 0;
-            const bonusCoveredCountPrevious = clientsWhoGotBonusAnyVisibleProductPrevious.size;
-            const bonusCoveragePercentPrevious = activeClientsCount > 0 ? (bonusCoveredCountPrevious / activeClientsCount) * 100 : 0;
-
-            // Update DOM
-            innovationsMonthActiveClientsKpi.textContent = activeClientsCount.toLocaleString('pt-BR');
-            innovationsMonthTopCoverageValueKpi.textContent = `${topCoverageItem.coverage.toFixed(2)}%`;
-            innovationsMonthTopCoverageKpi.textContent = topCoverageItem.name;
-            innovationsMonthTopCoverageKpi.title = topCoverageItem.name;
-            innovationsMonthTopCoverageCountKpi.textContent = `${topCoverageItem.clients.toLocaleString('pt-BR')} PDVs`;
-            document.getElementById('innovations-month-top-coverage-title').textContent = selectedCategory ? 'Produto com Maior Cobertura' : 'Categoria com Maior Cobertura';
-
-            innovationsMonthSelectionCoverageValueKpi.textContent = `${selectionCoveragePercentCurrent.toFixed(2)}%`;
-            innovationsMonthSelectionCoverageCountKpi.textContent = `${selectionCoveredCountCurrent.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
-            innovationsMonthSelectionCoverageValueKpiPrevious.textContent = `${selectionCoveragePercentPrevious.toFixed(2)}%`;
-            innovationsMonthSelectionCoverageCountKpiPrevious.textContent = `${selectionCoveredCountPrevious.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
-
-            innovationsMonthBonusCoverageValueKpi.textContent = `${bonusCoveragePercentCurrent.toFixed(2)}%`;
-            innovationsMonthBonusCoverageCountKpi.textContent = `${bonusCoveredCountCurrent.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
-            innovationsMonthBonusCoverageValueKpiPrevious.textContent = `${bonusCoveragePercentPrevious.toFixed(2)}%`;
-            innovationsMonthBonusCoverageCountKpiPrevious.textContent = `${bonusCoveredCountPrevious.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
-
-            // Chart Update
-            chartLabels = Object.keys(categoryAnalysis).sort((a,b) => categoryAnalysis[b].coverageCurrent - categoryAnalysis[a].coverageCurrent);
-            const chartDataCurrent = chartLabels.map(cat => categoryAnalysis[cat].coverageCurrent);
-            const chartDataPrevious = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious);
-
-            if (chartLabels.length > 0) {
-                createChart('innovations-month-chart', 'bar', chartLabels, [
-                    { label: 'Mês Anterior', data: chartDataPrevious, backgroundColor: '#f97316' },
-                    { label: 'Mês Atual', data: chartDataCurrent, backgroundColor: '#06b6d4' }
-                ], {
-                    plugins: {
-                        legend: { display: true, position: 'top' },
-                        datalabels: {
-                            anchor: 'end',
-                            align: 'top',
-                            offset: 8,
-                            formatter: (value) => value > 0 ? value.toFixed(1) + '%' : '',
-                            color: '#cbd5e1',
-                            font: { size: 10 }
-                        },
-                         tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed.y !== null) label += context.parsed.y.toFixed(2) + '%';
-                                    return label;
-                                }
-                            }
-                        }
-                    },
-                    scales: { y: { ticks: { callback: (v) => `${v}%` } } },
-                    layout: { padding: { top: 20 } }
-                });
-            } else {
-                showNoDataMessage('innovations-month-chart', 'Sem dados de inovações para exibir com os filtros atuais.');
-            }
-
-            // Table Update
-            const tableData = [];
-            const activeStockMap = getActiveStockMap(innovationsMonthFilialFilter.value);
-
-            chartLabels.forEach(categoryName => {
-                const categoryData = categories[categoryName];
-
-                categoryData.products.forEach((product) => {
-                    const productCode = product.Codigo;
-                    const productName = product.produto || product.Produto;
-                    const stock = activeStockMap.get(productCode) || 0;
-
-                    // Re-calculate per product using the Product Results Sets
-                    // Optimization: productResults[productCode] already contains sets of clients who bought
-                    const pRes = productResults[productCode];
-
-                    // IMPORTANT: productResults contains ALL clients who bought.
-                    // We must filter by 'activeClientCodes' if not already done?
-                    // 'processMap' already checked: `if (!activeClientCodes.has(codCli)) return;`
-                    // So the sets in productResults are already filtered by active clients.
-
-                    const clientsCurrentCount = pRes ? pRes.current.size : 0;
-                    const clientsPreviousCount = pRes ? pRes.previous.size : 0;
-
-                    const coverageCurrent = activeClientsCount > 0 ? (clientsCurrentCount / activeClientsCount) * 100 : 0;
-                    const coveragePrevious = activeClientsCount > 0 ? (clientsPreviousCount / activeClientsCount) * 100 : 0;
-                    const variation = coveragePrevious > 0 ? ((coverageCurrent - coveragePrevious) / coveragePrevious) * 100 : (coverageCurrent > 0 ? Infinity : 0);
-
-                    tableData.push({
-                        categoryName,
-                        productCode,
-                        productName,
-                        stock,
-                        coveragePrevious,
-                        clientsPreviousCount,
-                        coverageCurrent,
-                        clientsCurrentCount,
-                        variation
-                    });
-                });
-            });
-
-            tableData.sort((a,b) => b.coverageCurrent - a.coverageCurrent);
-            innovationsMonthTableDataForExport = tableData;
-
-            innovationsMonthTableBody.innerHTML = tableData.map(item => {
-                let variationContent;
-                if (isFinite(item.variation)) {
-                    const colorClass = item.variation >= 0 ? 'text-green-400' : 'text-red-400';
-                    variationContent = `<span class="${colorClass}">${item.variation.toFixed(1)}%</span>`;
-                } else if (item.coverageCurrent > 0) {
-                    variationContent = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/30 text-purple-300">Novo</span>`;
-                } else {
-                    variationContent = `<span>-</span>`;
-                }
-
-                return `
-                    <tr class="hover:bg-slate-700/50">
-                        <td class="px-2 py-1.5 text-xs">${item.categoryName}</td>
-                        <td class="px-2 py-1.5 text-xs">${item.productCode} - ${item.productName}</td>
-                        <td class="px-2 py-1.5 text-xs text-right">${item.stock.toLocaleString('pt-BR')}</td>
-                        <td class="px-2 py-1.5 text-xs text-right">
-                            <div class="tooltip">${item.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${item.clientsPreviousCount} PDVs</span></div>
+            // 2. Render Table
+            const tbody = document.getElementById('innovations-month-table-body');
+            if (tbody) {
+                tbody.innerHTML = rows.map(r => `
+                    <tr class="hover:bg-slate-700/50 transition-colors border-b border-slate-700/50">
+                        <td class="px-4 py-3 text-sm text-slate-300 font-mono">${r.code}</td>
+                        <td class="px-4 py-3">
+                            <div class="text-sm font-bold text-white">${r.name}</div>
+                            <div class="text-xs text-slate-500">${r.city}</div>
                         </td>
-                        <td class="px-2 py-1.5 text-xs text-right">
-                            <div class="tooltip">${item.coverageCurrent.toFixed(2)}%<span class="tooltip-text">${item.clientsCurrentCount} PDVs</span></div>
+                        <td class="px-4 py-3 text-sm text-slate-400">${r.seller}</td>
+                        <td class="px-4 py-3 text-center">
+                            ${r.has_innovation ?
+                                '<span class="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold">Sim</span>' :
+                                '<span class="px-2 py-1 rounded-full bg-slate-700 text-slate-500 text-xs">Não</span>'}
                         </td>
-                        <td class="px-2 py-1.5 text-xs text-right">${variationContent}</td>
+                        <td class="px-4 py-3 text-right font-mono text-sm text-emerald-400 font-bold">
+                            ${r.total_value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-slate-400 max-w-xs truncate" title="${r.products_list || ''}">
+                            ${r.products_list || '-'}
+                        </td>
                     </tr>
-                `;
-            }).join('');
+                `).join('');
+            }
 
-            // Innovations by Client Table
-            const innovationsByClientTableHead = document.getElementById('innovations-by-client-table-head');
-            const innovationsByClientTableBody = document.getElementById('innovations-by-client-table-body');
-            const innovationsByClientLegend = document.getElementById('innovations-by-client-legend');
-
-            categoryLegendForExport = chartLabels.map((name, index) => `${index + 1} - ${name}`);
-            if (innovationsByClientLegend) innovationsByClientLegend.innerHTML = `<strong>Legenda:</strong> ${categoryLegendForExport.join('; ')}`;
-
-            let tableHeadHTML = `
-                <tr>
-                    <th class="px-2 py-2 text-left">Código</th>
-                    <th class="px-2 py-2 text-left">Cliente</th>
-                    <th class="px-2 py-2 text-left">Cidade</th>
-                    <th class="px-2 py-2 text-left">Bairro</th>
-                    <th class="px-2 py-2 text-center">Últ. Compra</th>
-            `;
-            chartLabels.forEach((name, index) => {
-                tableHeadHTML += `<th class="px-2 py-2 text-center">${index + 1}</th>`;
-            });
-            tableHeadHTML += `</tr>`;
-            if (innovationsByClientTableHead) innovationsByClientTableHead.innerHTML = tableHeadHTML;
-
-            // Build Client Status List
-            // Optimized: Iterate Active Clients and check sets in categoryResults
-            const clientInnovationStatus = activeClients.map(client => {
-                const codcli = client['Código'];
-                const status = {};
-
-                chartLabels.forEach(catName => {
-                    // Check if client exists in Main OR Bonus sets for this category
-                    const inMain = categoryResults[catName].current.has(codcli);
-                    const inBonus = categoryResults[catName].bonusCurrent.has(codcli);
-                    status[catName] = inMain || inBonus;
-                });
-
-                // Explicit copy for robustness against Proxies
-                return {
-                    'Código': client['Código'],
-                    fantasia: client.fantasia,
-                    razaoSocial: client.razaoSocial,
-                    cidade: client.cidade,
-                    bairro: client.bairro,
-                    ultimaCompra: client.ultimaCompra,
-                    innovationStatus: status
-                };
-            });
-
-            clientInnovationStatus.sort((a, b) => {
-                const cidadeA = a.cidade || '';
-                const cidadeB = b.cidade || '';
-                const bairroA = a.bairro || '';
-                const bairroB = b.bairro || '';
-                if (cidadeA.localeCompare(cidadeB) !== 0) return cidadeA.localeCompare(cidadeB);
-                return bairroA.localeCompare(bairroB);
-            });
-
-            innovationsByClientForExport = clientInnovationStatus;
-
-            // Pagination for Innovations Client Table
-            const itemsPerPage = 100;
-            const totalPages = Math.ceil(clientInnovationStatus.length / itemsPerPage);
-            let currentPage = 1;
-
-            const renderInnovationsPage = (page) => {
-                const startIndex = (page - 1) * itemsPerPage;
-                const endIndex = startIndex + itemsPerPage;
-                const pageData = clientInnovationStatus.slice(startIndex, endIndex);
-
-                const checkIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>`;
-                const xIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400 mx-auto" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`;
-
-                let tableBodyHTML = '';
-                pageData.forEach(client => {
-                    tableBodyHTML += `
-                        <tr class="hover:bg-slate-700/50">
-                            <td class="px-2 py-1.5 text-xs">${client['Código']}</td>
-                            <td class="px-2 py-1.5 text-xs">${client.fantasia || client.razaoSocial}</td>
-                            <td class="px-2 py-1.5 text-xs">${client.cidade}</td>
-                            <td class="px-2 py-1.5 text-xs">${client.bairro}</td>
-                            <td class="px-2 py-1.5 text-xs text-center">${formatDate(client.ultimaCompra)}</td>
-                    `;
-                    chartLabels.forEach(catName => {
-                        tableBodyHTML += `<td class="px-2 py-1.5 text-center">${client.innovationStatus[catName] ? checkIcon : xIcon}</td>`;
-                    });
-                    tableBodyHTML += `</tr>`;
-                });
-                if (innovationsByClientTableBody) innovationsByClientTableBody.innerHTML = tableBodyHTML;
-
-                // Update Pagination Controls
-                const prevBtn = document.getElementById('innovations-prev-page-btn');
-                const nextBtn = document.getElementById('innovations-next-page-btn');
-                const infoText = document.getElementById('innovations-page-info-text');
-                const controls = document.getElementById('innovations-pagination-controls');
-
-                if (controls) {
-                    if (totalPages > 1) {
-                        controls.classList.remove('hidden');
-                        infoText.textContent = `Página ${page} de ${totalPages} (${clientInnovationStatus.length} clientes)`;
-                        prevBtn.disabled = page === 1;
-                        nextBtn.disabled = page === totalPages;
-
-                        // Clone and replace buttons to remove old event listeners
-                        const newPrevBtn = prevBtn.cloneNode(true);
-                        const newNextBtn = nextBtn.cloneNode(true);
-                        prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
-                        nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
-
-                        newPrevBtn.addEventListener('click', () => {
-                            if (currentPage > 1) {
-                                currentPage--;
-                                renderInnovationsPage(currentPage);
-                            }
-                        });
-                        newNextBtn.addEventListener('click', () => {
-                            if (currentPage < totalPages) {
-                                currentPage++;
-                                renderInnovationsPage(currentPage);
-                            }
-                        });
-
-                    } else {
-                        controls.classList.add('hidden');
-                    }
-                }
-            };
-
-            renderInnovationsPage(1);
+            // 3. Render Chart
+            if (data.chart_data) {
+                renderInnovationsChart(data.chart_data);
+            }
         }
 
+        function renderInnovationsChart(chartData) {
+            const ctx = document.getElementById('innovations-month-chart');
+            if (!ctx) return;
+
+            // Data: [{ date: '2023-01-01', value: 100 }]
+
+            const labels = chartData.map(d => {
+                const date = new Date(d.date);
+                // Adjust for timezone if needed, or just use UTC day/month
+                return `${date.getUTCDate()}/${date.getUTCMonth()+1}`;
+            });
+            const values = chartData.map(d => d.value);
+
+            if (charts.innovationsMonth) {
+                charts.innovationsMonth.data.labels = labels;
+                charts.innovationsMonth.data.datasets[0].data = values;
+                charts.innovationsMonth.update('none');
+            } else {
+                charts.innovationsMonth = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Vendas Inovação (R$)',
+                            data: values,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { mode: 'index', intersect: false }
+                        },
+                        scales: {
+                            y: {
+                                grid: { color: '#334155' },
+                                ticks: { color: '#94a3b8' }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#94a3b8' }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateInnovationsMonthView() {
+            if (embeddedData.isServerMode) {
+                const filters = {
+                    p_filial: [],
+                    p_cidade: [],
+                    p_vendedor: [],
+                    p_categoria: innovationsMonthCategoryFilter.value !== 'all' ? innovationsMonthCategoryFilter.value : null
+                };
+
+                const filial = innovationsMonthFilialFilter.value;
+                if (filial !== 'ambas') filters.p_filial = [filial];
+
+                const city = innovationsMonthCityFilter.value;
+                if (city) filters.p_cidade = [city];
+
+                // Hierarchy
+                const hState = hierarchyState['innovations-month'];
+                if (hState && hState.promotors.size > 0) {
+                    const names = [];
+                    hState.promotors.forEach(c => { const n = optimizedData.promotorMap.get(c); if(n) names.push(n); });
+                    if(names.length > 0) filters.p_vendedor = names;
+                }
+
+                window.supabaseClient.rpc('get_innovations_view_data', filters)
+                    .then(({ data, error }) => {
+                        if (error) console.error(error);
+                        else renderInnovationsFromRPC(data);
+                    });
+                return;
+            }
+        }
         async function exportInnovationsMonthPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape');
