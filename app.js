@@ -8992,6 +8992,8 @@ const supervisorGroups = new Map();
         }
 
         function calculateHistoricalBests() {
+            if (embeddedData.isServerMode) return; // Skip in Server Mode as allSalesData is empty
+
             const salesBySupervisorByDay = {};
             const mostRecentSaleDate = allSalesData.map(s => parseDate(s.DTPED)).filter(Boolean).reduce((a, b) => a > b ? a : b, new Date(0));
             const previousMonthDate = new Date(Date.UTC(mostRecentSaleDate.getUTCFullYear(), mostRecentSaleDate.getUTCMonth() - 1, 1));
