@@ -4290,14 +4290,14 @@
             const weeks = weeksMeta.map(w => {
                 const end = new Date(w.end_date); // Ensure JS Date
                 const isPast = end < lastSaleDate; // Global lastSaleDate
-                return {
-                    start: new Date(w.start_date),
-                    end: end,
+                return { 
+                    start: new Date(w.start_date), 
+                    end: end, 
                     workingDays: w.working_days || 5, // Fallback if calc fails
                     isPast: isPast
                 };
             });
-
+            
             let totalWorkingDays = weeks.reduce((sum, w) => sum + w.workingDays, 0);
             if (totalWorkingDays === 0) totalWorkingDays = 1;
 
@@ -4307,11 +4307,11 @@
             // 2. Process Sellers
             sellers.forEach(s => {
                 const name = optimizedData.rcaNameByCode.get(s.code) || s.code;
-
+                
                 // Determine Realized Values
                 const realizedTotal = metric === 'valor' ? s.total_val : s.total_vol;
                 const realizedWeeks = new Array(weeks.length).fill(0);
-
+                
                 if (s.weekly_data) {
                     s.weekly_data.forEach(wd => {
                         if (wd.week >= 0 && wd.week < weeks.length) {
@@ -4324,17 +4324,17 @@
                 let goalCategory = 'pepsico_all';
                 if (currentMetaRealizadoPasta === 'ELMA') goalCategory = 'total_elma';
                 else if (currentMetaRealizadoPasta === 'FOODS') goalCategory = 'total_foods';
-
+                
                 const metaTotal = getSellerCurrentGoal(name, goalCategory, metric === 'valor' ? 'rev' : 'vol');
-
+                
                 // Calculate Dynamic Distribution (Client-Side Math on Server Data)
                 const adjustedGoals = calculateAdjustedWeeklyGoals(metaTotal, realizedWeeks, weeks);
-
+                
                 const weekData = weeks.map((w, i) => {
-                    return {
-                        meta: adjustedGoals[i],
-                        real: realizedWeeks[i],
-                        isPast: w.isPast
+                    return { 
+                        meta: adjustedGoals[i], 
+                        real: realizedWeeks[i], 
+                        isPast: w.isPast 
                     };
                 });
 
@@ -4343,11 +4343,11 @@
                     metaTotal: metaTotal,
                     realTotal: realizedTotal,
                     weekData: weekData,
-                    posGoal: 0,
+                    posGoal: 0, 
                     posRealized: 0
                 });
             });
-
+            
             // Sort
             rowData.sort((a, b) => b.metaTotal - a.metaTotal);
 
@@ -4362,12 +4362,12 @@
                 const localFilters = {};
                 const filialF = document.getElementById('meta-realizado-filial-filter');
                 if(filialF && filialF.value !== 'ambas') localFilters.p_filial = [filialF.value];
-
+                
                 const cityF = document.getElementById('meta-realizado-city-filter');
                 if(cityF && cityF.value) localFilters.p_cidade = [cityF.value];
-
+                
                 if (selectedMetaRealizadoSuppliers.length > 0) localFilters.p_fornecedor = selectedMetaRealizadoSuppliers;
-
+                
                 // Hierarchy
                 const hState = hierarchyState['meta-realizado'];
                 if (hState) {
@@ -7860,7 +7860,7 @@ const supervisorGroups = new Map();
         // Helper to collect filters from UI for RPC
         function getFiltersFromUI(viewPrefix) {
             const filters = {};
-
+            
             // Map common filters
             const filialFilter = document.getElementById(`${viewPrefix}-filial-filter`);
             if (filialFilter && filialFilter.value && filialFilter.value !== 'ambas') {
@@ -7932,14 +7932,14 @@ const supervisorGroups = new Map();
         async function populateFiltersFromRPC(viewPrefix) {
             const filters = getFiltersFromUI(viewPrefix);
             const { data, error } = await window.supabaseClient.rpc('get_dashboard_filters', filters);
-
+            
             if (error || !data || data.length === 0) return;
             const res = data[0];
 
             const renderOpts = (containerId, items, selectedArray, onChangeCallback) => {
                 const container = document.getElementById(containerId);
                 if (!container) return;
-
+                
                 // Sort
                 items.sort();
 
@@ -7983,7 +7983,7 @@ const supervisorGroups = new Map();
                         const idx = targetArray.indexOf(val);
                         if (idx > -1) targetArray.splice(idx, 1);
                     }
-
+                    
                     // Trigger Update
                     if (updateFn) {
                         // Debounce?
@@ -7995,7 +7995,7 @@ const supervisorGroups = new Map();
                             // Actually map is better but let's try generic
                             // Or re-call populateFiltersFromRPC to refresh counts? No, that would re-render list and lose focus.
                             // Just update text
-                            const textEl = document.getElementById(containerId.replace('dropdown', 'text')); // provided dropdown ID usually matches btn-text ID pattern?
+                            const textEl = document.getElementById(containerId.replace('dropdown', 'text')); // provided dropdown ID usually matches btn-text ID pattern? 
                             // e.g. fornecedor-filter-text vs fornecedor-filter-dropdown
                             if (textEl) {
                                 if (targetArray.length === 0) textEl.textContent = 'Todos';
@@ -8006,7 +8006,7 @@ const supervisorGroups = new Map();
                     }
                 }
             };
-
+            
             if (viewPrefix === 'main') {
                 renderOpts('fornecedor-filter-dropdown', res.fornecedores || [], selectedMainSuppliers);
                 renderOpts('tipo-venda-filter-dropdown', res.tiposvenda || [], selectedTiposVenda);
@@ -8026,10 +8026,10 @@ const supervisorGroups = new Map();
             // Top 10 products
             const top10 = data.products_table.slice(0, 10);
             const metric = currentProductMetric === 'peso' ? 'peso' : 'faturamento';
-
+            
             const labels = top10.map(p => `(${p.produto}) ${p.descricao || 'Produto ' + p.produto}`);
             const values = top10.map(p => p[metric]);
-
+            
             createChart('salesByProductBarChart', 'bar', labels, values);
         }
 
@@ -8069,25 +8069,25 @@ const supervisorGroups = new Map();
             // Trend Chart
             if (charts.trendChart) charts.trendChart.destroy();
             const ctxTrend = document.getElementById('trendChart').getContext('2d');
-
+            
             const labels = [];
             const currentData = [];
             const previousData = [];
-            const trendData = [];
+            const trendData = []; 
 
             const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-
+            
             for(let i=0; i<12; i++) {
                 labels.push(monthNames[i]);
-
+                
                 const curr = data.monthly_data_current.find(m => m.month_index === i);
                 currentData.push(curr ? curr.faturamento : 0);
-
+                
                 const prev = data.monthly_data_previous.find(m => m.month_index === i);
                 previousData.push(prev ? prev.faturamento : 0);
-
+                
                 if (data.trend_allowed && data.trend_data && data.trend_data.month_index === i) {
-                    trendData.push(data.trend_data.faturamento);
+                    trendData.push(data.trend_data.faturamento); 
                 } else {
                     trendData.push(null);
                 }
@@ -8113,14 +8113,14 @@ const supervisorGroups = new Map();
             // Breakdown Charts (Suppliers & Persons)
             if (data.breakdown_person && charts.salesByPersonChart) {
                 // If chart exists or container exists
-                // We use helper if we have one or do manual.
+                // We use helper if we have one or do manual. 
                 // Using manual since logic is simple
                 const names = data.breakdown_person.map(x => getFirstName(x.name));
                 const values = data.breakdown_person.map(x => x.total);
-
+                
                 const ctxPerson = document.getElementById('salesByPersonChart').getContext('2d');
                 if(charts.salesByPersonChart) charts.salesByPersonChart.destroy();
-
+                
                 charts.salesByPersonChart = new Chart(ctxPerson, {
                     type: 'bar',
                     data: { labels: names, datasets: [{ label: 'Vendas', data: values, backgroundColor: '#10b981' }] },
@@ -8131,10 +8131,10 @@ const supervisorGroups = new Map();
             if (data.breakdown_supplier) {
                 const names = data.breakdown_supplier.map(x => x.name);
                 const values = data.breakdown_supplier.map(x => x.total);
-
+                
                 const ctxSup = document.getElementById('faturamentoPorFornecedorChart').getContext('2d');
                 if(charts.faturamentoPorFornecedorChart) charts.faturamentoPorFornecedorChart.destroy();
-
+                
                 charts.faturamentoPorFornecedorChart = new Chart(ctxSup, {
                     type: 'bar',
                     data: { labels: names, datasets: [{ label: 'Faturamento', data: values, backgroundColor: '#f59e0b' }] },
@@ -8147,9 +8147,9 @@ const supervisorGroups = new Map();
             if (embeddedData.isServerMode) {
                 console.log("[App] Updating Visuals in Server Mode (RPC)...");
                 const filters = getFiltersFromUI('main');
-
+                
                 totalVendasEl.textContent = '...';
-
+                
                 const rpcMain = window.supabaseClient.rpc('get_main_dashboard_data', filters);
                 const rpcBoxes = window.supabaseClient.rpc('get_boxes_dashboard_data', filters);
 
@@ -8441,7 +8441,7 @@ const supervisorGroups = new Map();
             // Reset UI Text directly
             const supplierText = document.getElementById('fornecedor-filter-text');
             if (supplierText) supplierText.textContent = 'Fornecedor';
-
+            
             if (tipoVendaFilterText) tipoVendaFilterText.textContent = 'Tipo Venda';
             if (mainComRedeBtnText) mainComRedeBtnText.textContent = 'Rede';
 
@@ -8627,9 +8627,9 @@ const supervisorGroups = new Map();
             // 1. Render Status Chart
             const activeCount = data.total_active_count || 0;
             const inactiveCount = data.total_inactive_count || 0;
-
+            
             const statusChartOptions = { maintainAspectRatio: false, animation: { duration: 800, easing: 'easeOutQuart' }, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1' } }, tooltip: { callbacks: { label: function(context) { return context.label; } } }, datalabels: { formatter: (value, ctx) => { const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); if (total === 0 || value === 0) return ''; const percentage = (value * 100 / total).toFixed(1) + "%"; return `${value}\n(${percentage})`; }, color: '#fff', backgroundColor: 'rgba(0, 0, 0, 0.6)', borderRadius: 4, padding: 4, font: { weight: 'bold', size: 12 }, textAlign: 'center' } } };
-
+            
             if (activeCount + inactiveCount > 0) {
                 createChart('customerStatusChart', 'doughnut', ['Ativos no Mês', 'S/ Vendas no Mês'], [activeCount, inactiveCount], statusChartOptions);
             } else {
@@ -8652,7 +8652,7 @@ const supervisorGroups = new Map();
                         <td class="px-4 py-3 text-xs text-blue-300">${rca1 || '-'}</td>
                     </tr>`;
                 }).join('');
-
+                
                 // Pagination UI (Simple prev/next implementation)
                 const container = document.getElementById('city-pagination-container');
                 if (container) {
@@ -8675,7 +8675,7 @@ const supervisorGroups = new Map();
                     const nome = fantasia || razao || 'N/A';
                     const dt = parseDate(ultima);
                     const dtStr = dt ? dt.toLocaleDateString('pt-BR') : 'Nunca';
-
+                    
                     return `<tr class="hover:bg-slate-700/50 transition-colors border-b border-slate-700/30">
                         <td class="px-4 py-3 font-mono text-xs text-slate-400">${cod}</td>
                         <td class="px-4 py-3"><div class="font-bold text-slate-300 text-sm">${nome}</div></td>
@@ -8697,7 +8697,7 @@ const supervisorGroups = new Map();
                     `;
                 }
             }
-
+            
             // 4. Update Totals
             if (totalFaturamentoCidadeEl) totalFaturamentoCidadeEl.textContent = 'Ver Dashboard'; // City View RPC doesn't return grand total yet?
             if (totalClientesCidadeEl) totalClientesCidadeEl.textContent = activeCount;
@@ -8992,6 +8992,8 @@ const supervisorGroups = new Map();
         }
 
         function calculateHistoricalBests() {
+            if (embeddedData.isServerMode) return; // Skip in Server Mode as allSalesData is empty
+
             const salesBySupervisorByDay = {};
             const mostRecentSaleDate = allSalesData.map(s => parseDate(s.DTPED)).filter(Boolean).reduce((a, b) => a > b ? a : b, new Date(0));
             const previousMonthDate = new Date(Date.UTC(mostRecentSaleDate.getUTCFullYear(), mostRecentSaleDate.getUTCMonth() - 1, 1));
@@ -9946,7 +9948,7 @@ const supervisorGroups = new Map();
             // 1. KPI Cards
             // Map RPC fields to UI fields
             const historyCount = 3; // Assuming 3 month average
-
+            
             const kpis = [
                 { title: 'Faturamento Total', current: current_kpi.f || 0, history: (history_kpi.f || 0) / historyCount, format: 'currency' },
                 { title: 'Peso Total (Ton)', current: (current_kpi.p || 0) / 1000, history: ((history_kpi.p || 0) / historyCount) / 1000, format: 'decimal' },
@@ -9955,7 +9957,7 @@ const supervisorGroups = new Map();
                 { title: 'Positivação Salty', current: current_kpi.pos_salty || 0, history: (history_kpi.sum_pos_salty || 0) / historyCount, format: 'integer' },
                 { title: 'Positivação Foods', current: current_kpi.pos_foods || 0, history: (history_kpi.sum_pos_foods || 0) / historyCount, format: 'integer' }
             ];
-
+            
             renderKpiCards(kpis);
 
             // 2. Supervisor Table
@@ -9974,7 +9976,7 @@ const supervisorGroups = new Map();
             const currentYear = lastSaleDate.getUTCFullYear();
             const currentMonth = lastSaleDate.getUTCMonth();
             const weeks = getMonthWeeks(currentYear, currentMonth);
-
+            
             const weeklyCurrent = new Array(weeks.length).fill(0);
             const weeklyHistory = new Array(weeks.length).fill(0);
             const dailyDataByWeek = weeks.map(() => new Array(7).fill(0));
@@ -10031,7 +10033,7 @@ const supervisorGroups = new Map();
                     datasets: dailyDatasets
                 }
             };
-
+            
             // Add current month to monthly data
             chartsData.monthlyData.push({ label: 'Atual', fat: current_kpi.f || 0, clients: current_kpi.c || 0 });
 
@@ -10044,7 +10046,7 @@ const supervisorGroups = new Map();
                 // Pass current year/month context if filters don't have them
                 // But getFiltersFromUI handles basic ones.
                 // get_comparison_view_data uses current date if not provided.
-
+                
                 // Show Loading
                 const chartContainers = ['weeklyComparisonChart', 'monthlyComparisonChart', 'dailyWeeklyComparisonChart'];
                 chartContainers.forEach(id => {
@@ -10470,7 +10472,7 @@ const supervisorGroups = new Map();
             innovationsMonthFilialFilter.value = 'ambas';
             innovationsMonthCategoryFilter.value = '';
             selectedInnovationsMonthTiposVenda = [];
-
+            
             if (innovationsMonthTipoVendaFilterText) innovationsMonthTipoVendaFilterText.textContent = 'Todos';
             // Uncheck all checkboxes in dropdown if exists
             if (innovationsMonthTipoVendaFilterDropdown) {
@@ -10484,10 +10486,10 @@ const supervisorGroups = new Map();
             if (!data) return;
             const kpis = data.kpis || {};
             const rows = data.rows || [];
-
+            
             // 1. Update KPIs
             if (innovationsMonthActiveClientsKpi) innovationsMonthActiveClientsKpi.textContent = kpis.active_clients || 0;
-
+            
             if (innovationsMonthTopCoverageKpi) innovationsMonthTopCoverageKpi.textContent = kpis.top_coverage?.product || '-';
             if (innovationsMonthTopCoverageValueKpi) innovationsMonthTopCoverageValueKpi.textContent = (kpis.top_coverage?.value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             if (innovationsMonthTopCoverageCountKpi) innovationsMonthTopCoverageCountKpi.textContent = kpis.top_coverage?.count || 0;
@@ -10510,8 +10512,8 @@ const supervisorGroups = new Map();
                         </td>
                         <td class="px-4 py-3 text-sm text-slate-400">${r.seller}</td>
                         <td class="px-4 py-3 text-center">
-                            ${r.has_innovation ?
-                                '<span class="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold">Sim</span>' :
+                            ${r.has_innovation ? 
+                                '<span class="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold">Sim</span>' : 
                                 '<span class="px-2 py-1 rounded-full bg-slate-700 text-slate-500 text-xs">Não</span>'}
                         </td>
                         <td class="px-4 py-3 text-right font-mono text-sm text-emerald-400 font-bold">
@@ -10523,7 +10525,7 @@ const supervisorGroups = new Map();
                     </tr>
                 `).join('');
             }
-
+            
             // 3. Render Chart
             if (data.chart_data) {
                 renderInnovationsChart(data.chart_data);
@@ -10533,16 +10535,16 @@ const supervisorGroups = new Map();
         function renderInnovationsChart(chartData) {
             const ctx = document.getElementById('innovations-month-chart');
             if (!ctx) return;
-
+            
             // Data: [{ date: '2023-01-01', value: 100 }]
-
+            
             const labels = chartData.map(d => {
                 const date = new Date(d.date);
                 // Adjust for timezone if needed, or just use UTC day/month
                 return `${date.getUTCDate()}/${date.getUTCMonth()+1}`;
             });
             const values = chartData.map(d => d.value);
-
+            
             if (charts.innovationsMonth) {
                 charts.innovationsMonth.data.labels = labels;
                 charts.innovationsMonth.data.datasets[0].data = values;
@@ -10591,13 +10593,13 @@ const supervisorGroups = new Map();
                     p_vendedor: [],
                     p_categoria: innovationsMonthCategoryFilter.value !== 'all' ? innovationsMonthCategoryFilter.value : null
                 };
-
+                
                 const filial = innovationsMonthFilialFilter.value;
                 if (filial !== 'ambas') filters.p_filial = [filial];
-
+                
                 const city = innovationsMonthCityFilter.value;
                 if (city) filters.p_cidade = [city];
-
+                
                 // Hierarchy
                 const hState = hierarchyState['innovations-month'];
                 if (hState && hState.promotors.size > 0) {
