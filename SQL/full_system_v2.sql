@@ -200,11 +200,42 @@ BEGIN
 END $$;
 
 -- Unified View
+-- Migration Helper: Add potentially missing columns to ensure schema parity (for existing databases)
+DO $$
+BEGIN
+    -- Add to data_detailed if missing
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_detailed' AND column_name = 'vldevolucao') THEN
+        ALTER TABLE public.data_detailed ADD COLUMN vldevolucao numeric DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_detailed' AND column_name = 'qtvenda_embalagem_master') THEN
+        ALTER TABLE public.data_detailed ADD COLUMN qtvenda_embalagem_master numeric DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_detailed' AND column_name = 'codsupervisor') THEN
+        ALTER TABLE public.data_detailed ADD COLUMN codsupervisor text;
+    END IF;
+
+    -- Add to data_history if missing
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_history' AND column_name = 'vldevolucao') THEN
+        ALTER TABLE public.data_history ADD COLUMN vldevolucao numeric DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_history' AND column_name = 'qtvenda_embalagem_master') THEN
+        ALTER TABLE public.data_history ADD COLUMN qtvenda_embalagem_master numeric DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_history' AND column_name = 'codsupervisor') THEN
+        ALTER TABLE public.data_history ADD COLUMN codsupervisor text;
+    END IF;
+END $$;
+
+-- Unified View (Explicit Columns to prevent UNION mismatch)
 DROP VIEW IF EXISTS public.all_sales CASCADE;
 create or replace view public.all_sales with (security_invoker = true) as
-select * from public.data_detailed
+select
+    id, pedido, codusur, codsupervisor, produto, codfor, codcli, cidade, qtvenda, vlvenda, vlbonific, vldevolucao, totpesoliq, dtped, dtsaida, posicao, estoqueunit, qtvenda_embalagem_master, tipovenda, filial, created_at
+from public.data_detailed
 union all
-select * from public.data_history;
+select
+    id, pedido, codusur, codsupervisor, produto, codfor, codcli, cidade, qtvenda, vlvenda, vlbonific, vldevolucao, totpesoliq, dtped, dtsaida, posicao, estoqueunit, qtvenda_embalagem_master, tipovenda, filial, created_at
+from public.data_history;
 
 -- Summary Table (Optimized: Uses Codes instead of Names)
 DROP TABLE IF EXISTS public.data_summary CASCADE;
