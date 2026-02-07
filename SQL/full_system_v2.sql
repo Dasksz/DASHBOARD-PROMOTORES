@@ -2421,3 +2421,365 @@ BEGIN
       AND (p_cidade IS NULL OR cidade = ANY(p_cidade));
 END;
 $$;
+
+-- ==============================================================================
+-- ADVANCED RPCs (Final Migration Phase)
+-- Includes: Complex Date Logic in SQL, Weekly Bucketing, and Table Joins
+-- ==============================================================================
+
+-- Helper: Get Weeks for a Month (Returns Table of Start/End Dates)
+CREATE OR REPLACE FUNCTION get_month_weeks(p_year int, p_month int)
+RETURNS TABLE (week_index int, start_date date, end_date date, working_days int)
+LANGUAGE plpgsql
+STABLE
+SET search_path = public
+AS $$
+DECLARE
+    v_month_start date := make_date(p_year, p_month, 1);
+    v_month_end date := (v_month_start + interval '1 month' - interval '1 day')::date;
+    v_curr date := v_month_start;
+    v_week_end date;
+    v_idx int := 0;
+BEGIN
+    WHILE v_curr <= v_month_end LOOP
+        -- End of week is Saturday (based on original JS logic: day 6) or Month End
+        -- JS logic: if day 0 (Sun), next Sat. If day 1 (Mon), next Sat.
+        -- Postgres ISODOW: Mon=1 ... Sun=7.
+        -- We want weeks ending on Saturday? Or Standard ISO?
+        -- JS: `lastSaleDate.getUTCDay()` 0=Sun..6=Sat.
+        -- JS Logic: `currentDate.getUTCDay() === 0` (Sun) -> start new week.
+        -- So weeks start on Sunday.
+
+        -- Find next Saturday (end of week)
+        -- If v_curr is Sunday, +6 days.
+        -- We just iterate until we hit next start or month end.
+
+        -- Simplified Week Logic: Week 1 = Days 1-7, Week 2 = 8-14... (User preference often simple)
+        -- BUT, original app used `getWeekIndex` based on calendar.
+        -- Let's stick to standard calendar weeks starting on SUNDAY.
+
+        -- Find end of this week (Next Saturday)
+        -- Postges: date + (6 - extract(dow from date)) integers?
+        -- dow: Sun=0, Sat=6.
+        v_week_end := v_curr + (6 - EXTRACT(DOW FROM v_curr)::int);
+
+        IF v_week_end > v_month_end THEN v_week_end := v_month_end; END IF;
+
+        week_index := v_idx;
+        start_date := v_curr;
+        end_date := v_week_end;
+
+        -- Calc working days (Mon-Fri) excluding holidays
+        SELECT COUNT(*) INTO working_days
+        FROM generate_series(start_date, end_date, '1 day'::interval) d
+        WHERE EXTRACT(DOW FROM d) BETWEEN 1 AND 5
+          AND NOT EXISTS (SELECT 1 FROM public.data_holidays h WHERE h.date = d::date);
+
+        RETURN NEXT;
+
+        v_curr := v_week_end + 1;
+        v_idx := v_idx + 1;
+    END LOOP;
+END;
+$$;
+
+-- M. Innovations View Data (Advanced)
+CREATE OR REPLACE FUNCTION get_innovations_view_data(
+    p_filial text[] default null,
+    p_cidade text[] default null,
+    p_supervisor text[] default null,
+    p_vendedor text[] default null,
+    p_fornecedor text[] default null,
+    p_ano text default null,
+    p_mes text default null,
+    p_tipovenda text[] default null,
+    p_rede text[] default null,
+    p_categoria text default null -- Specific filter for Innovation Category
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_current_year int;
+    v_target_month int;
+    v_prev_month_date date;
+    v_curr_month_date date;
+
+    v_where_base text := ' WHERE 1=1 ';
+    v_result json;
+
+    v_rede_condition text := '';
+    v_specific_redes text[];
+    v_has_com_rede boolean;
+    v_has_sem_rede boolean;
+BEGIN
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    SET LOCAL work_mem = '64MB';
+
+    -- 1. Date Context
+    IF p_ano IS NULL OR p_ano = 'todos' OR p_ano = '' THEN
+        SELECT COALESCE(MAX(ano), EXTRACT(YEAR FROM CURRENT_DATE)::int) INTO v_current_year FROM public.data_summary;
+    ELSE v_current_year := p_ano::int; END IF;
+
+    IF p_mes IS NOT NULL AND p_mes != '' AND p_mes != 'todos' THEN
+        v_target_month := p_mes::int + 1;
+    ELSE
+        v_target_month := EXTRACT(MONTH FROM CURRENT_DATE)::int;
+    END IF;
+
+    v_curr_month_date := make_date(v_current_year, v_target_month, 1);
+    v_prev_month_date := v_curr_month_date - interval '1 month';
+
+    -- 2. Filters
+    IF p_filial IS NOT NULL AND array_length(p_filial, 1) > 0 THEN v_where_base := v_where_base || format(' AND s.filial = ANY(%L) ', p_filial); END IF;
+    IF p_cidade IS NOT NULL AND array_length(p_cidade, 1) > 0 THEN v_where_base := v_where_base || format(' AND s.cidade = ANY(%L) ', p_cidade); END IF;
+
+    -- Codes
+    IF p_supervisor IS NOT NULL AND array_length(p_supervisor, 1) > 0 THEN
+        v_where_base := v_where_base || format(' AND s.codsupervisor IN (SELECT codigo FROM dim_supervisores WHERE nome = ANY(%L)) ', p_supervisor);
+    END IF;
+    IF p_vendedor IS NOT NULL AND array_length(p_vendedor, 1) > 0 THEN
+        v_where_base := v_where_base || format(' AND s.codusur IN (SELECT codigo FROM dim_vendedores WHERE nome = ANY(%L)) ', p_vendedor);
+    END IF;
+
+    IF p_fornecedor IS NOT NULL AND array_length(p_fornecedor, 1) > 0 THEN v_where_base := v_where_base || format(' AND s.codfor = ANY(%L) ', p_fornecedor); END IF;
+    IF p_tipovenda IS NOT NULL AND array_length(p_tipovenda, 1) > 0 THEN v_where_base := v_where_base || format(' AND s.tipovenda = ANY(%L) ', p_tipovenda); END IF;
+
+    -- Rede Logic
+    IF p_rede IS NOT NULL AND array_length(p_rede, 1) > 0 THEN
+       v_has_com_rede := ('C/ REDE' = ANY(p_rede));
+       v_has_sem_rede := ('S/ REDE' = ANY(p_rede));
+       v_specific_redes := array_remove(array_remove(p_rede, 'C/ REDE'), 'S/ REDE');
+
+       IF array_length(v_specific_redes, 1) > 0 THEN
+           v_rede_condition := format('c.ramo = ANY(%L)', v_specific_redes);
+       END IF;
+
+       IF v_has_com_rede THEN
+           IF v_rede_condition != '' THEN v_rede_condition := v_rede_condition || ' OR '; END IF;
+           v_rede_condition := v_rede_condition || ' (c.ramo IS NOT NULL AND c.ramo NOT IN (''N/A'', ''N/D'')) ';
+       END IF;
+
+       IF v_has_sem_rede THEN
+           IF v_rede_condition != '' THEN v_rede_condition := v_rede_condition || ' OR '; END IF;
+           v_rede_condition := v_rede_condition || ' (c.ramo IS NULL OR c.ramo IN (''N/A'', ''N/D'')) ';
+       END IF;
+
+       IF v_rede_condition != '' THEN
+           v_where_base := v_where_base || ' AND EXISTS (SELECT 1 FROM public.data_clients c WHERE c.codigo_cliente = s.codcli AND (' || v_rede_condition || ')) ';
+       END IF;
+    END IF;
+
+    -- Innovation Category Filter
+    IF p_categoria IS NOT NULL AND p_categoria != '' THEN
+        v_where_base := v_where_base || format(' AND i.inovacoes = %L ', p_categoria);
+    END IF;
+
+    -- 3. Execution
+    -- We need to join data_innovations (i) with sales (s)
+    -- We calculate Current Month and Previous Month metrics
+
+    EXECUTE format('
+        WITH combined_sales AS (
+            SELECT s.dtped, s.codcli, s.vlvenda, s.produto, i.inovacoes
+            FROM public.data_detailed s
+            JOIN public.data_innovations i ON s.produto = i.codigo
+            %s AND s.dtped >= %L AND s.dtped < %L
+            UNION ALL
+            SELECT s.dtped, s.codcli, s.vlvenda, s.produto, i.inovacoes
+            FROM public.data_history s
+            JOIN public.data_innovations i ON s.produto = i.codigo
+            %s AND s.dtped >= %L AND s.dtped < %L
+        ),
+        agg_by_cat AS (
+            SELECT
+                i.inovacoes as categoria,
+                -- Current Month Metrics
+                SUM(CASE WHEN EXTRACT(MONTH FROM cs.dtped) = %L THEN cs.vlvenda ELSE 0 END) as val_current,
+                COUNT(DISTINCT CASE WHEN EXTRACT(MONTH FROM cs.dtped) = %L AND cs.vlvenda > 0 THEN cs.codcli END) as pos_current,
+
+                -- Previous Month Metrics
+                SUM(CASE WHEN EXTRACT(MONTH FROM cs.dtped) = %L THEN cs.vlvenda ELSE 0 END) as val_prev,
+                COUNT(DISTINCT CASE WHEN EXTRACT(MONTH FROM cs.dtped) = %L AND cs.vlvenda > 0 THEN cs.codcli END) as pos_prev
+            FROM combined_sales cs
+            RIGHT JOIN public.data_innovations i ON cs.produto = i.codigo
+            GROUP BY 1
+        ),
+        active_clients_current AS (
+            SELECT COUNT(DISTINCT codcli) as cnt
+            FROM public.data_summary
+            WHERE ano = %L AND mes = %L AND vlvenda >= 1
+        ),
+        active_clients_prev AS (
+            SELECT COUNT(DISTINCT codcli) as cnt
+            FROM public.data_summary
+            WHERE ano = %L AND mes = %L AND vlvenda >= 1
+        )
+        SELECT json_build_object(
+            ''kpi_active_current'', (SELECT cnt FROM active_clients_current),
+            ''kpi_active_prev'', (SELECT cnt FROM active_clients_prev),
+            ''categories'', json_agg(json_build_object(
+                ''name'', categoria,
+                ''val_current'', COALESCE(val_current, 0),
+                ''pos_current'', COALESCE(pos_current, 0),
+                ''val_prev'', COALESCE(val_prev, 0),
+                ''pos_prev'', COALESCE(pos_prev, 0)
+            ) ORDER BY val_current DESC)
+        )
+        FROM agg_by_cat
+        WHERE val_current > 0 OR val_prev > 0
+    ',
+    v_where_base, v_prev_month_date, (v_curr_month_date + interval '1 month'),
+    v_where_base, v_prev_month_date, (v_curr_month_date + interval '1 month'),
+    v_target_month, v_target_month,
+    EXTRACT(MONTH FROM v_prev_month_date)::int, EXTRACT(MONTH FROM v_prev_month_date)::int,
+    v_current_year, v_target_month,
+    EXTRACT(YEAR FROM v_prev_month_date)::int, EXTRACT(MONTH FROM v_prev_month_date)::int
+    ) INTO v_result;
+
+    RETURN COALESCE(v_result, '{}'::json);
+END;
+$$;
+
+-- N. Meta Realizado Advanced (Weekly Breakdown)
+CREATE OR REPLACE FUNCTION get_meta_realizado_advanced(
+    p_filial text[] default null,
+    p_cidade text[] default null,
+    p_supervisor text[] default null,
+    p_vendedor text[] default null,
+    p_fornecedor text[] default null,
+    p_ano text default null,
+    p_mes text default null,
+    p_tipovenda text[] default null,
+    p_rede text[] default null
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_current_year int;
+    v_target_month int;
+    v_where text := ' WHERE 1=1 ';
+    v_result json;
+
+    v_rede_condition text := '';
+    v_specific_redes text[];
+    v_has_com_rede boolean;
+    v_has_sem_rede boolean;
+BEGIN
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    SET LOCAL work_mem = '64MB';
+
+    -- Date
+    IF p_ano IS NULL OR p_ano = 'todos' OR p_ano = '' THEN
+        SELECT COALESCE(MAX(ano), EXTRACT(YEAR FROM CURRENT_DATE)::int) INTO v_current_year FROM public.data_summary;
+    ELSE v_current_year := p_ano::int; END IF;
+
+    IF p_mes IS NOT NULL AND p_mes != '' AND p_mes != 'todos' THEN
+        v_target_month := p_mes::int + 1;
+        v_where := v_where || format(' AND EXTRACT(MONTH FROM s.dtped) = %L ', v_target_month);
+    ELSE
+        -- Default to latest month with data if not specified?
+        -- App.js usually sets a month. If not, default to current.
+        v_target_month := EXTRACT(MONTH FROM CURRENT_DATE)::int;
+        v_where := v_where || format(' AND EXTRACT(MONTH FROM s.dtped) = %L ', v_target_month);
+    END IF;
+    v_where := v_where || format(' AND EXTRACT(YEAR FROM s.dtped) = %L ', v_current_year);
+
+    -- Filters
+    IF p_filial IS NOT NULL AND array_length(p_filial, 1) > 0 THEN v_where := v_where || format(' AND s.filial = ANY(%L) ', p_filial); END IF;
+    IF p_cidade IS NOT NULL AND array_length(p_cidade, 1) > 0 THEN v_where := v_where || format(' AND s.cidade = ANY(%L) ', p_cidade); END IF;
+
+    IF p_supervisor IS NOT NULL AND array_length(p_supervisor, 1) > 0 THEN
+        v_where := v_where || format(' AND s.codsupervisor IN (SELECT codigo FROM dim_supervisores WHERE nome = ANY(%L)) ', p_supervisor);
+    END IF;
+    IF p_vendedor IS NOT NULL AND array_length(p_vendedor, 1) > 0 THEN
+        v_where := v_where || format(' AND s.codusur IN (SELECT codigo FROM dim_vendedores WHERE nome = ANY(%L)) ', p_vendedor);
+    END IF;
+
+    IF p_fornecedor IS NOT NULL AND array_length(p_fornecedor, 1) > 0 THEN v_where := v_where || format(' AND s.codfor = ANY(%L) ', p_fornecedor); END IF;
+    IF p_tipovenda IS NOT NULL AND array_length(p_tipovenda, 1) > 0 THEN v_where := v_where || format(' AND s.tipovenda = ANY(%L) ', p_tipovenda); END IF;
+
+    -- Rede Logic (Requires Client Join)
+    IF p_rede IS NOT NULL AND array_length(p_rede, 1) > 0 THEN
+       v_has_com_rede := ('C/ REDE' = ANY(p_rede));
+       v_has_sem_rede := ('S/ REDE' = ANY(p_rede));
+       v_specific_redes := array_remove(array_remove(p_rede, 'C/ REDE'), 'S/ REDE');
+
+       IF array_length(v_specific_redes, 1) > 0 THEN
+           v_rede_condition := format('c.ramo = ANY(%L)', v_specific_redes);
+       END IF;
+
+       IF v_has_com_rede THEN
+           IF v_rede_condition != '' THEN v_rede_condition := v_rede_condition || ' OR '; END IF;
+           v_rede_condition := v_rede_condition || ' (c.ramo IS NOT NULL AND c.ramo NOT IN (''N/A'', ''N/D'')) ';
+       END IF;
+
+       IF v_has_sem_rede THEN
+           IF v_rede_condition != '' THEN v_rede_condition := v_rede_condition || ' OR '; END IF;
+           v_rede_condition := v_rede_condition || ' (c.ramo IS NULL OR c.ramo IN (''N/A'', ''N/D'')) ';
+       END IF;
+
+       IF v_rede_condition != '' THEN
+           v_where := v_where || ' AND EXISTS (SELECT 1 FROM public.data_clients c WHERE c.codigo_cliente = s.codcli AND (' || v_rede_condition || ')) ';
+       END IF;
+    END IF;
+
+    -- Execute with Weekly Bucketing
+    -- Using public.get_month_weeks
+
+    EXECUTE format('
+        WITH weeks AS (
+            SELECT week_index, start_date, end_date FROM get_month_weeks(%L, %L)
+        ),
+        raw_sales AS (
+            SELECT s.dtped, s.codusur, s.vlvenda, s.totpesoliq
+            FROM public.data_detailed s
+            %s
+            UNION ALL
+            SELECT s.dtped, s.codusur, s.vlvenda, s.totpesoliq
+            FROM public.data_history s
+            %s
+        ),
+        seller_weekly AS (
+            SELECT
+                rs.codusur,
+                w.week_index,
+                SUM(rs.vlvenda) as val,
+                SUM(rs.totpesoliq) as vol
+            FROM raw_sales rs
+            JOIN weeks w ON rs.dtped >= w.start_date AND rs.dtped <= w.end_date
+            GROUP BY 1, 2
+        ),
+        seller_totals AS (
+            SELECT
+                codusur,
+                SUM(val) as total_val,
+                SUM(vol) as total_vol
+            FROM seller_weekly
+            GROUP BY 1
+        )
+        SELECT json_build_object(
+            ''weeks_meta'', (SELECT json_agg(row_to_json(w.*)) FROM weeks w),
+            ''sellers'', (
+                SELECT json_agg(json_build_object(
+                    ''code'', st.codusur,
+                    ''total_val'', st.total_val,
+                    ''total_vol'', st.total_vol,
+                    ''weekly_data'', (
+                        SELECT json_agg(json_build_object(''week'', sw.week_index, ''val'', sw.val, ''vol'', sw.vol))
+                        FROM seller_weekly sw WHERE sw.codusur = st.codusur
+                    )
+                ))
+                FROM seller_totals st
+            )
+        )
+    ', v_current_year, v_target_month, v_where, v_where) INTO v_result;
+
+    RETURN COALESCE(v_result, '{}'::json);
+END;
+$$;
