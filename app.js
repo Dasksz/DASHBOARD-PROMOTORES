@@ -13473,15 +13473,20 @@ const supervisorGroups = new Map();
         updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
 
         // Fix: Pre-filter Suppliers for Meta Realizado (Only PEPSICO)
-        const pepsicoSuppliersSource = [...allSalesData, ...allHistoryData].filter(s => {
-            let rowPasta = s.OBSERVACAOFOR;
-            if (!rowPasta || rowPasta === '0' || rowPasta === '00' || rowPasta === 'N/A') {
-                 const rawFornecedor = String(s.FORNECEDOR || '').toUpperCase();
-                 rowPasta = rawFornecedor.includes('PEPSICO') ? 'PEPSICO' : 'MULTIMARCAS';
-            }
-            return rowPasta === 'PEPSICO';
-        });
-        selectedMetaRealizadoSuppliers = updateSupplierFilter(document.getElementById('meta-realizado-supplier-filter-dropdown'), document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, pepsicoSuppliersSource, 'metaRealizado');
+        if (!embeddedData.isServerMode) {
+            const pepsicoSuppliersSource = [...allSalesData, ...allHistoryData].filter(s => {
+                let rowPasta = s.OBSERVACAOFOR;
+                if (!rowPasta || rowPasta === '0' || rowPasta === '00' || rowPasta === 'N/A') {
+                     const rawFornecedor = String(s.FORNECEDOR || '').toUpperCase();
+                     rowPasta = rawFornecedor.includes('PEPSICO') ? 'PEPSICO' : 'MULTIMARCAS';
+                }
+                return rowPasta === 'PEPSICO';
+            });
+            selectedMetaRealizadoSuppliers = updateSupplierFilter(document.getElementById('meta-realizado-supplier-filter-dropdown'), document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, pepsicoSuppliersSource, 'metaRealizado');
+        } else {
+            // Server Mode: Populate initial filters or leave empty
+            // Meta Realizado typically defaults to Pepsico in SQL/RPC logic if not filtered
+        }
 
         updateAllComparisonFilters();
 
