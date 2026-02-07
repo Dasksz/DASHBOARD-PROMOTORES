@@ -224,6 +224,14 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_history' AND column_name = 'codsupervisor') THEN
         ALTER TABLE public.data_history ADD COLUMN codsupervisor text;
     END IF;
+
+    -- Add created_at if missing (Critical for UNION)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_detailed' AND column_name = 'created_at') THEN
+        ALTER TABLE public.data_detailed ADD COLUMN created_at timestamp with time zone default now();
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_history' AND column_name = 'created_at') THEN
+        ALTER TABLE public.data_history ADD COLUMN created_at timestamp with time zone default now();
+    END IF;
 END $$;
 
 -- Unified View (Explicit Columns to prevent UNION mismatch)
