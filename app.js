@@ -8052,7 +8052,310 @@ const supervisorGroups = new Map();
             });
         }
 
+        // Helper to collect filters from UI for RPC
+        function getFiltersFromUI(viewPrefix) {
+            const filters = {};
+
+            // Map common filters
+            const filialFilter = document.getElementById(`${viewPrefix}-filial-filter`);
+            if (filialFilter && filialFilter.value && filialFilter.value !== 'ambas') {
+                filters.p_filial = [filialFilter.value];
+            }
+
+            const cityFilter = document.getElementById(`${viewPrefix}-city-filter`);
+            if (cityFilter && cityFilter.value) {
+                filters.p_cidade = [cityFilter.value];
+            }
+
+            // Hierarchy Filters (Map Codes to Names for RPC)
+            const state = hierarchyState[viewPrefix];
+            if (state) {
+                if (state.promotors.size > 0) {
+                    const names = [];
+                    state.promotors.forEach(code => {
+                        const name = optimizedData.promotorMap.get(code);
+                        if(name) names.push(name);
+                    });
+                    if(names.length > 0) filters.p_vendedor = names;
+                } else if (state.cocoords.size > 0) {
+                    // Supervisors (Co-Coords)
+                    const names = [];
+                    state.cocoords.forEach(code => {
+                        const name = optimizedData.cocoordMap.get(code);
+                        if(name) names.push(name);
+                    });
+                    if(names.length > 0) filters.p_supervisor = names;
+                } else if (state.coords.size > 0) {
+                    // Coordinators (Logic might need adjustment if Coord maps to Supervisor column)
+                    const names = [];
+                    state.coords.forEach(code => {
+                        const name = optimizedData.coordMap.get(code);
+                        // Resolving supervisors under selected Coords:
+                        const relatedCoCoords = optimizedData.cocoordsByCoord.get(code);
+                        if (relatedCoCoords) {
+                            relatedCoCoords.forEach(cc => {
+                                const ccName = optimizedData.cocoordMap.get(cc);
+                                if(ccName) names.push(ccName);
+                            });
+                        }
+                    });
+                    if(names.length > 0) filters.p_supervisor = names;
+                }
+            }
+
+            // Other filters
+            if (viewPrefix === 'main') {
+                if (selectedMainSuppliers.length > 0) filters.p_fornecedor = selectedMainSuppliers;
+                if (selectedTiposVenda.length > 0) filters.p_tipovenda = selectedTiposVenda;
+                if (mainRedeGroupFilter === 'com_rede') filters.p_rede = ['C/ REDE'];
+                else if (mainRedeGroupFilter === 'sem_rede') filters.p_rede = ['S/ REDE'];
+            } else if (viewPrefix === 'city') {
+                if (selectedCitySuppliers.length > 0) filters.p_fornecedor = selectedCitySuppliers;
+                if (selectedCityTiposVenda.length > 0) filters.p_tipovenda = selectedCityTiposVenda;
+                if (cityRedeGroupFilter === 'com_rede') filters.p_rede = ['C/ REDE'];
+                else if (cityRedeGroupFilter === 'sem_rede') filters.p_rede = ['S/ REDE'];
+            } else if (viewPrefix === 'comparison') {
+                if (selectedComparisonSuppliers.length > 0) filters.p_fornecedor = selectedComparisonSuppliers;
+                if (selectedComparisonTiposVenda.length > 0) filters.p_tipovenda = selectedComparisonTiposVenda;
+                if (comparisonRedeGroupFilter === 'com_rede') filters.p_rede = ['C/ REDE'];
+                else if (comparisonRedeGroupFilter === 'sem_rede') filters.p_rede = ['S/ REDE'];
+            }
+
+            return filters;
+        }
+
+        async function populateFiltersFromRPC(viewPrefix) {
+            const filters = getFiltersFromUI(viewPrefix);
+            const { data, error } = await window.supabaseClient.rpc('get_dashboard_filters', filters);
+
+            if (error || !data || data.length === 0) return;
+            const res = data[0];
+
+            const renderOpts = (containerId, items, selectedArray, onChangeCallback) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                // Sort
+                items.sort();
+
+                const html = items.map(item => {
+                    const checked = selectedArray.includes(item) ? 'checked' : '';
+                    return `<label class="flex items-center p-2 hover:bg-slate-700 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 bg-slate-800 border-slate-600 rounded text-blue-500 focus:ring-blue-500" value="${item}" ${checked} onchange="handleRpcFilterChange('${viewPrefix}', this)"><span class="ml-2 truncate text-xs text-slate-300">${item}</span></label>`;
+                }).join('');
+                container.innerHTML = html || '<div class="p-2 text-slate-500 text-xs">Vazio</div>';
+            };
+
+            // Helper for global filter change handler
+            window.handleRpcFilterChange = (prefix, checkbox) => {
+                const val = checkbox.value;
+                const isChecked = checkbox.checked;
+                let targetArray = null;
+                let updateFn = null;
+                let containerId = null;
+
+                // Identification logic based on container ID
+                const parent = checkbox.closest('div[id$="-dropdown"]');
+                if (parent) containerId = parent.id;
+
+                if (prefix === 'main') {
+                    updateFn = updateAllVisuals;
+                    if (containerId === 'fornecedor-filter-dropdown') targetArray = selectedMainSuppliers;
+                    else if (containerId === 'tipo-venda-filter-dropdown') targetArray = selectedTiposVenda;
+                } else if (prefix === 'city') {
+                    updateFn = updateCityView;
+                    if (containerId === 'city-supplier-filter-dropdown') targetArray = selectedCitySuppliers;
+                    else if (containerId === 'city-tipo-venda-filter-dropdown') targetArray = selectedCityTiposVenda;
+                } else if (prefix === 'comparison') {
+                    updateFn = updateComparisonView;
+                    if (containerId === 'comparison-supplier-filter-dropdown') targetArray = selectedComparisonSuppliers;
+                    else if (containerId === 'comparison-tipo-venda-filter-dropdown') targetArray = selectedComparisonTiposVenda;
+                }
+
+                if (targetArray) {
+                    if (isChecked) {
+                        if (!targetArray.includes(val)) targetArray.push(val);
+                    } else {
+                        const idx = targetArray.indexOf(val);
+                        if (idx > -1) targetArray.splice(idx, 1);
+                    }
+
+                    // Trigger Update
+                    if (updateFn) {
+                        // Debounce?
+                        if (window.rpcFilterTimeout) clearTimeout(window.rpcFilterTimeout);
+                        window.rpcFilterTimeout = setTimeout(() => {
+                            updateFn();
+                            // Also refresh filter counts text
+                            const btnTextId = containerId.replace('-dropdown', '-text'); // naive
+                            // Actually map is better but let's try generic
+                            // Or re-call populateFiltersFromRPC to refresh counts? No, that would re-render list and lose focus.
+                            // Just update text
+                            const textEl = document.getElementById(containerId.replace('dropdown', 'text')); // provided dropdown ID usually matches btn-text ID pattern?
+                            // e.g. fornecedor-filter-text vs fornecedor-filter-dropdown
+                            if (textEl) {
+                                if (targetArray.length === 0) textEl.textContent = 'Todos';
+                                else if (targetArray.length === 1) textEl.textContent = targetArray[0];
+                                else textEl.textContent = `${targetArray.length} selecionados`;
+                            }
+                        }, 300);
+                    }
+                }
+            };
+
+            if (viewPrefix === 'main') {
+                renderOpts('fornecedor-filter-dropdown', res.fornecedores || [], selectedMainSuppliers);
+                renderOpts('tipo-venda-filter-dropdown', res.tiposvenda || [], selectedTiposVenda);
+            }
+            if (viewPrefix === 'city') {
+                renderOpts('city-supplier-filter-dropdown', res.fornecedores || [], selectedCitySuppliers);
+                renderOpts('city-tipo-venda-filter-dropdown', res.tiposvenda || [], selectedCityTiposVenda);
+            }
+            if (viewPrefix === 'comparison') {
+                renderOpts('comparison-supplier-filter-dropdown', res.fornecedores || [], selectedComparisonSuppliers);
+                renderOpts('comparison-tipo-venda-filter-dropdown', res.tiposvenda || [], selectedComparisonTiposVenda);
+            }
+        }
+
+        function renderBoxesFromRPC(data) {
+            if (!data || !data.products_table) return;
+            // Top 10 products
+            const top10 = data.products_table.slice(0, 10);
+            const metric = currentProductMetric === 'peso' ? 'peso' : 'faturamento';
+
+            const labels = top10.map(p => `(${p.produto}) ${p.descricao || 'Produto ' + p.produto}`);
+            const values = top10.map(p => p[metric]);
+
+            createChart('salesByProductBarChart', 'bar', labels, values);
+        }
+
+        function renderDashboardFromRPC(data) {
+            if (!data) return;
+
+            // 1. Calculate Totals (Sum Monthly Data)
+            let totalFat = 0;
+            let totalPeso = 0;
+            let totalPos = data.kpi_clients_attended || 0;
+            let basePos = data.kpi_clients_base || 1;
+            let totalMixSum = 0;
+            let mixCount = 0;
+
+            if (data.monthly_data_current && Array.isArray(data.monthly_data_current)) {
+                data.monthly_data_current.forEach(m => {
+                    totalFat += Number(m.faturamento) || 0;
+                    totalPeso += Number(m.peso) || 0;
+                    if (m.mix_pdv > 0) {
+                        totalMixSum += Number(m.mix_pdv);
+                        mixCount++;
+                    }
+                });
+            }
+
+            const mixAvg = mixCount > 0 ? totalMixSum / mixCount : 0;
+            const posPercent = basePos > 0 ? (totalPos / basePos) * 100 : 0;
+
+            // Update DOM
+            totalVendasEl.textContent = totalFat.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            totalPesoEl.textContent = (totalPeso / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 3 });
+            kpiPositivacaoEl.textContent = `${posPercent.toFixed(2)}%`;
+            kpiPositivacaoPercentEl.textContent = `${totalPos} PDVs`;
+            kpiSkuPdVEl.textContent = mixAvg.toFixed(2);
+
+            // 2. Render Charts
+            // Trend Chart
+            if (charts.trendChart) charts.trendChart.destroy();
+            const ctxTrend = document.getElementById('trendChart').getContext('2d');
+
+            const labels = [];
+            const currentData = [];
+            const previousData = [];
+            const trendData = [];
+
+            const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+            for(let i=0; i<12; i++) {
+                labels.push(monthNames[i]);
+
+                const curr = data.monthly_data_current.find(m => m.month_index === i);
+                currentData.push(curr ? curr.faturamento : 0);
+
+                const prev = data.monthly_data_previous.find(m => m.month_index === i);
+                previousData.push(prev ? prev.faturamento : 0);
+
+                if (data.trend_allowed && data.trend_data && data.trend_data.month_index === i) {
+                    trendData.push(data.trend_data.faturamento);
+                } else {
+                    trendData.push(null);
+                }
+            }
+
+            charts.trendChart = new Chart(ctxTrend, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: data.current_year, data: currentData, backgroundColor: '#3b82f6' },
+                        { label: data.previous_year, data: previousData, backgroundColor: '#9ca3af' },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: { y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }, x: { grid: { display: false }, ticks: { color: '#cbd5e1' } } },
+                    plugins: { legend: { labels: { color: '#cbd5e1' } } }
+                }
+            });
+
+            // Breakdown Charts (Suppliers & Persons)
+            if (data.breakdown_person && charts.salesByPersonChart) {
+                // If chart exists or container exists
+                // We use helper if we have one or do manual.
+                // Using manual since logic is simple
+                const names = data.breakdown_person.map(x => getFirstName(x.name));
+                const values = data.breakdown_person.map(x => x.total);
+
+                const ctxPerson = document.getElementById('salesByPersonChart').getContext('2d');
+                if(charts.salesByPersonChart) charts.salesByPersonChart.destroy();
+
+                charts.salesByPersonChart = new Chart(ctxPerson, {
+                    type: 'bar',
+                    data: { labels: names, datasets: [{ label: 'Vendas', data: values, backgroundColor: '#10b981' }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            }
+
+            if (data.breakdown_supplier) {
+                const names = data.breakdown_supplier.map(x => x.name);
+                const values = data.breakdown_supplier.map(x => x.total);
+
+                const ctxSup = document.getElementById('faturamentoPorFornecedorChart').getContext('2d');
+                if(charts.faturamentoPorFornecedorChart) charts.faturamentoPorFornecedorChart.destroy();
+
+                charts.faturamentoPorFornecedorChart = new Chart(ctxSup, {
+                    type: 'bar',
+                    data: { labels: names, datasets: [{ label: 'Faturamento', data: values, backgroundColor: '#f59e0b' }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            }
+        }
+
         function updateAllVisuals() {
+            if (embeddedData.isServerMode) {
+                console.log("[App] Updating Visuals in Server Mode (RPC)...");
+                const filters = getFiltersFromUI('main');
+
+                totalVendasEl.textContent = '...';
+
+                const rpcMain = window.supabaseClient.rpc('get_main_dashboard_data', filters);
+                const rpcBoxes = window.supabaseClient.rpc('get_boxes_dashboard_data', filters);
+
+                Promise.all([rpcMain, rpcBoxes]).then((results) => {
+                    const [resMain, resBoxes] = results;
+                    if (resMain.data) renderDashboardFromRPC(resMain.data);
+                    if (resBoxes.data) renderBoxesFromRPC(resBoxes.data);
+                });
+                return;
+            }
+
             const posicao = posicaoFilter.value;
             const codcli = codcliFilter.value.trim();
 
@@ -8498,7 +8801,121 @@ const supervisorGroups = new Map();
             if (!availableCities.includes(selectedCity)) cityNameFilter.value = '';
         }
 
+        let cityActivePage = 0;
+        let cityInactivePage = 0;
+
+        function renderCityViewFromRPC(data) {
+            if (!data) return;
+
+            // 1. Render Status Chart
+            const activeCount = data.total_active_count || 0;
+            const inactiveCount = data.total_inactive_count || 0;
+
+            const statusChartOptions = { maintainAspectRatio: false, animation: { duration: 800, easing: 'easeOutQuart' }, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1' } }, tooltip: { callbacks: { label: function(context) { return context.label; } } }, datalabels: { formatter: (value, ctx) => { const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); if (total === 0 || value === 0) return ''; const percentage = (value * 100 / total).toFixed(1) + "%"; return `${value}\n(${percentage})`; }, color: '#fff', backgroundColor: 'rgba(0, 0, 0, 0.6)', borderRadius: 4, padding: 4, font: { weight: 'bold', size: 12 }, textAlign: 'center' } } };
+
+            if (activeCount + inactiveCount > 0) {
+                createChart('customerStatusChart', 'doughnut', ['Ativos no Mês', 'S/ Vendas no Mês'], [activeCount, inactiveCount], statusChartOptions);
+            } else {
+                showNoDataMessage('customerStatusChart', 'Sem clientes no filtro.');
+            }
+
+            // 2. Render Active Clients Table
+            const activeBody = document.getElementById('city-active-detail-table-body');
+            if (data.active_clients && data.active_clients.rows && activeBody) {
+                const rows = data.active_clients.rows;
+                activeBody.innerHTML = rows.map(r => {
+                    const [cod, fantasia, razao, total, cidade, bairro, rca1] = r;
+                    const nome = fantasia || razao || 'N/A';
+                    return `<tr class="hover:bg-slate-700/50 transition-colors border-b border-slate-700/30">
+                        <td class="px-4 py-3 font-mono text-xs text-slate-400">${cod}</td>
+                        <td class="px-4 py-3"><div class="font-bold text-white text-sm">${nome}</div><div class="text-xs text-slate-500">${razao}</div></td>
+                        <td class="px-4 py-3 text-right font-bold text-green-400">${Number(total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td class="px-4 py-3 text-xs text-slate-300">${cidade || '-'}</td>
+                        <td class="px-4 py-3 text-xs text-slate-300">${bairro || '-'}</td>
+                        <td class="px-4 py-3 text-xs text-blue-300">${rca1 || '-'}</td>
+                    </tr>`;
+                }).join('');
+
+                // Pagination UI (Simple prev/next implementation)
+                const container = document.getElementById('city-pagination-container');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="flex justify-between items-center mt-4 px-4">
+                            <button onclick="changeCityPage('active', -1)" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50" ${cityActivePage === 0 ? 'disabled' : ''}>Anterior</button>
+                            <span class="text-xs text-slate-400">Página ${cityActivePage + 1}</span>
+                            <button onclick="changeCityPage('active', 1)" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50" ${rows.length < 50 ? 'disabled' : ''}>Próxima</button>
+                        </div>
+                    `;
+                }
+            }
+
+            // 3. Render Inactive Clients Table
+            const inactiveBody = document.getElementById('city-inactive-detail-table-body');
+            if (data.inactive_clients && data.inactive_clients.rows && inactiveBody) {
+                const rows = data.inactive_clients.rows;
+                inactiveBody.innerHTML = rows.map(r => {
+                    const [cod, fantasia, razao, cidade, bairro, ultima, rca1] = r;
+                    const nome = fantasia || razao || 'N/A';
+                    const dt = parseDate(ultima);
+                    const dtStr = dt ? dt.toLocaleDateString('pt-BR') : 'Nunca';
+
+                    return `<tr class="hover:bg-slate-700/50 transition-colors border-b border-slate-700/30">
+                        <td class="px-4 py-3 font-mono text-xs text-slate-400">${cod}</td>
+                        <td class="px-4 py-3"><div class="font-bold text-slate-300 text-sm">${nome}</div></td>
+                        <td class="px-4 py-3 text-xs text-slate-400">${cidade || '-'}</td>
+                        <td class="px-4 py-3 text-xs text-slate-400">${bairro || '-'}</td>
+                        <td class="px-4 py-3 text-center text-xs text-red-300">${dtStr}</td>
+                        <td class="px-4 py-3 text-xs text-blue-300">${rca1 || '-'}</td>
+                    </tr>`;
+                }).join('');
+
+                const container = document.getElementById('city-inactive-pagination-container');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="flex justify-between items-center mt-4 px-4">
+                            <button onclick="changeCityPage('inactive', -1)" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50" ${cityInactivePage === 0 ? 'disabled' : ''}>Anterior</button>
+                            <span class="text-xs text-slate-400">Página ${cityInactivePage + 1}</span>
+                            <button onclick="changeCityPage('inactive', 1)" class="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50" ${rows.length < 50 ? 'disabled' : ''}>Próxima</button>
+                        </div>
+                    `;
+                }
+            }
+
+            // 4. Update Totals
+            if (totalFaturamentoCidadeEl) totalFaturamentoCidadeEl.textContent = 'Ver Dashboard'; // City View RPC doesn't return grand total yet?
+            if (totalClientesCidadeEl) totalClientesCidadeEl.textContent = activeCount;
+        }
+
+        window.changeCityPage = function(type, delta) {
+            if (type === 'active') {
+                cityActivePage += delta;
+                if (cityActivePage < 0) cityActivePage = 0;
+            } else {
+                cityInactivePage += delta;
+                if (cityInactivePage < 0) cityInactivePage = 0;
+            }
+            updateCityView();
+        };
+
         function updateCityView() {
+            if (embeddedData.isServerMode) {
+                const filters = getFiltersFromUI('city');
+                filters.p_page = cityActivePage;
+                filters.p_inactive_page = cityInactivePage;
+                filters.p_limit = 50;
+                filters.p_inactive_limit = 50;
+
+                cityActiveDetailTableBody.innerHTML = getSkeletonRows(6, 5);
+                cityInactiveDetailTableBody.innerHTML = getSkeletonRows(6, 5);
+
+                window.supabaseClient.rpc('get_city_view_data', filters)
+                    .then(({ data, error }) => {
+                        if (error) console.error(error);
+                        else renderCityViewFromRPC(data);
+                    });
+                return;
+            }
+
             cityRenderId++;
             const currentRenderId = cityRenderId;
 
@@ -9704,7 +10121,128 @@ const supervisorGroups = new Map();
         }
 
 
+        function renderComparisonViewFromRPC(data) {
+            if (!data) return;
+
+            const { current_kpi, history_kpi, current_daily, history_daily, supervisor_data, history_monthly, trend_info } = data;
+
+            // 1. KPI Cards
+            // Map RPC fields to UI fields
+            const historyCount = 3; // Assuming 3 month average
+
+            const kpis = [
+                { title: 'Faturamento Total', current: current_kpi.f || 0, history: (history_kpi.f || 0) / historyCount, format: 'currency' },
+                { title: 'Peso Total (Ton)', current: (current_kpi.p || 0) / 1000, history: ((history_kpi.p || 0) / historyCount) / 1000, format: 'decimal' },
+                { title: 'Clientes Atendidos', current: current_kpi.c || 0, history: (history_kpi.c || 0) / historyCount, format: 'integer' },
+                { title: 'Mix Pepsico', current: current_kpi.mix_pepsico || 0, history: (history_kpi.sum_mix_pepsico || 0) / historyCount, format: 'decimal_2' },
+                { title: 'Positivação Salty', current: current_kpi.pos_salty || 0, history: (history_kpi.sum_pos_salty || 0) / historyCount, format: 'integer' },
+                { title: 'Positivação Foods', current: current_kpi.pos_foods || 0, history: (history_kpi.sum_pos_foods || 0) / historyCount, format: 'integer' }
+            ];
+
+            renderKpiCards(kpis);
+
+            // 2. Supervisor Table
+            // supervisor_data is Array of { name, current, history }
+            // Transform to Object for renderSupervisorTable: { name: { current, history } }
+            const supData = {};
+            if (Array.isArray(supervisor_data)) {
+                supervisor_data.forEach(s => {
+                    supData[s.name] = { current: s.current, history: s.history / historyCount };
+                });
+            }
+            renderSupervisorTable(supData);
+
+            // 3. Weekly/Daily Charts
+            // Bucket Daily into Weeks
+            const currentYear = lastSaleDate.getUTCFullYear();
+            const currentMonth = lastSaleDate.getUTCMonth();
+            const weeks = getMonthWeeks(currentYear, currentMonth);
+
+            const weeklyCurrent = new Array(weeks.length).fill(0);
+            const weeklyHistory = new Array(weeks.length).fill(0);
+            const dailyDataByWeek = weeks.map(() => new Array(7).fill(0));
+
+            // Current Bucketing
+            if (Array.isArray(current_daily)) {
+                current_daily.forEach(d => {
+                    const dt = parseDate(d.d);
+                    if (dt) {
+                        const wIdx = weeks.findIndex(w => dt >= w.start && dt <= w.end);
+                        if (wIdx !== -1) {
+                            const val = Number(d.f) || 0;
+                            weeklyCurrent[wIdx] += val;
+                            dailyDataByWeek[wIdx][dt.getUTCDay()] += val;
+                        }
+                    }
+                });
+            }
+
+            // History Bucketing (Project to current month)
+            // History Daily data from RPC is real date. We need to project day-of-month to current month.
+            if (Array.isArray(history_daily)) {
+                history_daily.forEach(d => {
+                    const dt = parseDate(d.d);
+                    if (dt) {
+                        const projected = new Date(Date.UTC(currentYear, currentMonth, dt.getUTCDate()));
+                        const wIdx = weeks.findIndex(w => projected >= w.start && projected <= w.end);
+                        if (wIdx !== -1) {
+                            weeklyHistory[wIdx] += (Number(d.f) || 0) / historyCount;
+                        }
+                    }
+                });
+            }
+
+            // Apply Trend
+            if (trend_info && trend_info.allowed) {
+                // Not applying trend to history, only used for projection if needed?
+                // The client side code applied trend logic to current vs history comparison visually sometimes.
+                // For now, raw comparison.
+            }
+
+            // Render Charts
+            const dailyDatasets = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map((name, i) => ({
+                label: name,
+                data: dailyDataByWeek.map(weekData => weekData[i])
+            }));
+
+            const chartsData = {
+                weeklyCurrent: weeklyCurrent,
+                weeklyHistory: weeklyHistory,
+                monthlyData: history_monthly.map(m => ({ label: m.m, fat: m.f, clients: m.c })),
+                dailyData: {
+                    labels: weeks.map((_, i) => `Semana ${i+1}`),
+                    datasets: dailyDatasets
+                }
+            };
+
+            // Add current month to monthly data
+            chartsData.monthlyData.push({ label: 'Atual', fat: current_kpi.f || 0, clients: current_kpi.c || 0 });
+
+            renderComparisonCharts(chartsData);
+        }
+
         function updateComparisonView() {
+            if (embeddedData.isServerMode) {
+                const filters = getFiltersFromUI('comparison');
+                // Pass current year/month context if filters don't have them
+                // But getFiltersFromUI handles basic ones.
+                // get_comparison_view_data uses current date if not provided.
+
+                // Show Loading
+                const chartContainers = ['weeklyComparisonChart', 'monthlyComparisonChart', 'dailyWeeklyComparisonChart'];
+                chartContainers.forEach(id => {
+                    const el = document.getElementById(id + 'Container');
+                    if(el) el.innerHTML = '<div class="flex h-full items-center justify-center"><svg class="animate-spin h-8 w-8 text-teal-500" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+                });
+
+                window.supabaseClient.rpc('get_comparison_view_data', filters)
+                    .then(({ data, error }) => {
+                        if (error) console.error(error);
+                        else renderComparisonViewFromRPC(data);
+                    });
+                return;
+            }
+
             comparisonRenderId++;
             const currentRenderId = comparisonRenderId;
             const { currentSales, historySales } = getComparisonFilteredData();
@@ -11241,6 +11779,7 @@ const supervisorGroups = new Map();
                         chartView.classList.remove('hidden');
                         tableView.classList.add('hidden');
                         tablePaginationControls.classList.add('hidden');
+                        if (embeddedData.isServerMode) populateFiltersFromRPC('main');
                         if (viewState.dashboard.dirty) {
                             updateAllVisuals();
                             viewState.dashboard.dirty = false;
@@ -11251,6 +11790,7 @@ const supervisorGroups = new Map();
                         chartView.classList.add('hidden');
                         tableView.classList.remove('hidden');
                         tablePaginationControls.classList.remove('hidden');
+                        if (embeddedData.isServerMode) populateFiltersFromRPC('main');
                         if (viewState.pedidos.dirty) {
                             updateAllVisuals();
                             viewState.pedidos.dirty = false;
@@ -11258,6 +11798,7 @@ const supervisorGroups = new Map();
                         break;
                     case 'comparativo':
                         showViewElement(comparisonView);
+                        if (embeddedData.isServerMode) populateFiltersFromRPC('comparison');
                         if (viewState.comparativo.dirty) {
                             updateAllComparisonFilters();
                             updateComparisonView();
@@ -11283,6 +11824,7 @@ const supervisorGroups = new Map();
                         showViewElement(cityView);
                         // Always trigger background sync if admin
                         syncGlobalCoordinates();
+                        if (embeddedData.isServerMode) populateFiltersFromRPC('city');
                         if (viewState.cidades.dirty) {
                             updateAllCityFilters();
                             updateCityView();
