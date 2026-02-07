@@ -232,6 +232,14 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_history' AND column_name = 'created_at') THEN
         ALTER TABLE public.data_history ADD COLUMN created_at timestamp with time zone default now();
     END IF;
+
+    -- Add cidade if missing (Fix for 42703)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_detailed' AND column_name = 'cidade') THEN
+        ALTER TABLE public.data_detailed ADD COLUMN cidade text;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_history' AND column_name = 'cidade') THEN
+        ALTER TABLE public.data_history ADD COLUMN cidade text;
+    END IF;
 END $$;
 
 -- Unified View (Explicit Columns to prevent UNION mismatch)
