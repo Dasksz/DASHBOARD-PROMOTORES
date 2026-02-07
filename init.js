@@ -89,6 +89,7 @@
             // Server-Side Mode Configuration
             const embeddedData = {
                 isServerMode: true, // Flag for app.js
+                isColumnar: true,
                 metadata: metadata,
                 hierarchy: hierarchy,
                 clientPromoters: clientPromoters,
@@ -97,7 +98,7 @@
                 // Empty placeholders for legacy compatibility (prevent crash on access)
                 detailed: { columns: [], values: {}, length: 0 },
                 history: { columns: [], values: {}, length: 0 },
-                clients: [], // Will use RPC for client lists
+                clients: { columns: [], values: {}, length: 0 }, // Will use RPC for client lists
                 byOrder: [],
                 stockMap05: {},
                 stockMap08: {},
