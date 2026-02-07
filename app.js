@@ -11687,8 +11687,6 @@ const supervisorGroups = new Map();
                         input.value = code;
                         suggestions.classList.add('hidden');
                         if (onSelect) onSelect(code);
-                        // Trigger standard input event for existing listeners
-                        input.dispatchEvent(new Event('input', { bubbles: true }));
                     };
                     suggestions.appendChild(div);
                 });
