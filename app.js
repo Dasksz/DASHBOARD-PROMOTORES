@@ -7125,6 +7125,24 @@ const supervisorGroups = new Map();
         }
 
         function resetGoalsGvFilters() {
+            if (hierarchyState['goals-gv']) {
+                hierarchyState['goals-gv'].coords.clear();
+                hierarchyState['goals-gv'].cocoords.clear();
+                hierarchyState['goals-gv'].promotors.clear();
+
+                if (userHierarchyContext.role !== 'adm') {
+                    if (userHierarchyContext.coord) hierarchyState['goals-gv'].coords.add(userHierarchyContext.coord);
+                    if (userHierarchyContext.cocoord) hierarchyState['goals-gv'].cocoords.add(userHierarchyContext.cocoord);
+                    if (userHierarchyContext.promotor) hierarchyState['goals-gv'].promotors.add(userHierarchyContext.promotor);
+                }
+
+                updateHierarchyDropdown('goals-gv', 'coord');
+                updateHierarchyDropdown('goals-gv', 'cocoord');
+                updateHierarchyDropdown('goals-gv', 'promotor');
+            }
+
+            const codcli = document.getElementById('goals-gv-codcli-filter');
+            if(codcli) codcli.value = '';
 
             updateGoalsView();
         }
@@ -8308,6 +8326,9 @@ const supervisorGroups = new Map();
             selectedTiposVenda = [];
             selectedMainRedes = [];
             mainRedeGroupFilter = '';
+
+            const codcliFilter = document.getElementById('codcli-filter');
+            if (codcliFilter) codcliFilter.value = '';
 
             selectedMainSuppliers = updateSupplierFilter(document.getElementById('fornecedor-filter-dropdown'), document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, [...allSalesData, ...allHistoryData], 'main');
             updateTipoVendaFilter(tipoVendaFilterDropdown, tipoVendaFilterText, selectedTiposVenda, allSalesData);
@@ -11694,6 +11715,45 @@ const supervisorGroups = new Map();
             }
         }
 
+        function handleClientFilterCascade(clientCode, viewPrefix) {
+            if (!clientCode) return;
+
+            // Apply only for Co-Coord and up
+            const role = userHierarchyContext.role;
+            if (role !== 'adm' && role !== 'coord' && role !== 'cocoord') return;
+
+            const normalizedCode = normalizeKey(clientCode);
+
+            // 1. Auto-Select Promoter
+            if (optimizedData.clientHierarchyMap) {
+                const node = optimizedData.clientHierarchyMap.get(normalizedCode);
+                if (node && hierarchyState[viewPrefix]) {
+                    const promotorCode = node.promotor.code;
+                    if (promotorCode) {
+                        hierarchyState[viewPrefix].promotors.clear();
+                        hierarchyState[viewPrefix].promotors.add(promotorCode);
+                        updateHierarchyDropdown(viewPrefix, 'promotor');
+                    }
+                }
+            }
+
+            // 2. Update Supplier Filter Options based on Client Data
+            const salesIndices = optimizedData.indices.current.byClient.get(normalizedCode);
+            const historyIndices = optimizedData.indices.history.byClient.get(normalizedCode);
+
+            const filteredRows = [];
+            if (salesIndices) salesIndices.forEach(i => filteredRows.push(allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i]));
+            if (historyIndices) historyIndices.forEach(i => filteredRows.push(allHistoryData instanceof ColumnarDataset ? allHistoryData.get(i) : allHistoryData[i]));
+
+            if (filteredRows.length > 0) {
+                if (viewPrefix === 'main') {
+                     // Note: We don't change 'selectedMainSuppliers' here, just the options available.
+                     // The user said: "se eu filtrar um cliente... só deve aparecer para selecionar esse fornecedor"
+                     updateSupplierFilter(document.getElementById('fornecedor-filter-dropdown'), document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, filteredRows, 'main');
+                }
+            }
+        }
+
         function setupEventListeners() {
             // Drag-to-Scroll for Desktop Nav
             const navContainer = document.getElementById('desktop-nav-container');
@@ -11927,10 +11987,15 @@ const supervisorGroups = new Map();
             const debouncedUpdateDashboard = debounce(updateDashboard, 400);
             if (codcliFilter) {
                 setupClientTypeahead('codcli-filter', 'codcli-filter-suggestions', (code) => {
+                    handleClientFilterCascade(code, 'main');
                     mainTableState.currentPage = 1;
                     debouncedUpdateDashboard();
                 });
                 codcliFilter.addEventListener('input', (e) => {
+                    const val = e.target.value.trim();
+                    if (val && clientMapForKPIs.has(normalizeKey(val))) {
+                         handleClientFilterCascade(val, 'main');
+                    }
                     mainTableState.currentPage = 1;
                     debouncedUpdateDashboard();
                 });
@@ -11947,7 +12012,8 @@ const supervisorGroups = new Map();
 
             const goalsGvCodcliFilter = document.getElementById('goals-gv-codcli-filter');
             if (goalsGvCodcliFilter) {
-                setupClientTypeahead('goals-gv-codcli-filter', 'goals-gv-codcli-filter-suggestions', () => {
+                setupClientTypeahead('goals-gv-codcli-filter', 'goals-gv-codcli-filter-suggestions', (code) => {
+                    handleClientFilterCascade(code, 'goals-gv');
                     if (typeof updateGoalsView === 'function') {
                         goalsTableState.currentPage = 1;
                         updateGoalsView();
@@ -11955,7 +12021,11 @@ const supervisorGroups = new Map();
                         goalsGvCodcliFilter.dispatchEvent(new Event('input'));
                     }
                 });
-                goalsGvCodcliFilter.addEventListener('input', () => {
+                goalsGvCodcliFilter.addEventListener('input', (e) => {
+                    const val = e.target.value.trim();
+                    if (val && clientMapForKPIs.has(normalizeKey(val))) {
+                         handleClientFilterCascade(val, 'goals-gv');
+                    }
                     if (typeof updateGoalsView === 'function') {
                         goalsTableState.currentPage = 1;
                         updateGoalsView();
