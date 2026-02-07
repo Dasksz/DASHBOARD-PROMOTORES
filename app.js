@@ -15790,8 +15790,13 @@ const supervisorGroups = new Map();
         const normCurrent = currentOwner ? String(currentOwner).trim().toUpperCase() : null;
         const normMy = myPromoter ? String(myPromoter).trim().toUpperCase() : null;
 
+        // Reset Status Area (Fix for Stale State)
         statusArea.classList.remove('hidden');
+        statusTitle.textContent = '';
+        statusMsg.textContent = '';
+        statusArea.className = 'mt-4 p-4 rounded-lg hidden';
         btn.onclick = null;
+        btn.disabled = false;
         
         let isPromoterOnly = true;
         const h = embeddedData.hierarchy || [];
@@ -15803,8 +15808,22 @@ const supervisorGroups = new Map();
         
         if (!myPromoter) {
             btn.classList.add('hidden');
+            statusArea.classList.remove('hidden'); // Ensure visible
+            if (currentOwner) {
+                statusArea.className = 'mt-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30';
+                statusTitle.textContent = 'Cadastrado';
+                statusTitle.className = 'text-sm font-bold text-orange-400 mb-1';
+                statusMsg.textContent = `Pertence a: ${currentOwner}`;
+            } else {
+                statusArea.className = 'mt-4 p-4 rounded-lg bg-slate-700/50 border border-slate-600/50';
+                statusTitle.textContent = 'Não Cadastrado';
+                statusTitle.className = 'text-sm font-bold text-slate-400 mb-1';
+                statusMsg.textContent = 'Este cliente não pertence a nenhuma carteira.';
+            }
         } else {
              btn.classList.remove('hidden');
+             statusArea.classList.remove('hidden');
+
              if (normCurrent && normMy && normCurrent === normMy) {
                  statusArea.className = 'mt-4 p-4 rounded-lg bg-green-500/10 border border-green-500/30';
                  statusTitle.textContent = 'Cliente na Carteira';
@@ -15824,6 +15843,23 @@ const supervisorGroups = new Map();
                  btnText.textContent = 'Transferir';
                  btn.className = 'px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2';
                  btn.onclick = () => handleWalletAction(client.codigo_cliente, 'upsert');
+
+                 // Co-Coordinator Restriction Check: Prevent cross-base transfers
+                 // Only allows transfer if the current owner belongs to the same Co-Coordinator
+                 if (userHierarchyContext && userHierarchyContext.role === 'cocoord' && optimizedData) {
+                     const ownerNode = optimizedData.hierarchyMap.get(String(currentOwner).trim().toUpperCase());
+                     const myCocoord = userHierarchyContext.cocoord;
+
+                     if (ownerNode && ownerNode.cocoord && ownerNode.cocoord.code) {
+                         const ownerCocoord = ownerNode.cocoord.code;
+                         if (String(ownerCocoord).trim() !== String(myCocoord).trim()) {
+                             btn.disabled = true;
+                             btnText.textContent = 'Não Permitido';
+                             btn.className = 'px-4 py-2 bg-slate-700 text-slate-400 rounded-lg font-bold cursor-not-allowed flex items-center gap-2';
+                             statusMsg.textContent += ' (Bloqueado: Cliente de outra base)';
+                         }
+                     }
+                 }
                  
              } else {
                  statusArea.className = 'mt-4 p-4 rounded-lg bg-slate-700 border border-slate-600';
