@@ -153,7 +153,7 @@ create table if not exists public.profiles (
 CREATE TABLE IF NOT EXISTS public.config_city_branches (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     cidade text NOT NULL UNIQUE,
-    filial text,
+    filial text, 
     updated_at timestamp with time zone DEFAULT now(),
     created_at timestamp with time zone DEFAULT now()
 );
@@ -200,11 +200,58 @@ BEGIN
 END $$;
 
 -- Unified View
+-- Migration Helper: Add potentially missing columns to ensure schema parity (for existing databases)
+DO $$
+BEGIN
+    -- Add to data_detailed if missing
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_detailed' AND column_name = 'vldevolucao') THEN
+        ALTER TABLE public.data_detailed ADD COLUMN vldevolucao numeric DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_detailed' AND column_name = 'qtvenda_embalagem_master') THEN
+        ALTER TABLE public.data_detailed ADD COLUMN qtvenda_embalagem_master numeric DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_detailed' AND column_name = 'codsupervisor') THEN
+        ALTER TABLE public.data_detailed ADD COLUMN codsupervisor text;
+    END IF;
+
+    -- Add to data_history if missing
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_history' AND column_name = 'vldevolucao') THEN
+        ALTER TABLE public.data_history ADD COLUMN vldevolucao numeric DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_history' AND column_name = 'qtvenda_embalagem_master') THEN
+        ALTER TABLE public.data_history ADD COLUMN qtvenda_embalagem_master numeric DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_history' AND column_name = 'codsupervisor') THEN
+        ALTER TABLE public.data_history ADD COLUMN codsupervisor text;
+    END IF;
+
+    -- Add created_at if missing (Critical for UNION)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_detailed' AND column_name = 'created_at') THEN
+        ALTER TABLE public.data_detailed ADD COLUMN created_at timestamp with time zone default now();
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_history' AND column_name = 'created_at') THEN
+        ALTER TABLE public.data_history ADD COLUMN created_at timestamp with time zone default now();
+    END IF;
+
+    -- Add cidade if missing (Fix for 42703)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_detailed' AND column_name = 'cidade') THEN
+        ALTER TABLE public.data_detailed ADD COLUMN cidade text;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'data_history' AND column_name = 'cidade') THEN
+        ALTER TABLE public.data_history ADD COLUMN cidade text;
+    END IF;
+END $$;
+
+-- Unified View (Explicit Columns to prevent UNION mismatch)
 DROP VIEW IF EXISTS public.all_sales CASCADE;
 create or replace view public.all_sales with (security_invoker = true) as
-select * from public.data_detailed
+select 
+    id, pedido, codusur, codsupervisor, produto, codfor, codcli, cidade, qtvenda, vlvenda, vlbonific, vldevolucao, totpesoliq, dtped, dtsaida, posicao, estoqueunit, qtvenda_embalagem_master, tipovenda, filial, created_at
+from public.data_detailed
 union all
-select * from public.data_history;
+select 
+    id, pedido, codusur, codsupervisor, produto, codfor, codcli, cidade, qtvenda, vlvenda, vlbonific, vldevolucao, totpesoliq, dtped, dtsaida, posicao, estoqueunit, qtvenda_embalagem_master, tipovenda, filial, created_at
+from public.data_history;
 
 -- Summary Table (Optimized: Uses Codes instead of Names)
 DROP TABLE IF EXISTS public.data_summary CASCADE;
@@ -351,7 +398,7 @@ BEGIN
         EXECUTE format('DROP POLICY IF EXISTS "Insert Admin" ON public.%I;', t);
         EXECUTE format('DROP POLICY IF EXISTS "Update Admin" ON public.%I;', t);
         EXECUTE format('DROP POLICY IF EXISTS "Read Access" ON public.%I;', t);
-
+        
         -- New standardized policy names
         EXECUTE format('DROP POLICY IF EXISTS "Unified Read Access" ON public.%I;', t);
         EXECUTE format('DROP POLICY IF EXISTS "Admin Insert" ON public.%I;', t);
@@ -383,13 +430,13 @@ BEGIN
     LOOP
         EXECUTE format('DROP POLICY IF EXISTS "Unified Read Access" ON public.%I', t);
         EXECUTE format('CREATE POLICY "Unified Read Access" ON public.%I FOR SELECT USING (public.is_admin() OR public.is_approved())', t);
-
+        
         EXECUTE format('DROP POLICY IF EXISTS "Admin Insert" ON public.%I', t);
         EXECUTE format('CREATE POLICY "Admin Insert" ON public.%I FOR INSERT WITH CHECK (public.is_admin())', t);
-
+        
         EXECUTE format('DROP POLICY IF EXISTS "Admin Update" ON public.%I', t);
         EXECUTE format('CREATE POLICY "Admin Update" ON public.%I FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin())', t);
-
+        
         EXECUTE format('DROP POLICY IF EXISTS "Admin Delete" ON public.%I', t);
         EXECUTE format('CREATE POLICY "Admin Delete" ON public.%I FOR DELETE USING (public.is_admin())', t);
     END LOOP;
@@ -414,14 +461,14 @@ BEGIN
         -- Read: Approved Users
         EXECUTE format('DROP POLICY IF EXISTS "Unified Read Access" ON public.%I', t);
         EXECUTE format('CREATE POLICY "Unified Read Access" ON public.%I FOR SELECT USING (public.is_approved());', t);
-
+        
         -- Write: Admins Only
         EXECUTE format('DROP POLICY IF EXISTS "Admin Insert" ON public.%I', t);
         EXECUTE format('CREATE POLICY "Admin Insert" ON public.%I FOR INSERT WITH CHECK (public.is_admin());', t);
-
+        
         EXECUTE format('DROP POLICY IF EXISTS "Admin Update" ON public.%I', t);
         EXECUTE format('CREATE POLICY "Admin Update" ON public.%I FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());', t);
-
+        
         EXECUTE format('DROP POLICY IF EXISTS "Admin Delete" ON public.%I', t);
         EXECUTE format('CREATE POLICY "Admin Delete" ON public.%I FOR DELETE USING (public.is_admin());', t);
     END LOOP;
@@ -521,7 +568,7 @@ DECLARE
     years int[];
 BEGIN
     -- Get Min/Max from both tables efficiently using indexes
-    SELECT
+    SELECT 
         LEAST(
             (SELECT EXTRACT(YEAR FROM MIN(dtped))::int FROM public.data_detailed),
             (SELECT EXTRACT(YEAR FROM MIN(dtped))::int FROM public.data_history)
@@ -533,14 +580,14 @@ BEGIN
     INTO min_year, max_year;
 
     -- Handle empty tables
-    IF min_year IS NULL THEN
+    IF min_year IS NULL THEN 
         min_year := COALESCE(
             (SELECT EXTRACT(YEAR FROM MIN(dtped))::int FROM public.data_detailed),
             (SELECT EXTRACT(YEAR FROM MIN(dtped))::int FROM public.data_history),
             EXTRACT(YEAR FROM CURRENT_DATE)::int
         );
     END IF;
-
+    
     IF max_year IS NULL THEN
         max_year := COALESCE(
             (SELECT EXTRACT(YEAR FROM MAX(dtped))::int FROM public.data_detailed),
@@ -552,7 +599,7 @@ BEGIN
     -- Generate series
     SELECT array_agg(y ORDER BY y DESC) INTO years
     FROM generate_series(min_year, max_year) as y;
-
+    
     RETURN years;
 END;
 $$;
@@ -569,10 +616,10 @@ BEGIN
 
     -- Clear data for this year first (avoid duplicates)
     DELETE FROM public.data_summary WHERE ano = p_year;
-
+    
     INSERT INTO public.data_summary (
         ano, mes, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli,
-        vlvenda, peso, bonificacao, devolucao,
+        vlvenda, peso, bonificacao, devolucao, 
         pre_mix_count, pre_positivacao_val,
         ramo, caixas
     )
@@ -586,25 +633,25 @@ BEGIN
         WHERE EXTRACT(YEAR FROM dtped)::int = p_year
     ),
     augmented_data AS (
-        SELECT
+        SELECT 
             EXTRACT(YEAR FROM s.dtped)::int as ano,
             EXTRACT(MONTH FROM s.dtped)::int as mes,
             CASE
                 WHEN s.codcli = '11625' AND EXTRACT(YEAR FROM s.dtped) = 2025 AND EXTRACT(MONTH FROM s.dtped) = 12 THEN '05'
                 ELSE s.filial
             END as filial,
-            COALESCE(s.cidade, c.cidade) as cidade,
+            COALESCE(s.cidade, c.cidade) as cidade, 
             s.codsupervisor,
             s.codusur,
-            CASE
+            CASE 
                 WHEN s.codfor = '1119' AND dp.descricao ILIKE '%TODDYNHO%' THEN '1119_TODDYNHO'
                 WHEN s.codfor = '1119' AND dp.descricao ILIKE '%TODDY %' THEN '1119_TODDY'
                 WHEN s.codfor = '1119' AND dp.descricao ILIKE '%QUAKER%' THEN '1119_QUAKER'
                 WHEN s.codfor = '1119' AND dp.descricao ILIKE '%KEROCOCO%' THEN '1119_KEROCOCO'
                 WHEN s.codfor = '1119' THEN '1119_OUTROS'
-                ELSE s.codfor
-            END as codfor,
-            s.tipovenda,
+                ELSE s.codfor 
+            END as codfor, 
+            s.tipovenda, 
             s.codcli,
             s.vlvenda, s.totpesoliq, s.vlbonific, s.vldevolucao, s.produto, s.qtvenda_embalagem_master,
             c.ramo
@@ -613,7 +660,7 @@ BEGIN
         LEFT JOIN public.dim_produtos dp ON s.produto = dp.codigo
     ),
     product_agg AS (
-        SELECT
+        SELECT 
             ano, mes, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli, ramo, produto,
             SUM(vlvenda) as prod_val,
             SUM(totpesoliq) as prod_peso,
@@ -624,7 +671,7 @@ BEGIN
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
     ),
     client_agg AS (
-        SELECT
+        SELECT 
             pa.ano, pa.mes, pa.filial, pa.cidade, pa.codsupervisor, pa.codusur, pa.codfor, pa.tipovenda, pa.codcli, pa.ramo,
             SUM(pa.prod_val) as total_val,
             SUM(pa.prod_peso) as total_peso,
@@ -635,7 +682,7 @@ BEGIN
         FROM product_agg pa
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
     )
-    SELECT
+    SELECT 
         ano, mes, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli,
         total_val, total_peso, total_bonific, total_devol,
         mix_calc,
@@ -643,7 +690,7 @@ BEGIN
         ramo,
         total_caixas
     FROM client_agg;
-
+    
     ANALYZE public.data_summary;
 END;
 $$;
@@ -660,10 +707,10 @@ BEGIN
 
     -- Clear data for this year/month first (avoid duplicates)
     DELETE FROM public.data_summary WHERE ano = p_year AND mes = p_month;
-
+    
     INSERT INTO public.data_summary (
         ano, mes, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli,
-        vlvenda, peso, bonificacao, devolucao,
+        vlvenda, peso, bonificacao, devolucao, 
         pre_mix_count, pre_positivacao_val,
         ramo, caixas
     )
@@ -677,25 +724,25 @@ BEGIN
         WHERE dtped >= make_date(p_year, p_month, 1) AND dtped < (make_date(p_year, p_month, 1) + interval '1 month')
     ),
     augmented_data AS (
-        SELECT
+        SELECT 
             EXTRACT(YEAR FROM s.dtped)::int as ano,
             EXTRACT(MONTH FROM s.dtped)::int as mes,
             CASE
                 WHEN s.codcli = '11625' AND EXTRACT(YEAR FROM s.dtped) = 2025 AND EXTRACT(MONTH FROM s.dtped) = 12 THEN '05'
                 ELSE s.filial
             END as filial,
-            COALESCE(s.cidade, c.cidade) as cidade,
+            COALESCE(s.cidade, c.cidade) as cidade, 
             s.codsupervisor,
             s.codusur,
-            CASE
+            CASE 
                 WHEN s.codfor = '1119' AND dp.descricao ILIKE '%TODDYNHO%' THEN '1119_TODDYNHO'
                 WHEN s.codfor = '1119' AND dp.descricao ILIKE '%TODDY %' THEN '1119_TODDY'
                 WHEN s.codfor = '1119' AND dp.descricao ILIKE '%QUAKER%' THEN '1119_QUAKER'
                 WHEN s.codfor = '1119' AND dp.descricao ILIKE '%KEROCOCO%' THEN '1119_KEROCOCO'
                 WHEN s.codfor = '1119' THEN '1119_OUTROS'
-                ELSE s.codfor
-            END as codfor,
-            s.tipovenda,
+                ELSE s.codfor 
+            END as codfor, 
+            s.tipovenda, 
             s.codcli,
             s.vlvenda, s.totpesoliq, s.vlbonific, s.vldevolucao, s.produto, s.qtvenda_embalagem_master,
             c.ramo
@@ -704,7 +751,7 @@ BEGIN
         LEFT JOIN public.dim_produtos dp ON s.produto = dp.codigo
     ),
     product_agg AS (
-        SELECT
+        SELECT 
             ano, mes, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli, ramo, produto,
             SUM(vlvenda) as prod_val,
             SUM(totpesoliq) as prod_peso,
@@ -715,7 +762,7 @@ BEGIN
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
     ),
     client_agg AS (
-        SELECT
+        SELECT 
             pa.ano, pa.mes, pa.filial, pa.cidade, pa.codsupervisor, pa.codusur, pa.codfor, pa.tipovenda, pa.codcli, pa.ramo,
             SUM(pa.prod_val) as total_val,
             SUM(pa.prod_peso) as total_peso,
@@ -726,7 +773,7 @@ BEGIN
         FROM product_agg pa
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
     )
-    SELECT
+    SELECT 
         ano, mes, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli,
         total_val, total_peso, total_bonific, total_devol,
         mix_calc,
@@ -734,7 +781,7 @@ BEGIN
         ramo,
         total_caixas
     FROM client_agg;
-
+    
     -- No internal ANALYZE to keep chunks fast
 END;
 $$;
@@ -748,19 +795,19 @@ SET search_path = public
 AS $$
 BEGIN
     SET LOCAL statement_timeout = '600s';
-
+    
     -- Ensure stats are up to date before complex joins
     ANALYZE public.data_summary;
 
     TRUNCATE TABLE public.cache_filters;
     INSERT INTO public.cache_filters (filial, cidade, superv, nome, codfor, fornecedor, tipovenda, ano, mes, rede)
-    SELECT DISTINCT
-        t.filial,
-        t.cidade,
-        ds.nome as superv,
-        dv.nome as nome,
+    SELECT DISTINCT 
+        t.filial, 
+        t.cidade, 
+        ds.nome as superv, 
+        dv.nome as nome, 
         t.codfor,
-        CASE
+        CASE 
             WHEN t.codfor = '707' THEN 'EXTRUSADOS'
             WHEN t.codfor = '708' THEN 'Ñ EXTRUSADOS'
             WHEN t.codfor = '752' THEN 'TORCIDA'
@@ -770,10 +817,10 @@ BEGIN
             WHEN t.codfor = '1119_KEROCOCO' THEN 'KEROCOCO'
             WHEN t.codfor = '1119_OUTROS' THEN 'FOODS (Outros)'
             WHEN t.codfor = '1119' THEN 'FOODS (Outros)'
-            ELSE df.nome
-        END as fornecedor,
-        t.tipovenda,
-        t.ano,
+            ELSE df.nome 
+        END as fornecedor, 
+        t.tipovenda, 
+        t.ano, 
         t.mes,
         t.ramo as rede
     FROM public.data_summary t
@@ -796,7 +843,7 @@ DECLARE
 BEGIN
     -- 1. Truncate Main
     TRUNCATE TABLE public.data_summary;
-
+    
     -- 2. Loop Years and Months
     FOR r_year IN SELECT y FROM unnest(get_available_years()) as y
     LOOP
@@ -825,7 +872,7 @@ BEGIN
 
     -- Drop heavy indexes if they exist
     DROP INDEX IF EXISTS public.idx_summary_main;
-
+    
     -- Drop legacy inefficient indexes
     DROP INDEX IF EXISTS public.idx_summary_ano_mes_filial;
     DROP INDEX IF EXISTS public.idx_summary_ano_mes_cidade;
@@ -852,7 +899,7 @@ BEGIN
     CREATE INDEX IF NOT EXISTS idx_summary_ano_tipovenda ON public.data_summary (ano, tipovenda);
     CREATE INDEX IF NOT EXISTS idx_summary_ano_codcli ON public.data_summary (ano, codcli);
     CREATE INDEX IF NOT EXISTS idx_summary_ano_ramo ON public.data_summary (ano, ramo);
-
+    
     -- Re-cluster table for physical order optimization (Manual Only)
     BEGIN
         CLUSTER public.data_summary USING idx_summary_ano_filial;
@@ -903,7 +950,7 @@ BEGIN
     FROM generate_series(start_date, end_date, '1 day'::interval) AS d
     WHERE EXTRACT(ISODOW FROM d) < 6 -- Mon-Fri (1-5)
       AND NOT EXISTS (SELECT 1 FROM public.data_holidays h WHERE h.date = d::date);
-
+    
     RETURN days;
 END;
 $$;
@@ -961,7 +1008,7 @@ DECLARE
     v_current_year int;
     v_previous_year int;
     v_target_month int;
-
+    
     -- Trend Vars
     v_max_sale_date date;
     v_trend_allowed boolean;
@@ -972,13 +1019,13 @@ DECLARE
     v_month_start date;
     v_month_end date;
     v_holidays json;
-
+    
     -- Dynamic SQL
     v_sql text;
     v_where_base text := ' WHERE 1=1 ';
     v_where_kpi text := ' WHERE 1=1 ';
     v_result json;
-
+    
     -- Execution Context
     v_kpi_clients_attended int;
     v_kpi_clients_base int;
@@ -987,14 +1034,14 @@ DECLARE
     v_breakdown_person json;
     v_breakdown_supplier json;
     v_curr_month_idx int;
-
+    
     -- Rede Logic Vars
     v_has_com_rede boolean;
     v_has_sem_rede boolean;
     v_specific_redes text[];
     v_rede_condition text := '';
     v_is_month_filtered boolean := false;
-
+    
     -- Mix Logic Vars
     v_mix_constraint text;
 
@@ -1029,7 +1076,7 @@ BEGIN
     IF v_max_sale_date IS NULL THEN v_max_sale_date := CURRENT_DATE; END IF;
 
     v_trend_allowed := (v_current_year = EXTRACT(YEAR FROM v_max_sale_date)::int);
-
+    
     IF p_mes IS NOT NULL AND p_mes != '' AND p_mes != 'todos' THEN
        IF (p_mes::int + 1) != EXTRACT(MONTH FROM v_max_sale_date)::int THEN
            v_trend_allowed := false;
@@ -1040,10 +1087,10 @@ BEGIN
         v_month_start := make_date(v_current_year, EXTRACT(MONTH FROM v_max_sale_date)::int, 1);
         v_month_end := (v_month_start + interval '1 month' - interval '1 day')::date;
         IF v_max_sale_date > v_month_end THEN v_max_sale_date := v_month_end; END IF;
-
+        
         v_work_days_passed := public.calc_working_days(v_month_start, v_max_sale_date);
         v_work_days_total := public.calc_working_days(v_month_start, v_month_end);
-
+        
         IF v_work_days_passed > 0 AND v_work_days_total > 0 THEN
             v_trend_factor := v_work_days_total::numeric / v_work_days_passed::numeric;
         ELSE
@@ -1052,7 +1099,7 @@ BEGIN
     END IF;
 
     -- 3. Construct Dynamic WHERE Clause
-
+    
     v_where_base := v_where_base || format(' AND ano IN (%L, %L) ', v_current_year, v_previous_year);
 
     IF p_filial IS NOT NULL AND array_length(p_filial, 1) > 0 THEN
@@ -1071,27 +1118,27 @@ BEGIN
     IF p_fornecedor IS NOT NULL AND array_length(p_fornecedor, 1) > 0 THEN
         v_where_base := v_where_base || format(' AND codfor = ANY(%L) ', p_fornecedor);
     END IF;
-
+    
     -- REDE Logic
     IF p_rede IS NOT NULL AND array_length(p_rede, 1) > 0 THEN
        v_has_com_rede := ('C/ REDE' = ANY(p_rede));
        v_has_sem_rede := ('S/ REDE' = ANY(p_rede));
        v_specific_redes := array_remove(array_remove(p_rede, 'C/ REDE'), 'S/ REDE');
-
+       
        IF array_length(v_specific_redes, 1) > 0 THEN
            v_rede_condition := format('ramo = ANY(%L)', v_specific_redes);
        END IF;
-
+       
        IF v_has_com_rede THEN
            IF v_rede_condition != '' THEN v_rede_condition := v_rede_condition || ' OR '; END IF;
            v_rede_condition := v_rede_condition || ' (ramo IS NOT NULL AND ramo NOT IN (''N/A'', ''N/D'')) ';
        END IF;
-
+       
        IF v_has_sem_rede THEN
            IF v_rede_condition != '' THEN v_rede_condition := v_rede_condition || ' OR '; END IF;
            v_rede_condition := v_rede_condition || ' (ramo IS NULL OR ramo IN (''N/A'', ''N/D'')) ';
        END IF;
-
+       
        IF v_rede_condition != '' THEN
            v_where_base := v_where_base || ' AND (' || v_rede_condition || ') ';
        END IF;
@@ -1201,11 +1248,11 @@ BEGIN
         SELECT
             fs.ano,
             fs.mes,
-            SUM(CASE
+            SUM(CASE 
                 WHEN ($1 IS NOT NULL AND COALESCE(array_length($1, 1), 0) > 0) THEN
                     CASE WHEN fs.tipovenda = ANY($1) THEN fs.vlvenda ELSE 0 END
                 WHEN fs.tipovenda IN (''1'', ''9'') THEN fs.vlvenda
-                ELSE 0
+                ELSE 0 
             END) as faturamento,
 
             SUM(CASE
@@ -1240,18 +1287,18 @@ BEGIN
 
             COALESCE(mc.active_count, 0) as positivacao_count,
 
-            SUM(CASE
+            SUM(CASE 
                 WHEN ($1 IS NOT NULL AND COALESCE(array_length($1, 1), 0) > 0) THEN
                     CASE WHEN fs.tipovenda = ANY($1) AND (' || v_mix_constraint || ') THEN fs.pre_mix_count ELSE 0 END
                 WHEN fs.tipovenda IN (''1'', ''9'') AND (' || v_mix_constraint || ') THEN fs.pre_mix_count
-                ELSE 0
+                ELSE 0 
             END) as total_mix_sum,
 
-            COUNT(DISTINCT CASE
+            COUNT(DISTINCT CASE 
                 WHEN ($1 IS NOT NULL AND COALESCE(array_length($1, 1), 0) > 0) AND fs.pre_mix_count > 0 THEN
                     CASE WHEN fs.tipovenda = ANY($1) AND (' || v_mix_constraint || ') THEN fs.codcli ELSE NULL END
                 WHEN fs.tipovenda IN (''1'', ''9'') AND fs.pre_mix_count > 0 AND (' || v_mix_constraint || ') THEN fs.codcli
-                ELSE NULL
+                ELSE NULL 
             END) as mix_client_count
         FROM filtered_summary fs
         LEFT JOIN monthly_counts mc ON fs.ano = mc.ano AND fs.mes = mc.mes
@@ -1283,7 +1330,7 @@ BEGIN
         ' || v_where_kpi || '
     ),
     breakdown_person AS (
-        SELECT
+        SELECT 
             COALESCE(ds.nome, fs.codsupervisor) as name,
             SUM(fs.vlvenda) as total
         FROM filtered_summary fs
@@ -1293,8 +1340,8 @@ BEGIN
         ORDER BY 2 DESC
     ),
     breakdown_supplier AS (
-        SELECT
-            CASE
+        SELECT 
+            CASE 
                 WHEN fs.codfor = ''707'' THEN ''EXTRUSADOS''
                 WHEN fs.codfor = ''708'' THEN ''Ñ EXTRUSADOS''
                 WHEN fs.codfor = ''752'' THEN ''TORCIDA''
@@ -1312,26 +1359,26 @@ BEGIN
         (SELECT val FROM kpi_active_count),
         (SELECT val FROM kpi_base_count),
         COALESCE(json_agg(json_build_object(
-            ''month_index'', a.mes - 1,
-            ''faturamento'', a.faturamento,
+            ''month_index'', a.mes - 1, 
+            ''faturamento'', a.faturamento, 
             ''total_sold_base'', a.total_sold_base,
-            ''peso'', a.peso,
-            ''bonificacao'', a.bonificacao,
-            ''devolucao'', a.devolucao,
-            ''positivacao'', a.positivacao_count,
-            ''mix_pdv'', CASE WHEN a.mix_client_count > 0 THEN a.total_mix_sum::numeric / a.mix_client_count ELSE 0 END,
+            ''peso'', a.peso, 
+            ''bonificacao'', a.bonificacao, 
+            ''devolucao'', a.devolucao, 
+            ''positivacao'', a.positivacao_count, 
+            ''mix_pdv'', CASE WHEN a.mix_client_count > 0 THEN a.total_mix_sum::numeric / a.mix_client_count ELSE 0 END, 
             ''ticket_medio'', CASE WHEN a.positivacao_count > 0 THEN a.faturamento / a.positivacao_count ELSE 0 END
         ) ORDER BY a.mes) FILTER (WHERE a.ano = $2), ''[]''::json),
-
+        
         COALESCE(json_agg(json_build_object(
-            ''month_index'', a.mes - 1,
-            ''faturamento'', a.faturamento,
+            ''month_index'', a.mes - 1, 
+            ''faturamento'', a.faturamento, 
             ''total_sold_base'', a.total_sold_base,
-            ''peso'', a.peso,
-            ''bonificacao'', a.bonificacao,
-            ''devolucao'', a.devolucao,
-            ''positivacao'', a.positivacao_count,
-            ''mix_pdv'', CASE WHEN a.mix_client_count > 0 THEN a.total_mix_sum::numeric / a.mix_client_count ELSE 0 END,
+            ''peso'', a.peso, 
+            ''bonificacao'', a.bonificacao, 
+            ''devolucao'', a.devolucao, 
+            ''positivacao'', a.positivacao_count, 
+            ''mix_pdv'', CASE WHEN a.mix_client_count > 0 THEN a.total_mix_sum::numeric / a.mix_client_count ELSE 0 END, 
             ''ticket_medio'', CASE WHEN a.positivacao_count > 0 THEN a.faturamento / a.positivacao_count ELSE 0 END
         ) ORDER BY a.mes) FILTER (WHERE a.ano = $4), ''[]''::json),
 
@@ -1340,14 +1387,14 @@ BEGIN
     FROM agg_data a
     ';
 
-    EXECUTE v_sql
+    EXECUTE v_sql 
     INTO v_kpi_clients_attended, v_kpi_clients_base, v_monthly_chart_current, v_monthly_chart_previous, v_breakdown_person, v_breakdown_supplier
     USING p_tipovenda, v_current_year, v_target_month, v_previous_year;
 
     -- 5. Calculate Trend (Post-Processing)
     IF v_trend_allowed THEN
         v_curr_month_idx := EXTRACT(MONTH FROM v_max_sale_date)::int - 1;
-
+        
         DECLARE
              v_elem json;
         BEGIN
@@ -1414,10 +1461,10 @@ DECLARE
     v_ref_date date;
     v_tri_start date;
     v_tri_end date;
-
+    
     v_where_summary text := ' WHERE 1=1 ';
     v_where_raw text := ' WHERE 1=1 ';
-
+    
     v_chart_data json;
     v_kpis_current json;
     v_kpis_previous json;
@@ -1483,7 +1530,7 @@ BEGIN
         v_where_raw := v_where_raw || format(' AND tipovenda = ANY(%L) ', p_tipovenda);
         v_where_summary := v_where_summary || format(' AND tipovenda = ANY(%L) ', p_tipovenda);
     END IF;
-
+    
     -- Fornecedor Logic
     IF p_fornecedor IS NOT NULL AND array_length(p_fornecedor, 1) > 0 THEN
         v_where_summary := v_where_summary || format(' AND codfor = ANY(%L) ', p_fornecedor);
@@ -1528,21 +1575,21 @@ BEGIN
        v_has_com_rede := ('C/ REDE' = ANY(p_rede));
        v_has_sem_rede := ('S/ REDE' = ANY(p_rede));
        v_specific_redes := array_remove(array_remove(p_rede, 'C/ REDE'), 'S/ REDE');
-
+       
        IF array_length(v_specific_redes, 1) > 0 THEN
            v_rede_condition := format('ramo = ANY(%L)', v_specific_redes);
        END IF;
-
+       
        IF v_has_com_rede THEN
            IF v_rede_condition != '' THEN v_rede_condition := v_rede_condition || ' OR '; END IF;
            v_rede_condition := v_rede_condition || ' (ramo IS NOT NULL AND ramo NOT IN (''N/A'', ''N/D'')) ';
        END IF;
-
+       
        IF v_has_sem_rede THEN
            IF v_rede_condition != '' THEN v_rede_condition := v_rede_condition || ' OR '; END IF;
            v_rede_condition := v_rede_condition || ' (ramo IS NULL OR ramo IN (''N/A'', ''N/D'')) ';
        END IF;
-
+       
        IF v_rede_condition != '' THEN
            v_where_summary := v_where_summary || ' AND (' || v_rede_condition || ') ';
            v_where_raw := v_where_raw || ' AND EXISTS (SELECT 1 FROM public.data_clients c WHERE c.codigo_cliente = s.codcli AND (' || v_rede_condition || ')) ';
@@ -1554,9 +1601,9 @@ BEGIN
     IF v_use_cache THEN
         -- FAST PATH (Uses data_summary for totals)
         EXECUTE format('
-            WITH
+            WITH 
             chart_agg AS (
-                SELECT
+                SELECT 
                     mes - 1 as m_idx,
                     ano as yr,
                     SUM(vlvenda) as fat,
@@ -1567,7 +1614,7 @@ BEGIN
                 GROUP BY 1, 2
             ),
             kpi_curr AS (
-                SELECT
+                SELECT 
                     SUM(vlvenda) as fat,
                     SUM(peso) as peso,
                     SUM(COALESCE(caixas, 0)) as caixas
@@ -1575,7 +1622,7 @@ BEGIN
                 %s AND ano = %L %s
             ),
             kpi_prev AS (
-                SELECT
+                SELECT 
                     SUM(vlvenda) as fat,
                     SUM(peso) as peso,
                     SUM(COALESCE(caixas, 0)) as caixas
@@ -1583,7 +1630,7 @@ BEGIN
                 %s AND ano = %L %s
             ),
             kpi_tri AS (
-                SELECT
+                SELECT 
                     SUM(vlvenda) / 3 as fat,
                     SUM(peso) / 3 as peso,
                     SUM(COALESCE(caixas, 0)) / 3 as caixas
@@ -1614,13 +1661,13 @@ BEGIN
                 ORDER BY caixas DESC
                 LIMIT 50
             )
-            SELECT
+            SELECT 
                 (SELECT json_agg(json_build_object(''month_index'', m_idx, ''year'', yr, ''faturamento'', fat, ''peso'', peso, ''caixas'', caixas)) FROM chart_agg),
                 (SELECT row_to_json(c) FROM kpi_curr c),
                 (SELECT row_to_json(p) FROM kpi_prev p),
                 (SELECT row_to_json(t) FROM kpi_tri t),
                 (SELECT json_agg(pa) FROM prod_agg pa)
-        ',
+        ', 
         v_where_summary, v_current_year, v_previous_year, -- Chart
         v_where_summary, v_current_year, CASE WHEN v_target_month IS NOT NULL THEN format(' AND mes = %L ', v_target_month) ELSE '' END, -- KPI Curr
         v_where_summary, v_previous_year, CASE WHEN v_target_month IS NOT NULL THEN format(' AND mes = %L ', v_target_month) ELSE '' END, -- KPI Prev
@@ -1629,7 +1676,7 @@ BEGIN
         v_where_raw, v_current_year, v_current_year, CASE WHEN v_target_month IS NOT NULL THEN format(' AND EXTRACT(MONTH FROM dtped) = %L ', v_target_month) ELSE '' END  -- Prod
         )
         INTO v_chart_data, v_kpis_current, v_kpis_previous, v_kpis_tri_avg, v_products_table;
-
+    
     ELSE
         -- SLOW PATH (Full Raw Data with dim_produtos join)
         EXECUTE format('
@@ -1645,7 +1692,7 @@ BEGIN
                 %s AND s.dtped >= make_date(%L, 1, 1)
             ),
             chart_agg AS (
-                SELECT
+                SELECT 
                     EXTRACT(MONTH FROM dtped)::int - 1 as m_idx,
                     EXTRACT(YEAR FROM dtped)::int as yr,
                     SUM(vlvenda) as fat,
@@ -1656,7 +1703,7 @@ BEGIN
                 GROUP BY 1, 2
             ),
             kpi_curr AS (
-                SELECT
+                SELECT 
                     SUM(vlvenda) as fat,
                     SUM(totpesoliq) as peso,
                     SUM(COALESCE(qtvenda_embalagem_master, 0)) as caixas
@@ -1664,7 +1711,7 @@ BEGIN
                 WHERE EXTRACT(YEAR FROM dtped) = %L %s
             ),
             kpi_prev AS (
-                SELECT
+                SELECT 
                     SUM(vlvenda) as fat,
                     SUM(totpesoliq) as peso,
                     SUM(COALESCE(qtvenda_embalagem_master, 0)) as caixas
@@ -1672,7 +1719,7 @@ BEGIN
                 WHERE EXTRACT(YEAR FROM dtped) = %L %s
             ),
             kpi_tri AS (
-                SELECT
+                SELECT 
                     SUM(vlvenda) / 3 as fat,
                     SUM(totpesoliq) / 3 as peso,
                     SUM(COALESCE(qtvenda_embalagem_master, 0)) / 3 as caixas
@@ -1692,13 +1739,13 @@ BEGIN
                 ORDER BY caixas DESC
                 LIMIT 50
             )
-            SELECT
+            SELECT 
                 (SELECT json_agg(json_build_object(''month_index'', m_idx, ''year'', yr, ''faturamento'', fat, ''peso'', peso, ''caixas'', caixas)) FROM chart_agg),
                 (SELECT row_to_json(c) FROM kpi_curr c),
                 (SELECT row_to_json(p) FROM kpi_prev p),
                 (SELECT row_to_json(t) FROM kpi_tri t),
                 (SELECT json_agg(pa) FROM prod_agg pa)
-        ',
+        ', 
         v_where_raw, v_previous_year,
         v_where_raw, v_previous_year,
         v_current_year, v_previous_year,
@@ -1752,7 +1799,7 @@ DECLARE
     v_where text := ' WHERE 1=1 ';
     v_sql text;
     v_result json;
-
+    
     -- Rede Logic
     v_has_com_rede boolean;
     v_has_sem_rede boolean;
@@ -1812,21 +1859,21 @@ BEGIN
        v_has_com_rede := ('C/ REDE' = ANY(p_rede));
        v_has_sem_rede := ('S/ REDE' = ANY(p_rede));
        v_specific_redes := array_remove(array_remove(p_rede, 'C/ REDE'), 'S/ REDE');
-
+       
        IF array_length(v_specific_redes, 1) > 0 THEN
            v_rede_condition := format('ramo = ANY(%L)', v_specific_redes);
        END IF;
-
+       
        IF v_has_com_rede THEN
            IF v_rede_condition != '' THEN v_rede_condition := v_rede_condition || ' OR '; END IF;
            v_rede_condition := v_rede_condition || ' (ramo IS NOT NULL AND ramo NOT IN (''N/A'', ''N/D'')) ';
        END IF;
-
+       
        IF v_has_sem_rede THEN
            IF v_rede_condition != '' THEN v_rede_condition := v_rede_condition || ' OR '; END IF;
            v_rede_condition := v_rede_condition || ' (ramo IS NULL OR ramo IN (''N/A'', ''N/D'')) ';
        END IF;
-
+       
        IF v_rede_condition != '' THEN
            v_where := v_where || ' AND (' || v_rede_condition || ') ';
        END IF;
@@ -2449,34 +2496,34 @@ BEGIN
         -- JS: `lastSaleDate.getUTCDay()` 0=Sun..6=Sat.
         -- JS Logic: `currentDate.getUTCDay() === 0` (Sun) -> start new week.
         -- So weeks start on Sunday.
-
+        
         -- Find next Saturday (end of week)
         -- If v_curr is Sunday, +6 days.
         -- We just iterate until we hit next start or month end.
-
+        
         -- Simplified Week Logic: Week 1 = Days 1-7, Week 2 = 8-14... (User preference often simple)
         -- BUT, original app used `getWeekIndex` based on calendar.
         -- Let's stick to standard calendar weeks starting on SUNDAY.
-
+        
         -- Find end of this week (Next Saturday)
         -- Postges: date + (6 - extract(dow from date)) integers?
         -- dow: Sun=0, Sat=6.
         v_week_end := v_curr + (6 - EXTRACT(DOW FROM v_curr)::int);
-
+        
         IF v_week_end > v_month_end THEN v_week_end := v_month_end; END IF;
-
+        
         week_index := v_idx;
         start_date := v_curr;
         end_date := v_week_end;
-
+        
         -- Calc working days (Mon-Fri) excluding holidays
         SELECT COUNT(*) INTO working_days
         FROM generate_series(start_date, end_date, '1 day'::interval) d
         WHERE EXTRACT(DOW FROM d) BETWEEN 1 AND 5
           AND NOT EXISTS (SELECT 1 FROM public.data_holidays h WHERE h.date = d::date);
-
+          
         RETURN NEXT;
-
+        
         v_curr := v_week_end + 1;
         v_idx := v_idx + 1;
     END LOOP;
@@ -2506,10 +2553,10 @@ DECLARE
     v_target_month int;
     v_prev_month_date date;
     v_curr_month_date date;
-
+    
     v_where_base text := ' WHERE 1=1 ';
     v_result json;
-
+    
     v_rede_condition text := '';
     v_specific_redes text[];
     v_has_com_rede boolean;
@@ -2535,7 +2582,7 @@ BEGIN
     -- 2. Filters
     IF p_filial IS NOT NULL AND array_length(p_filial, 1) > 0 THEN v_where_base := v_where_base || format(' AND s.filial = ANY(%L) ', p_filial); END IF;
     IF p_cidade IS NOT NULL AND array_length(p_cidade, 1) > 0 THEN v_where_base := v_where_base || format(' AND s.cidade = ANY(%L) ', p_cidade); END IF;
-
+    
     -- Codes
     IF p_supervisor IS NOT NULL AND array_length(p_supervisor, 1) > 0 THEN
         v_where_base := v_where_base || format(' AND s.codsupervisor IN (SELECT codigo FROM dim_supervisores WHERE nome = ANY(%L)) ', p_supervisor);
@@ -2580,7 +2627,7 @@ BEGIN
     -- 3. Execution
     -- We need to join data_innovations (i) with sales (s)
     -- We calculate Current Month and Previous Month metrics
-
+    
     EXECUTE format('
         WITH combined_sales AS (
             SELECT s.dtped, s.codcli, s.vlvenda, s.produto, i.inovacoes
@@ -2594,12 +2641,12 @@ BEGIN
             %s AND s.dtped >= %L AND s.dtped < %L
         ),
         agg_by_cat AS (
-            SELECT
+            SELECT 
                 i.inovacoes as categoria,
                 -- Current Month Metrics
                 SUM(CASE WHEN EXTRACT(MONTH FROM cs.dtped) = %L THEN cs.vlvenda ELSE 0 END) as val_current,
                 COUNT(DISTINCT CASE WHEN EXTRACT(MONTH FROM cs.dtped) = %L AND cs.vlvenda > 0 THEN cs.codcli END) as pos_current,
-
+                
                 -- Previous Month Metrics
                 SUM(CASE WHEN EXTRACT(MONTH FROM cs.dtped) = %L THEN cs.vlvenda ELSE 0 END) as val_prev,
                 COUNT(DISTINCT CASE WHEN EXTRACT(MONTH FROM cs.dtped) = %L AND cs.vlvenda > 0 THEN cs.codcli END) as pos_prev
@@ -2630,7 +2677,7 @@ BEGIN
         )
         FROM agg_by_cat
         WHERE val_current > 0 OR val_prev > 0
-    ',
+    ', 
     v_where_base, v_prev_month_date, (v_curr_month_date + interval '1 month'),
     v_where_base, v_prev_month_date, (v_curr_month_date + interval '1 month'),
     v_target_month, v_target_month,
@@ -2665,7 +2712,7 @@ DECLARE
     v_target_month int;
     v_where text := ' WHERE 1=1 ';
     v_result json;
-
+    
     v_rede_condition text := '';
     v_specific_redes text[];
     v_has_com_rede boolean;
@@ -2683,7 +2730,7 @@ BEGIN
         v_target_month := p_mes::int + 1;
         v_where := v_where || format(' AND EXTRACT(MONTH FROM s.dtped) = %L ', v_target_month);
     ELSE
-        -- Default to latest month with data if not specified?
+        -- Default to latest month with data if not specified? 
         -- App.js usually sets a month. If not, default to current.
         v_target_month := EXTRACT(MONTH FROM CURRENT_DATE)::int;
         v_where := v_where || format(' AND EXTRACT(MONTH FROM s.dtped) = %L ', v_target_month);
@@ -2693,14 +2740,14 @@ BEGIN
     -- Filters
     IF p_filial IS NOT NULL AND array_length(p_filial, 1) > 0 THEN v_where := v_where || format(' AND s.filial = ANY(%L) ', p_filial); END IF;
     IF p_cidade IS NOT NULL AND array_length(p_cidade, 1) > 0 THEN v_where := v_where || format(' AND s.cidade = ANY(%L) ', p_cidade); END IF;
-
+    
     IF p_supervisor IS NOT NULL AND array_length(p_supervisor, 1) > 0 THEN
         v_where := v_where || format(' AND s.codsupervisor IN (SELECT codigo FROM dim_supervisores WHERE nome = ANY(%L)) ', p_supervisor);
     END IF;
     IF p_vendedor IS NOT NULL AND array_length(p_vendedor, 1) > 0 THEN
         v_where := v_where || format(' AND s.codusur IN (SELECT codigo FROM dim_vendedores WHERE nome = ANY(%L)) ', p_vendedor);
     END IF;
-
+    
     IF p_fornecedor IS NOT NULL AND array_length(p_fornecedor, 1) > 0 THEN v_where := v_where || format(' AND s.codfor = ANY(%L) ', p_fornecedor); END IF;
     IF p_tipovenda IS NOT NULL AND array_length(p_tipovenda, 1) > 0 THEN v_where := v_where || format(' AND s.tipovenda = ANY(%L) ', p_tipovenda); END IF;
 
@@ -2731,7 +2778,7 @@ BEGIN
 
     -- Execute with Weekly Bucketing
     -- Using public.get_month_weeks
-
+    
     EXECUTE format('
         WITH weeks AS (
             SELECT week_index, start_date, end_date FROM get_month_weeks(%L, %L)
@@ -2746,7 +2793,7 @@ BEGIN
             %s
         ),
         seller_weekly AS (
-            SELECT
+            SELECT 
                 rs.codusur,
                 w.week_index,
                 SUM(rs.vlvenda) as val,
