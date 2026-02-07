@@ -202,9 +202,17 @@ END $$;
 -- Unified View
 DROP VIEW IF EXISTS public.all_sales CASCADE;
 create or replace view public.all_sales with (security_invoker = true) as
-select * from public.data_detailed
+select
+    id, pedido, codusur, codsupervisor, produto, codfor, codcli, cidade,
+    qtvenda, vlvenda, vlbonific, vldevolucao, totpesoliq, dtped, dtsaida,
+    posicao, estoqueunit, qtvenda_embalagem_master, tipovenda, filial, created_at
+from public.data_detailed
 union all
-select * from public.data_history;
+select
+    id, pedido, codusur, codsupervisor, produto, codfor, codcli, cidade,
+    qtvenda, vlvenda, vlbonific, vldevolucao, totpesoliq, dtped, dtsaida,
+    posicao, estoqueunit, qtvenda_embalagem_master, tipovenda, filial, created_at
+from public.data_history;
 
 -- Summary Table (Optimized: Uses Codes instead of Names)
 DROP TABLE IF EXISTS public.data_summary CASCADE;
