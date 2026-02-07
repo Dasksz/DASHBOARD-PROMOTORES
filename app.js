@@ -1557,7 +1557,14 @@
                     }
                 }
 
-                optimizedData.searchIndices.clients[i] = { code: codCli, nameLower: (client.nomeCliente || '').toLowerCase(), cityLower: (client.cidade || '').toLowerCase() };
+                const rawCnpj = client['CNPJ/CPF'] || client.cnpj_cpf || client.CNPJ || '';
+                const cleanCnpj = String(rawCnpj).replace(/[^0-9]/g, '');
+                optimizedData.searchIndices.clients[i] = {
+                    code: codCli,
+                    nameLower: (client.nomeCliente || '').toLowerCase(),
+                    cityLower: (client.cidade || '').toLowerCase(),
+                    cnpj: cleanCnpj
+                };
             }
 
             const supervisorToRcaMap = new Map();
@@ -11583,6 +11590,112 @@ const supervisorGroups = new Map();
             updateAllVisuals();
         };
 
+        function searchLocalClients(query) {
+            if (!query || query.length < 3) return [];
+            query = query.toLowerCase();
+            const cleanQuery = query.replace(/[^a-z0-9]/g, '');
+
+            const results = [];
+            const indices = optimizedData.searchIndices.clients;
+            const limit = 10;
+
+            if (!indices || indices.length === 0) return [];
+
+            for (let i = 0; i < indices.length; i++) {
+                const idx = indices[i];
+                if (!idx) continue;
+
+                // Match Code (Exact or partial)
+                if (idx.code.includes(cleanQuery)) {
+                    results.push(allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i]);
+                    if (results.length >= limit) break;
+                    continue;
+                }
+                // Match Name
+                if (idx.nameLower && idx.nameLower.includes(query)) {
+                    results.push(allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i]);
+                    if (results.length >= limit) break;
+                    continue;
+                }
+                // Match CNPJ
+                if (idx.cnpj && idx.cnpj.includes(cleanQuery)) {
+                    results.push(allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i]);
+                    if (results.length >= limit) break;
+                    continue;
+                }
+            }
+            return results;
+        }
+
+        function setupClientTypeahead(inputId, suggestionsId, onSelect) {
+            const input = document.getElementById(inputId);
+            const suggestions = document.getElementById(suggestionsId);
+            if (!input || !suggestions) return;
+
+            let debounce;
+
+            input.addEventListener('input', (e) => {
+                const val = e.target.value;
+                if (!val || val.length < 3) {
+                    suggestions.classList.add('hidden');
+                    return;
+                }
+
+                clearTimeout(debounce);
+                debounce = setTimeout(() => {
+                    const results = searchLocalClients(val);
+                    renderSuggestions(results);
+                }, 300);
+            });
+
+            // Close on click outside
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+                    suggestions.classList.add('hidden');
+                }
+            });
+
+            function renderSuggestions(results) {
+                suggestions.innerHTML = '';
+                if (results.length === 0) {
+                    suggestions.classList.add('hidden');
+                    return;
+                }
+
+                results.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'px-4 py-3 border-b border-slate-700 hover:bg-slate-700 cursor-pointer flex justify-between items-center group';
+
+                    const code = c['Código'] || c['codigo_cliente'];
+                    const name = c.fantasia || c.nomeCliente || c.razaoSocial || 'Sem Nome';
+                    const city = c.cidade || c.CIDADE || '';
+                    const doc = c['CNPJ/CPF'] || c.cnpj_cpf || '';
+
+                    div.innerHTML = `
+                        <div>
+                            <div class="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">
+                                <span class="font-mono text-slate-400 mr-2">${code}</span>
+                                ${name}
+                            </div>
+                            <div class="text-xs text-slate-500">${city} • ${doc}</div>
+                        </div>
+                         <div class="p-2 bg-slate-800 rounded-full group-hover:bg-blue-600 transition-colors text-slate-400 group-hover:text-white">
+                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                    `;
+                    div.onclick = () => {
+                        input.value = code;
+                        suggestions.classList.add('hidden');
+                        if (onSelect) onSelect(code);
+                        // Trigger standard input event for existing listeners
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                    };
+                    suggestions.appendChild(div);
+                });
+                suggestions.classList.remove('hidden');
+            }
+        }
+
         function setupEventListeners() {
             // Drag-to-Scroll for Desktop Nav
             const navContainer = document.getElementById('desktop-nav-container');
@@ -11815,10 +11928,31 @@ const supervisorGroups = new Map();
             if (posicaoFilter) posicaoFilter.addEventListener('change', () => { mainTableState.currentPage = 1; updateDashboard(); });
             const debouncedUpdateDashboard = debounce(updateDashboard, 400);
             if (codcliFilter) {
-                codcliFilter.addEventListener('input', (e) => {
-                    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                setupClientTypeahead('codcli-filter', 'codcli-filter-suggestions', (code) => {
                     mainTableState.currentPage = 1;
                     debouncedUpdateDashboard();
+                });
+                codcliFilter.addEventListener('input', (e) => {
+                    mainTableState.currentPage = 1;
+                    debouncedUpdateDashboard();
+                });
+            }
+
+            const goalsGvCodcliFilter = document.getElementById('goals-gv-codcli-filter');
+            if (goalsGvCodcliFilter) {
+                setupClientTypeahead('goals-gv-codcli-filter', 'goals-gv-codcli-filter-suggestions', () => {
+                    if (typeof updateGoalsView === 'function') {
+                        goalsTableState.currentPage = 1;
+                        updateGoalsView();
+                    } else {
+                        goalsGvCodcliFilter.dispatchEvent(new Event('input'));
+                    }
+                });
+                goalsGvCodcliFilter.addEventListener('input', () => {
+                    if (typeof updateGoalsView === 'function') {
+                        goalsTableState.currentPage = 1;
+                        updateGoalsView();
+                    }
                 });
             }
             if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', () => { resetMainFilters(); markDirty('dashboard'); markDirty('pedidos'); });

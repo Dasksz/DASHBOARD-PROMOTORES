@@ -378,9 +378,15 @@
                         </button>
                         <div id="fornecedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                     </div>
-                    <div class="flex-1 min-w-[200px]">
-                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cód. Cliente</label>
-                        <input type="text" id="codcli-filter" placeholder="Digite..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-full p-2.5">
+                    <div class="flex-1 min-w-[200px] relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </div>
+                            <input type="text" id="codcli-filter" placeholder="Código, Nome, CNPJ..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-full pl-10 p-2.5 transition-all" autocomplete="off">
+                            <div id="codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
+                        </div>
                     </div>
                     <div class="flex-1 min-w-[200px]">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Posição</label>
@@ -798,7 +804,16 @@
             <div id="goals-gv-coord-filter-wrapper"><button id="goals-gv-coord-filter-btn"><span id="goals-gv-coord-filter-text"></span></button><div id="goals-gv-coord-filter-dropdown"></div></div>
             <div id="goals-gv-cocoord-filter-wrapper"><button id="goals-gv-cocoord-filter-btn"><span id="goals-gv-cocoord-filter-text"></span></button><div id="goals-gv-cocoord-filter-dropdown"></div></div>
             <div id="goals-gv-promotor-filter-wrapper"><button id="goals-gv-promotor-filter-btn"><span id="goals-gv-promotor-filter-text"></span></button><div id="goals-gv-promotor-filter-dropdown"></div></div>
-            <input id="goals-gv-codcli-filter"><button id="clear-goals-gv-filters-btn"></button>
+            <div class="relative flex-1 min-w-[200px] max-w-[300px]">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <input id="goals-gv-codcli-filter" placeholder="Código, Nome, CNPJ..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-full pl-10 p-2.5 transition-all" autocomplete="off">
+                    <div id="goals-gv-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
+                </div>
+            </div>
+            <button id="clear-goals-gv-filters-btn"></button>
             <div id="goals-table-container"><tbody id="goals-gv-table-body"></tbody><div id="goals-pagination-controls"><button id="goals-gv-export-pdf-btn"></button><button id="goals-gv-export-xlsx-btn"></button><button id="goals-prev-page-btn"></button><span id="goals-page-info-text"></span><button id="goals-next-page-btn"></button></div></div>
         </div>
         <div id="goals-sv-content">
