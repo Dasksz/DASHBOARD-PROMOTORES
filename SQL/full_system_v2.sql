@@ -1050,7 +1050,7 @@ DECLARE
     v_supervisor_rcas text[];
     v_vendedor_rcas text[];
 BEGIN
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
 
     SET LOCAL work_mem = '64MB';
     SET LOCAL statement_timeout = '60s';
@@ -1477,7 +1477,7 @@ DECLARE
     v_specific_redes text[];
     v_use_cache boolean := true;
 BEGIN
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
     SET LOCAL work_mem = '64MB';
     SET LOCAL statement_timeout = '120s';
 
@@ -1806,7 +1806,7 @@ DECLARE
     v_specific_redes text[];
     v_rede_condition text := '';
 BEGIN
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
 
     SET LOCAL work_mem = '64MB';
 
@@ -1957,7 +1957,7 @@ DECLARE
     v_specific_redes text[];
     v_rede_condition text := '';
 BEGIN
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
 
     SET LOCAL work_mem = '64MB';
     SET LOCAL statement_timeout = '120s';
@@ -2142,7 +2142,7 @@ DECLARE
     v_rede_condition text := '';
 BEGIN
     -- Security Check
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
 
     SET LOCAL statement_timeout = '120s'; -- Explicitly increased for heavy agg
 
@@ -2562,7 +2562,7 @@ DECLARE
     v_has_com_rede boolean;
     v_has_sem_rede boolean;
 BEGIN
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
     SET LOCAL work_mem = '64MB';
 
     -- 1. Date Context
@@ -2718,7 +2718,7 @@ DECLARE
     v_has_com_rede boolean;
     v_has_sem_rede boolean;
 BEGIN
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
     SET LOCAL work_mem = '64MB';
 
     -- Date
@@ -2865,7 +2865,7 @@ DECLARE
     v_has_com_rede boolean;
     v_has_sem_rede boolean;
 BEGIN
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
     SET LOCAL work_mem = '64MB';
 
     -- Date
@@ -3029,7 +3029,7 @@ DECLARE
     v_has_com_rede boolean;
     v_has_sem_rede boolean;
 BEGIN
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
     SET LOCAL work_mem = '64MB';
 
     -- Date
@@ -3196,7 +3196,7 @@ DECLARE
     v_has_com_rede boolean;
     v_has_sem_rede boolean;
 BEGIN
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
     SET LOCAL work_mem = '64MB';
 
     -- Date
@@ -3318,7 +3318,7 @@ DECLARE
     v_has_com_rede boolean;
     v_has_sem_rede boolean;
 BEGIN
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
     SET LOCAL work_mem = '64MB';
 
     -- Date
@@ -3482,7 +3482,7 @@ DECLARE
     v_has_com_rede boolean;
     v_has_sem_rede boolean;
 BEGIN
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
     SET LOCAL work_mem = '64MB';
 
     -- Date
@@ -3649,7 +3649,7 @@ DECLARE
     v_has_com_rede boolean;
     v_has_sem_rede boolean;
 BEGIN
-    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado'; END IF;
+    IF NOT public.is_approved() THEN RAISE EXCEPTION 'Acesso negado. UID: %, Role: %', (select auth.uid()), (select auth.role()); END IF;
     SET LOCAL work_mem = '64MB';
 
     -- Date
