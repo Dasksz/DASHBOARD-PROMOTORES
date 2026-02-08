@@ -8057,17 +8057,21 @@ const supervisorGroups = new Map();
             let mixCount = 0;
 
             if (data.monthly_data_current && Array.isArray(data.monthly_data_current)) {
-                data.monthly_data_current.forEach(m => {
-                    totalFat += Number(m.faturamento) || 0;
-                    totalPeso += Number(m.peso) || 0;
-                    if (m.mix_pdv > 0) {
-                        totalMixSum += Number(m.mix_pdv);
-                        mixCount++;
+                // Fix: Use only the target month for KPIs to avoid YTD inflation
+                const targetIdx = data.target_month_index;
+                const targetMonthData = data.monthly_data_current.find(m => m.month_index === targetIdx);
+
+                if (targetMonthData) {
+                    totalFat = Number(targetMonthData.faturamento) || 0;
+                    totalPeso = Number(targetMonthData.peso) || 0;
+                    if (targetMonthData.mix_pdv > 0) {
+                        totalMixSum = Number(targetMonthData.mix_pdv);
+                        mixCount = 1;
                     }
-                });
+                }
             }
 
-            const mixAvg = mixCount > 0 ? totalMixSum / mixCount : 0;
+            const mixAvg = mixCount > 0 ? totalMixSum : 0;
             const posPercent = basePos > 0 ? (totalPos / basePos) * 100 : 0;
 
             // Update DOM
@@ -9939,35 +9943,6 @@ const supervisorGroups = new Map();
         }
 
 
-        function renderComparisonViewFromRPC(data) {
-            if (!data) return;
-
-            const { current_kpi, history_kpi, current_daily, history_daily, supervisor_data, history_monthly, trend_info } = data;
-
-            // 1. KPI Cards
-            // Map RPC fields to UI fields
-            const historyCount = 3; // Assuming 3 month average
-            
-            const kpis = [
-                { title: 'Faturamento Total', current: current_kpi.f || 0, history: (history_kpi.f || 0) / historyCount, format: 'currency' },
-                { title: 'Peso Total (Ton)', current: (current_kpi.p || 0) / 1000, history: ((history_kpi.p || 0) / historyCount) / 1000, format: 'decimal' },
-                { title: 'Clientes Atendidos', current: current_kpi.c || 0, history: (history_kpi.c || 0) / historyCount, format: 'integer' },
-                { title: 'Mix Pepsico', current: current_kpi.mix_pepsico || 0, history: (history_kpi.sum_mix_pepsico || 0) / historyCount, format: 'decimal_2' },
-                { title: 'Positivação Salty', current: current_kpi.pos_salty || 0, history: (history_kpi.sum_pos_salty || 0) / historyCount, format: 'integer' },
-                { title: 'Positivação Foods', current: current_kpi.pos_foods || 0, history: (history_kpi.sum_pos_foods || 0) / historyCount, format: 'integer' }
-            ];
-            
-            renderKpiCards(kpis);
-
-            // 2. Supervisor Table
-            // supervisor_data is Array of { name, current, history }
-            // Transform to Object for renderSupervisorTable: { name: { current, history } }
-            const supData = {};
-            if (Array.isArray(supervisor_data)) {
-                supervisor_data.forEach(s => {
-                    supData[s.name] = { current: s.current, history: s.history / historyCount };
-                });
-            }
         function renderSupervisorTable(data) {
             const tableBody = document.getElementById('supervisorComparisonTableBody');
             if (!tableBody || !data) return;
@@ -10009,6 +9984,36 @@ const supervisorGroups = new Map();
 
             tableBody.innerHTML = rows.join('');
         }
+
+        function renderComparisonViewFromRPC(data) {
+            if (!data) return;
+
+            const { current_kpi, history_kpi, current_daily, history_daily, supervisor_data, history_monthly, trend_info } = data;
+
+            // 1. KPI Cards
+            // Map RPC fields to UI fields
+            const historyCount = 3; // Assuming 3 month average
+
+            const kpis = [
+                { title: 'Faturamento Total', current: current_kpi.f || 0, history: (history_kpi.f || 0) / historyCount, format: 'currency' },
+                { title: 'Peso Total (Ton)', current: (current_kpi.p || 0) / 1000, history: ((history_kpi.p || 0) / historyCount) / 1000, format: 'decimal' },
+                { title: 'Clientes Atendidos', current: current_kpi.c || 0, history: (history_kpi.c || 0) / historyCount, format: 'integer' },
+                { title: 'Mix Pepsico', current: current_kpi.mix_pepsico || 0, history: (history_kpi.sum_mix_pepsico || 0) / historyCount, format: 'decimal_2' },
+                { title: 'Positivação Salty', current: current_kpi.pos_salty || 0, history: (history_kpi.sum_pos_salty || 0) / historyCount, format: 'integer' },
+                { title: 'Positivação Foods', current: current_kpi.pos_foods || 0, history: (history_kpi.sum_pos_foods || 0) / historyCount, format: 'integer' }
+            ];
+
+            renderKpiCards(kpis);
+
+            // 2. Supervisor Table
+            // supervisor_data is Array of { name, current, history }
+            // Transform to Object for renderSupervisorTable: { name: { current, history } }
+            const supData = {};
+            if (Array.isArray(supervisor_data)) {
+                supervisor_data.forEach(s => {
+                    supData[s.name] = { current: s.current, history: s.history / historyCount };
+                });
+            }
             renderSupervisorTable(supData);
 
             // 3. Weekly/Daily Charts
@@ -15676,10 +15681,16 @@ const supervisorGroups = new Map();
                                          else if(c === 'CIDADE') val = newClient.cidade;
                                          else if(c === 'PROMOTOR') val = code;
                                          else if(c === 'RCA1' || c === 'RCA 1') val = newClient.rca1;
+                                         else if(c === 'BAIRRO') val = newClient.bairro;
+                                         else if(c === 'BLOQUEIO') val = newClient.bloqueio;
                                          
                                          if(dataset.values[colName]) dataset.values[colName].push(val);
                                      });
                                      dataset.length++;
+                                     // Ensure the wrapper knows about the new length
+                                     if (typeof allClientsData !== 'undefined' && allClientsData instanceof ColumnarDataset) {
+                                         allClientsData.length = dataset.length;
+                                     }
                                  } else if (Array.isArray(dataset)) {
                                      dataset.push(mapped);
                                  }

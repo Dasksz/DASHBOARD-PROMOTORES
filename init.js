@@ -98,7 +98,14 @@
                 // Empty placeholders for legacy compatibility (prevent crash on access)
                 detailed: { columns: [], values: {}, length: 0 },
                 history: { columns: [], values: {}, length: 0 },
-                clients: { columns: [], values: {}, length: 0 }, // Will use RPC for client lists
+                // Initialize with schema to allow dynamic injection in app.js
+                clients: {
+                    columns: ['Código', 'Fantasia', 'Razão Social', 'CNPJ/CPF', 'Cidade', 'Bairro', 'RCA 1', 'PROMOTOR', 'Bloqueio'],
+                    values: {
+                        'Código': [], 'Fantasia': [], 'Razão Social': [], 'CNPJ/CPF': [], 'Cidade': [], 'Bairro': [], 'RCA 1': [], 'PROMOTOR': [], 'Bloqueio': []
+                    },
+                    length: 0
+                },
                 byOrder: [],
                 stockMap05: {},
                 stockMap08: {},
