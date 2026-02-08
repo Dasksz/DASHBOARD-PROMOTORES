@@ -8079,9 +8079,6 @@ const supervisorGroups = new Map();
 
             // 2. Render Charts
             // Trend Chart
-            if (charts.trendChart) charts.trendChart.destroy();
-            const ctxTrend = document.getElementById('trendChart').getContext('2d');
-            
             const labels = [];
             const currentData = [];
             const previousData = [];
@@ -8105,38 +8102,24 @@ const supervisorGroups = new Map();
                 }
             }
 
-            charts.trendChart = new Chart(ctxTrend, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: data.current_year, data: currentData, backgroundColor: '#3b82f6' },
-                        { label: data.previous_year, data: previousData, backgroundColor: '#9ca3af' },
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    interaction: { mode: 'index', intersect: false },
-                    scales: { y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }, x: { grid: { display: false }, ticks: { color: '#cbd5e1' } } },
-                    plugins: { legend: { labels: { color: '#cbd5e1' } } }
-                }
+            const trendDatasets = [
+                { label: data.current_year, data: currentData, backgroundColor: '#3b82f6' },
+                { label: data.previous_year, data: previousData, backgroundColor: '#9ca3af' },
+            ];
+
+            createChart('trendChart', 'bar', labels, trendDatasets, {
+                interaction: { mode: 'index', intersect: false },
+                scales: { x: { display: true } }, // Override base x display:false if needed
+                plugins: { legend: { display: true } }
             });
 
             // Breakdown Charts (Suppliers & Persons)
-            if (data.breakdown_person && charts.salesByPersonChart) {
-                // If chart exists or container exists
-                // We use helper if we have one or do manual. 
-                // Using manual since logic is simple
+            if (data.breakdown_person) {
                 const names = data.breakdown_person.map(x => getFirstName(x.name));
                 const values = data.breakdown_person.map(x => x.total);
                 
-                const ctxPerson = document.getElementById('salesByPersonChart').getContext('2d');
-                if(charts.salesByPersonChart) charts.salesByPersonChart.destroy();
-                
-                charts.salesByPersonChart = new Chart(ctxPerson, {
-                    type: 'bar',
-                    data: { labels: names, datasets: [{ label: 'Vendas', data: values, backgroundColor: '#10b981' }] },
-                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                createChart('salesByPersonChart', 'bar', names, [{ label: 'Vendas', data: values, backgroundColor: '#10b981' }], {
+                    indexAxis: 'y'
                 });
             }
 
@@ -8144,13 +8127,8 @@ const supervisorGroups = new Map();
                 const names = data.breakdown_supplier.map(x => x.name);
                 const values = data.breakdown_supplier.map(x => x.total);
                 
-                const ctxSup = document.getElementById('faturamentoPorFornecedorChart').getContext('2d');
-                if(charts.faturamentoPorFornecedorChart) charts.faturamentoPorFornecedorChart.destroy();
-                
-                charts.faturamentoPorFornecedorChart = new Chart(ctxSup, {
-                    type: 'bar',
-                    data: { labels: names, datasets: [{ label: 'Faturamento', data: values, backgroundColor: '#f59e0b' }] },
-                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                createChart('faturamentoPorFornecedorChart', 'bar', names, [{ label: 'Faturamento', data: values, backgroundColor: '#f59e0b' }], {
+                    indexAxis: 'y'
                 });
             }
         }
