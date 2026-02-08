@@ -8167,8 +8167,17 @@ const supervisorGroups = new Map();
 
                 Promise.all([rpcMain, rpcBoxes]).then((results) => {
                     const [resMain, resBoxes] = results;
+
+                    if (resMain.error) {
+                        console.error("[App] RPC Main Error:", resMain.error);
+                        totalVendasEl.textContent = 'Erro';
+                    }
+
                     if (resMain.data) renderDashboardFromRPC(resMain.data);
                     if (resBoxes.data) renderBoxesFromRPC(resBoxes.data);
+                }).catch(err => {
+                    console.error("[App] RPC Critical Failure:", err);
+                    totalVendasEl.textContent = 'Erro de Conexão';
                 });
                 return;
             }
