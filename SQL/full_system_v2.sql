@@ -1219,7 +1219,7 @@ BEGIN
     -- 4. Execute Main Aggregation Query
     v_sql := '
     WITH filtered_summary AS (
-        SELECT ano, mes, vlvenda, peso, bonificacao, devolucao, pre_positivacao_val, pre_mix_count, codcli, tipovenda, codfor
+        SELECT ano, mes, vlvenda, peso, bonificacao, devolucao, pre_positivacao_val, pre_mix_count, codcli, tipovenda, codfor, codsupervisor
         FROM public.data_summary
         ' || v_where_base || '
     ),
