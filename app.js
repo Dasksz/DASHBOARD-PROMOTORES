@@ -9968,6 +9968,47 @@ const supervisorGroups = new Map();
                     supData[s.name] = { current: s.current, history: s.history / historyCount };
                 });
             }
+        function renderSupervisorTable(data) {
+            const tableBody = document.getElementById('supervisorComparisonTableBody');
+            if (!tableBody || !data) return;
+
+            // data is expected to be an object: { "Supervisor Name": { current: X, history: Y }, ... }
+            // or an array of objects from RPC: [{ name: "Sup", current: X, history: Y }]
+
+            let rows = [];
+
+            // Normalize input format
+            let entries = [];
+            if (Array.isArray(data)) {
+                entries = data.map(item => [item.name, item]);
+            } else {
+                entries = Object.entries(data);
+            }
+
+            entries.sort((a, b) => b[1].current - a[1].current);
+
+            rows = entries.map(([sup, metrics]) => {
+                const current = metrics.current || 0;
+                const history = metrics.history || 0;
+
+                let variation = 0;
+                if (history > 0) variation = ((current - history) / history) * 100;
+                else if (current > 0) variation = 100;
+
+                const colorClass = variation > 0 ? 'text-green-400' : variation < 0 ? 'text-red-400' : 'text-slate-400';
+
+                return `
+                    <tr class="hover:bg-slate-700/50 border-b border-slate-800/50">
+                        <td class="px-4 py-3 font-medium text-white">${sup}</td>
+                        <td class="px-4 py-3 text-right text-slate-400">${history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td class="px-4 py-3 text-right text-white font-bold">${current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td class="px-4 py-3 text-right ${colorClass} font-bold">${variation.toFixed(1)}%</td>
+                    </tr>
+                `;
+            });
+
+            tableBody.innerHTML = rows.join('');
+        }
             renderSupervisorTable(supData);
 
             // 3. Weekly/Daily Charts
