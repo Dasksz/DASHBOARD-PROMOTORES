@@ -1,3 +1,4 @@
+
 (function() {
         const embeddedData = window.embeddedData;
         let metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [] };
@@ -8057,17 +8058,21 @@ const supervisorGroups = new Map();
             let mixCount = 0;
 
             if (data.monthly_data_current && Array.isArray(data.monthly_data_current)) {
-                data.monthly_data_current.forEach(m => {
-                    totalFat += Number(m.faturamento) || 0;
-                    totalPeso += Number(m.peso) || 0;
-                    if (m.mix_pdv > 0) {
-                        totalMixSum += Number(m.mix_pdv);
-                        mixCount++;
+                // Fix: Use only the target month for KPIs to avoid YTD inflation
+                const targetIdx = data.target_month_index;
+                const targetMonthData = data.monthly_data_current.find(m => m.month_index === targetIdx);
+
+                if (targetMonthData) {
+                    totalFat = Number(targetMonthData.faturamento) || 0;
+                    totalPeso = Number(targetMonthData.peso) || 0;
+                    if (targetMonthData.mix_pdv > 0) {
+                        totalMixSum = Number(targetMonthData.mix_pdv);
+                        mixCount = 1;
                     }
-                });
+                }
             }
 
-            const mixAvg = mixCount > 0 ? totalMixSum / mixCount : 0;
+            const mixAvg = mixCount > 0 ? totalMixSum : 0;
             const posPercent = basePos > 0 ? (totalPos / basePos) * 100 : 0;
 
             // Update DOM
@@ -9938,6 +9943,48 @@ const supervisorGroups = new Map();
             return combinedStock;
         }
 
+
+        function renderSupervisorTable(data) {
+            const tableBody = document.getElementById('supervisorComparisonTableBody');
+            if (!tableBody || !data) return;
+
+            // data is expected to be an object: { "Supervisor Name": { current: X, history: Y }, ... }
+            // or an array of objects from RPC: [{ name: "Sup", current: X, history: Y }]
+            
+            let rows = [];
+            
+            // Normalize input format
+            let entries = [];
+            if (Array.isArray(data)) {
+                entries = data.map(item => [item.name, item]);
+            } else {
+                entries = Object.entries(data);
+            }
+
+            entries.sort((a, b) => b[1].current - a[1].current);
+
+            rows = entries.map(([sup, metrics]) => {
+                const current = metrics.current || 0;
+                const history = metrics.history || 0;
+                
+                let variation = 0;
+                if (history > 0) variation = ((current - history) / history) * 100;
+                else if (current > 0) variation = 100;
+                
+                const colorClass = variation > 0 ? 'text-green-400' : variation < 0 ? 'text-red-400' : 'text-slate-400';
+                
+                return `
+                    <tr class="hover:bg-slate-700/50 border-b border-slate-800/50">
+                        <td class="px-4 py-3 font-medium text-white">${sup}</td>
+                        <td class="px-4 py-3 text-right text-slate-400">${history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td class="px-4 py-3 text-right text-white font-bold">${current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td class="px-4 py-3 text-right ${colorClass} font-bold">${variation.toFixed(1)}%</td>
+                    </tr>
+                `;
+            });
+
+            tableBody.innerHTML = rows.join('');
+        }
 
         function renderComparisonViewFromRPC(data) {
             if (!data) return;
@@ -15635,10 +15682,16 @@ const supervisorGroups = new Map();
                                          else if(c === 'CIDADE') val = newClient.cidade;
                                          else if(c === 'PROMOTOR') val = code;
                                          else if(c === 'RCA1' || c === 'RCA 1') val = newClient.rca1;
+                                         else if(c === 'BAIRRO') val = newClient.bairro;
+                                         else if(c === 'BLOQUEIO') val = newClient.bloqueio;
                                          
                                          if(dataset.values[colName]) dataset.values[colName].push(val);
                                      });
                                      dataset.length++;
+                                     // Ensure the wrapper knows about the new length
+                                     if (typeof allClientsData !== 'undefined' && allClientsData instanceof ColumnarDataset) {
+                                         allClientsData.length = dataset.length;
+                                     }
                                  } else if (Array.isArray(dataset)) {
                                      dataset.push(mapped);
                                  }
