@@ -7874,8 +7874,12 @@ const supervisorGroups = new Map();
 
             // Date Filters (Global)
             if (calendarState) {
-                if (calendarState.year) filters.p_ano = String(calendarState.year);
-                if (calendarState.month !== undefined && calendarState.month !== null) filters.p_mes = String(calendarState.month);
+                if (calendarState.year !== undefined && calendarState.year !== null) {
+                    filters.p_ano = String(calendarState.year);
+                }
+                if (calendarState.month !== undefined && calendarState.month !== null) {
+                    filters.p_mes = String(calendarState.month);
+                }
             }
 
             // Hierarchy Filters (Map Codes to Names for RPC)
@@ -7885,7 +7889,7 @@ const supervisorGroups = new Map();
                     const names = [];
                     state.promotors.forEach(code => {
                         const name = optimizedData.promotorMap.get(code);
-                        if(name) names.push(name);
+                        if(name && typeof name === 'string') names.push(name);
                     });
                     if(names.length > 0) filters.p_vendedor = names;
                 } else if (state.cocoords.size > 0) {
@@ -7893,7 +7897,7 @@ const supervisorGroups = new Map();
                     const names = [];
                     state.cocoords.forEach(code => {
                         const name = optimizedData.cocoordMap.get(code);
-                        if(name) names.push(name);
+                        if(name && typeof name === 'string') names.push(name);
                     });
                     if(names.length > 0) filters.p_supervisor = names;
                 } else if (state.coords.size > 0) {
@@ -7906,13 +7910,15 @@ const supervisorGroups = new Map();
                         if (relatedCoCoords) {
                             relatedCoCoords.forEach(cc => {
                                 const ccName = optimizedData.cocoordMap.get(cc);
-                                if(ccName) names.push(ccName);
+                                if(ccName && typeof ccName === 'string') names.push(ccName);
                             });
                         }
                     });
                     if(names.length > 0) filters.p_supervisor = names;
                 }
             }
+            
+            console.log(`[App] Generated Filters for ${viewPrefix}:`, filters);
 
             // Other filters
             if (viewPrefix === 'main') {
