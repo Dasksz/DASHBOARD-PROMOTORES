@@ -7872,6 +7872,12 @@ const supervisorGroups = new Map();
                 filters.p_cidade = [cityFilter.value];
             }
 
+            // Date Filters (Global)
+            if (calendarState) {
+                if (calendarState.year) filters.p_ano = String(calendarState.year);
+                if (calendarState.month !== undefined && calendarState.month !== null) filters.p_mes = String(calendarState.month);
+            }
+
             // Hierarchy Filters (Map Codes to Names for RPC)
             const state = hierarchyState[viewPrefix];
             if (state) {
