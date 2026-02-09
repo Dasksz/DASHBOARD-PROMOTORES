@@ -15539,6 +15539,9 @@ const supervisorGroups = new Map();
         
         renderWalletTable();
     }
+
+    // Cache for client existing codes to optimize promoter selection
+    const clientsExistingCodesCache = new WeakMap();
     
     window.selectWalletPromoter = async function(code, name) {
         walletState.selectedPromoter = code;
@@ -15589,15 +15592,27 @@ const supervisorGroups = new Map();
             if (clientCodes.length > 0) {
                 // 2. Identify which are missing from local embeddedData.clients
                 const dataset = embeddedData.clients;
-                const existingCodes = new Set();
+                let existingCodes;
                 const isColumnar = dataset && dataset.values && dataset.columns;
                 
-                if (isColumnar) {
-                    const col = dataset.values['Código'] || dataset.values['CODIGO_CLIENTE'] || [];
-                    const len = dataset.length || col.length || 0;
-                    for(let i=0; i<len; i++) existingCodes.add(normalizeKey(col[i]));
-                } else if (Array.isArray(dataset)) {
-                    dataset.forEach(c => existingCodes.add(normalizeKey(c['Código'] || c['codigo_cliente'])));
+                // Try to get from WeakMap cache first (prevents crashes if dataset is null)
+                if (dataset && typeof dataset === 'object') {
+                    existingCodes = clientsExistingCodesCache.get(dataset);
+                }
+
+                if (!existingCodes) {
+                    existingCodes = new Set();
+                    if (isColumnar) {
+                        const col = dataset.values['Código'] || dataset.values['CODIGO_CLIENTE'] || [];
+                        const len = dataset.length || col.length || 0;
+                        for(let i=0; i<len; i++) existingCodes.add(normalizeKey(col[i]));
+                    } else if (Array.isArray(dataset)) {
+                        dataset.forEach(c => existingCodes.add(normalizeKey(c['Código'] || c['codigo_cliente'])));
+                    }
+                    // Cache existingCodes for this dataset object
+                    if (dataset && typeof dataset === 'object') {
+                        clientsExistingCodesCache.set(dataset, existingCodes);
+                    }
                 }
                 
                 const missing = clientCodes.filter(c => !existingCodes.has(c));
