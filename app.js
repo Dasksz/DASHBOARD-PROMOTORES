@@ -1354,6 +1354,17 @@
             bindToggle(els.cocoord);
             bindToggle(els.promotor);
 
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', (e) => {
+                Object.values(els).forEach(x => {
+                    if (x.dd && !x.dd.classList.contains('hidden')) {
+                        if (x.btn && !x.btn.contains(e.target) && !x.dd.contains(e.target)) {
+                            x.dd.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+
             const bindChange = (level, nextLevel, nextNextLevel) => {
                 const el = els[level];
                 if (el && el.dd) {
