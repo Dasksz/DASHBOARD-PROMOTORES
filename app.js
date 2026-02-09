@@ -10101,18 +10101,51 @@ const supervisorGroups = new Map();
                 });
             }
 
-            // Apply Trend
-            if (trend_info && trend_info.allowed) {
-                // Not applying trend to history, only used for projection if needed?
-                // The client side code applied trend logic to current vs history comparison visually sometimes.
-                // For now, raw comparison.
+            // Apply Trend Logic (Projection)
+            if (useTendencyComparison && trend_info && trend_info.allowed) {
+                // Calculate current week projection
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                // Find current week index
+                const currentWeekIdx = weeks.findIndex(w => today >= w.start && today <= w.end);
+                
+                if (currentWeekIdx !== -1) {
+                    // Calculate working days passed in this week
+                    const start = weeks[currentWeekIdx].start;
+                    const end = weeks[currentWeekIdx].end;
+                    let daysPassed = 0;
+                    let totalDays = 0;
+                    
+                    // Simple working day calculation (Mon-Sat)
+                    let loop = new Date(start);
+                    const loopEnd = new Date(end);
+                    
+                    while(loop <= loopEnd) {
+                        const d = loop.getUTCDay();
+                        if (d !== 0) { // Exclude Sunday
+                            totalDays++;
+                            if (loop <= today) daysPassed++;
+                        }
+                        loop.setDate(loop.getDate() + 1);
+                    }
+                    
+                    if (daysPassed > 0 && totalDays > 0 && daysPassed < totalDays) {
+                        const currentVal = weeklyCurrent[currentWeekIdx];
+                        const projected = currentVal * (totalDays / daysPassed);
+                        // Update weeklyCurrent for the chart
+                        weeklyCurrent[currentWeekIdx] = projected;
+                    }
+                }
             }
 
             // Render Charts
-            const dailyDatasets = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map((name, i) => ({
-                label: name,
-                data: dailyDataByWeek.map(weekData => weekData[i])
-            }));
+            // Filter out days with zero values across all weeks
+            const dailyDatasets = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+                .map((name, i) => ({
+                    label: name,
+                    data: dailyDataByWeek.map(weekData => weekData[i])
+                }))
+                .filter(ds => ds.data.some(val => val > 0)); // Remove datasets with all zeros
 
             const chartsData = {
                 weeklyCurrent: weeklyCurrent,
@@ -16412,16 +16445,27 @@ const supervisorGroups = new Map();
                         legend: { position: 'top', labels: { color: '#cbd5e1' } },
                         datalabels: { display: false },
                         tooltip: {
-                            mode: 'index',
-                            intersect: false,
+                            mode: 'nearest',
+                            intersect: true,
                             callbacks: {
                                 label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed.y !== null) {
-                                        label += context.parsed.y.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                                    }
-                                    return label;
+                                    const value = context.parsed.y || 0;
+                                    const formattedValue = value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                                    const datasetLabel = context.dataset.label || '';
+
+                                    // Calculate Total for the Week (All Datasets at this X index)
+                                    let total = 0;
+                                    context.chart.data.datasets.forEach(ds => {
+                                        if (ds.data && ds.data[context.dataIndex] !== undefined) {
+                                            total += (Number(ds.data[context.dataIndex]) || 0);
+                                        }
+                                    });
+                                    const formattedTotal = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                                    return [
+                                        `${datasetLabel}: ${formattedValue}`,
+                                        `${context.label}: ${formattedTotal}`
+                                    ];
                                 }
                             }
                         }
