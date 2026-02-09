@@ -1593,6 +1593,9 @@
                     return data[i] ? data[i][prop] : undefined;
                 };
 
+                // Cache for parsed dates to avoid repeated parsing of same timestamp/string
+                const dateCache = new Map();
+
                 for (let i = 0; i < data.length; i++) {
                     // Optimized: Use Integer Index as ID
                     const id = i;
@@ -1645,15 +1648,26 @@
 
                     const dtPed = getVal(i, 'DTPED');
                     if (dtPed) {
-                        // dtPed is likely a number (timestamp).
-                        // If it's a number, new Date(dtPed) works.
-                        // If it's a string, parseDate(dtPed) (from local function or global?)
-                        // Global parseDate handles numbers too.
-                        const dateObj = (typeof dtPed === 'number') ? new Date(dtPed) : parseDate(dtPed);
+                        // Check cache
+                        if (dateCache.has(dtPed)) {
+                            const cached = dateCache.get(dtPed);
+                            if (cached) workingDaysSet.add(cached);
+                        } else {
+                            // dtPed is likely a number (timestamp).
+                            // If it's a number, new Date(dtPed) works.
+                            // If it's a string, parseDate(dtPed) (from local function or global?)
+                            // Global parseDate handles numbers too.
+                            const dateObj = (typeof dtPed === 'number') ? new Date(dtPed) : parseDate(dtPed);
+                            let result = null;
 
-                        if(dateObj && !isNaN(dateObj.getTime())) {
-                            const dayOfWeek = dateObj.getUTCDay();
-                            if (dayOfWeek >= 1 && dayOfWeek <= 5) workingDaysSet.add(dateObj.toISOString().split('T')[0]);
+                            if(dateObj && !isNaN(dateObj.getTime())) {
+                                const dayOfWeek = dateObj.getUTCDay();
+                                if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                                    result = dateObj.toISOString().split('T')[0];
+                                    workingDaysSet.add(result);
+                                }
+                            }
+                            dateCache.set(dtPed, result);
                         }
                     }
 
