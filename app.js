@@ -10086,6 +10086,241 @@ const supervisorGroups = new Map();
             renderComparisonCharts(chartsData);
         }
 
+
+        function renderComparisonCharts(data) {
+            if (!data) return;
+
+            // Render Weekly (Always available in data)
+            renderWeeklyComparisonChart(data.weeklyCurrent, data.weeklyHistory);
+
+            // Render Monthly
+            renderMonthlyComparisonChart(data.monthlyData);
+
+            // Render Daily
+            renderDailyWeeklyComparisonChart(data.dailyData);
+        }
+
+        function renderWeeklyComparisonChart(current, history) {
+            const container = document.getElementById('weeklyComparisonChartContainer');
+            if (!container) return;
+
+            // Clear loading state if present (only if it doesn't contain canvas or if we force reset)
+            let canvas = container.querySelector('canvas');
+            if (!canvas) {
+                container.innerHTML = '';
+                canvas = document.createElement('canvas');
+                canvas.id = 'weeklyComparisonChart';
+                container.appendChild(canvas);
+            }
+
+            const chartId = 'weeklyComparisonChart';
+            if (charts[chartId]) {
+                charts[chartId].destroy();
+                delete charts[chartId]; // Clean up reference
+            }
+
+            // Labels
+            const labels = current.map((_, i) => `Semana ${i + 1}`);
+
+            charts[chartId] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Atual',
+                            data: current,
+                            backgroundColor: '#22c55e', // Green
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
+                        },
+                        {
+                            label: 'Média Histórica',
+                            data: history,
+                            backgroundColor: '#94a3b8', // Gray
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#cbd5e1' } },
+                        datalabels: {
+                            color: '#fff',
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: (value) => {
+                                // Short format for thousands
+                                if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
+                                return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+                            },
+                            font: { weight: 'bold', size: 10 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#334155' },
+                            ticks: { color: '#94a3b8', callback: (val) => val.toLocaleString('pt-BR', { notation: "compact" }) }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderMonthlyComparisonChart(monthlyData) {
+            const container = document.getElementById('monthlyComparisonChartContainer');
+            if (!container) return;
+
+            let canvas = container.querySelector('canvas');
+            if (!canvas) {
+                container.innerHTML = '';
+                canvas = document.createElement('canvas');
+                canvas.id = 'monthlyComparisonChart';
+                container.appendChild(canvas);
+            }
+
+            const chartId = 'monthlyComparisonChart';
+            if (charts[chartId]) {
+                charts[chartId].destroy();
+                delete charts[chartId];
+            }
+
+            // Determine metric
+            // Global: comparisonMonthlyMetric ('faturamento' or 'clientes')
+            const isClients = (typeof comparisonMonthlyMetric !== 'undefined' && comparisonMonthlyMetric === 'clientes');
+            const metricKey = isClients ? 'clients' : 'fat';
+            const label = isClients ? 'Clientes Atendidos' : 'Faturamento Total';
+            const color = isClients ? '#3b82f6' : '#22c55e'; // Blue or Green
+
+            charts[chartId] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: monthlyData.map(d => d.label),
+                    datasets: [
+                        {
+                            label: label,
+                            data: monthlyData.map(d => d[metricKey]),
+                            backgroundColor: color,
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#cbd5e1' } },
+                        datalabels: {
+                            color: '#fff',
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: (value) => {
+                                if (isClients) return value;
+                                if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
+                                return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+                            },
+                            font: { weight: 'bold', size: 10 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#334155' },
+                            ticks: { color: '#94a3b8', callback: (val) => val.toLocaleString('pt-BR', { notation: "compact" }) }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderDailyWeeklyComparisonChart(dailyData) {
+            const container = document.getElementById('dailyWeeklyComparisonChartContainer');
+            if (!container) return;
+
+            let canvas = container.querySelector('canvas');
+            if (!canvas) {
+                container.innerHTML = '';
+                canvas = document.createElement('canvas');
+                canvas.id = 'dailyWeeklyComparisonChart';
+                container.appendChild(canvas);
+            }
+
+            const chartId = 'dailyWeeklyComparisonChart';
+            if (charts[chartId]) {
+                charts[chartId].destroy();
+                delete charts[chartId];
+            }
+            
+            // Standardize colors
+            const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7'];
+            
+            // Clone datasets to avoid mutating original if reused
+            const datasets = dailyData.datasets.map((ds, i) => ({
+                ...ds,
+                backgroundColor: colors[i % colors.length],
+                borderRadius: 4,
+                stack: 'Stack 0'
+            }));
+
+            charts[chartId] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: dailyData.labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#cbd5e1' } },
+                        datalabels: { display: false }, // Hide for stacked
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            grid: { color: '#334155' },
+                            ticks: { color: '#94a3b8', callback: (val) => val.toLocaleString('pt-BR', { notation: "compact" }) }
+                        },
+                        x: {
+                            stacked: true,
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
         function updateComparisonView() {
             if (embeddedData.isServerMode) {
                 const filters = getFiltersFromUI('comparison');
