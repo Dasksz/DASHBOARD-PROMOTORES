@@ -12484,8 +12484,13 @@ const supervisorGroups = new Map();
 
             toggleWeeklyBtn.addEventListener('click', () => {
                 comparisonChartType = 'weekly';
-                toggleWeeklyBtn.classList.add('active');
-                toggleMonthlyBtn.classList.remove('active');
+                
+                // Visual State
+                toggleWeeklyBtn.classList.add('active', 'bg-blue-600', 'text-white');
+                toggleWeeklyBtn.classList.remove('text-slate-400');
+                
+                toggleMonthlyBtn.classList.remove('active', 'bg-blue-600', 'text-white');
+                toggleMonthlyBtn.classList.add('text-slate-400');
                 
                 document.getElementById('weeklyComparisonChartContainer').classList.remove('hidden');
                 document.getElementById('monthlyComparisonChartContainer').classList.add('hidden');
@@ -12497,8 +12502,13 @@ const supervisorGroups = new Map();
 
             toggleMonthlyBtn.addEventListener('click', () => {
                 comparisonChartType = 'monthly';
-                toggleMonthlyBtn.classList.add('active');
-                toggleWeeklyBtn.classList.remove('active');
+                
+                // Visual State
+                toggleMonthlyBtn.classList.add('active', 'bg-blue-600', 'text-white');
+                toggleMonthlyBtn.classList.remove('text-slate-400');
+                
+                toggleWeeklyBtn.classList.remove('active', 'bg-blue-600', 'text-white');
+                toggleWeeklyBtn.classList.add('text-slate-400');
                 
                 document.getElementById('weeklyComparisonChartContainer').classList.add('hidden');
                 document.getElementById('monthlyComparisonChartContainer').classList.remove('hidden');
@@ -16212,8 +16222,7 @@ const supervisorGroups = new Map();
             const container = document.getElementById('monthlyComparisonChartContainer');
             if (!container) return;
 
-            // Ensure container is visible
-            container.classList.remove('hidden');
+            // Visibility is managed by toggle buttons, do not force unhide here
 
             let canvas = container.querySelector('canvas');
             if (!canvas) {
