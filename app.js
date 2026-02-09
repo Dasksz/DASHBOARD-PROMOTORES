@@ -1,5 +1,27 @@
 (function() {
         const embeddedData = window.embeddedData;
+
+        // --- CONFIGURATION ---
+        const SUPPLIER_CONFIG = {
+            inference: {
+                triggerKeywords: ['PEPSICO'],
+                matchValue: 'PEPSICO',
+                defaultValue: 'MULTIMARCAS'
+            },
+            metaRealizado: {
+                requiredPasta: 'PEPSICO'
+            }
+        };
+
+        function resolveSupplierPasta(rowPasta, fornecedorName) {
+            if (!rowPasta || rowPasta === '0' || rowPasta === '00' || rowPasta === 'N/A') {
+                const rawFornecedor = String(fornecedorName || '').toUpperCase();
+                const match = SUPPLIER_CONFIG.inference.triggerKeywords.some(k => rawFornecedor.includes(k));
+                return match ? SUPPLIER_CONFIG.inference.matchValue : SUPPLIER_CONFIG.inference.defaultValue;
+            }
+            return rowPasta;
+        }
+
         let metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [] };
         const dateCache = new Map();
 
@@ -1621,11 +1643,7 @@
                     const rca = getVal(i, 'NOME') || 'N/A';
 
                     // --- FIX: Derive PASTA if empty directly inside indexing loop ---
-                    let pasta = getVal(i, 'OBSERVACAOFOR');
-                    if (!pasta || pasta === '0' || pasta === '00' || pasta === 'N/A') {
-                        const rawFornecedor = String(getVal(i, 'FORNECEDOR') || '').toUpperCase();
-                        pasta = rawFornecedor.includes('PEPSICO') ? 'PEPSICO' : 'MULTIMARCAS';
-                    }
+                    let pasta = resolveSupplierPasta(getVal(i, 'OBSERVACAOFOR'), getVal(i, 'FORNECEDOR'));
                     // ---------------------------------------------------------------
 
                     const supplier = getVal(i, 'CODFOR');
@@ -12961,7 +12979,7 @@ const supervisorGroups = new Map();
                     } else {
                         selectedMetaRealizadoSuppliers = selectedMetaRealizadoSuppliers.filter(s => s !== value);
                     }
-                    selectedMetaRealizadoSuppliers = updateSupplierFilter(metaRealizadoSupplierFilterDropdown, document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, pepsicoSuppliersSource, 'metaRealizado', true);
+                    selectedMetaRealizadoSuppliers = updateSupplierFilter(metaRealizadoSupplierFilterDropdown, document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, metaRealizadoSuppliersSource, 'metaRealizado', true);
                     debouncedUpdateMetaRealizado();
                 }
             });
@@ -13481,15 +13499,11 @@ const supervisorGroups = new Map();
         updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
 
         // Fix: Pre-filter Suppliers for Meta Realizado (Only PEPSICO)
-        const pepsicoSuppliersSource = [...allSalesData, ...allHistoryData].filter(s => {
-            let rowPasta = s.OBSERVACAOFOR;
-            if (!rowPasta || rowPasta === '0' || rowPasta === '00' || rowPasta === 'N/A') {
-                 const rawFornecedor = String(s.FORNECEDOR || '').toUpperCase();
-                 rowPasta = rawFornecedor.includes('PEPSICO') ? 'PEPSICO' : 'MULTIMARCAS';
-            }
-            return rowPasta === 'PEPSICO';
+        const metaRealizadoSuppliersSource = [...allSalesData, ...allHistoryData].filter(s => {
+            const rowPasta = resolveSupplierPasta(s.OBSERVACAOFOR, s.FORNECEDOR);
+            return rowPasta === SUPPLIER_CONFIG.metaRealizado.requiredPasta;
         });
-        selectedMetaRealizadoSuppliers = updateSupplierFilter(document.getElementById('meta-realizado-supplier-filter-dropdown'), document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, pepsicoSuppliersSource, 'metaRealizado');
+        selectedMetaRealizadoSuppliers = updateSupplierFilter(document.getElementById('meta-realizado-supplier-filter-dropdown'), document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, metaRealizadoSuppliersSource, 'metaRealizado');
 
         updateAllComparisonFilters();
 
