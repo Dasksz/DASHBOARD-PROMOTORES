@@ -1821,8 +1821,16 @@
         const citySupplierFilterText = document.getElementById('city-supplier-filter-text');
         const citySupplierFilterDropdown = document.getElementById('city-supplier-filter-dropdown');
         const cityNameFilter = document.getElementById('city-name-filter');
+        let activeClientsCache = null;
+
+        function invalidateActiveClientsCache() {
+            activeClientsCache = null;
+        }
+
         function getActiveClientsData() {
-            return allClientsData.filter(c => {
+            if (activeClientsCache) return activeClientsCache;
+
+            activeClientsCache = allClientsData.filter(c => {
                 const codcli = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
@@ -1830,6 +1838,7 @@
                 // Logic identical to 'updateCoverageView' active clients KPI
                 return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(codcli));
             });
+            return activeClientsCache;
         }
         const cityCodCliFilter = document.getElementById('city-codcli-filter');
         const citySuggestions = document.getElementById('city-suggestions');
@@ -15995,6 +16004,7 @@ const supervisorGroups = new Map();
                          } else {
                              dataset.push(mapped);
                          }
+                         invalidateActiveClientsCache();
                      }
                  }
                  
