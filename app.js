@@ -4047,37 +4047,60 @@
 
             tableHead.innerHTML = headerHTML;
 
-            // Build Body
-            // data is Array of { name, metaTotal, realTotal, weeks: [{meta, real}] }
-            const rowsHTML = data.map(row => {
+            // Build Body using DocumentFragment for performance
+            const fragment = document.createDocumentFragment();
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-700/30 transition-colors';
+
                 const metaTotalStr = row.metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const realTotalStr = row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                let cells = `
-                    <td class="px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 bg-[#1d2347] z-30 truncate" title="${row.name}">${getFirstName(row.name)}</td>
-                    <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs" title="Meta Contratual Mensal">${metaTotalStr}</td>
-                    <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs">${realTotalStr}</td>
-                `;
+                // Cell 1: Name (Sticky)
+                const tdName = document.createElement('td');
+                tdName.className = 'px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 bg-[#1d2347] z-30 truncate';
+                tdName.title = row.name;
+                tdName.textContent = getFirstName(row.name);
+                tr.appendChild(tdName);
 
+                // Cell 2: Meta Total
+                const tdMetaTotal = document.createElement('td');
+                tdMetaTotal.className = 'px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs';
+                tdMetaTotal.title = 'Meta Contratual Mensal';
+                tdMetaTotal.textContent = metaTotalStr;
+                tr.appendChild(tdMetaTotal);
+
+                // Cell 3: Real Total
+                const tdRealTotal = document.createElement('td');
+                tdRealTotal.className = 'px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs';
+                tdRealTotal.textContent = realTotalStr;
+                tr.appendChild(tdRealTotal);
+
+                // Week Cells
                 row.weekData.forEach(w => {
                     const wMetaStr = w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     const wRealStr = w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                    // Simple logic: Green if Real >= Meta, Red if Real < Meta (only if week has passed? Or always?)
-                    // Let's keep it neutral for now or simple colors.
                     const realClass = w.real >= w.meta ? 'text-green-400' : 'text-slate-300';
                     const metaClass = w.isPast ? 'text-red-500' : 'text-slate-400';
 
-                    cells += `
-                        <td class="px-2 py-3 text-right ${metaClass} text-xs border-r border-b border-slate-700">${wMetaStr}</td>
-                        <td class="px-2 py-3 text-right ${realClass} text-xs font-medium border-r border-b border-slate-700">${wRealStr}</td>
-                    `;
+                    const tdWeekMeta = document.createElement('td');
+                    tdWeekMeta.className = `px-2 py-3 text-right ${metaClass} text-xs border-r border-b border-slate-700`;
+                    tdWeekMeta.textContent = wMetaStr;
+                    tr.appendChild(tdWeekMeta);
+
+                    const tdWeekReal = document.createElement('td');
+                    tdWeekReal.className = `px-2 py-3 text-right ${realClass} text-xs font-medium border-r border-b border-slate-700`;
+                    tdWeekReal.textContent = wRealStr;
+                    tr.appendChild(tdWeekReal);
                 });
 
-                return `<tr class="hover:bg-slate-700/30 transition-colors">${cells}</tr>`;
-            }).join('');
+                fragment.appendChild(tr);
+            });
 
-            tableBody.innerHTML = rowsHTML;
+            tableBody.innerHTML = '';
+            tableBody.appendChild(fragment);
         }
 
         function renderMetaRealizadoChart(data) {
