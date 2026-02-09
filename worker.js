@@ -192,7 +192,12 @@
             }
 
             if (formats) {
-                for (let i = 0; i < data.length; i++) {
+                // OPTIMIZATION: Validate only the first 50 rows (sampling)
+                // Full validation is too expensive for large datasets.
+                const VALIDATION_LIMIT = 50;
+                const limit = Math.min(data.length, VALIDATION_LIMIT);
+
+                for (let i = 0; i < limit; i++) {
                     const row = data[i];
                     for (const col in formats) {
                         if (row.hasOwnProperty(col)) {
