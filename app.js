@@ -16396,8 +16396,7 @@ const supervisorGroups = new Map();
             const datasets = dailyData.datasets.map((ds, i) => ({
                 ...ds,
                 backgroundColor: colors[i % colors.length],
-                borderRadius: 4,
-                stack: 'Stack 0'
+                borderRadius: 4
             }));
 
             charts[chartId] = new Chart(canvas, {
@@ -16429,13 +16428,11 @@ const supervisorGroups = new Map();
                     },
                     scales: {
                         y: {
-                            stacked: true,
                             beginAtZero: true,
                             grid: { color: '#334155' },
                             ticks: { color: '#94a3b8', callback: (val) => val.toLocaleString('pt-BR', { notation: "compact" }) }
                         },
                         x: {
-                            stacked: true,
                             grid: { display: false },
                             ticks: { color: '#94a3b8' }
                         }
