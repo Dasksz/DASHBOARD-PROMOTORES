@@ -1,6 +1,8 @@
         self.importScripts('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
         self.importScripts('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js');
 
+        const dateCache = new Map();
+
         const FORBIDDEN_KEYS = ['SUPERV', 'CODUSUR', 'CODSUPERVISOR', 'NOME', 'CODCLI', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX', 'SUPERVISOR', 'PASTA', 'RAMO', 'ATIVIDADE', 'CIDADE', 'MUNICIPIO', 'BAIRRO'];
 
         const mandatoryColumns = {
@@ -60,15 +62,25 @@
             if (dateString instanceof Date) {
                 return !isNaN(dateString.getTime()) ? dateString : null;
             }
-            if (typeof dateString === 'number') {
+
+            // Se for uma string, verifica o cache
+            if (typeof dateString === 'string') {
+                const cached = dateCache.get(dateString);
+                if (cached !== undefined) {
+                    return cached !== null ? new Date(cached) : null;
+                }
+            } else if (typeof dateString === 'number') {
                 // Fix: Check if number is a JS Timestamp (large number) or Excel Serial (small number)
                 // Excel dates are around 45000 (for year 2023). Timestamps are > 1.6e12
                 if (dateString > 1000000) {
                     return new Date(dateString);
                 }
                 return new Date(Math.round((dateString - 25569) * 86400 * 1000));
+            } else {
+                return null;
             }
-            if (typeof dateString !== 'string') return null;
+
+            let result = null;
 
             // NEW: Handle datetime strings by taking only the date part first.
             const dateOnlyString = dateString.split(' ')[0];
@@ -81,21 +93,30 @@
                     // Using Date.UTC ensures the date is created at 00:00:00 UTC directly.
                     const utcDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
                     if (!isNaN(utcDate.getTime())) {
-                        return utcDate;
+                        result = utcDate;
                     }
                 }
             }
 
-            // Fallback for ISO 8601 or other formats that new Date() can parse.
-            // Try parsing the original string first, in case it's a valid ISO datetime.
-            const isoDate = new Date(dateString);
-            if (!isNaN(isoDate.getTime())) {
-                return isoDate;
+            if (!result) {
+                // Fallback for ISO 8601 or other formats that new Date() can parse.
+                // Try parsing the original string first, in case it's a valid ISO datetime.
+                const isoDate = new Date(dateString);
+                if (!isNaN(isoDate.getTime())) {
+                    result = isoDate;
+                } else {
+                    // If that fails, try parsing just the date part.
+                    const isoDateFromDateOnly = new Date(dateOnlyString);
+                    if (!isNaN(isoDateFromDateOnly.getTime())) {
+                        result = isoDateFromDateOnly;
+                    }
+                }
             }
 
-            // If that fails, try parsing just the date part.
-            const isoDateFromDateOnly = new Date(dateOnlyString);
-            return !isNaN(isoDateFromDateOnly.getTime()) ? isoDateFromDateOnly : null;
+            // Armazena no cache (apenas strings)
+            dateCache.set(dateString, result !== null ? result.getTime() : null);
+
+            return result;
         }
 
         function parseBrazilianNumber(value) {
