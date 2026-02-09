@@ -3715,21 +3715,8 @@
             });
 
             // Implement Supplier Filter Logic (Virtual IDs for Foods) - Step 7
-            // Filter clients if supplier filter is active?
-            // Usually we filter SALES, not clients list, because a client might buy multiple brands.
-            // But 'getMetaRealizadoFilteredData' returns 'goalsBySeller' and 'salesBySeller'.
-            // Filtering 'clients' here only filters the BASE for Goal calculation if Goal is derived from Client List?
-            // Yes, Goals are derived from `globalClientGoals`.
-            // If I filter clients here, I remove their goals from the sum.
-            // Requirement: "filter the Realized, but not the Goals".
-            // "ele filtra o que foi realizado, mas não filtra as metas." (He said "filters realized, BUT NOT goals").
-            // Wait, re-reading: "ele filtra o que foi realizado, mas não filtra as metas. ( fazendo a alteração para consertar o filtro...)"
-            // "consertar o filtro" implies it SHOULD filter goals too?
-            // " quando eu aplico um filtro... ele filtra o que foi realizado, mas não filtra as metas." -> This is the BUG report.
-            // "fazendo a alteração para consertar o filtro" -> This implies fixing the behavior.
-            // Usually, if I filter by "Toddynho", I want to see "Toddynho Goal vs Toddynho Realized".
-            // So YES, I should filter Goals too.
-            // To filter Goals, I need to adjust `goalKeys` loop below based on `suppliersSet`.
+            // Goals are derived from `globalClientGoals` and manual overrides.
+            // To ensure consistency, both the base client list and the goal calculation must respect all active filters.
 
             const filteredClientCodes = new Set(clients.map(c => String(c['Código'] || c['codigo_cliente'])));
 
@@ -3801,19 +3788,40 @@
                 if (targets) {
                     // 1. Positivação Overrides
                     let overrideKey = null;
-                    if (pasta === 'PEPSICO') {
-                        if (targets['pepsico_all'] !== undefined) overrideKey = 'pepsico_all';
-                        else overrideKey = 'GERAL';
-                    }
-                    else if (pasta === 'ELMA') overrideKey = 'total_elma';
-                    else if (pasta === 'FOODS') overrideKey = 'total_foods';
 
-                    if (suppliersSet.size === 1) {
+                    // Improved Override Logic: Only apply aggregate pasta targets if NO specific supplier filter is active,
+                    // or if all suppliers of that pasta are selected.
+                    const elmaKeys = ['707', '708', '752'];
+                    const foodsKeys = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                    const allElmaSelected = elmaKeys.every(k => goalKeys.includes(k));
+                    const allFoodsSelected = foodsKeys.every(k => goalKeys.includes(k));
+
+                    if (suppliersSet.size === 0) {
+                        if (pasta === 'PEPSICO') {
+                            overrideKey = targets['pepsico_all'] !== undefined ? 'pepsico_all' : 'GERAL';
+                        } else if (pasta === 'ELMA') {
+                            overrideKey = 'total_elma';
+                        } else if (pasta === 'FOODS') {
+                            overrideKey = 'total_foods';
+                        }
+                    } else if (suppliersSet.size === 1) {
                         const sup = [...suppliersSet][0];
                         if (sup === '1119_TODDYNHO') overrideKey = '1119_TODDYNHO';
                         else if (sup === '1119_TODDY') overrideKey = '1119_TODDY';
-                        else if (sup === '1119_QUAKER') overrideKey = '1119_QUAKER_KEROCOCO';
+                        else if (sup === '1119_QUAKER' || sup === '1119_QUAKER_KEROCOCO') overrideKey = '1119_QUAKER_KEROCOCO';
+                        else if (sup === '1119') {
+                             if (allFoodsSelected) overrideKey = 'total_foods';
+                        }
                         else overrideKey = sup;
+                    } else {
+                        // Multiple suppliers selected - Only use aggregate if it matches the selection
+                        if (pasta === 'ELMA' && allElmaSelected) {
+                            overrideKey = 'total_elma';
+                        } else if (pasta === 'FOODS' && allFoodsSelected) {
+                            overrideKey = 'total_foods';
+                        } else if (pasta === 'PEPSICO' && allElmaSelected && allFoodsSelected) {
+                            overrideKey = targets['pepsico_all'] !== undefined ? 'pepsico_all' : 'GERAL';
+                        }
                     }
 
                     if (overrideKey && targets[overrideKey] !== undefined) {
@@ -3826,105 +3834,48 @@
                     let hasOverrideFat = false;
                     let hasOverrideVol = false;
 
-                    // If Specific Supplier Filter is Active, check specific keys
-                    if (suppliersSet.size > 0) {
-                        goalKeys.forEach(k => {
-                            if (targets[`${k}_FAT`] !== undefined) {
-                                overrideFat += targets[`${k}_FAT`];
-                                hasOverrideFat = true;
-                            }
-                            if (targets[`${k}_VOL`] !== undefined) {
-                                overrideVol += targets[`${k}_VOL`];
-                                hasOverrideVol = true;
-                            }
-                        });
-                    } else {
-                        // Aggregate View (PEPSICO/ELMA/FOODS)
-                        // Check for Aggregate Keys first (Preferred for Total View)
-                        if (pasta === 'PEPSICO') {
-                            // Sum up sub-aggregates or check 'pepsico_all'? (Import doesn't set 'pepsico_all_FAT')
-                            // Import sets totals or individual categories.
-                            // If user imported Total Elma and Total Foods, use those.
-                            // If user imported Individual Categories, sum those.
-
-                            // Strategy: Sum all matching components found in goalKeys
-                            goalKeys.forEach(k => {
-                                if (targets[`${k}_FAT`] !== undefined) { overrideFat += targets[`${k}_FAT`]; hasOverrideFat = true; }
-                                if (targets[`${k}_VOL`] !== undefined) { overrideVol += targets[`${k}_VOL`]; hasOverrideVol = true; }
-                            });
-
-                            // Fallback/Augment for FAT (Revenue): Check Aggregates (total_elma_FAT, total_foods_FAT)
-                            if (targets['total_elma_FAT'] !== undefined) {
-                                const elmaKeys = ['707', '708', '752'];
-                                const hasIndividualElmaFat = elmaKeys.some(k => targets[`${k}_FAT`] !== undefined);
-                                if (!hasIndividualElmaFat) {
-                                    overrideFat += targets['total_elma_FAT'];
-                                    hasOverrideFat = true;
-                                }
-                            }
-                            if (targets['total_foods_FAT'] !== undefined) {
-                                const foodsKeys = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
-                                const hasIndividualFoodsFat = foodsKeys.some(k => targets[`${k}_FAT`] !== undefined);
-                                if (!hasIndividualFoodsFat) {
-                                    overrideFat += targets['total_foods_FAT'];
-                                    hasOverrideFat = true;
-                                }
-                            }
-
-                            // Fallback/Augment: If individual keys missing but Aggregates present?
-                            // This is complex. Let's assume Import provided consistent level.
-                            // However, Volume is often imported as 'tonelada_elma'.
-                            if (targets['tonelada_elma_VOL'] !== undefined) {
-                                // If we are viewing PEPSICO, we should include ELMA Volume
-                                // Check if we already summed up individual ELMA components (707, 708, 752)
-                                // If 707_VOL etc are missing, we use tonelada_elma_VOL
-                                const elmaKeys = ['707', '708', '752'];
-                                const hasIndividualElmaVol = elmaKeys.some(k => targets[`${k}_VOL`] !== undefined);
-                                if (!hasIndividualElmaVol) {
-                                    overrideVol += targets['tonelada_elma_VOL'];
-                                    hasOverrideVol = true;
-                                }
-                            }
-                            if (targets['tonelada_foods_VOL'] !== undefined) {
-                                const foodsKeys = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
-                                const hasIndividualFoodsVol = foodsKeys.some(k => targets[`${k}_VOL`] !== undefined);
-                                if (!hasIndividualFoodsVol) {
-                                    overrideVol += targets['tonelada_foods_VOL'];
-                                    hasOverrideVol = true;
-                                }
-                            }
+                    // Strategy:
+                    // 1. Sum individual targets for all selected goalKeys
+                    goalKeys.forEach(k => {
+                        if (targets[`${k}_FAT`] !== undefined) {
+                            overrideFat += targets[`${k}_FAT`];
+                            hasOverrideFat = true;
                         }
-                        else if (pasta === 'ELMA') {
-                            // Check for 'total_elma_FAT' override? Import sets individual categories for FAT usually.
-                            // Check 'tonelada_elma_VOL' for Volume
-                            if (targets['tonelada_elma_VOL'] !== undefined) {
-                                overrideVol = targets['tonelada_elma_VOL'];
-                                hasOverrideVol = true;
-                            } else {
-                                // Sum leaves
-                                goalKeys.forEach(k => {
-                                    if (targets[`${k}_VOL`] !== undefined) { overrideVol += targets[`${k}_VOL`]; hasOverrideVol = true; }
-                                });
-                            }
-
-                            // Fat
-                            goalKeys.forEach(k => {
-                                if (targets[`${k}_FAT`] !== undefined) { overrideFat += targets[`${k}_FAT`]; hasOverrideFat = true; }
-                            });
+                        if (targets[`${k}_VOL`] !== undefined) {
+                            overrideVol += targets[`${k}_VOL`];
+                            hasOverrideVol = true;
                         }
-                        else if (pasta === 'FOODS') {
-                            if (targets['tonelada_foods_VOL'] !== undefined) {
-                                overrideVol = targets['tonelada_foods_VOL'];
-                                hasOverrideVol = true;
-                            } else {
-                                goalKeys.forEach(k => {
-                                    if (targets[`${k}_VOL`] !== undefined) { overrideVol += targets[`${k}_VOL`]; hasOverrideVol = true; }
-                                });
-                            }
-                            // Fat
-                            goalKeys.forEach(k => {
-                                if (targets[`${k}_FAT`] !== undefined) { overrideFat += targets[`${k}_FAT`]; hasOverrideFat = true; }
-                            });
+                    });
+
+                    // 2. Aggregate fallbacks: If individual targets are missing, check for aggregate keys
+                    // but ONLY if the current selection matches the aggregate (full pasta or no filter)
+                    const noSupplierFilter = suppliersSet.size === 0;
+
+                    // Pepsico / Elma Fallbacks
+                    if (noSupplierFilter || allElmaSelected) {
+                        const hasIndividualElmaFat = elmaKeys.some(k => targets[`${k}_FAT`] !== undefined);
+                        if (!hasIndividualElmaFat && targets['total_elma_FAT'] !== undefined) {
+                            overrideFat += targets['total_elma_FAT'];
+                            hasOverrideFat = true;
+                        }
+                        const hasIndividualElmaVol = elmaKeys.some(k => targets[`${k}_VOL`] !== undefined);
+                        if (!hasIndividualElmaVol && targets['tonelada_elma_VOL'] !== undefined) {
+                            overrideVol += targets['tonelada_elma_VOL'];
+                            hasOverrideVol = true;
+                        }
+                    }
+
+                    // Pepsico / Foods Fallbacks
+                    if (noSupplierFilter || allFoodsSelected) {
+                        const hasIndividualFoodsFat = foodsKeys.some(k => targets[`${k}_FAT`] !== undefined);
+                        if (!hasIndividualFoodsFat && targets['total_foods_FAT'] !== undefined) {
+                            overrideFat += targets['total_foods_FAT'];
+                            hasOverrideFat = true;
+                        }
+                        const hasIndividualFoodsVol = foodsKeys.some(k => targets[`${k}_VOL`] !== undefined);
+                        if (!hasIndividualFoodsVol && targets['tonelada_foods_VOL'] !== undefined) {
+                            overrideVol += targets['tonelada_foods_VOL'];
+                            hasOverrideVol = true;
                         }
                     }
 
@@ -4004,6 +3955,9 @@
 
                 if (supervisorsSet.size > 0 && !supervisorsSet.has(s.SUPERV)) continue;
                 if (sellersSet.size > 0 && !sellersSet.has(s.NOME)) continue;
+
+                // Client Filter: Ensure sale belongs to the same set of clients used for goals
+                if (!filteredClientCodes.has(String(s.CODCLI))) continue;
 
                 // Enhanced Supplier Logic to handle Virtual Foods Categories
                 if (suppliersSet.size > 0) {
