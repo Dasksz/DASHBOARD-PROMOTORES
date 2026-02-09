@@ -10087,240 +10087,6 @@ const supervisorGroups = new Map();
         }
 
 
-        function renderComparisonCharts(data) {
-            if (!data) return;
-
-            // Render Weekly (Always available in data)
-            renderWeeklyComparisonChart(data.weeklyCurrent, data.weeklyHistory);
-
-            // Render Monthly
-            renderMonthlyComparisonChart(data.monthlyData);
-
-            // Render Daily
-            renderDailyWeeklyComparisonChart(data.dailyData);
-        }
-
-        function renderWeeklyComparisonChart(current, history) {
-            const container = document.getElementById('weeklyComparisonChartContainer');
-            if (!container) return;
-
-            // Clear loading state if present (only if it doesn't contain canvas or if we force reset)
-            let canvas = container.querySelector('canvas');
-            if (!canvas) {
-                container.innerHTML = '';
-                canvas = document.createElement('canvas');
-                canvas.id = 'weeklyComparisonChart';
-                container.appendChild(canvas);
-            }
-
-            const chartId = 'weeklyComparisonChart';
-            if (charts[chartId]) {
-                charts[chartId].destroy();
-                delete charts[chartId]; // Clean up reference
-            }
-
-            // Labels
-            const labels = current.map((_, i) => `Semana ${i + 1}`);
-
-            charts[chartId] = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Atual',
-                            data: current,
-                            backgroundColor: '#22c55e', // Green
-                            borderRadius: 4,
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.8
-                        },
-                        {
-                            label: 'Média Histórica',
-                            data: history,
-                            backgroundColor: '#94a3b8', // Gray
-                            borderRadius: 4,
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.8
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top', labels: { color: '#cbd5e1' } },
-                        datalabels: {
-                            color: '#fff',
-                            anchor: 'end',
-                            align: 'top',
-                            formatter: (value) => {
-                                // Short format for thousands
-                                if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
-                                return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
-                            },
-                            font: { weight: 'bold', size: 10 }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: '#334155' },
-                            ticks: { color: '#94a3b8', callback: (val) => val.toLocaleString('pt-BR', { notation: "compact" }) }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#94a3b8' }
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderMonthlyComparisonChart(monthlyData) {
-            const container = document.getElementById('monthlyComparisonChartContainer');
-            if (!container) return;
-
-            let canvas = container.querySelector('canvas');
-            if (!canvas) {
-                container.innerHTML = '';
-                canvas = document.createElement('canvas');
-                canvas.id = 'monthlyComparisonChart';
-                container.appendChild(canvas);
-            }
-
-            const chartId = 'monthlyComparisonChart';
-            if (charts[chartId]) {
-                charts[chartId].destroy();
-                delete charts[chartId];
-            }
-
-            // Determine metric
-            // Global: comparisonMonthlyMetric ('faturamento' or 'clientes')
-            const isClients = (typeof comparisonMonthlyMetric !== 'undefined' && comparisonMonthlyMetric === 'clientes');
-            const metricKey = isClients ? 'clients' : 'fat';
-            const label = isClients ? 'Clientes Atendidos' : 'Faturamento Total';
-            const color = isClients ? '#3b82f6' : '#22c55e'; // Blue or Green
-
-            charts[chartId] = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: monthlyData.map(d => d.label),
-                    datasets: [
-                        {
-                            label: label,
-                            data: monthlyData.map(d => d[metricKey]),
-                            backgroundColor: color,
-                            borderRadius: 4,
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.8
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top', labels: { color: '#cbd5e1' } },
-                        datalabels: {
-                            color: '#fff',
-                            anchor: 'end',
-                            align: 'top',
-                            formatter: (value) => {
-                                if (isClients) return value;
-                                if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
-                                return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
-                            },
-                            font: { weight: 'bold', size: 10 }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: '#334155' },
-                            ticks: { color: '#94a3b8', callback: (val) => val.toLocaleString('pt-BR', { notation: "compact" }) }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#94a3b8' }
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderDailyWeeklyComparisonChart(dailyData) {
-            const container = document.getElementById('dailyWeeklyComparisonChartContainer');
-            if (!container) return;
-
-            let canvas = container.querySelector('canvas');
-            if (!canvas) {
-                container.innerHTML = '';
-                canvas = document.createElement('canvas');
-                canvas.id = 'dailyWeeklyComparisonChart';
-                container.appendChild(canvas);
-            }
-
-            const chartId = 'dailyWeeklyComparisonChart';
-            if (charts[chartId]) {
-                charts[chartId].destroy();
-                delete charts[chartId];
-            }
-
-            // Standardize colors
-            const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7'];
-
-            // Clone datasets to avoid mutating original if reused
-            const datasets = dailyData.datasets.map((ds, i) => ({
-                ...ds,
-                backgroundColor: colors[i % colors.length],
-                borderRadius: 4,
-                stack: 'Stack 0'
-            }));
-
-            charts[chartId] = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                    labels: dailyData.labels,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top', labels: { color: '#cbd5e1' } },
-                        datalabels: { display: false }, // Hide for stacked
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed.y !== null) {
-                                        label += context.parsed.y.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                                    }
-                                    return label;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            stacked: true,
-                            beginAtZero: true,
-                            grid: { color: '#334155' },
-                            ticks: { color: '#94a3b8', callback: (val) => val.toLocaleString('pt-BR', { notation: "compact" }) }
-                        },
-                        x: {
-                            stacked: true,
-                            grid: { display: false },
-                            ticks: { color: '#94a3b8' }
-                        }
-                    }
-                }
-            });
-        }
         function updateComparisonView() {
             if (embeddedData.isServerMode) {
                 const filters = getFiltersFromUI('comparison');
@@ -10337,8 +10103,29 @@ const supervisorGroups = new Map();
 
                 window.supabaseClient.rpc('get_comparison_view_data', filters)
                     .then(({ data, error }) => {
-                        if (error) console.error(error);
-                        else renderComparisonViewFromRPC(data);
+                        if (error) {
+                            console.error("Error fetching comparison data:", error);
+                            // Clear spinners on error
+                            chartContainers.forEach(id => {
+                                const el = document.getElementById(id + 'Container');
+                                if(el) el.innerHTML = '<div class="flex h-full items-center justify-center text-red-500 font-bold">Erro ao carregar dados.</div>';
+                            });
+                        } else if (!data) {
+                            console.warn("No data returned for comparison view.");
+                            chartContainers.forEach(id => {
+                                const el = document.getElementById(id + 'Container');
+                                if(el) el.innerHTML = '<div class="flex h-full items-center justify-center text-slate-500">Sem dados disponíveis.</div>';
+                            });
+                        } else {
+                            renderComparisonViewFromRPC(data);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Unexpected error in updateComparisonView:", err);
+                        chartContainers.forEach(id => {
+                            const el = document.getElementById(id + 'Container');
+                            if(el) el.innerHTML = '<div class="flex h-full items-center justify-center text-red-500 font-bold">Erro inesperado.</div>';
+                        });
                     });
                 return;
             }
@@ -12699,7 +12486,12 @@ const supervisorGroups = new Map();
                 comparisonChartType = 'weekly';
                 toggleWeeklyBtn.classList.add('active');
                 toggleMonthlyBtn.classList.remove('active');
+
+                document.getElementById('weeklyComparisonChartContainer').classList.remove('hidden');
+                document.getElementById('monthlyComparisonChartContainer').classList.add('hidden');
                 document.getElementById('comparison-monthly-metric-container').classList.add('hidden');
+                document.getElementById('comparison-chart-title').textContent = 'Comparativo Semanal';
+
                 updateComparisonView();
             });
 
@@ -12707,7 +12499,14 @@ const supervisorGroups = new Map();
                 comparisonChartType = 'monthly';
                 toggleMonthlyBtn.classList.add('active');
                 toggleWeeklyBtn.classList.remove('active');
-                // The toggle visibility is handled inside updateComparisonView based on mode
+
+                document.getElementById('weeklyComparisonChartContainer').classList.add('hidden');
+                document.getElementById('monthlyComparisonChartContainer').classList.remove('hidden');
+                document.getElementById('comparison-monthly-metric-container').classList.remove('hidden');
+
+                const isFat = comparisonMonthlyMetric === 'faturamento';
+                document.getElementById('comparison-chart-title').textContent = isFat ? 'Faturamento Mensal' : 'Clientes Atendidos Mensal';
+
                 updateComparisonView();
             });
 
@@ -12718,15 +12517,29 @@ const supervisorGroups = new Map();
             if (toggleMonthlyFatBtn && toggleMonthlyClientsBtn) {
                 toggleMonthlyFatBtn.addEventListener('click', () => {
                     comparisonMonthlyMetric = 'faturamento';
-                    toggleMonthlyFatBtn.classList.add('active');
-                    toggleMonthlyClientsBtn.classList.remove('active');
+
+                    // Style Updates
+                    toggleMonthlyFatBtn.classList.add('active', 'bg-green-600', 'text-white');
+                    toggleMonthlyFatBtn.classList.remove('bg-slate-700', 'text-slate-400');
+
+                    toggleMonthlyClientsBtn.classList.remove('active', 'bg-blue-600', 'text-white');
+                    toggleMonthlyClientsBtn.classList.add('bg-slate-700', 'text-slate-400');
+
+                    document.getElementById('comparison-chart-title').textContent = 'Faturamento Mensal';
                     updateComparisonView();
                 });
 
                 toggleMonthlyClientsBtn.addEventListener('click', () => {
                     comparisonMonthlyMetric = 'clientes';
-                    toggleMonthlyClientsBtn.classList.add('active');
-                    toggleMonthlyFatBtn.classList.remove('active');
+
+                    // Style Updates
+                    toggleMonthlyClientsBtn.classList.add('active', 'bg-blue-600', 'text-white');
+                    toggleMonthlyClientsBtn.classList.remove('bg-slate-700', 'text-slate-400');
+
+                    toggleMonthlyFatBtn.classList.remove('active', 'bg-green-600', 'text-white');
+                    toggleMonthlyFatBtn.classList.add('bg-slate-700', 'text-slate-400');
+
+                    document.getElementById('comparison-chart-title').textContent = 'Clientes Atendidos Mensal';
                     updateComparisonView();
                 });
             }
@@ -16307,4 +16120,237 @@ const supervisorGroups = new Map();
         initWalletView();
     }
 
+
+        function renderComparisonCharts(data) {
+            if (!data) return;
+
+            // Render Weekly (Always available in data)
+            renderWeeklyComparisonChart(data.weeklyCurrent, data.weeklyHistory);
+
+            // Render Monthly
+            renderMonthlyComparisonChart(data.monthlyData);
+
+            // Render Daily
+            renderDailyWeeklyComparisonChart(data.dailyData);
+        }
+
+        function renderWeeklyComparisonChart(current, history) {
+            const container = document.getElementById('weeklyComparisonChartContainer');
+            if (!container) return;
+
+            let canvas = container.querySelector('canvas');
+            if (!canvas) {
+                container.innerHTML = '';
+                canvas = document.createElement('canvas');
+                canvas.id = 'weeklyComparisonChart';
+                container.appendChild(canvas);
+            }
+
+            const chartId = 'weeklyComparisonChart';
+            if (charts[chartId]) {
+                charts[chartId].destroy();
+                delete charts[chartId];
+            }
+
+            const labels = current.map((_, i) => `Semana ${i + 1}`);
+
+            charts[chartId] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Atual',
+                            data: current,
+                            backgroundColor: '#22c55e',
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
+                        },
+                        {
+                            label: 'Média Histórica',
+                            data: history,
+                            backgroundColor: '#94a3b8',
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#cbd5e1' } },
+                        datalabels: {
+                            color: '#fff',
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: (value) => {
+                                if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
+                                return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+                            },
+                            font: { weight: 'bold', size: 10 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#334155' },
+                            ticks: { color: '#94a3b8', callback: (val) => val.toLocaleString('pt-BR', { notation: "compact" }) }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderMonthlyComparisonChart(monthlyData) {
+            const container = document.getElementById('monthlyComparisonChartContainer');
+            if (!container) return;
+
+            // Ensure container is visible
+            container.classList.remove('hidden');
+
+            let canvas = container.querySelector('canvas');
+            if (!canvas) {
+                container.innerHTML = '';
+                canvas = document.createElement('canvas');
+                canvas.id = 'monthlyComparisonChart';
+                canvas.style.height = '100%';
+                canvas.style.width = '100%';
+                container.appendChild(canvas);
+            }
+
+            const chartId = 'monthlyComparisonChart';
+            if (charts[chartId]) {
+                charts[chartId].destroy();
+                delete charts[chartId];
+            }
+
+            const isClients = (typeof comparisonMonthlyMetric !== 'undefined' && comparisonMonthlyMetric === 'clientes');
+            const metricKey = isClients ? 'clients' : 'fat';
+            const label = isClients ? 'Clientes Atendidos' : 'Faturamento Total';
+            const color = isClients ? '#3b82f6' : '#22c55e';
+
+            charts[chartId] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: monthlyData.map(d => d.label),
+                    datasets: [
+                        {
+                            label: label,
+                            data: monthlyData.map(d => d[metricKey]),
+                            backgroundColor: color,
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#cbd5e1' } },
+                        datalabels: {
+                            color: '#fff',
+                            anchor: 'end',
+                            align: 'top',
+                            formatter: (value) => {
+                                if (isClients) return value;
+                                if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
+                                return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+                            },
+                            font: { weight: 'bold', size: 10 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#334155' },
+                            ticks: { color: '#94a3b8', callback: (val) => val.toLocaleString('pt-BR', { notation: "compact" }) }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderDailyWeeklyComparisonChart(dailyData) {
+            const container = document.getElementById('dailyWeeklyComparisonChartContainer');
+            if (!container) return;
+
+            let canvas = container.querySelector('canvas');
+            if (!canvas) {
+                container.innerHTML = '';
+                canvas = document.createElement('canvas');
+                canvas.id = 'dailyWeeklyComparisonChart';
+                container.appendChild(canvas);
+            }
+
+            const chartId = 'dailyWeeklyComparisonChart';
+            if (charts[chartId]) {
+                charts[chartId].destroy();
+                delete charts[chartId];
+            }
+
+            const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7'];
+
+            const datasets = dailyData.datasets.map((ds, i) => ({
+                ...ds,
+                backgroundColor: colors[i % colors.length],
+                borderRadius: 4,
+                stack: 'Stack 0'
+            }));
+
+            charts[chartId] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: dailyData.labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#cbd5e1' } },
+                        datalabels: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            grid: { color: '#334155' },
+                            ticks: { color: '#94a3b8', callback: (val) => val.toLocaleString('pt-BR', { notation: "compact" }) }
+                        },
+                        x: {
+                            stacked: true,
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
 })();
