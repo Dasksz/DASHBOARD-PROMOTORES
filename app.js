@@ -10006,16 +10006,60 @@ const supervisorGroups = new Map();
             
             renderKpiCards(kpis);
 
-            // 2. Supervisor Table
+            // 2. Co-coordinator Table (Aggregated from Supervisor Data)
             // supervisor_data is Array of { name, current, history }
-            // Transform to Object for renderSupervisorTable: { name: { current, history } }
-            const supData = {};
-            if (Array.isArray(supervisor_data)) {
-                supervisor_data.forEach(s => {
-                    supData[s.name] = { current: s.current, history: s.history / historyCount };
+            // We need to map Supervisor Name -> Co-coordinator Name
+            const cocoordAggMap = new Map(); // Map<CocoordName, { current, history }>
+            
+            // Build Helper Map: Promotor Name -> Cocoord Name
+            const promotorToCocoordMap = new Map();
+            if (optimizedData && optimizedData.hierarchyMap) {
+                optimizedData.hierarchyMap.forEach(node => {
+                    if (node.promotor && node.promotor.name && node.cocoord && node.cocoord.name) {
+                        promotorToCocoordMap.set(node.promotor.name.toUpperCase().trim(), node.cocoord.name);
+                    }
                 });
             }
-            renderSupervisorTable(supData);
+
+            if (Array.isArray(supervisor_data)) {
+                supervisor_data.forEach(s => {
+                    const supName = (s.name || '').toUpperCase().trim();
+                    // Try to find Co-coord
+                    let targetName = 'OUTROS';
+                    
+                    // Direct lookup
+                    if (promotorToCocoordMap.has(supName)) {
+                        targetName = promotorToCocoordMap.get(supName);
+                    } else {
+                        // Fuzzy or Direct Code check? 
+                        // Assuming Supervisor Name corresponds to Promotor Name.
+                        // If not found, check if it is a Co-coord itself?
+                        // For now, group under 'OUTROS' or keep original if valid.
+                        // If the user role is Cocoord, maybe they only see their own?
+                        // If supName is actually a CoCoord name in the hierarchy?
+                        // Let's assume strict mapping for now.
+                    }
+
+                    // Special Case: If targetName is still OUTROS, maybe try to match by partial name?
+                    // Or maybe s.name IS the co-coord? (Unlikely given "Variação por Supervisor" original title)
+                    
+                    if (!cocoordAggMap.has(targetName)) {
+                        cocoordAggMap.set(targetName, { current: 0, history: 0 });
+                    }
+                    
+                    const entry = cocoordAggMap.get(targetName);
+                    entry.current += (s.current || 0);
+                    entry.history += ((s.history || 0) / historyCount);
+                });
+            }
+
+            // Convert back to object for render function
+            const finalSupData = {};
+            cocoordAggMap.forEach((val, key) => {
+                finalSupData[key] = val;
+            });
+            
+            renderSupervisorTable(finalSupData);
 
             // 3. Weekly/Daily Charts
             // Bucket Daily into Weeks
@@ -10084,6 +10128,22 @@ const supervisorGroups = new Map();
             chartsData.monthlyData.push({ label: 'Atual', fat: current_kpi.f || 0, clients: current_kpi.c || 0 });
 
             renderComparisonCharts(chartsData);
+
+            // 4. Populate Weekly Summary Table
+            const weeklySummaryTableBody = document.getElementById('weeklySummaryTableBody');
+            if (weeklySummaryTableBody) {
+                let grandTotal = 0;
+                let rowsHTML = '';
+                
+                weeklyCurrent.forEach((val, idx) => {
+                    grandTotal += val;
+                    rowsHTML += `<tr class="hover:bg-slate-700/50 border-b border-slate-800/50"><td class="px-4 py-3 font-medium text-slate-300">Semana ${idx + 1}</td><td class="px-4 py-3 text-right font-bold text-white">${val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`;
+                });
+
+                rowsHTML += `<tr class="bg-slate-800/80 font-bold text-white"><td class="px-4 py-3">Total do Mês</td><td class="px-4 py-3 text-right text-green-400">${grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`;
+                
+                weeklySummaryTableBody.innerHTML = rowsHTML;
+            }
         }
 
 
@@ -16128,6 +16188,25 @@ const supervisorGroups = new Map();
     // Auto-init User Menu on load if ready (for Navbar)
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         initWalletView();
+        updateMenuVisibility();
+    }
+
+    function updateMenuVisibility() {
+        const role = (window.userRole || '').trim().toLowerCase();
+        // Visible only for 'adm' and 'coord'
+        const allowed = ['adm', 'coord'];
+        
+        const compBtn = document.querySelector('button[data-target="comparativo"]');
+        const compBtnMobile = document.querySelector('.mobile-nav-link[data-target="comparativo"]');
+        
+        if (compBtn) {
+            if (allowed.includes(role)) compBtn.classList.remove('hidden');
+            else compBtn.classList.add('hidden');
+        }
+        if (compBtnMobile) {
+            if (allowed.includes(role)) compBtnMobile.classList.remove('hidden');
+            else compBtnMobile.classList.add('hidden');
+        }
     }
 
 
