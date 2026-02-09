@@ -16244,25 +16244,27 @@ const supervisorGroups = new Map();
             const labels = current.map((_, i) => `Semana ${i + 1}`);
 
             charts[chartId] = new Chart(canvas, {
-                type: 'bar',
+                type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
                         {
-                            label: 'Atual',
+                            label: useTendencyComparison ? 'Tendência Semanal' : 'Mês Atual',
                             data: current,
-                            backgroundColor: '#22c55e',
-                            borderRadius: 4,
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.8
+                            borderColor: '#14b8a6',
+                            tension: 0.2,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#14b8a6',
+                            borderWidth: 2.5
                         },
                         {
-                            label: 'Média Histórica',
+                            label: 'Média Trimestre',
                             data: history,
-                            backgroundColor: '#94a3b8',
-                            borderRadius: 4,
-                            barPercentage: 0.6,
-                            categoryPercentage: 0.8
+                            borderColor: '#f97316',
+                            tension: 0.2,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#f97316',
+                            borderWidth: 2.5
                         }
                     ]
                 },
@@ -16270,7 +16272,7 @@ const supervisorGroups = new Map();
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'top', labels: { color: '#cbd5e1' } },
+                        legend: { position: 'top', align: 'end', labels: { color: '#cbd5e1' } },
                         datalabels: {
                             color: '#fff',
                             anchor: 'end',
@@ -16389,7 +16391,7 @@ const supervisorGroups = new Map();
                 delete charts[chartId];
             }
             
-            const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7'];
+            const colors = ['#a855f7', '#6366f1', '#ec4899', '#f97316', '#8b5cf6', '#06b6d4', '#f59e0b'];
             
             const datasets = dailyData.datasets.map((ds, i) => ({
                 ...ds,
