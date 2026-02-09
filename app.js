@@ -12692,7 +12692,7 @@ const supervisorGroups = new Map();
                 comparisonTendencyToggle.classList.toggle('hover:bg-orange-500');
                 comparisonTendencyToggle.classList.toggle('bg-purple-600');
                 comparisonTendencyToggle.classList.toggle('hover:bg-purple-500');
-                updateComparison();
+                updateComparisonView();
             });
 
             toggleWeeklyBtn.addEventListener('click', () => {
@@ -12700,7 +12700,7 @@ const supervisorGroups = new Map();
                 toggleWeeklyBtn.classList.add('active');
                 toggleMonthlyBtn.classList.remove('active');
                 document.getElementById('comparison-monthly-metric-container').classList.add('hidden');
-                updateComparison();
+                updateComparisonView();
             });
 
             toggleMonthlyBtn.addEventListener('click', () => {
@@ -12708,7 +12708,7 @@ const supervisorGroups = new Map();
                 toggleMonthlyBtn.classList.add('active');
                 toggleWeeklyBtn.classList.remove('active');
                 // The toggle visibility is handled inside updateComparisonView based on mode
-                updateComparison();
+                updateComparisonView();
             });
 
             // New Metric Toggle Listeners
@@ -12720,14 +12720,14 @@ const supervisorGroups = new Map();
                     comparisonMonthlyMetric = 'faturamento';
                     toggleMonthlyFatBtn.classList.add('active');
                     toggleMonthlyClientsBtn.classList.remove('active');
-                    updateComparison();
+                    updateComparisonView();
                 });
 
                 toggleMonthlyClientsBtn.addEventListener('click', () => {
                     comparisonMonthlyMetric = 'clientes';
                     toggleMonthlyClientsBtn.classList.add('active');
                     toggleMonthlyFatBtn.classList.remove('active');
-                    updateComparison();
+                    updateComparisonView();
                 });
             }
 
@@ -12745,7 +12745,7 @@ const supervisorGroups = new Map();
                 const holidayBtnText = selectedHolidays.length > 0 ? `${selectedHolidays.length} feriado(s)` : 'Selecionar Feriados';
                 comparisonHolidayPickerBtn.textContent = holidayBtnText;
                 mainHolidayPickerBtn.textContent = holidayBtnText;
-                updateComparison();
+                updateComparisonView();
                 updateDashboard();
             });
             calendarContainer.addEventListener('click', (e) => {
