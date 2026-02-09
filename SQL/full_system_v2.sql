@@ -624,11 +624,11 @@ BEGIN
         ramo, caixas
     )
     WITH raw_data AS (
-        SELECT dtped, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli, vlvenda, totpesoliq, vlbonific, vldevolucao, produto, qtvenda_embalagem_master
+        SELECT pedido, dtped, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli, vlvenda, totpesoliq, vlbonific, vldevolucao, produto, qtvenda_embalagem_master
         FROM public.data_detailed
         WHERE EXTRACT(YEAR FROM dtped)::int = p_year
-        UNION ALL
-        SELECT dtped, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli, vlvenda, totpesoliq, vlbonific, vldevolucao, produto, qtvenda_embalagem_master
+        UNION
+        SELECT pedido, dtped, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli, vlvenda, totpesoliq, vlbonific, vldevolucao, produto, qtvenda_embalagem_master
         FROM public.data_history
         WHERE EXTRACT(YEAR FROM dtped)::int = p_year
     ),
@@ -715,11 +715,11 @@ BEGIN
         ramo, caixas
     )
     WITH raw_data AS (
-        SELECT dtped, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli, vlvenda, totpesoliq, vlbonific, vldevolucao, produto, qtvenda_embalagem_master
+        SELECT pedido, dtped, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli, vlvenda, totpesoliq, vlbonific, vldevolucao, produto, qtvenda_embalagem_master
         FROM public.data_detailed
         WHERE dtped >= make_date(p_year, p_month, 1) AND dtped < (make_date(p_year, p_month, 1) + interval '1 month')
-        UNION ALL
-        SELECT dtped, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli, vlvenda, totpesoliq, vlbonific, vldevolucao, produto, qtvenda_embalagem_master
+        UNION
+        SELECT pedido, dtped, filial, cidade, codsupervisor, codusur, codfor, tipovenda, codcli, vlvenda, totpesoliq, vlbonific, vldevolucao, produto, qtvenda_embalagem_master
         FROM public.data_history
         WHERE dtped >= make_date(p_year, p_month, 1) AND dtped < (make_date(p_year, p_month, 1) + interval '1 month')
     ),
@@ -1681,12 +1681,12 @@ BEGIN
         -- SLOW PATH (Full Raw Data with dim_produtos join)
         EXECUTE format('
             WITH base_data AS (
-                SELECT s.dtped, s.vlvenda, s.totpesoliq, s.qtvenda_embalagem_master, s.produto, dp.descricao
+                SELECT s.pedido, s.dtped, s.vlvenda, s.totpesoliq, s.qtvenda_embalagem_master, s.produto, dp.descricao
                 FROM public.data_detailed s
                 LEFT JOIN public.dim_produtos dp ON s.produto = dp.codigo
                 %s AND s.dtped >= make_date(%L, 1, 1)
-                UNION ALL
-                SELECT s.dtped, s.vlvenda, s.totpesoliq, s.qtvenda_embalagem_master, s.produto, dp.descricao
+                UNION
+                SELECT s.pedido, s.dtped, s.vlvenda, s.totpesoliq, s.qtvenda_embalagem_master, s.produto, dp.descricao
                 FROM public.data_history s
                 LEFT JOIN public.dim_produtos dp ON s.produto = dp.codigo
                 %s AND s.dtped >= make_date(%L, 1, 1)
@@ -2272,23 +2272,23 @@ BEGIN
 
     EXECUTE format('
         WITH target_sales AS (
-            SELECT s.dtped, s.vlvenda, s.totpesoliq, s.codcli, s.codsupervisor, s.produto, dp.descricao, s.codfor
+            SELECT s.pedido, s.dtped, s.vlvenda, s.totpesoliq, s.codcli, s.codsupervisor, s.produto, dp.descricao, s.codfor
             FROM public.data_detailed s
             LEFT JOIN public.dim_produtos dp ON s.produto = dp.codigo
             %s %s AND s.dtped >= %L AND s.dtped <= %L
-            UNION ALL
-            SELECT s.dtped, s.vlvenda, s.totpesoliq, s.codcli, s.codsupervisor, s.produto, dp.descricao, s.codfor
+            UNION
+            SELECT s.pedido, s.dtped, s.vlvenda, s.totpesoliq, s.codcli, s.codsupervisor, s.produto, dp.descricao, s.codfor
             FROM public.data_history s
             LEFT JOIN public.dim_produtos dp ON s.produto = dp.codigo
             %s %s AND s.dtped >= %L AND s.dtped <= %L
         ),
         history_sales AS (
-            SELECT s.dtped, s.vlvenda, s.totpesoliq, s.codcli, s.codsupervisor, s.produto, dp.descricao, s.codfor
+            SELECT s.pedido, s.dtped, s.vlvenda, s.totpesoliq, s.codcli, s.codsupervisor, s.produto, dp.descricao, s.codfor
             FROM public.data_detailed s
             LEFT JOIN public.dim_produtos dp ON s.produto = dp.codigo
             %s %s AND s.dtped >= %L AND s.dtped <= %L
-            UNION ALL
-            SELECT s.dtped, s.vlvenda, s.totpesoliq, s.codcli, s.codsupervisor, s.produto, dp.descricao, s.codfor
+            UNION
+            SELECT s.pedido, s.dtped, s.vlvenda, s.totpesoliq, s.codcli, s.codsupervisor, s.produto, dp.descricao, s.codfor
             FROM public.data_history s
             LEFT JOIN public.dim_produtos dp ON s.produto = dp.codigo
             %s %s AND s.dtped >= %L AND s.dtped <= %L
@@ -2630,12 +2630,12 @@ BEGIN
     
     EXECUTE format('
         WITH combined_sales AS (
-            SELECT s.dtped, s.codcli, s.vlvenda, s.produto, i.inovacoes
+            SELECT s.pedido, s.dtped, s.codcli, s.vlvenda, s.produto, i.inovacoes
             FROM public.data_detailed s
             JOIN public.data_innovations i ON s.produto = i.codigo
             %s AND s.dtped >= %L AND s.dtped < %L
-            UNION ALL
-            SELECT s.dtped, s.codcli, s.vlvenda, s.produto, i.inovacoes
+            UNION
+            SELECT s.pedido, s.dtped, s.codcli, s.vlvenda, s.produto, i.inovacoes
             FROM public.data_history s
             JOIN public.data_innovations i ON s.produto = i.codigo
             %s AND s.dtped >= %L AND s.dtped < %L
@@ -2784,11 +2784,11 @@ BEGIN
             SELECT week_index, start_date, end_date FROM get_month_weeks(%L, %L)
         ),
         raw_sales AS (
-            SELECT s.dtped, s.codusur, s.vlvenda, s.totpesoliq
+            SELECT s.pedido, s.dtped, s.codusur, s.vlvenda, s.totpesoliq
             FROM public.data_detailed s
             %s
-            UNION ALL
-            SELECT s.dtped, s.codusur, s.vlvenda, s.totpesoliq
+            UNION
+            SELECT s.pedido, s.dtped, s.codusur, s.vlvenda, s.totpesoliq
             FROM public.data_history s
             %s
         ),
