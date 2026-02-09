@@ -1,6 +1,7 @@
 (function() {
         const embeddedData = window.embeddedData;
         let metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [] };
+        const dateCache = new Map();
 
         // Helper to normalize keys (remove leading zeros) to ensure consistent joins
         const normalizeKey = (key) => {
@@ -219,15 +220,23 @@
                 return !isNaN(dateString.getTime()) ? dateString : null;
             }
 
-            // Se for um número (formato Excel ou Timestamp)
-            if (typeof dateString === 'number') {
+            // Se for uma string, verifica o cache
+            if (typeof dateString === 'string') {
+                const cached = dateCache.get(dateString);
+                if (cached !== undefined) {
+                    return cached !== null ? new Date(cached) : null;
+                }
+            } else if (typeof dateString === 'number') {
+                // Se for um número (formato Excel ou Timestamp)
                 // Excel Serial Date (approx < 50000 for current dates, Timestamp is > 1000000000000)
                 if (dateString < 100000) return new Date(Math.round((dateString - 25569) * 86400 * 1000));
                 // Timestamp
                 return new Date(dateString);
+            } else {
+                return null;
             }
 
-            if (typeof dateString !== 'string') return null;
+            let result = null;
 
             // Tentativa de parse para 'YYYY-MM-DDTHH:mm:ss.sssZ' ou 'YYYY-MM-DD'
             // O construtor do Date já lida bem com isso, mas vamos garantir o UTC.
@@ -236,29 +245,34 @@
                 const isoString = dateString.endsWith('Z') ? dateString : dateString + 'Z';
                 const isoDate = new Date(isoString);
                 if (!isNaN(isoDate.getTime())) {
-                    return isoDate;
+                    result = isoDate;
                 }
             }
 
             // Tentativa de parse para 'DD/MM/YYYY'
-            if (dateString.length === 10 && dateString.charAt(2) === '/' && dateString.charAt(5) === '/') {
+            if (!result && dateString.length === 10 && dateString.charAt(2) === '/' && dateString.charAt(5) === '/') {
                 const [day, month, year] = dateString.split('/');
                 if (year && month && day && year.length === 4) {
                     // Cria a data em UTC para evitar problemas de fuso horário
                     const utcDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
                     if (!isNaN(utcDate.getTime())) {
-                        return utcDate;
+                        result = utcDate;
                     }
                 }
             }
 
             // Fallback para outros formatos que o `new Date()` consegue interpretar
-            const genericDate = new Date(dateString);
-            if (!isNaN(genericDate.getTime())) {
-                return genericDate;
+            if (!result) {
+                const genericDate = new Date(dateString);
+                if (!isNaN(genericDate.getTime())) {
+                    result = genericDate;
+                }
             }
 
-            return null; // Retorna nulo se nenhum formato corresponder
+            // Armazena no cache (apenas strings)
+            dateCache.set(dateString, result !== null ? result.getTime() : null);
+
+            return result;
         }
 
         // --- OPTIMIZATION: Chunked Processor to prevent UI Freeze ---
