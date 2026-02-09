@@ -1,5 +1,27 @@
 (function() {
         const embeddedData = window.embeddedData;
+
+        // --- CONFIGURATION ---
+        const SUPPLIER_CONFIG = {
+            inference: {
+                triggerKeywords: ['PEPSICO'],
+                matchValue: 'PEPSICO',
+                defaultValue: 'MULTIMARCAS'
+            },
+            metaRealizado: {
+                requiredPasta: 'PEPSICO'
+            }
+        };
+
+        function resolveSupplierPasta(rowPasta, fornecedorName) {
+            if (!rowPasta || rowPasta === '0' || rowPasta === '00' || rowPasta === 'N/A') {
+                const rawFornecedor = String(fornecedorName || '').toUpperCase();
+                const match = SUPPLIER_CONFIG.inference.triggerKeywords.some(k => rawFornecedor.includes(k));
+                return match ? SUPPLIER_CONFIG.inference.matchValue : SUPPLIER_CONFIG.inference.defaultValue;
+            }
+            return rowPasta;
+        }
+
         let metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [] };
         const dateCache = new Map();
 
@@ -1621,11 +1643,7 @@
                     const rca = getVal(i, 'NOME') || 'N/A';
 
                     // --- FIX: Derive PASTA if empty directly inside indexing loop ---
-                    let pasta = getVal(i, 'OBSERVACAOFOR');
-                    if (!pasta || pasta === '0' || pasta === '00' || pasta === 'N/A') {
-                        const rawFornecedor = String(getVal(i, 'FORNECEDOR') || '').toUpperCase();
-                        pasta = rawFornecedor.includes('PEPSICO') ? 'PEPSICO' : 'MULTIMARCAS';
-                    }
+                    let pasta = resolveSupplierPasta(getVal(i, 'OBSERVACAOFOR'), getVal(i, 'FORNECEDOR'));
                     // ---------------------------------------------------------------
 
                     const supplier = getVal(i, 'CODFOR');
@@ -1821,16 +1839,8 @@
         const citySupplierFilterText = document.getElementById('city-supplier-filter-text');
         const citySupplierFilterDropdown = document.getElementById('city-supplier-filter-dropdown');
         const cityNameFilter = document.getElementById('city-name-filter');
-        let activeClientsCache = null;
-
-        function invalidateActiveClientsCache() {
-            activeClientsCache = null;
-        }
-
         function getActiveClientsData() {
-            if (activeClientsCache) return activeClientsCache;
-
-            activeClientsCache = allClientsData.filter(c => {
+            return allClientsData.filter(c => {
                 const codcli = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
@@ -1838,7 +1848,6 @@
                 // Logic identical to 'updateCoverageView' active clients KPI
                 return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(codcli));
             });
-            return activeClientsCache;
         }
         const cityCodCliFilter = document.getElementById('city-codcli-filter');
         const citySuggestions = document.getElementById('city-suggestions');
@@ -4056,60 +4065,37 @@
 
             tableHead.innerHTML = headerHTML;
 
-            // Build Body using DocumentFragment for performance
-            const fragment = document.createDocumentFragment();
-
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-700/30 transition-colors';
-
+            // Build Body
+            // data is Array of { name, metaTotal, realTotal, weeks: [{meta, real}] }
+            const rowsHTML = data.map(row => {
                 const metaTotalStr = row.metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const realTotalStr = row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                // Cell 1: Name (Sticky)
-                const tdName = document.createElement('td');
-                tdName.className = 'px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 bg-[#1d2347] z-30 truncate';
-                tdName.title = row.name;
-                tdName.textContent = getFirstName(row.name);
-                tr.appendChild(tdName);
+                let cells = `
+                    <td class="px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 bg-[#1d2347] z-30 truncate" title="${row.name}">${getFirstName(row.name)}</td>
+                    <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs" title="Meta Contratual Mensal">${metaTotalStr}</td>
+                    <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs">${realTotalStr}</td>
+                `;
 
-                // Cell 2: Meta Total
-                const tdMetaTotal = document.createElement('td');
-                tdMetaTotal.className = 'px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs';
-                tdMetaTotal.title = 'Meta Contratual Mensal';
-                tdMetaTotal.textContent = metaTotalStr;
-                tr.appendChild(tdMetaTotal);
-
-                // Cell 3: Real Total
-                const tdRealTotal = document.createElement('td');
-                tdRealTotal.className = 'px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs';
-                tdRealTotal.textContent = realTotalStr;
-                tr.appendChild(tdRealTotal);
-
-                // Week Cells
                 row.weekData.forEach(w => {
                     const wMetaStr = w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     const wRealStr = w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+                    // Simple logic: Green if Real >= Meta, Red if Real < Meta (only if week has passed? Or always?)
+                    // Let's keep it neutral for now or simple colors.
                     const realClass = w.real >= w.meta ? 'text-green-400' : 'text-slate-300';
                     const metaClass = w.isPast ? 'text-red-500' : 'text-slate-400';
 
-                    const tdWeekMeta = document.createElement('td');
-                    tdWeekMeta.className = `px-2 py-3 text-right ${metaClass} text-xs border-r border-b border-slate-700`;
-                    tdWeekMeta.textContent = wMetaStr;
-                    tr.appendChild(tdWeekMeta);
-
-                    const tdWeekReal = document.createElement('td');
-                    tdWeekReal.className = `px-2 py-3 text-right ${realClass} text-xs font-medium border-r border-b border-slate-700`;
-                    tdWeekReal.textContent = wRealStr;
-                    tr.appendChild(tdWeekReal);
+                    cells += `
+                        <td class="px-2 py-3 text-right ${metaClass} text-xs border-r border-b border-slate-700">${wMetaStr}</td>
+                        <td class="px-2 py-3 text-right ${realClass} text-xs font-medium border-r border-b border-slate-700">${wRealStr}</td>
+                    `;
                 });
 
-                fragment.appendChild(tr);
-            });
+                return `<tr class="hover:bg-slate-700/30 transition-colors">${cells}</tr>`;
+            }).join('');
 
-            tableBody.innerHTML = '';
-            tableBody.appendChild(fragment);
+            tableBody.innerHTML = rowsHTML;
         }
 
         function renderMetaRealizadoChart(data) {
@@ -12993,7 +12979,7 @@ const supervisorGroups = new Map();
                     } else {
                         selectedMetaRealizadoSuppliers = selectedMetaRealizadoSuppliers.filter(s => s !== value);
                     }
-                    selectedMetaRealizadoSuppliers = updateSupplierFilter(metaRealizadoSupplierFilterDropdown, document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, pepsicoSuppliersSource, 'metaRealizado', true);
+                    selectedMetaRealizadoSuppliers = updateSupplierFilter(metaRealizadoSupplierFilterDropdown, document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, metaRealizadoSuppliersSource, 'metaRealizado', true);
                     debouncedUpdateMetaRealizado();
                 }
             });
@@ -13513,15 +13499,11 @@ const supervisorGroups = new Map();
         updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
 
         // Fix: Pre-filter Suppliers for Meta Realizado (Only PEPSICO)
-        const pepsicoSuppliersSource = [...allSalesData, ...allHistoryData].filter(s => {
-            let rowPasta = s.OBSERVACAOFOR;
-            if (!rowPasta || rowPasta === '0' || rowPasta === '00' || rowPasta === 'N/A') {
-                 const rawFornecedor = String(s.FORNECEDOR || '').toUpperCase();
-                 rowPasta = rawFornecedor.includes('PEPSICO') ? 'PEPSICO' : 'MULTIMARCAS';
-            }
-            return rowPasta === 'PEPSICO';
+        const metaRealizadoSuppliersSource = [...allSalesData, ...allHistoryData].filter(s => {
+            const rowPasta = resolveSupplierPasta(s.OBSERVACAOFOR, s.FORNECEDOR);
+            return rowPasta === SUPPLIER_CONFIG.metaRealizado.requiredPasta;
         });
-        selectedMetaRealizadoSuppliers = updateSupplierFilter(document.getElementById('meta-realizado-supplier-filter-dropdown'), document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, pepsicoSuppliersSource, 'metaRealizado');
+        selectedMetaRealizadoSuppliers = updateSupplierFilter(document.getElementById('meta-realizado-supplier-filter-dropdown'), document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, metaRealizadoSuppliersSource, 'metaRealizado');
 
         updateAllComparisonFilters();
 
@@ -15571,9 +15553,6 @@ const supervisorGroups = new Map();
         
         renderWalletTable();
     }
-
-    // Cache for client existing codes to optimize promoter selection
-    const clientsExistingCodesCache = new WeakMap();
     
     window.selectWalletPromoter = async function(code, name) {
         walletState.selectedPromoter = code;
@@ -15624,27 +15603,15 @@ const supervisorGroups = new Map();
             if (clientCodes.length > 0) {
                 // 2. Identify which are missing from local embeddedData.clients
                 const dataset = embeddedData.clients;
-                let existingCodes;
+                const existingCodes = new Set();
                 const isColumnar = dataset && dataset.values && dataset.columns;
                 
-                // Try to get from WeakMap cache first (prevents crashes if dataset is null)
-                if (dataset && typeof dataset === 'object') {
-                    existingCodes = clientsExistingCodesCache.get(dataset);
-                }
-
-                if (!existingCodes) {
-                    existingCodes = new Set();
-                    if (isColumnar) {
-                        const col = dataset.values['Código'] || dataset.values['CODIGO_CLIENTE'] || [];
-                        const len = dataset.length || col.length || 0;
-                        for(let i=0; i<len; i++) existingCodes.add(normalizeKey(col[i]));
-                    } else if (Array.isArray(dataset)) {
-                        dataset.forEach(c => existingCodes.add(normalizeKey(c['Código'] || c['codigo_cliente'])));
-                    }
-                    // Cache existingCodes for this dataset object
-                    if (dataset && typeof dataset === 'object') {
-                        clientsExistingCodesCache.set(dataset, existingCodes);
-                    }
+                if (isColumnar) {
+                    const col = dataset.values['Código'] || dataset.values['CODIGO_CLIENTE'] || [];
+                    const len = dataset.length || col.length || 0;
+                    for(let i=0; i<len; i++) existingCodes.add(normalizeKey(col[i]));
+                } else if (Array.isArray(dataset)) {
+                    dataset.forEach(c => existingCodes.add(normalizeKey(c['Código'] || c['codigo_cliente'])));
                 }
                 
                 const missing = clientCodes.filter(c => !existingCodes.has(c));
@@ -16042,7 +16009,6 @@ const supervisorGroups = new Map();
                          } else {
                              dataset.push(mapped);
                          }
-                         invalidateActiveClientsCache();
                      }
                  }
                  
