@@ -343,6 +343,68 @@
         const FORBIDDEN_KEYS = ['SUPERV', 'CODUSUR', 'CODSUPERVISOR', 'NOME', 'CODCLI', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX', 'SUPERVISOR', 'PASTA', 'RAMO', 'ATIVIDADE', 'CIDADE', 'MUNICIPIO', 'BAIRRO'];
         let allSalesData, allHistoryData, allClientsData;
 
+        function normalizePastaInData(dataset) {
+            // Cache for supplier -> pasta mapping to avoid repeated config lookups
+            const supplierCache = new Map();
+
+            const getResolvedPasta = (currentPasta, fornecedor) => {
+                // If we already have a valid pasta, return it
+                if (currentPasta && currentPasta !== '0' && currentPasta !== '00' && currentPasta !== 'N/A') {
+                    return currentPasta;
+                }
+
+                // Check cache
+                const key = String(fornecedor || '').toUpperCase();
+                if (supplierCache.has(key)) {
+                    return supplierCache.get(key);
+                }
+
+                // Calculate and cache
+                const resolved = resolveSupplierPasta(currentPasta, fornecedor);
+                supplierCache.set(key, resolved);
+                return resolved;
+            };
+
+            if (dataset instanceof ColumnarDataset) {
+                const data = dataset._data;
+                const len = dataset.length;
+
+                // Ensure columns exist or gracefully handle
+                const pastaCol = data['OBSERVACAOFOR'] || new Array(len).fill(null);
+                const supplierCol = data['FORNECEDOR'] || [];
+
+                // If we created a new array for pasta, we must attach it to _data
+                if (!data['OBSERVACAOFOR']) {
+                    data['OBSERVACAOFOR'] = pastaCol;
+                    if (dataset.columns && !dataset.columns.includes('OBSERVACAOFOR')) {
+                        dataset.columns.push('OBSERVACAOFOR');
+                    }
+                }
+
+                for (let i = 0; i < len; i++) {
+                    const originalPasta = pastaCol[i];
+                    const fornecedor = supplierCol[i];
+                    const newPasta = getResolvedPasta(originalPasta, fornecedor);
+
+                    // Only update if changed (optimization)
+                    if (newPasta !== originalPasta) {
+                        pastaCol[i] = newPasta;
+                    }
+                }
+            } else if (Array.isArray(dataset)) {
+                 for (let i = 0; i < dataset.length; i++) {
+                    const item = dataset[i];
+                    const originalPasta = item['OBSERVACAOFOR'];
+                    const fornecedor = item['FORNECEDOR'];
+                    const newPasta = getResolvedPasta(originalPasta, fornecedor);
+
+                    if (newPasta !== originalPasta) {
+                        item['OBSERVACAOFOR'] = newPasta;
+                    }
+                 }
+            }
+        }
+
         function sanitizeData(data) {
             if (!data) return [];
             const forbidden = ['SUPERV', 'CODUSUR', 'CODSUPERVISOR', 'NOME', 'CODCLI', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX', 'SUPERVISOR'];
@@ -380,6 +442,11 @@
             allHistoryData = sanitizeData(embeddedData.history);
             allClientsData = embeddedData.clients;
         }
+
+        // --- PRE-PROCESSING: Normalize PASTA once to avoid repeated logic in loops ---
+        normalizePastaInData(allSalesData);
+        normalizePastaInData(allHistoryData);
+        // -----------------------------------------------------------------------------
 
         let aggregatedOrders = embeddedData.byOrder;
         const stockData05 = new Map(Object.entries(embeddedData.stockMap05 || {}));
@@ -1664,9 +1731,8 @@
                     const supervisor = getVal(i, 'SUPERV') || 'N/A';
                     const rca = getVal(i, 'NOME') || 'N/A';
 
-                    // --- FIX: Derive PASTA if empty directly inside indexing loop ---
-                    let pasta = resolveSupplierPasta(getVal(i, 'OBSERVACAOFOR'), getVal(i, 'FORNECEDOR'));
-                    // ---------------------------------------------------------------
+                    // Use pre-normalized PASTA
+                    let pasta = getVal(i, 'OBSERVACAOFOR');
 
                     const supplier = getVal(i, 'CODFOR');
                     const client = getVal(i, 'CODCLI');
@@ -14335,10 +14401,14 @@ const supervisorGroups = new Map();
                 if (type === 'pos' || type === 'mix') {
                     // FIX: Do not mask missing data. If manual targets exist for seller, do not fall back to defaults.
                     if (targets) {
-                        if (targets[category] !== undefined) return targets[category];
-                        return 0; // Explicitly 0 if missing from manual file for this seller
+                        // Manual Override Exists for this Seller
+                        if (targets[category] !== undefined) {
+                            return targets[category];
+                        }
+                        // Explicitly return 0 if category is missing (User intended 0 or skipped it)
+                        return 0;
                     } else {
-                        // Calculate Default (Auto-pilot for sellers NOT in manual targets)
+                        // Calculate Default (Auto-Pilot for unconfigured sellers)
                         const defaults = calculateSellerDefaults(sellerName);
                         if (category === 'total_elma') return defaults.elmaPos;
                         if (category === 'total_foods') return defaults.foodsPos;
@@ -14801,41 +14871,9 @@ const supervisorGroups = new Map();
                     // We get active sellers from optimizedData.rcasBySupervisor
                     // 2. Backfill Defaults for ALL Active Sellers
                     // Iterate all active sellers to ensure their calculated "Suggestions" are saved if not manually set.
-                    // We get active sellers from optimizedData.rcasBySupervisor
-                    const activeSellerNames = new Set();
-                    const forbiddenBackfill = ['INATIVOS', 'N/A', 'BALCAO', 'BALCÃO', 'TOTAL', 'GERAL'];
-                    const supervisorNames = new Set(optimizedData.rcasBySupervisor.keys());
-
-                    optimizedData.rcasBySupervisor.forEach(rcas => {
-                        rcas.forEach(code => {
-                            const name = optimizedData.rcaNameByCode.get(code);
-                            if (name) {
-                                const upper = name.toUpperCase();
-                                // Ensure we exclude supervisors themselves from being treated as sellers
-                                // and exclude forbidden keywords
-                                if (!forbiddenBackfill.some(f => upper.includes(f)) && !supervisorNames.has(name)) {
-                                    activeSellerNames.add(name);
-                                }
-                            }
-                        });
-                    });
-
-                    activeSellerNames.forEach(sellerName => {
-                        // Skip backfill for imported sellers (respect manual override)
-                        if (importedSellers.has(sellerName)) return;
-
-                        if (!goalsSellerTargets.has(sellerName)) goalsSellerTargets.set(sellerName, {});
-                        const targets = goalsSellerTargets.get(sellerName);
-
-                        // Calculate Defaults
-                        const defaults = calculateSellerDefaults(sellerName);
-
-                        // Backfill if missing
-                        if (targets['total_elma'] === undefined) targets['total_elma'] = defaults.elmaPos;
-                        if (targets['total_foods'] === undefined) targets['total_foods'] = defaults.foodsPos;
-                        if (targets['mix_salty'] === undefined) targets['mix_salty'] = defaults.mixSalty;
-                        if (targets['mix_foods'] === undefined) targets['mix_foods'] = defaults.mixFoods;
-                    });
+                    // 2. Backfill Defaults Removed
+                    // We rely on getSellerCurrentGoal dynamic calculation for unconfigured sellers.
+                    // This avoids materializing defaults into overrides, which would prevent strict mode behavior (returning 0 for missing manual targets).
 
                     // Save to Supabase (SKIPPED - Load to Memory Only)
                     // const success = await saveGoalsToSupabase();
