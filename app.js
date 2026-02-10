@@ -796,7 +796,13 @@
 
                         const cityMapContainer = document.getElementById('city-map-container');
                         if (heatLayer && cityMapContainer && !cityMapContainer.classList.contains('hidden')) {
-                            heatLayer.addLatLng([result.lat, result.lng, 1]);
+                            // Fix: Check if layer is active on map to avoid "Cannot read properties of null (reading '_animating')"
+                            if (heatLayer._map) {
+                                heatLayer.addLatLng([result.lat, result.lng, 1]);
+                            } else {
+                                // If layer is hidden (e.g. high zoom), just update data source without redraw
+                                heatLayer._latlngs.push([result.lat, result.lng, 1]);
+                            }
                         }
                     } else {
                         // Retry Logic: If failed, try next level of fallback
