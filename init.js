@@ -1,3 +1,11 @@
+    // Global Constants for Goals Logic
+    // 'GENERAL' brand is used to satisfy the unique constraint (month_key, supplier, brand)
+    // in the 'goals_distribution' table when saving a global snapshot.
+    window.GOALS_CONSTANTS = {
+        SUPPLIER: 'ALL',
+        BRAND: 'GENERAL'
+    };
+
     const SUPABASE_URL = 'https://dldsocponbjthqxhmttj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZHNvY3BvbmJqdGhxeGhtdHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzgzMzgsImV4cCI6MjA4NTAxNDMzOH0.IGxUEd977uIdhWvMzjDM8ygfISB_Frcf_2air8e3aOs';
 
@@ -1104,8 +1112,8 @@
 
             const payload = {
                 month_key: monthKey,
-                supplier: 'ALL', // Global snapshot
-                brand: 'GENERAL', // Fix for Unique Constraint
+                supplier: window.GOALS_CONSTANTS.SUPPLIER, // Global snapshot
+                brand: window.GOALS_CONSTANTS.BRAND, // Fix for Unique Constraint
                 goals_data: {
                     clients: goalsObj,
                     targets: goalsTargets,
@@ -1144,7 +1152,7 @@
 
             try {
                 // DELETE via REST
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/goals_distribution?month_key=eq.${monthKey}&supplier=eq.ALL&brand=eq.GENERAL`, {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/goals_distribution?month_key=eq.${monthKey}&supplier=eq.${window.GOALS_CONSTANTS.SUPPLIER}&brand=eq.${window.GOALS_CONSTANTS.BRAND}`, {
                     method: 'DELETE',
                     headers: {
                         'apikey': SUPABASE_ANON_KEY,

@@ -2983,8 +2983,8 @@
                     .from('goals_distribution')
                     .upsert({
                         month_key: monthKey,
-                        supplier: 'ALL',
-                        brand: 'GENERAL',
+                        supplier: window.GOALS_CONSTANTS.SUPPLIER,
+                        brand: window.GOALS_CONSTANTS.BRAND,
                         goals_data: payload
                     });
 
@@ -12645,8 +12645,8 @@ const supervisorGroups = new Map();
                         .from('goals_distribution')
                         .select('goals_data')
                         .eq('month_key', monthKey)
-                        .eq('supplier', 'ALL')
-                        .eq('brand', 'GENERAL')
+                        .eq('supplier', window.GOALS_CONSTANTS.SUPPLIER)
+                        .eq('brand', window.GOALS_CONSTANTS.BRAND)
                         .maybeSingle();
 
                     if (error) {
