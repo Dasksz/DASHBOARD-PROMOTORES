@@ -12616,57 +12616,75 @@ const supervisorGroups = new Map();
                 });
             }
 
-            mainHolidayPickerBtn.addEventListener('click', () => {
-                renderCalendar(calendarState.year, calendarState.month);
-                holidayModal.classList.remove('hidden');
-            });
-            comparisonHolidayPickerBtn.addEventListener('click', () => {
-                renderCalendar(calendarState.year, calendarState.month);
-                holidayModal.classList.remove('hidden');
-            });
-            holidayModalCloseBtn.addEventListener('click', () => holidayModal.classList.add('hidden'));
-            holidayModalDoneBtn.addEventListener('click', () => {
-                holidayModal.classList.add('hidden');
-                const holidayBtnText = selectedHolidays.length > 0 ? `${selectedHolidays.length} feriado(s)` : 'Selecionar Feriados';
-                comparisonHolidayPickerBtn.textContent = holidayBtnText;
-                mainHolidayPickerBtn.textContent = holidayBtnText;
-                updateComparison();
-                updateDashboard();
-            });
-            calendarContainer.addEventListener('click', (e) => {
-                if (e.target.id === 'prev-month-btn') {
-                    calendarState.month--;
-                    if (calendarState.month < 0) {
-                        calendarState.month = 11;
-                        calendarState.year--;
-                    }
+            if (mainHolidayPickerBtn) {
+                mainHolidayPickerBtn.addEventListener('click', () => {
                     renderCalendar(calendarState.year, calendarState.month);
-                } else if (e.target.id === 'next-month-btn') {
-                    calendarState.month++;
-                    if (calendarState.month > 11) {
-                        calendarState.month = 0;
-                        calendarState.year++;
-                    }
+                    holidayModal.classList.remove('hidden');
+                });
+            }
+            if (comparisonHolidayPickerBtn) {
+                comparisonHolidayPickerBtn.addEventListener('click', () => {
                     renderCalendar(calendarState.year, calendarState.month);
-                } else if (e.target.dataset.date) {
-                    const dateString = e.target.dataset.date;
-                    const index = selectedHolidays.indexOf(dateString);
-                    if (index > -1) {
-                        selectedHolidays.splice(index, 1);
-                    } else {
-                        selectedHolidays.push(dateString);
+                    holidayModal.classList.remove('hidden');
+                });
+            }
+            if (holidayModalCloseBtn) {
+                holidayModalCloseBtn.addEventListener('click', () => holidayModal.classList.add('hidden'));
+            }
+            if (holidayModalDoneBtn) {
+                holidayModalDoneBtn.addEventListener('click', () => {
+                    holidayModal.classList.add('hidden');
+                    const holidayBtnText = selectedHolidays.length > 0 ? `${selectedHolidays.length} feriado(s)` : 'Selecionar Feriados';
+                    if (comparisonHolidayPickerBtn) comparisonHolidayPickerBtn.textContent = holidayBtnText;
+                    if (mainHolidayPickerBtn) mainHolidayPickerBtn.textContent = holidayBtnText;
+                    updateComparison();
+                    updateDashboard();
+                });
+            }
+            if (calendarContainer) {
+                calendarContainer.addEventListener('click', (e) => {
+                    if (e.target.id === 'prev-month-btn') {
+                        calendarState.month--;
+                        if (calendarState.month < 0) {
+                            calendarState.month = 11;
+                            calendarState.year--;
+                        }
+                        renderCalendar(calendarState.year, calendarState.month);
+                    } else if (e.target.id === 'next-month-btn') {
+                        calendarState.month++;
+                        if (calendarState.month > 11) {
+                            calendarState.month = 0;
+                            calendarState.year++;
+                        }
+                        renderCalendar(calendarState.year, calendarState.month);
+                    } else if (e.target.dataset.date) {
+                        const dateString = e.target.dataset.date;
+                        const index = selectedHolidays.indexOf(dateString);
+                        if (index > -1) {
+                            selectedHolidays.splice(index, 1);
+                        } else {
+                            selectedHolidays.push(dateString);
+                        }
+                        renderCalendar(calendarState.year, calendarState.month);
                     }
-                    renderCalendar(calendarState.year, calendarState.month);
-                }
-            });
+                });
+            }
 
 
-            document.getElementById('export-active-pdf-btn').addEventListener('click', () => exportClientsPDF(activeClientsForExport, 'Relatório de Clientes Ativos no Mês', 'clientes_ativos', true));
-            document.getElementById('export-inactive-pdf-btn').addEventListener('click', () => exportClientsPDF(inactiveClientsForExport, 'Relatório de Clientes Sem Vendas no Mês', 'clientes_sem_vendas', false));
-            modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
-            clientModalCloseBtn.addEventListener('click', () => clientModal.classList.add('hidden'));
-            faturamentoBtn.addEventListener('click', () => { currentProductMetric = 'faturamento'; faturamentoBtn.classList.add('active'); pesoBtn.classList.remove('active'); updateDashboard(); });
-            pesoBtn.addEventListener('click', () => { currentProductMetric = 'peso'; pesoBtn.classList.add('active'); faturamentoBtn.classList.remove('active'); updateDashboard(); });
+            const exportActiveBtn = document.getElementById('export-active-pdf-btn');
+            if (exportActiveBtn) {
+                exportActiveBtn.addEventListener('click', () => exportClientsPDF(activeClientsForExport, 'Relatório de Clientes Ativos no Mês', 'clientes_ativos', true));
+            }
+
+            const exportInactiveBtn = document.getElementById('export-inactive-pdf-btn');
+            if (exportInactiveBtn) {
+                exportInactiveBtn.addEventListener('click', () => exportClientsPDF(inactiveClientsForExport, 'Relatório de Clientes Sem Vendas no Mês', 'clientes_sem_vendas', false));
+            }
+
+            if (modalCloseBtn) modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
+            if (clientModalCloseBtn) clientModalCloseBtn.addEventListener('click', () => clientModal.classList.add('hidden'));
+            if (faturamentoBtn) faturamentoBtn.addEventListener('click', () => { currentProductMetric = 'faturamento'; faturamentoBtn.classList.add('active'); pesoBtn.classList.remove('active'); updateDashboard(); });
+            if (pesoBtn) pesoBtn.addEventListener('click', () => { currentProductMetric = 'peso'; pesoBtn.classList.add('active'); faturamentoBtn.classList.remove('active'); updateDashboard(); });
 
             // --- Innovations View Filters ---
             const updateInnovations = () => {
