@@ -62,6 +62,61 @@
             }
             return Number(sale.VLVENDA) || 0;
         }
+
+// Helper to redistribute weekly goals
+function calculateAdjustedWeeklyGoals(totalGoal, realizedByWeek, weeks) {
+    let adjustedGoals = new Array(weeks.length).fill(0);
+    let remainingWorkingDays = 0;
+    let pastDifference = 0;
+    let totalWorkingDays = weeks.reduce((sum, w) => sum + w.workingDays, 0);
+    if (totalWorkingDays === 0) totalWorkingDays = 1;
+
+    const currentDate = lastSaleDate; // Global context
+
+    // 1. First Pass: Identify Past Weeks and Calculate Initial Diff
+    weeks.forEach((week, i) => {
+        const isPast = week.end < currentDate;
+        const dailyGoal = totalGoal / totalWorkingDays;
+        let originalWeekGoal = dailyGoal * week.workingDays;
+
+        if (isPast) {
+            adjustedGoals[i] = originalWeekGoal;
+            const realized = realizedByWeek[i] || 0;
+            pastDifference += (originalWeekGoal - realized); // Positive if deficit, Negative if surplus
+        } else {
+            remainingWorkingDays += week.workingDays;
+        }
+    });
+
+    // 2. Second Pass: Distribute Difference to Future Weeks
+    if (remainingWorkingDays > 0) {
+        weeks.forEach((week, i) => {
+            const isPast = week.end < currentDate;
+            if (!isPast) {
+                const dailyGoal = totalGoal / totalWorkingDays;
+                const originalWeekGoal = dailyGoal * week.workingDays;
+
+                // Distribute pastDifference proportionally to this week's weight in remaining time
+                const share = pastDifference * (week.workingDays / remainingWorkingDays);
+
+                let newGoal = originalWeekGoal + share;
+                if (newGoal < 0) newGoal = 0;
+
+                adjustedGoals[i] = newGoal;
+            }
+        });
+    } else {
+        weeks.forEach((week, i) => {
+            const isPast = week.end < currentDate;
+            if (!isPast) {
+                    const dailyGoal = totalGoal / totalWorkingDays;
+                    adjustedGoals[i] = dailyGoal * week.workingDays;
+            }
+        });
+    }
+
+    return adjustedGoals;
+}
         // ---------------------------------------------
 
         // --- OPTIMIZATION: Lazy Columnar Accessor with Write-Back Support ---
@@ -13841,93 +13896,6 @@ const supervisorGroups = new Map();
             window.location.hash = targetPage;
         }
         renderTable(aggregatedOrders);
-
-        // Helper to redistribute weekly goals
-        function calculateAdjustedWeeklyGoals(totalGoal, realizedByWeek, weeks) {
-            let adjustedGoals = new Array(weeks.length).fill(0);
-            let remainingWorkingDays = 0;
-            let pastDifference = 0;
-            let totalWorkingDays = weeks.reduce((sum, w) => sum + w.workingDays, 0);
-            if (totalWorkingDays === 0) totalWorkingDays = 1;
-
-            const currentDate = lastSaleDate; // Global context
-
-            // 1. First Pass: Identify Past Weeks and Calculate Initial Diff
-            weeks.forEach((week, i) => {
-                // Determine if week is fully past
-                // A week is "past" if its END date is strictly BEFORE the currentDate (ignoring time)
-                // Logic: "Check if first week passed... then redistribute difference".
-                // If we are IN week 2, week 1 is past.
-                // Assuming lastSaleDate represents "today".
-
-                const isPast = week.end < currentDate;
-                const dailyGoal = totalGoal / totalWorkingDays;
-                let originalWeekGoal = dailyGoal * week.workingDays;
-
-                if (isPast) {
-                    // Week is closed.
-                    // User Requirement: "case in the first week the goal that was 40k wasn't hit (realized 30k), the 10k missing must be reassigned"
-                    //
-                    // Implementation:
-                    // 1. Past Weeks: Display Original Goal (to show variance/failure).
-                    // 2. Future Weeks: Display Adjusted Goal (Original + Share of Deficit).
-                    //
-                    // Mathematical Note:
-                    // Because we display Original Goal for past weeks (instead of Realized), the sum of displayed goals
-                    // will NOT equal the Total Monthly Goal if there is any deficit/surplus.
-                    // Sum(Displayed) = Total Goal + (Original Past - Realized Past).
-                    //
-                    // However, the Dynamic Planning Invariant holds:
-                    // Realized Past + Future Adjusted Goals = Total Monthly Goal.
-                    // This ensures the seller knows exactly what is needed in future weeks to hit the contract target.
-
-                    adjustedGoals[i] = originalWeekGoal;
-                    const realized = realizedByWeek[i] || 0;
-                    pastDifference += (originalWeekGoal - realized); // Positive if deficit, Negative if surplus
-                } else {
-                    remainingWorkingDays += week.workingDays;
-                }
-            });
-
-            // 2. Second Pass: Distribute Difference to Future Weeks
-            if (remainingWorkingDays > 0) {
-                weeks.forEach((week, i) => {
-                    const isPast = week.end < currentDate;
-                    if (!isPast) {
-                        const dailyGoal = totalGoal / totalWorkingDays;
-                        const originalWeekGoal = dailyGoal * week.workingDays;
-
-                        // Distribute pastDifference proportionally to this week's weight in remaining time
-                        const share = pastDifference * (week.workingDays / remainingWorkingDays);
-
-                        // New Goal = Original + Share
-                        // If deficit (pos), goal increases. If surplus (neg), goal decreases.
-                        let newGoal = originalWeekGoal + share;
-
-                        // Prevent negative goals? (Extreme surplus)
-                        if (newGoal < 0) newGoal = 0;
-
-                        adjustedGoals[i] = newGoal;
-                    }
-                });
-            } else {
-                // If no remaining days (month over), the deficit just sits there (or we add to last week?)
-                // Usually just leave as is.
-                weeks.forEach((week, i) => {
-                    const isPast = week.end < currentDate;
-                    if (!isPast) {
-                         // Should not happen if logic is correct, unless current date is before start of month?
-                         // If we are strictly before month starts, remaining = total. Loop above handles it (pastDifference=0).
-                         const dailyGoal = totalGoal / totalWorkingDays;
-                         adjustedGoals[i] = dailyGoal * week.workingDays;
-                    }
-                });
-            }
-
-            return adjustedGoals;
-        }
-
-        // --- IMPORT PARSER AND LOGIC ---
 
         function calculateSellerDefaults(sellerName) {
             const defaults = {
