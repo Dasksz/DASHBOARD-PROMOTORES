@@ -14333,11 +14333,16 @@ const supervisorGroups = new Map();
                 }
 
                 if (type === 'pos' || type === 'mix') {
-                    // FIX: Return Default Calculated Value if Manual Target is Missing
-                    if (targets && targets[category] !== undefined) {
-                        return targets[category];
+                    // FIX: Do not mask missing data. If manual targets exist for seller, do not fall back to defaults.
+                    if (targets) {
+                        // Manual Override Exists for this Seller
+                        if (targets[category] !== undefined) {
+                            return targets[category];
+                        }
+                        // Explicitly return 0 if category is missing (User intended 0 or skipped it)
+                        return 0;
                     } else {
-                        // Calculate Default
+                        // Calculate Default (Auto-Pilot for unconfigured sellers)
                         const defaults = calculateSellerDefaults(sellerName);
                         if (category === 'total_elma') return defaults.elmaPos;
                         if (category === 'total_foods') return defaults.foodsPos;
@@ -14802,38 +14807,9 @@ const supervisorGroups = new Map();
                     // We get active sellers from optimizedData.rcasBySupervisor
                     // 2. Backfill Defaults for ALL Active Sellers
                     // Iterate all active sellers to ensure their calculated "Suggestions" are saved if not manually set.
-                    // We get active sellers from optimizedData.rcasBySupervisor
-                    const activeSellerNames = new Set();
-                    const forbiddenBackfill = ['INATIVOS', 'N/A', 'BALCAO', 'BALCÃO', 'TOTAL', 'GERAL'];
-                    const supervisorNames = new Set(optimizedData.rcasBySupervisor.keys());
-
-                    optimizedData.rcasBySupervisor.forEach(rcas => {
-                        rcas.forEach(code => {
-                            const name = optimizedData.rcaNameByCode.get(code);
-                            if (name) {
-                                const upper = name.toUpperCase();
-                                // Ensure we exclude supervisors themselves from being treated as sellers
-                                // and exclude forbidden keywords
-                                if (!forbiddenBackfill.some(f => upper.includes(f)) && !supervisorNames.has(name)) {
-                                    activeSellerNames.add(name);
-                                }
-                            }
-                        });
-                    });
-
-                    activeSellerNames.forEach(sellerName => {
-                        if (!goalsSellerTargets.has(sellerName)) goalsSellerTargets.set(sellerName, {});
-                        const targets = goalsSellerTargets.get(sellerName);
-
-                        // Calculate Defaults
-                        const defaults = calculateSellerDefaults(sellerName);
-
-                        // Backfill if missing
-                        if (targets['total_elma'] === undefined) targets['total_elma'] = defaults.elmaPos;
-                        if (targets['total_foods'] === undefined) targets['total_foods'] = defaults.foodsPos;
-                        if (targets['mix_salty'] === undefined) targets['mix_salty'] = defaults.mixSalty;
-                        if (targets['mix_foods'] === undefined) targets['mix_foods'] = defaults.mixFoods;
-                    });
+                    // 2. Backfill Defaults Removed
+                    // We rely on getSellerCurrentGoal dynamic calculation for unconfigured sellers.
+                    // This avoids materializing defaults into overrides, which would prevent strict mode behavior (returning 0 for missing manual targets).
 
                     // Save to Supabase (SKIPPED - Load to Memory Only)
                     // const success = await saveGoalsToSupabase();
