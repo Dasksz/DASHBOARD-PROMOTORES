@@ -12464,39 +12464,48 @@ const supervisorGroups = new Map();
 
             const handleComparisonFilterChange = updateComparison;
 
-            comparisonTipoVendaFilterBtn.addEventListener('click', () => comparisonTipoVendaFilterDropdown.classList.toggle('hidden'));
-            comparisonTipoVendaFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) {
-                        if (!selectedComparisonTiposVenda.includes(value)) selectedComparisonTiposVenda.push(value);
-                    } else {
-                        selectedComparisonTiposVenda = selectedComparisonTiposVenda.filter(s => s !== value);
+            if (comparisonTipoVendaFilterBtn && comparisonTipoVendaFilterDropdown) {
+                comparisonTipoVendaFilterBtn.addEventListener('click', () => comparisonTipoVendaFilterDropdown.classList.toggle('hidden'));
+                comparisonTipoVendaFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) {
+                            if (!selectedComparisonTiposVenda.includes(value)) selectedComparisonTiposVenda.push(value);
+                        } else {
+                            selectedComparisonTiposVenda = selectedComparisonTiposVenda.filter(s => s !== value);
+                        }
+                        selectedComparisonTiposVenda = updateTipoVendaFilter(comparisonTipoVendaFilterDropdown, comparisonTipoVendaFilterText, selectedComparisonTiposVenda, [...allSalesData, ...allHistoryData]);
+                        handleComparisonFilterChange();
                     }
-                    selectedComparisonTiposVenda = updateTipoVendaFilter(comparisonTipoVendaFilterDropdown, comparisonTipoVendaFilterText, selectedComparisonTiposVenda, [...allSalesData, ...allHistoryData]);
-                    handleComparisonFilterChange();
-                }
-            });
-            comparisonFornecedorToggleContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { const fornecedor = e.target.dataset.fornecedor; if (currentComparisonFornecedor === fornecedor) { currentComparisonFornecedor = ''; e.target.classList.remove('active'); } else { currentComparisonFornecedor = fornecedor; comparisonFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); } handleComparisonFilterChange(); } });
-            comparisonSupplierFilterBtn.addEventListener('click', () => comparisonSupplierFilterDropdown.classList.toggle('hidden'));
-            comparisonSupplierFilterDropdown.addEventListener('change', (e) => { if (e.target.type === 'checkbox' && e.target.dataset.filterType === 'comparison') { const { value, checked } = e.target; if (checked) selectedComparisonSuppliers.push(value); else selectedComparisonSuppliers = selectedComparisonSuppliers.filter(s => s !== value); handleComparisonFilterChange(); } });
+                });
+            }
+            if (comparisonFornecedorToggleContainer) {
+                comparisonFornecedorToggleContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { const fornecedor = e.target.dataset.fornecedor; if (currentComparisonFornecedor === fornecedor) { currentComparisonFornecedor = ''; e.target.classList.remove('active'); } else { currentComparisonFornecedor = fornecedor; comparisonFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); } handleComparisonFilterChange(); } });
+            }
+            if (comparisonSupplierFilterBtn && comparisonSupplierFilterDropdown) {
+                comparisonSupplierFilterBtn.addEventListener('click', () => comparisonSupplierFilterDropdown.classList.toggle('hidden'));
+                comparisonSupplierFilterDropdown.addEventListener('change', (e) => { if (e.target.type === 'checkbox' && e.target.dataset.filterType === 'comparison') { const { value, checked } = e.target; if (checked) selectedComparisonSuppliers.push(value); else selectedComparisonSuppliers = selectedComparisonSuppliers.filter(s => s !== value); handleComparisonFilterChange(); } });
+            }
 
-            comparisonComRedeBtn.addEventListener('click', () => comparisonRedeFilterDropdown.classList.toggle('hidden'));
-            comparisonRedeGroupContainer.addEventListener('click', (e) => {
-                if(e.target.closest('button')) {
-                    const button = e.target.closest('button');
-                    comparisonRedeGroupFilter = button.dataset.group;
-                    comparisonRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    button.classList.add('active');
-                    if (comparisonRedeGroupFilter !== 'com_rede') {
-                        comparisonRedeFilterDropdown.classList.add('hidden');
-                        selectedComparisonRedes = [];
+            if (comparisonComRedeBtn) comparisonComRedeBtn.addEventListener('click', () => comparisonRedeFilterDropdown.classList.toggle('hidden'));
+            if (comparisonRedeGroupContainer) {
+                comparisonRedeGroupContainer.addEventListener('click', (e) => {
+                    if(e.target.closest('button')) {
+                        const button = e.target.closest('button');
+                        comparisonRedeGroupFilter = button.dataset.group;
+                        comparisonRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                        button.classList.add('active');
+                        if (comparisonRedeGroupFilter !== 'com_rede') {
+                            comparisonRedeFilterDropdown.classList.add('hidden');
+                            selectedComparisonRedes = [];
+                        }
+                        updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
+                        handleComparisonFilterChange();
                     }
-                    updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
-                    handleComparisonFilterChange();
-                }
-            });
-            comparisonRedeFilterDropdown.addEventListener('change', (e) => {
+                });
+            }
+            if (comparisonRedeFilterDropdown) {
+                comparisonRedeFilterDropdown.addEventListener('change', (e) => {
                 if (e.target.type === 'checkbox') {
                     const { value, checked } = e.target;
                     if (checked) selectedComparisonRedes.push(value);
@@ -12517,30 +12526,36 @@ const supervisorGroups = new Map();
                 updateComparisonCitySuggestions([...currentSales, ...historySales]);
             }, 300);
 
-            comparisonCityFilter.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/[0-9]/g, '');
-                debouncedComparisonCityUpdate();
-            });
-            comparisonCityFilter.addEventListener('focus', () => {
-                const { currentSales, historySales } = getComparisonFilteredData({ excludeFilter: 'city' });
-                comparisonCitySuggestions.classList.remove('manual-hide');
-                updateComparisonCitySuggestions([...currentSales, ...historySales]);
-            });
-            comparisonCityFilter.addEventListener('blur', () => setTimeout(() => comparisonCitySuggestions.classList.add('hidden'), 150));
-            comparisonCityFilter.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    comparisonCitySuggestions.classList.add('hidden', 'manual-hide');
-                    handleComparisonFilterChange();
-                    e.target.blur();
-                }
-            });
-            comparisonCitySuggestions.addEventListener('click', (e) => {
-                if (e.target.tagName === 'DIV') {
-                    comparisonCityFilter.value = e.target.textContent;
-                    comparisonCitySuggestions.classList.add('hidden');
-                    handleComparisonFilterChange();
-                }
-            });
+            if (comparisonCityFilter) {
+                comparisonCityFilter.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/[0-9]/g, '');
+                    debouncedComparisonCityUpdate();
+                });
+                comparisonCityFilter.addEventListener('focus', () => {
+                    const { currentSales, historySales } = getComparisonFilteredData({ excludeFilter: 'city' });
+                    if (comparisonCitySuggestions) {
+                        comparisonCitySuggestions.classList.remove('manual-hide');
+                        updateComparisonCitySuggestions([...currentSales, ...historySales]);
+                    }
+                });
+                comparisonCityFilter.addEventListener('blur', () => setTimeout(() => { if(comparisonCitySuggestions) comparisonCitySuggestions.classList.add('hidden'); }, 150));
+                comparisonCityFilter.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        if (comparisonCitySuggestions) comparisonCitySuggestions.classList.add('hidden', 'manual-hide');
+                        handleComparisonFilterChange();
+                        e.target.blur();
+                    }
+                });
+            }
+            if (comparisonCitySuggestions) {
+                comparisonCitySuggestions.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'DIV') {
+                        if (comparisonCityFilter) comparisonCityFilter.value = e.target.textContent;
+                        comparisonCitySuggestions.classList.add('hidden');
+                        handleComparisonFilterChange();
+                    }
+                });
+            }
 
             const resetComparisonFilters = () => {
                 selectedComparisonTiposVenda = [];
@@ -12597,26 +12612,31 @@ const supervisorGroups = new Map();
                 return false;
             }
 
-            comparisonProductFilterBtn.addEventListener('click', () => {
-                updateComparisonProductFilter();
-                comparisonProductFilterDropdown.classList.toggle('hidden');
-            });
+            if (comparisonProductFilterBtn) {
+                comparisonProductFilterBtn.addEventListener('click', () => {
+                    updateComparisonProductFilter();
+                    if (comparisonProductFilterDropdown) comparisonProductFilterDropdown.classList.toggle('hidden');
+                });
+            }
 
             const debouncedComparisonProductSearch = debounce(updateComparisonProductFilter, 250);
-            comparisonProductFilterDropdown.addEventListener('input', (e) => {
-                if (e.target.id === 'comparison-product-search-input') {
-                    debouncedComparisonProductSearch();
-                }
-            });
-            comparisonProductFilterDropdown.addEventListener('change', (e) => {
-                if(e.target.dataset.filterType === 'comparison' && handleProductFilterChange(e, selectedComparisonProducts)) {
-                    handleComparisonFilterChange();
-                    updateComparisonProductFilter();
-                }
-            });
+            if (comparisonProductFilterDropdown) {
+                comparisonProductFilterDropdown.addEventListener('input', (e) => {
+                    if (e.target.id === 'comparison-product-search-input') {
+                        debouncedComparisonProductSearch();
+                    }
+                });
+                comparisonProductFilterDropdown.addEventListener('change', (e) => {
+                    if(e.target.dataset.filterType === 'comparison' && handleProductFilterChange(e, selectedComparisonProducts)) {
+                        handleComparisonFilterChange();
+                        updateComparisonProductFilter();
+                    }
+                });
+            }
 
 
-            comparisonTendencyToggle.addEventListener('click', () => {
+            if (comparisonTendencyToggle) {
+                comparisonTendencyToggle.addEventListener('click', () => {
                 useTendencyComparison = !useTendencyComparison;
                 comparisonTendencyToggle.textContent = useTendencyComparison ? 'Ver Dados Reais' : 'Calcular Tendência';
                 comparisonTendencyToggle.classList.toggle('bg-orange-600');
@@ -12626,21 +12646,26 @@ const supervisorGroups = new Map();
                 updateComparison();
             });
 
-            toggleWeeklyBtn.addEventListener('click', () => {
-                comparisonChartType = 'weekly';
-                toggleWeeklyBtn.classList.add('active');
-                toggleMonthlyBtn.classList.remove('active');
-                document.getElementById('comparison-monthly-metric-container').classList.add('hidden');
-                updateComparison();
-            });
+            if (toggleWeeklyBtn) {
+                toggleWeeklyBtn.addEventListener('click', () => {
+                    comparisonChartType = 'weekly';
+                    toggleWeeklyBtn.classList.add('active');
+                    if (toggleMonthlyBtn) toggleMonthlyBtn.classList.remove('active');
+                    const metricContainer = document.getElementById('comparison-monthly-metric-container');
+                    if (metricContainer) metricContainer.classList.add('hidden');
+                    updateComparison();
+                });
+            }
 
-            toggleMonthlyBtn.addEventListener('click', () => {
-                comparisonChartType = 'monthly';
-                toggleMonthlyBtn.classList.add('active');
-                toggleWeeklyBtn.classList.remove('active');
-                // The toggle visibility is handled inside updateComparisonView based on mode
-                updateComparison();
-            });
+            if (toggleMonthlyBtn) {
+                toggleMonthlyBtn.addEventListener('click', () => {
+                    comparisonChartType = 'monthly';
+                    toggleMonthlyBtn.classList.add('active');
+                    if (toggleWeeklyBtn) toggleWeeklyBtn.classList.remove('active');
+                    // The toggle visibility is handled inside updateComparisonView based on mode
+                    updateComparison();
+                });
+            }
 
             // New Metric Toggle Listeners
             const toggleMonthlyFatBtn = document.getElementById('toggle-monthly-fat-btn');
@@ -12662,24 +12687,30 @@ const supervisorGroups = new Map();
                 });
             }
 
-            mainHolidayPickerBtn.addEventListener('click', () => {
-                renderCalendar(calendarState.year, calendarState.month);
-                holidayModal.classList.remove('hidden');
-            });
-            comparisonHolidayPickerBtn.addEventListener('click', () => {
-                renderCalendar(calendarState.year, calendarState.month);
-                holidayModal.classList.remove('hidden');
-            });
-            holidayModalCloseBtn.addEventListener('click', () => holidayModal.classList.add('hidden'));
-            holidayModalDoneBtn.addEventListener('click', () => {
-                holidayModal.classList.add('hidden');
-                const holidayBtnText = selectedHolidays.length > 0 ? `${selectedHolidays.length} feriado(s)` : 'Selecionar Feriados';
-                comparisonHolidayPickerBtn.textContent = holidayBtnText;
-                mainHolidayPickerBtn.textContent = holidayBtnText;
-                updateComparison();
-                updateDashboard();
-            });
-            calendarContainer.addEventListener('click', (e) => {
+            if (mainHolidayPickerBtn) {
+                mainHolidayPickerBtn.addEventListener('click', () => {
+                    renderCalendar(calendarState.year, calendarState.month);
+                    if (holidayModal) holidayModal.classList.remove('hidden');
+                });
+            }
+            if (comparisonHolidayPickerBtn) {
+                comparisonHolidayPickerBtn.addEventListener('click', () => {
+                    renderCalendar(calendarState.year, calendarState.month);
+                    if (holidayModal) holidayModal.classList.remove('hidden');
+                });
+            }
+            if (holidayModalCloseBtn) holidayModalCloseBtn.addEventListener('click', () => { if(holidayModal) holidayModal.classList.add('hidden'); });
+            if (holidayModalDoneBtn) {
+                holidayModalDoneBtn.addEventListener('click', () => {
+                    if (holidayModal) holidayModal.classList.add('hidden');
+                    const holidayBtnText = selectedHolidays.length > 0 ? `${selectedHolidays.length} feriado(s)` : 'Selecionar Feriados';
+                    if (comparisonHolidayPickerBtn) comparisonHolidayPickerBtn.textContent = holidayBtnText;
+                    if (mainHolidayPickerBtn) mainHolidayPickerBtn.textContent = holidayBtnText;
+                    updateComparison();
+                    updateDashboard();
+                });
+            }
+            if (calendarContainer) calendarContainer.addEventListener('click', (e) => {
                 if (e.target.id === 'prev-month-btn') {
                     calendarState.month--;
                     if (calendarState.month < 0) {
@@ -12720,58 +12751,68 @@ const supervisorGroups = new Map();
                 updateInnovationsMonthView();
             };
 
-            innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
+            if (innovationsMonthCategoryFilter) innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
 
             const debouncedUpdateInnovationsMonth = debounce(updateInnovations, 400);
 
             const debouncedInnovationsCityUpdate = debounce(() => {
                 const cityDataSource = getInnovationsMonthFilteredData({ excludeFilter: 'city' }).clients;
-                innovationsMonthCitySuggestions.classList.remove('manual-hide');
-                updateCitySuggestions(innovationsMonthCityFilter, innovationsMonthCitySuggestions, cityDataSource);
+                if (innovationsMonthCitySuggestions) {
+                    innovationsMonthCitySuggestions.classList.remove('manual-hide');
+                    updateCitySuggestions(innovationsMonthCityFilter, innovationsMonthCitySuggestions, cityDataSource);
+                }
             }, 300);
 
-            innovationsMonthCityFilter.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/[0-9]/g, '');
-                debouncedInnovationsCityUpdate();
-            });
-            innovationsMonthCityFilter.addEventListener('focus', () => {
-                const cityDataSource = getInnovationsMonthFilteredData({ excludeFilter: 'city' }).clients;
-                innovationsMonthCitySuggestions.classList.remove('manual-hide');
-                updateCitySuggestions(innovationsMonthCityFilter, innovationsMonthCitySuggestions, cityDataSource);
-            });
-            innovationsMonthCityFilter.addEventListener('blur', () => setTimeout(() => innovationsMonthCitySuggestions.classList.add('hidden'), 150));
-            innovationsMonthCityFilter.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    innovationsMonthCitySuggestions.classList.add('hidden', 'manual-hide');
-                    debouncedUpdateInnovationsMonth();
-                    e.target.blur();
-                }
-            });
-            innovationsMonthCitySuggestions.addEventListener('click', (e) => {
-                if (e.target.tagName === 'DIV') {
-                    innovationsMonthCityFilter.value = e.target.textContent;
-                    innovationsMonthCitySuggestions.classList.add('hidden');
-                    debouncedUpdateInnovationsMonth();
-                }
-            });
-
-            innovationsMonthFilialFilter.addEventListener('change', debouncedUpdateInnovationsMonth);
-            clearInnovationsMonthFiltersBtn.addEventListener('click', () => { resetInnovationsMonthFilters(); markDirty('inovacoes'); });
-            exportInnovationsMonthPdfBtn.addEventListener('click', exportInnovationsMonthPDF);
-
-            innovationsMonthTipoVendaFilterBtn.addEventListener('click', () => innovationsMonthTipoVendaFilterDropdown.classList.toggle('hidden'));
-            innovationsMonthTipoVendaFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) {
-                        if (!selectedInnovationsMonthTiposVenda.includes(value)) selectedInnovationsMonthTiposVenda.push(value);
-                    } else {
-                        selectedInnovationsMonthTiposVenda = selectedInnovationsMonthTiposVenda.filter(s => s !== value);
+            if (innovationsMonthCityFilter) {
+                innovationsMonthCityFilter.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/[0-9]/g, '');
+                    debouncedInnovationsCityUpdate();
+                });
+                innovationsMonthCityFilter.addEventListener('focus', () => {
+                    const cityDataSource = getInnovationsMonthFilteredData({ excludeFilter: 'city' }).clients;
+                    if (innovationsMonthCitySuggestions) {
+                        innovationsMonthCitySuggestions.classList.remove('manual-hide');
+                        updateCitySuggestions(innovationsMonthCityFilter, innovationsMonthCitySuggestions, cityDataSource);
                     }
-                    selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, [...allSalesData, ...allHistoryData]);
-                    debouncedUpdateInnovationsMonth();
-                }
-            });
+                });
+                innovationsMonthCityFilter.addEventListener('blur', () => setTimeout(() => { if(innovationsMonthCitySuggestions) innovationsMonthCitySuggestions.classList.add('hidden'); }, 150));
+                innovationsMonthCityFilter.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        if (innovationsMonthCitySuggestions) innovationsMonthCitySuggestions.classList.add('hidden', 'manual-hide');
+                        debouncedUpdateInnovationsMonth();
+                        e.target.blur();
+                    }
+                });
+            }
+            if (innovationsMonthCitySuggestions) {
+                innovationsMonthCitySuggestions.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'DIV') {
+                        if (innovationsMonthCityFilter) innovationsMonthCityFilter.value = e.target.textContent;
+                        innovationsMonthCitySuggestions.classList.add('hidden');
+                        debouncedUpdateInnovationsMonth();
+                    }
+                });
+            }
+
+            if (innovationsMonthFilialFilter) innovationsMonthFilialFilter.addEventListener('change', debouncedUpdateInnovationsMonth);
+            if (clearInnovationsMonthFiltersBtn) clearInnovationsMonthFiltersBtn.addEventListener('click', () => { resetInnovationsMonthFilters(); markDirty('inovacoes'); });
+            if (exportInnovationsMonthPdfBtn) exportInnovationsMonthPdfBtn.addEventListener('click', exportInnovationsMonthPDF);
+
+            if (innovationsMonthTipoVendaFilterBtn && innovationsMonthTipoVendaFilterDropdown) {
+                innovationsMonthTipoVendaFilterBtn.addEventListener('click', () => innovationsMonthTipoVendaFilterDropdown.classList.toggle('hidden'));
+                innovationsMonthTipoVendaFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) {
+                            if (!selectedInnovationsMonthTiposVenda.includes(value)) selectedInnovationsMonthTiposVenda.push(value);
+                        } else {
+                            selectedInnovationsMonthTiposVenda = selectedInnovationsMonthTiposVenda.filter(s => s !== value);
+                        }
+                        selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, [...allSalesData, ...allHistoryData]);
+                        debouncedUpdateInnovationsMonth();
+                    }
+                });
+            }
 
 
             document.getElementById('export-coverage-pdf-btn').addEventListener('click', exportCoveragePDF);
@@ -13015,28 +13056,31 @@ const supervisorGroups = new Map();
             }
 
             // Tab Switching
-            document.getElementById('goals-tabs').addEventListener('click', (e) => {
-                if (e.target.tagName === 'BUTTON') {
-                    const tab = e.target.dataset.tab;
-                    document.querySelectorAll('#goals-tabs button').forEach(btn => {
-                        btn.classList.remove('border-teal-500', 'text-teal-500', 'active');
-                        btn.classList.add('border-transparent', 'hover:text-slate-300', 'hover:border-slate-300', 'text-slate-400');
-                    });
-                    e.target.classList.remove('border-transparent', 'hover:text-slate-300', 'hover:border-slate-300', 'text-slate-400');
-                    e.target.classList.add('border-teal-500', 'text-teal-500', 'active');
+            const goalsTabs = document.getElementById('goals-tabs');
+            if (goalsTabs) {
+                goalsTabs.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON') {
+                        const tab = e.target.dataset.tab;
+                        document.querySelectorAll('#goals-tabs button').forEach(btn => {
+                            btn.classList.remove('border-teal-500', 'text-teal-500', 'active');
+                            btn.classList.add('border-transparent', 'hover:text-slate-300', 'hover:border-slate-300', 'text-slate-400');
+                        });
+                        e.target.classList.remove('border-transparent', 'hover:text-slate-300', 'hover:border-slate-300', 'text-slate-400');
+                        e.target.classList.add('border-teal-500', 'text-teal-500', 'active');
 
-                    if (tab === 'gv') {
-                        goalsGvContent.classList.remove('hidden');
-                        goalsSvContent.classList.add('hidden');
-                        updateGoals(); // Refresh GV view
-                    } else if (tab === 'sv') {
-                        goalsGvContent.classList.add('hidden');
-                        goalsSvContent.classList.remove('hidden');
-                        // But we want to refresh data
-                        updateGoalsSvView();
+                        if (tab === 'gv') {
+                            if(goalsGvContent) goalsGvContent.classList.remove('hidden');
+                            if(goalsSvContent) goalsSvContent.classList.add('hidden');
+                            updateGoals(); // Refresh GV view
+                        } else if (tab === 'sv') {
+                            if(goalsGvContent) goalsGvContent.classList.add('hidden');
+                            if(goalsSvContent) goalsSvContent.classList.remove('hidden');
+                            // But we want to refresh data
+                            if (typeof updateGoalsSvView === 'function') updateGoalsSvView();
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // SV Sub-tabs Logic and Toggle Logic REMOVED (Replaced by Single Table View)
 
@@ -13111,16 +13155,19 @@ const supervisorGroups = new Map();
             // REMOVED: Automatic update on change/input to prevent overwriting user input before distribution.
             // Values are now read directly from the input when the "Distribute" button is clicked.
 
-            clearGoalsGvFiltersBtn.addEventListener('click', () => { resetGoalsGvFilters(); markDirty('goals'); });
+            if (clearGoalsGvFiltersBtn) clearGoalsGvFiltersBtn.addEventListener('click', () => { resetGoalsGvFilters(); markDirty('goals'); });
 
             // SV Filters
 
-            document.getElementById('goals-prev-page-btn').addEventListener('click', () => {
-                if (goalsTableState.currentPage > 1) {
-                    goalsTableState.currentPage--;
-                    updateGoalsView();
-                }
-            });
+            const goalsPrevPageBtn = document.getElementById('goals-prev-page-btn');
+            if (goalsPrevPageBtn) {
+                goalsPrevPageBtn.addEventListener('click', () => {
+                    if (goalsTableState.currentPage > 1) {
+                        goalsTableState.currentPage--;
+                        updateGoalsView();
+                    }
+                });
+            }
 
             const goalsGvExportPdfBtn = document.getElementById('goals-gv-export-pdf-btn');
             if(goalsGvExportPdfBtn) {
@@ -13131,12 +13178,15 @@ const supervisorGroups = new Map();
             if(goalsGvExportXlsxBtn) {
                 goalsGvExportXlsxBtn.addEventListener('click', exportGoalsCurrentTabXLSX);
             }
-            document.getElementById('goals-next-page-btn').addEventListener('click', () => {
-                if (goalsTableState.currentPage < goalsTableState.totalPages) {
-                    goalsTableState.currentPage++;
-                    updateGoalsView();
-                }
-            });
+            const goalsNextPageBtn = document.getElementById('goals-next-page-btn');
+            if (goalsNextPageBtn) {
+                goalsNextPageBtn.addEventListener('click', () => {
+                    if (goalsTableState.currentPage < goalsTableState.totalPages) {
+                        goalsTableState.currentPage++;
+                        updateGoalsView();
+                    }
+                });
+            }
 
             // --- Meta Vs Realizado Listeners ---
             const updateMetaRealizado = () => {
@@ -13151,12 +13201,13 @@ const supervisorGroups = new Map();
             // Supplier Filter
             const metaRealizadoSupplierFilterBtn = document.getElementById('meta-realizado-supplier-filter-btn');
             const metaRealizadoSupplierFilterDropdown = document.getElementById('meta-realizado-supplier-filter-dropdown');
-            metaRealizadoSupplierFilterBtn.addEventListener('click', () => metaRealizadoSupplierFilterDropdown.classList.toggle('hidden'));
-            metaRealizadoSupplierFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) {
-                        if (!selectedMetaRealizadoSuppliers.includes(value)) selectedMetaRealizadoSuppliers.push(value);
+            if (metaRealizadoSupplierFilterBtn && metaRealizadoSupplierFilterDropdown) {
+                metaRealizadoSupplierFilterBtn.addEventListener('click', () => metaRealizadoSupplierFilterDropdown.classList.toggle('hidden'));
+                metaRealizadoSupplierFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) {
+                            if (!selectedMetaRealizadoSuppliers.includes(value)) selectedMetaRealizadoSuppliers.push(value);
                     } else {
                         selectedMetaRealizadoSuppliers = selectedMetaRealizadoSuppliers.filter(s => s !== value);
                     }
