@@ -11341,6 +11341,7 @@ const supervisorGroups = new Map();
                         break;
                     case 'dashboard':
                         showViewElement(mainDashboard);
+                        document.getElementById('dashboard-kpi-container').classList.remove('hidden');
                         chartView.classList.remove('hidden');
                         tableView.classList.add('hidden');
                         tablePaginationControls.classList.add('hidden');
@@ -11351,6 +11352,7 @@ const supervisorGroups = new Map();
                         break;
                     case 'pedidos':
                         showViewElement(mainDashboard);
+                        document.getElementById('dashboard-kpi-container').classList.add('hidden');
                         chartView.classList.add('hidden');
                         tableView.classList.remove('hidden');
                         tablePaginationControls.classList.remove('hidden');
