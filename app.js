@@ -1542,7 +1542,6 @@
             // --- SAFEGUARD: Initialize all structures first ---
             sellerDetailsMap = new Map();
             optimizedData.clientsByRca = new Map();
-            optimizedData.searchIndices.clients = new Array(allClientsData.length);
             optimizedData.rcasBySupervisor = new Map();
             optimizedData.productsBySupplier = new Map();
             optimizedData.salesByProduct = { current: new Map(), history: new Map() };
@@ -1558,6 +1557,9 @@
             optimizedData.coordsByCocoord = new Map();
             optimizedData.cocoordsByCoord = new Map();
             optimizedData.promotorsByCocoord = new Map();
+
+            // Initialize Arrays safely later
+            optimizedData.searchIndices.clients = [];
             // --------------------------------------------------
 
             const sellerLastSaleDateMap = new Map(); // Track latest date per seller
@@ -1565,6 +1567,9 @@
             let americanasCodCli = null;
 
             try {
+                if (allClientsData) {
+                    optimizedData.searchIndices.clients = new Array(allClientsData.length);
+                }
                 // Use ONLY History Data for identifying Supervisor (User Request)
                 // Identify Supervisor for each Seller based on the *Latest* sale in History
                 const historyData = allHistoryData; // Using variable for clarity
