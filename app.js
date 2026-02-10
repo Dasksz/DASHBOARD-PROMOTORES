@@ -12506,19 +12506,20 @@ const supervisorGroups = new Map();
             }
             if (comparisonRedeFilterDropdown) {
                 comparisonRedeFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) selectedComparisonRedes.push(value);
-                    else selectedComparisonRedes = selectedComparisonRedes.filter(r => r !== value);
+                    if (e.target.type === 'checkbox') {
+                        const { value, checked } = e.target;
+                        if (checked) selectedComparisonRedes.push(value);
+                        else selectedComparisonRedes = selectedComparisonRedes.filter(r => r !== value);
 
-                    comparisonRedeGroupFilter = 'com_rede';
-                    comparisonRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    comparisonComRedeBtn.classList.add('active');
+                        comparisonRedeGroupFilter = 'com_rede';
+                        comparisonRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                        comparisonComRedeBtn.classList.add('active');
 
-                    selectedComparisonRedes = updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
-                    handleComparisonFilterChange();
-                }
-            });
+                        selectedComparisonRedes = updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
+                        handleComparisonFilterChange();
+                    }
+                });
+            }
 
             const debouncedComparisonCityUpdate = debounce(() => {
                 const { currentSales, historySales } = getComparisonFilteredData({ excludeFilter: 'city' });
@@ -13208,13 +13209,14 @@ const supervisorGroups = new Map();
                         const { value, checked } = e.target;
                         if (checked) {
                             if (!selectedMetaRealizadoSuppliers.includes(value)) selectedMetaRealizadoSuppliers.push(value);
-                    } else {
-                        selectedMetaRealizadoSuppliers = selectedMetaRealizadoSuppliers.filter(s => s !== value);
+                        } else {
+                            selectedMetaRealizadoSuppliers = selectedMetaRealizadoSuppliers.filter(s => s !== value);
+                        }
+                        selectedMetaRealizadoSuppliers = updateSupplierFilter(metaRealizadoSupplierFilterDropdown, document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, metaRealizadoSuppliersSource, 'metaRealizado', true);
+                        debouncedUpdateMetaRealizado();
                     }
-                    selectedMetaRealizadoSuppliers = updateSupplierFilter(metaRealizadoSupplierFilterDropdown, document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, metaRealizadoSuppliersSource, 'metaRealizado', true);
-                    debouncedUpdateMetaRealizado();
-                }
-            });
+                });
+            }
 
             // Pasta Filter
             const metaRealizadoPastaContainer = document.getElementById('meta-realizado-pasta-toggle-container');
