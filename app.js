@@ -14414,10 +14414,6 @@ const supervisorGroups = new Map();
                         if (category === 'total_foods') return defaults.foodsPos;
                         if (category === 'mix_salty') return defaults.mixSalty;
                         if (category === 'mix_foods') return defaults.mixFoods;
-                        // Fallback for leaf components? Currently Pos adjustments are manual.
-                        // If category is a leaf (e.g. 707), default adjustment is 0 (Natural Base is not stored here).
-                        // Note: parseGoalsSvStructure sends '707', '708' etc for Positivação.
-                        // We assume 0 for leaf adjustments if not set.
                         return 0;
                     }
                 }
@@ -14844,7 +14840,9 @@ const supervisorGroups = new Map();
                     // ------------------------
 
                     // 1. Process Manual Updates (Imported)
+                    const importedSellers = new Set();
                     pendingImportUpdates.forEach(u => {
+                        importedSellers.add(u.seller);
                         if (u.type === 'rev') {
                             distributeSellerGoal(u.seller, u.category, u.val, 'fat');
                             // Save Override
