@@ -343,6 +343,68 @@
         const FORBIDDEN_KEYS = ['SUPERV', 'CODUSUR', 'CODSUPERVISOR', 'NOME', 'CODCLI', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX', 'SUPERVISOR', 'PASTA', 'RAMO', 'ATIVIDADE', 'CIDADE', 'MUNICIPIO', 'BAIRRO'];
         let allSalesData, allHistoryData, allClientsData;
 
+        function normalizePastaInData(dataset) {
+            // Cache for supplier -> pasta mapping to avoid repeated config lookups
+            const supplierCache = new Map();
+
+            const getResolvedPasta = (currentPasta, fornecedor) => {
+                // If we already have a valid pasta, return it
+                if (currentPasta && currentPasta !== '0' && currentPasta !== '00' && currentPasta !== 'N/A') {
+                    return currentPasta;
+                }
+
+                // Check cache
+                const key = String(fornecedor || '').toUpperCase();
+                if (supplierCache.has(key)) {
+                    return supplierCache.get(key);
+                }
+
+                // Calculate and cache
+                const resolved = resolveSupplierPasta(currentPasta, fornecedor);
+                supplierCache.set(key, resolved);
+                return resolved;
+            };
+
+            if (dataset instanceof ColumnarDataset) {
+                const data = dataset._data;
+                const len = dataset.length;
+
+                // Ensure columns exist or gracefully handle
+                const pastaCol = data['OBSERVACAOFOR'] || new Array(len).fill(null);
+                const supplierCol = data['FORNECEDOR'] || [];
+
+                // If we created a new array for pasta, we must attach it to _data
+                if (!data['OBSERVACAOFOR']) {
+                    data['OBSERVACAOFOR'] = pastaCol;
+                    if (dataset.columns && !dataset.columns.includes('OBSERVACAOFOR')) {
+                        dataset.columns.push('OBSERVACAOFOR');
+                    }
+                }
+
+                for (let i = 0; i < len; i++) {
+                    const originalPasta = pastaCol[i];
+                    const fornecedor = supplierCol[i];
+                    const newPasta = getResolvedPasta(originalPasta, fornecedor);
+
+                    // Only update if changed (optimization)
+                    if (newPasta !== originalPasta) {
+                        pastaCol[i] = newPasta;
+                    }
+                }
+            } else if (Array.isArray(dataset)) {
+                 for (let i = 0; i < dataset.length; i++) {
+                    const item = dataset[i];
+                    const originalPasta = item['OBSERVACAOFOR'];
+                    const fornecedor = item['FORNECEDOR'];
+                    const newPasta = getResolvedPasta(originalPasta, fornecedor);
+
+                    if (newPasta !== originalPasta) {
+                        item['OBSERVACAOFOR'] = newPasta;
+                    }
+                 }
+            }
+        }
+
         function sanitizeData(data) {
             if (!data) return [];
             const forbidden = ['SUPERV', 'CODUSUR', 'CODSUPERVISOR', 'NOME', 'CODCLI', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX', 'SUPERVISOR'];
@@ -380,6 +442,11 @@
             allHistoryData = sanitizeData(embeddedData.history);
             allClientsData = embeddedData.clients;
         }
+
+        // --- PRE-PROCESSING: Normalize PASTA once to avoid repeated logic in loops ---
+        normalizePastaInData(allSalesData);
+        normalizePastaInData(allHistoryData);
+        // -----------------------------------------------------------------------------
 
         let aggregatedOrders = embeddedData.byOrder;
         const stockData05 = new Map(Object.entries(embeddedData.stockMap05 || {}));
@@ -1664,9 +1731,8 @@
                     const supervisor = getVal(i, 'SUPERV') || 'N/A';
                     const rca = getVal(i, 'NOME') || 'N/A';
 
-                    // --- FIX: Derive PASTA if empty directly inside indexing loop ---
-                    let pasta = resolveSupplierPasta(getVal(i, 'OBSERVACAOFOR'), getVal(i, 'FORNECEDOR'));
-                    // ---------------------------------------------------------------
+                    // Use pre-normalized PASTA
+                    let pasta = getVal(i, 'OBSERVACAOFOR');
 
                     const supplier = getVal(i, 'CODFOR');
                     const client = getVal(i, 'CODCLI');
