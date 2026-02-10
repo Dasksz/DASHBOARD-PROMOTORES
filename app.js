@@ -46,6 +46,21 @@
             return s;
         };
 
+        // --- HELPER: Alternative Sales Type Logic ---
+        function isAlternativeMode(selectedTypes) {
+            if (!selectedTypes || selectedTypes.length === 0) return false;
+            // "Alternative Mode" is active ONLY if we have selected types AND none of them are 1 or 9.
+            return !selectedTypes.includes('1') && !selectedTypes.includes('9');
+        }
+
+        function getValueForSale(sale, selectedTypes) {
+            if (isAlternativeMode(selectedTypes)) {
+                return Number(sale.VLBONIFIC) || 0;
+            }
+            return Number(sale.VLVENDA) || 0;
+        }
+        // ---------------------------------------------
+
         // --- OPTIMIZATION: Lazy Columnar Accessor with Write-Back Support ---
         class ColumnarDataset {
             constructor(columnarData) {
@@ -2715,13 +2730,15 @@
 
             sales.forEach(s => {
                 if (!s.CODCLI || !s.PRODUTO) return;
+                if (!isAlternativeMode(selectedMixTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
 
                 if (!clientProductNetValues.has(s.CODCLI)) {
                     clientProductNetValues.set(s.CODCLI, new Map());
                 }
                 const clientMap = clientProductNetValues.get(s.CODCLI);
                 const currentVal = clientMap.get(s.PRODUTO) || 0;
-                clientMap.set(s.PRODUTO, currentVal + (Number(s.VLVENDA) || 0));
+                const val = getValueForSale(s, selectedMixTiposVenda);
+                clientMap.set(s.PRODUTO, currentVal + val);
 
                 if (!clientProductDesc.has(s.PRODUTO)) {
                     clientProductDesc.set(s.PRODUTO, s.DESCRICAO);
@@ -7402,10 +7419,13 @@ const supervisorGroups = new Map();
             // The bottleneck is the nested Product * Client check loop later.
 
             sales.forEach(s => {
+                if (!isAlternativeMode(selectedCoverageTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                const val = getValueForSale(s, selectedCoverageTiposVenda);
+
                 // Coverage Map (Inverted for Performance)
                 if (!productClientsCurrent.has(s.PRODUTO)) productClientsCurrent.set(s.PRODUTO, new Map());
                 const clientMap = productClientsCurrent.get(s.PRODUTO);
-                clientMap.set(s.CODCLI, (clientMap.get(s.CODCLI) || 0) + s.VLVENDA);
+                clientMap.set(s.CODCLI, (clientMap.get(s.CODCLI) || 0) + val);
 
                 // Box Quantity Map
                 boxesSoldCurrentMap.set(s.PRODUTO, (boxesSoldCurrentMap.get(s.PRODUTO) || 0) + s.QTVENDA_EMBALAGEM_MASTER);
@@ -7420,12 +7440,15 @@ const supervisorGroups = new Map();
                 const d = parseDate(s.DTPED);
                 const isPrevMonth = d && d.getUTCMonth() === prevMonthIdx && d.getUTCFullYear() === prevMonthYear;
 
+                if (!isAlternativeMode(selectedCoverageTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                const val = getValueForSale(s, selectedCoverageTiposVenda);
+
                 // Coverage Map (only if prev month)
                 if (isPrevMonth) {
                     // Coverage Map (Inverted for Performance)
                     if (!productClientsPrevious.has(s.PRODUTO)) productClientsPrevious.set(s.PRODUTO, new Map());
                     const clientMap = productClientsPrevious.get(s.PRODUTO);
-                    clientMap.set(s.CODCLI, (clientMap.get(s.CODCLI) || 0) + s.VLVENDA);
+                    clientMap.set(s.CODCLI, (clientMap.get(s.CODCLI) || 0) + val);
 
                     // Box Quantity Map (only if prev month)
                     boxesSoldPreviousMap.set(s.PRODUTO, (boxesSoldPreviousMap.get(s.PRODUTO) || 0) + s.QTVENDA_EMBALAGEM_MASTER);
@@ -7751,13 +7774,15 @@ const supervisorGroups = new Map();
             const clientTotalSales = new Map();
 
             data.forEach(sale => {
+                if (!isAlternativeMode(selectedTiposVenda) && sale.TIPOVENDA !== '1' && sale.TIPOVENDA !== '9') return;
                 if (sale.CODCLI) {
                     const currentVal = clientTotalSales.get(sale.CODCLI) || 0;
                     // Considera apenas VLVENDA para consistência com o KPI "Clientes Atendidos" do Comparativo
                     // Se a regra de bonificação mudar lá, deve mudar aqui também.
                     // Atualmente Comparativo usa: (s.TIPOVENDA === '1' || s.TIPOVENDA === '9') -> VLVENDA
                     // Note que 'data' aqui já vem filtrado, mas precisamos checar se o valor agregado passa do threshold
-                    clientTotalSales.set(sale.CODCLI, currentVal + (Number(sale.VLVENDA) || 0));
+                    const val = getValueForSale(sale, selectedTiposVenda);
+                    clientTotalSales.set(sale.CODCLI, currentVal + val);
 
                     // Rastrear SKUs únicos (mantendo lógica existente para SKU/PDV)
                     // Mas apenas se o cliente for considerado "positivo" no final?
@@ -7786,7 +7811,8 @@ const supervisorGroups = new Map();
             });
 
             data.forEach(item => {
-                const vlVenda = Number(item.VLVENDA) || 0;
+                if (!isAlternativeMode(selectedTiposVenda) && item.TIPOVENDA !== '1' && item.TIPOVENDA !== '9') return;
+                const vlVenda = getValueForSale(item, selectedTiposVenda);
                 const totPesoLiq = Number(item.TOTPESOLIQ) || 0;
 
                 summary.totalFaturamento += vlVenda;
@@ -8622,10 +8648,12 @@ const supervisorGroups = new Map();
             for(let i=0; i<allSalesData.length; i++) {
                 const s = (allSalesData instanceof ColumnarDataset) ? allSalesData.get(i) : allSalesData[i];
                 if (selectedTiposVendaSet.size > 0 && !selectedTiposVendaSet.has(s.TIPOVENDA)) continue;
+                if (!isAlternativeMode(selectedCityTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') continue;
 
                 const d = parseDate(s.DTPED);
                 if (d && d.getUTCFullYear() === currentYear && d.getUTCMonth() === currentMonth) {
-                    clientTotalsThisMonth.set(s.CODCLI, (clientTotalsThisMonth.get(s.CODCLI) || 0) + s.VLVENDA);
+                    const val = getValueForSale(s, selectedCityTiposVenda);
+                    clientTotalsThisMonth.set(s.CODCLI, (clientTotalsThisMonth.get(s.CODCLI) || 0) + val);
                 }
             }
 
@@ -8635,6 +8663,7 @@ const supervisorGroups = new Map();
             salesForAnalysis.forEach(s => {
                 const d = parseDate(s.DTPED);
                 if (d) {
+                    if (!isAlternativeMode(selectedCityTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
                     if (!detailedDataByClient.has(s.CODCLI)) {
                         detailedDataByClient.set(s.CODCLI, { total: 0, pepsico: 0, multimarcas: 0, maxDate: 0 });
                     }
@@ -8644,9 +8673,10 @@ const supervisorGroups = new Map();
                     if (ts > entry.maxDate) entry.maxDate = ts;
 
                     if (d.getUTCFullYear() === currentYear && d.getUTCMonth() === currentMonth) {
-                        entry.total += s.VLVENDA;
-                        if (s.OBSERVACAOFOR === 'PEPSICO') entry.pepsico += s.VLVENDA;
-                        else if (s.OBSERVACAOFOR === 'MULTIMARCAS') entry.multimarcas += s.VLVENDA;
+                        const val = getValueForSale(s, selectedCityTiposVenda);
+                        entry.total += val;
+                        if (s.OBSERVACAOFOR === 'PEPSICO') entry.pepsico += val;
+                        else if (s.OBSERVACAOFOR === 'MULTIMARCAS') entry.multimarcas += val;
                     }
                 }
             });
@@ -9858,26 +9888,27 @@ const supervisorGroups = new Map();
 
             // 1. Process Current Sales
             runAsyncChunked(currentSales, (s) => {
-                const isValidType = (s.TIPOVENDA === '1' || s.TIPOVENDA === '9');
-                if (isValidType) {
-                    metrics.current.fat += s.VLVENDA;
-                    metrics.current.peso += s.TOTPESOLIQ;
-                }
+                if (!isAlternativeMode(selectedComparisonTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                const val = getValueForSale(s, selectedComparisonTiposVenda);
+
+                metrics.current.fat += val;
+                metrics.current.peso += s.TOTPESOLIQ;
+
                 if (s.CODCLI) {
-                    currentClientsSet.set(s.CODCLI, (currentClientsSet.get(s.CODCLI) || 0) + s.VLVENDA);
+                    currentClientsSet.set(s.CODCLI, (currentClientsSet.get(s.CODCLI) || 0) + val);
                     if (!currentClientProductMap.has(s.CODCLI)) currentClientProductMap.set(s.CODCLI, new Map());
                     const cMap = currentClientProductMap.get(s.CODCLI);
                     if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: s.DESCRICAO, codfor: String(s.CODFOR) });
-                    cMap.get(s.PRODUTO).val += s.VLVENDA;
+                    cMap.get(s.PRODUTO).val += val;
                 }
-                if (s.SUPERV && isValidType) {
+                if (s.SUPERV) {
                     if (!metrics.charts.supervisorData[s.SUPERV]) metrics.charts.supervisorData[s.SUPERV] = { current: 0, history: 0 };
-                    metrics.charts.supervisorData[s.SUPERV].current += s.VLVENDA;
+                    metrics.charts.supervisorData[s.SUPERV].current += val;
                 }
                 const d = parseDate(s.DTPED);
-                if (d && isValidType) {
+                if (d) {
                     const wIdx = currentMonthWeeks.findIndex(w => d >= w.start && d <= w.end);
-                    if (wIdx !== -1) metrics.charts.weeklyCurrent[wIdx] += s.VLVENDA;
+                    if (wIdx !== -1) metrics.charts.weeklyCurrent[wIdx] += val;
                 }
             }, () => {
                 // 1.1 Finalize Current KPIs
@@ -9910,11 +9941,12 @@ const supervisorGroups = new Map();
 
                 // 2. Process History Sales
                 runAsyncChunked(historySales, (s) => {
-                    const isValidType = (s.TIPOVENDA === '1' || s.TIPOVENDA === '9');
-                    if (isValidType) {
-                        metrics.history.fat += s.VLVENDA;
-                        metrics.history.peso += s.TOTPESOLIQ;
-                    }
+                    if (!isAlternativeMode(selectedComparisonTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                    const val = getValueForSale(s, selectedComparisonTiposVenda);
+
+                    metrics.history.fat += val;
+                    metrics.history.peso += s.TOTPESOLIQ;
+
                     const d = parseDate(s.DTPED);
                     if (!d) return;
 
@@ -9922,34 +9954,32 @@ const supervisorGroups = new Map();
                     if (!historyMonths.has(monthKey)) historyMonths.set(monthKey, { fat: 0, clients: new Map(), productMap: new Map() });
                     const mData = historyMonths.get(monthKey);
 
-                    if (isValidType) mData.fat += s.VLVENDA;
+                    mData.fat += val;
 
                     if (s.CODCLI) {
-                        mData.clients.set(s.CODCLI, (mData.clients.get(s.CODCLI) || 0) + s.VLVENDA);
+                        mData.clients.set(s.CODCLI, (mData.clients.get(s.CODCLI) || 0) + val);
                         if (!mData.productMap.has(s.CODCLI)) mData.productMap.set(s.CODCLI, new Map());
                         const cMap = mData.productMap.get(s.CODCLI);
                         if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: s.DESCRICAO, codfor: String(s.CODFOR) });
-                        cMap.get(s.PRODUTO).val += s.VLVENDA;
+                        cMap.get(s.PRODUTO).val += val;
                     }
 
-                    if (s.SUPERV && isValidType) {
+                    if (s.SUPERV) {
                         if (!metrics.charts.supervisorData[s.SUPERV]) metrics.charts.supervisorData[s.SUPERV] = { current: 0, history: 0 };
-                        metrics.charts.supervisorData[s.SUPERV].history += s.VLVENDA;
+                        metrics.charts.supervisorData[s.SUPERV].history += val;
                     }
 
                     // Accumulate Day Totals for Day Weight Calculation
-                    if (isValidType) {
-                        metrics.historicalDayTotals[d.getUTCDay()] += s.VLVENDA;
-                    }
+                    metrics.historicalDayTotals[d.getUTCDay()] += val;
 
                     if (!monthWeeksCache.has(monthKey)) monthWeeksCache.set(monthKey, getMonthWeeks(d.getUTCFullYear(), d.getUTCMonth()));
                     const weeks = monthWeeksCache.get(monthKey);
                     const wIdx = weeks.findIndex(w => d >= w.start && d <= w.end);
-                    if (wIdx !== -1 && wIdx < metrics.charts.weeklyHistory.length && isValidType) {
-                        metrics.charts.weeklyHistory[wIdx] += s.VLVENDA;
+                    if (wIdx !== -1 && wIdx < metrics.charts.weeklyHistory.length) {
+                        metrics.charts.weeklyHistory[wIdx] += val;
                     }
-                    if (hasOverlap && d >= firstWeekStart && d < firstOfMonth && isValidType) {
-                        metrics.charts.weeklyCurrent[0] += s.VLVENDA;
+                    if (hasOverlap && d >= firstWeekStart && d < firstOfMonth) {
+                        metrics.charts.weeklyCurrent[0] += val;
                         metrics.overlapSales.push(s);
                     }
                 }, () => {
