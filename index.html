@@ -403,20 +403,32 @@
 
             <main id="app-container">
                 <div id="chartView">
-                    <!-- Main Trend Chart -->
-                    <div class="mb-8 bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg relative">
-                        <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
-                            <div>
-                                <h2 class="text-xl font-bold text-white mb-1">Tendência de Faturamento</h2>
-                                <p class="text-sm text-slate-400">Análise diária do mês corrente</p>
+                    <!-- Main Menu Buttons -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                        <button onclick="renderView('clientes')" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-6 px-6 rounded-xl border border-slate-700 shadow-md transition-all flex flex-col items-center gap-3 group">
+                            <div class="p-4 rounded-full bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                                <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                             </div>
-                            <div class="mt-4 sm:mt-0 w-full sm:w-auto">
-                                <button id="main-holiday-picker-btn" class="w-full sm:w-48 bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold uppercase py-2 px-4 rounded-lg hover:bg-slate-700 transition-colors">
-                                    Feriados
-                                </button>
+                            <span class="text-sm uppercase tracking-wider font-semibold">Clientes</span>
+                        </button>
+                        <button onclick="renderView('produtos')" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-6 px-6 rounded-xl border border-slate-700 shadow-md transition-all flex flex-col items-center gap-3 group">
+                            <div class="p-4 rounded-full bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                                <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                             </div>
-                        </div>
-                        <div id="trendChartContainer" class="relative h-80 w-full"></div>
+                            <span class="text-sm uppercase tracking-wider font-semibold">Produtos</span>
+                        </button>
+                        <button onclick="renderView('meta-realizado')" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-6 px-6 rounded-xl border border-slate-700 shadow-md transition-all flex flex-col items-center gap-3 group">
+                            <div class="p-4 rounded-full bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                                <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            </div>
+                            <span class="text-sm uppercase tracking-wider font-semibold">Objetivos</span>
+                        </button>
+                        <button onclick="renderView('consultas')" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-6 px-6 rounded-xl border border-slate-700 shadow-md transition-all flex flex-col items-center gap-3 group">
+                            <div class="p-4 rounded-full bg-yellow-500/10 group-hover:bg-yellow-500/20 transition-colors">
+                                <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </div>
+                            <span class="text-sm uppercase tracking-wider font-semibold">Consultas</span>
+                        </button>
                     </div>
 
                     <!-- Secondary Charts -->
@@ -783,45 +795,219 @@
         <!-- Complex structure placeholders for JS -->
         <header class="mb-6"><div id="goals-tabs"><button data-tab="gv" id="btn-tab-gv"></button><button data-tab="sv" id="btn-tab-sv"></button></div><button id="save-goals-btn"></button><button id="clear-goals-btn"></button></header>
         <div id="goals-gv-content">
-            <button id="goals-category-pepsico-btn"></button><button id="goals-category-elmachips-btn"></button><button id="goals-category-foods-btn"></button><button id="goals-category-summary-btn"></button>
-            <div id="goals-sub-tabs-container"><div id="goals-sub-tabs-pepsico"></div><div id="goals-sub-tabs-elmachips"></div><div id="goals-sub-tabs-foods"></div></div>
-            <div id="goals-summary-content">
-                <div id="goals-summary-coord-filter-wrapper"><button id="goals-summary-coord-filter-btn"><span id="goals-summary-coord-filter-text"></span></button><div id="goals-summary-coord-filter-dropdown"></div></div>
-                <div id="goals-summary-cocoord-filter-wrapper"><button id="goals-summary-cocoord-filter-btn"><span id="goals-summary-cocoord-filter-text"></span></button><div id="goals-summary-cocoord-filter-dropdown"></div></div>
-                <div id="goals-summary-promotor-filter-wrapper"><button id="goals-summary-promotor-filter-btn"><span id="goals-summary-promotor-filter-text"></span></button><div id="goals-summary-promotor-filter-dropdown"></div></div>
-                <button id="clear-goals-summary-filters-btn"></button>
-                <div id="summary-total-fat"></div><div id="summary-total-vol"></div><div id="summary-total-pos"></div><div id="summary-mix-salty"></div><div id="summary-mix-foods"></div>
-                <div id="goals-summary-grid"></div>
+            <!-- Category Tabs -->
+            <div class="flex flex-wrap gap-2 mb-4 p-1 bg-slate-800/50 rounded-lg inline-flex">
+                <button id="goals-category-pepsico-btn" class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-slate-300 hover:text-white hover:bg-slate-700">PEPSICO</button>
+                <button id="goals-category-elmachips-btn" class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-slate-300 hover:text-white hover:bg-slate-700">ELMA CHIPS</button>
+                <button id="goals-category-foods-btn" class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-slate-300 hover:text-white hover:bg-slate-700">FOODS</button>
+                <button id="goals-category-summary-btn" class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-slate-300 hover:text-white hover:bg-slate-700">RESUMO</button>
             </div>
-            <div id="goals-input-cards">
-                <input id="goal-global-fat"><button id="btn-distribute-fat"></button><span id="ref-avg-fat"></span><span id="ref-prev-fat"></span>
-                <input id="goal-global-vol"><button id="btn-distribute-vol"></button><span id="ref-avg-vol"></span><span id="ref-prev-vol"></span>
-                <input id="goal-global-mix"><button id="btn-distribute-mix"></button><span id="ref-avg-clients"></span><span id="ref-prev-clients"></span>
-                <div id="card-mix-salty"><input id="goal-global-mix-salty"><button id="btn-distribute-mix-salty"></button></div>
-                <div id="card-mix-foods"><input id="goal-global-mix-foods"><button id="btn-distribute-mix-foods"></button></div>
-                <div id="goals-dist-summary"></div>
-            </div>
-            <div id="goals-gv-coord-filter-wrapper"><button id="goals-gv-coord-filter-btn"><span id="goals-gv-coord-filter-text"></span></button><div id="goals-gv-coord-filter-dropdown"></div></div>
-            <div id="goals-gv-cocoord-filter-wrapper"><button id="goals-gv-cocoord-filter-btn"><span id="goals-gv-cocoord-filter-text"></span></button><div id="goals-gv-cocoord-filter-dropdown"></div></div>
-            <div id="goals-gv-promotor-filter-wrapper"><button id="goals-gv-promotor-filter-btn"><span id="goals-gv-promotor-filter-text"></span></button><div id="goals-gv-promotor-filter-dropdown"></div></div>
-            <div class="relative flex-1 min-w-[200px] max-w-[300px]">
-                <div class="relative">
-                    <div id="goals-gv-search-icon" class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
-                        <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+
+            <div id="goals-sub-tabs-container" class="mb-6"><div id="goals-sub-tabs-pepsico"></div><div id="goals-sub-tabs-elmachips"></div><div id="goals-sub-tabs-foods"></div></div>
+
+            <!-- Summary Mode Content -->
+            <div id="goals-summary-content" class="hidden">
+                <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div id="goals-summary-coord-filter-wrapper" class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
+                            <button id="goals-summary-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-summary-coord-filter-text">Todos</span></button>
+                            <div id="goals-summary-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                        </div>
+                        <div id="goals-summary-cocoord-filter-wrapper" class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
+                            <button id="goals-summary-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-summary-cocoord-filter-text">Todos</span></button>
+                            <div id="goals-summary-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                        </div>
+                        <div id="goals-summary-promotor-filter-wrapper" class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
+                            <button id="goals-summary-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-summary-promotor-filter-text">Todos</span></button>
+                            <div id="goals-summary-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                        </div>
+                        <div>
+                            <button id="clear-goals-summary-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg">Limpar</button>
+                        </div>
                     </div>
-                    <input id="goals-gv-codcli-filter" placeholder="Código, Nome, CNPJ..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-full pl-10 p-2.5 transition-all" autocomplete="off">
-                    <div id="goals-gv-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
+                </div>
+
+                <!-- Summary Metrics Cards -->
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                    <div id="summary-total-fat" class="bg-slate-800 p-4 rounded-xl border border-slate-700"></div>
+                    <div id="summary-total-vol" class="bg-slate-800 p-4 rounded-xl border border-slate-700"></div>
+                    <div id="summary-total-pos" class="bg-slate-800 p-4 rounded-xl border border-slate-700"></div>
+                    <div id="summary-mix-salty" class="bg-slate-800 p-4 rounded-xl border border-slate-700"></div>
+                    <div id="summary-mix-foods" class="bg-slate-800 p-4 rounded-xl border border-slate-700"></div>
+                </div>
+
+                <div id="goals-summary-grid" class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg p-6"></div>
+            </div>
+
+            <!-- Detail Mode Inputs -->
+            <div id="goals-input-cards" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Faturamento Card -->
+                <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50">
+                    <h3 class="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span> Faturamento
+                    </h3>
+                    <div class="flex gap-2 mb-4">
+                        <input id="goal-global-fat" class="bg-slate-900 border border-slate-700 rounded-lg p-3 text-white w-full font-mono" placeholder="R$ 0,00">
+                        <button id="btn-distribute-fat" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg font-bold">Distrib.</button>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-400">
+                        <span>Média: <span id="ref-avg-fat" class="text-white">R$ 0,00</span></span>
+                        <span>Ant: <span id="ref-prev-fat" class="text-white">R$ 0,00</span></span>
+                    </div>
+                </div>
+
+                <!-- Volume Card -->
+                <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50">
+                    <h3 class="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> Volume (Kg)
+                    </h3>
+                    <div class="flex gap-2 mb-4">
+                        <input id="goal-global-vol" class="bg-slate-900 border border-slate-700 rounded-lg p-3 text-white w-full font-mono" placeholder="0.000">
+                        <button id="btn-distribute-vol" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg font-bold">Distrib.</button>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-400">
+                        <span>Média: <span id="ref-avg-vol" class="text-white">0.000</span></span>
+                        <span>Ant: <span id="ref-prev-vol" class="text-white">0.000</span></span>
+                    </div>
+                </div>
+
+                <!-- Positivation / Mix Card Container -->
+                <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50 space-y-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-white mb-2 uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-purple-500"></span> Positivação
+                        </h3>
+                        <div class="flex gap-2">
+                            <input id="goal-global-mix" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white w-full font-mono text-sm" placeholder="Qtd">
+                            <button id="btn-distribute-mix" class="bg-blue-600 hover:bg-blue-500 text-white px-3 rounded-lg font-bold text-xs">OK</button>
+                        </div>
+                        <div class="flex justify-between text-xs text-slate-400 mt-1">
+                            <span>Média: <span id="ref-avg-clients" class="text-white">0</span></span>
+                            <span>Ant: <span id="ref-prev-clients" class="text-white">0</span></span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-700/50">
+                        <div id="card-mix-salty">
+                            <label class="block text-xs text-slate-500 mb-1">Mix Salty</label>
+                            <div class="flex gap-1">
+                                <input id="goal-global-mix-salty" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-white w-full text-xs" placeholder="0">
+                                <button id="btn-distribute-mix-salty" class="bg-slate-700 text-white px-2 rounded text-xs">→</button>
+                            </div>
+                        </div>
+                        <div id="card-mix-foods">
+                            <label class="block text-xs text-slate-500 mb-1">Mix Foods</label>
+                            <div class="flex gap-1">
+                                <input id="goal-global-mix-foods" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-white w-full text-xs" placeholder="0">
+                                <button id="btn-distribute-mix-foods" class="bg-slate-700 text-white px-2 rounded text-xs">→</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="goals-dist-summary" class="hidden"></div>
+            </div>
+
+            <!-- Detail Mode Filters -->
+            <div class="filter-wrapper-sentinel">
+                <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                        <div id="goals-gv-coord-filter-wrapper" class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
+                            <button id="goals-gv-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-gv-coord-filter-text">Todos</span></button>
+                            <div id="goals-gv-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                        </div>
+                        <div id="goals-gv-cocoord-filter-wrapper" class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
+                            <button id="goals-gv-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-gv-cocoord-filter-text">Todos</span></button>
+                            <div id="goals-gv-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                        </div>
+                        <div id="goals-gv-promotor-filter-wrapper" class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
+                            <button id="goals-gv-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-gv-promotor-filter-text">Todos</span></button>
+                            <div id="goals-gv-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                        </div>
+                        <div class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
+                            <div class="relative">
+                                <div id="goals-gv-search-icon" class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
+                                    <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </div>
+                                <input id="goals-gv-codcli-filter" placeholder="Código, Nome, CNPJ..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-full pl-10 p-2.5 transition-all" autocomplete="off">
+                                <div id="goals-gv-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <button id="clear-goals-gv-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg">Limpar</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <button id="clear-goals-gv-filters-btn"></button>
-            <div id="goals-table-container"><tbody id="goals-gv-table-body"></tbody><div id="goals-pagination-controls"><button id="goals-gv-export-pdf-btn"></button><button id="goals-gv-export-xlsx-btn"></button><button id="goals-prev-page-btn"></button><span id="goals-page-info-text"></span><button id="goals-next-page-btn"></button></div></div>
+
+            <div id="goals-table-container" class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="min-w-full text-sm text-left text-slate-300">
+                        <thead id="goals-gv-table-head"></thead>
+                        <tbody id="goals-gv-table-body" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
+                <div id="goals-pagination-controls" class="p-4 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
+                    <div class="flex gap-2">
+                        <button id="goals-gv-export-pdf-btn" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded border border-slate-700">PDF</button>
+                        <button id="goals-gv-export-xlsx-btn" class="bg-green-900/30 hover:bg-green-900/50 text-green-400 text-xs px-3 py-1.5 rounded border border-green-900/50">XLSX</button>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <button id="goals-prev-page-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1.5 px-3 rounded text-xs disabled:opacity-50">Anterior</button>
+                        <span id="goals-page-info-text" class="text-slate-400 text-xs font-medium"></span>
+                        <button id="goals-next-page-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1.5 px-3 rounded text-xs disabled:opacity-50">Próxima</button>
+                    </div>
+                </div>
+            </div>
         </div>
         <div id="goals-sv-content">
-            <button id="goals-sv-coord-filter-btn"><span id="goals-sv-coord-filter-text">Coord</span></button><div id="goals-sv-coord-filter-dropdown"></div>
-            <button id="goals-sv-cocoord-filter-btn"><span id="goals-sv-cocoord-filter-text">Co-Coord</span></button><div id="goals-sv-cocoord-filter-dropdown"></div>
-            <button id="goals-sv-promotor-filter-btn"><span id="goals-sv-promotor-filter-text">Promotor</span></button><div id="goals-sv-promotor-filter-dropdown"></div>
-            <button id="goals-sv-import-btn"></button><button id="goals-sv-export-xlsx-btn"></button>
-            <div id="goals-sv-table-container"><table id="goals-sv-main-table"><tbody id="goals-sv-table-body"></tbody></table></div>
+            <div class="filter-wrapper-sentinel">
+                <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                        <div id="goals-sv-coord-filter-wrapper" class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
+                            <button id="goals-sv-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-sv-coord-filter-text">Todos</span></button>
+                            <div id="goals-sv-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                        </div>
+                        <div id="goals-sv-cocoord-filter-wrapper" class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
+                            <button id="goals-sv-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-sv-cocoord-filter-text">Todos</span></button>
+                            <div id="goals-sv-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                        </div>
+                        <div id="goals-sv-promotor-filter-wrapper" class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
+                            <button id="goals-sv-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-sv-promotor-filter-text">Todos</span></button>
+                            <div id="goals-sv-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="goals-sv-import-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 text-xs">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                Importar
+                            </button>
+                            <button id="goals-sv-export-xlsx-btn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 text-xs">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Exportar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="goals-sv-table-container" class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table id="goals-sv-main-table" class="min-w-full text-sm text-left text-slate-300">
+                        <thead class="text-xs text-slate-400 uppercase bg-slate-900 sticky top-0"></thead>
+                        <tbody id="goals-sv-table-body" class="divide-y divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1459,6 +1645,78 @@
         </div>
     </div>
     
+    <!-- CONSULTAS VIEW -->
+    <div id="consultas-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
+        <header class="mb-8 border-b border-slate-800 pb-4">
+            <h1 class="text-3xl font-bold text-white">Consultas</h1>
+        </header>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Positivação de Clientes -->
+            <button onclick="renderView('cobertura')" class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4">
+                <div class="p-3 bg-green-500/20 rounded-full text-green-400 group-hover:bg-green-500/30 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white group-hover:text-blue-300 transition-colors">Positivação de Clientes</h3>
+                    <p class="text-sm text-slate-400 mt-1">Clientes com e sem venda</p>
+                </div>
+            </button>
+
+            <!-- Histórico de Pedidos (Links to Orders View) -->
+            <button onclick="renderView('pedidos')" class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4">
+                <div class="p-3 bg-green-500/20 rounded-full text-green-400 group-hover:bg-green-500/30 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white group-hover:text-blue-300 transition-colors">Histórico de Pedidos</h3>
+                    <p class="text-sm text-slate-400 mt-1">Possibilita visualizar pedidos mais antigos no sistema</p>
+                </div>
+            </button>
+
+            <!-- Other placeholders from image -->
+            <button class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 opacity-50 cursor-not-allowed" title="Em breve">
+                <div class="p-3 bg-green-500/20 rounded-full text-green-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Títulos</h3>
+                    <p class="text-sm text-slate-400 mt-1">Consulta todos os títulos para todos os clientes</p>
+                </div>
+            </button>
+             <button class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 opacity-50 cursor-not-allowed" title="Em breve">
+                <div class="p-3 bg-green-500/20 rounded-full text-green-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Relatórios</h3>
+                    <p class="text-sm text-slate-400 mt-1">Permite a solicitação de relatórios ao servidor</p>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- CLIENTES VIEW (Placeholder) -->
+    <div id="clientes-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
+        <header class="mb-8 border-b border-slate-800 pb-4">
+            <h1 class="text-3xl font-bold text-white">Clientes</h1>
+        </header>
+        <div class="bg-slate-800/50 p-8 rounded-xl text-center border border-slate-700 border-dashed">
+            <p class="text-slate-400 text-lg">Módulo de Clientes em desenvolvimento.</p>
+            <p class="text-sm text-slate-500 mt-2">Funcionalidades previstas: Ícones de inatividade > 20 dias, gestão de carteira.</p>
+        </div>
+    </div>
+
+    <!-- PRODUTOS VIEW (Placeholder) -->
+    <div id="produtos-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
+        <header class="mb-8 border-b border-slate-800 pb-4">
+            <h1 class="text-3xl font-bold text-white">Produtos</h1>
+        </header>
+        <div class="bg-slate-800/50 p-8 rounded-xl text-center border border-slate-700 border-dashed">
+            <p class="text-slate-400 text-lg">Módulo de Produtos em desenvolvimento.</p>
+            <p class="text-sm text-slate-500 mt-2">Funcionalidades previstas: Estoque, Velocidade de Vendas, Promoções.</p>
+        </div>
+    </div>
+
     <div id="ai-insights-full-page" class="hidden"><div id="ai-insights-full-content"></div><button id="ai-insights-back-btn"></button><button id="ai-insights-export-btn"></button></div>
 
 </div>

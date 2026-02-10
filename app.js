@@ -55,7 +55,7 @@
 
         function getValueForSale(sale, selectedTypes) {
             if (isAlternativeMode(selectedTypes)) {
-                return Number(sale.VLBONIFIC) || 0;
+                return (Number(sale.VLBONIFIC) || 0) + (Number(sale.VLVENDA) || 0);
             }
             return Number(sale.VLVENDA) || 0;
         }
@@ -1226,15 +1226,16 @@
             let effectivePromotors = new Set(promotors);
 
             // Apply User Context Constraints implicitly?
-            if (userHierarchyContext.role === 'coord') effectiveCoords.add(userHierarchyContext.coord);
+            // FIX: Only add if values exist to avoid filtering by 'undefined' (which causes 0 results)
+            if (userHierarchyContext.role === 'coord' && userHierarchyContext.coord) effectiveCoords.add(userHierarchyContext.coord);
             if (userHierarchyContext.role === 'cocoord') {
-                effectiveCoords.add(userHierarchyContext.coord);
-                effectiveCoCoords.add(userHierarchyContext.cocoord);
+                if (userHierarchyContext.coord) effectiveCoords.add(userHierarchyContext.coord);
+                if (userHierarchyContext.cocoord) effectiveCoCoords.add(userHierarchyContext.cocoord);
             }
             if (userHierarchyContext.role === 'promotor') {
-                effectiveCoords.add(userHierarchyContext.coord);
-                effectiveCoCoords.add(userHierarchyContext.cocoord);
-                effectivePromotors.add(userHierarchyContext.promotor);
+                if (userHierarchyContext.coord) effectiveCoords.add(userHierarchyContext.coord);
+                if (userHierarchyContext.cocoord) effectiveCoCoords.add(userHierarchyContext.cocoord);
+                if (userHierarchyContext.promotor) effectivePromotors.add(userHierarchyContext.promotor);
             }
 
             const isColumnar = sourceClients instanceof ColumnarDataset;
@@ -8153,11 +8154,17 @@ const supervisorGroups = new Map();
             const monthCount = getUniqueMonthCount(historicalSales);
 
             // Robust calculation: handle potential undefined/NaN in full dataset
-            const pastQuarterRevenue = historicalSales.reduce((sum, sale) => sum + (Number(sale.VLVENDA) || 0), 0);
+            const pastQuarterRevenue = historicalSales.reduce((sum, sale) => {
+                if (!isAlternativeMode(selectedTiposVenda) && sale.TIPOVENDA !== '1' && sale.TIPOVENDA !== '9') return sum;
+                return sum + getValueForSale(sale, selectedTiposVenda);
+            }, 0);
             let averageMonthlyRevenue = pastQuarterRevenue / QUARTERLY_DIVISOR;
             if (isNaN(averageMonthlyRevenue)) averageMonthlyRevenue = 0;
 
-            const currentMonthRevenue = currentSales.reduce((sum, sale) => sum + (Number(sale.VLVENDA) || 0), 0);
+            const currentMonthRevenue = currentSales.reduce((sum, sale) => {
+                if (!isAlternativeMode(selectedTiposVenda) && sale.TIPOVENDA !== '1' && sale.TIPOVENDA !== '9') return sum;
+                return sum + getValueForSale(sale, selectedTiposVenda);
+            }, 0);
             let trend = passedWorkingDays > 0 && totalWorkingDays > 0 ? (currentMonthRevenue / passedWorkingDays) * totalWorkingDays : 0;
             if (isNaN(trend)) trend = 0;
 
@@ -11318,6 +11325,20 @@ const supervisorGroups = new Map();
         }
 
         async function renderView(view) {
+            // Access Control for Comparison View
+            // Restrict 'comparativo' to ADM and COORD only
+            if (view === 'comparativo') {
+                // Normalize role check (userHierarchyContext is more reliable than window.userRole here as it is resolved)
+                const contextRole = userHierarchyContext.role;
+                const isAuth = contextRole === 'adm' || contextRole === 'coord';
+
+                if (!isAuth) {
+                    console.warn(`[Access] Unauthorized access to 'comparativo'. Redirecting.`);
+                    view = 'dashboard';
+                    // alert("Acesso restrito a Coordenadores e Administradores.");
+                }
+            }
+
             const mobileMenu = document.getElementById('mobile-menu');
             if (mobileMenu && mobileMenu.classList.contains('open')) {
                 toggleMobileMenu();
@@ -11333,7 +11354,10 @@ const supervisorGroups = new Map();
                 'inovacoes-mes': 'Inovações',
                 mix: 'Mix',
                 'meta-realizado': 'Meta Vs. Realizado',
-                'goals': 'Metas'
+                'goals': 'Metas',
+                'consultas': 'Consultas',
+                'clientes': 'Clientes',
+                'produtos': 'Produtos'
             };
             const friendlyName = viewNameMap[view] || 'a página';
 
@@ -11341,7 +11365,22 @@ const supervisorGroups = new Map();
 
             // This function now runs after the loader is visible
             const updateContent = () => {
-                [mainDashboard, cityView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view')].forEach(el => {
+                [
+                    mainDashboard,
+                    cityView,
+                    comparisonView,
+                    stockView,
+                    innovationsMonthView,
+                    coverageView,
+                    document.getElementById('mix-view'),
+                    goalsView,
+                    document.getElementById('meta-realizado-view'),
+                    document.getElementById('ai-insights-full-page'),
+                    document.getElementById('wallet-view'),
+                    document.getElementById('consultas-view'),
+                    document.getElementById('clientes-view'),
+                    document.getElementById('produtos-view')
+                ].forEach(el => {
                     if(el) el.classList.add('hidden');
                 });
 
@@ -11365,6 +11404,15 @@ const supervisorGroups = new Map();
                 });
 
                 switch(view) {
+                    case 'consultas':
+                        showViewElement(document.getElementById('consultas-view'));
+                        break;
+                    case 'clientes':
+                        showViewElement(document.getElementById('clientes-view'));
+                        break;
+                    case 'produtos':
+                        showViewElement(document.getElementById('produtos-view'));
+                        break;
                     case 'wallet':
                         showViewElement(document.getElementById('wallet-view'));
                         if (typeof renderWalletView === 'function') renderWalletView();
@@ -13562,6 +13610,23 @@ const supervisorGroups = new Map();
             });
         }
 
+        function updateNavigationVisibility() {
+            const role = (userHierarchyContext.role || '').toLowerCase();
+            const isAuth = role === 'adm' || role === 'coord';
+
+            // Toggle Comparison Buttons (Desktop and Mobile)
+            const comparisonBtns = document.querySelectorAll('button[data-target="comparativo"]');
+            comparisonBtns.forEach(btn => {
+                if (isAuth) {
+                    btn.classList.remove('hidden');
+                    // If desktop nav, ensure we don't break layout (flex)
+                    if (btn.classList.contains('nav-link')) btn.style.display = '';
+                } else {
+                    btn.classList.add('hidden');
+                }
+            });
+        }
+
         function resolveUserContext() {
             const role = (window.userRole || '').trim().toUpperCase();
             console.log(`[DEBUG] Resolving User Context for Role: '${role}'`);
@@ -13608,6 +13673,7 @@ const supervisorGroups = new Map();
             console.log("Available Coords:", Array.from(optimizedData.coordMap.keys()));
         }
         resolveUserContext();
+        updateNavigationVisibility(); // Update menu visibility based on resolved context
         applyHierarchyVisibilityRules();
 
         calculateHistoricalBests(); // <-- MOVIDA PARA CIMA
@@ -16136,6 +16202,10 @@ const supervisorGroups = new Map();
     // Auto-init User Menu on load if ready (for Navbar)
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         initWalletView();
+        updateNavigationVisibility();
     }
+
+    // Expose renderView globally for HTML onclick handlers
+    window.renderView = renderView;
 
 })();
