@@ -16261,4 +16261,5 @@ const supervisorGroups = new Map();
     // Expose renderView globally for HTML onclick handlers
     window.renderView = renderView;
 
+}
 })();
