@@ -1,7 +1,10 @@
 (function() {
-        const embeddedData = window.embeddedData;
+    // Expose renderView globally immediately (hoisted function)
+    window.renderView = renderView;
 
-        // --- CONFIGURATION ---
+    const embeddedData = window.embeddedData;
+
+    // --- CONFIGURATION ---
         const SUPPLIER_CONFIG = {
             inference: {
                 triggerKeywords: ['PEPSICO'],
@@ -16257,9 +16260,6 @@ const supervisorGroups = new Map();
         initWalletView();
         updateNavigationVisibility();
     }
-
-    // Expose renderView globally for HTML onclick handlers
-    window.renderView = renderView;
 
 }
 })();
