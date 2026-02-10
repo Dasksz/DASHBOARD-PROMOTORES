@@ -22,6 +22,17 @@
             return rowPasta;
         }
 
+        const GARBAGE_SELLER_KEYWORDS = ['TOTAL', 'GERAL', 'SUPERVISOR', 'BALCAO'];
+        const GARBAGE_SELLER_EXACT = ['INATIVOS', 'N/A'];
+
+        function isGarbageSeller(name) {
+            if (!name) return true;
+            // Normalize: Remove accents (NFD + Replace), Uppercase, Trim
+            const upper = String(name).normalize('NFD').replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+            if (GARBAGE_SELLER_EXACT.includes(upper)) return true;
+            return GARBAGE_SELLER_KEYWORDS.some(k => upper.includes(k));
+        }
+
         let metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [] };
         const dateCache = new Map();
 
@@ -3838,9 +3849,7 @@
                 const rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode; // Map code to name for grouping
 
                 // Filtering "Garbage" Sellers to fix Total Positivação (1965 vs 1977)
-                if (!rcaName || rcaName === 'INATIVOS') return;
-                const upperName = rcaName.toUpperCase();
-                if (upperName === 'BALCAO' || upperName === 'BALCÃO' || upperName.includes('TOTAL') || upperName.includes('GERAL')) return;
+                if (isGarbageSeller(rcaName)) return;
 
                 // Goal Keys are now determined at function scope (hoisted)
 
@@ -13883,9 +13892,8 @@ const supervisorGroups = new Map();
             // Helper: Resolve Seller
             const resolveSeller = (rawName) => {
                 if (!rawName) return null;
+                if (isGarbageSeller(rawName)) return null;
                 const upperName = rawName.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
-
-                if (upperName === 'BALCAO' || upperName === 'BALCÃO' || upperName.includes('TOTAL') || upperName.includes('SUPERVISOR') || upperName.includes('GERAL')) return null;
                 if (optimizedData.rcasBySupervisor.has(upperName) || optimizedData.rcasBySupervisor.has(rawName)) return null;
 
                 if (!isNaN(parseImportValue(rawName))) {
@@ -14027,13 +14035,8 @@ const supervisorGroups = new Map();
                 if (!sellerName) continue;
 
                 // --- ENHANCED FILTER: Ignore Supervisors, Aggregates, and BALCAO ---
+                if (isGarbageSeller(sellerName)) continue;
                 const upperName = sellerName.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
-
-                // 1. Explicit Blocklist
-                if (upperName === 'BALCAO' || upperName === 'BALCÃO' ||
-                    upperName.includes('TOTAL') || upperName.includes('SUPERVISOR') || upperName.includes('GERAL')) {
-                    continue;
-                }
 
                 // --- RESOLUTION LOGIC: Normalize Seller Name to System Canonical Name ---
                 let canonicalName = null;
@@ -14520,10 +14523,10 @@ const supervisorGroups = new Map();
                     // Process Updates
                     for (const u of pendingImportUpdates) {
                         // Filter out supervisors/aggregates
+                        if (isGarbageSeller(u.seller)) continue;
+
                         const upperUName = u.seller.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
-                        if (upperUName === 'BALCAO' || upperUName === 'BALCÃO' ||
-                            upperUName.includes('TOTAL') || upperUName.includes('SUPERVISOR') || upperUName.includes('GERAL') ||
-                            optimizedData.rcasBySupervisor.has(upperUName) || optimizedData.rcasBySupervisor.has(u.seller)) {
+                        if (optimizedData.rcasBySupervisor.has(upperUName) || optimizedData.rcasBySupervisor.has(u.seller)) {
                             continue;
                         }
 
