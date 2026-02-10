@@ -1538,30 +1538,9 @@
 
         function initializeOptimizedDataStructures() {
             console.log("[DEBUG] Starting initializeOptimizedDataStructures");
+
+            // --- SAFEGUARD: Initialize all structures first ---
             sellerDetailsMap = new Map();
-            const sellerLastSaleDateMap = new Map(); // Track latest date per seller
-            const clientToCurrentSellerMap = new Map();
-            let americanasCodCli = null;
-
-            // Use ONLY History Data for identifying Supervisor (User Request)
-            // Identify Supervisor for each Seller based on the *Latest* sale in History
-            const historyData = allHistoryData; // Using variable for clarity
-            for (let i = 0; i < historyData.length; i++) {
-                const s = historyData instanceof ColumnarDataset ? historyData.get(i) : historyData[i];
-                const codUsur = s.CODUSUR;
-                // Ignorar 'INATIVOS' e 'AMERICANAS' para evitar poluição do mapa de supervisores com lógica de fallback
-                if (codUsur && s.NOME !== 'INATIVOS' && s.NOME !== 'AMERICANAS') {
-                    const dt = parseDate(s.DTPED);
-                    const ts = dt ? dt.getTime() : 0;
-                    const lastTs = sellerLastSaleDateMap.get(codUsur) || 0;
-
-                    if (ts >= lastTs || !sellerDetailsMap.has(codUsur)) {
-                        sellerLastSaleDateMap.set(codUsur, ts);
-                        sellerDetailsMap.set(codUsur, { name: s.NOME, supervisor: s.SUPERV });
-                    }
-                }
-            }
-
             optimizedData.clientsByRca = new Map();
             optimizedData.searchIndices.clients = new Array(allClientsData.length);
             optimizedData.rcasBySupervisor = new Map();
@@ -1571,16 +1550,42 @@
             optimizedData.rcaNameByCode = new Map();
             optimizedData.supervisorCodeByName = new Map();
             optimizedData.productPastaMap = new Map();
+            optimizedData.hierarchyMap = new Map();
+            optimizedData.clientHierarchyMap = new Map();
+            optimizedData.coordMap = new Map();
+            optimizedData.cocoordMap = new Map();
+            optimizedData.promotorMap = new Map();
+            optimizedData.coordsByCocoord = new Map();
+            optimizedData.cocoordsByCoord = new Map();
+            optimizedData.promotorsByCocoord = new Map();
+            // --------------------------------------------------
 
-            // --- HIERARCHY LOGIC START ---
-            optimizedData.hierarchyMap = new Map(); // Promotor Code -> Hierarchy Node
-            optimizedData.clientHierarchyMap = new Map(); // Client Code -> Hierarchy Node
-            optimizedData.coordMap = new Map(); // Coord Code -> Name
-            optimizedData.cocoordMap = new Map(); // CoCoord Code -> Name
-            optimizedData.promotorMap = new Map(); // Promotor Code -> Name
-            optimizedData.coordsByCocoord = new Map(); // CoCoord Code -> Coord Code
-            optimizedData.cocoordsByCoord = new Map(); // Coord Code -> Set<CoCoord Code>
-            optimizedData.promotorsByCocoord = new Map(); // CoCoord Code -> Set<Promotor Code>
+            const sellerLastSaleDateMap = new Map(); // Track latest date per seller
+            const clientToCurrentSellerMap = new Map();
+            let americanasCodCli = null;
+
+            try {
+                // Use ONLY History Data for identifying Supervisor (User Request)
+                // Identify Supervisor for each Seller based on the *Latest* sale in History
+                const historyData = allHistoryData; // Using variable for clarity
+                for (let i = 0; i < historyData.length; i++) {
+                    const s = historyData instanceof ColumnarDataset ? historyData.get(i) : historyData[i];
+                    const codUsur = s.CODUSUR;
+                    // Ignorar 'INATIVOS' e 'AMERICANAS' para evitar poluição do mapa de supervisores com lógica de fallback
+                    if (codUsur && s.NOME !== 'INATIVOS' && s.NOME !== 'AMERICANAS') {
+                        const dt = parseDate(s.DTPED);
+                        const ts = dt ? dt.getTime() : 0;
+                        const lastTs = sellerLastSaleDateMap.get(codUsur) || 0;
+
+                        if (ts >= lastTs || !sellerDetailsMap.has(codUsur)) {
+                            sellerLastSaleDateMap.set(codUsur, ts);
+                            sellerDetailsMap.set(codUsur, { name: s.NOME, supervisor: s.SUPERV });
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("[Initialize] Error processing history data for supervisors:", e);
+            }
 
             if (embeddedData.hierarchy) {
                 console.log(`[DEBUG] Processing Hierarchy. Rows: ${embeddedData.hierarchy.length}`);
@@ -1657,75 +1662,79 @@
             // Access via accessor method for potential ColumnarDataset
             const getClient = (i) => allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i];
 
-            for (let i = 0; i < allClientsData.length; i++) {
-                const client = getClient(i); // Hydrate object for processing
-                const codCli = normalizeKey(client['Código'] || client['codigo_cliente']);
+            try {
+                for (let i = 0; i < allClientsData.length; i++) {
+                    const client = getClient(i); // Hydrate object for processing
+                    const codCli = normalizeKey(client['Código'] || client['codigo_cliente']);
 
-                // Sanitize: Skip header rows if present
-                if (!codCli || codCli === 'Código' || codCli === 'codigo_cliente' || codCli === 'CODCLI' || codCli === 'CODIGO') continue;
+                    // Sanitize: Skip header rows if present
+                    if (!codCli || codCli === 'Código' || codCli === 'codigo_cliente' || codCli === 'CODCLI' || codCli === 'CODIGO') continue;
 
-                // Normalize keys from Supabase (Upper) or Local/Legacy (Lower/Camel)
-                // mapKeysToUpper might have transformed 'cidade' -> 'CIDADE', 'ramo' -> 'RAMO', etc.
-                client.cidade = client.cidade || client.CIDADE || 'N/A';
-                client.bairro = client.bairro || client.BAIRRO || 'N/A';
-                client.ramo = client.ramo || client.RAMO || 'N/A';
+                    // Normalize keys from Supabase (Upper) or Local/Legacy (Lower/Camel)
+                    // mapKeysToUpper might have transformed 'cidade' -> 'CIDADE', 'ramo' -> 'RAMO', etc.
+                    client.cidade = client.cidade || client.CIDADE || 'N/A';
+                    client.bairro = client.bairro || client.BAIRRO || 'N/A';
+                    client.ramo = client.ramo || client.RAMO || 'N/A';
 
-                // Name Normalization
-                // mapKeysToUpper maps 'NOMECLIENTE' -> 'Cliente'. Local/Worker might produce 'nomeCliente'.
-                // Fix: Include razaoSocial and RAZAOSOCIAL in naming priority
-                client.nomeCliente = client.nomeCliente || client.razaoSocial || client.RAZAOSOCIAL || client.Cliente || client.CLIENTE || client.NOMECLIENTE || 'N/A';
+                    // Name Normalization
+                    // mapKeysToUpper maps 'NOMECLIENTE' -> 'Cliente'. Local/Worker might produce 'nomeCliente'.
+                    // Fix: Include razaoSocial and RAZAOSOCIAL in naming priority
+                    client.nomeCliente = client.nomeCliente || client.razaoSocial || client.RAZAOSOCIAL || client.Cliente || client.CLIENTE || client.NOMECLIENTE || 'N/A';
 
-                // RCA Handling
-                // mapKeysToUpper maps 'RCA1' -> 'RCA 1'. Local might use 'rca1'.
-                const rca1 = client.rca1 || client['RCA 1'] || client.RCA1;
-                // Normalize access for rest of the code
-                client.rca1 = rca1;
+                    // RCA Handling
+                    // mapKeysToUpper maps 'RCA1' -> 'RCA 1'. Local might use 'rca1'.
+                    const rca1 = client.rca1 || client['RCA 1'] || client.RCA1;
+                    // Normalize access for rest of the code
+                    client.rca1 = rca1;
 
-                const razaoSocial = client.razaoSocial || client.RAZAOSOCIAL || client.Cliente || ''; // Fallback
+                    const razaoSocial = client.razaoSocial || client.RAZAOSOCIAL || client.Cliente || ''; // Fallback
 
-                if (razaoSocial.toUpperCase().includes('AMERICANAS')) {
-                    client.rca1 = '1001';
-                    client.rcas = ['1001'];
-                    americanasCodCli = codCli;
-                    // Ensure global mapping for Import/Analysis lookup
-                    optimizedData.rcaCodeByName.set('AMERICANAS', '1001');
-                    sellerDetailsMap.set('1001', { name: 'AMERICANAS', supervisor: 'BALCAO' });
-                }
-                // Removed INATIVOS logic as per request
+                    if (razaoSocial.toUpperCase().includes('AMERICANAS')) {
+                        client.rca1 = '1001';
+                        client.rcas = ['1001'];
+                        americanasCodCli = codCli;
+                        // Ensure global mapping for Import/Analysis lookup
+                        optimizedData.rcaCodeByName.set('AMERICANAS', '1001');
+                        sellerDetailsMap.set('1001', { name: 'AMERICANAS', supervisor: 'BALCAO' });
+                    }
+                    // Removed INATIVOS logic as per request
 
-                if (client.rca1) clientToCurrentSellerMap.set(codCli, String(client.rca1));
-                clientRamoMap.set(codCli, client.ramo);
+                    if (client.rca1) clientToCurrentSellerMap.set(codCli, String(client.rca1));
+                    clientRamoMap.set(codCli, client.ramo);
 
-                // Handle RCAS array (could be 'rcas' or 'RCAS')
-                let rcas = client.rcas || client.RCAS;
+                    // Handle RCAS array (could be 'rcas' or 'RCAS')
+                    let rcas = client.rcas || client.RCAS;
 
-                // Sanitize RCAS: Filter out invalid values like "rcas" (header leak)
-                if (Array.isArray(rcas)) {
-                    rcas = rcas.filter(r => r && String(r).toLowerCase() !== 'rcas');
-                } else if (typeof rcas === 'string' && rcas.toLowerCase() === 'rcas') {
-                    rcas = [];
-                }
+                    // Sanitize RCAS: Filter out invalid values like "rcas" (header leak)
+                    if (Array.isArray(rcas)) {
+                        rcas = rcas.filter(r => r && String(r).toLowerCase() !== 'rcas');
+                    } else if (typeof rcas === 'string' && rcas.toLowerCase() === 'rcas') {
+                        rcas = [];
+                    }
 
-                client.rcas = rcas; // Normalize for later use if needed
+                    client.rcas = rcas; // Normalize for later use if needed
 
-                if (rcas) {
-                    for (let j = 0; j < rcas.length; j++) {
-                        const rca = rcas[j];
-                        if (rca) {
-                            if (!optimizedData.clientsByRca.has(rca)) optimizedData.clientsByRca.set(rca, []);
-                            optimizedData.clientsByRca.get(rca).push(client);
+                    if (rcas) {
+                        for (let j = 0; j < rcas.length; j++) {
+                            const rca = rcas[j];
+                            if (rca) {
+                                if (!optimizedData.clientsByRca.has(rca)) optimizedData.clientsByRca.set(rca, []);
+                                optimizedData.clientsByRca.get(rca).push(client);
+                            }
                         }
                     }
-                }
 
-                const rawCnpj = client['CNPJ/CPF'] || client.cnpj_cpf || client.CNPJ || '';
-                const cleanCnpj = String(rawCnpj).replace(/[^0-9]/g, '');
-                optimizedData.searchIndices.clients[i] = {
-                    code: codCli,
-                    nameLower: (client.nomeCliente || '').toLowerCase(),
-                    cityLower: (client.cidade || '').toLowerCase(),
-                    cnpj: cleanCnpj
-                };
+                    const rawCnpj = client['CNPJ/CPF'] || client.cnpj_cpf || client.CNPJ || '';
+                    const cleanCnpj = String(rawCnpj).replace(/[^0-9]/g, '');
+                    optimizedData.searchIndices.clients[i] = {
+                        code: codCli,
+                        nameLower: (client.nomeCliente || '').toLowerCase(),
+                        cityLower: (client.cidade || '').toLowerCase(),
+                        cnpj: cleanCnpj
+                    };
+                }
+            } catch (e) {
+                console.error("[Initialize] Error processing client data:", e);
             }
 
             const supervisorToRcaMap = new Map();
