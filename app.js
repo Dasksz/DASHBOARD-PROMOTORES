@@ -1219,6 +1219,7 @@
         const hierarchyState = {}; // Map<viewPrefix, { coords: Set, cocoords: Set, promotors: Set }>
 
         function getHierarchyFilteredClients(viewPrefix, sourceClients = allClientsData) {
+            if (!sourceClients) return [];
             const state = hierarchyState[viewPrefix];
             if (!state) return sourceClients;
 
@@ -4066,10 +4067,11 @@
             // Cache for Positivação Logic (Unique Clients per Seller)
             const sellerClients = new Map(); // Map<SellerName, Set<CodCli>>
 
-            for(let i=0; i<allSalesData.length; i++) {
-                const s = allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i];
+            if (allSalesData) {
+                for(let i=0; i<allSalesData.length; i++) {
+                    const s = allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i];
 
-                // Date Filter
+                    // Date Filter
                 const d = typeof s.DTPED === 'number' ? new Date(s.DTPED) : parseDate(s.DTPED);
                 if (!d || d.getUTCMonth() !== currentMonthIndex || d.getUTCFullYear() !== currentYear) continue;
 
@@ -4157,6 +4159,7 @@
                 if (!sellerClients.has(sellerName)) sellerClients.set(sellerName, new Set());
                 sellerClients.get(sellerName).add(String(s.CODCLI));
             }
+        }
 
             // Finalize Positivação Counts
             sellerClients.forEach((clientSet, sel) => {
