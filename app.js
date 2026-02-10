@@ -14333,20 +14333,17 @@ const supervisorGroups = new Map();
                 }
 
                 if (type === 'pos' || type === 'mix') {
-                    // FIX: Return Default Calculated Value if Manual Target is Missing
-                    if (targets && targets[category] !== undefined) {
-                        return targets[category];
+                    // FIX: Do not mask missing data. If manual targets exist for seller, do not fall back to defaults.
+                    if (targets) {
+                        if (targets[category] !== undefined) return targets[category];
+                        return 0; // Explicitly 0 if missing from manual file for this seller
                     } else {
-                        // Calculate Default
+                        // Calculate Default (Auto-pilot for sellers NOT in manual targets)
                         const defaults = calculateSellerDefaults(sellerName);
                         if (category === 'total_elma') return defaults.elmaPos;
                         if (category === 'total_foods') return defaults.foodsPos;
                         if (category === 'mix_salty') return defaults.mixSalty;
                         if (category === 'mix_foods') return defaults.mixFoods;
-                        // Fallback for leaf components? Currently Pos adjustments are manual.
-                        // If category is a leaf (e.g. 707), default adjustment is 0 (Natural Base is not stored here).
-                        // Note: parseGoalsSvStructure sends '707', '708' etc for Positivação.
-                        // We assume 0 for leaf adjustments if not set.
                         return 0;
                     }
                 }
@@ -14773,7 +14770,9 @@ const supervisorGroups = new Map();
                     // ------------------------
 
                     // 1. Process Manual Updates (Imported)
+                    const importedSellers = new Set();
                     pendingImportUpdates.forEach(u => {
+                        importedSellers.add(u.seller);
                         if (u.type === 'rev') {
                             distributeSellerGoal(u.seller, u.category, u.val, 'fat');
                             // Save Override
@@ -14822,6 +14821,9 @@ const supervisorGroups = new Map();
                     });
 
                     activeSellerNames.forEach(sellerName => {
+                        // Skip backfill for imported sellers (respect manual override)
+                        if (importedSellers.has(sellerName)) return;
+
                         if (!goalsSellerTargets.has(sellerName)) goalsSellerTargets.set(sellerName, {});
                         const targets = goalsSellerTargets.get(sellerName);
 
