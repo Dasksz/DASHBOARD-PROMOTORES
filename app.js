@@ -309,23 +309,12 @@
                 if (isCancelled && isCancelled()) return;
 
                 const start = performance.now();
-                // Process in batches (50 items) to reduce overhead of time checks and loop condition
-                const BATCH_SIZE = 50;
-
                 while (index < total) {
-                    const limit = Math.min(index + BATCH_SIZE, total);
+                    const item = isColumnar ? items.get(index) : items[index];
+                    processItemFn(item, index);
+                    index++;
 
-                    if (isColumnar) {
-                        for (; index < limit; index++) {
-                            processItemFn(items.get(index), index);
-                        }
-                    } else {
-                        for (; index < limit; index++) {
-                            processItemFn(items[index], index);
-                        }
-                    }
-
-                    if (performance.now() - start >= 12) { // Check budget (12ms)
+                    if (index % 5 === 0 && performance.now() - start >= 12) { // Check budget frequently to avoid long tasks
                         break;
                     }
                 }
