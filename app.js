@@ -3888,7 +3888,12 @@
             clients.forEach(client => {
                 const codCli = String(client['Código'] || client['codigo_cliente']);
                 const rcaCode = String(client.rca1 || '');
-                const rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode; // Map code to name for grouping
+
+                // Defensive check for optimizedData structures
+                let rcaName = rcaCode;
+                if (optimizedData && optimizedData.rcaNameByCode) {
+                    rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode;
+                }
 
                 // Filtering "Garbage" Sellers to fix Total Positivação (1965 vs 1977)
                 if (isGarbageSeller(rcaName)) return;
@@ -8519,7 +8524,8 @@ const supervisorGroups = new Map();
                 updateHierarchyDropdown('main', 'promotor');
             }
 
-            updateDashboard();
+            // Removed recursive call to prevent infinite loop
+            // updateDashboard();
         }
 
 
@@ -13814,6 +13820,9 @@ const supervisorGroups = new Map();
             const refAvgClients = document.getElementById('ref-avg-clients');
             const refPrevClients = document.getElementById('ref-prev-clients');
         }
+
+        // Initial dashboard update to load data on startup
+        updateDashboard();
         // ----------------------------------------
 
         window.addEventListener('hashchange', () => {
