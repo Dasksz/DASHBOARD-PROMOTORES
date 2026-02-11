@@ -11377,10 +11377,6 @@ const supervisorGroups = new Map();
         }
 
         async function renderView(view, options = {}) {
-            if (view === 'goals' && window.userRole !== 'adm') {
-                view = 'dashboard';
-            }
-
             // Push to history if not navigating back
             if (!options.skipHistory && currentActiveView && currentActiveView !== view) {
                 viewHistory.push(currentActiveView);
@@ -16378,7 +16374,19 @@ const supervisorGroups = new Map();
         if (me || role === 'ADM') isPromoterOnly = false;
         
         if (!myPromoter) {
-            btn.classList.add('hidden');
+            // UX Improvement: If Admin/Manager, show disabled button with hint instead of hiding
+            if (walletState.canEdit) {
+                btn.classList.remove('hidden');
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-700', 'text-slate-400');
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-500', 'text-white', 'shadow-lg'); // Remove active styles
+                btnText.textContent = 'Selecione Promotor';
+                // Remove previous click handler
+                btn.onclick = null;
+            } else {
+                btn.classList.add('hidden');
+            }
+
             statusArea.classList.remove('hidden'); // Ensure visible
             if (currentOwner) {
                 statusArea.className = 'mt-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30';
@@ -16392,6 +16400,11 @@ const supervisorGroups = new Map();
                 statusMsg.textContent = 'Este cliente não pertence a nenhuma carteira.';
             }
         } else {
+            // Reset Button Styles (Enable)
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-700', 'text-slate-400');
+            btn.classList.add('bg-blue-600', 'hover:bg-blue-500', 'text-white', 'shadow-lg');
+            
              btn.classList.remove('hidden');
              statusArea.classList.remove('hidden');
 
@@ -16510,7 +16523,7 @@ const supervisorGroups = new Map();
                      // data_clients code should be normalized ideally but let's try 'ilike' or both?
                      // Or just query by codigo_cliente (which is text).
                      const { data: newClient } = await window.supabaseClient.from('data_clients').select('*').eq('codigo_cliente', clientCode).single();
-
+                     
                      if (newClient) {
                          const mapped = {
                              'Código': newClient.codigo_cliente,
@@ -16535,7 +16548,7 @@ const supervisorGroups = new Map();
                                  if(dataset.values[col]) dataset.values[col].push(val);
                              });
                              dataset.length++;
-
+                             
                              // CRITICAL FIX: Update underlying embeddedData.clients.length if needed
                              // renderWalletTable iterates embeddedData.clients directly
                              if (embeddedData.clients && typeof embeddedData.clients.length === 'number') {
@@ -16562,7 +16575,7 @@ const supervisorGroups = new Map();
                      } else {
                          // Fallback: Delete by client_code. Try Normalized first (standard).
                          let { error } = await window.supabaseClient.from('data_client_promoters').delete().eq('client_code', clientCodeNorm);
-
+                         
                          // If rows affected is 0? Supabase doesn't return count by default unless select().
                          // If we are dealing with legacy data (leading zeros), try raw code if different.
                          if (!error && clientCode !== clientCodeNorm) {
@@ -17022,17 +17035,9 @@ const supervisorGroups = new Map();
         renderList();
     }
 
-    function applyMenuPermissions() {
-        if (window.userRole !== 'adm') {
-            const goalsLinks = document.querySelectorAll('[data-target="goals"]');
-            goalsLinks.forEach(el => el.classList.add('hidden'));
-        }
-    }
-
     // Auto-init User Menu on load if ready (for Navbar)
     if (document.readyState === "complete" || document.readyState === "interactive") {
         initWalletView();
-        applyMenuPermissions();
     }
 
 })();
