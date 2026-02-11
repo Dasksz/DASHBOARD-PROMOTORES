@@ -15984,23 +15984,35 @@ const supervisorGroups = new Map();
     
     async function handleWalletSearch(query) {
         const sugg = document.getElementById('wallet-search-suggestions');
-        if (!query || query.length < 3) {
+        if (!query || query.trim().length < 3) {
             sugg.classList.add('hidden');
             return;
         }
+
+        const terms = query.split('%').map(t => t.trim()).filter(t => t.length > 0);
         
-        const cleanQ = query.replace(/[^a-zA-Z0-9]/g, '');
-        let filter = `codigo_cliente.ilike.%${query}%,fantasia.ilike.%${query}%,razaosocial.ilike.%${query}%,cnpj_cpf.ilike.%${query}%`;
-        
-        if (cleanQ.length > 0 && cleanQ !== query) {
-             filter += `,cnpj_cpf.ilike.%${cleanQ}%,codigo_cliente.ilike.%${cleanQ}%`;
+        if (terms.length === 0) {
+             sugg.classList.add('hidden');
+             return;
         }
 
-        const { data, error } = await window.supabaseClient
-            .from('data_clients')
-            .select('*')
-            .or(filter)
-            .limit(10);
+        let dbQuery = window.supabaseClient.from('data_clients').select('*');
+
+        // Apply AND logic for each term (term must match at least one field)
+        terms.forEach(term => {
+             const cleanTerm = term.replace(/[^a-zA-Z0-9]/g, '');
+             // Basic fields including City and Bairro as requested
+             let orClause = `codigo_cliente.ilike.%${term}%,fantasia.ilike.%${term}%,razaosocial.ilike.%${term}%,cnpj_cpf.ilike.%${term}%,cidade.ilike.%${term}%,bairro.ilike.%${term}%`;
+             
+             // Add clean variations if they differ (mostly for CNPJ/Codes)
+             if (cleanTerm.length > 0 && cleanTerm !== term) {
+                 orClause += `,cnpj_cpf.ilike.%${cleanTerm}%,codigo_cliente.ilike.%${cleanTerm}%`;
+             }
+             
+             dbQuery = dbQuery.or(orClause);
+        });
+
+        const { data, error } = await dbQuery.limit(10);
             
         if (error || !data || data.length === 0) {
             sugg.classList.add('hidden');
