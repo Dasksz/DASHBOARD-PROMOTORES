@@ -607,7 +607,7 @@
                 const promoterValues = clients.values['PROMOTOR'];
                 const freqValues = clients.values['ITINERARY_FREQUENCY'];
                 const nextDateValues = clients.values['ITINERARY_NEXT_DATE'];
-
+                
                 // Fallback: Use RCA 1 if Promotor is missing (Legacy Support)
                 const rcaValues = clients.values['RCA 1'] || clients.values['RCA1'];
 
@@ -617,7 +617,7 @@
                     let updatedCount = 0;
                     let fallbackCount = 0;
                     for (let i = 0; i < clients.length; i++) {
-                        const code = String(clientCodes[i]).trim();
+                        const code = normalizeKey(clientCodes[i]);
                         const promoterData = promoterMap.get(code);
                         
                         if (promoterData) {
