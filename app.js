@@ -1916,6 +1916,50 @@
             return dateB - dateA;
         });
 
+        // --- GLOBAL NAVIGATION HISTORY ---
+        let currentActiveView = 'dashboard';
+        let viewHistory = [];
+
+        function setupGlobalEsc() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    // Priority 1: Check Open Modals
+                    const openModal = document.querySelector('.modal-overlay:not(.hidden)');
+                    if (openModal) {
+                        // Check for Modal Internal History (Tabs)
+                        if (openModal._tabHistory && openModal._tabHistory.length > 0) {
+                            const prevTab = openModal._tabHistory.pop();
+                            // Find switchTab function context?
+                            // Since switchTab is closure-scoped inside openWalletClientModal, we can't call it directly unless we exposed it or stored it.
+                            // Better approach: Store the 'restore' callback in the history.
+
+                            // Re-evaluating: 'switchTab' is inside 'openWalletClientModal'.
+                            // We need to expose switchTab or make _tabHistory store functions.
+                            // Let's assume _tabHistory stores { callback: () => ... }
+                            if (prevTab && typeof prevTab.restore === 'function') {
+                                prevTab.restore();
+                                return;
+                            }
+                        }
+
+                        // Default: Close Modal
+                        // Find the close button and click it to ensure cleanup logic runs
+                        const closeBtn = openModal.querySelector('button[id$="close-btn"]');
+                        if (closeBtn) closeBtn.click();
+                        else openModal.classList.add('hidden'); // Fallback
+                        return;
+                    }
+
+                    // Priority 2: View Navigation
+                    if (viewHistory.length > 0) {
+                        const prevView = viewHistory.pop();
+                        renderView(prevView, { skipHistory: true });
+                    }
+                }
+            });
+        }
+        setupGlobalEsc();
+
         Chart.register(ChartDataLabels);
 
         const mainDashboard = document.getElementById('main-dashboard');
@@ -11332,7 +11376,13 @@ const supervisorGroups = new Map();
             }, 700);
         }
 
-        async function renderView(view) {
+        async function renderView(view, options = {}) {
+            // Push to history if not navigating back
+            if (!options.skipHistory && currentActiveView && currentActiveView !== view) {
+                viewHistory.push(currentActiveView);
+            }
+            currentActiveView = view;
+
             const mobileMenu = document.getElementById('mobile-menu');
             if (mobileMenu && mobileMenu.classList.contains('open')) {
                 toggleMobileMenu();
@@ -15987,14 +16037,243 @@ const supervisorGroups = new Map();
         if (!client) return;
         
         const modal = document.getElementById('wallet-client-modal');
-        document.getElementById('wallet-modal-code').textContent = client.codigo_cliente;
-        document.getElementById('wallet-modal-cnpj').textContent = client.cnpj_cpf;
-        document.getElementById('wallet-modal-razao').textContent = client.razaosocial;
-        document.getElementById('wallet-modal-fantasia').textContent = client.fantasia;
+        const codeKey = String(client['Código'] || client['codigo_cliente']);
+
+        // 1. Populate Basic Info
+        document.getElementById('wallet-modal-code').textContent = codeKey;
+        document.getElementById('wallet-modal-cnpj').textContent = client.cnpj_cpf || client['CNPJ/CPF'] || '--';
+        document.getElementById('wallet-modal-razao').textContent = client.razaosocial || client['Razão Social'] || '--';
+        document.getElementById('wallet-modal-fantasia').textContent = client.fantasia || client['Fantasia'] || '--';
+
         const bairro = client.bairro || client.BAIRRO || '';
         const cidade = client.cidade || client.CIDADE || '';
         document.getElementById('wallet-modal-city').textContent = (bairro && bairro !== 'N/A') ? `${bairro} - ${cidade}` : cidade;
         
+        // Address & Seller
+        const address = buildAddress(client, 1);
+        document.getElementById('wallet-modal-address').textContent = address || 'Endereço não disponível';
+
+        const rca1 = String(client.rca1 || client['RCA 1'] || '');
+        let sellerName = rca1;
+        if (optimizedData.rcaNameByCode && optimizedData.rcaNameByCode.has(rca1)) {
+            sellerName = `${rca1} - ${optimizedData.rcaNameByCode.get(rca1)}`;
+        }
+        document.getElementById('wallet-modal-seller').textContent = sellerName || '--';
+
+        // 2. Tabs Logic
+        const tabs = document.querySelectorAll('.wallet-tab-btn');
+        const contents = {
+            general: document.getElementById('wallet-tab-content-general'),
+            losses: document.getElementById('wallet-tab-content-losses'),
+            bonus: document.getElementById('wallet-tab-content-bonus')
+        };
+
+        // Initialize Modal Tab History
+        modal._tabHistory = [];
+        let activeTab = 'general';
+
+        const switchTab = (tabName, options = {}) => {
+            if (!options.skipHistory && activeTab !== tabName) {
+                const prev = activeTab;
+                modal._tabHistory.push({
+                    name: prev,
+                    restore: () => switchTab(prev, { skipHistory: true })
+                });
+            }
+
+            activeTab = tabName;
+
+            tabs.forEach(t => {
+                if (t.dataset.tab === tabName) {
+                    t.classList.add('active', 'text-blue-400', 'border-blue-500');
+                    t.classList.remove('text-slate-400', 'border-transparent');
+                } else {
+                    t.classList.remove('active', 'text-blue-400', 'border-blue-500');
+                    t.classList.add('text-slate-400', 'border-transparent');
+                }
+            });
+            Object.keys(contents).forEach(k => {
+                if (k === tabName) contents[k].classList.remove('hidden');
+                else contents[k].classList.add('hidden');
+            });
+        };
+
+        tabs.forEach(t => t.onclick = () => switchTab(t.dataset.tab));
+        switchTab('general', { skipHistory: true }); // Default
+
+        // 3. Calculate Metrics (Sales, Losses, Bonus)
+        const metrics = {
+            salesByMonth: new Map(), // Map<YYYY-MM, value>
+            lossesByMonth: new Map(), // Map<YYYY-MM, { value, items: [] }>
+            bonusByMonth: new Map() // Map<YYYY-MM, { value, items: [] }>
+        };
+
+        const normalizeItem = (s) => ({
+            d: parseDate(s.DTPED),
+            val: Number(s.VLVENDA) || 0,
+            bon: Number(s.VLBONIFIC) || 0,
+            type: String(s.TIPOVENDA),
+            prod: s.PRODUTO,
+            desc: s.DESCRICAO,
+            qty: Number(s.QTVENDA) || 0
+        });
+
+        const processHistory = (idx) => {
+            const s = allHistoryData instanceof ColumnarDataset ? allHistoryData.get(idx) : allHistoryData[idx];
+            if (normalizeKey(s.CODCLI) !== normalizeKey(codeKey)) return;
+
+            const item = normalizeItem(s);
+            if (!item.d) return;
+
+            const monthKey = `${item.d.getUTCFullYear()}-${String(item.d.getUTCMonth()+1).padStart(2,'0')}`;
+
+            // General Sales (Type 1, 9, etc - usually non-bonus or specific types? Just sum VLVENDA for Total Purchase)
+            // User asked for "Total Purchased". Usually Sum(VLVENDA).
+            if (item.val > 0) {
+                metrics.salesByMonth.set(monthKey, (metrics.salesByMonth.get(monthKey) || 0) + item.val);
+            }
+
+            // Perdas (Type 5) - Use VLBONIFIC usually, or VLVENDA if bonific is 0?
+            // In `getValueForSale`, type 5/11 uses VLBONIFIC if filters are exclusive.
+            // Here we want the monetary value of the loss/bonus.
+            // Let's assume VLBONIFIC for Type 5/11.
+            if (item.type === '5') {
+                const entry = metrics.lossesByMonth.get(monthKey) || { value: 0, items: [] };
+                entry.value += (item.bon || item.val); // Fallback to val if bon is 0?
+                entry.items.push(item);
+                metrics.lossesByMonth.set(monthKey, entry);
+            }
+
+            if (item.type === '11') {
+                const entry = metrics.bonusByMonth.get(monthKey) || { value: 0, items: [] };
+                entry.value += (item.bon || item.val);
+                entry.items.push(item);
+                metrics.bonusByMonth.set(monthKey, entry);
+            }
+        };
+
+        // Iterate History
+        if (allHistoryData instanceof ColumnarDataset) {
+            // Optimization: Get indices if available
+            const indices = optimizedData.indices.history.byClient.get(normalizeKey(codeKey));
+            if (indices) {
+                indices.forEach(idx => processHistory(idx));
+            } else {
+                // Fallback scan
+                for(let i=0; i<allHistoryData.length; i++) processHistory(i);
+            }
+        } else {
+            for(let i=0; i<allHistoryData.length; i++) processHistory(i);
+        }
+
+        // 4. Render Tab Content
+
+        // General: Sales History Table
+        const salesBody = document.getElementById('wallet-purchase-history-body');
+        salesBody.innerHTML = '';
+        const sortedMonths = Array.from(metrics.salesByMonth.keys()).sort().reverse().slice(0, 12); // Last 12 months
+        if (sortedMonths.length === 0) {
+            salesBody.innerHTML = '<tr><td colspan="2" class="px-4 py-3 text-center text-slate-500">Sem histórico recente</td></tr>';
+        } else {
+            sortedMonths.forEach(m => {
+                const val = metrics.salesByMonth.get(m);
+                const [y, mo] = m.split('-');
+                const monthName = new Date(y, mo-1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+
+                salesBody.innerHTML += `
+                    <tr>
+                        <td class="px-4 py-2 capitalize text-slate-300">${monthName}</td>
+                        <td class="px-4 py-2 text-right font-mono font-bold text-white">${val.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Helper to render Drill-down lists
+        const renderDrillDownList = (containerId, totalId, mapData, emptyMsg) => {
+            const container = document.getElementById(containerId);
+            const totalEl = document.getElementById(totalId);
+            container.innerHTML = '';
+
+            const sorted = Array.from(mapData.keys()).sort().reverse();
+            let totalVal = 0;
+
+            if (sorted.length === 0) {
+                container.innerHTML = `<div class="text-center text-slate-500 py-4 text-xs">${emptyMsg}</div>`;
+                totalEl.textContent = 'R$ 0,00';
+                return;
+            }
+
+            sorted.forEach(m => {
+                const data = mapData.get(m);
+                totalVal += data.value;
+                const [y, mo] = m.split('-');
+                const monthName = new Date(y, mo-1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+
+                // Create Month Header
+                const row = document.createElement('div');
+                row.className = 'bg-slate-800 rounded-lg overflow-hidden border border-slate-700/50';
+
+                const header = document.createElement('div');
+                header.className = 'p-3 flex justify-between items-center cursor-pointer hover:bg-slate-700 transition-colors';
+                header.innerHTML = `
+                    <span class="text-sm font-bold text-slate-300 capitalize flex items-center gap-2">
+                        <svg class="w-4 h-4 text-slate-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        ${monthName}
+                    </span>
+                    <span class="text-sm font-mono font-bold text-white">${data.value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span>
+                `;
+
+                // Create Detail Container
+                const details = document.createElement('div');
+                details.className = 'hidden bg-slate-900/50 border-t border-slate-700 p-2 text-xs';
+
+                // Aggregate items by product to avoid huge lists
+                const prodMap = new Map();
+                data.items.forEach(it => {
+                    if (!prodMap.has(it.prod)) prodMap.set(it.prod, { desc: it.desc, qty: 0, val: 0 });
+                    const p = prodMap.get(it.prod);
+                    p.qty += it.qty;
+                    p.val += (it.bon || it.val);
+                });
+
+                let detailsHtml = '<table class="w-full text-left text-slate-400"><thead><tr class="text-[10px] uppercase border-b border-slate-700/50"><th class="py-1">Prod</th><th class="py-1 text-right">Qtd</th><th class="py-1 text-right">Valor</th></tr></thead><tbody>';
+                prodMap.forEach((v, k) => {
+                    detailsHtml += `
+                        <tr class="border-b border-slate-800/50 last:border-0">
+                            <td class="py-1 pr-2 truncate max-w-[150px]" title="${v.desc}">${k} - ${v.desc}</td>
+                            <td class="py-1 text-right font-mono">${v.qty}</td>
+                            <td class="py-1 text-right font-mono text-slate-200">${v.val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        </tr>
+                    `;
+                });
+                detailsHtml += '</tbody></table>';
+                details.innerHTML = detailsHtml;
+
+                // Toggle Logic
+                header.onclick = () => {
+                    const isHidden = details.classList.contains('hidden');
+                    if (isHidden) {
+                        details.classList.remove('hidden');
+                        header.querySelector('svg').classList.add('rotate-90');
+                    } else {
+                        details.classList.add('hidden');
+                        header.querySelector('svg').classList.remove('rotate-90');
+                    }
+                };
+
+                row.appendChild(header);
+                row.appendChild(details);
+                container.appendChild(row);
+            });
+
+            totalEl.textContent = totalVal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+        };
+
+        renderDrillDownList('wallet-losses-list', 'wallet-total-losses', metrics.lossesByMonth, 'Nenhuma perda registrada.');
+        renderDrillDownList('wallet-bonus-list', 'wallet-total-bonus', metrics.bonusByMonth, 'Nenhuma bonificação registrada.');
+
+        // 5. Existing Wallet Management Logic (Status & Buttons)
         const statusArea = document.getElementById('wallet-modal-status-area');
         const statusTitle = document.getElementById('wallet-modal-status-title');
         const statusMsg = document.getElementById('wallet-modal-status-msg');
@@ -16003,7 +16282,7 @@ const supervisorGroups = new Map();
         
         let currentOwner = null;
         if (embeddedData.clientPromoters) {
-             const match = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === normalizeKey(client.codigo_cliente));
+             const match = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === normalizeKey(codeKey));
              if (match) currentOwner = match.promoter_code;
         }
         
@@ -16026,7 +16305,8 @@ const supervisorGroups = new Map();
         const h = embeddedData.hierarchy || [];
         const me = h.find(x => 
             (x.cod_coord && x.cod_coord.trim().toUpperCase() === role) || 
-            (x.cod_cocoord && x.cod_cocoord.trim().toUpperCase() === role)
+            (x.cod_cocoord && x.cod_cocoord.trim().toUpperCase() === role) ||
+            (window.userRole === 'adm') // Fix logic
         );
         if (me || role === 'ADM') isPromoterOnly = false;
         
@@ -16055,8 +16335,8 @@ const supervisorGroups = new Map();
                  statusMsg.textContent = 'Este cliente já pertence à carteira selecionada.';
                  
                  btnText.textContent = 'Remover';
-                 btn.className = 'px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2';
-                 btn.onclick = () => handleWalletAction(client.codigo_cliente, 'remove');
+                 btn.className = 'px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm';
+                 btn.onclick = () => handleWalletAction(codeKey, 'remove');
                  
              } else if (currentOwner) {
                  statusArea.className = 'mt-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30';
@@ -16065,8 +16345,8 @@ const supervisorGroups = new Map();
                  statusMsg.textContent = `Pertence a: ${currentOwner}. Transferir?`;
                  
                  btnText.textContent = 'Transferir';
-                 btn.className = 'px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2';
-                 btn.onclick = () => handleWalletAction(client.codigo_cliente, 'upsert');
+                 btn.className = 'px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm';
+                 btn.onclick = () => handleWalletAction(codeKey, 'upsert');
 
                  // Co-Coordinator Restriction Check: Prevent cross-base transfers
                  // Only allows transfer if the current owner belongs to the same Co-Coordinator
@@ -16079,7 +16359,7 @@ const supervisorGroups = new Map();
                          if (String(ownerCocoord).trim() !== String(myCocoord).trim()) {
                              btn.disabled = true;
                              btnText.textContent = 'Não Permitido';
-                             btn.className = 'px-4 py-2 bg-slate-700 text-slate-400 rounded-lg font-bold cursor-not-allowed flex items-center gap-2';
+                             btn.className = 'px-4 py-2 bg-slate-700 text-slate-400 rounded-lg font-bold cursor-not-allowed flex items-center gap-2 text-sm';
                              statusMsg.textContent += ' (Bloqueado: Cliente de outra base)';
                          }
                      }
@@ -16092,8 +16372,8 @@ const supervisorGroups = new Map();
                  statusMsg.textContent = 'Sem vínculo atual.';
                  
                  btnText.textContent = 'Adicionar';
-                 btn.className = 'px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2';
-                 btn.onclick = () => handleWalletAction(client.codigo_cliente, 'upsert');
+                 btn.className = 'px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm';
+                 btn.onclick = () => handleWalletAction(codeKey, 'upsert');
              }
         }
         
@@ -16287,11 +16567,11 @@ const supervisorGroups = new Map();
                 if (days !== '-' && parseInt(days) > 30) statusColor = 'bg-red-500';
 
                 const item = document.createElement('div');
-                // Dark Theme Classes
-                item.className = 'p-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors cursor-pointer border-b border-slate-800 last:border-0 bg-[#0f172a]';
+                // Dark Theme Classes with "Shiny" Hover (Left Border)
+                item.className = 'p-4 flex items-center justify-between transition-all duration-200 cursor-pointer border-b border-slate-800/50 bg-[#0f172a] hover:bg-slate-800/80 border-l-4 border-l-transparent hover:border-l-blue-500 group';
                 item.innerHTML = `
                     <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full ${statusColor} flex items-center justify-center text-white font-bold text-lg shadow-sm ring-2 ring-slate-700">
+                        <div class="w-10 h-10 rounded-full ${statusColor} flex items-center justify-center text-white font-bold text-lg shadow-lg ring-2 ring-slate-800 group-hover:ring-slate-600 transition-all">
                             ${firstLetter}
                         </div>
                         <div>
