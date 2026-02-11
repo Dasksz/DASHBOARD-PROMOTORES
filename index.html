@@ -1102,8 +1102,16 @@
                 <div id="wallet-tab-content-general" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
-                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Código / RCA</p>
-                            <p class="text-white font-mono font-medium text-sm"><span id="wallet-modal-code">--</span> / <span id="wallet-modal-seller" class="text-blue-300">--</span></p>
+                            <div class="flex flex-col gap-2">
+                                <div>
+                                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-0.5">Código</p>
+                                    <p class="text-white font-mono font-medium text-sm" id="wallet-modal-code">--</p>
+                                </div>
+                                <div class="pt-2 border-t border-slate-700/50">
+                                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-0.5">RCA</p>
+                                    <p class="text-blue-300 font-medium text-xs leading-tight" id="wallet-modal-seller">--</p>
+                                </div>
+                            </div>
                         </div>
                         <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
                             <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">CNPJ / CPF</p>
