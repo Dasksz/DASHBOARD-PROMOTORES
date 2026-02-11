@@ -1714,7 +1714,7 @@
                     <p class="text-sm text-slate-400 mt-1">Acesso a todas as políticas comerciais de Brindes e Desconto</p>
                 </div>
             </button>
-            <button onclick="renderView('pedidos')" class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4">
+            <button onclick="renderView('history')" class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4">
                 <div class="p-3 bg-green-500/20 rounded-full text-green-400 group-hover:bg-green-500/30 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
@@ -1732,6 +1732,118 @@
                     <p class="text-sm text-slate-400 mt-1">Consulta por clientes aniversariantes no sistema</p>
                 </div>
             </button>
+        </div>
+    </div>
+
+    <!-- HISTORY VIEW -->
+    <div id="history-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
+        <header class="mb-8 border-b border-slate-800 pb-4">
+            <h1 class="text-3xl font-bold text-white">Histórico de Pedidos</h1>
+            <p class="text-slate-400 text-sm mt-1">Selecione um período para visualizar os pedidos.</p>
+        </header>
+
+        <div class="filter-wrapper-sentinel">
+            <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <!-- Date Range -->
+                    <div>
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Data Inicial</label>
+                        <input type="date" id="history-date-start" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Data Final</label>
+                        <input type="date" id="history-date-end" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <!-- Status Filter -->
+                    <div>
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Posição</label>
+                        <select id="history-posicao-filter" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-full p-2.5">
+                            <option value="">Todas</option>
+                            <option value="L">Liberado</option>
+                            <option value="M">Montado</option>
+                            <option value="F">Faturado</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="history-filter-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            Filtrar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end border-t border-slate-800/50 pt-4">
+                    <!-- Hierarchy Filters -->
+                    <div id="history-coord-filter-wrapper" class="relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
+                        <button id="history-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="history-coord-filter-text">Todos</span></button>
+                        <div id="history-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    </div>
+                    <div id="history-cocoord-filter-wrapper" class="relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
+                        <button id="history-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="history-cocoord-filter-text">Todos</span></button>
+                        <div id="history-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    </div>
+                    <div id="history-promotor-filter-wrapper" class="relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
+                        <button id="history-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="history-promotor-filter-text">Todos</span></button>
+                        <div id="history-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    </div>
+                    <!-- Other Filters -->
+                    <div class="relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Fornecedor</label>
+                        <button id="history-supplier-filter-btn" class="w-full bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="history-supplier-filter-text">Todos</span></button>
+                        <div id="history-supplier-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
+                    </div>
+                    <div class="relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
+                        <input id="history-codcli-filter" placeholder="Buscar..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg block w-full p-2.5">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
+            <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="font-bold text-white flex items-center gap-2">
+                    Resultados
+                    <span id="history-count-badge" class="bg-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded-full">0</span>
+                </h3>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar" style="max-height: 70vh;">
+                <table class="min-w-full text-sm text-left text-slate-300">
+                    <thead class="text-xs text-slate-400 uppercase bg-slate-900 sticky top-0 z-10">
+                        <tr>
+                            <th class="px-6 py-4 font-bold tracking-wider">Data</th>
+                            <th class="px-6 py-4 font-bold tracking-wider">Nº Pedido</th>
+                            <th class="px-6 py-4 font-bold tracking-wider">Cliente</th>
+                            <th class="px-6 py-4 font-bold tracking-wider">Vendedor</th>
+                            <th class="px-6 py-4 font-bold tracking-wider">Fornecedor</th>
+                            <th class="px-6 py-4 font-bold tracking-wider text-right">Valor</th>
+                            <th class="px-6 py-4 font-bold tracking-wider text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body" class="divide-y divide-slate-800/50">
+                        <!-- Empty State initially -->
+                        <tr id="history-empty-state">
+                            <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+                                <div class="flex flex-col items-center justify-center">
+                                    <svg class="w-12 h-12 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    <p class="text-lg font-medium">Nenhum período selecionado</p>
+                                    <p class="text-sm">Utilize os filtros acima para buscar o histórico.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination -->
+            <div id="history-pagination-controls" class="hidden p-4 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
+                <button id="history-prev-page-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
+                <span id="history-page-info-text" class="text-slate-400 text-xs font-medium"></span>
+                <button id="history-next-page-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
+            </div>
         </div>
     </div>
 

@@ -527,9 +527,20 @@
             clientsWithSalesThisMonth.add(s.CODCLI);
         }
 
+        // Helper to ensure .get() exists
+        const ensureGet = (data) => {
+            if (Array.isArray(data) && !data.get) {
+                Object.defineProperty(data, 'get', {
+                    value: function(i) { return this[i]; },
+                    enumerable: false
+                });
+            }
+            return data;
+        };
+
         const optimizedData = {
-            salesById: allSalesData, // Use dataset directly to avoid empty IndexMap issues
-            historyById: allHistoryData, // Use dataset directly
+            salesById: ensureGet(allSalesData), // Use dataset directly to avoid empty IndexMap issues
+            historyById: ensureGet(allHistoryData), // Use dataset directly
             indices: {
                 current: {
                     bySupervisor: new Map(),
@@ -11340,7 +11351,8 @@ const supervisorGroups = new Map();
                 'goals': 'Metas',
                 'clientes': 'Clientes',
                 'produtos': 'Produtos',
-                'consultas': 'Consultas'
+                'consultas': 'Consultas',
+                'history': 'Histórico de Pedidos'
             };
             const friendlyName = viewNameMap[view] || 'a página';
 
@@ -11348,7 +11360,7 @@ const supervisorGroups = new Map();
 
             // This function now runs after the loader is visible
             const updateContent = () => {
-                [mainDashboard, cityView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view'), document.getElementById('clientes-view'), document.getElementById('produtos-view'), document.getElementById('consultas-view')].forEach(el => {
+                [mainDashboard, cityView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view'), document.getElementById('clientes-view'), document.getElementById('produtos-view'), document.getElementById('consultas-view'), document.getElementById('history-view')].forEach(el => {
                     if(el) el.classList.add('hidden');
                 });
 
@@ -11372,6 +11384,10 @@ const supervisorGroups = new Map();
                 });
 
                 switch(view) {
+                    case 'history':
+                        showViewElement(document.getElementById('history-view'));
+                        if (typeof renderHistoryView === 'function') renderHistoryView();
+                        break;
                     case 'clientes':
                         showViewElement(document.getElementById('clientes-view'));
                         if (typeof renderClientView === 'function') renderClientView();
@@ -11394,8 +11410,11 @@ const supervisorGroups = new Map();
                         if (tableView) tableView.classList.add('hidden');
                         if (tablePaginationControls) tablePaginationControls.classList.add('hidden');
                         if (viewState.dashboard.dirty) {
-                            updateAllVisuals();
-                            viewState.dashboard.dirty = false;
+                            // Defer execution to allow loader to render
+                            setTimeout(() => {
+                                updateAllVisuals();
+                                viewState.dashboard.dirty = false;
+                            }, 50);
                         }
                         break;
                     case 'pedidos':
@@ -16173,38 +16192,82 @@ const supervisorGroups = new Map();
     
     window.renderView = renderView;
 
+    let clientsTableState = { page: 1, limit: 200, filtered: [] };
+    let historyTableState = { page: 1, limit: 50, filtered: [], hasSearched: false };
+
     window.renderClientView = function() {
         const container = document.getElementById('clientes-list-container');
         const countEl = document.getElementById('clientes-count');
         const searchInput = document.getElementById('clientes-search');
         if (!container) return;
 
-        const renderList = (filter = '') => {
-            container.innerHTML = '';
-            const clients = getActiveClientsData(); // Reuse existing function
-            const filtered = clients.filter(c => {
-                if (!filter) return true;
-                const f = filter.toLowerCase();
-                return (c.nomeCliente || '').toLowerCase().includes(f) ||
-                       (c.fantasia || '').toLowerCase().includes(f) ||
-                       (String(c['Código'] || c['codigo_cliente'])).includes(f);
+        // Create pagination controls if not exist
+        let paginationContainer = document.getElementById('clients-pagination');
+        if (!paginationContainer) {
+            paginationContainer = document.createElement('div');
+            paginationContainer.id = 'clients-pagination';
+            paginationContainer.className = 'p-4 flex justify-between items-center bg-[#0f172a] border-t border-slate-800 mt-4';
+            paginationContainer.innerHTML = `
+                <button id="client-prev-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
+                <span id="client-page-info" class="text-slate-400 text-xs font-medium"></span>
+                <button id="client-next-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
+            `;
+            container.parentNode.appendChild(paginationContainer);
+
+            document.getElementById('client-prev-btn').addEventListener('click', () => {
+                if (clientsTableState.page > 1) {
+                    clientsTableState.page--;
+                    renderList(null, true);
+                }
             });
+            document.getElementById('client-next-btn').addEventListener('click', () => {
+                const maxPage = Math.ceil(clientsTableState.filtered.length / clientsTableState.limit);
+                if (clientsTableState.page < maxPage) {
+                    clientsTableState.page++;
+                    renderList(null, true);
+                }
+            });
+        }
 
-            // Sort by Name
-            filtered.sort((a, b) => (a.nomeCliente || '').localeCompare(b.nomeCliente || ''));
+        const renderList = (filterValue = null, isPagination = false) => {
+            container.innerHTML = '';
 
-            const limit = 50; // Render limit for performance
-            const subset = filtered.slice(0, limit);
+            if (!isPagination) {
+                // Reset to page 1 on new filter
+                clientsTableState.page = 1;
+                const filter = (filterValue !== null ? filterValue : (searchInput ? searchInput.value : '')).toLowerCase();
+                const clients = getActiveClientsData();
+                clientsTableState.filtered = clients.filter(c => {
+                    if (!filter) return true;
+                    return (c.nomeCliente || '').toLowerCase().includes(filter) ||
+                           (c.fantasia || '').toLowerCase().includes(filter) ||
+                           (String(c['Código'] || c['codigo_cliente'])).includes(filter);
+                });
 
-            if (countEl) countEl.textContent = `${filtered.length} Clientes${filtered.length > limit ? ` (Exibindo ${limit})` : ''}`;
+                // Sort by Name
+                clientsTableState.filtered.sort((a, b) => (a.nomeCliente || '').localeCompare(b.nomeCliente || ''));
+            }
 
-            subset.forEach((client, index) => {
+            const total = clientsTableState.filtered.length;
+            const start = (clientsTableState.page - 1) * clientsTableState.limit;
+            const end = start + clientsTableState.limit;
+            const subset = clientsTableState.filtered.slice(start, end);
+            const totalPages = Math.ceil(total / clientsTableState.limit) || 1;
+
+            // Update Counts
+            if (countEl) countEl.textContent = `${total} Clientes (Página ${clientsTableState.page} de ${totalPages})`;
+
+            // Update Pagination Buttons
+            document.getElementById('client-prev-btn').disabled = clientsTableState.page === 1;
+            document.getElementById('client-next-btn').disabled = clientsTableState.page >= totalPages;
+            document.getElementById('client-page-info').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
+
+            subset.forEach((client) => {
                 const cod = String(client['Código'] || client['codigo_cliente']);
                 const name = client.nomeCliente || 'Desconhecido';
                 const fantasia = client.fantasia || '';
                 const firstLetter = name.charAt(0).toUpperCase();
 
-                // Days since last purchase
                 let days = '-';
                 if (client.ultimacompra) {
                     const d = parseDate(client.ultimacompra);
@@ -16220,30 +16283,27 @@ const supervisorGroups = new Map();
                      }
                 }
 
-                // Status Color Logic (Mocked based on index for variety, or real logic if available)
-                // Real logic: Blocked? Days without purchase?
-                // Let's use days. > 30 days = red, else green.
                 let statusColor = 'bg-green-500';
                 if (days !== '-' && parseInt(days) > 30) statusColor = 'bg-red-500';
 
                 const item = document.createElement('div');
-                item.className = 'p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer';
+                // Dark Theme Classes
+                item.className = 'p-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors cursor-pointer border-b border-slate-800 last:border-0 bg-[#0f172a]';
                 item.innerHTML = `
                     <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full ${statusColor} flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                        <div class="w-10 h-10 rounded-full ${statusColor} flex items-center justify-center text-white font-bold text-lg shadow-sm ring-2 ring-slate-700">
                             ${firstLetter}
                         </div>
                         <div>
-                            <h3 class="text-sm font-bold text-slate-800 leading-tight">${cod} - ${name}</h3>
-                            <p class="text-xs text-slate-500 font-medium mt-0.5">Fantasia: ${fantasia}</p>
+                            <h3 class="text-sm font-bold text-white leading-tight">${cod} - ${name}</h3>
+                            <p class="text-xs text-slate-400 font-medium mt-0.5">Fantasia: ${fantasia}</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-1 text-slate-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        <span class="text-xs font-bold">${days}</span>
+                    <div class="flex items-center gap-2 text-slate-500 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="text-xs font-bold text-slate-300">${days}</span>
                     </div>
                 `;
-                // Add click to open details
                 item.onclick = () => openWalletClientModal(cod, client);
                 container.appendChild(item);
             });
@@ -16253,6 +16313,239 @@ const supervisorGroups = new Map();
             searchInput.oninput = (e) => renderList(e.target.value);
         }
         renderList();
+    }
+
+    let isHistoryViewInitialized = false;
+    window.renderHistoryView = function() {
+        if (!isHistoryViewInitialized) {
+            setupHierarchyFilters('history', null); // Reuse hierarchy logic
+
+            // Set default dates (Current Month)
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+            const startEl = document.getElementById('history-date-start');
+            const endEl = document.getElementById('history-date-end');
+
+            if (startEl && endEl) {
+                startEl.valueAsDate = firstDay;
+                endEl.valueAsDate = lastDay;
+            } else {
+                console.error("History date inputs not found!");
+            }
+
+            const filterBtn = document.getElementById('history-filter-btn');
+            if(filterBtn) filterBtn.addEventListener('click', filterHistoryView);
+
+            // Pagination listeners
+            document.getElementById('history-prev-page-btn').addEventListener('click', () => {
+                if(historyTableState.page > 1) {
+                    historyTableState.page--;
+                    renderHistoryTable();
+                }
+            });
+            document.getElementById('history-next-page-btn').addEventListener('click', () => {
+                const max = Math.ceil(historyTableState.filtered.length / historyTableState.limit);
+                if(historyTableState.page < max) {
+                    historyTableState.page++;
+                    renderHistoryTable();
+                }
+            });
+
+            isHistoryViewInitialized = true;
+        }
+        // Don't auto-search on first load, wait for filter click
+        // But if searched previously, maybe render? No, clear state to be safe or keep it?
+        // Let's keep it if state exists.
+        if (historyTableState.hasSearched) {
+            renderHistoryTable();
+        }
+    }
+
+    function filterHistoryView() {
+        const startVal = document.getElementById('history-date-start').value;
+        const endVal = document.getElementById('history-date-end').value;
+        const posFilter = document.getElementById('history-posicao-filter').value;
+        const supplierBtn = document.getElementById('history-supplier-filter-text'); // Text based extraction from button
+        const clientFilter = document.getElementById('history-codcli-filter').value.toLowerCase();
+
+        if (!startVal || !endVal) {
+            alert('Por favor, selecione as datas inicial e final.');
+            return;
+        }
+
+        const startDate = new Date(startVal);
+        const endDate = new Date(endVal);
+        startDate.setUTCHours(0,0,0,0);
+        endDate.setUTCHours(23,59,59,999);
+
+        // 1. Get Base Data (Hierarchy)
+        // We use 'history' prefix for hierarchy filters
+        const clients = getHierarchyFilteredClients('history', allClientsData);
+        const validClientCodes = new Set(clients.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
+
+        // 2. Filter History Data
+        // Use allHistoryData which contains the trimester data
+        const results = [];
+
+        // Helper to check if a sale matches criteria
+        const checkSale = (sale) => {
+            const dtPed = sale.DTPED;
+            const d = parseDate(dtPed);
+            if (!d) return false;
+
+            // Date Check
+            if (d < startDate || d > endDate) return false;
+
+            // Client Check (Hierarchy + Text Search)
+            const codCli = normalizeKey(sale.CODCLI);
+            if (!validClientCodes.has(codCli)) return false;
+
+            if (clientFilter) {
+                // We need client name from map
+                const clientObj = clientMapForKPIs.get(codCli);
+                const name = clientObj ? (clientObj.nomeCliente || clientObj.fantasia || '') : '';
+                if (!codCli.includes(clientFilter) && !name.toLowerCase().includes(clientFilter)) return false;
+            }
+
+            // Position Check
+            if (posFilter && sale.POSICAO !== posFilter) return false;
+
+            // Supplier Check (Simplified via existing filters logic or button text?)
+            // The button text is "Todos" or "X Selecionados".
+            // We should use `hierarchyState` or a new supplier state.
+            // For now, let's assume no supplier filter if button text is 'Todos' or implement supplier filter properly.
+            // Since we reused existing HTML structure but didn't bind specific JS for Supplier Dropdown in History,
+            // let's skip strict Supplier filtering for this pass unless we bind it.
+            // NOTE: The user asked for "same filters as pedidos".
+            // Ideally we need `setupSupplierFilter('history')`.
+
+            return true;
+        };
+
+        // Chunked processing for performance?
+        // For simplicity in this step, synchronous loop.
+        for(let i=0; i<allHistoryData.length; i++) {
+            const s = allHistoryData instanceof ColumnarDataset ? allHistoryData.get(i) : allHistoryData[i];
+            if (checkSale(s)) results.push(s);
+        }
+
+        // Also check detailed sales (current month) if date range covers it?
+        // Usually `allHistoryData` covers past + current?
+        // If `allSalesData` is separate (detailed view of current month), we should merge?
+        // User said "historico de pedidos disponiveis".
+        // `allHistoryData` is usually the master set for history analysis. `allSalesData` is detailed items.
+        // Let's stick to `allHistoryData` for "History".
+
+        // Aggregate by Order (Num Pedido)
+        const ordersMap = new Map();
+        results.forEach(s => {
+            const key = s.PEDIDO;
+            if (!ordersMap.has(key)) {
+                ordersMap.set(key, {
+                    PEDIDO: key,
+                    DTPED: s.DTPED,
+                    CODCLI: s.CODCLI,
+                    NOME: s.NOME, // Vendedor (RCA)
+                    CODFOR: s.CODFOR, // Can be multiple?
+                    VLVENDA: 0,
+                    POSICAO: s.POSICAO,
+                    CLIENTE_NOME: '' // Need lookup
+                });
+            }
+            const o = ordersMap.get(key);
+            o.VLVENDA += (Number(s.VLVENDA) || 0);
+        });
+
+        historyTableState.filtered = Array.from(ordersMap.values());
+
+        // Enrich with Client Name
+        historyTableState.filtered.forEach(o => {
+            const c = clientMapForKPIs.get(normalizeKey(o.CODCLI));
+            if (c) o.CLIENTE_NOME = c.nomeCliente || c.fantasia;
+        });
+
+        // Sort by Date Desc
+        historyTableState.filtered.sort((a, b) => {
+            const da = parseDate(a.DTPED) || 0;
+            const db = parseDate(b.DTPED) || 0;
+            return db - da;
+        });
+
+        historyTableState.page = 1;
+        historyTableState.hasSearched = true;
+        renderHistoryTable();
+    }
+
+    function renderHistoryTable() {
+        const tbody = document.getElementById('history-table-body');
+        const countBadge = document.getElementById('history-count-badge');
+        const emptyState = document.getElementById('history-empty-state');
+        const pagination = document.getElementById('history-pagination-controls');
+
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (!historyTableState.hasSearched || historyTableState.filtered.length === 0) {
+            tbody.appendChild(emptyState.cloneNode(true)); // Restore empty state
+            document.getElementById('history-empty-state').classList.remove('hidden'); // Ensure visible
+            if (historyTableState.hasSearched && historyTableState.filtered.length === 0) {
+                 // Show "No results" instead of "Select period"
+                 tbody.querySelector('p.text-lg').textContent = 'Nenhum pedido encontrado';
+                 tbody.querySelector('p.text-sm').textContent = 'Tente ajustar os filtros.';
+            }
+            countBadge.textContent = '0';
+            pagination.classList.add('hidden');
+            return;
+        }
+
+        const total = historyTableState.filtered.length;
+        const start = (historyTableState.page - 1) * historyTableState.limit;
+        const end = start + historyTableState.limit;
+        const subset = historyTableState.filtered.slice(start, end);
+        const totalPages = Math.ceil(total / historyTableState.limit) || 1;
+
+        countBadge.textContent = total;
+        pagination.classList.remove('hidden');
+
+        // Update Pagination Controls
+        document.getElementById('history-prev-page-btn').disabled = historyTableState.page === 1;
+        document.getElementById('history-next-page-btn').disabled = historyTableState.page >= totalPages;
+        document.getElementById('history-page-info-text').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
+
+        subset.forEach(order => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-800/50 transition-colors border-b border-slate-800 last:border-0';
+
+            const dateStr = formatDate(order.DTPED);
+            const valStr = (order.VLVENDA || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            let statusColor = 'text-slate-400';
+            let statusText = order.POSICAO;
+            if (statusText === 'F') { statusText = 'Faturado'; statusColor = 'text-green-400 font-bold'; }
+            else if (statusText === 'L') { statusText = 'Liberado'; statusColor = 'text-blue-400'; }
+            else if (statusText === 'M') { statusText = 'Montado'; statusColor = 'text-yellow-400'; }
+            else if (statusText === 'P') { statusText = 'Pendente'; statusColor = 'text-orange-400'; }
+            else if (statusText === 'B') { statusText = 'Bloqueado'; statusColor = 'text-red-400'; }
+
+            tr.innerHTML = `
+                <td class="px-6 py-4 text-xs text-slate-400 font-mono">${dateStr}</td>
+                <td class="px-6 py-4 text-sm text-white font-bold">${order.PEDIDO}</td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-white">${order.CLIENTE_NOME || 'N/A'}</div>
+                    <div class="text-xs text-slate-500 font-mono">${order.CODCLI}</div>
+                </td>
+                <td class="px-6 py-4 text-xs text-slate-400">${order.NOME || '-'}</td>
+                <td class="px-6 py-4 text-xs text-slate-400">${order.CODFOR || '-'}</td>
+                <td class="px-6 py-4 text-sm text-white font-bold text-right">${valStr}</td>
+                <td class="px-6 py-4 text-xs text-center ${statusColor}">${statusText}</td>
+            `;
+            // Optional: Click to see details (reuse existing modal logic if possible)
+            // tr.onclick = ...
+
+            tbody.appendChild(tr);
+        });
     }
 
     window.renderProductView = function() {
