@@ -11371,10 +11371,10 @@ const supervisorGroups = new Map();
                         break;
                     case 'dashboard':
                         showViewElement(mainDashboard);
-                        document.getElementById('dashboard-kpi-container').classList.remove('hidden');
-                        chartView.classList.remove('hidden');
-                        tableView.classList.add('hidden');
-                        tablePaginationControls.classList.add('hidden');
+                        if (document.getElementById('dashboard-kpi-container')) document.getElementById('dashboard-kpi-container').classList.remove('hidden');
+                        if (chartView) chartView.classList.remove('hidden');
+                        if (tableView) tableView.classList.add('hidden');
+                        if (tablePaginationControls) tablePaginationControls.classList.add('hidden');
                         if (viewState.dashboard.dirty) {
                             updateAllVisuals();
                             viewState.dashboard.dirty = false;
@@ -11382,10 +11382,10 @@ const supervisorGroups = new Map();
                         break;
                     case 'pedidos':
                         showViewElement(mainDashboard);
-                        document.getElementById('dashboard-kpi-container').classList.add('hidden');
-                        chartView.classList.add('hidden');
-                        tableView.classList.remove('hidden');
-                        tablePaginationControls.classList.remove('hidden');
+                        if (document.getElementById('dashboard-kpi-container')) document.getElementById('dashboard-kpi-container').classList.add('hidden');
+                        if (chartView) chartView.classList.add('hidden');
+                        if (tableView) tableView.classList.remove('hidden');
+                        if (tablePaginationControls) tablePaginationControls.classList.remove('hidden');
                         if (viewState.pedidos.dirty) {
                             updateAllVisuals();
                             viewState.pedidos.dirty = false;
