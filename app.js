@@ -1253,9 +1253,6 @@
             const len = sourceClients.length;
 
             if (viewPrefix === 'main') {
-                 console.log(`[DEBUG] Filtering Clients for view 'main'. Total Clients: ${len}`);
-                 console.log(`[DEBUG] Effective Coords: ${Array.from(effectiveCoords).join(', ')}`);
-                 console.log(`[DEBUG] User Context Role: ${userHierarchyContext.role}`);
             }
 
             let missingNodeCount = 0;
@@ -1288,7 +1285,6 @@
             }
 
             if (viewPrefix === 'main') {
-                 console.log(`[DEBUG] Filter Result: ${result.length} clients kept. (Missing Node: ${missingNodeCount})`);
             }
             return result;
         }
@@ -1545,7 +1541,6 @@
         }
 
         function initializeOptimizedDataStructures() {
-            console.log("[DEBUG] Starting initializeOptimizedDataStructures");
             sellerDetailsMap = new Map();
             const sellerLastSaleDateMap = new Map(); // Track latest date per seller
             const clientToCurrentSellerMap = new Map();
@@ -1591,7 +1586,6 @@
             optimizedData.promotorsByCocoord = new Map(); // CoCoord Code -> Set<Promotor Code>
 
             if (embeddedData.hierarchy) {
-                console.log(`[DEBUG] Processing Hierarchy. Rows: ${embeddedData.hierarchy.length}`);
                 embeddedData.hierarchy.forEach(h => {
                     // Robust key access (Handle lowercase/uppercase/mapped variations)
                     const getVal = (keys) => {
@@ -1634,7 +1628,6 @@
             }
 
             if (embeddedData.clientPromoters) {
-                console.log(`[DEBUG] Processing Client Promoters. Rows: ${embeddedData.clientPromoters.length}`);
                 let matchCount = 0;
                 let sampleLogged = false;
                 embeddedData.clientPromoters.forEach(cp => {
@@ -1654,12 +1647,9 @@
                         sampleLogged = true;
                     }
                 });
-                console.log(`[DEBUG] Client Promoters Merged: ${matchCount}/${embeddedData.clientPromoters.length}`);
             } else {
                 console.warn("[DEBUG] embeddedData.clientPromoters is missing or empty.");
             }
-            console.log(`[DEBUG] Final Hierarchy Map Size: ${optimizedData.hierarchyMap.size}`);
-            console.log(`[DEBUG] Final Client Hierarchy Map Size: ${optimizedData.clientHierarchyMap.size}`);
             // --- HIERARCHY LOGIC END ---
 
             // Access via accessor method for potential ColumnarDataset
@@ -2017,14 +2007,19 @@
         const citySupplierFilterDropdown = document.getElementById('city-supplier-filter-dropdown');
         const cityNameFilter = document.getElementById('city-name-filter');
         function getActiveClientsData() {
-            return allClientsData.filter(c => {
-                const codcli = String(c['Código'] || c['codigo_cliente']);
-                const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-
-                // Logic identical to 'updateCoverageView' active clients KPI
-                return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(codcli));
-            });
+            try {
+                const res = allClientsData.filter(c => {
+                    const codcli = String(c['Código'] || c['codigo_cliente']);
+                    const rca1 = String(c.rca1 || '').trim();
+                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                    const keep = (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(codcli));
+                    return keep;
+                });
+                return res;
+            } catch (e) {
+                console.error("[ActiveClients] Error:", e);
+                return [];
+            }
         }
         const cityCodCliFilter = document.getElementById('city-codcli-filter');
         const citySuggestions = document.getElementById('city-suggestions');
@@ -13697,11 +13692,9 @@ const supervisorGroups = new Map();
 
         function resolveUserContext() {
             const role = (window.userRole || '').trim().toUpperCase();
-            console.log(`[DEBUG] Resolving User Context for Role: '${role}'`);
 
             if (role === 'ADM' || role === 'ADMIN') {
                 userHierarchyContext.role = 'adm';
-                console.log(`[DEBUG] Role identified as ADM`);
                 return;
             }
 
@@ -13709,7 +13702,6 @@ const supervisorGroups = new Map();
             if (optimizedData.coordMap.has(role)) {
                 userHierarchyContext.role = 'coord';
                 userHierarchyContext.coord = role;
-                console.log(`[DEBUG] Role identified as COORD: ${role}`);
                 return;
             }
 
@@ -13718,7 +13710,6 @@ const supervisorGroups = new Map();
                 userHierarchyContext.role = 'cocoord';
                 userHierarchyContext.cocoord = role;
                 userHierarchyContext.coord = optimizedData.coordsByCocoord.get(role);
-                console.log(`[DEBUG] Role identified as COCOORD: ${role}`);
                 return;
             }
 
@@ -13731,7 +13722,6 @@ const supervisorGroups = new Map();
                     userHierarchyContext.cocoord = node.cocoord.code;
                     userHierarchyContext.coord = node.coord.code;
                 }
-                console.log(`[DEBUG] Role identified as PROMOTOR: ${role}`);
                 return;
             }
             
@@ -16868,58 +16858,52 @@ const supervisorGroups = new Map();
         dateDisplay.textContent = date.toLocaleDateString('pt-BR', options);
 
         // Filter Logic
-        const clients = getActiveClientsData(); // Considers hierarchy and active status
+        let clients = [];
+        try {
+            clients = getActiveClientsData(); // Considers hierarchy and active status
+        } catch(e) {
+            console.error("[Roteiro] Error getting clients:", e);
+        }
         const scheduledClients = [];
 
         clients.forEach(c => {
-            // Get Itinerary Data
-            // Note: init.js injected these fields into clients.values['ITINERARY...']
-            // But getActiveClientsData returns objects. We need to check if properties were merged properly.
-            // init.js merges into Columnar values. But `getActiveClientsData` creates objects from Columnar or Array.
-            // If ColumnarDataset class is used, .get() should handle it IF mapped correctly.
-            // `ColumnarDataset` proxy logic looks at `_data`.
-            // In init.js we populated `clients.values['ITINERARY_FREQUENCY']`.
-            // So `c.ITINERARY_FREQUENCY` should be available.
-
-            // Normalize Keys (init.js uses raw keys from DB/CSV which are Uppercase mostly)
-            // But init.js explicitly pushed 'ITINERARY_FREQUENCY'.
-            // So we access via that key.
-
             const freq = c.ITINERARY_FREQUENCY || c.itinerary_frequency;
             const refDateStr = c.ITINERARY_NEXT_DATE || c.itinerary_next_date;
 
+
             if (!freq || !refDateStr) return;
 
-            const refDate = parseDate(refDateStr);
-            if (!refDate) return;
+            // Robust Parsing of YYYY-MM-DD to avoid Timezone Offset issues
+            // refDateStr is YYYY-MM-DD. We construct UTC Midnight directly from components.
+            // Using parseDate() (which does new Date(string)) might introduce local offsets depending on how the string is interpreted.
+            let utcRef;
+            if (refDateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const [y, m, d] = refDateStr.split('-').map(Number);
+                utcRef = Date.UTC(y, m - 1, d);
+            } else {
+                // Fallback for unexpected formats
+                const d = parseDate(refDateStr);
+                if (!d) return;
+                utcRef = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); // Fallback might still have offset risk if refDateStr was UTC-ish
+            }
 
-            // Normalize dates to midnight UTC or Local?
-            // roteiroDate is set to 00:00:00 local (via setHours).
-            // parseDate returns Date object.
-
-            // Calculate Day Difference
-            // Use UTC to avoid DST issues
+            // Target Date (UI Selection) is local midnight. Construct UTC components from it.
+            // date.getFullYear() gets Local Year.
             const utcTarget = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-            const utcRef = Date.UTC(refDate.getFullYear(), refDate.getMonth(), refDate.getDate());
 
             const diffTime = utcTarget - utcRef;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
+
             let isScheduled = false;
-            if (diffDays >= 0) { // Only future or today relative to ref (or past if cyclic)
-                // Actually cycle works in past too if we just take modulus
-                if (freq === 'weekly') {
-                    isScheduled = (diffDays % 7 === 0);
-                } else if (freq === 'biweekly') {
-                    isScheduled = (diffDays % 14 === 0);
-                }
-            } else {
-                 // For past ref dates? Yes, logic holds. -7 % 7 == 0.
-                 if (freq === 'weekly') {
-                    isScheduled = (Math.abs(diffDays) % 7 === 0);
-                } else if (freq === 'biweekly') {
-                    isScheduled = (Math.abs(diffDays) % 14 === 0);
-                }
+            // Modulo logic handles both future and past days correctly if aligned
+            // e.g. ref=Monday, target=Monday+7. diff=7. 7%7=0.
+            // ref=Monday, target=Monday-7. diff=-7. -7%7=0.
+
+            if (freq === 'weekly') {
+                isScheduled = (Math.abs(diffDays) % 7 === 0);
+            } else if (freq === 'biweekly') {
+                isScheduled = (Math.abs(diffDays) % 14 === 0);
             }
 
             if (isScheduled) {
@@ -16936,28 +16920,41 @@ const supervisorGroups = new Map();
         let visitedCount = 0;
         let positiveCount = 0;
 
-        // We need to check orders for this specific date
-        // `allSalesData` has detailed sales. We can check `DTPED`.
-        // Optimization: Pre-filter sales for this date? Or lookup?
-        // Lookup is expensive inside loop.
-        // Better: Build a Set of ClientCodes who bought on `date`.
-
+        // Check Sales on target date
+        // Note: aggregatedOrders.DTPED is a Date object.
+        // We compare YYYY-MM-DD strings to ignore time.
         const salesOnDate = new Set();
-        // Iterate allSalesData (Current Month)
-        // Check date match
-        const targetDateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
-
-        // Use optimizedData if possible
-        // optimizedData.salesById is Columnar.
-        // We can iterate indices.current.byClient? No, that's all sales for client.
-        // We need byDate? We don't have byDate index.
-        // Fallback: iterate allSalesData (fast enough for 50k rows usually?)
-        // Or if we have `aggregatedOrders` (which is per order), it's smaller.
+        // Construct YYYY-MM-DD from 'date' (which is local midnight)
+        // To ensure consistency, we use getFullYear/getMonth/getDate padding
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        const targetDateStr = `${y}-${m}-${d}`;
 
         aggregatedOrders.forEach(order => {
-            // order.DTPED is a Date object (parsed in init)
             if (order.DTPED) {
-                const orderDateStr = order.DTPED.toISOString().split('T')[0];
+                // order.DTPED is Date object. Convert to Local YYYY-MM-DD string for comparison
+                // Or UTC? parseDate generally produces UTC-ish dates if from ISO.
+                // But let's check parseDate implementation again.
+                // It usually adds 'Z' to ISO strings -> UTC.
+                // If DTPED came from '2023-10-27T10:00:00', it's a point in time.
+                // Sales happen in local time.
+                // If DTPED is 2023-10-27, it means sale on 27th.
+                // We should compare the date components.
+                // safely get components
+                const oy = order.DTPED.getUTCFullYear();
+                const om = String(order.DTPED.getUTCMonth() + 1).padStart(2, '0');
+                const od = String(order.DTPED.getUTCDate()).padStart(2, '0');
+
+                // Wait, if parseDate forced UTC (Z), then getUTC* gives the date in the file.
+                // e.g. CSV has 2023-10-27. parseDate makes 2023-10-27Z.
+                // getUTCDate gives 27. Correct.
+
+                // BUT targetDateStr was constructed from Local Date components.
+                // If 'date' is 27th (Local), we compare with 27th (from file).
+                // So we compare `oy-om-od` vs `targetDateStr`.
+
+                const orderDateStr = `${oy}-${om}-${od}`;
                 if (orderDateStr === targetDateStr) {
                     salesOnDate.add(normalizeKey(order.codcli));
                 }
@@ -17111,11 +17108,14 @@ const supervisorGroups = new Map();
         const searchInput = document.getElementById('clientes-search');
         const roteiroBtn = document.getElementById('toggle-roteiro-btn');
 
+
         if (roteiroBtn) {
             // Remove old listeners (clone trick)
             const newBtn = roteiroBtn.cloneNode(true);
             roteiroBtn.parentNode.replaceChild(newBtn, roteiroBtn);
-            newBtn.addEventListener('click', toggleRoteiroMode);
+            newBtn.onclick = (e) => {
+                toggleRoteiroMode();
+            };
 
             // Sync state visual
             if (isRoteiroMode) {
