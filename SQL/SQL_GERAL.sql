@@ -433,8 +433,13 @@ DROP POLICY IF EXISTS "Acesso Escrita Admin (Delete)" ON public.data_client_prom
 
 -- Create permissive policies for Coordinators/Co-coordinators (Approved Users)
 -- This allows them to manage the client portfolio
+DROP POLICY IF EXISTS "Acesso Escrita Aprovados (Insert)" ON public.data_client_promoters;
 CREATE POLICY "Acesso Escrita Aprovados (Insert)" ON public.data_client_promoters FOR INSERT TO authenticated WITH CHECK (public.is_approved());
+
+DROP POLICY IF EXISTS "Acesso Escrita Aprovados (Update)" ON public.data_client_promoters;
 CREATE POLICY "Acesso Escrita Aprovados (Update)" ON public.data_client_promoters FOR UPDATE TO authenticated USING (public.is_approved()) WITH CHECK (public.is_approved());
+
+DROP POLICY IF EXISTS "Acesso Escrita Aprovados (Delete)" ON public.data_client_promoters;
 CREATE POLICY "Acesso Escrita Aprovados (Delete)" ON public.data_client_promoters FOR DELETE TO authenticated USING (public.is_approved());
 
 -- 4.3 Goals Distribution Policies
