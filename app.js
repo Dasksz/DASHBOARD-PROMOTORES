@@ -16811,7 +16811,7 @@ const supervisorGroups = new Map();
             const isToday = d.toDateString() === new Date().toDateString();
             
             const dayEl = document.createElement('div');
-            dayEl.className = `flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer min-w-[50px] transition-colors ${isSelected ? 'bg-purple-600 text-white shadow-lg scale-110' : 'text-gray-500 hover:bg-gray-100'}`;
+            dayEl.className = `flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer min-w-[50px] transition-colors ${isSelected ? 'bg-purple-600 text-white shadow-lg scale-110' : 'text-slate-400 hover:bg-slate-800'}`;
             
             dayEl.innerHTML = `
                 <span class="text-[10px] font-bold tracking-wider ${isToday && !isSelected ? 'text-purple-600' : ''}">${weekDays[d.getDay()]}</span>
@@ -16851,16 +16851,16 @@ const supervisorGroups = new Map();
         const dateDisplay = document.getElementById('roteiro-date-display');
         const countDisplay = document.getElementById('roteiro-client-count');
         const emptyState = document.getElementById('roteiro-empty-state');
-        const statsPanel = container.querySelector('.bg-gray-50'); // Stats panel at bottom of card
+        const statsPanel = container.querySelector('.bg-slate-900'); // Stats panel at bottom of card
         
         // Remove existing list if any (custom injection point)
         let listContainer = document.getElementById('roteiro-clients-list');
         if (!listContainer) {
             listContainer = document.createElement('div');
             listContainer.id = 'roteiro-clients-list';
-            listContainer.className = 'divide-y divide-gray-100 max-h-[500px] overflow-y-auto custom-scrollbar';
+            listContainer.className = 'divide-y divide-slate-800 max-h-[500px] overflow-y-auto custom-scrollbar';
             // Insert after header, before stats
-            const card = container.querySelector('.bg-white');
+            const card = document.getElementById('roteiro-main-card');
             card.insertBefore(listContainer, statsPanel);
         }
         listContainer.innerHTML = '';
@@ -16991,19 +16991,19 @@ const supervisorGroups = new Map();
                 }
                 
                 const div = document.createElement('div');
-                div.className = 'p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer transition-colors';
+                div.className = 'p-4 flex items-center justify-between hover:bg-slate-800 cursor-pointer transition-colors';
                 div.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <div class="w-2 h-10 ${hasSale ? 'bg-green-500' : 'bg-gray-300'} rounded-full"></div>
+                        <div class="w-2 h-10 ${hasSale ? 'bg-green-500' : 'bg-slate-600'} rounded-full"></div>
                         <div>
-                            <div class="text-sm font-bold text-gray-800">${c.fantasia || c.nomeCliente}</div>
-                            <div class="text-xs text-gray-500 font-mono">${cod} • ${c.cidade || ''}</div>
+                            <div class="text-sm font-bold text-white">${c.fantasia || c.nomeCliente}</div>
+                            <div class="text-xs text-slate-400 font-mono">${cod} • ${c.cidade || ''}</div>
                         </div>
                     </div>
                     <div>
                         ${hasSale 
                             ? `<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Positivado</span>`
-                            : `<span class="px-2 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-full">Pendente</span>`
+                            : `<span class="px-2 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-full">Pendente</span>`
                         }
                     </div>
                 `;
