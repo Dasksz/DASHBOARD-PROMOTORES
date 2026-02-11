@@ -11377,6 +11377,10 @@ const supervisorGroups = new Map();
         }
 
         async function renderView(view, options = {}) {
+            if (view === 'goals' && window.userRole !== 'adm') {
+                view = 'dashboard';
+            }
+
             // Push to history if not navigating back
             if (!options.skipHistory && currentActiveView && currentActiveView !== view) {
                 viewHistory.push(currentActiveView);
@@ -16962,9 +16966,17 @@ const supervisorGroups = new Map();
         renderList();
     }
 
+    function applyMenuPermissions() {
+        if (window.userRole !== 'adm') {
+            const goalsLinks = document.querySelectorAll('[data-target="goals"]');
+            goalsLinks.forEach(el => el.classList.add('hidden'));
+        }
+    }
+
     // Auto-init User Menu on load if ready (for Navbar)
     if (document.readyState === "complete" || document.readyState === "interactive") {
         initWalletView();
+        applyMenuPermissions();
     }
 
 })();
