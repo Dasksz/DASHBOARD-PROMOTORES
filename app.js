@@ -9796,9 +9796,13 @@ const supervisorGroups = new Map();
                 clientCodes
             };
 
+            const perdasFilters = { ...filters, tipoVenda: new Set(['5']) };
+
             return {
                 currentSales: getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters, excludeFilter),
-                historySales: getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters, excludeFilter)
+                historySales: getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters, excludeFilter),
+                perdasSales: getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, perdasFilters, excludeFilter),
+                perdasHistory: getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, perdasFilters, excludeFilter)
             };
         }
 
@@ -9900,7 +9904,7 @@ const supervisorGroups = new Map();
         function updateComparisonView() {
             comparisonRenderId++;
             const currentRenderId = comparisonRenderId;
-            const { currentSales, historySales } = getComparisonFilteredData();
+            const { currentSales, historySales, perdasSales, perdasHistory } = getComparisonFilteredData();
 
             // Show Loading State on Charts (only if no chart exists)
             const chartContainers = ['weeklyComparisonChart', 'monthlyComparisonChart', 'dailyWeeklyComparisonChart'];
@@ -10099,6 +10103,24 @@ const supervisorGroups = new Map();
                     metrics.history.avgPositivacaoSalty = sumPosSalty / QUARTERLY_DIVISOR;
                     metrics.history.avgPositivacaoFoods = sumPosFoods / QUARTERLY_DIVISOR;
 
+                    // Calculate Perdas KPI
+                    let currentPerdas = 0;
+                    if (perdasSales && perdasSales.length > 0) {
+                        for(let i=0; i<perdasSales.length; i++) {
+                            // Force Alternative Mode (VLBONIFIC) for Perdas (Type 5)
+                            currentPerdas += getValueForSale(perdasSales[i], ['5']);
+                        }
+                    }
+                    metrics.current.perdas = currentPerdas;
+
+                    let historyPerdas = 0;
+                    if (perdasHistory && perdasHistory.length > 0) {
+                        for(let i=0; i<perdasHistory.length; i++) {
+                            historyPerdas += getValueForSale(perdasHistory[i], ['5']);
+                        }
+                    }
+                    metrics.history.avgPerdas = historyPerdas / QUARTERLY_DIVISOR;
+
                     // 3. Render Views
                     const m = metrics;
                     renderKpiCards([
@@ -10108,7 +10130,8 @@ const supervisorGroups = new Map();
                         { title: 'Ticket Médio', current: m.current.clients > 0 ? m.current.fat / m.current.clients : 0, history: m.history.avgClients > 0 ? m.history.avgFat / m.history.avgClients : 0, format: 'currency' },
                         { title: 'Mix por PDV (Pepsico)', current: m.current.mixPepsico, history: m.history.avgMixPepsico, format: 'mix' },
                         { title: 'Mix Salty', current: m.current.positivacaoSalty, history: m.history.avgPositivacaoSalty, format: 'integer' },
-                        { title: 'Mix Foods', current: m.current.positivacaoFoods, history: m.history.avgPositivacaoFoods, format: 'integer' }
+                        { title: 'Mix Foods', current: m.current.positivacaoFoods, history: m.history.avgPositivacaoFoods, format: 'integer' },
+                        { title: 'Perdas', current: m.current.perdas, history: m.history.avgPerdas, format: 'currency' }
                     ]);
 
                     // Weekly Chart Logic with Tendency
