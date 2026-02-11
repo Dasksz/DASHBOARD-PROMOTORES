@@ -1732,6 +1732,7 @@
                     code: codCli,
                     nameLower: (client.nomeCliente || '').toLowerCase(),
                     cityLower: (client.cidade || '').toLowerCase(),
+                    bairroLower: (client.bairro || '').toLowerCase(),
                     cnpj: cleanCnpj
                 };
             }
@@ -11840,8 +11841,8 @@ const supervisorGroups = new Map();
 
         function searchLocalClients(query) {
             if (!query || query.length < 3) return [];
-            query = query.toLowerCase();
-            const cleanQuery = query.replace(/[^a-z0-9]/g, '');
+            const terms = query.toLowerCase().split('%').map(t => t.trim()).filter(t => t.length > 0);
+            if (terms.length === 0) return [];
 
             const results = [];
             const indices = optimizedData.searchIndices.clients;
@@ -11853,23 +11854,20 @@ const supervisorGroups = new Map();
                 const idx = indices[i];
                 if (!idx) continue;
 
-                // Match Code (Exact or partial)
-                if (idx.code.includes(cleanQuery)) {
+                const match = terms.every(term => {
+                    const cleanTerm = term.replace(/[^a-z0-9]/g, '');
+                    return (
+                        (idx.code && idx.code.includes(cleanTerm)) ||
+                        (idx.nameLower && idx.nameLower.includes(term)) ||
+                        (idx.cnpj && idx.cnpj.includes(cleanTerm)) ||
+                        (idx.cityLower && idx.cityLower.includes(term)) ||
+                        (idx.bairroLower && idx.bairroLower.includes(term))
+                    );
+                });
+
+                if (match) {
                     results.push(allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i]);
                     if (results.length >= limit) break;
-                    continue;
-                }
-                // Match Name
-                if (idx.nameLower && idx.nameLower.includes(query)) {
-                    results.push(allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i]);
-                    if (results.length >= limit) break;
-                    continue;
-                }
-                // Match CNPJ
-                if (idx.cnpj && idx.cnpj.includes(cleanQuery)) {
-                    results.push(allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i]);
-                    if (results.length >= limit) break;
-                    continue;
                 }
             }
             return results;
@@ -16668,9 +16666,16 @@ const supervisorGroups = new Map();
                 const clients = getActiveClientsData();
                 clientsTableState.filtered = clients.filter(c => {
                     if (!filter) return true;
-                    return (c.nomeCliente || '').toLowerCase().includes(filter) ||
-                           (c.fantasia || '').toLowerCase().includes(filter) ||
-                           (String(c['Código'] || c['codigo_cliente'])).includes(filter);
+                    const terms = filter.split('%').map(t => t.trim()).filter(t => t.length > 0);
+                    if (terms.length === 0) return true;
+
+                    return terms.every(term => {
+                        return (c.nomeCliente || '').toLowerCase().includes(term) ||
+                               (c.fantasia || '').toLowerCase().includes(term) ||
+                               (String(c['Código'] || c['codigo_cliente'])).toLowerCase().includes(term) ||
+                               (c.cidade || '').toLowerCase().includes(term) ||
+                               (c.bairro || '').toLowerCase().includes(term);
+                    });
                 });
                 
                 // Sort by Name
@@ -16835,7 +16840,18 @@ const supervisorGroups = new Map();
                 // We need client name from map
                 const clientObj = clientMapForKPIs.get(codCli);
                 const name = clientObj ? (clientObj.nomeCliente || clientObj.fantasia || '') : '';
-                if (!codCli.includes(clientFilter) && !name.toLowerCase().includes(clientFilter)) return false;
+                const city = clientObj ? (clientObj.cidade || '') : '';
+                const bairro = clientObj ? (clientObj.bairro || '') : '';
+
+                const terms = clientFilter.split('%').map(t => t.trim()).filter(t => t.length > 0);
+                const match = terms.every(term => {
+                    return codCli.toLowerCase().includes(term) ||
+                           name.toLowerCase().includes(term) ||
+                           city.toLowerCase().includes(term) ||
+                           bairro.toLowerCase().includes(term);
+                });
+
+                if (!match) return false;
             }
 
             // Position Check
