@@ -1076,56 +1076,121 @@
 
     <!-- Wallet Client Action Modal -->
     <div id="wallet-client-modal" class="modal-overlay hidden z-[3000]">
-        <div class="bg-modal-content max-w-lg w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 overflow-hidden relative">
+        <div class="bg-modal-content max-w-2xl w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 overflow-hidden relative flex flex-col max-h-[90vh]">
+            <!-- Header -->
             <div class="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-800/50">
                 <div>
                     <h3 id="wallet-modal-title" class="text-xl font-bold text-white mb-1">Detalhes do Cliente</h3>
-                    <p id="wallet-modal-subtitle" class="text-sm text-slate-400">Verifique as informações antes de alterar.</p>
+                    <p id="wallet-modal-subtitle" class="text-sm text-slate-400">Visão completa e gestão.</p>
                 </div>
                 <button id="wallet-modal-close-btn" class="text-slate-400 hover:text-white transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            
-            <div class="p-6 space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="p-3 bg-slate-800 rounded-lg">
-                        <p class="text-xs text-slate-500 uppercase font-bold mb-1">Código</p>
-                        <p id="wallet-modal-code" class="text-white font-mono font-medium">--</p>
-                    </div>
-                    <div class="p-3 bg-slate-800 rounded-lg">
-                        <p class="text-xs text-slate-500 uppercase font-bold mb-1">CNPJ / CPF</p>
-                        <p id="wallet-modal-cnpj" class="text-white font-medium">--</p>
-                    </div>
-                </div>
-                <div class="p-3 bg-slate-800 rounded-lg">
-                    <p class="text-xs text-slate-500 uppercase font-bold mb-1">Razão Social</p>
-                    <p id="wallet-modal-razao" class="text-white font-medium break-words">--</p>
-                </div>
-                <div class="p-3 bg-slate-800 rounded-lg">
-                    <p class="text-xs text-slate-500 uppercase font-bold mb-1">Nome Fantasia</p>
-                    <p id="wallet-modal-fantasia" class="text-white font-medium break-words">--</p>
-                </div>
-                 <div class="p-3 bg-slate-800 rounded-lg">
-                    <p class="text-xs text-slate-500 uppercase font-bold mb-1">Cidade / UF</p>
-                    <p id="wallet-modal-city" class="text-white font-medium break-words">--</p>
-                </div>
 
-                <!-- Status / Warning Area -->
-                <div id="wallet-modal-status-area" class="mt-4 p-4 rounded-lg bg-slate-800 border border-slate-700 hidden">
-                    <div class="flex items-start gap-3">
-                        <div id="wallet-modal-status-icon"></div>
-                        <div>
-                            <h4 id="wallet-modal-status-title" class="text-sm font-bold text-white mb-1"></h4>
-                            <p id="wallet-modal-status-msg" class="text-xs text-slate-300"></p>
+            <!-- Tabs Navigation -->
+            <div class="flex border-b border-slate-800 bg-slate-900/50 px-6">
+                <button data-tab="general" class="wallet-tab-btn active px-4 py-3 text-sm font-medium text-blue-400 border-b-2 border-blue-500 transition-colors">Geral</button>
+                <button data-tab="losses" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors">Perdas</button>
+                <button data-tab="bonus" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors">Bonificações</button>
+            </div>
+            
+            <!-- Content Area (Scrollable) -->
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                
+                <!-- Tab: General -->
+                <div id="wallet-tab-content-general" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Código / RCA</p>
+                            <p class="text-white font-mono font-medium text-sm"><span id="wallet-modal-code">--</span> / <span id="wallet-modal-seller" class="text-blue-300">--</span></p>
+                        </div>
+                        <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">CNPJ / CPF</p>
+                            <p id="wallet-modal-cnpj" class="text-white font-medium text-sm">--</p>
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Razão Social</p>
+                        <p id="wallet-modal-razao" class="text-white font-medium text-sm break-words">--</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Fantasia</p>
+                            <p id="wallet-modal-fantasia" class="text-white font-medium text-sm break-words">--</p>
+                        </div>
+                        <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Cidade / UF</p>
+                            <p id="wallet-modal-city" class="text-white font-medium text-sm break-words">--</p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Endereço Completo</p>
+                        <p id="wallet-modal-address" class="text-slate-300 text-xs break-words">--</p>
+                    </div>
+
+                    <!-- Purchase Summary -->
+                    <div class="mt-6">
+                        <h4 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                            <span class="w-1.5 h-4 bg-green-500 rounded-full"></span>
+                            Histórico de Compras (6 Meses)
+                        </h4>
+                        <div class="overflow-hidden rounded-lg border border-slate-700">
+                            <table class="min-w-full text-xs text-left text-slate-300">
+                                <thead class="bg-slate-900 uppercase text-slate-500 font-bold">
+                                    <tr>
+                                        <th class="px-4 py-2">Mês</th>
+                                        <th class="px-4 py-2 text-right">Valor (R$)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wallet-purchase-history-body" class="divide-y divide-slate-800"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Status / Warning Area -->
+                    <div id="wallet-modal-status-area" class="mt-4 p-4 rounded-lg bg-slate-800 border border-slate-700 hidden">
+                        <div class="flex items-start gap-3">
+                            <div id="wallet-modal-status-icon"></div>
+                            <div>
+                                <h4 id="wallet-modal-status-title" class="text-sm font-bold text-white mb-1"></h4>
+                                <p id="wallet-modal-status-msg" class="text-xs text-slate-300"></p>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Tab: Losses (Perdas - Type 5) -->
+                <div id="wallet-tab-content-losses" class="hidden space-y-4">
+                    <div class="p-4 bg-red-900/10 border border-red-900/30 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <h4 class="text-sm font-bold text-red-400">Total Perdas (Geral)</h4>
+                            <span id="wallet-total-losses" class="text-lg font-bold text-white">R$ 0,00</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2" id="wallet-losses-list"></div>
+                </div>
+
+                <!-- Tab: Bonus (Bonificação - Type 11) -->
+                <div id="wallet-tab-content-bonus" class="hidden space-y-4">
+                    <div class="p-4 bg-blue-900/10 border border-blue-900/30 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <h4 class="text-sm font-bold text-blue-400">Total Bonificações</h4>
+                            <span id="wallet-total-bonus" class="text-lg font-bold text-white">R$ 0,00</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2" id="wallet-bonus-list"></div>
+                </div>
+
             </div>
 
+            <!-- Footer Action -->
             <div class="p-6 border-t border-slate-800 flex justify-end gap-3 bg-slate-800/30">
-                <button id="wallet-modal-cancel-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition-colors border border-slate-700">Cancelar</button>
-                <button id="wallet-modal-action-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2">
+                <button id="wallet-modal-cancel-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition-colors border border-slate-700 text-sm">Fechar</button>
+                <button id="wallet-modal-action-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm">
                     <span id="wallet-modal-action-text">Confirmar</span>
                 </button>
             </div>
@@ -1860,8 +1925,8 @@
                 <button class="p-2 text-white hover:bg-slate-800 rounded-full"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg></button>
             </div>
         </header>
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div id="clientes-list-container" class="divide-y divide-gray-200">
+        <div class="bg-[#0f172a] rounded-xl shadow-lg overflow-hidden border border-slate-800">
+            <div id="clientes-list-container" class="divide-y divide-slate-800">
                 <!-- List Items injected by JS -->
             </div>
         </div>
