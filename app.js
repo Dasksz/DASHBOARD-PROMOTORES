@@ -16374,7 +16374,19 @@ const supervisorGroups = new Map();
         if (me || role === 'ADM') isPromoterOnly = false;
         
         if (!myPromoter) {
-            btn.classList.add('hidden');
+            // UX Improvement: If Admin/Manager, show disabled button with hint instead of hiding
+            if (walletState.canEdit) {
+                btn.classList.remove('hidden');
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-700', 'text-slate-400');
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-500', 'text-white', 'shadow-lg'); // Remove active styles
+                btnText.textContent = 'Selecione Promotor';
+                // Remove previous click handler
+                btn.onclick = null;
+            } else {
+                btn.classList.add('hidden');
+            }
+
             statusArea.classList.remove('hidden'); // Ensure visible
             if (currentOwner) {
                 statusArea.className = 'mt-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30';
@@ -16388,6 +16400,11 @@ const supervisorGroups = new Map();
                 statusMsg.textContent = 'Este cliente não pertence a nenhuma carteira.';
             }
         } else {
+            // Reset Button Styles (Enable)
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-700', 'text-slate-400');
+            btn.classList.add('bg-blue-600', 'hover:bg-blue-500', 'text-white', 'shadow-lg');
+
              btn.classList.remove('hidden');
              statusArea.classList.remove('hidden');
 
