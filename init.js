@@ -572,27 +572,42 @@
             }
 
             // --- MERGE PROMOTERS INTO CLIENTS ---
-            // Build Map of Promoter Codes
+            // Build Map of Promoter Codes and Itinerary Data
             const promoterMap = new Map();
             if (clientPromoters && clientPromoters.length > 0) {
                 clientPromoters.forEach(p => {
                     if (p.client_code && p.promoter_code) {
                         // Normalize key to match client data
-                        promoterMap.set(normalizeKey(p.client_code), String(p.promoter_code).trim());
+                        promoterMap.set(normalizeKey(p.client_code), {
+                            code: String(p.promoter_code).trim(),
+                            frequency: p.itinerary_frequency || '',
+                            nextDate: p.itinerary_ref_date || ''
+                        });
                     }
                 });
             }
 
             // Inject into Clients Columnar Data
             if (clients && clients.values) {
-                // Ensure PROMOTOR column exists in values/columns
+                // Ensure columns exist
                 if (!clients.columns.includes('PROMOTOR')) {
                     clients.columns.push('PROMOTOR');
                     clients.values['PROMOTOR'] = new Array(clients.length).fill('');
                 }
+                if (!clients.columns.includes('ITINERARY_FREQUENCY')) {
+                    clients.columns.push('ITINERARY_FREQUENCY');
+                    clients.values['ITINERARY_FREQUENCY'] = new Array(clients.length).fill('');
+                }
+                if (!clients.columns.includes('ITINERARY_NEXT_DATE')) {
+                    clients.columns.push('ITINERARY_NEXT_DATE');
+                    clients.values['ITINERARY_NEXT_DATE'] = new Array(clients.length).fill('');
+                }
 
                 const clientCodes = clients.values['CODIGO_CLIENTE'] || clients.values['Código'];
                 const promoterValues = clients.values['PROMOTOR'];
+                const freqValues = clients.values['ITINERARY_FREQUENCY'];
+                const nextDateValues = clients.values['ITINERARY_NEXT_DATE'];
+
                 // Fallback: Use RCA 1 if Promotor is missing (Legacy Support)
                 const rcaValues = clients.values['RCA 1'] || clients.values['RCA1'];
 
@@ -603,10 +618,12 @@
                     let fallbackCount = 0;
                     for (let i = 0; i < clients.length; i++) {
                         const code = String(clientCodes[i]).trim();
-                        const promoter = promoterMap.get(code);
+                        const promoterData = promoterMap.get(code);
                         
-                        if (promoter) {
-                            promoterValues[i] = promoter;
+                        if (promoterData) {
+                            promoterValues[i] = promoterData.code;
+                            freqValues[i] = promoterData.frequency;
+                            nextDateValues[i] = promoterData.nextDate;
                             updatedCount++;
                         } else if ((!promoterValues[i] || promoterValues[i] === '') && rcaValues && rcaValues[i]) {
                              // Fallback to RCA 1 if explicit Promotor is empty
