@@ -16064,6 +16064,16 @@ const supervisorGroups = new Map();
              client = data;
         }
         if (!client) return;
+
+        // Merge Itinerary Data from embeddedData.clientPromoters (Memory Cache)
+        // This ensures we show the latest Saved data even if data_clients table is stale
+        if (embeddedData.clientPromoters) {
+             const promoData = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === normalizeKey(clientCode));
+             if (promoData) {
+                 client.itinerary_frequency = promoData.itinerary_frequency;
+                 client.itinerary_next_date = promoData.itinerary_ref_date;
+             }
+        }
         
         const modal = document.getElementById('wallet-client-modal');
         const codeKey = String(client['Código'] || client['codigo_cliente']);
@@ -16229,7 +16239,7 @@ const supervisorGroups = new Map();
                     today.setHours(0,0,0,0);
                     
                     // Use UTC for day diff calculation to avoid timezone issues
-                    const utcRef = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+                    const utcRef = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
                     const utcToday = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
                     
                     if (utcRef < utcToday) {
@@ -16253,9 +16263,10 @@ const supervisorGroups = new Map();
                 }
 
                 // Format YYYY-MM-DD
-                const yyyy = displayDate.getFullYear();
-                const mm = String(displayDate.getMonth() + 1).padStart(2, '0');
-                const dd = String(displayDate.getDate()).padStart(2, '0');
+                // Use UTC components to prevent local timezone shift (e.g. 11/02 becoming 10/02)
+                const yyyy = displayDate.getUTCFullYear();
+                const mm = String(displayDate.getUTCMonth() + 1).padStart(2, '0');
+                const dd = String(displayDate.getUTCDate()).padStart(2, '0');
                 itinDateInput.value = `${yyyy}-${mm}-${dd}`;
             }
         }
@@ -16884,7 +16895,8 @@ const supervisorGroups = new Map();
                 // Fallback for unexpected formats
                 const d = parseDate(refDateStr);
                 if (!d) return;
-                utcRef = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); // Fallback might still have offset risk if refDateStr was UTC-ish
+                // Use UTC components to avoid timezone shift
+                utcRef = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
             }
             
             // Target Date (UI Selection) is local midnight. Construct UTC components from it.
