@@ -11445,7 +11445,7 @@ const supervisorGroups = new Map();
                         break;
                     case 'clientes':
                         showViewElement(document.getElementById('clientes-view'));
-                        if (typeof renderClientView === 'function') renderClientView();
+                        if (typeof renderClientView === 'function') if (typeof renderClientView === "function") renderClientView();
                         break;
                     case 'produtos':
                         showViewElement(document.getElementById('produtos-view'));
@@ -16075,9 +16075,46 @@ const supervisorGroups = new Map();
         
         const rca1 = String(client.rca1 || client['RCA 1'] || '');
         let sellerName = rca1;
-        if (optimizedData.rcaNameByCode && optimizedData.rcaNameByCode.has(rca1)) {
-            sellerName = `${rca1} - ${optimizedData.rcaNameByCode.get(rca1)}`;
+        
+        let resolvedName = optimizedData.rcaNameByCode ? optimizedData.rcaNameByCode.get(rca1) : null;
+
+        // Fallback: If name is missing or "INATIVOS", try to find a valid name in current sales
+        if (!resolvedName || resolvedName.toUpperCase() === 'INATIVOS') {
+            // Check Seller Details Map first (History based)
+            if (sellerDetailsMap && sellerDetailsMap.has(rca1)) {
+                const details = sellerDetailsMap.get(rca1);
+                if (details && details.name && details.name.toUpperCase() !== 'INATIVOS') {
+                    resolvedName = details.name;
+                }
+            }
+            
+            // Still invalid? Scan current sales for this RCA (Expensive but robust fallback)
+            if (!resolvedName || resolvedName.toUpperCase() === 'INATIVOS') {
+                if (allSalesData instanceof ColumnarDataset) {
+                     const codUsurArr = allSalesData._data['CODUSUR'];
+                     const nomeArr = allSalesData._data['NOME'];
+                     if (codUsurArr && nomeArr) {
+                         for(let i=0; i < allSalesData.length; i++) {
+                             if (String(codUsurArr[i]) === rca1) {
+                                 const n = String(nomeArr[i]);
+                                 if (n && n.toUpperCase() !== 'INATIVOS') {
+                                     resolvedName = n;
+                                     break;
+                                 }
+                             }
+                         }
+                     }
+                } else if (Array.isArray(allSalesData)) {
+                    const match = allSalesData.find(s => String(s.CODUSUR) === rca1 && s.NOME && s.NOME.toUpperCase() !== 'INATIVOS');
+                    if (match) resolvedName = match.NOME;
+                }
+            }
         }
+        
+        if (resolvedName) {
+            sellerName = `${rca1} - ${resolvedName}`;
+        }
+        
         document.getElementById('wallet-modal-seller').textContent = sellerName || '--';
 
         // 2. Tabs Logic
@@ -16138,8 +16175,7 @@ const supervisorGroups = new Map();
             qty: Number(s.QTVENDA) || 0
         });
 
-        const processHistory = (idx) => {
-            const s = allHistoryData instanceof ColumnarDataset ? allHistoryData.get(idx) : allHistoryData[idx];
+        const processSaleItem = (s) => {
             if (normalizeKey(s.CODCLI) !== normalizeKey(codeKey)) return;
             
             const item = normalizeItem(s);
@@ -16148,22 +16184,19 @@ const supervisorGroups = new Map();
             const monthKey = `${item.d.getUTCFullYear()}-${String(item.d.getUTCMonth()+1).padStart(2,'0')}`;
             
             // General Sales (Type 1, 9, etc - usually non-bonus or specific types? Just sum VLVENDA for Total Purchase)
-            // User asked for "Total Purchased". Usually Sum(VLVENDA).
             if (item.val > 0) {
                 metrics.salesByMonth.set(monthKey, (metrics.salesByMonth.get(monthKey) || 0) + item.val);
             }
             
-            // Perdas (Type 5) - Use VLBONIFIC usually, or VLVENDA if bonific is 0?
-            // In `getValueForSale`, type 5/11 uses VLBONIFIC if filters are exclusive.
-            // Here we want the monetary value of the loss/bonus.
-            // Let's assume VLBONIFIC for Type 5/11.
+            // Perdas (Type 5)
             if (item.type === '5') {
                 const entry = metrics.lossesByMonth.get(monthKey) || { value: 0, items: [] };
-                entry.value += (item.bon || item.val); // Fallback to val if bon is 0?
+                entry.value += (item.bon || item.val); 
                 entry.items.push(item);
                 metrics.lossesByMonth.set(monthKey, entry);
             }
             
+            // Bonificações (Type 11)
             if (item.type === '11') {
                 const entry = metrics.bonusByMonth.get(monthKey) || { value: 0, items: [] };
                 entry.value += (item.bon || item.val);
@@ -16174,16 +16207,26 @@ const supervisorGroups = new Map();
 
         // Iterate History
         if (allHistoryData instanceof ColumnarDataset) {
-            // Optimization: Get indices if available
             const indices = optimizedData.indices.history.byClient.get(normalizeKey(codeKey));
             if (indices) {
-                indices.forEach(idx => processHistory(idx));
+                indices.forEach(idx => processSaleItem(allHistoryData.get(idx)));
             } else {
-                // Fallback scan
-                for(let i=0; i<allHistoryData.length; i++) processHistory(i);
+                for(let i=0; i<allHistoryData.length; i++) processSaleItem(allHistoryData.get(i));
             }
         } else {
-            for(let i=0; i<allHistoryData.length; i++) processHistory(i);
+            for(let i=0; i<allHistoryData.length; i++) processSaleItem(allHistoryData[i]);
+        }
+
+        // Iterate Current Sales (Month) - Added per user request
+        if (allSalesData instanceof ColumnarDataset) {
+            const indices = optimizedData.indices.current.byClient.get(normalizeKey(codeKey));
+            if (indices) {
+                indices.forEach(idx => processSaleItem(allSalesData.get(idx)));
+            } else {
+                for(let i=0; i<allSalesData.length; i++) processSaleItem(allSalesData.get(i));
+            }
+        } else {
+            for(let i=0; i<allSalesData.length; i++) processSaleItem(allSalesData[i]);
         }
 
         // 4. Render Tab Content
@@ -16920,7 +16963,7 @@ const supervisorGroups = new Map();
     }
 
     // Auto-init User Menu on load if ready (for Navbar)
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    if (document.readyState === "complete" || document.readyState === "interactive") {
         initWalletView();
     }
 
