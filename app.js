@@ -16557,7 +16557,7 @@ const supervisorGroups = new Map();
                                  else if(c === 'CIDADE') val = newClient.cidade;
                                  else if(c === 'PROMOTOR') val = promoter;
                                  
-                                 if(dataset.values[col]) dataset.values[col].push(val);
+                         if(dataset._data[col]) dataset._data[col].push(val);
                              });
                              dataset.length++;
                              
