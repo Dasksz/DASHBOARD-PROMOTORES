@@ -1412,7 +1412,8 @@
             }
 
             // Sort
-            options.sort((a, b) => a.label.localeCompare(b.label));
+            if (options) options.sort((a, b) => a.label.localeCompare(b.label));
+            else options = [];
 
             // Render
             let html = '';
@@ -2128,7 +2129,10 @@
             inovacoes: { dirty: true, cache: null, lastTypesKey: '' },
             mix: { dirty: true },
             goals: { dirty: true },
-            metaRealizado: { dirty: true }
+            metaRealizado: { dirty: true },
+            clientes: { dirty: true },
+            produtos: { dirty: true },
+            consultas: { dirty: true }
         };
 
         // Render IDs for Race Condition Guard
@@ -11333,7 +11337,10 @@ const supervisorGroups = new Map();
                 'inovacoes-mes': 'Inovações',
                 mix: 'Mix',
                 'meta-realizado': 'Meta Vs. Realizado',
-                'goals': 'Metas'
+                'goals': 'Metas',
+                'clientes': 'Clientes',
+                'produtos': 'Produtos',
+                'consultas': 'Consultas'
             };
             const friendlyName = viewNameMap[view] || 'a página';
 
@@ -11341,7 +11348,7 @@ const supervisorGroups = new Map();
 
             // This function now runs after the loader is visible
             const updateContent = () => {
-                [mainDashboard, cityView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view')].forEach(el => {
+                [mainDashboard, cityView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view'), document.getElementById('clientes-view'), document.getElementById('produtos-view'), document.getElementById('consultas-view')].forEach(el => {
                     if(el) el.classList.add('hidden');
                 });
 
@@ -11365,6 +11372,17 @@ const supervisorGroups = new Map();
                 });
 
                 switch(view) {
+                    case 'clientes':
+                        showViewElement(document.getElementById('clientes-view'));
+                        if (typeof renderClientView === 'function') renderClientView();
+                        break;
+                    case 'produtos':
+                        showViewElement(document.getElementById('produtos-view'));
+                        if (typeof renderProductView === 'function') renderProductView();
+                        break;
+                    case 'consultas':
+                        showViewElement(document.getElementById('consultas-view'));
+                        break;
                     case 'wallet':
                         showViewElement(document.getElementById('wallet-view'));
                         if (typeof renderWalletView === 'function') renderWalletView();
@@ -16153,6 +16171,169 @@ const supervisorGroups = new Map();
          }
     }
     
+    window.renderView = renderView;
+
+    window.renderClientView = function() {
+        const container = document.getElementById('clientes-list-container');
+        const countEl = document.getElementById('clientes-count');
+        const searchInput = document.getElementById('clientes-search');
+        if (!container) return;
+
+        const renderList = (filter = '') => {
+            container.innerHTML = '';
+            const clients = getActiveClientsData(); // Reuse existing function
+            const filtered = clients.filter(c => {
+                if (!filter) return true;
+                const f = filter.toLowerCase();
+                return (c.nomeCliente || '').toLowerCase().includes(f) ||
+                       (c.fantasia || '').toLowerCase().includes(f) ||
+                       (String(c['Código'] || c['codigo_cliente'])).includes(f);
+            });
+
+            // Sort by Name
+            filtered.sort((a, b) => (a.nomeCliente || '').localeCompare(b.nomeCliente || ''));
+
+            const limit = 50; // Render limit for performance
+            const subset = filtered.slice(0, limit);
+
+            if (countEl) countEl.textContent = `${filtered.length} Clientes${filtered.length > limit ? ` (Exibindo ${limit})` : ''}`;
+
+            subset.forEach((client, index) => {
+                const cod = String(client['Código'] || client['codigo_cliente']);
+                const name = client.nomeCliente || 'Desconhecido';
+                const fantasia = client.fantasia || '';
+                const firstLetter = name.charAt(0).toUpperCase();
+
+                // Days since last purchase
+                let days = '-';
+                if (client.ultimacompra) {
+                    const d = parseDate(client.ultimacompra);
+                    if (d) {
+                        const diffTime = Math.abs(new Date() - d);
+                        days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 'd';
+                    }
+                } else if (client['Data da Última Compra']) {
+                     const d = parseDate(client['Data da Última Compra']);
+                     if (d) {
+                        const diffTime = Math.abs(new Date() - d);
+                        days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 'd';
+                     }
+                }
+
+                // Status Color Logic (Mocked based on index for variety, or real logic if available)
+                // Real logic: Blocked? Days without purchase?
+                // Let's use days. > 30 days = red, else green.
+                let statusColor = 'bg-green-500';
+                if (days !== '-' && parseInt(days) > 30) statusColor = 'bg-red-500';
+
+                const item = document.createElement('div');
+                item.className = 'p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer';
+                item.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full ${statusColor} flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                            ${firstLetter}
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800 leading-tight">${cod} - ${name}</h3>
+                            <p class="text-xs text-slate-500 font-medium mt-0.5">Fantasia: ${fantasia}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        <span class="text-xs font-bold">${days}</span>
+                    </div>
+                `;
+                // Add click to open details
+                item.onclick = () => openWalletClientModal(cod, client);
+                container.appendChild(item);
+            });
+        };
+
+        if (searchInput) {
+            searchInput.oninput = (e) => renderList(e.target.value);
+        }
+        renderList();
+    }
+
+    window.renderProductView = function() {
+        const container = document.getElementById('produtos-list-container');
+        const countEl = document.getElementById('produtos-count');
+        const searchInput = document.getElementById('produtos-search');
+        if (!container) return;
+
+        const renderList = (filter = '') => {
+            container.innerHTML = '';
+            // Get products
+            let prodList = embeddedData.products || [];
+
+            const filtered = prodList.filter(p => {
+                if (!filter) return true;
+                const f = filter.toLowerCase();
+                return (p.descricao || '').toLowerCase().includes(f) ||
+                       (String(p.code || '')).includes(f);
+            });
+
+            const limit = 50;
+            const subset = filtered.slice(0, limit);
+
+            if (countEl) countEl.textContent = `${filtered.length} Produtos${filtered.length > limit ? ` (Exibindo ${limit})` : ''}`;
+
+            subset.forEach(prod => {
+                const code = prod.code;
+                const desc = prod.descricao || 'Sem Descrição';
+                const emb = prod.embalagem || 'UNIDADE'; // Fallback
+                // Stock
+                const stock05 = stockData05.get(code) || 0;
+                const stock08 = stockData08.get(code) || 0;
+                const totalStock = stock05 + stock08;
+
+                // Price (Inferred from recent sales or product details if available)
+                // We don't have a direct price map efficiently accessible.
+                // Let's check `productDetailsMap`
+                const details = productDetailsMap.get(code);
+                let price = 'R$ --';
+                // If details has a price field? No standard field.
+                // Try to find ANY sale for this product in current sales to guess price?
+                // Too expensive to scan all sales.
+                // Check if `activeProds` has it.
+                // For now, placeholder or random if strictly needed for visual match?
+                // The image shows "R$ 8,78". I will leave as "--" to be accurate or calculate if easy.
+                // Actually, let's look for `preco_venda` or similar in `prod` object.
+                if (prod.preco || prod.price) {
+                     price = parseFloat(prod.preco || prod.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                }
+
+                const item = document.createElement('div');
+                item.className = 'p-4 border-b border-gray-100 hover:bg-slate-50 transition-colors';
+                item.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-sm font-bold text-slate-900 leading-tight flex-1">${code} - ${desc}</h3>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-slate-500 mb-2">
+                        <span>Emb.: ${emb}</span>
+                        <span>Und.: UN Preço: <span class="font-bold text-slate-800">${price}</span></span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400">Cód. fábrica: ${prod.cod_fabrica || code}</span>
+                        <span class="font-bold text-slate-700">Est.: ${totalStock}</span>
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                        <button class="p-1 bg-lime-100 text-lime-600 rounded hover:bg-lime-200"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg></button>
+                        <button class="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
+                        <button class="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg></button>
+                        <button class="p-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 ml-auto"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg></button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        };
+
+        if (searchInput) {
+            searchInput.oninput = (e) => renderList(e.target.value);
+        }
+        renderList();
+    }
+
     // Auto-init User Menu on load if ready (for Navbar)
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         initWalletView();
