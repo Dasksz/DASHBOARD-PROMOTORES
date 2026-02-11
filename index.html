@@ -1651,7 +1651,6 @@
             <h1 class="text-3xl font-bold text-white">Consultas</h1>
         </header>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Positivação de Clientes -->
             <button onclick="renderView('cobertura')" class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4">
                 <div class="p-3 bg-green-500/20 rounded-full text-green-400 group-hover:bg-green-500/30 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
@@ -1661,8 +1660,60 @@
                     <p class="text-sm text-slate-400 mt-1">Clientes com e sem venda</p>
                 </div>
             </button>
-            
-            <!-- Histórico de Pedidos (Links to Orders View) -->
+            <button class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer" title="Em breve">
+                <div class="p-3 bg-green-500/20 rounded-full text-green-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Títulos</h3>
+                    <p class="text-sm text-slate-400 mt-1">Consulta todos os títulos para todos os clientes</p>
+                </div>
+            </button>
+            <button class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer" title="Em breve">
+                <div class="p-3 bg-green-500/20 rounded-full text-green-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">MaxInsights</h3>
+                    <p class="text-sm text-slate-400 mt-1">Acesse os relatórios disponíveis no maxInsights</p>
+                </div>
+            </button>
+            <button class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer" title="Em breve">
+                <div class="p-3 bg-green-500/20 rounded-full text-green-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Relatórios</h3>
+                    <p class="text-sm text-slate-400 mt-1">Permite a solicitação de relatórios ao servidor</p>
+                </div>
+            </button>
+            <button class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer" title="Em breve">
+                <div class="p-3 bg-green-500/20 rounded-full text-green-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Extrato Conta Corrente</h3>
+                    <p class="text-sm text-slate-400 mt-1">Consulta movimentação de conta corrente do RCA</p>
+                </div>
+            </button>
+            <button class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer" title="Em breve">
+                <div class="p-3 bg-green-500/20 rounded-full text-green-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Notificações de Estoque</h3>
+                    <p class="text-sm text-slate-400 mt-1">Consulta notificações de estoque de produtos</p>
+                </div>
+            </button>
+            <button class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer" title="Em breve">
+                <div class="p-3 bg-green-500/20 rounded-full text-green-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Políticas Comerciais</h3>
+                    <p class="text-sm text-slate-400 mt-1">Acesso a todas as políticas comerciais de Brindes e Desconto</p>
+                </div>
+            </button>
             <button onclick="renderView('pedidos')" class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4">
                 <div class="p-3 bg-green-500/20 rounded-full text-green-400 group-hover:bg-green-500/30 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -1672,49 +1723,57 @@
                     <p class="text-sm text-slate-400 mt-1">Possibilita visualizar pedidos mais antigos no sistema</p>
                 </div>
             </button>
-
-            <!-- Other placeholders from image -->
-            <button class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 opacity-50 cursor-not-allowed" title="Em breve">
+            <button class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer" title="Em breve">
                 <div class="p-3 bg-green-500/20 rounded-full text-green-400">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 </div>
                 <div>
-                    <h3 class="text-lg font-bold text-white">Títulos</h3>
-                    <p class="text-sm text-slate-400 mt-1">Consulta todos os títulos para todos os clientes</p>
-                </div>
-            </button>
-             <button class="bg-slate-800 hover:bg-slate-700 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 opacity-50 cursor-not-allowed" title="Em breve">
-                <div class="p-3 bg-green-500/20 rounded-full text-green-400">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold text-white">Relatórios</h3>
-                    <p class="text-sm text-slate-400 mt-1">Permite a solicitação de relatórios ao servidor</p>
+                    <h3 class="text-lg font-bold text-white">Consulta Aniversários</h3>
+                    <p class="text-sm text-slate-400 mt-1">Consulta por clientes aniversariantes no sistema</p>
                 </div>
             </button>
         </div>
     </div>
 
-    <!-- CLIENTES VIEW (Placeholder) -->
+    <!-- CLIENTES VIEW -->
     <div id="clientes-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
-        <header class="mb-8 border-b border-slate-800 pb-4">
-            <h1 class="text-3xl font-bold text-white">Clientes</h1>
+        <header class="mb-4 border-b border-slate-800 pb-4 flex justify-between items-center sticky top-16 bg-[#020617] z-10 pt-4">
+            <div class="flex items-center gap-4">
+                <h1 class="text-3xl font-bold text-white">Clientes</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="relative">
+                    <input type="text" id="clientes-search" placeholder="Pesquisar..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-40 sm:w-64 pl-3 p-2.5">
+                </div>
+                <button class="p-2 text-white hover:bg-slate-800 rounded-full"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg></button>
+            </div>
         </header>
-        <div class="bg-slate-800/50 p-8 rounded-xl text-center border border-slate-700 border-dashed">
-            <p class="text-slate-400 text-lg">Módulo de Clientes em desenvolvimento.</p>
-            <p class="text-sm text-slate-500 mt-2">Funcionalidades previstas: Ícones de inatividade > 20 dias, gestão de carteira.</p>
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div id="clientes-list-container" class="divide-y divide-gray-200">
+                <!-- List Items injected by JS -->
+            </div>
         </div>
+        <div class="mt-4 text-center text-slate-500 text-sm" id="clientes-count"></div>
     </div>
 
-    <!-- PRODUTOS VIEW (Placeholder) -->
+    <!-- PRODUTOS VIEW -->
     <div id="produtos-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
-        <header class="mb-8 border-b border-slate-800 pb-4">
-            <h1 class="text-3xl font-bold text-white">Produtos</h1>
+        <header class="mb-4 border-b border-slate-800 pb-4 flex justify-between items-center sticky top-16 bg-[#020617] z-10 pt-4">
+            <div class="flex items-center gap-4">
+                <h1 class="text-3xl font-bold text-white">Produtos</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="relative">
+                    <input type="text" id="produtos-search" placeholder="Pesquisar..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-40 sm:w-64 pl-3 p-2.5">
+                </div>
+            </div>
         </header>
-        <div class="bg-slate-800/50 p-8 rounded-xl text-center border border-slate-700 border-dashed">
-            <p class="text-slate-400 text-lg">Módulo de Produtos em desenvolvimento.</p>
-            <p class="text-sm text-slate-500 mt-2">Funcionalidades previstas: Estoque, Velocidade de Vendas, Promoções.</p>
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div id="produtos-list-container" class="divide-y divide-gray-200">
+                <!-- List Items injected by JS -->
+            </div>
         </div>
+        <div class="mt-4 text-center text-slate-500 text-sm" id="produtos-count"></div>
     </div>
 
     <div id="ai-insights-full-page" class="hidden"><div id="ai-insights-full-content"></div><button id="ai-insights-back-btn"></button><button id="ai-insights-export-btn"></button></div>
