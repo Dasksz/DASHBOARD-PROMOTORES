@@ -15049,9 +15049,10 @@ const supervisorGroups = new Map();
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape');
 
-            const supervisor = document.getElementById('meta-realizado-supervisor-filter-text').textContent;
-            const vendedor = document.getElementById('meta-realizado-vendedor-filter-text').textContent;
-            const supplier = document.getElementById('meta-realizado-supplier-filter-text').textContent;
+            const coord = document.getElementById('meta-realizado-coord-filter-text') ? document.getElementById('meta-realizado-coord-filter-text').textContent : 'N/A';
+            const cocoord = document.getElementById('meta-realizado-cocoord-filter-text') ? document.getElementById('meta-realizado-cocoord-filter-text').textContent : 'N/A';
+            const promotor = document.getElementById('meta-realizado-promotor-filter-text') ? document.getElementById('meta-realizado-promotor-filter-text').textContent : 'N/A';
+            const supplier = document.getElementById('meta-realizado-supplier-filter-text') ? document.getElementById('meta-realizado-supplier-filter-text').textContent : 'N/A';
             const pasta = currentMetaRealizadoPasta;
             const generationDate = new Date().toLocaleString('pt-BR');
 
@@ -15061,7 +15062,7 @@ const supervisorGroups = new Map();
             doc.setFontSize(10);
             doc.setTextColor(100);
             doc.text(`Data de Emissão: ${generationDate}`, 14, 30);
-            doc.text(`Filtros: Supervisor: ${supervisor} | Vendedor: ${vendedor} | Fornecedor: ${supplier} | Pasta: ${pasta}`, 14, 36);
+            doc.text(`Filtros: Coord: ${coord} | Co-Coord: ${cocoord} | Promotor: ${promotor} | Fornecedor: ${supplier} | Pasta: ${pasta}`, 14, 36);
 
             // --- Table 1: Sellers Summary ---
             // Build dynamic headers based on weeks
