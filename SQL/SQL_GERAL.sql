@@ -206,6 +206,8 @@ BEGIN
     ALTER TABLE public.data_orders ADD COLUMN IF NOT EXISTS fornecedores_list text[];
     ALTER TABLE public.data_orders ADD COLUMN IF NOT EXISTS codfors_list text[];
     ALTER TABLE public.data_product_details ADD COLUMN IF NOT EXISTS pasta text;
+    ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_frequency text;
+    ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_ref_date timestamp with time zone;
     -- promotor column removed from data_clients in new schema
 END $$;
 

@@ -1093,10 +1093,11 @@
             </div>
 
             <!-- Tabs Navigation -->
-            <div class="flex border-b border-slate-800 bg-slate-900/50 px-6">
-                <button data-tab="general" class="wallet-tab-btn active px-4 py-3 text-sm font-medium text-blue-400 border-b-2 border-blue-500 transition-colors">Geral</button>
-                <button data-tab="losses" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors">Perdas</button>
-                <button data-tab="bonus" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors">Bonificações</button>
+            <div class="flex border-b border-slate-800 bg-slate-900/50 px-6 overflow-x-auto no-scrollbar">
+                <button data-tab="general" class="wallet-tab-btn active px-4 py-3 text-sm font-medium text-blue-400 border-b-2 border-blue-500 transition-colors whitespace-nowrap">Geral</button>
+                <button data-tab="losses" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Perdas</button>
+                <button data-tab="bonus" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Bonificações</button>
+                <button data-tab="itinerary" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Roteirização</button>
             </div>
             
             <!-- Content Area (Scrollable) -->
@@ -1195,6 +1196,53 @@
                         </div>
                     </div>
                     <div class="space-y-2" id="wallet-bonus-list"></div>
+                </div>
+
+                <!-- Tab: Roteirização -->
+                <div id="wallet-tab-content-itinerary" class="hidden space-y-6">
+                    <div class="p-4 bg-slate-800 rounded-lg border border-slate-700">
+                        <h4 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Configuração de Visita
+                        </h4>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Frequência de Visita</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="itinerary-frequency" value="weekly" class="peer sr-only">
+                                        <div class="p-3 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-500 transition-all hover:bg-slate-700">
+                                            <div class="font-bold text-sm">Semanal</div>
+                                            <div class="text-[10px] opacity-75">7 em 7 dias</div>
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="itinerary-frequency" value="biweekly" class="peer sr-only">
+                                        <div class="p-3 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-500 transition-all hover:bg-slate-700">
+                                            <div class="font-bold text-sm">Quinzenal</div>
+                                            <div class="text-[10px] opacity-75">14 em 14 dias</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Próxima Data de Atendimento</label>
+                                <input type="date" id="itinerary-next-date" class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 block">
+                                <p class="mt-2 text-xs text-slate-400">
+                                    Define o dia base para o cálculo das próximas visitas.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-slate-700 flex justify-end">
+                            <button id="save-itinerary-btn" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-colors flex items-center gap-2 text-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Salvar Roteiro
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -1931,18 +1979,82 @@
                 <h1 class="text-3xl font-bold text-white">Clientes</h1>
             </div>
             <div class="flex items-center gap-2">
+                <button id="toggle-roteiro-btn" class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold py-2 px-4 rounded-lg border border-slate-700 transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    Roteiro
+                </button>
                 <div class="relative">
                     <input type="text" id="clientes-search" placeholder="Pesquisar..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-40 sm:w-64 pl-3 p-2.5">
                 </div>
-                <button class="p-2 text-white hover:bg-slate-800 rounded-full"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg></button>
             </div>
         </header>
-        <div class="bg-[#0f172a] rounded-xl shadow-lg overflow-hidden border border-slate-800">
-            <div id="clientes-list-container" class="divide-y divide-slate-800">
-                <!-- List Items injected by JS -->
+
+        <!-- Roteiro View Container (Hidden by default) -->
+        <div id="roteiro-container" class="hidden mb-6 animate-fade-in-up">
+            <div class="bg-white text-slate-900 rounded-xl shadow-lg overflow-hidden mb-6">
+                <!-- Calendar Header -->
+                <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <button id="roteiro-prev-day" class="p-2 hover:bg-gray-100 rounded-full"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                        <h2 id="roteiro-current-month" class="text-xl font-bold capitalize">Fevereiro</h2>
+                        <button id="roteiro-next-day" class="p-2 hover:bg-gray-100 rounded-full"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+                    </div>
+                    <div class="text-2xl font-bold text-gray-400" id="roteiro-day-number">--</div>
+                </div>
+
+                <!-- Calendar Strip -->
+                <div id="roteiro-calendar-strip" class="flex justify-between p-2 overflow-x-auto no-scrollbar">
+                    <!-- Days injected by JS -->
+                </div>
+
+                <!-- Daily Stats -->
+                <div class="p-4 bg-gray-50 border-t border-gray-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-bold text-gray-600" id="roteiro-date-display">-- de --</span>
+                        <span class="text-sm text-gray-500" id="roteiro-client-count">0 clientes</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs font-bold uppercase text-gray-500 mb-1">
+                                <span>Atendimento</span>
+                                <span id="roteiro-progress-visit-text">0,00%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="roteiro-progress-visit-bar" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-bold uppercase text-gray-500 mb-1">
+                                <span>Positivação</span>
+                                <span id="roteiro-progress-pos-text">0,00%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="roteiro-progress-pos-bar" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State Illustration -->
+            <div id="roteiro-empty-state" class="hidden flex flex-col items-center justify-center p-12 text-center">
+                <div class="w-48 h-48 bg-slate-800/50 rounded-full flex items-center justify-center mb-6">
+                    <svg class="w-24 h-24 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Dia Livre</h3>
+                <p class="text-slate-400">Nenhum cliente agendado para esta data.</p>
             </div>
         </div>
-        <div class="mt-4 text-center text-slate-500 text-sm" id="clientes-count"></div>
+
+        <div id="clientes-list-view-wrapper">
+            <div class="bg-[#0f172a] rounded-xl shadow-lg overflow-hidden border border-slate-800">
+                <div id="clientes-list-container" class="divide-y divide-slate-800">
+                    <!-- List Items injected by JS -->
+                </div>
+            </div>
+            <div class="mt-4 text-center text-slate-500 text-sm" id="clientes-count"></div>
+        </div>
     </div>
 
     <!-- PRODUTOS VIEW -->
