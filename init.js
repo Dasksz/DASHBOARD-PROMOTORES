@@ -500,19 +500,21 @@
                     clientCoordinates = cachedData.clientCoordinates || [];
                 }
 
-                // Refresh Promoters if missing or stale? For now, we trust cache or reload if needed.
-                // But since we just added this feature, cache might be empty for promoters.
-                if (!clientPromoters || clientPromoters.length === 0) {
-                     try {
-                        console.log("[Cache] Buscando promotores (feature nova)...");
-                        const freshPromoters = await fetchAll('data_client_promoters', null, null, 'object', 'client_code');
+                // Refresh Promoters (Always update cache to ensure wallet changes persist)
+                try {
+                    console.log("[Cache] Atualizando promotores...");
+                    const freshPromoters = await fetchAll('data_client_promoters', null, null, 'object', 'client_code');
+                    // Only update if we got data or empty array (successful fetch)
+                    if (Array.isArray(freshPromoters)) {
                         clientPromoters = freshPromoters;
                         cachedData.clientPromoters = freshPromoters;
                         saveToCache('dashboardData', cachedData).catch(e => console.warn("Background cache save failed (Promoters)", e));
-                     } catch(e) {
-                        console.warn("[Cache] Falha ao buscar promotores:", e);
-                        clientPromoters = []; // Fallback to avoid crash
-                     }
+                        console.log(`[Cache] Promotores atualizados: ${freshPromoters.length}`);
+                    }
+                } catch(e) {
+                    console.warn("[Cache] Falha ao atualizar promotores:", e);
+                    // Fallback to existing cache if fetch fails
+                    if (!clientPromoters) clientPromoters = [];
                 }
 
             } else {
