@@ -11383,6 +11383,11 @@ const supervisorGroups = new Map();
             }
             currentActiveView = view;
 
+            // Sync Hash to ensure navigation consistency
+            if (window.location.hash !== '#' + view) {
+                history.pushState(null, null, '#' + view);
+            }
+
             const mobileMenu = document.getElementById('mobile-menu');
             if (mobileMenu && mobileMenu.classList.contains('open')) {
                 toggleMobileMenu();
@@ -16041,12 +16046,27 @@ const supervisorGroups = new Map();
 
         // 1. Populate Basic Info
         document.getElementById('wallet-modal-code').textContent = codeKey;
-        document.getElementById('wallet-modal-cnpj').textContent = client.cnpj_cpf || client['CNPJ/CPF'] || '--';
-        document.getElementById('wallet-modal-razao').textContent = client.razaosocial || client['Razão Social'] || '--';
-        document.getElementById('wallet-modal-fantasia').textContent = client.fantasia || client['Fantasia'] || '--';
 
-        const bairro = client.bairro || client.BAIRRO || '';
-        const cidade = client.cidade || client.CIDADE || '';
+        // Robust Key Access
+        const getVal = (keys) => {
+            for (const k of keys) {
+                if (client[k]) return client[k];
+            }
+            return null;
+        };
+
+        document.getElementById('wallet-modal-cnpj').textContent = getVal(['cnpj_cpf', 'CNPJ/CPF', 'CNPJ', 'CPF']) || '--';
+
+        // Razão Social: try variations including Name fallback if Razao is missing
+        const razao = getVal(['razaosocial', 'Razão Social', 'RAZAOSOCIAL', 'razao', 'RAZAO', 'nomeCliente', 'NOMECLIENTE', 'Cliente', 'CLIENTE']);
+        document.getElementById('wallet-modal-razao').textContent = razao || '--';
+
+        // Fantasia: try variations
+        const fantasia = getVal(['fantasia', 'Fantasia', 'FANTASIA', 'nome_fantasia', 'NOME_FANTASIA']);
+        document.getElementById('wallet-modal-fantasia').textContent = fantasia || '--';
+
+        const bairro = getVal(['bairro', 'BAIRRO']) || '';
+        const cidade = getVal(['cidade', 'CIDADE']) || '';
         document.getElementById('wallet-modal-city').textContent = (bairro && bairro !== 'N/A') ? `${bairro} - ${cidade}` : cidade;
         
         // Address & Seller
@@ -16171,7 +16191,7 @@ const supervisorGroups = new Map();
         // General: Sales History Table
         const salesBody = document.getElementById('wallet-purchase-history-body');
         salesBody.innerHTML = '';
-        const sortedMonths = Array.from(metrics.salesByMonth.keys()).sort().reverse().slice(0, 12); // Last 12 months
+        const sortedMonths = Array.from(metrics.salesByMonth.keys()).sort().reverse().slice(0, 6); // Last 6 months (as requested)
         if (sortedMonths.length === 0) {
             salesBody.innerHTML = '<tr><td colspan="2" class="px-4 py-3 text-center text-slate-500">Sem histórico recente</td></tr>';
         } else {
@@ -16854,47 +16874,39 @@ const supervisorGroups = new Map();
             subset.forEach(prod => {
                 const code = prod.code;
                 const desc = prod.descricao || 'Sem Descrição';
-                const emb = prod.embalagem || 'UNIDADE'; // Fallback
+                const emb = prod.embalagem || 'UNIDADE';
                 // Stock
                 const stock05 = stockData05.get(code) || 0;
                 const stock08 = stockData08.get(code) || 0;
                 const totalStock = stock05 + stock08;
 
-                // Price (Inferred from recent sales or product details if available)
-                // We don't have a direct price map efficiently accessible.
-                // Let's check `productDetailsMap`
-                const details = productDetailsMap.get(code);
                 let price = 'R$ --';
-                // If details has a price field? No standard field.
-                // Try to find ANY sale for this product in current sales to guess price?
-                // Too expensive to scan all sales.
-                // Check if `activeProds` has it.
-                // For now, placeholder or random if strictly needed for visual match?
-                // The image shows "R$ 8,78". I will leave as "--" to be accurate or calculate if easy.
-                // Actually, let's look for `preco_venda` or similar in `prod` object.
-                if (prod.preco || prod.price) {
-                     price = parseFloat(prod.preco || prod.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                // Try to resolve price from available fields
+                const priceVal = prod.preco || prod.price || prod.PRECO || prod.PRICE || prod.preco_venda || prod.PRECO_VENDA;
+                if (priceVal) {
+                     price = parseFloat(priceVal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 }
 
                 const item = document.createElement('div');
-                item.className = 'p-4 border-b border-gray-100 hover:bg-slate-50 transition-colors';
+                // Dark Theme Styling
+                item.className = 'p-4 border-b border-slate-800 hover:bg-slate-800 transition-colors';
                 item.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
-                        <h3 class="text-sm font-bold text-slate-900 leading-tight flex-1">${code} - ${desc}</h3>
+                        <h3 class="text-sm font-bold text-white leading-tight flex-1">${code} - ${desc}</h3>
                     </div>
-                    <div class="flex justify-between items-center text-xs text-slate-500 mb-2">
+                    <div class="flex justify-between items-center text-xs text-slate-400 mb-2">
                         <span>Emb.: ${emb}</span>
-                        <span>Und.: UN Preço: <span class="font-bold text-slate-800">${price}</span></span>
+                        <span>Und.: UN Preço: <span class="font-bold text-green-400">${price}</span></span>
                     </div>
                     <div class="flex justify-between items-center text-xs">
-                        <span class="text-slate-400">Cód. fábrica: ${prod.cod_fabrica || code}</span>
-                        <span class="font-bold text-slate-700">Est.: ${totalStock}</span>
+                        <span class="text-slate-500">Cód. fábrica: ${prod.cod_fabrica || code}</span>
+                        <span class="font-bold text-blue-400">Est.: ${totalStock}</span>
                     </div>
-                    <div class="flex gap-2 mt-3">
-                        <button class="p-1 bg-lime-100 text-lime-600 rounded hover:bg-lime-200"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg></button>
-                        <button class="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
-                        <button class="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg></button>
-                        <button class="p-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 ml-auto"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg></button>
+                    <div class="flex gap-2 mt-3 opacity-60 hover:opacity-100 transition-opacity">
+                        <button class="p-1.5 bg-slate-700 text-lime-400 rounded hover:bg-slate-600 border border-slate-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg></button>
+                        <button class="p-1.5 bg-slate-700 text-red-400 rounded hover:bg-slate-600 border border-slate-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
+                        <button class="p-1.5 bg-slate-700 text-blue-400 rounded hover:bg-slate-600 border border-slate-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg></button>
+                        <button class="p-1.5 bg-slate-700 text-purple-400 rounded hover:bg-slate-600 border border-slate-600 ml-auto"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg></button>
                     </div>
                 `;
                 container.appendChild(item);
