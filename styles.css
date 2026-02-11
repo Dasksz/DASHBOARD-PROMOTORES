@@ -197,6 +197,18 @@
         ring: 2px solid rgba(59, 130, 246, 0.5) !important;
     }
 
+    /* Date Picker Icon High Contrast */
+    ::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        opacity: 0.8;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    ::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
     /* Mobile Menu */
     #mobile-menu {
         transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
