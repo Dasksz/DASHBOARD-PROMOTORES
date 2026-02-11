@@ -16452,6 +16452,9 @@ const supervisorGroups = new Map();
          const promoter = walletState.selectedPromoter;
          if (!promoter) return;
          
+         const clientCodeNorm = normalizeKey(clientCode);
+         console.log(`[Wallet] Action: ${action} for ${clientCode} (Norm: ${clientCodeNorm})`);
+
          const btn = document.getElementById('wallet-modal-action-btn');
          const txt = document.getElementById('wallet-modal-action-text');
          const oldTxt = txt.textContent;
@@ -16463,27 +16466,47 @@ const supervisorGroups = new Map();
              if (!embeddedData.clientPromoters) embeddedData.clientPromoters = [];
 
              if (action === 'upsert') {
+                 // Use Normalized Key for DB Consistency
                  const { error } = await window.supabaseClient.from('data_client_promoters')
-                    .upsert({ client_code: clientCode, promoter_code: promoter }, { onConflict: 'client_code' });
+                    .upsert({ client_code: clientCodeNorm, promoter_code: promoter }, { onConflict: 'client_code' });
                  if(error) throw error;
                  
-                 const idx = embeddedData.clientPromoters.findIndex(cp => normalizeKey(cp.client_code) === normalizeKey(clientCode));
+                 const idx = embeddedData.clientPromoters.findIndex(cp => normalizeKey(cp.client_code) === clientCodeNorm);
                  if(idx >= 0) embeddedData.clientPromoters[idx].promoter_code = promoter;
-                 else embeddedData.clientPromoters.push({ client_code: clientCode, promoter_code: promoter });
+                 else embeddedData.clientPromoters.push({ client_code: clientCodeNorm, promoter_code: promoter });
                  
                  // Ensure client exists in local dataset (for display)
                  const dataset = allClientsData;
                  let exists = false;
                  if (dataset instanceof ColumnarDataset) {
                      const col = dataset._data['Código'] || dataset._data['CODIGO_CLIENTE'];
-                     if (col && col.includes(normalizeKey(clientCode))) exists = true;
+                     // Use normalized key for check
+                     if (col) {
+                         // Column might contain mixed types, normalize elements for check if needed, or rely on format
+                         // Usually column data is normalized on init.
+                         // But simple .includes might fail if column has "123" (string) and clientCodeNorm is "123"
+                         // But let's check manually to be safe or trust includes if data is clean
+                         // Faster: trust includes first
+                         if (col.includes(clientCodeNorm)) exists = true;
+                         // Fallback: search with normalize
+                         else {
+                             for(let i=0; i<col.length; i++) {
+                                 if(normalizeKey(col[i]) === clientCodeNorm) { exists=true; break; }
+                             }
+                         }
+                     }
                  } else {
-                     if (dataset.find(c => normalizeKey(c['Código'] || c['codigo_cliente']) === normalizeKey(clientCode))) exists = true;
+                     if (dataset.find(c => normalizeKey(c['Código'] || c['codigo_cliente']) === clientCodeNorm)) exists = true;
                  }
                  
                  if (!exists) {
+                     console.log(`[Wallet] Client ${clientCodeNorm} not in cache. Fetching...`);
                      // Fetch and inject
+                     // Try fetching with raw code (might work if DB has it) or normalized?
+                     // data_clients code should be normalized ideally but let's try 'ilike' or both?
+                     // Or just query by codigo_cliente (which is text).
                      const { data: newClient } = await window.supabaseClient.from('data_clients').select('*').eq('codigo_cliente', clientCode).single();
+
                      if (newClient) {
                          const mapped = {
                              'Código': newClient.codigo_cliente,
@@ -16503,10 +16526,17 @@ const supervisorGroups = new Map();
                                  else if(c === 'RAZÃO SOCIAL' || c === 'RAZAOSOCIAL' || c === 'RAZAO') val = newClient.razaosocial;
                                  else if(c === 'CNPJ/CPF' || c === 'CNPJ') val = newClient.cnpj_cpf;
                                  else if(c === 'CIDADE') val = newClient.cidade;
+                                 else if(c === 'PROMOTOR') val = promoter;
                                  
                                  if(dataset.values[col]) dataset.values[col].push(val);
                              });
                              dataset.length++;
+
+                             // CRITICAL FIX: Update underlying embeddedData.clients.length if needed
+                             // renderWalletTable iterates embeddedData.clients directly
+                             if (embeddedData.clients && typeof embeddedData.clients.length === 'number') {
+                                 embeddedData.clients.length++;
+                             }
                          } else {
                              dataset.push(mapped);
                          }
@@ -16514,11 +16544,37 @@ const supervisorGroups = new Map();
                  }
                  
              } else {
-                 const { error } = await window.supabaseClient.from('data_client_promoters').delete().eq('client_code', clientCode);
-                 if(error) throw error;
+                 // Try to find the entry in memory first to get ID (if available) or check existence
+                 const idx = embeddedData.clientPromoters.findIndex(cp => normalizeKey(cp.client_code) === clientCodeNorm);
                  
-                 const idx = embeddedData.clientPromoters.findIndex(cp => normalizeKey(cp.client_code) === normalizeKey(clientCode));
-                 if(idx >= 0) embeddedData.clientPromoters.splice(idx, 1);
+                 if (idx >= 0) {
+                     const entry = embeddedData.clientPromoters[idx];
+                     console.log(`[Wallet] Removing existing entry:`, entry);
+
+                     if (entry.id) {
+                         // Delete by ID is safest
+                         const { error } = await window.supabaseClient.from('data_client_promoters').delete().eq('id', entry.id);
+                         if(error) throw error;
+                     } else {
+                         // Fallback: Delete by client_code. Try Normalized first (standard).
+                         let { error } = await window.supabaseClient.from('data_client_promoters').delete().eq('client_code', clientCodeNorm);
+
+                         // If rows affected is 0? Supabase doesn't return count by default unless select().
+                         // If we are dealing with legacy data (leading zeros), try raw code if different.
+                         if (!error && clientCode !== clientCodeNorm) {
+                             console.log(`[Wallet] Retrying delete with raw code: ${clientCode}`);
+                             await window.supabaseClient.from('data_client_promoters').delete().eq('client_code', clientCode);
+                         }
+                         if (error) throw error;
+                     }
+                     // Remove from memory
+                     embeddedData.clientPromoters.splice(idx, 1);
+                 } else {
+                     console.warn(`[Wallet] Client ${clientCodeNorm} not found in memory map during remove. Performing blind delete.`);
+                     // Blind delete
+                     const { error } = await window.supabaseClient.from('data_client_promoters').delete().eq('client_code', clientCodeNorm);
+                     if(error) throw error;
+                 }
              }
              
              document.getElementById('wallet-client-modal').classList.add('hidden');
