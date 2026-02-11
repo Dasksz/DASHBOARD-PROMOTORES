@@ -16164,6 +16164,16 @@ const supervisorGroups = new Map();
         modal._tabHistory = [];
         let activeTab = 'general';
 
+        // Visibility Control: Hide Itinerary Tab if user cannot edit (Promoter)
+        const itineraryTabBtn = document.querySelector('.wallet-tab-btn[data-tab="itinerary"]');
+        if (itineraryTabBtn) {
+            if (walletState.canEdit) {
+                itineraryTabBtn.classList.remove('hidden');
+            } else {
+                itineraryTabBtn.classList.add('hidden');
+            }
+        }
+
         const switchTab = (tabName, options = {}) => {
             if (!options.skipHistory && activeTab !== tabName) {
                 const prev = activeTab;
@@ -16204,25 +16214,7 @@ const supervisorGroups = new Map();
         itinFreqInputs.forEach(i => i.checked = false);
         if(itinDateInput) itinDateInput.value = '';
 
-        // Get Values from Client Data (injected via init.js)
-        // Access via property or method
-        // ColumnarDataset uses Proxy, so direct access works if property is set.
-        // init.js set 'ITINERARY_FREQUENCY' and 'ITINERARY_NEXT_DATE'
-
-        // Check if `client` object has them (init.js handles array access for fetching, but object creation logic needs verification)
-        // In `init.js`, `carregarDadosDoSupabase`:
-        // We merged into `clients` dataset.
-        // `getClient(i)` in `app.js` loop creates object with props.
-        // But `openWalletClientModal` fetches single client from Supabase OR uses passed object.
-        // If fetched from Supabase via `select('*')`, it SHOULD have the new columns.
-        // If passed from `renderClientView` (which uses `getActiveClientsData` -> `allClientsData` filter), it assumes `allClientsData` has them.
-
-        // `allClientsData` initialization in `app.js` calls `new ColumnarDataset`.
-        // ColumnarDataset `get()` creates Proxy. `ownKeys` includes `columns`.
-        // `init.js` added `ITINERARY_FREQUENCY` to columns.
-        // So `client.ITINERARY_FREQUENCY` should work.
-        // But let's check for lowercase variants too just in case.
-
+        // Get Values
         const freqVal = client.ITINERARY_FREQUENCY || client.itinerary_frequency;
         const dateVal = client.ITINERARY_NEXT_DATE || client.itinerary_next_date;
 
@@ -16231,14 +16223,49 @@ const supervisorGroups = new Map();
                 if(i.value === freqVal) i.checked = true;
             });
         }
-
+        
         if (dateVal) {
-            // Format for input type=date (YYYY-MM-DD)
+            // Auto-update Display Date Logic
+            // If the stored reference date has passed, show the *next* valid future date based on frequency.
+            // This prevents showing an old date and helps the user visualize the current schedule status.
+            
             const d = parseDate(dateVal);
             if (d) {
-                const yyyy = d.getFullYear();
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                const dd = String(d.getDate()).padStart(2, '0');
+                let displayDate = d;
+                
+                // Only calculate if we have a valid frequency
+                if (freqVal === 'weekly' || freqVal === 'biweekly') {
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    
+                    // Use UTC for day diff calculation to avoid timezone issues
+                    const utcRef = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+                    const utcToday = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+                    
+                    if (utcRef < utcToday) {
+                        const diffTime = utcToday - utcRef;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        const interval = (freqVal === 'weekly') ? 7 : 14;
+                        
+                        // Calculate days to add to reach next cycle >= today
+                        // We want the smallest N where Ref + (N * interval) >= Today
+                        // Ref + X = Today -> X = Today - Ref = diffDays
+                        // We need ceil(diffDays / interval) * interval
+                        
+                        const cycles = Math.ceil(diffDays / interval);
+                        const daysToAdd = cycles * interval;
+                        
+                        // Create new date object from ref
+                        const nextFutureDate = new Date(d);
+                        nextFutureDate.setDate(d.getDate() + daysToAdd);
+                        displayDate = nextFutureDate;
+                    }
+                }
+
+                // Format YYYY-MM-DD
+                const yyyy = displayDate.getFullYear();
+                const mm = String(displayDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(displayDate.getDate()).padStart(2, '0');
                 itinDateInput.value = `${yyyy}-${mm}-${dd}`;
             }
         }
@@ -16248,7 +16275,7 @@ const supervisorGroups = new Map();
             // Remove old listeners
             const newBtn = itinSaveBtn.cloneNode(true);
             itinSaveBtn.parentNode.replaceChild(newBtn, itinSaveBtn);
-
+            
             newBtn.onclick = () => {
                 const selectedFreq = document.querySelector('input[name="itinerary-frequency"]:checked')?.value;
                 const selectedDate = document.getElementById('itinerary-next-date')?.value;
@@ -16723,10 +16750,10 @@ const supervisorGroups = new Map();
             btn.classList.remove('bg-slate-800', 'border-slate-700', 'hover:bg-slate-700');
             btn.querySelector('svg').classList.add('text-white');
             btn.querySelector('svg').classList.remove('text-purple-400');
-
+            
             roteiroContainer.classList.remove('hidden');
             listWrapper.classList.add('hidden');
-
+            
             // Disable search in roteiro mode or adapt it? For now disable to keep it simple
             if(searchInput) {
                 searchInput.disabled = true;
@@ -16761,7 +16788,7 @@ const supervisorGroups = new Map();
         const strip = document.getElementById('roteiro-calendar-strip');
         const monthLabel = document.getElementById('roteiro-current-month');
         const dayNumber = document.getElementById('roteiro-day-number');
-
+        
         if (!strip) return;
         strip.innerHTML = '';
 
@@ -16778,30 +16805,30 @@ const supervisorGroups = new Map();
         for (let i = 0; i < 7; i++) {
             const d = new Date(start);
             d.setDate(d.getDate() + i);
-
+            
             const isSelected = d.getTime() === roteiroDate.getTime();
             const isToday = d.toDateString() === new Date().toDateString();
-
+            
             const dayEl = document.createElement('div');
             dayEl.className = `flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer min-w-[50px] transition-colors ${isSelected ? 'bg-purple-600 text-white shadow-lg scale-110' : 'text-gray-500 hover:bg-gray-100'}`;
-
+            
             dayEl.innerHTML = `
                 <span class="text-[10px] font-bold tracking-wider ${isToday && !isSelected ? 'text-purple-600' : ''}">${weekDays[d.getDay()]}</span>
                 <span class="text-lg font-bold ${isToday && !isSelected ? 'text-purple-600' : ''}">${d.getDate()}</span>
             `;
-
+            
             dayEl.onclick = () => {
                 roteiroDate = d;
                 renderRoteiroView();
             };
-
+            
             strip.appendChild(dayEl);
         }
-
+        
         // Bind Nav Buttons logic only once? No, safe to rebind or check
         const prevBtn = document.getElementById('roteiro-prev-day');
         const nextBtn = document.getElementById('roteiro-next-day');
-
+        
         // Remove old listeners to avoid stacking (cloning trick)
         const newPrev = prevBtn.cloneNode(true);
         const newNext = nextBtn.cloneNode(true);
@@ -16824,7 +16851,7 @@ const supervisorGroups = new Map();
         const countDisplay = document.getElementById('roteiro-client-count');
         const emptyState = document.getElementById('roteiro-empty-state');
         const statsPanel = container.querySelector('.bg-gray-50'); // Stats panel at bottom of card
-
+        
         // Remove existing list if any (custom injection point)
         let listContainer = document.getElementById('roteiro-clients-list');
         if (!listContainer) {
@@ -16843,7 +16870,7 @@ const supervisorGroups = new Map();
         // Filter Logic
         const clients = getActiveClientsData(); // Considers hierarchy and active status
         const scheduledClients = [];
-
+        
         clients.forEach(c => {
             // Get Itinerary Data
             // Note: init.js injected these fields into clients.values['ITINERARY...']
@@ -16853,31 +16880,31 @@ const supervisorGroups = new Map();
             // `ColumnarDataset` proxy logic looks at `_data`.
             // In init.js we populated `clients.values['ITINERARY_FREQUENCY']`.
             // So `c.ITINERARY_FREQUENCY` should be available.
-
+            
             // Normalize Keys (init.js uses raw keys from DB/CSV which are Uppercase mostly)
             // But init.js explicitly pushed 'ITINERARY_FREQUENCY'.
             // So we access via that key.
-
+            
             const freq = c.ITINERARY_FREQUENCY || c.itinerary_frequency;
             const refDateStr = c.ITINERARY_NEXT_DATE || c.itinerary_next_date;
-
+            
             if (!freq || !refDateStr) return;
-
+            
             const refDate = parseDate(refDateStr);
             if (!refDate) return;
-
+            
             // Normalize dates to midnight UTC or Local?
             // roteiroDate is set to 00:00:00 local (via setHours).
             // parseDate returns Date object.
-
+            
             // Calculate Day Difference
             // Use UTC to avoid DST issues
             const utcTarget = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
             const utcRef = Date.UTC(refDate.getFullYear(), refDate.getMonth(), refDate.getDate());
-
+            
             const diffTime = utcTarget - utcRef;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
+            
             let isScheduled = false;
             if (diffDays >= 0) { // Only future or today relative to ref (or past if cyclic)
                 // Actually cycle works in past too if we just take modulus
@@ -16894,7 +16921,7 @@ const supervisorGroups = new Map();
                     isScheduled = (Math.abs(diffDays) % 14 === 0);
                 }
             }
-
+            
             if (isScheduled) {
                 scheduledClients.push(c);
             }
@@ -16908,25 +16935,25 @@ const supervisorGroups = new Map();
         // Metrics
         let visitedCount = 0;
         let positiveCount = 0;
-
+        
         // We need to check orders for this specific date
         // `allSalesData` has detailed sales. We can check `DTPED`.
         // Optimization: Pre-filter sales for this date? Or lookup?
         // Lookup is expensive inside loop.
         // Better: Build a Set of ClientCodes who bought on `date`.
-
+        
         const salesOnDate = new Set();
         // Iterate allSalesData (Current Month)
         // Check date match
         const targetDateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
-
+        
         // Use optimizedData if possible
         // optimizedData.salesById is Columnar.
         // We can iterate indices.current.byClient? No, that's all sales for client.
         // We need byDate? We don't have byDate index.
         // Fallback: iterate allSalesData (fast enough for 50k rows usually?)
         // Or if we have `aggregatedOrders` (which is per order), it's smaller.
-
+        
         aggregatedOrders.forEach(order => {
             // order.DTPED is a Date object (parsed in init)
             if (order.DTPED) {
@@ -16936,7 +16963,7 @@ const supervisorGroups = new Map();
                 }
             }
         });
-
+        
         // Render List
         if (scheduledClients.length === 0) {
             listContainer.innerHTML = '';
@@ -16945,7 +16972,7 @@ const supervisorGroups = new Map();
         } else {
             emptyState.classList.add('hidden');
             statsPanel.classList.remove('hidden');
-
+            
             scheduledClients.forEach(c => {
                 const cod = normalizeKey(c['Código'] || c['codigo_cliente']);
                 const hasSale = salesOnDate.has(cod);
@@ -16953,7 +16980,7 @@ const supervisorGroups = new Map();
                     visitedCount++;
                     positiveCount++; // Assuming order implies positivation
                 }
-
+                
                 const div = document.createElement('div');
                 div.className = 'p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer transition-colors';
                 div.innerHTML = `
@@ -16965,7 +16992,7 @@ const supervisorGroups = new Map();
                         </div>
                     </div>
                     <div>
-                        ${hasSale
+                        ${hasSale 
                             ? `<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Positivado</span>`
                             : `<span class="px-2 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-full">Pendente</span>`
                         }
@@ -16975,14 +17002,14 @@ const supervisorGroups = new Map();
                 listContainer.appendChild(div);
             });
         }
-
+        
         // Update Progress Bars
         const visitPct = scheduledClients.length > 0 ? (visitedCount / scheduledClients.length) * 100 : 0;
         const posPct = scheduledClients.length > 0 ? (positiveCount / scheduledClients.length) * 100 : 0;
-
+        
         document.getElementById('roteiro-progress-visit-text').textContent = visitPct.toFixed(1) + '%';
         document.getElementById('roteiro-progress-visit-bar').style.width = visitPct + '%';
-
+        
         document.getElementById('roteiro-progress-pos-text').textContent = posPct.toFixed(1) + '%';
         document.getElementById('roteiro-progress-pos-bar').style.width = posPct + '%';
     }
@@ -16993,7 +17020,7 @@ const supervisorGroups = new Map();
             alert('Preencha todos os campos.');
             return;
         }
-
+        
         const btn = document.getElementById('save-itinerary-btn');
         const oldHtml = btn.innerHTML;
         btn.disabled = true;
@@ -17001,7 +17028,7 @@ const supervisorGroups = new Map();
 
         try {
             const clientCodeNorm = normalizeKey(clientCode);
-
+            
             // 1. Update Supabase (data_client_promoters)
             // Note: We update existing record. If it doesn't exist, we should theoretically insert, but user should be assigned first.
             // upsert is safer. We need the promoter code.
@@ -17011,12 +17038,12 @@ const supervisorGroups = new Map();
                 const match = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === clientCodeNorm);
                 if (match) currentPromoter = match.promoter_code;
             }
-
-            // If no promoter assigned, we can't save itinerary comfortably in that table?
+            
+            // If no promoter assigned, we can't save itinerary comfortably in that table? 
             // The prompt implies "Gestão de Carteira" access, so likely assigned.
-            // If not assigned, warn user? Or just upsert with null promoter? (Table might not allow null if we didn't check schema constraints, usually PK + columns).
+            // If not assigned, warn user? Or just upsert with null promoter? (Table might not allow null if we didn't check schema constraints, usually PK + columns). 
             // Schema: client_code PK, promoter_code text.
-
+            
             const payload = {
                 client_code: clientCodeNorm,
                 itinerary_frequency: frequency,
@@ -17089,14 +17116,14 @@ const supervisorGroups = new Map();
             const newBtn = roteiroBtn.cloneNode(true);
             roteiroBtn.parentNode.replaceChild(newBtn, roteiroBtn);
             newBtn.addEventListener('click', toggleRoteiroMode);
-
+            
             // Sync state visual
             if (isRoteiroMode) {
                 newBtn.classList.add('bg-purple-600', 'border-purple-500');
                 newBtn.classList.remove('bg-slate-800', 'border-slate-700', 'hover:bg-slate-700');
                 newBtn.querySelector('svg').classList.add('text-white');
                 newBtn.querySelector('svg').classList.remove('text-purple-400');
-
+                
                 // Enforce View State
                 const roteiroContainer = document.getElementById('roteiro-container');
                 const listWrapper = document.getElementById('clientes-list-view-wrapper');
