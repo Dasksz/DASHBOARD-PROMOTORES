@@ -617,7 +617,7 @@
                     let updatedCount = 0;
                     let fallbackCount = 0;
                     for (let i = 0; i < clients.length; i++) {
-                        const code = String(clientCodes[i]).trim();
+                        const code = normalizeKey(clientCodes[i]);
                         const promoterData = promoterMap.get(code);
                         
                         if (promoterData) {

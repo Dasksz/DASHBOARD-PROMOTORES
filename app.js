@@ -16164,6 +16164,16 @@ const supervisorGroups = new Map();
         modal._tabHistory = [];
         let activeTab = 'general';
 
+        // Visibility Control: Hide Itinerary Tab if user cannot edit (Promoter)
+        const itineraryTabBtn = document.querySelector('.wallet-tab-btn[data-tab="itinerary"]');
+        if (itineraryTabBtn) {
+            if (walletState.canEdit) {
+                itineraryTabBtn.classList.remove('hidden');
+            } else {
+                itineraryTabBtn.classList.add('hidden');
+            }
+        }
+
         const switchTab = (tabName, options = {}) => {
             if (!options.skipHistory && activeTab !== tabName) {
                 const prev = activeTab;
@@ -16204,25 +16214,7 @@ const supervisorGroups = new Map();
         itinFreqInputs.forEach(i => i.checked = false);
         if(itinDateInput) itinDateInput.value = '';
 
-        // Get Values from Client Data (injected via init.js)
-        // Access via property or method
-        // ColumnarDataset uses Proxy, so direct access works if property is set.
-        // init.js set 'ITINERARY_FREQUENCY' and 'ITINERARY_NEXT_DATE'
-
-        // Check if `client` object has them (init.js handles array access for fetching, but object creation logic needs verification)
-        // In `init.js`, `carregarDadosDoSupabase`:
-        // We merged into `clients` dataset.
-        // `getClient(i)` in `app.js` loop creates object with props.
-        // But `openWalletClientModal` fetches single client from Supabase OR uses passed object.
-        // If fetched from Supabase via `select('*')`, it SHOULD have the new columns.
-        // If passed from `renderClientView` (which uses `getActiveClientsData` -> `allClientsData` filter), it assumes `allClientsData` has them.
-
-        // `allClientsData` initialization in `app.js` calls `new ColumnarDataset`.
-        // ColumnarDataset `get()` creates Proxy. `ownKeys` includes `columns`.
-        // `init.js` added `ITINERARY_FREQUENCY` to columns.
-        // So `client.ITINERARY_FREQUENCY` should work.
-        // But let's check for lowercase variants too just in case.
-
+        // Get Values
         const freqVal = client.ITINERARY_FREQUENCY || client.itinerary_frequency;
         const dateVal = client.ITINERARY_NEXT_DATE || client.itinerary_next_date;
 
@@ -16233,12 +16225,47 @@ const supervisorGroups = new Map();
         }
 
         if (dateVal) {
-            // Format for input type=date (YYYY-MM-DD)
+            // Auto-update Display Date Logic
+            // If the stored reference date has passed, show the *next* valid future date based on frequency.
+            // This prevents showing an old date and helps the user visualize the current schedule status.
+
             const d = parseDate(dateVal);
             if (d) {
-                const yyyy = d.getFullYear();
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                const dd = String(d.getDate()).padStart(2, '0');
+                let displayDate = d;
+
+                // Only calculate if we have a valid frequency
+                if (freqVal === 'weekly' || freqVal === 'biweekly') {
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+
+                    // Use UTC for day diff calculation to avoid timezone issues
+                    const utcRef = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+                    const utcToday = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+
+                    if (utcRef < utcToday) {
+                        const diffTime = utcToday - utcRef;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        const interval = (freqVal === 'weekly') ? 7 : 14;
+
+                        // Calculate days to add to reach next cycle >= today
+                        // We want the smallest N where Ref + (N * interval) >= Today
+                        // Ref + X = Today -> X = Today - Ref = diffDays
+                        // We need ceil(diffDays / interval) * interval
+
+                        const cycles = Math.ceil(diffDays / interval);
+                        const daysToAdd = cycles * interval;
+
+                        // Create new date object from ref
+                        const nextFutureDate = new Date(d);
+                        nextFutureDate.setDate(d.getDate() + daysToAdd);
+                        displayDate = nextFutureDate;
+                    }
+                }
+
+                // Format YYYY-MM-DD
+                const yyyy = displayDate.getFullYear();
+                const mm = String(displayDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(displayDate.getDate()).padStart(2, '0');
                 itinDateInput.value = `${yyyy}-${mm}-${dd}`;
             }
         }
