@@ -15723,14 +15723,15 @@ const supervisorGroups = new Map();
              hierarchy.forEach(h => {
                  const c = (h.cod_coord||'').trim().toUpperCase();
                  const cc = (h.cod_cocoord||'').trim().toUpperCase();
-                 const p = (h.cod_promotor||'').trim().toUpperCase();
-                 const pName = h.nome_promotor || p;
+                 const pRaw = (h.cod_promotor||'').trim(); // Keep raw case
+                 const p = pRaw.toUpperCase(); // For comparison
+                 const pName = h.nome_promotor || pRaw;
 
                  if (role === 'ADM' || c === role || cc === role) {
                      if (role !== 'ADM') isManager = true;
-                     if (p) myPromoters.add(JSON.stringify({ code: p, name: pName }));
+                     if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
                  } else if (p === role) {
-                     myPromoters.add(JSON.stringify({ code: p, name: pName }));
+                     if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
                  }
             });
             

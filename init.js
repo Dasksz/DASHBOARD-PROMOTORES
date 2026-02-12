@@ -588,7 +588,7 @@
                 // Filter Functions
                 const applyClientFilter = (q) => {
                     if (isPromoter && clientFilterCodes !== null) {
-                        if (clientFilterCodes.length === 0) return q.eq('id', -1);
+                        if (clientFilterCodes.length === 0) return q.eq('id', '00000000-0000-0000-0000-000000000000');
                         return q.in('codcli', clientFilterCodes);
                     }
                     return q;
@@ -596,7 +596,7 @@
 
                 const applyClientTableFilter = (q) => {
                      if (isPromoter && clientFilterCodes !== null) {
-                        if (clientFilterCodes.length === 0) return q.eq('id', -1);
+                        if (clientFilterCodes.length === 0) return q.eq('id', '00000000-0000-0000-0000-000000000000');
                         return q.in('codigo_cliente', clientFilterCodes);
                      }
                      return q;
