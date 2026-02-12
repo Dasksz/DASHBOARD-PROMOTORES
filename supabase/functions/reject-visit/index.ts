@@ -12,6 +12,30 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   )
 
+  // 1. Check current status
+  const { data: currentVisit, error: fetchError } = await supabase
+    .from("visitas")
+    .select("status")
+    .eq("id", id)
+    .single()
+
+  if (fetchError || !currentVisit) {
+    return new Response("Erro ao buscar visita ou visita não encontrada.", { status: 500 })
+  }
+
+  if (currentVisit.status !== 'pendente') {
+    return new Response(
+      `<html>
+        <body style="font-family:sans-serif; text-align:center; padding:50px;">
+          <h1 style="color:orange;">Ação já realizada! ⚠️</h1>
+          <p>Esta visita já foi processada anteriormente (Status atual: <strong>${currentVisit.status}</strong>).</p>
+        </body>
+      </html>`,
+      { headers: { "Content-Type": "text/html; charset=utf-8" } }
+    )
+  }
+
+  // 2. Update if pending
   const { error } = await supabase
     .from("visitas")
     .update({ status: "rejeitado" })
