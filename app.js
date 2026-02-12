@@ -17007,7 +17007,7 @@ const supervisorGroups = new Map();
                         }
                     </div>
                 `;
-                div.onclick = () => openWalletClientModal(cod, c);
+                div.onclick = () => openActionModal(cod, c.fantasia || c.nomeCliente);
                 listContainer.appendChild(div);
             });
         }
@@ -17611,9 +17611,274 @@ const supervisorGroups = new Map();
         renderList();
     }
 
+    // --- VISITAS LOGIC ---
+    let visitaAbertaId = null;
+    let clienteEmVisitaId = null; // Storing Client Code (text) to match our usage
+    let currentActionClientCode = null; // For the modal context
+
+    async function verificarEstadoVisita() {
+        const { data: { user } } = await window.supabaseClient.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await window.supabaseClient
+            .from('visitas')
+            .select('id, id_cliente, client_code')
+            .eq('id_promotor', user.id)
+            .is('checkout_at', null)
+            .maybeSingle();
+
+        if (data) {
+            visitaAbertaId = data.id;
+            // Prefer client_code if available, else id_cliente (which we decided to be text/flexible)
+            clienteEmVisitaId = data.client_code || data.id_cliente;
+            console.log(`[Visitas] Visita aberta encontrada: ID ${visitaAbertaId}, Cliente ${clienteEmVisitaId}`);
+        } else {
+            console.log("[Visitas] Nenhuma visita aberta.");
+        }
+        // Re-render roteiro if active to update UI state
+        if (isRoteiroMode) renderRoteiroView();
+    }
+
+    window.openActionModal = function(clientCode, clientName) {
+        currentActionClientCode = String(clientCode);
+        const modal = document.getElementById('modal-acoes-visita');
+        const title = document.getElementById('acoes-visita-titulo');
+
+        // Update Title
+        title.textContent = `${clientCode} - ${clientName}`;
+
+        // Get Buttons
+        const btnCheckIn = document.getElementById('btn-acao-checkin');
+        const btnCheckOut = document.getElementById('btn-acao-checkout');
+        const btnPesquisa = document.getElementById('btn-acao-pesquisa');
+        const btnDetalhes = document.getElementById('btn-acao-detalhes');
+
+        // Logic
+        // Normalize for comparison
+        const normCurrent = normalizeKey(currentActionClientCode);
+        const normOpen = clienteEmVisitaId ? normalizeKey(clienteEmVisitaId) : null;
+
+        if (visitaAbertaId) {
+            if (normOpen === normCurrent) {
+                // This is the active visit
+                btnCheckIn.classList.add('hidden');
+                btnCheckOut.classList.remove('hidden');
+                btnPesquisa.classList.remove('hidden');
+            } else {
+                // Visit open for ANOTHER client
+                btnCheckIn.classList.remove('hidden');
+                btnCheckIn.disabled = true;
+                btnCheckIn.innerHTML = `<span class="text-xs">Finalize a visita anterior (${normOpen})</span>`;
+                btnCheckOut.classList.add('hidden');
+                btnPesquisa.classList.add('hidden');
+            }
+        } else {
+            // No open visit
+            btnCheckIn.classList.remove('hidden');
+            btnCheckIn.disabled = false;
+            btnCheckIn.innerHTML = `
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                📍 Fazer Check-in
+            `;
+            btnCheckOut.classList.add('hidden');
+            btnPesquisa.classList.add('hidden');
+        }
+
+        // Bind Actions (Clean old listeners via cloning)
+        const bind = (btn, fn) => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            newBtn.addEventListener('click', fn);
+            return newBtn;
+        };
+
+        bind(btnCheckIn, () => fazerCheckIn(currentActionClientCode));
+        bind(btnCheckOut, () => fazerCheckOut());
+        bind(btnPesquisa, () => abrirPesquisa());
+        bind(btnDetalhes, () => {
+            modal.classList.add('hidden');
+            openWalletClientModal(currentActionClientCode);
+        });
+
+        modal.classList.remove('hidden');
+    }
+
+    async function fazerCheckIn(clientCode) {
+        if (!navigator.geolocation) {
+            alert('Geolocalização não suportada.');
+            return;
+        }
+
+        const btn = document.getElementById('btn-acao-checkin');
+        const oldHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = 'Obtendo localização...';
+
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            btn.innerHTML = 'Salvando...';
+            const { latitude, longitude } = pos.coords;
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+
+            if (!user) {
+                alert('Erro: Usuário não autenticado.');
+                btn.disabled = false; btn.innerHTML = oldHtml;
+                return;
+            }
+
+            // 1. Insert Visit
+            const { data, error } = await window.supabaseClient.from('visitas').insert({
+                id_promotor: user.id,
+                id_cliente: clientCode, // Text
+                client_code: clientCode, // Text
+                latitude,
+                longitude,
+                status: 'pendente'
+            }).select().single();
+
+            if (error) {
+                console.error(error);
+                alert('Erro ao fazer check-in: ' + error.message);
+                btn.disabled = false; btn.innerHTML = oldHtml;
+                return;
+            }
+
+            visitaAbertaId = data.id;
+            clienteEmVisitaId = clientCode;
+
+            // 2. Upsert Coordinates (Background)
+            window.supabaseClient.from('data_client_coordinates').upsert({
+                client_code: clientCode,
+                lat: latitude,
+                lng: longitude,
+                updated_at: new Date().toISOString()
+            }).then(({ error }) => {
+                if (error) console.warn("Erro ao atualizar coordenadas:", error);
+                else {
+                    // Update local cache
+                    clientCoordinatesMap.set(String(clientCode), { lat: latitude, lng: longitude, address: 'Atualizado via Check-in' });
+                }
+            });
+
+            // UI Update
+            document.getElementById('modal-acoes-visita').classList.add('hidden');
+            renderRoteiroView(); // Refresh UI to show "Em Visita" status if implemented
+            alert('Check-in realizado com sucesso!');
+
+        }, (err) => {
+            console.error(err);
+            alert('Erro ao obter localização. Permita o acesso e tente novamente.');
+            btn.disabled = false;
+            btn.innerHTML = oldHtml;
+        }, { enableHighAccuracy: true, timeout: 10000 });
+    }
+
+    async function fazerCheckOut() {
+        if (!visitaAbertaId) return;
+
+        const btn = document.getElementById('btn-acao-checkout');
+        const oldHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = 'Finalizando...';
+
+        const { error } = await window.supabaseClient
+            .from('visitas')
+            .update({ checkout_at: new Date().toISOString() })
+            .eq('id', visitaAbertaId);
+
+        if (error) {
+            alert('Erro ao fazer check-out: ' + error.message);
+            btn.disabled = false; btn.innerHTML = oldHtml;
+            return;
+        }
+
+        visitaAbertaId = null;
+        clienteEmVisitaId = null;
+        document.getElementById('modal-acoes-visita').classList.add('hidden');
+        renderRoteiroView();
+        alert('Visita finalizada!');
+    }
+
+    async function abrirPesquisa() {
+        document.getElementById('modal-acoes-visita').classList.add('hidden');
+        const modal = document.getElementById('modal-relatorio');
+        const form = document.getElementById('form-visita');
+        document.getElementById('visita-atual-id').value = visitaAbertaId;
+
+        // Reset form or load previous?
+        // Plan says "Carregamos os dados da última visita".
+        // Logic: Fetch LAST visit answers for THIS client.
+
+        form.reset();
+
+        // Fetch last answers
+        if (clienteEmVisitaId) {
+             const { data } = await window.supabaseClient
+                .from('visitas')
+                .select('respostas')
+                .eq('client_code', clienteEmVisitaId) // Use client_code
+                .not('respostas', 'is', null)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+             if (data && data.respostas) {
+                 Object.keys(data.respostas).forEach(key => {
+                     const field = form.elements[key];
+                     if (field) {
+                         if (field instanceof RadioNodeList) field.value = data.respostas[key];
+                         else field.value = data.respostas[key];
+                     }
+                 });
+             }
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    // Bind Form Submit
+    const formVisita = document.getElementById('form-visita');
+    if (formVisita) {
+        formVisita.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const oldHtml = btn.innerHTML;
+            btn.disabled = true; btn.innerHTML = 'Salvando...';
+
+            const formData = new FormData(e.target);
+            const respostas = Object.fromEntries(formData.entries());
+            // Remove internal fields if any
+            const visitId = respostas.visita_id;
+            delete respostas.visita_id;
+
+            // Extract observation
+            const obs = respostas.observacoes;
+            delete respostas.observacoes; // Store obs separately in column
+
+            try {
+                const { error } = await window.supabaseClient
+                    .from('visitas')
+                    .update({
+                        respostas: respostas,
+                        observacao: obs
+                    })
+                    .eq('id', visitId);
+
+                if (error) throw error;
+
+                document.getElementById('modal-relatorio').classList.add('hidden');
+                alert('Relatório salvo!');
+            } catch (err) {
+                alert('Erro ao salvar: ' + err.message);
+            } finally {
+                btn.disabled = false; btn.innerHTML = oldHtml;
+            }
+        });
+    }
+
     // Auto-init User Menu on load if ready (for Navbar)
     if (document.readyState === "complete" || document.readyState === "interactive") {
         initWalletView();
+        verificarEstadoVisita();
     }
 
 })();
