@@ -17975,6 +17975,7 @@ const supervisorGroups = new Map();
 
             const formData = new FormData(e.target);
             const respostas = Object.fromEntries(formData.entries());
+            
             // Remove internal fields if any
             const visitId = respostas.visita_id;
             delete respostas.visita_id;
@@ -17982,6 +17983,45 @@ const supervisorGroups = new Map();
             // Extract observation
             const obs = respostas.observacoes;
             delete respostas.observacoes; // Store obs separately in column
+
+            // Handle Photo Upload
+            const fotoFile = formData.get('foto_gondola');
+            delete respostas.foto_gondola; // Remove file object from JSON
+
+            let fotoUrl = null;
+
+            if (fotoFile && fotoFile.size > 0) {
+                btn.innerHTML = 'Enviando foto...';
+                try {
+                    const fileName = `${visitId}_${Date.now()}.jpg`;
+                    const { data, error: uploadError } = await window.supabaseClient
+                        .storage
+                        .from('visitas-images')
+                        .upload(fileName, fotoFile, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+
+                    if (uploadError) {
+                        console.error('Erro no upload:', uploadError);
+                        // Don't block submission, just log error
+                    } else {
+                        const { data: publicUrlData } = window.supabaseClient
+                            .storage
+                            .from('visitas-images')
+                            .getPublicUrl(fileName);
+                        
+                        if (publicUrlData) {
+                            fotoUrl = publicUrlData.publicUrl;
+                            respostas.foto_url = fotoUrl; // Store URL in answers
+                        }
+                    }
+                } catch (uploadErr) {
+                    console.error('Exceção no upload:', uploadErr);
+                }
+            }
+
+            btn.innerHTML = 'Salvando dados...';
 
             try {
                 const { error } = await window.supabaseClient
