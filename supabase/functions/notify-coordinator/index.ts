@@ -228,7 +228,7 @@ serve(async (req) => {
     const { data: keyData, error: keyError } = await supabase
       .from('data_metadata')
       .select('key, value')
-      .in('key', ['RESEND_API_KEY', 'RESEND_FROM_EMAIL'])
+      .in('key', ['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'RESEND_TEST_EMAIL'])
 
     if (keyError || !keyData) {
       console.error('Error fetching API Key:', keyError)
@@ -240,6 +240,7 @@ serve(async (req) => {
 
     const apiKeyObj = keyData.find(k => k.key === 'RESEND_API_KEY');
     const fromEmailObj = keyData.find(k => k.key === 'RESEND_FROM_EMAIL');
+    const testEmailObj = keyData.find(k => k.key === 'RESEND_TEST_EMAIL');
 
     if (!apiKeyObj) {
          console.error('Error: RESEND_API_KEY not found in metadata');
@@ -251,6 +252,14 @@ serve(async (req) => {
 
     const RESEND_API_KEY = apiKeyObj.value;
     const RESEND_FROM_EMAIL = fromEmailObj ? fromEmailObj.value : 'onboarding@resend.dev';
+
+    // Test Mode Logic: Override recipient if RESEND_TEST_EMAIL is set
+    let originalTargetEmail = null;
+    if (testEmailObj && testEmailObj.value) {
+        console.log(`TEST MODE ACTIVE: Redirecting email from ${targetEmail} to ${testEmailObj.value}`);
+        originalTargetEmail = targetEmail;
+        targetEmail = testEmailObj.value;
+    }
 
     // 6. Construct Email (Styled)
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? 'https://dldsocponbjthqxhmttj.supabase.co';
@@ -294,6 +303,14 @@ serve(async (req) => {
     const htmlContent = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
         
+        ${originalTargetEmail ? `
+        <!-- Test Mode Banner -->
+        <div style="background-color: #fff1f2; border: 1px solid #fda4af; color: #be123c; padding: 12px; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: 700;">
+            ⚠️ MODO TESTE ATIVO<br>
+            <span style="font-weight: 400; font-size: 14px;">Destinatário Original: ${originalTargetEmail}</span>
+        </div>
+        ` : ''}
+
         <!-- Header -->
         <h2 style="color: #0f172a; margin-top: 0; font-size: 20px; font-weight: 700;">Nova Visita para Validação: <span style="color: #2563eb;">${clientName}</span></h2>
         <p style="color: #64748b; font-size: 14px; margin-bottom: 24px;">
