@@ -17782,6 +17782,7 @@ const supervisorGroups = new Map();
     let visitaAbertaId = null;
     let clienteEmVisitaId = null; // Storing Client Code (text) to match our usage
     let currentActionClientCode = null; // For the modal context
+    let currentActionClientName = null; // For refetching modal
 
     async function verificarEstadoVisita() {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
@@ -17808,18 +17809,32 @@ const supervisorGroups = new Map();
 
     window.openActionModal = function(clientCode, clientName) {
         currentActionClientCode = String(clientCode);
+        if (clientName) currentActionClientName = clientName; // Cache name
+        else if (!currentActionClientName) currentActionClientName = 'Cliente';
+
         const modal = document.getElementById('modal-acoes-visita');
         const title = document.getElementById('acoes-visita-titulo');
+        const subtitle = document.getElementById('acoes-visita-subtitulo');
+        const statusText = document.getElementById('status-text-visita');
+        const statusCard = document.getElementById('status-card-visita');
 
-        // Update Title
-        title.textContent = `${clientCode} - ${clientName}`;
+        // Update Title & Subtitle
+        title.textContent = currentActionClientName;
+        // Try to find city/info from dataset if possible, or just show code
+        let extraInfo = `Código: ${currentActionClientCode}`;
+        const clientObj = clientMapForKPIs.get(normalizeKey(currentActionClientCode));
+        if (clientObj) {
+             const city = clientObj.cidade || clientObj['Nome da Cidade'] || '';
+             if (city) extraInfo += ` • ${city}`;
+        }
+        subtitle.textContent = extraInfo;
 
         // Get Buttons
         const btnCheckIn = document.getElementById('btn-acao-checkin');
         const btnCheckOut = document.getElementById('btn-acao-checkout');
         const btnPesquisa = document.getElementById('btn-acao-pesquisa');
         const btnDetalhes = document.getElementById('btn-acao-detalhes');
-        const btnGeo = document.getElementById('btn-acao-geo'); // New
+        const btnGeo = document.getElementById('btn-acao-geo');
 
         // Logic
         // Normalize for comparison
@@ -17832,6 +17847,11 @@ const supervisorGroups = new Map();
                 btnCheckIn.classList.add('hidden');
                 btnCheckOut.classList.remove('hidden');
                 btnPesquisa.classList.remove('hidden');
+
+                statusText.textContent = 'Em Andamento';
+                statusText.className = 'text-sm font-bold text-green-400 animate-pulse';
+                statusCard.classList.add('border-green-500/30', 'bg-green-500/5');
+                statusCard.classList.remove('border-slate-700/50', 'bg-slate-800/50');
             } else {
                 // Visit open for ANOTHER client
                 btnCheckIn.classList.remove('hidden');
@@ -17839,17 +17859,27 @@ const supervisorGroups = new Map();
                 btnCheckIn.innerHTML = `<span class="text-xs">Finalize a visita anterior (${normOpen})</span>`;
                 btnCheckOut.classList.add('hidden');
                 btnPesquisa.classList.add('hidden');
+
+                statusText.textContent = 'Outra Visita Ativa';
+                statusText.className = 'text-sm font-bold text-orange-400';
+                statusCard.classList.remove('border-green-500/30', 'bg-green-500/5');
+                statusCard.classList.add('border-slate-700/50', 'bg-slate-800/50');
             }
         } else {
             // No open visit
             btnCheckIn.classList.remove('hidden');
             btnCheckIn.disabled = false;
             btnCheckIn.innerHTML = `
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                📍 Fazer Check-in
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                Check-in
             `;
             btnCheckOut.classList.add('hidden');
             btnPesquisa.classList.add('hidden');
+
+            statusText.textContent = 'Não Iniciada';
+            statusText.className = 'text-sm font-bold text-slate-400';
+            statusCard.classList.remove('border-green-500/30', 'bg-green-500/5');
+            statusCard.classList.add('border-slate-700/50', 'bg-slate-800/50');
         }
 
         // Bind Actions (Clean old listeners via cloning)
@@ -17864,7 +17894,7 @@ const supervisorGroups = new Map();
         bind(btnCheckIn, () => fazerCheckIn(currentActionClientCode));
         bind(btnCheckOut, () => fazerCheckOut());
         bind(btnPesquisa, () => abrirPesquisa());
-        bind(btnGeo, () => openGeoUpdateModal()); // New Binding
+        bind(btnGeo, () => openGeoUpdateModal());
         bind(btnDetalhes, () => {
             modal.classList.add('hidden');
             openWalletClientModal(currentActionClientCode);
@@ -17882,10 +17912,9 @@ const supervisorGroups = new Map();
         const btn = document.getElementById('btn-acao-checkin');
         const oldHtml = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = 'Obtendo localização...';
+        btn.innerHTML = '...';
 
         navigator.geolocation.getCurrentPosition(async (pos) => {
-            btn.innerHTML = 'Salvando...';
             const { latitude, longitude } = pos.coords;
             const { data: { user } } = await window.supabaseClient.auth.getUser();
 
@@ -17917,11 +17946,10 @@ const supervisorGroups = new Map();
             let response = await window.supabaseClient.from('visitas').insert(payload).select().single();
 
             // Self-Healing: Fallback for ANY error if we sent new columns
-            // This covers schema cache errors, missing columns, or other potential migration mismatches
             if (response.error && (payload.cod_cocoord || payload.coordenador_email)) {
                 console.warn("[CheckIn] Error detected with new columns. Retrying purely...", response.error);
                 delete payload.cod_cocoord;
-                delete payload.coordenador_email; // Fallback to database trigger resolution
+                delete payload.coordenador_email;
                 response = await window.supabaseClient.from('visitas').insert(payload).select().single();
             }
 
@@ -17935,12 +17963,9 @@ const supervisorGroups = new Map();
             visitaAbertaId = response.data.id;
             clienteEmVisitaId = clientCode;
 
-            // REMOVED: Automatic coordinate update (moved to manual action)
-
-            // UI Update
-            document.getElementById('modal-acoes-visita').classList.add('hidden');
-            renderRoteiroView(); // Refresh UI to show "Em Visita" status if implemented
-            alert('Check-in realizado com sucesso!');
+            // REFRESH UI (Keep Modal Open, Update State)
+            if (isRoteiroMode) renderRoteiroView();
+            openActionModal(currentActionClientCode, currentActionClientName); // Re-open/Refresh
 
         }, (err) => {
             console.error(err);
@@ -18124,6 +18149,21 @@ const supervisorGroups = new Map();
         modal.classList.remove('hidden');
     }
 
+    // --- Navigation Helpers ---
+    window.closeResearchModal = function() {
+        document.getElementById('modal-relatorio').classList.add('hidden');
+        if (currentActionClientCode) {
+            openActionModal(currentActionClientCode, currentActionClientName);
+        }
+    }
+
+    window.closeGeoModal = function() {
+        document.getElementById('modal-geo-update').classList.add('hidden');
+        if (currentActionClientCode) {
+            openActionModal(currentActionClientCode, currentActionClientName);
+        }
+    }
+
     // Bind Form Submit
     const formVisita = document.getElementById('form-visita');
     if (formVisita) {
@@ -18196,6 +18236,12 @@ const supervisorGroups = new Map();
 
                 document.getElementById('modal-relatorio').classList.add('hidden');
                 alert('Relatório salvo!');
+
+                // Return to Action Menu
+                if (currentActionClientCode) {
+                    openActionModal(currentActionClientCode, currentActionClientName);
+                }
+
             } catch (err) {
                 alert('Erro ao salvar: ' + err.message);
             } finally {
