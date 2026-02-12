@@ -2081,6 +2081,137 @@
 
 </div>
 
+<!-- MODAL DE RELATORIO / PESQUISA -->
+<div id="modal-relatorio" class="modal-overlay hidden z-[3000]">
+    <div class="bg-modal-content max-w-lg w-full m-4 p-6 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900">
+        <div class="flex justify-between items-start mb-6 border-b border-slate-800 pb-4">
+            <h3 class="text-xl font-bold text-white">Relatório de Visita</h3>
+            <span class="text-slate-400 hover:text-white cursor-pointer text-2xl leading-none" onclick="document.getElementById('modal-relatorio').classList.add('hidden')">&times;</span>
+        </div>
+        <form id="form-visita" class="space-y-6">
+            <input type="hidden" id="visita-atual-id" name="visita_id">
+            <p class="text-xs text-blue-400 bg-blue-900/20 p-3 rounded-lg flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Carregamos os dados da última visita.
+            </p>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-bold text-slate-300">Estado da Gôndola:</label>
+                <select name="estado_gondola" required class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500">
+                    <option value="Excelente">Excelente</option>
+                    <option value="Boa">Boa</option>
+                    <option value="Bagunçada">Bagunçada</option>
+                    <option value="Critica">Crítica</option>
+                </select>
+            </div>
+
+            <div class="pt-4 border-t border-slate-800">
+                <h4 class="text-sm font-bold text-slate-400 uppercase mb-3">Elma Chips</h4>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Tipo de Rack:</label>
+                        <select name="tipo_rack" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500">
+                            <option value="Padrao">Padrão</option>
+                            <option value="Display">Display</option>
+                            <option value="ClipStrip">Clip Strip</option>
+                            <option value="Nenhum">Nenhum</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Tem seção dedicada?</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="tem_secao" value="Sim" class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                <span class="text-slate-300">Sim</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="tem_secao" value="Nao" checked class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                <span class="text-slate-300">Não</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-bold text-slate-300">Observações:</label>
+                <textarea name="observacoes" rows="3" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500" placeholder="Alguma observação importante?"></textarea>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Salvar e Enviar
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL DE ACOES DA VISITA (MINI MENU) -->
+<div id="modal-acoes-visita" class="modal-overlay hidden z-[2900]">
+    <div class="bg-modal-content max-w-sm w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 overflow-hidden relative">
+        <div class="p-5 border-b border-slate-800 bg-slate-800/50 flex justify-between items-center">
+            <h3 id="acoes-visita-titulo" class="text-lg font-bold text-white truncate pr-4">Cliente</h3>
+            <button class="text-slate-400 hover:text-white" onclick="document.getElementById('modal-acoes-visita').classList.add('hidden')">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="p-4 space-y-3">
+            <button id="btn-acao-checkin" class="w-full py-4 px-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                📍 Fazer Check-in
+            </button>
+
+            <button id="btn-acao-checkout" class="w-full py-4 px-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-3 transition-all hidden">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                🛑 Fazer Check-out
+            </button>
+
+            <button id="btn-acao-pesquisa" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-3 transition-all hidden">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                📝 Responder Pesquisa
+            </button>
+
+            <div class="border-t border-slate-800 my-2"></div>
+
+            <button id="btn-acao-geo" class="w-full py-3 px-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium flex items-center justify-center gap-3 transition-all">
+                <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                Atualizar Geolocalização
+            </button>
+
+            <button id="btn-acao-detalhes" class="w-full py-3 px-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium flex items-center justify-center gap-3 transition-all">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Detalhes do Cliente
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE ATUALIZACAO DE GEO -->
+<div id="modal-geo-update" class="modal-overlay hidden z-[3100]">
+    <div class="bg-modal-content max-w-md w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 overflow-hidden relative">
+        <div class="p-4 border-b border-slate-800 bg-slate-800/50 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-white">Atualizar Posição</h3>
+            <button class="text-slate-400 hover:text-white" onclick="document.getElementById('modal-geo-update').classList.add('hidden')">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div class="relative h-64 bg-slate-800">
+            <div id="geo-update-map" class="w-full h-full z-0"></div>
+            <div id="geo-update-loading" class="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center z-10">
+                <div class="spinner-orange mb-2"></div>
+                <span class="text-sm text-slate-300">Obtendo localização...</span>
+            </div>
+        </div>
+        <div class="p-4 bg-slate-900 border-t border-slate-800">
+            <p class="text-xs text-slate-400 mb-4 text-center">Verifique se o pino está na posição correta do estabelecimento.</p>
+            <button id="btn-confirm-geo-update" class="w-full py-3 px-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Confirmar Atualização
+            </button>
+        </div>
+    </div>
+</div>
+
 <script src="init.js?v=6.0.0" defer></script>
 </body>
 </html>
