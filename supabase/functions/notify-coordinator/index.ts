@@ -30,12 +30,12 @@ serve(async (req) => {
       })
     }
 
-    // 2. Validation: Ensure Check-out is complete (Contains answers AND checkout time)
-    const hasAnswers = record.respostas && Object.keys(record.respostas).length > 0;
+    // 2. Validation: Ensure Check-out is complete (Contains checkout time)
+    // Modified: removed requirement for 'respostas' to allow checkout-only visits
     const hasCheckout = !!record.checkout_at;
 
-    if (!hasAnswers || !hasCheckout) {
-      console.log('Skipping: Visit incomplete (Check-in only or missing answers/checkout)')
+    if (!hasCheckout) {
+      console.log('Skipping: Visit incomplete (Check-in only, missing checkout_at)')
       return new Response(JSON.stringify({ message: 'Skipped: Incomplete visit' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -44,11 +44,11 @@ serve(async (req) => {
     // 3. Validation: Prevent Duplicate Emails (Only send on transition to complete)
     // If old_record existed and WAS complete, skip.
     if (old_record) {
-        const hadAnswers = old_record.respostas && Object.keys(old_record.respostas).length > 0;
+        // Was it already checked out?
         const hadCheckout = !!old_record.checkout_at;
 
-        if (hadAnswers && hadCheckout) {
-             console.log('Skipping: Email already sent (visit was already complete)')
+        if (hadCheckout) {
+             console.log('Skipping: Email already sent (visit was already checked out)')
              return new Response(JSON.stringify({ message: 'Skipped: Duplicate event' }), {
                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
              })
@@ -216,12 +216,11 @@ serve(async (req) => {
       })
     }
 
-    // 5. Fetch API Key from Metadata
+    // 5. Fetch API Key AND From Email from Metadata
     const { data: keyData, error: keyError } = await supabase
       .from('data_metadata')
-      .select('value')
-      .eq('key', 'RESEND_API_KEY')
-      .single()
+      .select('key, value')
+      .in('key', ['RESEND_API_KEY', 'RESEND_FROM_EMAIL'])
 
     if (keyError || !keyData) {
       console.error('Error fetching API Key:', keyError)
@@ -231,7 +230,19 @@ serve(async (req) => {
       })
     }
 
-    const RESEND_API_KEY = keyData.value
+    const apiKeyObj = keyData.find(k => k.key === 'RESEND_API_KEY');
+    const fromEmailObj = keyData.find(k => k.key === 'RESEND_FROM_EMAIL');
+
+    if (!apiKeyObj) {
+         console.error('Error: RESEND_API_KEY not found in metadata');
+         return new Response(JSON.stringify({ error: 'RESEND_API_KEY missing' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+         })
+    }
+
+    const RESEND_API_KEY = apiKeyObj.value;
+    const RESEND_FROM_EMAIL = fromEmailObj ? fromEmailObj.value : 'onboarding@resend.dev';
 
     // 6. Construct Email (Styled)
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? 'https://dldsocponbjthqxhmttj.supabase.co';
@@ -246,7 +257,7 @@ serve(async (req) => {
     // Parsing Survey Answers Table
     let answersRows = '';
     const answers = record.respostas;
-    if (answers && typeof answers === 'object') {
+    if (answers && typeof answers === 'object' && Object.keys(answers).length > 0) {
         for (const [key, value] of Object.entries(answers)) {
             // Clean keys if needed (e.g. remove snake_case) or use label map
             const questionLabel = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -262,6 +273,14 @@ serve(async (req) => {
                 <td style="padding: 12px 16px; color: #1e293b; font-weight: 500;">${displayValue}</td>
             </tr>`;
         }
+    } else {
+        answersRows = `
+            <tr>
+                <td colspan="2" style="padding: 16px; color: #64748b; text-align: center; font-style: italic; background-color: #f8fafc;">
+                    Nenhuma resposta registrada nesta visita.
+                </td>
+            </tr>
+        `;
     }
 
     const htmlContent = `
@@ -344,7 +363,7 @@ serve(async (req) => {
     `
 
     // 7. Send Email via Resend
-    console.log(`Sending email to: ${targetEmail}`);
+    console.log(`Sending email to: ${targetEmail} from: ${RESEND_FROM_EMAIL}`);
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -352,7 +371,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'onboarding@resend.dev',
+        from: RESEND_FROM_EMAIL,
         to: targetEmail,
         subject: `Nova Visita: ${clientName}`,
         html: htmlContent,
