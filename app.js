@@ -16871,7 +16871,19 @@ const supervisorGroups = new Map();
         // Filter Logic
         let clients = [];
         try {
-            clients = getActiveClientsData(); // Considers hierarchy and active status
+            // Use allClientsData directly to include ANY client with an itinerary, bypassing active/RCA filters
+            // This ensures newly added wallet clients (even if inactive/RCA 53) appear if scheduled.
+            if (allClientsData instanceof ColumnarDataset) {
+                // Optimization: direct loop instead of filter to avoid unnecessary array creation
+                for (let i = 0; i < allClientsData.length; i++) {
+                    const c = allClientsData.get(i);
+                    if (c.ITINERARY_FREQUENCY || c.itinerary_frequency) {
+                        clients.push(c);
+                    }
+                }
+            } else {
+                clients = allClientsData.filter(c => c.ITINERARY_FREQUENCY || c.itinerary_frequency);
+            }
         } catch(e) {
             console.error("[Roteiro] Error getting clients:", e);
         }
