@@ -562,22 +562,27 @@ BEGIN
   WHERE id = NEW.id_promotor;
 
   -- 2. Buscar na hierarquia quem é o co-coordenador deste promotor
-  -- Assumindo que v_user_code bate com 'cod_promotor' na tabela de hierarquia
-  SELECT cod_cocoord INTO v_cocoord_code
-  FROM public.data_hierarchy
-  WHERE cod_promotor = v_user_code
-  LIMIT 1;
-
-  -- 3. Buscar o e-mail desse co-coordenador na tabela profiles (onde role = codigo do co-coord)
-  IF v_cocoord_code IS NOT NULL THEN
-    NEW.coordenador_email := (SELECT email FROM public.profiles WHERE role = v_cocoord_code LIMIT 1);
+  -- Usamos UPPER para evitar erros de case sensitivity
+  IF v_user_code IS NOT NULL THEN
+    SELECT cod_cocoord INTO v_cocoord_code
+    FROM public.data_hierarchy
+    WHERE UPPER(cod_promotor) = UPPER(v_user_code)
+    LIMIT 1;
   END IF;
 
-  -- Fallback: Se não encontrou hierarquia ou email, tenta um coordenador geral 'coord' ou mantém NULL
+  -- 3. Buscar o e-mail desse co-coordenador na tabela profiles
+  IF v_cocoord_code IS NOT NULL THEN
+    NEW.coordenador_email := (SELECT email FROM public.profiles WHERE UPPER(role) = UPPER(v_cocoord_code) LIMIT 1);
+  END IF;
+
+  -- Fallback 1: Tenta buscar um usuario com role 'coord' (Coordenador Geral)
   IF NEW.coordenador_email IS NULL THEN
-     -- Tenta buscar pelo menos um admin/coord padrão se desejar, ou deixa NULL.
-     -- Mantendo comportamento anterior como fallback:
      NEW.coordenador_email := (SELECT email FROM public.profiles WHERE role = 'coord' LIMIT 1);
+  END IF;
+
+  -- Fallback 2: Tenta buscar um usuario com role 'adm' (Admin) se não achou coord
+  IF NEW.coordenador_email IS NULL THEN
+     NEW.coordenador_email := (SELECT email FROM public.profiles WHERE role = 'adm' LIMIT 1);
   END IF;
 
   RETURN NEW;
@@ -588,3 +593,10 @@ DROP TRIGGER IF EXISTS trigger_auto_email_coordenador ON public.visitas;
 CREATE TRIGGER trigger_auto_email_coordenador
 BEFORE INSERT ON public.visitas
 FOR EACH ROW EXECUTE FUNCTION public.preencher_email_coordenador();
+
+DROP TRIGGER IF EXISTS trigger_auto_email_coordenador_update ON public.visitas;
+CREATE TRIGGER trigger_auto_email_coordenador_update
+BEFORE UPDATE ON public.visitas
+FOR EACH ROW
+WHEN (OLD.coordenador_email IS NULL)
+EXECUTE FUNCTION public.preencher_email_coordenador();
