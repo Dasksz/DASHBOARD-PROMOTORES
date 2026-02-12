@@ -164,7 +164,23 @@
                 // If Promoter, force refresh to ensure fresh client data
                 console.log("[Init] Promoter role detected. Bypassing global cache.");
                 useCache = false;
-            } else if (cachedData && metadataRemote) {
+            }
+
+            // Identify and store Co-Coordinator Code for this user
+            if (hierarchy && window.userRole) {
+                const normRole = window.userRole.trim().toUpperCase();
+                // Find my entry in hierarchy
+                const myEntry = hierarchy.find(h => (h.cod_promotor || '').trim().toUpperCase() === normRole);
+                if (myEntry && myEntry.cod_cocoord) {
+                    window.userCoCoordCode = myEntry.cod_cocoord.trim();
+                    console.log(`[Init] Co-Coordinator Code identified: ${window.userCoCoordCode}`);
+                } else {
+                    console.log("[Init] No Co-Coordinator found for this user in hierarchy.");
+                    window.userCoCoordCode = null;
+                }
+            }
+
+            if (!isPromoter && cachedData && metadataRemote) {
                 // Check if remote last_update is same as cached (Standard Logic)
                 const remoteDate = new Date(metadataRemote.last_update).getTime();
                 const cachedDate = new Date(cachedData.metadata ? cachedData.metadata.find(m=>m.key==='last_update')?.value : 0).getTime();
