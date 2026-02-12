@@ -552,9 +552,34 @@ CREATE POLICY "Serviço tem acesso total" ON public.visitas FOR ALL TO service_r
 -- 7.3 Trigger para Email Coordenador
 CREATE OR REPLACE FUNCTION public.preencher_email_coordenador()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_user_code text;
+  v_cocoord_code text;
 BEGIN
-  -- Busca o email na tabela profiles onde role = 'coord'
-  NEW.coordenador_email := (SELECT email FROM public.profiles WHERE role = 'coord' LIMIT 1);
+  -- 1. Descobrir o código do promotor atual (armazenado na coluna 'role' do profile)
+  SELECT role INTO v_user_code
+  FROM public.profiles
+  WHERE id = NEW.id_promotor;
+
+  -- 2. Buscar na hierarquia quem é o co-coordenador deste promotor
+  -- Assumindo que v_user_code bate com 'cod_promotor' na tabela de hierarquia
+  SELECT cod_cocoord INTO v_cocoord_code
+  FROM public.data_hierarchy
+  WHERE cod_promotor = v_user_code
+  LIMIT 1;
+
+  -- 3. Buscar o e-mail desse co-coordenador na tabela profiles (onde role = codigo do co-coord)
+  IF v_cocoord_code IS NOT NULL THEN
+    NEW.coordenador_email := (SELECT email FROM public.profiles WHERE role = v_cocoord_code LIMIT 1);
+  END IF;
+
+  -- Fallback: Se não encontrou hierarquia ou email, tenta um coordenador geral 'coord' ou mantém NULL
+  IF NEW.coordenador_email IS NULL THEN
+     -- Tenta buscar pelo menos um admin/coord padrão se desejar, ou deixa NULL.
+     -- Mantendo comportamento anterior como fallback:
+     NEW.coordenador_email := (SELECT email FROM public.profiles WHERE role = 'coord' LIMIT 1);
+  END IF;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
