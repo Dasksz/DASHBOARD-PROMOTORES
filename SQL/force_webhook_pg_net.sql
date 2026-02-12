@@ -66,5 +66,5 @@ FOR EACH ROW
 WHEN (OLD.checkout_at IS NULL AND NEW.checkout_at IS NOT NULL)
 EXECUTE FUNCTION public.trigger_notify_coordinator_http();
 
--- Confirmation
-RAISE NOTICE 'Manual pg_net webhook configured successfully on public.visitas';
+-- Confirmation (Use SELECT instead of RAISE NOTICE for top-level output compatibility)
+SELECT 'Manual pg_net webhook configured successfully on public.visitas' as status;
