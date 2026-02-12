@@ -609,7 +609,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS trigger_auto_email_coordenador ON public.visitas;
 CREATE TRIGGER trigger_auto_email_coordenador
