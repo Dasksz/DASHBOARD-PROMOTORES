@@ -17758,9 +17758,10 @@ const supervisorGroups = new Map();
 
             let response = await window.supabaseClient.from('visitas').insert(payload).select().single();
 
-            // Self-Healing: Fallback if cod_cocoord column is missing in DB
-            if (response.error && response.error.message && (response.error.message.includes('cod_cocoord') || response.error.message.includes('schema cache'))) {
-                console.warn("[CheckIn] Schema mismatch detected. Retrying without cod_cocoord...");
+            // Self-Healing: Fallback for ANY error if we sent the new column
+            // This covers schema cache errors, missing columns, or other potential migration mismatches
+            if (response.error && payload.cod_cocoord) {
+                console.warn("[CheckIn] Error detected with new column. Retrying without cod_cocoord fallback...", response.error);
                 delete payload.cod_cocoord;
                 response = await window.supabaseClient.from('visitas').insert(payload).select().single();
             }

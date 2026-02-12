@@ -208,8 +208,14 @@ BEGIN
     ALTER TABLE public.data_product_details ADD COLUMN IF NOT EXISTS pasta text;
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_frequency text;
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_ref_date timestamp with time zone;
+
+    -- Ensure 'cod_cocoord' exists in 'visitas'
+    ALTER TABLE public.visitas ADD COLUMN IF NOT EXISTS cod_cocoord text;
     -- promotor column removed from data_clients in new schema
 END $$;
+
+-- Reload Schema Cache to recognize new columns immediately
+NOTIFY pgrst, 'reload config';
 
 -- ==============================================================================
 -- 2. HELPER FUNCTIONS
@@ -603,7 +609,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS trigger_auto_email_coordenador ON public.visitas;
 CREATE TRIGGER trigger_auto_email_coordenador
