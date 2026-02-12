@@ -2106,10 +2106,11 @@
             </div>
 
             <div class="pt-4 border-t border-slate-800">
-                <h4 class="text-sm font-bold text-slate-400 uppercase mb-3">Elma Chips</h4>
+                <h4 class="text-sm font-bold text-slate-400 uppercase mb-3">Check-in Elma Chips</h4>
                 <div class="space-y-4">
+                    <!-- 1. Tipo de Rack -->
                     <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-1">Tipo de Rack:</label>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Qual tipo de Rack da Elma Chips?</label>
                         <select name="tipo_rack" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500">
                             <option value="Padrao">Padrão</option>
                             <option value="Display">Display</option>
@@ -2117,17 +2118,112 @@
                             <option value="Nenhum">Nenhum</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Tem seção dedicada?</label>
-                        <div class="flex gap-4">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="tem_secao" value="Sim" class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
-                                <span class="text-slate-300">Sim</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="tem_secao" value="Nao" checked class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
-                                <span class="text-slate-300">Não</span>
-                            </label>
+
+                    <!-- Helper to create Yes/No structure -->
+                    <div class="grid grid-cols-1 gap-4">
+                        <!-- 2. Seção -->
+                        <div class="flex flex-col gap-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                            <label class="text-sm font-medium text-slate-300">Tem seção de Elma Chips?</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_secao" value="Sim" class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Sim</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_secao" value="Nao" checked class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Não</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 3. Checkout 50% -->
+                        <div class="flex flex-col gap-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                            <label class="text-sm font-medium text-slate-300">Tem 50% do Checkout?</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_checkout" value="Sim" class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Sim</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_checkout" value="Nao" checked class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Não</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 4. Correlatos Bebidas -->
+                        <div class="flex flex-col gap-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                            <label class="text-sm font-medium text-slate-300">Tem Correlatos Seção de Bebidas?</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_correlatos_bebidas" value="Sim" class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Sim</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_correlatos_bebidas" value="Nao" checked class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Não</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 5. Correlatos Molho -->
+                        <div class="flex flex-col gap-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                            <label class="text-sm font-medium text-slate-300">Tem Correlatos Seção de Molho?</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_correlatos_molho" value="Sim" class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Sim</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_correlatos_molho" value="Nao" checked class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Não</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 6. Correlatos Biscoito -->
+                        <div class="flex flex-col gap-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                            <label class="text-sm font-medium text-slate-300">Tem Correlatos Seção de Biscoito?</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_correlatos_biscoito" value="Sim" class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Sim</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_correlatos_biscoito" value="Nao" checked class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Não</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 7. Ilha Elma Chips -->
+                        <div class="flex flex-col gap-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                            <label class="text-sm font-medium text-slate-300">Ilha de Elma Chips na loja?</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_ilha" value="Sim" class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Sim</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_ilha" value="Nao" checked class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Não</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 8. Ponto Extra -->
+                        <div class="flex flex-col gap-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                            <label class="text-sm font-medium text-slate-300">Tem Ponto Extra na loja?</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_ponto_extra" value="Sim" class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Sim</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="tem_ponto_extra" value="Nao" checked class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-600">
+                                    <span class="text-slate-300 text-sm">Não</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
