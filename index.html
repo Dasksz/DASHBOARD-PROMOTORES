@@ -1975,11 +1975,11 @@
     <!-- CLIENTES VIEW -->
     <div id="clientes-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
         <header class="mb-4 border-b border-slate-800 pb-4 flex justify-between items-center sticky top-16 bg-[#020617] z-10 pt-4">
-            <div class="flex items-center gap-4">
-                <h1 class="text-3xl font-bold text-white">Clientes</h1>
+            <div class="flex items-center gap-2 sm:gap-4">
+                <h1 class="text-2xl sm:text-3xl font-bold text-white">Clientes</h1>
             </div>
             <div class="flex items-center gap-2">
-                <button id="toggle-roteiro-btn" class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold py-2 px-4 rounded-lg border border-slate-700 transition-colors flex items-center gap-2">
+                <button id="toggle-roteiro-btn" class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold py-2 px-3 sm:px-4 rounded-lg border border-slate-700 transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     Roteiro
                 </button>
@@ -2086,7 +2086,7 @@
     <div class="bg-modal-content max-w-lg w-full m-4 p-6 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 max-h-[90vh] overflow-y-auto custom-scrollbar">
         <div class="flex justify-between items-start mb-6 border-b border-slate-800 pb-4">
             <h3 class="text-xl font-bold text-white">Relatório de Visita</h3>
-            <span class="text-slate-400 hover:text-white cursor-pointer text-2xl leading-none" onclick="document.getElementById('modal-relatorio').classList.add('hidden')">&times;</span>
+            <span class="text-slate-400 hover:text-white cursor-pointer text-2xl leading-none" onclick="closeResearchModal()">&times;</span>
         </div>
         <form id="form-visita" class="space-y-6">
             <input type="hidden" id="visita-atual-id" name="visita_id">
@@ -2111,25 +2111,16 @@
                     <!-- 1. Tipo de Rack -->
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Qual tipo de Rack da Elma Chips?</label>
-                        <select name="tipo_rack" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500">
-                            <option value="Padrao">Mini Lego</option>
-                            <option value="Display">Lego 4C</option>
-                            <option value="ClipStrip">Lego 4C Smart</option>
-                            <option value="Nenhum">4C Arramado </option>
-                            <option value="Padrao">5C</option>
-                            <option value="Display">6C</option>
-                            <option value="ClipStrip">7C - P</option>
-                            <option value="Nenhum">7C - M</option>
-                            <option value="Nenhum">7C - G</option>
-                            <option value="Nenhum">8C</option>
-                            <option value="Nenhum">Ilha Quadrada</option>
-                            <option value="Nenhum">Giratório</option>
-                            <option value="Nenhum">Carrossel</option>
-                            <option value="Nenhum">Rack de Amendoim</option>
-                            <option value="Nenhum">Botadeiro</option>
-                            <option value="Nenhum">Rack Toddynho</option>
-                            <option value="Nenhum">Rack FOODS</option>
-                        </select>
+                        <div class="relative" id="rack-multiselect-container">
+                            <input type="hidden" name="tipo_rack" id="tipo_rack_hidden">
+                            <button type="button" id="rack-multiselect-btn" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500 hover:bg-slate-700 transition-colors">
+                                <span id="rack-multiselect-text" class="truncate text-slate-400">Selecione...</span>
+                                <svg class="w-4 h-4 text-slate-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div id="rack-multiselect-dropdown" class="hidden absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
+                                <!-- Options injected by JS -->
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Helper to create Yes/No structure -->
@@ -2244,7 +2235,34 @@
 
             <div class="space-y-2">
                 <label class="block text-sm font-bold text-slate-300">Foto da Gôndola (Opcional):</label>
-                <input type="file" name="foto_gondola" accept="image/*" capture="environment" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 transition-colors">
+                <input type="file" name="foto_gondola" id="visita-foto-input" accept="image/*" class="hidden">
+
+                <div id="visita-foto-trigger" class="w-full bg-slate-800 border-2 border-dashed border-slate-600 rounded-lg p-6 text-center hover:bg-slate-700/50 hover:border-slate-500 transition-all cursor-pointer group">
+                    <div class="flex flex-col items-center justify-center gap-2">
+                        <div class="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                            <svg class="w-6 h-6 text-slate-300 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-white group-hover:text-blue-400 transition-colors">Toque para adicionar foto</p>
+                            <p class="text-xs text-slate-500">Câmera ou Galeria</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="visita-foto-preview" class="hidden w-full bg-slate-800 border border-slate-600 rounded-lg p-3 flex items-center justify-between">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center text-green-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-white truncate" id="visita-foto-filename">foto.jpg</p>
+                            <p class="text-xs text-green-400">Pronto para envio</p>
+                        </div>
+                    </div>
+                    <button type="button" id="visita-foto-remove" class="p-2 text-slate-400 hover:text-red-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
             </div>
 
             <div class="space-y-2">
@@ -2260,41 +2278,84 @@
     </div>
 </div>
 
-<!-- MODAL DE ACOES DA VISITA (MINI MENU) -->
+<!-- MODAL DE ACOES DA VISITA (MINI MENU REFACTORED) -->
 <div id="modal-acoes-visita" class="modal-overlay hidden z-[2900]">
-    <div class="bg-modal-content max-w-sm w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 overflow-hidden relative">
-        <div class="p-5 border-b border-slate-800 bg-slate-800/50 flex justify-between items-center">
-            <h3 id="acoes-visita-titulo" class="text-lg font-bold text-white truncate pr-4">Cliente</h3>
-            <button class="text-slate-400 hover:text-white" onclick="document.getElementById('modal-acoes-visita').classList.add('hidden')">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
+    <div class="bg-modal-content max-w-sm w-full m-4 p-0 rounded-3xl shadow-2xl border border-slate-700 bg-slate-900 overflow-hidden relative transform transition-all">
+        <!-- Header with Client Info -->
+        <div class="p-6 pb-4 bg-gradient-to-b from-slate-800 to-slate-900">
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-blue-600/20 flex items-center justify-center text-blue-400 shadow-inner ring-1 ring-white/5">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </div>
+                <button class="bg-slate-800/50 p-2 rounded-full text-slate-400 hover:text-white transition-colors hover:bg-slate-700" onclick="document.getElementById('modal-acoes-visita').classList.add('hidden')">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <h3 id="acoes-visita-titulo" class="text-xl font-bold text-white leading-tight">Cliente</h3>
+            <p id="acoes-visita-subtitulo" class="text-sm text-slate-400 mt-1 font-medium">Gestão de Visita</p>
         </div>
-        <div class="p-4 space-y-3">
-            <button id="btn-acao-checkin" class="w-full py-4 px-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                📍 Fazer Check-in
+
+        <!-- Main Status / Action Card -->
+        <div class="px-6 py-2">
+            <div id="status-card-visita" class="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50 flex items-center justify-between backdrop-blur-sm">
+                <div>
+                    <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Status da Visita</p>
+                    <p id="status-text-visita" class="text-sm font-bold text-white">Não Iniciada</p>
+                </div>
+                <!-- Action Buttons (Toggled) -->
+                <button id="btn-acao-checkin" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-green-900/20 transition-all text-sm flex items-center gap-2 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Check-in
+                </button>
+                <button id="btn-acao-checkout" class="hidden bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-red-900/20 transition-all text-sm flex items-center gap-2 transform active:scale-95">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    Check-out
+                </button>
+            </div>
+        </div>
+
+        <!-- Action Menu List -->
+        <div class="p-6 pt-2 space-y-2.5">
+            <!-- Pesquisa -->
+            <button id="btn-acao-pesquisa" class="hidden w-full group flex items-center justify-between p-3.5 rounded-2xl bg-slate-800/30 hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all text-left">
+                <div class="flex items-center gap-3.5">
+                    <div class="p-2.5 bg-blue-500/10 rounded-xl text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-bold text-slate-200 group-hover:text-white transition-colors">Pesquisa</span>
+                        <span class="block text-[11px] text-slate-500 group-hover:text-slate-400 transition-colors">Preencher formulário</span>
+                    </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-600 group-hover:text-slate-400 transform group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </button>
 
-            <button id="btn-acao-checkout" class="w-full py-4 px-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-3 transition-all hidden">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                🛑 Fazer Check-out
+            <!-- Detalhes -->
+            <button id="btn-acao-detalhes" class="w-full group flex items-center justify-between p-3.5 rounded-2xl bg-slate-800/30 hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all text-left">
+                <div class="flex items-center gap-3.5">
+                    <div class="p-2.5 bg-purple-500/10 rounded-xl text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-bold text-slate-200 group-hover:text-white transition-colors">Detalhes</span>
+                        <span class="block text-[11px] text-slate-500 group-hover:text-slate-400 transition-colors">Ver ficha do cliente</span>
+                    </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-600 group-hover:text-slate-400 transform group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </button>
 
-            <button id="btn-acao-pesquisa" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-3 transition-all hidden">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                📝 Responder Pesquisa
-            </button>
-
-            <div class="border-t border-slate-800 my-2"></div>
-
-            <button id="btn-acao-geo" class="w-full py-3 px-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium flex items-center justify-center gap-3 transition-all">
-                <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                Atualizar Geolocalização
-            </button>
-
-            <button id="btn-acao-detalhes" class="w-full py-3 px-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium flex items-center justify-center gap-3 transition-all">
-                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                Detalhes do Cliente
+            <!-- Geo -->
+            <button id="btn-acao-geo" class="w-full group flex items-center justify-between p-3.5 rounded-2xl bg-slate-800/30 hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all text-left">
+                <div class="flex items-center gap-3.5">
+                    <div class="p-2.5 bg-orange-500/10 rounded-xl text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-colors shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-bold text-slate-200 group-hover:text-white transition-colors">Localização</span>
+                        <span class="block text-[11px] text-slate-500 group-hover:text-slate-400 transition-colors">Atualizar coordenadas</span>
+                    </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-600 group-hover:text-slate-400 transform group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </button>
         </div>
     </div>
@@ -2305,7 +2366,7 @@
     <div class="bg-modal-content max-w-md w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 overflow-hidden relative">
         <div class="p-4 border-b border-slate-800 bg-slate-800/50 flex justify-between items-center">
             <h3 class="text-lg font-bold text-white">Atualizar Posição</h3>
-            <button class="text-slate-400 hover:text-white" onclick="document.getElementById('modal-geo-update').classList.add('hidden')">
+            <button class="text-slate-400 hover:text-white" onclick="closeGeoModal()">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>

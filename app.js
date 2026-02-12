@@ -15607,6 +15607,160 @@ const supervisorGroups = new Map();
                 return report;
             }
 
+    // --- RACK MULTI-SELECT COMPONENT ---
+    const RACK_OPTIONS = [
+        "Mini Lego", "Lego 4C", "Lego 4C Smart", "4C Arramado", "5C", "6C",
+        "7C - P", "7C - M", "7C - G", "8C", "Ilha Quadrada", "Giratório",
+        "Carrossel", "Rack de Amendoim", "Botadeiro", "Rack Toddynho", "Rack FOODS"
+    ];
+
+    let selectedRackOptions = new Set();
+
+    function initCustomFileInput() {
+        const input = document.getElementById('visita-foto-input');
+        const trigger = document.getElementById('visita-foto-trigger');
+        const preview = document.getElementById('visita-foto-preview');
+        const filenameEl = document.getElementById('visita-foto-filename');
+        const removeBtn = document.getElementById('visita-foto-remove');
+
+        if (!input || !trigger || !preview) return;
+
+        trigger.onclick = () => input.click();
+
+        input.onchange = () => {
+            if (input.files && input.files.length > 0) {
+                const file = input.files[0];
+                filenameEl.textContent = file.name;
+                trigger.classList.add('hidden');
+                preview.classList.remove('hidden');
+            }
+        };
+
+        removeBtn.onclick = () => {
+            input.value = '';
+            trigger.classList.remove('hidden');
+            preview.classList.add('hidden');
+        };
+    }
+
+    function resetCustomFileInput() {
+        const input = document.getElementById('visita-foto-input');
+        const trigger = document.getElementById('visita-foto-trigger');
+        const preview = document.getElementById('visita-foto-preview');
+
+        if (input) input.value = '';
+        if (trigger) trigger.classList.remove('hidden');
+        if (preview) preview.classList.add('hidden');
+    }
+
+    function initRackMultiSelect() {
+        const container = document.getElementById('rack-multiselect-container');
+        const btn = document.getElementById('rack-multiselect-btn');
+        const dropdown = document.getElementById('rack-multiselect-dropdown');
+        const input = document.getElementById('tipo_rack_hidden');
+
+        if (!container || !btn || !dropdown || !input) return;
+
+        // Populate Dropdown
+        dropdown.innerHTML = '';
+        RACK_OPTIONS.forEach(opt => {
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center p-3 hover:bg-slate-700 cursor-pointer transition-colors border-b border-slate-700/50 last:border-0';
+            div.dataset.value = opt;
+            div.innerHTML = `
+                <span class="text-sm text-white select-none">${opt}</span>
+                <svg class="w-4 h-4 text-white hidden check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+            `;
+
+            div.onclick = (e) => {
+                e.stopPropagation();
+                toggleRackOption(opt, div);
+            };
+            dropdown.appendChild(div);
+        });
+
+        // Toggle Dropdown
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            const svg = btn.querySelector('svg:last-child');
+            if (svg) svg.classList.toggle('rotate-180');
+        };
+
+        // Close on click outside
+        document.addEventListener('click', (e) => {
+            if (!container.contains(e.target)) {
+                dropdown.classList.add('hidden');
+                const svg = btn.querySelector('svg:last-child'); // The arrow
+                if (svg) svg.classList.remove('rotate-180');
+            }
+        });
+    }
+
+    function toggleRackOption(value, element) {
+        if (selectedRackOptions.has(value)) {
+            selectedRackOptions.delete(value);
+            element.classList.remove('bg-blue-600');
+            element.querySelector('.check-icon').classList.add('hidden');
+        } else {
+            selectedRackOptions.add(value);
+            element.classList.add('bg-blue-600');
+            element.querySelector('.check-icon').classList.remove('hidden');
+        }
+        updateRackInputState();
+    }
+
+    function updateRackInputState() {
+        const input = document.getElementById('tipo_rack_hidden');
+        const textLabel = document.getElementById('rack-multiselect-text');
+
+        const selected = Array.from(selectedRackOptions);
+        input.value = selected.join(', ');
+
+        if (selected.length === 0) {
+            textLabel.textContent = 'Selecione...';
+            textLabel.classList.add('text-slate-400');
+            textLabel.classList.remove('text-white');
+        } else if (selected.length === 1) {
+            textLabel.textContent = selected[0];
+            textLabel.classList.remove('text-slate-400');
+            textLabel.classList.add('text-white');
+        } else {
+            textLabel.textContent = `${selected.length} selecionados`;
+            textLabel.classList.remove('text-slate-400');
+            textLabel.classList.add('text-white');
+        }
+    }
+
+    function resetRackMultiSelect(initialValueString = '') {
+        selectedRackOptions.clear();
+
+        // Parse initial value
+        if (initialValueString) {
+            // Split by comma and trim
+            const parts = initialValueString.split(',').map(s => s.trim());
+            parts.forEach(p => {
+                if (RACK_OPTIONS.includes(p)) selectedRackOptions.add(p);
+            });
+        }
+
+        // Sync UI
+        const dropdown = document.getElementById('rack-multiselect-dropdown');
+        if (dropdown) {
+            Array.from(dropdown.children).forEach(div => {
+                const val = div.dataset.value;
+                if (selectedRackOptions.has(val)) {
+                    div.classList.add('bg-blue-600');
+                    div.querySelector('.check-icon').classList.remove('hidden');
+                } else {
+                    div.classList.remove('bg-blue-600');
+                    div.querySelector('.check-icon').classList.add('hidden');
+                }
+            });
+        }
+        updateRackInputState();
+    }
+
     // --- WALLET MANAGEMENT LOGIC ---
     let isWalletInitialized = false;
     let walletState = {
@@ -17628,6 +17782,7 @@ const supervisorGroups = new Map();
     let visitaAbertaId = null;
     let clienteEmVisitaId = null; // Storing Client Code (text) to match our usage
     let currentActionClientCode = null; // For the modal context
+    let currentActionClientName = null; // For refetching modal
 
     async function verificarEstadoVisita() {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
@@ -17654,18 +17809,32 @@ const supervisorGroups = new Map();
 
     window.openActionModal = function(clientCode, clientName) {
         currentActionClientCode = String(clientCode);
+        if (clientName) currentActionClientName = clientName; // Cache name
+        else if (!currentActionClientName) currentActionClientName = 'Cliente';
+
         const modal = document.getElementById('modal-acoes-visita');
         const title = document.getElementById('acoes-visita-titulo');
+        const subtitle = document.getElementById('acoes-visita-subtitulo');
+        const statusText = document.getElementById('status-text-visita');
+        const statusCard = document.getElementById('status-card-visita');
 
-        // Update Title
-        title.textContent = `${clientCode} - ${clientName}`;
+        // Update Title & Subtitle
+        title.textContent = currentActionClientName;
+        // Try to find city/info from dataset if possible, or just show code
+        let extraInfo = `Código: ${currentActionClientCode}`;
+        const clientObj = clientMapForKPIs.get(normalizeKey(currentActionClientCode));
+        if (clientObj) {
+             const city = clientObj.cidade || clientObj['Nome da Cidade'] || '';
+             if (city) extraInfo += ` • ${city}`;
+        }
+        subtitle.textContent = extraInfo;
 
         // Get Buttons
         const btnCheckIn = document.getElementById('btn-acao-checkin');
         const btnCheckOut = document.getElementById('btn-acao-checkout');
         const btnPesquisa = document.getElementById('btn-acao-pesquisa');
         const btnDetalhes = document.getElementById('btn-acao-detalhes');
-        const btnGeo = document.getElementById('btn-acao-geo'); // New
+        const btnGeo = document.getElementById('btn-acao-geo');
 
         // Logic
         // Normalize for comparison
@@ -17678,6 +17847,11 @@ const supervisorGroups = new Map();
                 btnCheckIn.classList.add('hidden');
                 btnCheckOut.classList.remove('hidden');
                 btnPesquisa.classList.remove('hidden');
+
+                statusText.textContent = 'Em Andamento';
+                statusText.className = 'text-sm font-bold text-green-400 animate-pulse';
+                statusCard.classList.add('border-green-500/30', 'bg-green-500/5');
+                statusCard.classList.remove('border-slate-700/50', 'bg-slate-800/50');
             } else {
                 // Visit open for ANOTHER client
                 btnCheckIn.classList.remove('hidden');
@@ -17685,17 +17859,27 @@ const supervisorGroups = new Map();
                 btnCheckIn.innerHTML = `<span class="text-xs">Finalize a visita anterior (${normOpen})</span>`;
                 btnCheckOut.classList.add('hidden');
                 btnPesquisa.classList.add('hidden');
+
+                statusText.textContent = 'Outra Visita Ativa';
+                statusText.className = 'text-sm font-bold text-orange-400';
+                statusCard.classList.remove('border-green-500/30', 'bg-green-500/5');
+                statusCard.classList.add('border-slate-700/50', 'bg-slate-800/50');
             }
         } else {
             // No open visit
             btnCheckIn.classList.remove('hidden');
             btnCheckIn.disabled = false;
             btnCheckIn.innerHTML = `
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                📍 Fazer Check-in
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                Check-in
             `;
             btnCheckOut.classList.add('hidden');
             btnPesquisa.classList.add('hidden');
+
+            statusText.textContent = 'Não Iniciada';
+            statusText.className = 'text-sm font-bold text-slate-400';
+            statusCard.classList.remove('border-green-500/30', 'bg-green-500/5');
+            statusCard.classList.add('border-slate-700/50', 'bg-slate-800/50');
         }
 
         // Bind Actions (Clean old listeners via cloning)
@@ -17710,7 +17894,7 @@ const supervisorGroups = new Map();
         bind(btnCheckIn, () => fazerCheckIn(currentActionClientCode));
         bind(btnCheckOut, () => fazerCheckOut());
         bind(btnPesquisa, () => abrirPesquisa());
-        bind(btnGeo, () => openGeoUpdateModal()); // New Binding
+        bind(btnGeo, () => openGeoUpdateModal());
         bind(btnDetalhes, () => {
             modal.classList.add('hidden');
             openWalletClientModal(currentActionClientCode);
@@ -17728,10 +17912,9 @@ const supervisorGroups = new Map();
         const btn = document.getElementById('btn-acao-checkin');
         const oldHtml = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = 'Obtendo localização...';
+        btn.innerHTML = '...';
 
         navigator.geolocation.getCurrentPosition(async (pos) => {
-            btn.innerHTML = 'Salvando...';
             const { latitude, longitude } = pos.coords;
             const { data: { user } } = await window.supabaseClient.auth.getUser();
 
@@ -17763,11 +17946,10 @@ const supervisorGroups = new Map();
             let response = await window.supabaseClient.from('visitas').insert(payload).select().single();
 
             // Self-Healing: Fallback for ANY error if we sent new columns
-            // This covers schema cache errors, missing columns, or other potential migration mismatches
             if (response.error && (payload.cod_cocoord || payload.coordenador_email)) {
                 console.warn("[CheckIn] Error detected with new columns. Retrying purely...", response.error);
                 delete payload.cod_cocoord;
-                delete payload.coordenador_email; // Fallback to database trigger resolution
+                delete payload.coordenador_email;
                 response = await window.supabaseClient.from('visitas').insert(payload).select().single();
             }
 
@@ -17781,12 +17963,9 @@ const supervisorGroups = new Map();
             visitaAbertaId = response.data.id;
             clienteEmVisitaId = clientCode;
 
-            // REMOVED: Automatic coordinate update (moved to manual action)
-
-            // UI Update
-            document.getElementById('modal-acoes-visita').classList.add('hidden');
-            renderRoteiroView(); // Refresh UI to show "Em Visita" status if implemented
-            alert('Check-in realizado com sucesso!');
+            // REFRESH UI (Keep Modal Open, Update State)
+            if (isRoteiroMode) renderRoteiroView();
+            openActionModal(currentActionClientCode, currentActionClientName); // Re-open/Refresh
 
         }, (err) => {
             console.error(err);
@@ -17938,6 +18117,8 @@ const supervisorGroups = new Map();
         // Logic: Fetch LAST visit answers for THIS client.
 
         form.reset();
+        resetRackMultiSelect();
+        resetCustomFileInput();
 
         // Fetch last answers
         if (clienteEmVisitaId) {
@@ -17952,16 +18133,35 @@ const supervisorGroups = new Map();
 
              if (data && data.respostas) {
                  Object.keys(data.respostas).forEach(key => {
-                     const field = form.elements[key];
-                     if (field) {
-                         if (field instanceof RadioNodeList) field.value = data.respostas[key];
-                         else field.value = data.respostas[key];
+                     if (key === 'tipo_rack') {
+                         resetRackMultiSelect(data.respostas[key]);
+                     } else {
+                         const field = form.elements[key];
+                         if (field) {
+                             if (field instanceof RadioNodeList) field.value = data.respostas[key];
+                             else field.value = data.respostas[key];
+                         }
                      }
                  });
              }
         }
 
         modal.classList.remove('hidden');
+    }
+
+    // --- Navigation Helpers ---
+    window.closeResearchModal = function() {
+        document.getElementById('modal-relatorio').classList.add('hidden');
+        if (currentActionClientCode) {
+            openActionModal(currentActionClientCode, currentActionClientName);
+        }
+    }
+
+    window.closeGeoModal = function() {
+        document.getElementById('modal-geo-update').classList.add('hidden');
+        if (currentActionClientCode) {
+            openActionModal(currentActionClientCode, currentActionClientName);
+        }
     }
 
     // Bind Form Submit
@@ -18036,6 +18236,12 @@ const supervisorGroups = new Map();
 
                 document.getElementById('modal-relatorio').classList.add('hidden');
                 alert('Relatório salvo!');
+
+                // Return to Action Menu
+                if (currentActionClientCode) {
+                    openActionModal(currentActionClientCode, currentActionClientName);
+                }
+
             } catch (err) {
                 alert('Erro ao salvar: ' + err.message);
             } finally {
@@ -18047,6 +18253,8 @@ const supervisorGroups = new Map();
     // Auto-init User Menu on load if ready (for Navbar)
     if (document.readyState === "complete" || document.readyState === "interactive") {
         initWalletView();
+        initRackMultiSelect();
+        initCustomFileInput();
         verificarEstadoVisita();
     }
 
