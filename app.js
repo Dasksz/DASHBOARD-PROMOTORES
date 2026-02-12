@@ -17652,6 +17652,7 @@ const supervisorGroups = new Map();
         const btnCheckOut = document.getElementById('btn-acao-checkout');
         const btnPesquisa = document.getElementById('btn-acao-pesquisa');
         const btnDetalhes = document.getElementById('btn-acao-detalhes');
+        const btnGeo = document.getElementById('btn-acao-geo'); // New
 
         // Logic
         // Normalize for comparison
@@ -17686,6 +17687,7 @@ const supervisorGroups = new Map();
 
         // Bind Actions (Clean old listeners via cloning)
         const bind = (btn, fn) => {
+            if (!btn) return;
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             newBtn.addEventListener('click', fn);
@@ -17695,6 +17697,7 @@ const supervisorGroups = new Map();
         bind(btnCheckIn, () => fazerCheckIn(currentActionClientCode));
         bind(btnCheckOut, () => fazerCheckOut());
         bind(btnPesquisa, () => abrirPesquisa());
+        bind(btnGeo, () => openGeoUpdateModal()); // New Binding
         bind(btnDetalhes, () => {
             modal.classList.add('hidden');
             openWalletClientModal(currentActionClientCode);
@@ -17745,19 +17748,7 @@ const supervisorGroups = new Map();
             visitaAbertaId = data.id;
             clienteEmVisitaId = clientCode;
 
-            // 2. Upsert Coordinates (Background)
-            window.supabaseClient.from('data_client_coordinates').upsert({
-                client_code: clientCode,
-                lat: latitude,
-                lng: longitude,
-                updated_at: new Date().toISOString()
-            }).then(({ error }) => {
-                if (error) console.warn("Erro ao atualizar coordenadas:", error);
-                else {
-                    // Update local cache
-                    clientCoordinatesMap.set(String(clientCode), { lat: latitude, lng: longitude, address: 'Atualizado via Check-in' });
-                }
-            });
+            // REMOVED: Automatic coordinate update (moved to manual action)
 
             // UI Update
             document.getElementById('modal-acoes-visita').classList.add('hidden');
@@ -17770,6 +17761,107 @@ const supervisorGroups = new Map();
             btn.disabled = false;
             btn.innerHTML = oldHtml;
         }, { enableHighAccuracy: true, timeout: 10000 });
+    }
+
+    // --- GEO UPDATE LOGIC ---
+    let geoUpdateMap = null;
+    let geoUpdateMarker = null;
+    let currentGeoLat = null;
+    let currentGeoLng = null;
+
+    function openGeoUpdateModal() {
+        document.getElementById('modal-acoes-visita').classList.add('hidden');
+        const modal = document.getElementById('modal-geo-update');
+        const loading = document.getElementById('geo-update-loading');
+
+        modal.classList.remove('hidden');
+        loading.classList.remove('hidden');
+
+        if (!navigator.geolocation) {
+            alert("Geolocalização não suportada.");
+            modal.classList.add('hidden');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition((pos) => {
+            const { latitude, longitude } = pos.coords;
+            currentGeoLat = latitude;
+            currentGeoLng = longitude;
+
+            loading.classList.add('hidden');
+
+            if (!geoUpdateMap) {
+                geoUpdateMap = L.map('geo-update-map').setView([latitude, longitude], 16);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(geoUpdateMap);
+            } else {
+                geoUpdateMap.invalidateSize(); // Fix render issues in modal
+                geoUpdateMap.setView([latitude, longitude], 16);
+            }
+
+            if (geoUpdateMarker) geoUpdateMap.removeLayer(geoUpdateMarker);
+
+            geoUpdateMarker = L.marker([latitude, longitude], { draggable: true }).addTo(geoUpdateMap);
+
+            // Allow manual refinement
+            geoUpdateMarker.on('dragend', function(e) {
+                const pos = e.target.getLatLng();
+                currentGeoLat = pos.lat;
+                currentGeoLng = pos.lng;
+            });
+
+        }, (err) => {
+            console.error(err);
+            alert("Erro ao obter localização.");
+            modal.classList.add('hidden');
+        }, { enableHighAccuracy: true });
+
+        // Bind Confirm Button
+        const confirmBtn = document.getElementById('btn-confirm-geo-update');
+        // Clean listeners
+        const newBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+
+        newBtn.addEventListener('click', async () => {
+            if (!currentGeoLat || !currentGeoLng || !currentActionClientCode) return;
+
+            const oldText = newBtn.innerHTML;
+            newBtn.disabled = true;
+            newBtn.innerHTML = 'Salvando...';
+
+            try {
+                const { error } = await window.supabaseClient
+                    .from('data_client_coordinates')
+                    .upsert({
+                        client_code: currentActionClientCode,
+                        lat: currentGeoLat,
+                        lng: currentGeoLng,
+                        updated_at: new Date().toISOString()
+                    });
+
+                if (error) throw error;
+
+                // Update Local Cache
+                clientCoordinatesMap.set(String(currentActionClientCode), {
+                    lat: currentGeoLat,
+                    lng: currentGeoLng,
+                    address: 'Atualizado Manualmente'
+                });
+
+                // Update Visuals if needed (e.g. City Map if open)
+                if (heatLayer) heatLayer.addLatLng([currentGeoLat, currentGeoLng, 1]);
+
+                alert('Geolocalização atualizada com sucesso!');
+                modal.classList.add('hidden');
+            } catch (e) {
+                console.error(e);
+                alert('Erro ao salvar: ' + e.message);
+            } finally {
+                newBtn.disabled = false;
+                newBtn.innerHTML = oldText;
+            }
+        });
     }
 
     async function fazerCheckOut() {
