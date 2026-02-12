@@ -17755,14 +17755,19 @@ const supervisorGroups = new Map();
             if (window.userCoCoordCode) {
                 payload.cod_cocoord = window.userCoCoordCode;
             }
+            // Include Pre-Resolved Email if available (Frontend-First Strategy)
+            if (window.userCoCoordEmail) {
+                payload.coordenador_email = window.userCoCoordEmail;
+            }
 
             let response = await window.supabaseClient.from('visitas').insert(payload).select().single();
 
-            // Self-Healing: Fallback for ANY error if we sent the new column
+            // Self-Healing: Fallback for ANY error if we sent new columns
             // This covers schema cache errors, missing columns, or other potential migration mismatches
-            if (response.error && payload.cod_cocoord) {
-                console.warn("[CheckIn] Error detected with new column. Retrying without cod_cocoord fallback...", response.error);
+            if (response.error && (payload.cod_cocoord || payload.coordenador_email)) {
+                console.warn("[CheckIn] Error detected with new columns. Retrying purely...", response.error);
                 delete payload.cod_cocoord;
+                delete payload.coordenador_email; // Fallback to database trigger resolution
                 response = await window.supabaseClient.from('visitas').insert(payload).select().single();
             }
 

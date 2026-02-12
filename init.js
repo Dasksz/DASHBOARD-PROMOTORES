@@ -174,9 +174,50 @@
                 if (myEntry && myEntry.cod_cocoord) {
                     window.userCoCoordCode = myEntry.cod_cocoord.trim();
                     console.log(`[Init] Co-Coordinator Code identified: ${window.userCoCoordCode}`);
+
+                    // Fetch Email Immediately (Frontend-First Strategy)
+                    const fetchEmail = async () => {
+                        try {
+                            const { data, error } = await supabaseClient
+                                .from('profiles')
+                                .select('email')
+                                .ilike('role', window.userCoCoordCode)
+                                .limit(1)
+                                .maybeSingle();
+
+                            if (data && data.email) {
+                                window.userCoCoordEmail = data.email;
+                                console.log(`[Init] Co-Coordinator Email resolved: ${window.userCoCoordEmail}`);
+                            } else {
+                                console.warn(`[Init] Email not found for Co-Coord Code: ${window.userCoCoordCode}`);
+                            }
+                        } catch(e) {
+                            console.error("[Init] Error fetching Co-Coord Email:", e);
+                        }
+                    };
+                    fetchEmail();
+
                 } else {
                     console.log("[Init] No Co-Coordinator found for this user in hierarchy.");
                     window.userCoCoordCode = null;
+
+                    // Fallback: Fetch General Coord or Admin Email
+                    const fetchFallbackEmail = async () => {
+                        try {
+                            // Try Coord
+                            let { data } = await supabaseClient.from('profiles').select('email').eq('role', 'coord').limit(1).maybeSingle();
+                            if (!data) {
+                                // Try Admin
+                                ({ data } = await supabaseClient.from('profiles').select('email').eq('role', 'adm').limit(1).maybeSingle());
+                            }
+
+                            if (data && data.email) {
+                                window.userCoCoordEmail = data.email;
+                                console.log(`[Init] Fallback Email resolved: ${window.userCoCoordEmail}`);
+                            }
+                        } catch(e) { console.error("[Init] Fallback email fetch failed", e); }
+                    };
+                    fetchFallbackEmail();
                 }
             }
 
