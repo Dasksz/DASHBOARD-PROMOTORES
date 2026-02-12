@@ -39,8 +39,6 @@ serve(async (req) => {
     }
 
     // 3. Validation: Prevent Duplicate Emails
-    // If old_record exists (UPDATE) and it ALREADY had answers, it means this update is something else (like checkout)
-    // We only want to send when answers are FIRST added.
     if (old_record && old_record.respostas && Object.keys(old_record.respostas).length > 0) {
        console.log('Skipping: Email already sent (answers existed previously)')
        return new Response(JSON.stringify({ message: 'Skipped: Duplicate event' }), {
@@ -48,22 +46,111 @@ serve(async (req) => {
        })
     }
 
-    // 4. Validation: Coordinator Email must exist
-    if (!record.coordenador_email) {
-      console.error('Error: No coordinator email found for this visit.')
-      // We return 200 to avoid retries from Supabase, but log the error
-      return new Response(JSON.stringify({ error: 'No coordinator email' }), {
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // 5. Fetch API Key from Database
+    // Initialize Supabase Client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // 4. Resolve Coordinator Email (Robust Logic)
+    let targetEmail = record.coordenador_email;
+
+    if (!targetEmail) {
+      console.log('Coordinator email missing. Attempting robust lookup...');
+
+      try {
+        // A. Get Promoter Code (Role)
+        const { data: promoterProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', record.id_promotor)
+          .single();
+
+        if (profileError || !promoterProfile) {
+           console.error('Lookup Failed: Promoter profile not found.', profileError);
+        } else {
+           const promoterCode = promoterProfile.role;
+           console.log(`Promoter Code found: ${promoterCode}`);
+
+           // B. Get Hierarchy (Co-Coordinator Code)
+           // Use ilike or upper/lower to match robustly
+           const { data: hierarchy, error: hierError } = await supabase
+             .from('data_hierarchy')
+             .select('cod_cocoord')
+             .ilike('cod_promotor', promoterCode)
+             .limit(1)
+             .maybeSingle(); // maybeSingle allows null without error
+
+           if (hierError) console.error('Lookup Error (Hierarchy):', hierError);
+
+           let coCoordCode = hierarchy?.cod_cocoord;
+
+           if (coCoordCode) {
+              console.log(`Co-Coordinator Code found: ${coCoordCode}`);
+
+              // C. Get Co-Coordinator Email
+              const { data: coCoordProfile } = await supabase
+                .from('profiles')
+                .select('email')
+                .ilike('role', coCoordCode)
+                .limit(1)
+                .maybeSingle();
+
+              if (coCoordProfile?.email) {
+                 targetEmail = coCoordProfile.email;
+                 console.log(`Found Co-Coordinator Email: ${targetEmail}`);
+              }
+           }
+        }
+
+        // D. Fallback 1: General Coordinator
+        if (!targetEmail) {
+           console.log('Fallback: Looking for General Coordinator...');
+           const { data: coordUser } = await supabase
+             .from('profiles')
+             .select('email')
+             .eq('role', 'coord')
+             .limit(1)
+             .maybeSingle();
+           if (coordUser?.email) targetEmail = coordUser.email;
+        }
+
+        // E. Fallback 2: Admin
+        if (!targetEmail) {
+           console.log('Fallback: Looking for Admin...');
+           const { data: admUser } = await supabase
+             .from('profiles')
+             .select('email')
+             .eq('role', 'adm')
+             .limit(1)
+             .maybeSingle();
+           if (admUser?.email) targetEmail = admUser.email;
+        }
+
+        // F. Update Record if found
+        if (targetEmail) {
+           console.log(`Updating visit record with resolved email: ${targetEmail}`);
+           await supabase
+             .from('visitas')
+             .update({ coordenador_email: targetEmail })
+             .eq('id', record.id);
+        }
+
+      } catch (err) {
+         console.error('Unexpected error during email lookup:', err);
+      }
+    }
+
+    if (!targetEmail) {
+      console.error('Critical Error: Could not resolve any recipient email.')
+      // Return 200 to avoid retries loops, but logged error
+      return new Response(JSON.stringify({ error: 'No coordinator email found after lookup' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // 5. Fetch API Key from Metadata
     const { data: keyData, error: keyError } = await supabase
       .from('data_metadata')
       .select('value')
@@ -81,7 +168,6 @@ serve(async (req) => {
     const RESEND_API_KEY = keyData.value
 
     // 6. Construct Email
-    // Using the project URL dynamically or falling back to a known structure
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? 'https://dldsocponbjthqxhmttj.supabase.co';
     const approveUrl = `${supabaseUrl}/functions/v1/approve-visit?id=${record.id}`
     const rejectUrl = `${supabaseUrl}/functions/v1/reject-visit?id=${record.id}`
@@ -114,6 +200,7 @@ serve(async (req) => {
     `
 
     // 7. Send Email via Resend
+    console.log(`Sending email to: ${targetEmail}`);
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -122,7 +209,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
-        to: record.coordenador_email,
+        to: targetEmail,
         subject: `Aprovação Necessária: Visita #${record.id}`,
         html: htmlContent,
       }),
