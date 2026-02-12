@@ -15617,38 +15617,72 @@ const supervisorGroups = new Map();
     let selectedRackOptions = new Set();
 
     function initCustomFileInput() {
-        const input = document.getElementById('visita-foto-input');
-        const trigger = document.getElementById('visita-foto-trigger');
+        const inputGallery = document.getElementById('visita-foto-input');
+        const inputCamera = document.getElementById('visita-foto-input-camera');
+
+        const btnGallery = document.getElementById('trigger-gallery-btn');
+        const btnCamera = document.getElementById('trigger-camera-btn');
+
+        const triggerArea = document.getElementById('visita-foto-trigger');
         const preview = document.getElementById('visita-foto-preview');
         const filenameEl = document.getElementById('visita-foto-filename');
         const removeBtn = document.getElementById('visita-foto-remove');
 
-        if (!input || !trigger || !preview) return;
+        if (!inputGallery || !preview) return;
 
-        trigger.onclick = () => input.click();
+        // Bind Buttons
+        if (btnGallery) btnGallery.onclick = (e) => { e.stopPropagation(); inputGallery.click(); };
+        if (btnCamera) btnCamera.onclick = (e) => { e.stopPropagation(); inputCamera.click(); };
 
-        input.onchange = () => {
-            if (input.files && input.files.length > 0) {
-                const file = input.files[0];
-                filenameEl.textContent = file.name;
-                trigger.classList.add('hidden');
-                preview.classList.remove('hidden');
+        // Fallback for clicking the dashed area (Default to Gallery if clicked outside buttons)
+        if (triggerArea) triggerArea.onclick = (e) => {
+            if (e.target !== btnGallery && e.target !== btnCamera && !btnGallery.contains(e.target) && !btnCamera.contains(e.target)) {
+               // Optional: Do nothing or default? Let's do nothing to force explicit choice,
+               // or default to gallery. User requested "Camera OR Photo".
+               // Explicit buttons handle it.
             }
         };
 
-        removeBtn.onclick = () => {
-            input.value = '';
-            trigger.classList.remove('hidden');
-            preview.classList.add('hidden');
+        const handleFileSelect = (file, sourceInput) => {
+            if (file) {
+                filenameEl.textContent = file.name;
+                triggerArea.classList.add('hidden');
+                preview.classList.remove('hidden');
+
+                // Clear the OTHER input to avoid confusion
+                if (sourceInput === inputGallery && inputCamera) inputCamera.value = '';
+                if (sourceInput === inputCamera && inputGallery) inputGallery.value = '';
+            }
         };
+
+        inputGallery.onchange = () => {
+            if (inputGallery.files && inputGallery.files.length > 0) handleFileSelect(inputGallery.files[0], inputGallery);
+        };
+
+        if (inputCamera) {
+            inputCamera.onchange = () => {
+                if (inputCamera.files && inputCamera.files.length > 0) handleFileSelect(inputCamera.files[0], inputCamera);
+            };
+        }
+
+        if (removeBtn) {
+            removeBtn.onclick = () => {
+                inputGallery.value = '';
+                if (inputCamera) inputCamera.value = '';
+                triggerArea.classList.remove('hidden');
+                preview.classList.add('hidden');
+            };
+        }
     }
 
     function resetCustomFileInput() {
-        const input = document.getElementById('visita-foto-input');
+        const inputGallery = document.getElementById('visita-foto-input');
+        const inputCamera = document.getElementById('visita-foto-input-camera');
         const trigger = document.getElementById('visita-foto-trigger');
         const preview = document.getElementById('visita-foto-preview');
 
-        if (input) input.value = '';
+        if (inputGallery) inputGallery.value = '';
+        if (inputCamera) inputCamera.value = '';
         if (trigger) trigger.classList.remove('hidden');
         if (preview) preview.classList.add('hidden');
     }
@@ -15860,8 +15894,21 @@ const supervisorGroups = new Map();
         // Modal Actions
         const modalCancel = document.getElementById('wallet-modal-cancel-btn');
         const modalClose = document.getElementById('wallet-modal-close-btn');
-        if(modalCancel) modalCancel.onclick = () => document.getElementById('wallet-client-modal').classList.add('hidden');
-        if(modalClose) modalClose.onclick = () => document.getElementById('wallet-client-modal').classList.add('hidden');
+
+        const closeWalletModal = () => {
+            document.getElementById('wallet-client-modal').classList.add('hidden');
+            // Return to Action Modal if flag is set (Navigation Fix)
+            if (window._returnToActionModal && currentActionClientCode) {
+                // Short delay to allow animation frame
+                setTimeout(() => {
+                    openActionModal(currentActionClientCode, currentActionClientName);
+                    window._returnToActionModal = false;
+                }, 50);
+            }
+        };
+
+        if(modalCancel) modalCancel.onclick = closeWalletModal;
+        if(modalClose) modalClose.onclick = closeWalletModal;
     }
 
     window.renderWalletView = function() {
@@ -17896,8 +17943,10 @@ const supervisorGroups = new Map();
         bind(btnPesquisa, () => abrirPesquisa());
         bind(btnGeo, () => openGeoUpdateModal());
         bind(btnDetalhes, () => {
-            modal.classList.add('hidden');
+            window._returnToActionModal = true;
             openWalletClientModal(currentActionClientCode);
+            // Delay hiding to prevent background blink
+            setTimeout(() => modal.classList.add('hidden'), 50);
         });
 
         modal.classList.remove('hidden');
@@ -18185,7 +18234,17 @@ const supervisorGroups = new Map();
             delete respostas.observacoes; // Store obs separately in column
 
             // Handle Photo Upload
-            const fotoFile = formData.get('foto_gondola');
+            // Check both inputs
+            let fotoFile = formData.get('foto_gondola'); // From Gallery Input (name="foto_gondola")
+
+            // Check Camera Input manually if main is empty
+            if (!fotoFile || fotoFile.size === 0) {
+                const cameraInput = document.getElementById('visita-foto-input-camera');
+                if (cameraInput && cameraInput.files.length > 0) {
+                    fotoFile = cameraInput.files[0];
+                }
+            }
+
             delete respostas.foto_gondola; // Remove file object from JSON
 
             let fotoUrl = null;
