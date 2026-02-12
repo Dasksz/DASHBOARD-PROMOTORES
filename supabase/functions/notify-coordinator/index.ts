@@ -55,24 +55,19 @@ serve(async (req) => {
     // Metadata for Email Content
     let promoterName = record.id_promotor; // Fallback
     let clientName = record.client_code || record.id_cliente; // Fallback
-
-    // 4. Resolve Coordinator Email (Robust Logic) & Metadata
     let targetEmail = record.coordenador_email;
 
-    // Fetch Promoter Name if possible
+    // --- Metadata Lookup ---
     try {
-        const { data: pProfile } = await supabase.from('profiles').select('email').eq('id', record.id_promotor).single();
-        // Since profiles don't usually have 'name' column based on previous SQL analysis (only id, email, status, role), 
-        // we might not get a name unless we join with hierarchy or use email alias. 
-        // Let's check hierarchy map for name.
+        const { data: pProfile } = await supabase.from('profiles').select('email, role').eq('id', record.id_promotor).single();
         if (pProfile) {
-             const { data: hInfo } = await supabase.from('data_hierarchy').select('nome_promotor').ilike('cod_promotor', pProfile.role || '').maybeSingle();
+             // Try to resolve name from Hierarchy
+             const { data: hInfo } = await supabase.from('data_hierarchy').select('nome_promotor').ilike('cod_promotor', (pProfile.role || '').trim()).maybeSingle();
              if (hInfo?.nome_promotor) promoterName = hInfo.nome_promotor;
              else if (pProfile.email) promoterName = pProfile.email.split('@')[0]; // Simple fallback
         }
     } catch(e) { console.error('Meta lookup failed', e); }
 
-    // Fetch Client Name if possible
     try {
         if (record.client_code) {
             const { data: cInfo } = await supabase.from('data_clients').select('fantasia, razaosocial').eq('codigo_cliente', record.client_code).maybeSingle();
@@ -81,6 +76,7 @@ serve(async (req) => {
     } catch(e) { console.error('Client meta lookup failed', e); }
 
 
+    // 4. Resolve Coordinator Email (Robust Logic)
     if (!targetEmail) {
       console.log('Coordinator email missing. Attempting robust lookup...');
       
@@ -95,70 +91,99 @@ serve(async (req) => {
         if (profileError || !promoterProfile) {
            console.error('Lookup Failed: Promoter profile not found.', profileError);
         } else {
-           const promoterCode = promoterProfile.role;
-           console.log(`Promoter Code found: ${promoterCode}`);
+           let promoterCode = (promoterProfile.role || '').trim();
+           console.log(`Promoter Code found: '${promoterCode}'`);
 
-           // B. Get Hierarchy (Co-Coordinator Code)
-           const { data: hierarchy, error: hierError } = await supabase
-             .from('data_hierarchy')
-             .select('cod_cocoord')
-             .ilike('cod_promotor', promoterCode)
-             .limit(1)
-             .maybeSingle();
+           if (promoterCode) {
+               // B. Get Hierarchy (Co-Coordinator Code) using ILIKE
+               const { data: hierarchy, error: hierError } = await supabase
+                 .from('data_hierarchy')
+                 .select('cod_cocoord')
+                 .ilike('cod_promotor', promoterCode)
+                 .limit(1)
+                 .maybeSingle();
 
-           if (hierError) console.error('Lookup Error (Hierarchy):', hierError);
-           
-           let coCoordCode = hierarchy?.cod_cocoord;
-           
-           if (coCoordCode) {
-              console.log(`Co-Coordinator Code found: ${coCoordCode}`);
-              
-              // C. Get Co-Coordinator Email
-              const { data: coCoordProfile } = await supabase
-                .from('profiles')
-                .select('email')
-                .ilike('role', coCoordCode)
-                .limit(1)
-                .maybeSingle();
-                
-              if (coCoordProfile?.email) {
-                 targetEmail = coCoordProfile.email;
-                 console.log(`Found Co-Coordinator Email: ${targetEmail}`);
-              }
+               if (hierError) console.error('Lookup Error (Hierarchy):', hierError);
+
+               let coCoordCode = hierarchy?.cod_cocoord;
+
+               if (coCoordCode) {
+                  coCoordCode = coCoordCode.trim();
+                  console.log(`Co-Coordinator Code found in Hierarchy: '${coCoordCode}'`);
+
+                  // C. Get Co-Coordinator Email using ILIKE on role
+                  const { data: coCoordProfile } = await supabase
+                    .from('profiles')
+                    .select('email')
+                    .ilike('role', coCoordCode)
+                    .limit(1)
+                    .maybeSingle();
+
+                  if (coCoordProfile?.email) {
+                     targetEmail = coCoordProfile.email;
+                     console.log(`Found Co-Coordinator Email: ${targetEmail}`);
+                  } else {
+                      console.log(`Co-Coordinator Code '${coCoordCode}' not found in profiles.`);
+                  }
+               } else {
+                   console.log(`No Co-Coordinator found for Promoter Code '${promoterCode}' in Hierarchy.`);
+               }
            }
         }
 
-        // D. Fallback 1: General Coordinator
+        // D. Fallback 1: General Coordinator (ILIKE)
         if (!targetEmail) {
-           console.log('Fallback: Looking for General Coordinator...');
+           console.log('Fallback 1: Looking for General Coordinator (coord)...');
            const { data: coordUser } = await supabase
              .from('profiles')
              .select('email')
-             .eq('role', 'coord')
+             .ilike('role', 'coord')
              .limit(1)
              .maybeSingle();
-           if (coordUser?.email) targetEmail = coordUser.email;
+           if (coordUser?.email) {
+               targetEmail = coordUser.email;
+               console.log(`Found General Coordinator Email: ${targetEmail}`);
+           }
         }
 
-        // E. Fallback 2: Admin
+        // E. Fallback 2: Admin (ILIKE 'adm' OR 'admin')
         if (!targetEmail) {
-           console.log('Fallback: Looking for Admin...');
-           const { data: admUser } = await supabase
+           console.log('Fallback 2: Looking for Admin (adm)...');
+           let { data: admUser } = await supabase
              .from('profiles')
              .select('email')
-             .eq('role', 'adm')
+             .ilike('role', 'adm') // Case insensitive 'adm'
              .limit(1)
              .maybeSingle();
-           if (admUser?.email) targetEmail = admUser.email;
+
+           if (!admUser) {
+               console.log('Fallback 2b: Looking for Admin (admin)...');
+               const { data: adminUser } = await supabase
+                 .from('profiles')
+                 .select('email')
+                 .ilike('role', 'admin') // Case insensitive 'admin'
+                 .limit(1)
+                 .maybeSingle();
+               admUser = adminUser;
+           }
+
+           if (admUser?.email) {
+               targetEmail = admUser.email;
+               console.log(`Found Admin Email: ${targetEmail}`);
+           }
         }
 
         // F. Update Record if found
         if (targetEmail) {
            console.log(`Updating visit record with resolved email: ${targetEmail}`);
-           await supabase
+           const { error: updateError } = await supabase
              .from('visitas')
              .update({ coordenador_email: targetEmail })
              .eq('id', record.id);
+
+           if (updateError) console.error('Error updating visit record:', updateError);
+        } else {
+            console.error('Critical: Failed to resolve ANY email recipient.');
         }
 
       } catch (err) {
