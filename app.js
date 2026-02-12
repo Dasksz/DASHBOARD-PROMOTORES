@@ -17756,16 +17756,23 @@ const supervisorGroups = new Map();
                 payload.cod_cocoord = window.userCoCoordCode;
             }
 
-            const { data, error } = await window.supabaseClient.from('visitas').insert(payload).select().single();
+            let response = await window.supabaseClient.from('visitas').insert(payload).select().single();
 
-            if (error) {
-                console.error(error);
-                alert('Erro ao fazer check-in: ' + error.message);
+            // Self-Healing: Fallback if cod_cocoord column is missing in DB
+            if (response.error && response.error.message && (response.error.message.includes('cod_cocoord') || response.error.message.includes('schema cache'))) {
+                console.warn("[CheckIn] Schema mismatch detected. Retrying without cod_cocoord...");
+                delete payload.cod_cocoord;
+                response = await window.supabaseClient.from('visitas').insert(payload).select().single();
+            }
+
+            if (response.error) {
+                console.error(response.error);
+                alert('Erro ao fazer check-in: ' + response.error.message);
                 btn.disabled = false; btn.innerHTML = oldHtml;
                 return;
             }
 
-            visitaAbertaId = data.id;
+            visitaAbertaId = response.data.id;
             clienteEmVisitaId = clientCode;
 
             // REMOVED: Automatic coordinate update (moved to manual action)
