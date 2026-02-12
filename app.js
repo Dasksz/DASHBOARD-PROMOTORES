@@ -17742,14 +17742,21 @@ const supervisorGroups = new Map();
             }
 
             // 1. Insert Visit
-            const { data, error } = await window.supabaseClient.from('visitas').insert({
+            const payload = {
                 id_promotor: user.id,
                 id_cliente: clientCode, // Text
                 client_code: clientCode, // Text
                 latitude,
                 longitude,
                 status: 'pendente'
-            }).select().single();
+            };
+
+            // Include Co-Coordinator Code if available (From Init)
+            if (window.userCoCoordCode) {
+                payload.cod_cocoord = window.userCoCoordCode;
+            }
+
+            const { data, error } = await window.supabaseClient.from('visitas').insert(payload).select().single();
 
             if (error) {
                 console.error(error);
@@ -17885,22 +17892,26 @@ const supervisorGroups = new Map();
         btn.disabled = true;
         btn.innerHTML = 'Finalizando...';
 
-        const { error } = await window.supabaseClient
-            .from('visitas')
-            .update({ checkout_at: new Date().toISOString() })
-            .eq('id', visitaAbertaId);
+        try {
+            const { error } = await window.supabaseClient
+                .from('visitas')
+                .update({ checkout_at: new Date().toISOString() })
+                .eq('id', visitaAbertaId);
 
-        if (error) {
+            if (error) throw error;
+
+            visitaAbertaId = null;
+            clienteEmVisitaId = null;
+            document.getElementById('modal-acoes-visita').classList.add('hidden');
+            renderRoteiroView();
+            alert('Visita finalizada!');
+        } catch (error) {
+            console.error(error);
             alert('Erro ao fazer check-out: ' + error.message);
-            btn.disabled = false; btn.innerHTML = oldHtml;
-            return;
+            // Fix: Re-enable button on error
+            btn.disabled = false;
+            btn.innerHTML = oldHtml;
         }
-
-        visitaAbertaId = null;
-        clienteEmVisitaId = null;
-        document.getElementById('modal-acoes-visita').classList.add('hidden');
-        renderRoteiroView();
-        alert('Visita finalizada!');
     }
 
     async function abrirPesquisa() {

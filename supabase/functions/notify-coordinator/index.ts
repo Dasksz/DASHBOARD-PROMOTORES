@@ -81,54 +81,61 @@ serve(async (req) => {
       console.log('Coordinator email missing. Attempting robust lookup...');
       
       try {
-        // A. Get Promoter Code (Role)
-        const { data: promoterProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', record.id_promotor)
-          .single();
+        let coCoordCode = null;
 
-        if (profileError || !promoterProfile) {
-           console.error('Lookup Failed: Promoter profile not found.', profileError);
+        // A. Check if co-coordinator code was passed in the record (Prioritize this)
+        if (record.cod_cocoord) {
+            coCoordCode = record.cod_cocoord.trim();
+            console.log(`Co-Coordinator Code found in record: '${coCoordCode}'`);
         } else {
-           let promoterCode = (promoterProfile.role || '').trim();
-           console.log(`Promoter Code found: '${promoterCode}'`);
+            // B. If not, try to look up via Promoter Code (Role) -> Hierarchy
+            const { data: promoterProfile, error: profileError } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', record.id_promotor)
+              .single();
 
-           if (promoterCode) {
-               // B. Get Hierarchy (Co-Coordinator Code) using ILIKE
-               const { data: hierarchy, error: hierError } = await supabase
-                 .from('data_hierarchy')
-                 .select('cod_cocoord')
-                 .ilike('cod_promotor', promoterCode)
-                 .limit(1)
-                 .maybeSingle();
+            if (profileError || !promoterProfile) {
+               console.error('Lookup Failed: Promoter profile not found.', profileError);
+            } else {
+               let promoterCode = (promoterProfile.role || '').trim();
+               console.log(`Promoter Code found: '${promoterCode}'`);
 
-               if (hierError) console.error('Lookup Error (Hierarchy):', hierError);
+               if (promoterCode) {
+                   const { data: hierarchy, error: hierError } = await supabase
+                     .from('data_hierarchy')
+                     .select('cod_cocoord')
+                     .ilike('cod_promotor', promoterCode)
+                     .limit(1)
+                     .maybeSingle();
 
-               let coCoordCode = hierarchy?.cod_cocoord;
+                   if (hierError) console.error('Lookup Error (Hierarchy):', hierError);
 
-               if (coCoordCode) {
-                  coCoordCode = coCoordCode.trim();
-                  console.log(`Co-Coordinator Code found in Hierarchy: '${coCoordCode}'`);
-
-                  // C. Get Co-Coordinator Email using ILIKE on role
-                  const { data: coCoordProfile } = await supabase
-                    .from('profiles')
-                    .select('email')
-                    .ilike('role', coCoordCode)
-                    .limit(1)
-                    .maybeSingle();
-
-                  if (coCoordProfile?.email) {
-                     targetEmail = coCoordProfile.email;
-                     console.log(`Found Co-Coordinator Email: ${targetEmail}`);
-                  } else {
-                      console.log(`Co-Coordinator Code '${coCoordCode}' not found in profiles.`);
-                  }
-               } else {
-                   console.log(`No Co-Coordinator found for Promoter Code '${promoterCode}' in Hierarchy.`);
+                   if (hierarchy?.cod_cocoord) {
+                      coCoordCode = hierarchy.cod_cocoord.trim();
+                      console.log(`Co-Coordinator Code resolved from Hierarchy: '${coCoordCode}'`);
+                   } else {
+                       console.log(`No Co-Coordinator found for Promoter Code '${promoterCode}' in Hierarchy.`);
+                   }
                }
-           }
+            }
+        }
+
+        // C. Get Co-Coordinator Email using ILIKE on role
+        if (coCoordCode) {
+            const { data: coCoordProfile } = await supabase
+              .from('profiles')
+              .select('email')
+              .ilike('role', coCoordCode)
+              .limit(1)
+              .maybeSingle();
+
+            if (coCoordProfile?.email) {
+               targetEmail = coCoordProfile.email;
+               console.log(`Found Co-Coordinator Email: ${targetEmail}`);
+            } else {
+                console.log(`Co-Coordinator Code '${coCoordCode}' not found in profiles.`);
+            }
         }
 
         // D. Fallback 1: General Coordinator (ILIKE)
