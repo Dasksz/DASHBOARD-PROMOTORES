@@ -574,7 +574,7 @@
                     console.log(`[Init] Fetching assigned clients for promoter ${role}...`);
                     // Fetch ONLY clients assigned to this promoter
                     // 1. Get List of Client Codes from data_client_promoters
-                    const myPromoterData = await fetchAll('data_client_promoters', null, null, 'object', 'client_code', (q) => q.eq('promoter_code', role));
+                    const myPromoterData = await fetchAll('data_client_promoters', null, null, 'object', 'client_code', (q) => q.ilike('promoter_code', role));
 
                     if (myPromoterData && myPromoterData.length > 0) {
                         clientFilterCodes = myPromoterData.map(p => normalizeKey(p.client_code)).filter(c => c);
