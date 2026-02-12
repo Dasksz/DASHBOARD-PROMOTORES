@@ -119,12 +119,53 @@
                 console.warn('Erro ao buscar metadados:', e);
             }
 
-            // 2. Check Cache
+            // 2. Determine Role and Cache Strategy
             let cachedData = await getFromCache('dashboardData');
             let useCache = false;
+            let hierarchy = null;
+            let isPromoter = false;
 
-            if (cachedData && metadataRemote) {
-                // Check if remote last_update is same as cached
+            // Fetch Hierarchy First to determine if user is a promoter
+            const fetchHierarchy = async () => {
+                let hierarchyData = null;
+                // Try to get hierarchy from cache first if available
+                if (cachedData && cachedData.hierarchy && cachedData.hierarchy.length > 0) {
+                     hierarchyData = cachedData.hierarchy;
+                } else {
+                    const { data, error } = await supabaseClient.from('data_hierarchy').select('*');
+                    if (!error) hierarchyData = data;
+                }
+                return hierarchyData;
+            }
+
+            try {
+                hierarchy = await fetchHierarchy();
+
+                // Check Role against Hierarchy
+                const role = window.userRole;
+                if (role && role !== 'adm' && hierarchy) {
+                    const normalizedRole = role.trim().toLowerCase();
+                    // Check if this role appears as a 'cod_promotor' in the hierarchy
+                    const hierarchyEntry = hierarchy.find(h => (h.cod_promotor || '').trim().toLowerCase() === normalizedRole);
+                    // Also check if they are NOT a coordinator or co-coordinator
+                    const isCoord = hierarchy.some(h => (h.cod_coord || '').trim().toLowerCase() === normalizedRole);
+                    const isCocoord = hierarchy.some(h => (h.cod_cocoord || '').trim().toLowerCase() === normalizedRole);
+
+                    if (hierarchyEntry && !isCoord && !isCocoord) {
+                        isPromoter = true;
+                        console.log(`[Init] User detected as Promoter: ${role}. Enabling targeted data fetching.`);
+                    }
+                }
+            } catch (e) {
+                console.warn("Failed to fetch hierarchy for role check:", e);
+            }
+
+            if (isPromoter) {
+                // If Promoter, force refresh to ensure fresh client data
+                console.log("[Init] Promoter role detected. Bypassing global cache.");
+                useCache = false;
+            } else if (cachedData && metadataRemote) {
+                // Check if remote last_update is same as cached (Standard Logic)
                 const remoteDate = new Date(metadataRemote.last_update).getTime();
                 const cachedDate = new Date(cachedData.metadata ? cachedData.metadata.find(m=>m.key==='last_update')?.value : 0).getTime();
 
@@ -312,7 +353,7 @@
                 return columnar;
             };
 
-            const fetchAll = async (table, columns = null, type = null, format = 'object', pkCol = 'id') => {
+            const fetchAll = async (table, columns = null, type = null, format = 'object', pkCol = 'id', filterFunc = null) => {
                 // Config
                 // Keyset Pagination for reliability
                 // Adjusted to 20000 to match Supabase API default limit and ensure pagination loop triggers correctly
@@ -333,9 +374,14 @@
                     const processNextPage = async () => {
                         const fetchWithRetry = async (attempt = 1) => {
                             try {
-                                const query = supabaseClient.from(table).select(columns || '*').order(pkCol, { ascending: true }).limit(pageSize);
+                                let query = supabaseClient.from(table).select(columns || '*').order(pkCol, { ascending: true }).limit(pageSize);
                                 if (lastId !== null) {
                                     query.gt(pkCol, lastId);
+                                }
+
+                                // Apply optional Supabase filter function (e.g., .in())
+                                if (filterFunc) {
+                                    query = filterFunc(query);
                                 }
 
                                 const promise = columns ? query.csv() : query;
@@ -461,13 +507,16 @@
                 });
             };
 
-            let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, hierarchy, clientPromoters;
-
+            let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientPromoters;
             let clientCoordinates;
 
+            const colsDetailed = 'id,pedido,codcli,nome,superv,codsupervisor,produto,descricao,fornecedor,observacaofor,codfor,codusur,qtvenda,vlvenda,vlbonific,totpesoliq,dtped,dtsaida,posicao,estoqueunit,tipovenda,filial,qtvenda_embalagem_master';
+            const colsClients = 'id,codigo_cliente,rca1,rca2,rcas,cidade,nomecliente,bairro,razaosocial,fantasia,cnpj_cpf,endereco,numero,cep,telefone,email,ramo,ultimacompra,datacadastro,bloqueio,inscricaoestadual';
+            const colsStock = 'id,product_code,filial,stock_qty';
+            const colsOrders = 'id,pedido,codcli,cliente_nome,cidade,nome,superv,fornecedores_str,dtped,dtsaida,posicao,vlvenda,totpesoliq,filial,tipovenda,fornecedores_list,codfors_list';
+
             if (useCache) {
-                // Se usamos cache, os dados já foram carregados do IndexedDB na variável cachedData
-                // Precisamos extraí-los para as variáveis que o resto do script espera
+                // LOAD FROM CACHE
                 detailed = cachedData.detailed;
                 history = cachedData.history;
                 clients = cachedData.clients;
@@ -477,12 +526,10 @@
                 innovations = cachedData.innovations;
                 metadata = metadataRemoteRaw || cachedData.metadata;
                 orders = cachedData.orders;
-                hierarchy = cachedData.hierarchy;
-                // Try to load promoters from cache if exists (backward compat)
+                hierarchy = cachedData.hierarchy; // Already loaded or from cache
                 clientPromoters = cachedData.clientPromoters || [];
 
                 // Refresh Coordinates specifically (Background Update for Cache)
-                // This ensures that even if main data is cached, we get the latest geocoding results
                 try {
                     const freshCoords = await fetchAll('data_client_coordinates', null, null, 'object', 'client_code');
                     if (freshCoords && freshCoords.length > 0) {
@@ -518,25 +565,56 @@
                 }
 
             } else {
-                const colsDetailed = 'id,pedido,codcli,nome,superv,codsupervisor,produto,descricao,fornecedor,observacaofor,codfor,codusur,qtvenda,vlvenda,vlbonific,totpesoliq,dtped,dtsaida,posicao,estoqueunit,tipovenda,filial,qtvenda_embalagem_master';
-                // Restore 'promotor' as fallback if not in separate table
-                const colsClients = 'id,codigo_cliente,rca1,rca2,rcas,cidade,nomecliente,bairro,razaosocial,fantasia,cnpj_cpf,endereco,numero,cep,telefone,email,ramo,ultimacompra,datacadastro,bloqueio,inscricaoestadual';
-                const colsStock = 'id,product_code,filial,stock_qty';
-                const colsOrders = 'id,pedido,codcli,cliente_nome,cidade,nome,superv,fornecedores_str,dtped,dtsaida,posicao,vlvenda,totpesoliq,filial,tipovenda,fornecedores_list,codfors_list';
+                 // FETCH FRESH (Promoter Optimized or Full Load)
+
+                // Promoter Filtering Setup
+                let clientFilterCodes = null;
+                if (isPromoter) {
+                    const role = window.userRole.trim();
+                    console.log(`[Init] Fetching assigned clients for promoter ${role}...`);
+                    // Fetch ONLY clients assigned to this promoter
+                    // 1. Get List of Client Codes from data_client_promoters
+                    const myPromoterData = await fetchAll('data_client_promoters', null, null, 'object', 'client_code', (q) => q.eq('promoter_code', role));
+
+                    if (myPromoterData && myPromoterData.length > 0) {
+                        clientFilterCodes = myPromoterData.map(p => normalizeKey(p.client_code)).filter(c => c);
+                        console.log(`[Init] Found ${clientFilterCodes.length} assigned clients.`);
+                    } else {
+                        console.warn(`[Init] No clients found for ${role}. Fetching empty set.`);
+                        clientFilterCodes = [];
+                    }
+                }
+
+                // Filter Functions
+                const applyClientFilter = (q) => {
+                    if (isPromoter && clientFilterCodes !== null) {
+                        if (clientFilterCodes.length === 0) return q.eq('id', -1);
+                        return q.in('codcli', clientFilterCodes);
+                    }
+                    return q;
+                };
+
+                const applyClientTableFilter = (q) => {
+                     if (isPromoter && clientFilterCodes !== null) {
+                        if (clientFilterCodes.length === 0) return q.eq('id', -1);
+                        return q.in('codigo_cliente', clientFilterCodes);
+                     }
+                     return q;
+                };
 
                 // Always fetch promoters to ensure feature works even for first-time load
                 const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched] = await Promise.all([
-                    fetchAll('data_detailed', colsDetailed, 'sales', 'columnar', 'id'),
-                    fetchAll('data_history', colsDetailed, 'history', 'columnar', 'id'),
-                    fetchAll('data_clients', colsClients, 'clients', 'columnar', 'id'),
+                    fetchAll('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter),
+                    fetchAll('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter),
+                    fetchAll('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter),
                     fetchAll('data_product_details', null, null, 'object', 'code'),
                     fetchAll('data_active_products', null, null, 'object', 'code'),
                     fetchAll('data_stock', colsStock, 'stock', 'columnar', 'id'),
                     fetchAll('data_innovations', null, null, 'object', 'id'),
                     fetchAll('data_metadata', null, null, 'object', 'key'),
-                    fetchAll('data_orders', colsOrders, 'orders', 'object', 'id'),
+                    fetchAll('data_orders', colsOrders, 'orders', 'object', 'id', applyClientFilter),
                     fetchAll('data_client_coordinates', null, null, 'object', 'client_code'),
-                    fetchAll('data_hierarchy', null, null, 'object', 'id'),
+                    (hierarchy ? Promise.resolve(hierarchy) : fetchAll('data_hierarchy', null, null, 'object', 'id')),
                     fetchAll('data_client_promoters', null, null, 'object', 'client_code')
                 ]);
 
