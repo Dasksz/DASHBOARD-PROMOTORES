@@ -52,8 +52,34 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 4. Resolve Coordinator Email (Robust Logic)
+    // Metadata for Email Content
+    let promoterName = record.id_promotor; // Fallback
+    let clientName = record.client_code || record.id_cliente; // Fallback
+
+    // 4. Resolve Coordinator Email (Robust Logic) & Metadata
     let targetEmail = record.coordenador_email;
+
+    // Fetch Promoter Name if possible
+    try {
+        const { data: pProfile } = await supabase.from('profiles').select('email').eq('id', record.id_promotor).single();
+        // Since profiles don't usually have 'name' column based on previous SQL analysis (only id, email, status, role),
+        // we might not get a name unless we join with hierarchy or use email alias.
+        // Let's check hierarchy map for name.
+        if (pProfile) {
+             const { data: hInfo } = await supabase.from('data_hierarchy').select('nome_promotor').ilike('cod_promotor', pProfile.role || '').maybeSingle();
+             if (hInfo?.nome_promotor) promoterName = hInfo.nome_promotor;
+             else if (pProfile.email) promoterName = pProfile.email.split('@')[0]; // Simple fallback
+        }
+    } catch(e) { console.error('Meta lookup failed', e); }
+
+    // Fetch Client Name if possible
+    try {
+        if (record.client_code) {
+            const { data: cInfo } = await supabase.from('data_clients').select('fantasia, razaosocial').eq('codigo_cliente', record.client_code).maybeSingle();
+            if (cInfo) clientName = cInfo.fantasia || cInfo.razaosocial || clientName;
+        }
+    } catch(e) { console.error('Client meta lookup failed', e); }
+
 
     if (!targetEmail) {
       console.log('Coordinator email missing. Attempting robust lookup...');
@@ -73,13 +99,12 @@ serve(async (req) => {
            console.log(`Promoter Code found: ${promoterCode}`);
 
            // B. Get Hierarchy (Co-Coordinator Code)
-           // Use ilike or upper/lower to match robustly
            const { data: hierarchy, error: hierError } = await supabase
              .from('data_hierarchy')
              .select('cod_cocoord')
              .ilike('cod_promotor', promoterCode)
              .limit(1)
-             .maybeSingle(); // maybeSingle allows null without error
+             .maybeSingle();
 
            if (hierError) console.error('Lookup Error (Hierarchy):', hierError);
 
@@ -143,7 +168,6 @@ serve(async (req) => {
 
     if (!targetEmail) {
       console.error('Critical Error: Could not resolve any recipient email.')
-      // Return 200 to avoid retries loops, but logged error
       return new Response(JSON.stringify({ error: 'No coordinator email found after lookup' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -167,35 +191,113 @@ serve(async (req) => {
 
     const RESEND_API_KEY = keyData.value
 
-    // 6. Construct Email
+    // 6. Construct Email (Styled)
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? 'https://dldsocponbjthqxhmttj.supabase.co';
     const approveUrl = `${supabaseUrl}/functions/v1/approve-visit?id=${record.id}`
     const rejectUrl = `${supabaseUrl}/functions/v1/reject-visit?id=${record.id}`
 
+    // Formatting Dates
+    const visitDate = new Date(record.data_visita).toLocaleDateString('pt-BR');
+    const checkInTime = new Date(record.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+    const checkOutTime = record.checkout_at ? new Date(record.checkout_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--';
+
+    // Parsing Survey Answers Table
+    let answersRows = '';
+    const answers = record.respostas;
+    if (answers && typeof answers === 'object') {
+        for (const [key, value] of Object.entries(answers)) {
+            // Clean keys if needed (e.g. remove snake_case) or use label map
+            const questionLabel = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            // Determine if value needs special formatting (e.g. image URL)
+            let displayValue = String(value);
+            if (displayValue.startsWith('http') && (displayValue.includes('supabase') || displayValue.includes('.png') || displayValue.includes('.jpg'))) {
+                displayValue = `<a href="${displayValue}" style="color: #2563eb; text-decoration: underline;">Ver Foto</a>`;
+            }
+
+            answersRows += `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 12px 16px; color: #475569;">${questionLabel}</td>
+                <td style="padding: 12px 16px; color: #1e293b; font-weight: 500;">${displayValue}</td>
+            </tr>`;
+        }
+    }
+
     const htmlContent = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
-        <h2 style="color: #333;">Relatório de Visita Concluído</h2>
-        <p><strong>Promotor ID:</strong> ${record.id_promotor}</p>
-        <p><strong>Cliente:</strong> ${record.client_code || record.id_cliente}</p>
-        <p><strong>Data:</strong> ${new Date(record.data_visita).toLocaleString('pt-BR')}</p>
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
         
-        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">Respostas:</h3>
-          <pre style="white-space: pre-wrap;">${JSON.stringify(record.respostas, null, 2)}</pre>
-          <p><strong>Observações:</strong> ${record.observacao || 'Nenhuma'}</p>
+        <!-- Header -->
+        <h2 style="color: #0f172a; margin-top: 0; font-size: 20px; font-weight: 700;">Nova Visita para Validação: <span style="color: #2563eb;">${clientName}</span></h2>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 24px;">
+            <strong>App Promotores</strong> &lt;noreply@app.com&gt; para <a href="#" style="color: #64748b; text-decoration: none;">${targetEmail}</a>
+        </p>
+
+        <!-- Title -->
+        <h3 style="color: #0f172a; font-size: 18px; font-weight: 700; margin-bottom: 12px;">Relatório de Visita</h3>
+        <p style="color: #475569; font-size: 14px; margin-bottom: 20px;">Uma nova visita foi finalizada e precisa da sua validação.</p>
+
+        <!-- Summary Card -->
+        <div style="background-color: #f8fafc; border-left: 4px solid #2563eb; border-radius: 4px; padding: 20px; margin-bottom: 24px;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding-bottom: 8px; width: 100px; color: #64748b; font-size: 14px; font-weight: 700;">Promotor:</td>
+                    <td style="padding-bottom: 8px; color: #334155; font-size: 14px;">${promoterName}</td>
+                </tr>
+                <tr>
+                    <td style="padding-bottom: 8px; color: #64748b; font-size: 14px; font-weight: 700;">Cliente:</td>
+                    <td style="padding-bottom: 8px; color: #334155; font-size: 14px;">${clientName}</td>
+                </tr>
+                <tr>
+                    <td style="padding-bottom: 8px; color: #64748b; font-size: 14px; font-weight: 700;">Data:</td>
+                    <td style="padding-bottom: 8px; color: #334155; font-size: 14px;">${visitDate}</td>
+                </tr>
+                <tr>
+                    <td style="padding-bottom: 8px; color: #64748b; font-size: 14px; font-weight: 700;">Check-in:</td>
+                    <td style="padding-bottom: 8px; color: #334155; font-size: 14px;">${checkInTime}</td>
+                </tr>
+                <tr>
+                    <td style="color: #64748b; font-size: 14px; font-weight: 700;">Check-out:</td>
+                    <td style="color: #334155; font-size: 14px;">${checkOutTime}</td>
+                </tr>
+            </table>
         </div>
-        
-        <div style="margin-top: 30px; text-align: center;">
-          <a href="${approveUrl}" 
-             style="background-color: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-right: 10px;">
-             ✅ APROVAR VISITA
-          </a>
-          <a href="${rejectUrl}" 
-             style="background-color: #dc3545; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-             ❌ REPROVAR
-          </a>
+
+        <!-- Survey Table -->
+        <h4 style="color: #0f172a; font-size: 16px; font-weight: 700; margin-bottom: 12px;">Respostas da Pesquisa:</h4>
+        <div style="border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; margin-bottom: 30px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <thead style="background-color: #f1f5f9;">
+                    <tr>
+                        <th style="text-align: left; padding: 12px 16px; color: #0f172a; font-weight: 700; border-bottom: 1px solid #e2e8f0;">Pergunta</th>
+                        <th style="text-align: left; padding: 12px 16px; color: #0f172a; font-weight: 700; border-bottom: 1px solid #e2e8f0;">Resposta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${answersRows}
+                </tbody>
+            </table>
         </div>
-        <p style="font-size: 12px; color: #999; margin-top: 20px; text-align: center;">Este é um e-mail automático do Dashboard de Promotores.</p>
+
+        <!-- Observações Extra -->
+        ${record.observacao ? `
+        <div style="margin-bottom: 30px; background-color: #fffbeb; padding: 15px; border-radius: 6px; border: 1px solid #fcd34d;">
+            <strong style="color: #92400e; display: block; margin-bottom: 5px;">Observações:</strong>
+            <span style="color: #b45309;">${record.observacao}</span>
+        </div>
+        ` : ''}
+
+        <!-- Actions -->
+        <div style="text-align: center; margin-bottom: 24px;">
+            <p style="color: #475569; font-size: 14px; margin-bottom: 16px;">Clique abaixo para validar esta visita no painel:</p>
+            <div>
+                <a href="${approveUrl}" style="display: inline-block; background-color: #22c55e; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px; margin-right: 12px;">Aprovar Visita</a>
+                <a href="${rejectUrl}" style="display: inline-block; background-color: #dc2626; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px;">Rejeitar / Comentar</a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+            Este é um e-mail automático do sistema de Dashboard Promotores.
+        </p>
       </div>
     `
 
@@ -210,7 +312,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
         to: targetEmail,
-        subject: `Aprovação Necessária: Visita #${record.id}`,
+        subject: `Nova Visita: ${clientName}`,
         html: htmlContent,
       }),
     })
