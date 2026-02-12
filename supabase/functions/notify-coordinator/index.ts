@@ -17,10 +17,16 @@ serve(async (req) => {
 
   try {
     const payload = await req.json()
+    console.log('Webhook Payload Received:', JSON.stringify(payload)); // Full Raw Payload
+
     const record = payload.record // The new state of the row
     const old_record = payload.old_record // The previous state
 
-    console.log('Webhook received for Visit ID:', record.id)
+    console.log('Processing Visit ID:', record.id)
+    console.log('Status:', record.status)
+    console.log('Checkout At:', record.checkout_at)
+    console.log('Old Checkout At:', old_record ? old_record.checkout_at : 'N/A')
+    console.log('Answers:', JSON.stringify(record.respostas))
 
     // 1. Validation: Only process if status is 'pendente'
     if (record.status !== 'pendente') {
@@ -31,7 +37,6 @@ serve(async (req) => {
     }
 
     // 2. Validation: Ensure Check-out is complete (Contains checkout time)
-    // Modified: removed requirement for 'respostas' to allow checkout-only visits
     const hasCheckout = !!record.checkout_at;
 
     if (!hasCheckout) {
@@ -42,9 +47,8 @@ serve(async (req) => {
     }
 
     // 3. Validation: Prevent Duplicate Emails (Only send on transition to complete)
-    // If old_record existed and WAS complete, skip.
+    // If old_record existed and WAS checked out, skip.
     if (old_record) {
-        // Was it already checked out?
         const hadCheckout = !!old_record.checkout_at;
 
         if (hadCheckout) {
@@ -52,7 +56,11 @@ serve(async (req) => {
              return new Response(JSON.stringify({ message: 'Skipped: Duplicate event' }), {
                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
              })
+        } else {
+             console.log('New Checkout detected (Old was null/empty). Proceeding...');
         }
+    } else {
+        console.log('No old_record provided (Insert or fresh state). Proceeding...');
     }
 
     // Initialize Supabase Client with Service Role Key to bypass RLS
@@ -388,6 +396,7 @@ serve(async (req) => {
         })
     }
 
+    console.log('Email sent successfully:', data.id);
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
