@@ -17081,8 +17081,29 @@ const supervisorGroups = new Map();
 
             // 3. Update allClientsData (In-memory Columnar)
             // Access by index
-            if (clientMapForKPIs && clientMapForKPIs instanceof IndexMap) {
-                const idx = clientMapForKPIs.getIndex(clientCodeNorm);
+            if (allClientsData instanceof ColumnarDataset) {
+                let idx = undefined;
+                if (clientMapForKPIs && clientMapForKPIs instanceof IndexMap) {
+                    idx = clientMapForKPIs.getIndex(clientCodeNorm);
+                }
+
+                // Fallback: Linear search (new clients might not be in map)
+                if (idx === undefined) {
+                    // Search backwards as new clients are likely at the end
+                    // Try to find the correct column for code
+                    let codeCol = allClientsData._data['Código'] || allClientsData._data['CODIGO_CLIENTE'] || allClientsData._data['codigo_cliente'];
+
+                    if (codeCol) {
+                        for(let i = allClientsData.length - 1; i >= 0; i--) {
+                            // Ensure strict string comparison with normalization
+                            if (normalizeKey(codeCol[i]) === clientCodeNorm) {
+                                idx = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 if (idx !== undefined) {
                     // Update via Proxy setter to handle overrides in ColumnarDataset
                     const clientProxy = allClientsData.get(idx);
