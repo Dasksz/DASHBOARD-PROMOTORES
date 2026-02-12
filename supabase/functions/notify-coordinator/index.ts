@@ -18,7 +18,7 @@ serve(async (req) => {
   try {
     const payload = await req.json()
     console.log('Webhook Payload Received:', JSON.stringify(payload)); // Full Raw Payload
-    
+
     const record = payload.record // The new state of the row
     const old_record = payload.old_record // The previous state
 

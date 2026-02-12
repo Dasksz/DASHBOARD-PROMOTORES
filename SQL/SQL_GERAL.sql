@@ -521,6 +521,11 @@ INSERT INTO public.data_metadata (key, value)
 VALUES ('senha_modal', '123456')
 ON CONFLICT (key) DO NOTHING;
 
+-- Initialize RESEND_FROM_EMAIL (Placeholder - Must be updated by Admin with verified domain)
+-- INSERT INTO public.data_metadata (key, value)
+-- VALUES ('RESEND_FROM_EMAIL', 'noreply@yourdomain.com')
+-- ON CONFLICT (key) DO NOTHING;
+
 
 -- ==============================================================================
 -- 7. VISITAS (New Module)
