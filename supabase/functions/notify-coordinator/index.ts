@@ -228,7 +228,7 @@ serve(async (req) => {
     const { data: keyData, error: keyError } = await supabase
       .from('data_metadata')
       .select('key, value')
-      .in('key', ['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'RESEND_TEST_EMAIL'])
+      .in('key', ['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'RESEND_TEST_EMAIL', 'BREVO_API_KEY', 'BREVO_SENDER_EMAIL'])
 
     if (keyError || !keyData) {
       console.error('Error fetching API Key:', keyError)
@@ -241,19 +241,28 @@ serve(async (req) => {
     const apiKeyObj = keyData.find(k => k.key === 'RESEND_API_KEY');
     const fromEmailObj = keyData.find(k => k.key === 'RESEND_FROM_EMAIL');
     const testEmailObj = keyData.find(k => k.key === 'RESEND_TEST_EMAIL');
+    const brevoKeyObj = keyData.find(k => k.key === 'BREVO_API_KEY');
+    const brevoSenderObj = keyData.find(k => k.key === 'BREVO_SENDER_EMAIL');
 
-    if (!apiKeyObj) {
-         console.error('Error: RESEND_API_KEY not found in metadata');
-         return new Response(JSON.stringify({ error: 'RESEND_API_KEY missing' }), {
+    // Determine Provider: Brevo (Priority) or Resend (Fallback)
+    const USE_BREVO = !!brevoKeyObj;
+
+    if (!USE_BREVO && !apiKeyObj) {
+         console.error('Error: Neither BREVO_API_KEY nor RESEND_API_KEY found in metadata');
+         return new Response(JSON.stringify({ error: 'No email provider configured' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
          })
     }
 
-    const RESEND_API_KEY = apiKeyObj.value;
-    const RESEND_FROM_EMAIL = fromEmailObj ? fromEmailObj.value : 'onboarding@resend.dev';
+    let SENDER_EMAIL = 'onboarding@resend.dev'; // Default for Resend
+    if (USE_BREVO) {
+        SENDER_EMAIL = brevoSenderObj ? brevoSenderObj.value : 'nao-responda@app.com';
+    } else {
+        SENDER_EMAIL = fromEmailObj ? fromEmailObj.value : 'onboarding@resend.dev';
+    }
 
-    // Test Mode Logic: Override recipient if RESEND_TEST_EMAIL is set
+    // Test Mode Logic: Override recipient if RESEND_TEST_EMAIL is set (applies to both providers for safety)
     let originalTargetEmail = null;
     if (testEmailObj && testEmailObj.value) {
         console.log(`TEST MODE ACTIVE: Redirecting email from ${targetEmail} to ${testEmailObj.value}`);
@@ -387,36 +396,72 @@ serve(async (req) => {
       </div>
     `
 
-    // 7. Send Email via Resend
-    console.log(`Sending email to: ${targetEmail} from: ${RESEND_FROM_EMAIL}`);
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: RESEND_FROM_EMAIL,
-        to: targetEmail,
-        subject: `Nova Visita: ${clientName}`,
-        html: htmlContent,
-      }),
-    })
+    // 7. Send Email via Provider
+    if (USE_BREVO) {
+        // --- BREVO (Sendinblue) ---
+        console.log(`Sending email via Brevo to: ${targetEmail} from: ${SENDER_EMAIL}`);
+        const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'api-key': brevoKeyObj.value,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            sender: { email: SENDER_EMAIL, name: 'App Promotores' },
+            to: [{ email: targetEmail }],
+            subject: `Nova Visita: ${clientName}`,
+            htmlContent: htmlContent,
+          }),
+        })
 
-    const data = await res.json()
-    
-    if (!res.ok) {
-        console.error('Resend API Error:', data);
-        return new Response(JSON.stringify({ error: 'Failed to send email', details: data }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        const data = await res.json();
+
+        if (!res.ok) {
+            console.error('Brevo API Error:', data);
+            return new Response(JSON.stringify({ error: 'Failed to send email via Brevo', details: data }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            })
+        }
+
+        console.log('Email sent successfully via Brevo:', data.messageId);
+        return new Response(JSON.stringify({ success: true, provider: 'brevo', id: data.messageId }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+
+    } else {
+        // --- RESEND ---
+        console.log(`Sending email via Resend to: ${targetEmail} from: ${SENDER_EMAIL}`);
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKeyObj.value}`,
+          },
+          body: JSON.stringify({
+            from: SENDER_EMAIL,
+            to: targetEmail,
+            subject: `Nova Visita: ${clientName}`,
+            html: htmlContent,
+          }),
+        })
+
+        const data = await res.json()
+
+        if (!res.ok) {
+            console.error('Resend API Error:', data);
+            return new Response(JSON.stringify({ error: 'Failed to send email via Resend', details: data }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            })
+        }
+
+        console.log('Email sent successfully via Resend:', data.id);
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
     }
-
-    console.log('Email sent successfully:', data.id);
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
 
   } catch (error) {
     console.error('Function Error:', error)
