@@ -30,20 +30,29 @@ serve(async (req) => {
       })
     }
 
-    // 2. Validation: Only process if survey answers exist
-    if (!record.respostas || Object.keys(record.respostas).length === 0) {
-      console.log('Skipping: No survey answers (Check-in only)')
-      return new Response(JSON.stringify({ message: 'Skipped: No answers' }), {
+    // 2. Validation: Ensure Check-out is complete (Contains answers AND checkout time)
+    const hasAnswers = record.respostas && Object.keys(record.respostas).length > 0;
+    const hasCheckout = !!record.checkout_at;
+
+    if (!hasAnswers || !hasCheckout) {
+      console.log('Skipping: Visit incomplete (Check-in only or missing answers/checkout)')
+      return new Response(JSON.stringify({ message: 'Skipped: Incomplete visit' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // 3. Validation: Prevent Duplicate Emails
-    if (old_record && old_record.respostas && Object.keys(old_record.respostas).length > 0) {
-       console.log('Skipping: Email already sent (answers existed previously)')
-       return new Response(JSON.stringify({ message: 'Skipped: Duplicate event' }), {
-         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-       })
+    // 3. Validation: Prevent Duplicate Emails (Only send on transition to complete)
+    // If old_record existed and WAS complete, skip.
+    if (old_record) {
+        const hadAnswers = old_record.respostas && Object.keys(old_record.respostas).length > 0;
+        const hadCheckout = !!old_record.checkout_at;
+
+        if (hadAnswers && hadCheckout) {
+             console.log('Skipping: Email already sent (visit was already complete)')
+             return new Response(JSON.stringify({ message: 'Skipped: Duplicate event' }), {
+               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+             })
+        }
     }
 
     // Initialize Supabase Client with Service Role Key to bypass RLS
