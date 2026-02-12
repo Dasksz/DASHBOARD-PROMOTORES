@@ -1975,11 +1975,11 @@
     <!-- CLIENTES VIEW -->
     <div id="clientes-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
         <header class="mb-4 border-b border-slate-800 pb-4 flex justify-between items-center sticky top-16 bg-[#020617] z-10 pt-4">
-            <div class="flex items-center gap-4">
-                <h1 class="text-3xl font-bold text-white">Clientes</h1>
+            <div class="flex items-center gap-2 sm:gap-4">
+                <h1 class="text-2xl sm:text-3xl font-bold text-white">Clientes</h1>
             </div>
             <div class="flex items-center gap-2">
-                <button id="toggle-roteiro-btn" class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold py-2 px-4 rounded-lg border border-slate-700 transition-colors flex items-center gap-2">
+                <button id="toggle-roteiro-btn" class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold py-2 px-3 sm:px-4 rounded-lg border border-slate-700 transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     Roteiro
                 </button>
@@ -2111,25 +2111,16 @@
                     <!-- 1. Tipo de Rack -->
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Qual tipo de Rack da Elma Chips?</label>
-                        <select name="tipo_rack" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500">
-                            <option value="Padrao">Mini Lego</option>
-                            <option value="Display">Lego 4C</option>
-                            <option value="ClipStrip">Lego 4C Smart</option>
-                            <option value="Nenhum">4C Arramado </option>
-                            <option value="Padrao">5C</option>
-                            <option value="Display">6C</option>
-                            <option value="ClipStrip">7C - P</option>
-                            <option value="Nenhum">7C - M</option>
-                            <option value="Nenhum">7C - G</option>
-                            <option value="Nenhum">8C</option>
-                            <option value="Nenhum">Ilha Quadrada</option>
-                            <option value="Nenhum">Giratório</option>
-                            <option value="Nenhum">Carrossel</option>
-                            <option value="Nenhum">Rack de Amendoim</option>
-                            <option value="Nenhum">Botadeiro</option>
-                            <option value="Nenhum">Rack Toddynho</option>
-                            <option value="Nenhum">Rack FOODS</option>
-                        </select>
+                        <div class="relative" id="rack-multiselect-container">
+                            <input type="hidden" name="tipo_rack" id="tipo_rack_hidden">
+                            <button type="button" id="rack-multiselect-btn" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-white text-left flex justify-between items-center focus:ring-2 focus:ring-blue-500 hover:bg-slate-700 transition-colors">
+                                <span id="rack-multiselect-text" class="truncate text-slate-400">Selecione...</span>
+                                <svg class="w-4 h-4 text-slate-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div id="rack-multiselect-dropdown" class="hidden absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
+                                <!-- Options injected by JS -->
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Helper to create Yes/No structure -->
@@ -2244,7 +2235,34 @@
 
             <div class="space-y-2">
                 <label class="block text-sm font-bold text-slate-300">Foto da Gôndola (Opcional):</label>
-                <input type="file" name="foto_gondola" accept="image/*" capture="environment" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 transition-colors">
+                <input type="file" name="foto_gondola" id="visita-foto-input" accept="image/*" class="hidden">
+
+                <div id="visita-foto-trigger" class="w-full bg-slate-800 border-2 border-dashed border-slate-600 rounded-lg p-6 text-center hover:bg-slate-700/50 hover:border-slate-500 transition-all cursor-pointer group">
+                    <div class="flex flex-col items-center justify-center gap-2">
+                        <div class="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                            <svg class="w-6 h-6 text-slate-300 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-white group-hover:text-blue-400 transition-colors">Toque para adicionar foto</p>
+                            <p class="text-xs text-slate-500">Câmera ou Galeria</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="visita-foto-preview" class="hidden w-full bg-slate-800 border border-slate-600 rounded-lg p-3 flex items-center justify-between">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center text-green-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-white truncate" id="visita-foto-filename">foto.jpg</p>
+                            <p class="text-xs text-green-400">Pronto para envio</p>
+                        </div>
+                    </div>
+                    <button type="button" id="visita-foto-remove" class="p-2 text-slate-400 hover:text-red-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
             </div>
 
             <div class="space-y-2">

@@ -15607,6 +15607,160 @@ const supervisorGroups = new Map();
                 return report;
             }
 
+    // --- RACK MULTI-SELECT COMPONENT ---
+    const RACK_OPTIONS = [
+        "Mini Lego", "Lego 4C", "Lego 4C Smart", "4C Arramado", "5C", "6C",
+        "7C - P", "7C - M", "7C - G", "8C", "Ilha Quadrada", "Giratório",
+        "Carrossel", "Rack de Amendoim", "Botadeiro", "Rack Toddynho", "Rack FOODS"
+    ];
+
+    let selectedRackOptions = new Set();
+
+    function initCustomFileInput() {
+        const input = document.getElementById('visita-foto-input');
+        const trigger = document.getElementById('visita-foto-trigger');
+        const preview = document.getElementById('visita-foto-preview');
+        const filenameEl = document.getElementById('visita-foto-filename');
+        const removeBtn = document.getElementById('visita-foto-remove');
+
+        if (!input || !trigger || !preview) return;
+
+        trigger.onclick = () => input.click();
+
+        input.onchange = () => {
+            if (input.files && input.files.length > 0) {
+                const file = input.files[0];
+                filenameEl.textContent = file.name;
+                trigger.classList.add('hidden');
+                preview.classList.remove('hidden');
+            }
+        };
+
+        removeBtn.onclick = () => {
+            input.value = '';
+            trigger.classList.remove('hidden');
+            preview.classList.add('hidden');
+        };
+    }
+
+    function resetCustomFileInput() {
+        const input = document.getElementById('visita-foto-input');
+        const trigger = document.getElementById('visita-foto-trigger');
+        const preview = document.getElementById('visita-foto-preview');
+
+        if (input) input.value = '';
+        if (trigger) trigger.classList.remove('hidden');
+        if (preview) preview.classList.add('hidden');
+    }
+
+    function initRackMultiSelect() {
+        const container = document.getElementById('rack-multiselect-container');
+        const btn = document.getElementById('rack-multiselect-btn');
+        const dropdown = document.getElementById('rack-multiselect-dropdown');
+        const input = document.getElementById('tipo_rack_hidden');
+
+        if (!container || !btn || !dropdown || !input) return;
+
+        // Populate Dropdown
+        dropdown.innerHTML = '';
+        RACK_OPTIONS.forEach(opt => {
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center p-3 hover:bg-slate-700 cursor-pointer transition-colors border-b border-slate-700/50 last:border-0';
+            div.dataset.value = opt;
+            div.innerHTML = `
+                <span class="text-sm text-white select-none">${opt}</span>
+                <svg class="w-4 h-4 text-white hidden check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+            `;
+
+            div.onclick = (e) => {
+                e.stopPropagation();
+                toggleRackOption(opt, div);
+            };
+            dropdown.appendChild(div);
+        });
+
+        // Toggle Dropdown
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            const svg = btn.querySelector('svg:last-child');
+            if (svg) svg.classList.toggle('rotate-180');
+        };
+
+        // Close on click outside
+        document.addEventListener('click', (e) => {
+            if (!container.contains(e.target)) {
+                dropdown.classList.add('hidden');
+                const svg = btn.querySelector('svg:last-child'); // The arrow
+                if (svg) svg.classList.remove('rotate-180');
+            }
+        });
+    }
+
+    function toggleRackOption(value, element) {
+        if (selectedRackOptions.has(value)) {
+            selectedRackOptions.delete(value);
+            element.classList.remove('bg-blue-600');
+            element.querySelector('.check-icon').classList.add('hidden');
+        } else {
+            selectedRackOptions.add(value);
+            element.classList.add('bg-blue-600');
+            element.querySelector('.check-icon').classList.remove('hidden');
+        }
+        updateRackInputState();
+    }
+
+    function updateRackInputState() {
+        const input = document.getElementById('tipo_rack_hidden');
+        const textLabel = document.getElementById('rack-multiselect-text');
+
+        const selected = Array.from(selectedRackOptions);
+        input.value = selected.join(', ');
+
+        if (selected.length === 0) {
+            textLabel.textContent = 'Selecione...';
+            textLabel.classList.add('text-slate-400');
+            textLabel.classList.remove('text-white');
+        } else if (selected.length === 1) {
+            textLabel.textContent = selected[0];
+            textLabel.classList.remove('text-slate-400');
+            textLabel.classList.add('text-white');
+        } else {
+            textLabel.textContent = `${selected.length} selecionados`;
+            textLabel.classList.remove('text-slate-400');
+            textLabel.classList.add('text-white');
+        }
+    }
+
+    function resetRackMultiSelect(initialValueString = '') {
+        selectedRackOptions.clear();
+
+        // Parse initial value
+        if (initialValueString) {
+            // Split by comma and trim
+            const parts = initialValueString.split(',').map(s => s.trim());
+            parts.forEach(p => {
+                if (RACK_OPTIONS.includes(p)) selectedRackOptions.add(p);
+            });
+        }
+
+        // Sync UI
+        const dropdown = document.getElementById('rack-multiselect-dropdown');
+        if (dropdown) {
+            Array.from(dropdown.children).forEach(div => {
+                const val = div.dataset.value;
+                if (selectedRackOptions.has(val)) {
+                    div.classList.add('bg-blue-600');
+                    div.querySelector('.check-icon').classList.remove('hidden');
+                } else {
+                    div.classList.remove('bg-blue-600');
+                    div.querySelector('.check-icon').classList.add('hidden');
+                }
+            });
+        }
+        updateRackInputState();
+    }
+
     // --- WALLET MANAGEMENT LOGIC ---
     let isWalletInitialized = false;
     let walletState = {
@@ -17938,6 +18092,8 @@ const supervisorGroups = new Map();
         // Logic: Fetch LAST visit answers for THIS client.
 
         form.reset();
+        resetRackMultiSelect();
+        resetCustomFileInput();
 
         // Fetch last answers
         if (clienteEmVisitaId) {
@@ -17952,10 +18108,14 @@ const supervisorGroups = new Map();
 
              if (data && data.respostas) {
                  Object.keys(data.respostas).forEach(key => {
-                     const field = form.elements[key];
-                     if (field) {
-                         if (field instanceof RadioNodeList) field.value = data.respostas[key];
-                         else field.value = data.respostas[key];
+                     if (key === 'tipo_rack') {
+                         resetRackMultiSelect(data.respostas[key]);
+                     } else {
+                         const field = form.elements[key];
+                         if (field) {
+                             if (field instanceof RadioNodeList) field.value = data.respostas[key];
+                             else field.value = data.respostas[key];
+                         }
                      }
                  });
              }
@@ -18047,6 +18207,8 @@ const supervisorGroups = new Map();
     // Auto-init User Menu on load if ready (for Navbar)
     if (document.readyState === "complete" || document.readyState === "interactive") {
         initWalletView();
+        initRackMultiSelect();
+        initCustomFileInput();
         verificarEstadoVisita();
     }
 
