@@ -534,7 +534,8 @@ CREATE TABLE IF NOT EXISTS public.visitas (
     status text DEFAULT 'pendente', -- pendente, aprovado, rejeitado
     respostas jsonb,
     observacao text,
-    coordenador_email text
+    coordenador_email text,
+    cod_cocoord text -- Codigo do Co-Coordenador (Para facilitar envio de email)
 );
 
 -- 7.2 Segurança (RLS)
@@ -556,33 +557,48 @@ DECLARE
   v_user_code text;
   v_cocoord_code text;
 BEGIN
-  -- 1. Descobrir o código do promotor atual (armazenado na coluna 'role' do profile)
-  SELECT role INTO v_user_code
-  FROM public.profiles
-  WHERE id = NEW.id_promotor;
-
-  -- 2. Buscar na hierarquia quem é o co-coordenador deste promotor
-  -- Usamos UPPER para evitar erros de case sensitivity
-  IF v_user_code IS NOT NULL THEN
-    SELECT cod_cocoord INTO v_cocoord_code
-    FROM public.data_hierarchy
-    WHERE UPPER(cod_promotor) = UPPER(v_user_code)
-    LIMIT 1;
+  -- 0. Se já foi informado um email (ex: pela Edge Function ou API), mantém.
+  IF NEW.coordenador_email IS NOT NULL THEN
+    RETURN NEW;
   END IF;
 
-  -- 3. Buscar o e-mail desse co-coordenador na tabela profiles
+  -- 1. Usar o código do Co-Coordenador se fornecido na inserção (Prioridade 1)
+  IF NEW.cod_cocoord IS NOT NULL THEN
+      v_cocoord_code := TRIM(NEW.cod_cocoord);
+  ELSE
+      -- 2. Descobrir o código do promotor atual (armazenado na coluna 'role' do profile)
+      SELECT role INTO v_user_code
+      FROM public.profiles
+      WHERE id = NEW.id_promotor;
+
+      -- 3. Buscar na hierarquia quem é o co-coordenador deste promotor
+      -- Usamos UPPER e TRIM para evitar erros de case sensitivity e espaços
+      IF v_user_code IS NOT NULL THEN
+        SELECT cod_cocoord INTO v_cocoord_code
+        FROM public.data_hierarchy
+        WHERE UPPER(TRIM(cod_promotor)) = UPPER(TRIM(v_user_code))
+        LIMIT 1;
+      END IF;
+      
+      -- Salvar na coluna para referência futura se descobrimos agora
+      IF v_cocoord_code IS NOT NULL THEN
+          NEW.cod_cocoord := v_cocoord_code;
+      END IF;
+  END IF;
+
+  -- 4. Buscar o e-mail desse co-coordenador na tabela profiles usando o código identificado
   IF v_cocoord_code IS NOT NULL THEN
-    NEW.coordenador_email := (SELECT email FROM public.profiles WHERE UPPER(role) = UPPER(v_cocoord_code) LIMIT 1);
+    NEW.coordenador_email := (SELECT email FROM public.profiles WHERE UPPER(TRIM(role)) = UPPER(TRIM(v_cocoord_code)) LIMIT 1);
   END IF;
 
   -- Fallback 1: Tenta buscar um usuario com role 'coord' (Coordenador Geral)
   IF NEW.coordenador_email IS NULL THEN
-     NEW.coordenador_email := (SELECT email FROM public.profiles WHERE role = 'coord' LIMIT 1);
+     NEW.coordenador_email := (SELECT email FROM public.profiles WHERE UPPER(TRIM(role)) = 'COORD' LIMIT 1);
   END IF;
 
-  -- Fallback 2: Tenta buscar um usuario com role 'adm' (Admin) se não achou coord
+  -- Fallback 2: Tenta buscar um usuario com role 'adm' ou 'admin' (Admin) se não achou coord
   IF NEW.coordenador_email IS NULL THEN
-     NEW.coordenador_email := (SELECT email FROM public.profiles WHERE role = 'adm' LIMIT 1);
+     NEW.coordenador_email := (SELECT email FROM public.profiles WHERE UPPER(TRIM(role)) IN ('ADM', 'ADMIN') LIMIT 1);
   END IF;
 
   RETURN NEW;
