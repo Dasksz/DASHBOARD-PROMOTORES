@@ -556,33 +556,38 @@ DECLARE
   v_user_code text;
   v_cocoord_code text;
 BEGIN
+  -- 0. Se já foi informado um email (ex: pela Edge Function ou API), mantém.
+  IF NEW.coordenador_email IS NOT NULL THEN
+    RETURN NEW;
+  END IF;
+
   -- 1. Descobrir o código do promotor atual (armazenado na coluna 'role' do profile)
   SELECT role INTO v_user_code
   FROM public.profiles
   WHERE id = NEW.id_promotor;
 
   -- 2. Buscar na hierarquia quem é o co-coordenador deste promotor
-  -- Usamos UPPER para evitar erros de case sensitivity
+  -- Usamos UPPER e TRIM para evitar erros de case sensitivity e espaços
   IF v_user_code IS NOT NULL THEN
     SELECT cod_cocoord INTO v_cocoord_code
     FROM public.data_hierarchy
-    WHERE UPPER(cod_promotor) = UPPER(v_user_code)
+    WHERE UPPER(TRIM(cod_promotor)) = UPPER(TRIM(v_user_code))
     LIMIT 1;
   END IF;
 
   -- 3. Buscar o e-mail desse co-coordenador na tabela profiles
   IF v_cocoord_code IS NOT NULL THEN
-    NEW.coordenador_email := (SELECT email FROM public.profiles WHERE UPPER(role) = UPPER(v_cocoord_code) LIMIT 1);
+    NEW.coordenador_email := (SELECT email FROM public.profiles WHERE UPPER(TRIM(role)) = UPPER(TRIM(v_cocoord_code)) LIMIT 1);
   END IF;
 
   -- Fallback 1: Tenta buscar um usuario com role 'coord' (Coordenador Geral)
   IF NEW.coordenador_email IS NULL THEN
-     NEW.coordenador_email := (SELECT email FROM public.profiles WHERE role = 'coord' LIMIT 1);
+     NEW.coordenador_email := (SELECT email FROM public.profiles WHERE UPPER(TRIM(role)) = 'COORD' LIMIT 1);
   END IF;
 
-  -- Fallback 2: Tenta buscar um usuario com role 'adm' (Admin) se não achou coord
+  -- Fallback 2: Tenta buscar um usuario com role 'adm' ou 'admin' (Admin) se não achou coord
   IF NEW.coordenador_email IS NULL THEN
-     NEW.coordenador_email := (SELECT email FROM public.profiles WHERE role = 'adm' LIMIT 1);
+     NEW.coordenador_email := (SELECT email FROM public.profiles WHERE UPPER(TRIM(role)) IN ('ADM', 'ADMIN') LIMIT 1);
   END IF;
 
   RETURN NEW;
