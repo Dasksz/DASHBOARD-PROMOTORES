@@ -17084,10 +17084,11 @@ const supervisorGroups = new Map();
             if (clientMapForKPIs && clientMapForKPIs instanceof IndexMap) {
                 const idx = clientMapForKPIs.getIndex(clientCodeNorm);
                 if (idx !== undefined) {
-                    if (allClientsData.columns && allClientsData.values) {
-                        // Ensure columns exist (init.js should have added them, but safe check)
-                        if (allClientsData.values['ITINERARY_FREQUENCY']) allClientsData.values['ITINERARY_FREQUENCY'][idx] = frequency;
-                        if (allClientsData.values['ITINERARY_NEXT_DATE']) allClientsData.values['ITINERARY_NEXT_DATE'][idx] = nextDate;
+                    // Update via Proxy setter to handle overrides in ColumnarDataset
+                    const clientProxy = allClientsData.get(idx);
+                    if (clientProxy) {
+                        clientProxy.ITINERARY_FREQUENCY = frequency;
+                        clientProxy.ITINERARY_NEXT_DATE = nextDate;
                     }
                 }
             } else if (Array.isArray(allClientsData)) {
