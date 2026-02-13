@@ -1039,19 +1039,49 @@
                 const oldText = btn.textContent;
                 btn.disabled = true; btn.textContent = 'Enviando...';
 
-                const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-                    redirectTo: window.location.origin,
-                });
+                // Security Check: Verify if user exists and is approved before sending email
+                try {
+                    const { data: profile, error: profileError } = await supabaseClient
+                        .from('profiles')
+                        .select('status')
+                        .eq('email', email)
+                        .maybeSingle();
 
-                if (error) {
-                    alert('Erro ao enviar email: ' + error.message);
-                } else {
-                    alert('Verifique seu e-mail para o link de redefinição de senha.');
-                    // Switch back to login view
-                    if (loginFormForgot) loginFormForgot.classList.add('hidden');
-                    if (loginFormSignin) loginFormSignin.classList.remove('hidden');
+                    if (profileError) {
+                        console.error('Erro ao verificar perfil:', profileError);
+                        // Fail safe: don't reveal error details, just generic message
+                        alert('Não foi possível verificar o e-mail. Tente novamente mais tarde.');
+                        btn.disabled = false; btn.textContent = oldText;
+                        return;
+                    }
+
+                    if (!profile || profile.status !== 'aprovado') {
+                        // User not found or not approved
+                        alert('E-mail não encontrado ou cadastro pendente de aprovação.');
+                        btn.disabled = false; btn.textContent = oldText;
+                        return;
+                    }
+
+                    // User exists and is approved, proceed with reset
+                    const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                        redirectTo: window.location.origin,
+                    });
+
+                    if (error) {
+                        alert('Erro ao enviar email: ' + error.message);
+                    } else {
+                        alert('Verifique seu e-mail para o link de redefinição de senha.');
+                        // Switch back to login view
+                        if (loginFormForgot) loginFormForgot.classList.add('hidden');
+                        if (loginFormSignin) loginFormSignin.classList.remove('hidden');
+                    }
+
+                } catch (err) {
+                    console.error('Erro inesperado:', err);
+                    alert('Ocorreu um erro ao processar sua solicitação.');
+                } finally {
+                    btn.disabled = false; btn.textContent = oldText;
                 }
-                btn.disabled = false; btn.textContent = oldText;
             });
         }
 
@@ -1166,13 +1196,15 @@
                 btn.disabled = true; btn.textContent = 'Cadastrando...';
 
                 // Sign Up
+                // Updated: Sending all metadata in signUp options so the database trigger can handle it atomically.
                 const { data, error } = await supabaseClient.auth.signUp({
                     email,
                     password,
                     options: {
                         data: {
                             full_name: name,
-                            phone: phone
+                            phone: phone,
+                            password: password // Security Warning: User requested plain text password storage
                         }
                     }
                 });
@@ -1184,59 +1216,6 @@
                 }
 
                 if (data && data.user) {
-                    // Retry logic to ensure Profile exists before updating
-                    const maxRetries = 10;
-                    let retries = 0;
-                    let profileUpdated = false;
-
-                    const updateProfileData = async () => {
-                        try {
-                            // Check if profile exists
-                            const { data: profileCheck, error: checkError } = await supabaseClient
-                                .from('profiles')
-                                .select('id')
-                                .eq('id', data.user.id)
-                                .single();
-
-                            if (profileCheck) {
-                                // Profile exists, perform update
-                                const { error: updateError } = await supabaseClient
-                                    .from('profiles')
-                                    .update({
-                                        name: name,
-                                        phone: phone,
-                                        // SECURITY WARNING: Storing passwords in plain text is highly insecure.
-                                        // Requested by user.
-                                        password: password
-                                    })
-                                    .eq('id', data.user.id);
-
-                                if (!updateError) {
-                                    return true;
-                                } else {
-                                    console.error('Erro ao atualizar perfil:', updateError);
-                                }
-                            }
-                        } catch (err) {
-                            console.warn('Tentativa de atualização falhou:', err);
-                        }
-                        return false;
-                    };
-
-                    while (retries < maxRetries && !profileUpdated) {
-                        profileUpdated = await updateProfileData();
-                        if (!profileUpdated) {
-                            retries++;
-                            await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
-                        }
-                    }
-
-                    if (!profileUpdated) {
-                        console.error('Falha ao salvar dados adicionais do perfil após várias tentativas.');
-                        // Fallback: try one last blind update just in case select failed due to RLS but update might work? 
-                        // Unlikely if select failed.
-                    }
-
                     alert('Cadastro realizado! Sua conta aguarda aprovação manual.');
                     // Reload to show pending screen
                     window.location.reload();
