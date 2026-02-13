@@ -88,7 +88,7 @@
 <!-- Tela de Login (Restyled) -->
 <div id="tela-login" class="flex-center-overlay z-[2000] hidden">
     <div class="login-container relative w-full max-w-4xl min-h-[600px] bg-[#0f172a]/90 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-white/10">
-        
+
         <!-- Left Panel (Welcome) -->
         <div class="login-welcome-panel w-full md:w-1/2 p-12 flex flex-col justify-center items-center text-center relative z-10 hidden md:flex">
             <div class="absolute inset-0 bg-gradient-to-br from-[#1e3a8a] to-[#020617] opacity-90 z-0"></div>
@@ -101,7 +101,7 @@
 
         <!-- Right Panel (Forms) -->
         <div class="login-form-panel w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-[#0f172a] relative border-l border-slate-800">
-            
+
             <!-- Sign In Form -->
             <div id="login-form-signin" class="login-form-view transition-opacity duration-300">
                 <div class="text-center mb-8">
@@ -355,7 +355,7 @@
         <button id="open-admin-btn" class="p-2 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-white/5" title="Admin Upload">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
         </button>
-        
+
         <!-- Mobile Menu Toggle -->
         <button id="mobile-menu-toggle" class="lg:hidden p-2 text-slate-300 hover:text-white">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -394,7 +394,7 @@
     <!-- MAIN DASHBOARD -->
     <div id="main-dashboard" class="animate-fade-in-up">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
-            
+
             <!-- Hero Section -->
             <div class="hero-section mb-8 p-8 flex flex-col md:flex-row justify-between items-center shadow-2xl">
                 <div class="z-10 text-left">
@@ -507,7 +507,7 @@
                         <button id="clear-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg transition-colors border border-slate-600">Limpar Filtros</button>
                     </div>
                 </div>
-                
+
                 <!-- Secondary Filters Row -->
                 <div class="flex flex-wrap gap-4 items-end mt-4 pt-4 border-t border-slate-800/50">
                      <div class="relative flex-1 min-w-[200px]">
@@ -638,7 +638,7 @@
 
     <!-- OTHER VIEWS (Initially Hidden) -->
     <!-- Note: Keeping structures similar but updating headers/classes -->
-    
+
     <!-- CITY VIEW -->
     <div id="city-view" class="hidden animate-fade-in-up">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
@@ -652,7 +652,7 @@
                     Alternar Mapa
                 </button>
             </header>
-            
+
             <div id="city-view-content">
                 <!-- Filters (Restyling minimal needed as classes are utility based, but ensure containers match) -->
                 <!-- Simplified filters block for brevity, ensuring ID matches -->
@@ -675,7 +675,7 @@
                             </div>
                             <div id="city-rede-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                         </div>
-                        
+
                         <!-- Coordenador -->
                         <div id="city-coord-filter-wrapper" class="relative">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
@@ -797,7 +797,7 @@
                 <button data-fornecedor="PEPSICO" class="fornecedor-btn active px-6 py-2 rounded-lg transition-all">PEPSICO</button>
                 <button data-fornecedor="MULTIMARCAS" class="fornecedor-btn px-6 py-2 rounded-lg transition-all">MULTIMARCAS</button>
             </div>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                 <!-- Rede Filter -->
                 <div id="comparison-rede-filter-wrapper" class="relative z-20">
@@ -885,7 +885,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="flex justify-end gap-2 mt-6 border-t border-slate-700/50 pt-4">
                 <button id="comparison-tendency-toggle" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 px-4 rounded-lg transition-colors">Calcular Tendência</button>
                 <button id="comparison-holiday-picker-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2.5 px-4 rounded-lg transition-colors">Feriados</button>
@@ -906,11 +906,11 @@
             </div>
             <!-- Metrics toggles hidden in layout but needed for JS -->
             <div id="comparison-monthly-metric-container" class="hidden"><button id="toggle-monthly-fat-btn"></button><button id="toggle-monthly-clients-btn"></button></div>
-            
+
             <div id="weeklyComparisonChartContainer" class="relative h-96"></div>
             <div id="monthlyComparisonChartContainer" class="relative h-96 hidden"></div>
         </div>
-        
+
         <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
             <h2 class="text-lg font-bold text-white mb-4 text-center">Faturamento por Dia da Semana</h2>
             <div id="dailyWeeklyComparisonChartContainer" class="relative h-96"></div>
@@ -1434,10 +1434,10 @@
                 <button data-tab="bonus" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Bonificações</button>
                 <button data-tab="itinerary" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Roteirização</button>
             </div>
-            
+
             <!-- Content Area (Scrollable) -->
             <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
-                
+
                 <!-- Tab: General -->
                 <div id="wallet-tab-content-general" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
@@ -1458,12 +1458,12 @@
                             <p id="wallet-modal-cnpj" class="text-white font-medium text-sm">--</p>
                         </div>
                     </div>
-                    
+
                     <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
                         <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Razão Social</p>
                         <p id="wallet-modal-razao" class="text-white font-medium text-sm break-words">--</p>
                     </div>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
                             <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Fantasia</p>
@@ -1843,7 +1843,7 @@
                     <div id="meta-realizado-supplier-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
                 </div>
             </div>
-            
+
             <div class="flex flex-wrap gap-4 items-center justify-between mt-6">
                 <div id="meta-realizado-pasta-toggle-container" class="flex gap-2">
                     <!-- Buttons injected by JS (Pasta), ensure container is styled flex -->
@@ -1983,7 +1983,7 @@
                 <div id="coverage-total-boxes" class="text-2xl font-bold text-yellow-400">0</div>
             </div>
         </div>
-        
+
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
              <div class="lg:col-span-2 bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg">
                 <p class="text-xs text-slate-500 uppercase font-bold mb-2">Top Produto (Valor)</p>
@@ -2052,7 +2052,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Search Box -->
                 <div id="wallet-search-container" class="flex-[2] relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Adicionar Cliente (Busca Global)</label>
@@ -2104,7 +2104,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- CONSULTAS VIEW -->
     <div id="consultas-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
         <header class="mb-8 border-b border-slate-800 pb-4">
@@ -2604,7 +2604,7 @@
                             </div>
                             <span class="text-xs text-slate-300 font-bold">Câmera</span>
                         </div>
-                        
+
                         <div id="trigger-gallery-btn" class="flex flex-col items-center justify-center gap-2 cursor-pointer group p-3 bg-slate-700/50 rounded-xl hover:bg-slate-700 transition-colors w-24">
                             <div class="w-10 h-10 bg-purple-600/20 rounded-full flex items-center justify-center text-purple-400 group-hover:bg-purple-600 group-hover:text-white transition-colors">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
