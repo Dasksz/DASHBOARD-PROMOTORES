@@ -419,19 +419,276 @@
     background-color: rgba(51, 65, 85, 0.5); /* hover:bg-slate-700/50 */
 }
 
-/* Comparison Toggle Buttons */
-.comparison-toggle-btn {
-    color: #94a3b8; /* text-slate-400 */
-    background-color: transparent;
-    transition: all 0.2s ease;
+
+/* Liquid Gauge Cylinder Animations */
+@keyframes wave {
+  0% { transform: translateX(0) translateZ(0) scaleY(1); }
+  50% { transform: translateX(25%) translateZ(0) scaleY(0.9); }
+  100% { transform: translateX(50%) translateZ(0) scaleY(1); }
 }
 
-.comparison-toggle-btn:hover {
-    color: #e2e8f0; /* text-slate-200 */
-    background-color: rgba(148, 163, 184, 0.1);
+.animate-wave {
+  animation: wave 4s ease-in-out infinite alternate;
 }
 
-.comparison-toggle-btn.active {
-    background-color: #2563eb; /* bg-blue-600 */
-    color: #ffffff; /* text-white */
+.animate-wave-slow {
+  animation: wave 6s ease-in-out infinite alternate-reverse;
+}
+
+    /* --- GOALS VIEW LIGHT MODE FIXES --- */
+
+    /* 1. Ensure Header is Orange */
+    html.light header.bg-gradient-to-r {
+        background: #FF9933 !important;
+    }
+
+    /* 2. Fix Text Contrast in Goals View (General) */
+    html.light .text-green-300 { color: #15803d !important; } /* green-700 */
+    html.light .text-teal-400 { color: #0f766e !important; } /* teal-700 */
+    html.light .text-orange-400 { color: #c2410c !important; } /* orange-700 */
+    html.light .text-purple-400 { color: #7e22ce !important; } /* purple-700 */
+    html.light .text-yellow-300 { color: #b45309 !important; } /* amber-700 */
+    html.light .text-yellow-400 { color: #b45309 !important; } /* amber-700 */
+    html.light .text-blue-300 { color: #1d4ed8 !important; } /* blue-700 */
+    html.light .text-emerald-300 { color: #047857 !important; } /* emerald-700 */
+    html.light .text-pink-400 { color: #be185d !important; } /* pink-700 */
+    html.light .text-cyan-400 { color: #0e7490 !important; } /* cyan-700 */
+
+    /* 3. Specific Bold & Darker Colors for SV Report Table in Light Mode */
+    html.light #goals-sv-main-table tbody .text-teal-400,
+    html.light #goals-sv-main-table tbody .text-green-400,
+    html.light #goals-sv-main-table tbody .text-emerald-300 {
+        color: #166534 !important; /* green-800 */
+        font-weight: 800 !important;
+    }
+
+    html.light #goals-sv-main-table tbody .text-orange-400,
+    html.light #goals-sv-main-table tbody .text-red-400 {
+        color: #991b1b !important; /* red-800 */
+        font-weight: 800 !important;
+    }
+
+    html.light #goals-sv-main-table tbody .text-yellow-400,
+    html.light #goals-sv-main-table tbody .text-yellow-300 {
+        color: #92400e !important; /* amber-800 */
+        font-weight: 800 !important;
+    }
+
+    html.light #goals-sv-main-table tbody .text-purple-400 {
+        color: #6b21a8 !important; /* purple-800 */
+        font-weight: 800 !important;
+    }
+
+    html.light #goals-sv-main-table tbody .text-pink-400 {
+        color: #9d174d !important; /* pink-800 */
+        font-weight: 800 !important;
+    }
+
+    /* GERAL column (text-white) needs to be bold dark in light mode */
+    html.light #goals-sv-main-table tbody .text-white {
+        color: #0f172a !important;
+        font-weight: 800 !important;
+    }
+
+    /* Fix Table Container & Body Backgrounds in Light Mode */
+    html.light #goals-sv-table-container {
+        background-color: #ffffff !important;
+        border-color: #e2e8f0 !important;
+    }
+    html.light #goals-sv-main-table tbody {
+        background-color: #ffffff !important;
+    }
+    /* Fix standard text colors in table that are hardcoded slate-300/400 */
+    html.light #goals-sv-main-table tbody .text-slate-300 {
+        color: #334155 !important; /* slate-700 */
+    }
+    html.light #goals-sv-main-table tbody .text-slate-400 {
+        color: #475569 !important; /* slate-600 */
+    }
+
+    /* Fix Header & Row Backgrounds in Goals Table (Light Mode) */
+    html.light #goals-sv-table-container thead {
+        background-color: #f8fafc !important; /* slate-50 */
+    }
+    html.light #goals-sv-table-container thead tr,
+    html.light #goals-sv-table-container thead th {
+        background-color: #f1f5f9 !important; /* slate-100 */
+        color: #334155 !important; /* slate-700 */
+        border-color: #cbd5e1 !important; /* slate-300 */
+    }
+
+    /* Supervisor Row (was bg-slate-800) */
+    html.light #goals-sv-main-table tbody tr.bg-slate-800 {
+        background-color: #e2e8f0 !important; /* slate-200 */
+        border-color: #cbd5e1 !important;
+    }
+    html.light #goals-sv-main-table tbody tr.bg-slate-800 td {
+        color: #1e293b !important; /* slate-800 */
+        background-color: #e2e8f0 !important; /* Ensure cells get the light background */
+    }
+
+    /* Fix Specific Input Cells with Dark Backgrounds in Light Mode */
+    html.light #goals-sv-main-table tbody td.bg-\[\#1e293b\],
+    html.light #goals-sv-main-table tbody td.bg-\[\#151c36\] {
+        background-color: #f8fafc !important; /* slate-50 - Lighter */
+        color: #1e293b !important;
+        border-color: #cbd5e1 !important;
+    }
+
+    /* Force cells to adopt row hover color in Light Mode (Fix Broken Lines) */
+    html.light #goals-sv-main-table tbody tr:hover td.bg-\[\#1e293b\],
+    html.light #goals-sv-main-table tbody tr:hover td.bg-\[\#151c36\] {
+        background-color: transparent !important; /* Let the orange row color show through */
+        color: #ffffff !important;
+    }
+
+    /* Ensure Inputs inside these cells are visible and readable when disabled */
+    html.light #goals-sv-main-table tbody td.bg-\[\#1e293b\] input,
+    html.light #goals-sv-main-table tbody td.bg-\[\#151c36\] input {
+        color: #1e293b !important; /* slate-800 */
+        font-weight: 700 !important;
+        background-color: transparent !important;
+        opacity: 1 !important; /* Force opacity for disabled inputs */
+        -webkit-text-fill-color: #1e293b !important; /* Force text color for Webkit/Chrome */
+    }
+
+    /* Ensure Inputs turn white on hover */
+    html.light #goals-sv-main-table tbody tr:hover td.bg-\[\#1e293b\] input,
+    html.light #goals-sv-main-table tbody tr:hover td.bg-\[\#151c36\] input {
+         color: #ffffff !important;
+         -webkit-text-fill-color: #ffffff !important;
+    }
+
+    /* Fix Adjustment Column Text Color & Background in Light Mode */
+    html.light #goals-sv-main-table tbody .text-yellow-500\/70 {
+        color: #b45309 !important; /* amber-700 - Darker for contrast */
+        background-color: #f8fafc !important; /* Ensure background is light */
+    }
+    html.light #goals-sv-main-table tbody tr:hover .text-yellow-500\/70 {
+        background-color: transparent !important;
+        color: #ffffff !important;
+    }
+    /* Grand Total Row (was bg-[#0f172a]) */
+    html.light #goals-sv-main-table tbody tr.bg-\[\#0f172a\] {
+        background-color: #cbd5e1 !important; /* slate-300 */
+        color: #0f172a !important; /* dark text */
+    }
+
+    /* Cell specific backgrounds (bg-blue-900/5 etc) */
+    html.light #goals-sv-main-table tbody .bg-blue-900\/5 {
+        background-color: #f8fafc !important; /* very light slate */
+    }
+    html.light #goals-sv-main-table tbody .bg-blue-900\/10 {
+        background-color: #f1f5f9 !important; /* light slate */
+    }
+
+    /* Header specific backgrounds (bg-slate-800/50 etc) */
+    html.light #goals-sv-table-container .bg-slate-800\/50 {
+        background-color: #e2e8f0 !important; /* slate-200 */
+    }
+
+    /* 4. Fix Tab Buttons (Rateio Metas / Relatório) */
+    html.light #goals-tabs {
+        background-color: #e2e8f0 !important;
+        border-color: #cbd5e1 !important;
+    }
+    html.light #goals-tabs button.text-slate-400 {
+        color: #64748b !important;
+    }
+    html.light #goals-tabs button.active {
+        background-color: #ffffff !important;
+        border-color: #0f766e !important; /* teal-700 */
+        color: #0f766e !important;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        font-weight: 800 !important;
+    }
+
+    /* 5. Fix Inactive Tab Buttons (Dark Slate) in other places if needed */
+    html.light .bg-\[\#334155\] {
+        background-color: #e2e8f0 !important;
+        color: #475569 !important;
+        border-color: #cbd5e1 !important;
+    }
+
+    /* 3. Fix Inactive Tab Buttons (Dark Slate) */
+    html.light .bg-\[\#334155\] {
+        background-color: #e2e8f0 !important;
+        color: #475569 !important;
+        border-color: #cbd5e1 !important;
+    }
+
+    /* 4. Fix Inputs inside Goal Cards */
+    /* Target inputs that use the dark bg-[#0f172a] specifically */
+    html.light input.bg-\[\#0f172a\] {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        border-color: #cbd5e1 !important;
+    }
+
+    /* 5. Fix Borders for Goal Cards (Input containers) */
+    html.light .border-green-900\/50 { border-color: #86efac !important; } /* green-300 */
+    html.light .border-blue-900\/50 { border-color: #93c5fd !important; } /* blue-300 */
+    html.light .border-purple-900\/50 { border-color: #d8b4fe !important; } /* purple-300 */
+    html.light .border-emerald-900\/50 { border-color: #6ee7b7 !important; } /* emerald-300 */
+    html.light .border-yellow-900\/50 { border-color: #fde047 !important; } /* yellow-300 */
+    html.light .border-teal-500\/50 { border-color: #0d9488 !important; } /* teal-600 */
+
+    /* 6. Fix "Rateio Metas" Tab Active State if needed */
+    html.light .border-teal-500.text-teal-500.active {
+        background-color: #ccfbf1 !important; /* teal-50 */
+        border-color: #0d9488 !important;
+        color: #0f766e !important;
+    }
+
+/* AI Insights Styles */
+.ai-strategy-card {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    background-image: linear-gradient(to bottom right, rgba(79, 70, 229, 0.2), rgba(67, 56, 202, 0.1));
+}
+
+.ai-supervisor-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.ai-supervisor-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Light Mode Overrides for AI Insights */
+html.light .ai-strategy-card {
+    background-image: linear-gradient(to bottom right, #e0e7ff, #eef2ff);
+    border-color: #c7d2fe;
+}
+html.light .ai-strategy-card h3,
+html.light .ai-strategy-card p {
+    color: #1e1b4b !important;
+}
+
+html.light .ai-supervisor-card {
+    background-color: #ffffff !important;
+    border-color: #e5e7eb !important;
+}
+html.light .ai-supervisor-card h4 {
+    color: #0f766e !important; /* teal-700 */
+}
+html.light .ai-supervisor-card p {
+    color: #374151 !important; /* gray-700 */
+}
+html.light .ai-supervisor-card .text-xs {
+    color: #4b5563 !important; /* gray-600 */
+}
+
+/* Badges in Light Mode */
+html.light .bg-red-900\/50,
+html.light .bg-red-900\/30 {
+    background-color: #fee2e2 !important; /* red-100 */
+    border-color: #fca5a5 !important;
+    color: #991b1b !important; /* red-800 */
+}
+
+html.light .bg-green-900\/30 {
+    background-color: #dcfce7 !important; /* green-100 */
+    border-color: #86efac !important;
+    color: #166534 !important; /* green-800 */
 }

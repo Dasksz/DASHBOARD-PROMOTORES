@@ -795,225 +795,324 @@
     </div>
 
 
-    <div id="goals-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
-        <!-- Complex structure placeholders for JS -->
-        <header class="mb-6"><div id="goals-tabs"><button data-tab="gv" id="btn-tab-gv"></button><button data-tab="sv" id="btn-tab-sv"></button></div><button id="save-goals-btn"></button><button id="clear-goals-btn"></button></header>
-        <div id="goals-gv-content">
-            <!-- Category Tabs -->
-            <div class="flex flex-wrap gap-2 mb-4 p-1 bg-slate-800/50 rounded-lg inline-flex">
-                <button id="goals-category-pepsico-btn" class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-slate-300 hover:text-white hover:bg-slate-700">PEPSICO</button>
-                <button id="goals-category-elmachips-btn" class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-slate-300 hover:text-white hover:bg-slate-700">ELMA CHIPS</button>
-                <button id="goals-category-foods-btn" class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-slate-300 hover:text-white hover:bg-slate-700">FOODS</button>
-                <button id="goals-category-summary-btn" class="px-4 py-2 text-sm font-medium rounded-md transition-colors text-slate-300 hover:text-white hover:bg-slate-700">RESUMO</button>
-            </div>
-            
-            <div id="goals-sub-tabs-container" class="mb-6"><div id="goals-sub-tabs-pepsico"></div><div id="goals-sub-tabs-elmachips"></div><div id="goals-sub-tabs-foods"></div></div>
-            
-            <!-- Summary Mode Content -->
-            <div id="goals-summary-content" class="hidden">
-                <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                        <div id="goals-summary-coord-filter-wrapper" class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                            <button id="goals-summary-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-summary-coord-filter-text">Todos</span></button>
-                            <div id="goals-summary-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
-                        </div>
-                        <div id="goals-summary-cocoord-filter-wrapper" class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                            <button id="goals-summary-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-summary-cocoord-filter-text">Todos</span></button>
-                            <div id="goals-summary-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
-                        </div>
-                        <div id="goals-summary-promotor-filter-wrapper" class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                            <button id="goals-summary-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-summary-promotor-filter-text">Todos</span></button>
-                            <div id="goals-summary-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
-                        </div>
-                        <div>
-                            <button id="clear-goals-summary-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg">Limpar</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Summary Metrics Cards -->
-                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                    <div id="summary-total-fat" class="bg-slate-800 p-4 rounded-xl border border-slate-700"></div>
-                    <div id="summary-total-vol" class="bg-slate-800 p-4 rounded-xl border border-slate-700"></div>
-                    <div id="summary-total-pos" class="bg-slate-800 p-4 rounded-xl border border-slate-700"></div>
-                    <div id="summary-mix-salty" class="bg-slate-800 p-4 rounded-xl border border-slate-700"></div>
-                    <div id="summary-mix-foods" class="bg-slate-800 p-4 rounded-xl border border-slate-700"></div>
-                </div>
-                
-                <div id="goals-summary-grid" class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg p-6"></div>
-            </div>
+                        <!-- Ecrã Metas (Goals) -->
+                        <div id="goals-view" class="hidden container mx-auto p-4 sm:p-6 lg:p-8">
+                            <!-- Header with Title and Tabs -->
+                            <header class="mb-6 -mt-4 -mx-4 sm:-mt-6 sm:-mx-6 lg:-mt-8 lg:-mx-8 p-6 bg-gradient-to-r from-[#1e2a5a] to-[#0d1126] rounded-b-lg shadow-lg">
+                                <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+                                    <div class="flex items-center gap-4">
+                                        <button class="sidebar-toggle text-white focus:outline-none">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                                        </button>
+                                        <div>
+                                            <h1 class="text-2xl font-bold text-white">PAINEL DE VENDAS - <span class="text-yellow-300">PRIME</span> DISTRIBUIÇÃO</h1>
+                                            <p class="text-slate-300">Planejamento de Metas (GV & SV)</p>
+                                        </div>
+                                    </div>
+                                    <!-- Top Right Tabs -->
 
-            <!-- Detail Mode Inputs -->
-            <div id="goals-input-cards" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <!-- Faturamento Card -->
-                <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50">
-                    <h3 class="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-green-500"></span> Faturamento
-                    </h3>
-                    <div class="flex gap-2 mb-4">
-                        <input id="goal-global-fat" class="bg-slate-900 border border-slate-700 rounded-lg p-3 text-white w-full font-mono" placeholder="R$ 0,00">
-                        <button id="btn-distribute-fat" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg font-bold">Distrib.</button>
-                    </div>
-                    <div class="flex justify-between text-xs text-slate-400">
-                        <span>Média: <span id="ref-avg-fat" class="text-white">R$ 0,00</span></span>
-                        <span>Ant: <span id="ref-prev-fat" class="text-white">R$ 0,00</span></span>
-                    </div>
-                </div>
-
-                <!-- Volume Card -->
-                <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50">
-                    <h3 class="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> Volume (Kg)
-                    </h3>
-                    <div class="flex gap-2 mb-4">
-                        <input id="goal-global-vol" class="bg-slate-900 border border-slate-700 rounded-lg p-3 text-white w-full font-mono" placeholder="0.000">
-                        <button id="btn-distribute-vol" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-lg font-bold">Distrib.</button>
-                    </div>
-                    <div class="flex justify-between text-xs text-slate-400">
-                        <span>Média: <span id="ref-avg-vol" class="text-white">0.000</span></span>
-                        <span>Ant: <span id="ref-prev-vol" class="text-white">0.000</span></span>
-                    </div>
-                </div>
-
-                <!-- Positivation / Mix Card Container -->
-                <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50 space-y-4">
-                    <div>
-                        <h3 class="text-sm font-bold text-white mb-2 uppercase tracking-wider flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-purple-500"></span> Positivação
-                        </h3>
-                        <div class="flex gap-2">
-                            <input id="goal-global-mix" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white w-full font-mono text-sm" placeholder="Qtd">
-                            <button id="btn-distribute-mix" class="bg-blue-600 hover:bg-blue-500 text-white px-3 rounded-lg font-bold text-xs">OK</button>
-                        </div>
-                        <div class="flex justify-between text-xs text-slate-400 mt-1">
-                            <span>Média: <span id="ref-avg-clients" class="text-white">0</span></span>
-                            <span>Ant: <span id="ref-prev-clients" class="text-white">0</span></span>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-700/50">
-                        <div id="card-mix-salty">
-                            <label class="block text-xs text-slate-500 mb-1">Mix Salty</label>
-                            <div class="flex gap-1">
-                                <input id="goal-global-mix-salty" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-white w-full text-xs" placeholder="0">
-                                <button id="btn-distribute-mix-salty" class="bg-slate-700 text-white px-2 rounded text-xs">→</button>
-                            </div>
-                        </div>
-                        <div id="card-mix-foods">
-                            <label class="block text-xs text-slate-500 mb-1">Mix Foods</label>
-                            <div class="flex gap-1">
-                                <input id="goal-global-mix-foods" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-white w-full text-xs" placeholder="0">
-                                <button id="btn-distribute-mix-foods" class="bg-slate-700 text-white px-2 rounded text-xs">→</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="goals-dist-summary" class="hidden"></div>
-            </div>
-
-            <!-- Detail Mode Filters -->
-            <div class="filter-wrapper-sentinel">
-                <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                        <div id="goals-gv-coord-filter-wrapper" class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                            <button id="goals-gv-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-gv-coord-filter-text">Todos</span></button>
-                            <div id="goals-gv-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
-                        </div>
-                        <div id="goals-gv-cocoord-filter-wrapper" class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                            <button id="goals-gv-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-gv-cocoord-filter-text">Todos</span></button>
-                            <div id="goals-gv-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
-                        </div>
-                        <div id="goals-gv-promotor-filter-wrapper" class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                            <button id="goals-gv-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-gv-promotor-filter-text">Todos</span></button>
-                            <div id="goals-gv-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
-                        </div>
-                        <div class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
-                            <div class="relative">
-                                <div id="goals-gv-search-icon" class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
-                                    <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+    <button id="save-goals-btn" class="ml-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+        </svg>
+        Salvar Metas
+    </button>
+    <button id="clear-goals-btn" class="ml-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Limpar Metas
+    </button>
+<div class="flex bg-[#161e3d] p-1 rounded-lg border border-slate-700" id="goals-tabs">
+                                        <button data-tab="gv" class="px-6 py-2 rounded-md text-sm font-bold transition-colors bg-slate-700 text-white shadow-sm border border-teal-500 text-teal-500 active" id="btn-tab-gv">Rateio Metas</button>
+                                        <button data-tab="sv" class="px-6 py-2 rounded-md text-sm font-bold text-slate-400 hover:text-white transition-colors border border-transparent" id="btn-tab-sv">Relatório</button>
+                                    </div>
                                 </div>
-                                <input id="goals-gv-codcli-filter" placeholder="Código, Nome, CNPJ..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-full pl-10 p-2.5 transition-all" autocomplete="off">
-                                <div id="goals-gv-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
+                            </header>
+
+                            <!-- Tab Content: Sugestão GV -->
+                            <div id="goals-gv-content">
+                                <!-- Category Selection Toggles -->
+                                <div class="flex flex-col gap-4 mb-6">
+                                    <div class="flex gap-4">
+                                        <button id="goals-category-pepsico-btn" class="px-8 py-3 bg-[#0d9488] text-white font-bold rounded hover:bg-teal-700 transition-colors uppercase tracking-wider text-sm shadow-lg border border-teal-500/50">PEPSICO</button>
+                                        <button id="goals-category-elmachips-btn" class="px-8 py-3 bg-[#334155] text-slate-400 font-bold rounded hover:bg-slate-700 transition-colors uppercase tracking-wider text-sm border border-slate-700">ELMA CHIPS</button>
+                                        <button id="goals-category-foods-btn" class="px-8 py-3 bg-[#334155] text-slate-400 font-bold rounded hover:bg-slate-700 transition-colors uppercase tracking-wider text-sm border border-slate-700">FOODS</button>
+                                         <button id="goals-category-summary-btn" class="px-8 py-3 bg-[#334155] text-slate-400 font-bold rounded hover:bg-slate-700 transition-colors uppercase tracking-wider text-sm border border-slate-700">RESUMO</button>
+                                    </div>
+
+                                    <!-- Sub-tabs Container -->
+                                    <div id="goals-sub-tabs-container">
+                                        <!-- PEPSICO Sub-tabs -->
+                                        <div class="flex border-b border-slate-700 overflow-x-auto" id="goals-sub-tabs-pepsico">
+                                            <button data-supplier="PEPSICO_ALL" class="goals-sub-tab px-6 py-3 text-teal-400 font-bold text-sm border-b-2 border-teal-400 flex items-center gap-2 whitespace-nowrap active">
+                                                <span class="w-2 h-2 rounded-full bg-teal-400 inline-block indicator"></span> PEPSICO
+                                            </button>
+                                        </div>
+
+                                        <!-- Elma Chips Sub-tabs -->
+                                        <div class="hidden flex border-b border-slate-700 overflow-x-auto" id="goals-sub-tabs-elmachips">
+                                            <button data-supplier="ELMA_ALL" class="goals-sub-tab px-6 py-3 text-slate-400 font-medium text-sm hover:text-white transition-colors whitespace-nowrap">
+                                                ELMA
+                                            </button>
+                                            <button data-supplier="707" class="goals-sub-tab px-6 py-3 text-slate-400 font-medium text-sm hover:text-white transition-colors whitespace-nowrap">EXTRUSADOS</button>
+                                            <button data-supplier="708" class="goals-sub-tab px-6 py-3 text-slate-400 font-medium text-sm hover:text-white transition-colors whitespace-nowrap">NÃO EXTRUSADOS</button>
+                                            <button data-supplier="752" class="goals-sub-tab px-6 py-3 text-slate-400 font-medium text-sm hover:text-white transition-colors whitespace-nowrap">TORCIDA</button>
+                                        </div>
+
+                                        <!-- Foods Sub-tabs -->
+                                        <div class="hidden flex border-b border-slate-700 overflow-x-auto" id="goals-sub-tabs-foods">
+                                            <button data-supplier="FOODS_ALL" class="goals-sub-tab px-6 py-3 text-slate-400 font-medium text-sm hover:text-white transition-colors whitespace-nowrap">FOODS</button>
+                                            <button data-supplier="1119" data-brand="TODDYNHO" class="goals-sub-tab px-6 py-3 text-slate-400 font-medium text-sm hover:text-white transition-colors whitespace-nowrap">TODDYNHO</button>
+                                            <button data-supplier="1119" data-brand="TODDY" class="goals-sub-tab px-6 py-3 text-slate-400 font-medium text-sm hover:text-white transition-colors whitespace-nowrap">TODDY</button>
+                                            <button data-supplier="1119" data-brand="QUAKER_KEROCOCO" class="goals-sub-tab px-6 py-3 text-slate-400 font-medium text-sm hover:text-white transition-colors whitespace-nowrap">QUAKER / KEROCOCO</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Summary Content -->
+                                <div id="goals-summary-content" class="hidden mb-6">
+                                    <!-- Independent Filters for Summary -->
+                                    <div class="mb-4 p-4 bg-[#1d2347] rounded-lg shadow-sm border border-slate-700 flex flex-col lg:flex-row justify-between items-center gap-4">
+                                        <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto items-end">
+                                            <div id="goals-summary-supervisor-filter-wrapper" class="relative w-full sm:w-64">
+                                                <label for="goals-summary-supervisor-filter-btn" class="block mb-2 text-sm font-medium text-slate-400">Supervisor</label>
+                                                <button id="goals-summary-supervisor-filter-btn" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-teal-500">
+                                                    <span id="goals-summary-supervisor-filter-text">Todos</span>
+                                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                                                </button>
+                                                <div id="goals-summary-supervisor-filter-dropdown" class="hidden absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto custom-scrollbar text-white"></div>
+                                            </div>
+                                            <div id="goals-summary-seller-filter-wrapper" class="relative w-full sm:w-64">
+                                                <label for="goals-summary-seller-filter-btn" class="block mb-2 text-sm font-medium text-slate-400">Vendedor</label>
+                                                <button id="goals-summary-seller-filter-btn" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-teal-500">
+                                                    <span id="goals-summary-seller-filter-text">Todos</span>
+                                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                                                </button>
+                                                <div id="goals-summary-seller-filter-dropdown" class="hidden absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto custom-scrollbar text-white"></div>
+                                            </div>
+                                            <button id="clear-goals-summary-filters-btn" class="w-full sm:w-auto bg-slate-600 hover:bg-slate-500 text-white font-bold py-2.5 px-4 rounded-lg">Limpar Filtros</button>
+                                        </div>
+
+                                        <!-- Totals Summary -->
+                                        <div class="flex flex-wrap lg:flex-nowrap gap-4 bg-[#161e3d] p-3 rounded-lg border border-slate-700/50 w-full lg:w-auto justify-end">
+                                            <div class="text-right px-2">
+                                                <p class="text-[10px] uppercase text-slate-300 font-bold mb-1">Total Meta Fat.</p>
+                                                <p class="text-xl font-bold text-teal-400" id="summary-total-fat">R$ 0,00</p>
+                                            </div>
+                                            <div class="text-right px-2 border-l border-slate-700">
+                                                <p class="text-[10px] uppercase text-slate-300 font-bold mb-1">Total Meta Kg</p>
+                                                <p class="text-xl font-bold text-orange-400" id="summary-total-vol">0,000</p>
+                                            </div>
+                                            <div class="text-right px-2 border-l border-slate-700">
+                                                <p class="text-[10px] uppercase text-slate-300 font-bold mb-1">Total Meta Pos.</p>
+                                                <p class="text-xl font-bold text-purple-400" id="summary-total-pos">0</p>
+                                            </div>
+                                            <div class="text-right px-2 border-l border-slate-700">
+                                                <p class="text-[10px] uppercase text-slate-300 font-bold mb-1">Meta Mix Salty</p>
+                                                <p class="text-xl font-bold text-teal-400" id="summary-mix-salty">0</p>
+                                            </div>
+                                            <div class="text-right px-2 border-l border-slate-700">
+                                                <p class="text-[10px] uppercase text-slate-300 font-bold mb-1">Meta Mix Foods</p>
+                                                <p class="text-xl font-bold text-yellow-400" id="summary-mix-foods">0</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="goals-summary-grid">
+                                        <!-- Summary Cards will be injected here -->
+                                    </div>
+                                </div>
+
+                                <!-- Meta Input Cards -->
+                                <div id="goals-input-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6 bg-[#161e3d] p-4 rounded-lg border border-slate-700/50">
+                                    <!-- Faturamento Card -->
+                                    <div class="bg-[#064e3b] kpi-glow-base kpi-glow-green rounded-lg p-3 relative overflow-hidden group shadow-md">
+                                        <label class="text-[10px] font-bold text-green-300 uppercase tracking-wider mb-1 block">META FATURAMENTO (R$)</label>
+                                        <div class="flex gap-2">
+                                            <input type="text" id="goal-global-fat" class="w-full bg-[#0f172a] border border-green-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-green-500" value="0,00">
+                                            <button id="btn-distribute-fat" class="bg-green-600 hover:bg-green-500 text-white px-3 rounded flex items-center justify-center transition-colors">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex justify-between text-[10px] text-slate-300 mt-1">
+                                            <span>Média Trim: <span id="ref-avg-fat" class="text-white font-bold">R$ 0,00</span></span>
+                                            <span>Mês Ant: <span id="ref-prev-fat" class="text-white font-bold">R$ 0,00</span></span>
+                                        </div>
+                                    </div>
+                                    <!-- Volume Card -->
+                                    <div class="bg-[#1e2a5a] kpi-glow-base kpi-glow-blue rounded-lg p-3 relative overflow-hidden group shadow-md">
+                                        <label class="text-[10px] font-bold text-blue-300 uppercase tracking-wider mb-1 block">META VOLUME (KG)</label>
+                                        <div class="flex gap-2">
+                                            <input type="text" id="goal-global-vol" class="w-full bg-[#0f172a] border border-blue-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-blue-500" value="0,000">
+                                            <button id="btn-distribute-vol" class="bg-blue-600 hover:bg-blue-500 text-white px-3 rounded flex items-center justify-center transition-colors">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex justify-between text-[10px] text-slate-300 mt-1">
+                                            <span>Média Trim: <span id="ref-avg-vol" class="text-white font-bold">0,000</span></span>
+                                            <span>Mês Ant: <span id="ref-prev-vol" class="text-white font-bold">0,000</span></span>
+                                        </div>
+                                    </div>
+                                    <!-- Positivação Card -->
+                                    <div class="bg-[#3b0764] kpi-glow-base kpi-glow-purple rounded-lg p-3 relative overflow-hidden group shadow-md">
+                                        <label class="text-[10px] font-bold text-purple-300 uppercase tracking-wider mb-1 block">META POSITIVAÇÃO</label>
+                                        <div class="flex gap-2">
+                                            <input type="text" id="goal-global-mix" class="w-full bg-[#0f172a] border border-purple-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-purple-500" value="0" readonly>
+                                            <button id="btn-distribute-mix" class="bg-purple-600 hover:bg-purple-500 text-white px-3 rounded flex items-center justify-center transition-colors" style="display: none;">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex justify-between text-[10px] text-slate-300 mt-1">
+                                            <span>Média Trim: <span id="ref-avg-clients" class="text-white font-bold">0</span></span>
+                                            <span>Mês Ant: <span id="ref-prev-clients" class="text-white font-bold">0</span></span>
+                                        </div>
+                                    </div>
+                                    <!-- Mix Salty Card (Hidden by Default) -->
+                                    <div id="card-mix-salty" class="hidden bg-[#064e3b] kpi-glow-base kpi-glow-green rounded-lg p-3 relative overflow-hidden group shadow-md">
+                                        <label class="text-[10px] font-bold text-emerald-300 uppercase tracking-wider mb-1 block">META MIX SALTY</label>
+                                        <div class="flex gap-2">
+                                            <input type="text" id="goal-global-mix-salty" class="w-full bg-[#0f172a] border border-emerald-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-emerald-500" value="0" readonly>
+                                            <button id="btn-distribute-mix-salty" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 rounded flex items-center justify-center transition-colors" style="display: none;">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex justify-between text-[10px] text-slate-300 mt-1">
+                                            <span>50% Ativos</span>
+                                        </div>
+                                    </div>
+                                    <!-- Mix Foods Card (Hidden by Default) -->
+                                    <div id="card-mix-foods" class="hidden bg-[#713f12] kpi-glow-base kpi-glow-yellow rounded-lg p-3 relative overflow-hidden group shadow-md">
+                                        <label class="text-[10px] font-bold text-yellow-300 uppercase tracking-wider mb-1 block">META MIX FOODS</label>
+                                        <div class="flex gap-2">
+                                            <input type="text" id="goal-global-mix-foods" class="w-full bg-[#0f172a] border border-yellow-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-yellow-500" value="0" readonly>
+                                            <button id="btn-distribute-mix-foods" class="bg-yellow-600 hover:bg-yellow-500 text-white px-3 rounded flex items-center justify-center transition-colors" style="display: none;">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex justify-between text-[10px] text-slate-300 mt-1">
+                                            <span>30% Ativos</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Summary -->
+                                    <div id="goals-dist-summary" class="flex flex-col justify-center items-end text-right pr-4">
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">TOTAL RATEADO</p>
+                                        <p class="text-2xl font-bold text-green-400">100% Distribuído</p>
+                                    </div>
+                                </div>
+
+                                <!-- Filters -->
+                                <div class="mb-4 p-4 bg-[#1d2347] rounded-lg shadow-sm border border-slate-700">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                                        <div id="goals-gv-supervisor-filter-wrapper" class="relative">
+                                            <label for="goals-gv-supervisor-filter-btn" class="block mb-2 text-sm font-medium text-slate-400">Supervisor</label>
+                                            <button id="goals-gv-supervisor-filter-btn" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-teal-500">
+                                                <span id="goals-gv-supervisor-filter-text">Todos</span>
+                                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                            <div id="goals-gv-supervisor-filter-dropdown" class="hidden absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto custom-scrollbar text-white"></div>
+                                        </div>
+                                        <div id="goals-gv-seller-filter-wrapper" class="relative">
+                                            <label for="goals-gv-seller-filter-btn" class="block mb-2 text-sm font-medium text-slate-400">Vendedor</label>
+                                            <button id="goals-gv-seller-filter-btn" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-teal-500">
+                                                <span id="goals-gv-seller-filter-text">Todos</span>
+                                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                            <div id="goals-gv-seller-filter-dropdown" class="hidden absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto custom-scrollbar text-white"></div>
+                                        </div>
+                                        <div id="goals-gv-codcli-filter-wrapper">
+                                            <label for="goals-gv-codcli-filter" class="block mb-2 text-sm font-medium text-slate-400">Cód. Cliente</label>
+                                            <input type="text" id="goals-gv-codcli-filter" name="goals_client_search_v2" placeholder="Digite o código..." class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 block w-full p-2.5" autocomplete="off">
+                                        </div>
+                                        <button id="clear-goals-gv-filters-btn" class="w-full bg-slate-600 hover:bg-slate-500 text-white font-bold py-2.5 px-4 rounded-lg">Limpar Filtros</button>
+                                    </div>
+                                </div>
+
+                                <!-- Main Table -->
+                                <div id="goals-table-container" class="bg-[#1d2347] border border-slate-700 shadow-sm rounded-lg overflow-hidden">
+                                    <div class="overflow-auto custom-scrollbar" style="max-height: 60vh;">
+                                        <table class="min-w-full text-sm text-left text-slate-300 border-collapse">
+                                            <thead class="text-xs uppercase sticky top-0 z-20 bg-[#0f172a] text-slate-400">
+                                                <tr>
+                                                    <th rowspan="2" class="px-2 py-2 text-center w-16 border-r border-b border-slate-700">CÓD</th>
+                                                    <th rowspan="2" class="px-3 py-2 text-left w-48 border-r border-b border-slate-700">CLIENTE</th>
+                                                    <th rowspan="2" class="px-3 py-2 text-left w-24 border-r border-b border-slate-700">VENDEDOR</th>
+                                                    <th colspan="3" class="px-2 py-1 text-center bg-blue-900/30 text-blue-400 border-r border-slate-700 border-b-0">FATURAMENTO (R$)</th>
+                                                    <th colspan="3" class="px-2 py-1 text-center bg-orange-900/30 text-orange-400 border-r border-slate-700 border-b-0">VOLUME (KG)</th>
+                                                    <th rowspan="2" class="px-2 py-2 text-center w-16 bg-purple-900/20 text-purple-300 font-bold border-b border-slate-700">META POS.</th>
+                                                </tr>
+                                                <tr>
+                                                    <!-- Fat Headers -->
+                                                    <th class="px-2 py-2 text-right w-24 bg-blue-900/20 text-blue-300 border-r border-b border-slate-700/50 text-[10px]">MÉDIA</th>
+                                                    <th class="px-2 py-2 text-center w-16 bg-blue-900/20 text-blue-300 border-r border-b border-slate-700/50 text-[10px]">% SHARE</th>
+                                                    <th class="px-2 py-2 text-right w-24 bg-blue-900/20 text-blue-100 font-bold border-r border-b border-slate-700 text-[10px]">META AUTO</th>
+                                                    <!-- Vol Headers -->
+                                                    <th class="px-2 py-2 text-right w-24 bg-orange-900/20 text-orange-300 border-r border-b border-slate-700/50 text-[10px]">MÉDIA KG</th>
+                                                    <th class="px-2 py-2 text-center w-16 bg-orange-900/20 text-orange-300 border-r border-b border-slate-700/50 text-[10px]">% SHARE</th>
+                                                    <th class="px-2 py-2 text-right w-24 bg-orange-900/20 text-orange-100 font-bold border-r border-b border-slate-700 text-[10px]">META KG</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="goals-gv-table-body" class="divide-y divide-slate-800 bg-[#151c36]">
+                                                <!-- Rows will be populated by JS -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <!-- Pagination Controls -->
+                                    <div id="goals-pagination-controls" class="hidden flex justify-between items-center p-4 bg-[#161e3d] border-t border-slate-700">
+                                        <div class="flex gap-2">
+                                            <button id="goals-gv-export-pdf-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center gap-2">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                                PDF
+                                            </button>
+                                            <button id="goals-gv-export-xlsx-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center gap-2">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                                XLS
+                                            </button>
+                                        </div>
+                                        <div class="flex items-center gap-4">
+                                            <button id="goals-prev-page-btn" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs" disabled>Anterior</button>
+                                            <span id="goals-page-info-text" class="text-slate-400 text-xs">Página 1 de 1</span>
+                                            <button id="goals-next-page-btn" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs" disabled>Próxima</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> <!-- End goals-gv-content -->
+
+                            <!-- Tab Content: Meta SV -->
+                            <div id="goals-sv-content" class="hidden">
+                                <div class="mb-6 p-4 bg-[#1d2347] rounded-lg shadow-sm border border-slate-700">
+                                    <div class="flex flex-col md:flex-row justify-between items-end gap-4">
+                                        <div class="relative w-full md:w-64">
+                                            <label for="goals-sv-supervisor-filter-btn" class="block mb-2 text-sm font-medium text-slate-400">Supervisor</label>
+                                            <button id="goals-sv-supervisor-filter-btn" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-teal-500">
+                                                <span id="goals-sv-supervisor-filter-text">Todos</span>
+                                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                            <div id="goals-sv-supervisor-filter-dropdown" class="hidden absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto custom-scrollbar text-white"></div>
+                                        </div>
+                                        <button id="goals-sv-import-btn" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2 shadow-lg transition-colors">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                            Importar
+                                        </button>
+                                        <button id="goals-sv-export-xlsx-btn" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2 shadow-lg transition-colors">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                            Exportar Excel
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Consolidated Table (SV) -->
+                                <div id="goals-sv-table-container" class="bg-[#1d2347] border border-slate-700 shadow-sm rounded-lg overflow-hidden">
+                                    <div class="overflow-auto custom-scrollbar" style="max-height: 75vh;">
+                                        <table class="min-w-full text-sm text-left text-slate-300 border-collapse" id="goals-sv-main-table">
+                                            <!-- Headers populated by JS -->
+                                            <tbody id="goals-sv-table-body" class="divide-y divide-slate-800 bg-[#151c36]"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <button id="clear-goals-gv-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg">Limpar</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="goals-table-container" class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="min-w-full text-sm text-left text-slate-300">
-                        <thead id="goals-gv-table-head"></thead>
-                        <tbody id="goals-gv-table-body" class="divide-y divide-slate-800"></tbody>
-                    </table>
-                </div>
-                <div id="goals-pagination-controls" class="p-4 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
-                    <div class="flex gap-2">
-                        <button id="goals-gv-export-pdf-btn" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded border border-slate-700">PDF</button>
-                        <button id="goals-gv-export-xlsx-btn" class="bg-green-900/30 hover:bg-green-900/50 text-green-400 text-xs px-3 py-1.5 rounded border border-green-900/50">XLSX</button>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <button id="goals-prev-page-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1.5 px-3 rounded text-xs disabled:opacity-50">Anterior</button>
-                        <span id="goals-page-info-text" class="text-slate-400 text-xs font-medium"></span>
-                        <button id="goals-next-page-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1.5 px-3 rounded text-xs disabled:opacity-50">Próxima</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div id="goals-sv-content">
-            <div class="filter-wrapper-sentinel">
-                <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                        <div id="goals-sv-coord-filter-wrapper" class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                            <button id="goals-sv-coord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-sv-coord-filter-text">Todos</span></button>
-                            <div id="goals-sv-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
-                        </div>
-                        <div id="goals-sv-cocoord-filter-wrapper" class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                            <button id="goals-sv-cocoord-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-sv-cocoord-filter-text">Todos</span></button>
-                            <div id="goals-sv-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
-                        </div>
-                        <div id="goals-sv-promotor-filter-wrapper" class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                            <button id="goals-sv-promotor-filter-btn" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="goals-sv-promotor-filter-text">Todos</span></button>
-                            <div id="goals-sv-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2"></div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button id="goals-sv-import-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 text-xs">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                Importar
-                            </button>
-                            <button id="goals-sv-export-xlsx-btn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 text-xs">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                Exportar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="goals-sv-table-container" class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table id="goals-sv-main-table" class="min-w-full text-sm text-left text-slate-300">
-                        <thead class="text-xs text-slate-400 uppercase bg-slate-900 sticky top-0"></thead>
-                        <tbody id="goals-sv-table-body" class="divide-y divide-slate-800"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Modals (Hidden) -->
     <!-- Order Details -->
@@ -1037,22 +1136,113 @@
         </div>
     </div>
 
-    <!-- Import Goals -->
-    <div id="import-goals-modal" class="modal-overlay hidden">
-        <div class="bg-modal-content">
-            <button id="import-goals-close-btn"></button>
-            <div id="import-drop-zone"><input id="import-goals-file"></div>
-            <textarea id="import-goals-textarea"></textarea>
-            <button id="import-goals-analyze-btn"></button>
-            <div id="import-analysis-container">
-                <div id="import-summary-badges"></div>
-                <button id="btn-generate-ai"></button>
-                <div id="ai-insights-result"><div id="ai-insights-content"></div><div id="ai-chart-container"></div></div>
-                <tbody id="import-analysis-table-body"></tbody>
-            </div>
-            <button id="import-goals-cancel-btn"></button><button id="import-goals-confirm-btn"></button>
-        </div>
-    </div>
+                        <!-- Modal Importar Metas -->
+                        <div id="import-goals-modal" class="modal-overlay hidden">
+                            <div class="bg-slate-800 rounded-lg shadow-2xl max-w-6xl w-full m-4 text-slate-300 border border-slate-700 flex flex-col max-h-[90vh]">
+                                <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                                    <h2 class="text-lg font-bold text-white">Importar / Analisar Planilha de Metas</h2>
+                                    <button id="import-goals-close-btn" class="text-slate-400 hover:text-white text-3xl">&times;</button>
+                                </div>
+                                <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
+                                    <div id="import-drop-zone" class="border-2 border-dashed border-slate-600 rounded-lg p-8 mb-6 flex flex-col items-center justify-center transition-colors hover:border-teal-500 hover:bg-slate-700/30 cursor-pointer">
+                                        <svg class="w-12 h-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                        </svg>
+                                        <p class="text-slate-300 font-medium mb-2">Arraste e solte o arquivo Excel aqui</p>
+                                        <p class="text-slate-500 text-sm mb-4">ou</p>
+                                        <label for="import-goals-file" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg cursor-pointer transition-colors shadow-lg">
+                                            Selecionar Arquivo
+                                        </label>
+                                        <p class="text-xs text-slate-500 mt-4">Formatos suportados: .xlsx, .xls, .csv</p>
+                                    </div>
+                                    <input type="file" id="import-goals-file" class="hidden" accept=".xlsx, .xls, .csv">
+
+                                    <div class="relative flex py-2 items-center mb-4">
+                                        <div class="flex-grow border-t border-slate-700"></div>
+                                        <span class="flex-shrink-0 mx-4 text-slate-500 text-xs uppercase font-bold">Ou colar texto</span>
+                                        <div class="flex-grow border-t border-slate-700"></div>
+                                    </div>
+
+                                    <p class="mb-2 text-sm text-slate-400">Cole abaixo os dados copiados da planilha (Excel/Sheets). Certifique-se de incluir os cabeçalhos das colunas.</p>
+                                    <textarea id="import-goals-textarea" class="w-full h-32 bg-slate-900 border border-slate-600 rounded-lg p-3 text-xs font-mono text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent mb-4" placeholder="Cole os dados aqui..."></textarea>
+
+                                    <div class="flex justify-end gap-4 mb-6">
+                                        <button id="import-goals-analyze-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow-lg">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                            Analisar
+                                        </button>
+                                    </div>
+
+                                    <!-- Analysis Report Container -->
+                                    <div id="import-analysis-container" class="hidden border-t border-slate-700 pt-6">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h3 class="text-white font-bold text-lg">Relatório de Análise</h3>
+                                            <div class="flex gap-3 items-center">
+                                                <div id="import-summary-badges" class="flex gap-2">
+                                                    <!-- Badges will be injected here -->
+                                                </div>
+                                                <button id="btn-generate-ai" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-1 px-4 rounded-full text-sm flex items-center shadow-lg transition-all transform hover:scale-105">
+                                                    ✨ Gerar Insights
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- AI Result Container -->
+                                        <div id="ai-insights-result" class="hidden mb-6 p-1 rounded-lg bg-gradient-to-r from-slate-700 to-slate-800 p-[1px]">
+                                            <div class="bg-slate-900 rounded-lg p-6 relative overflow-hidden">
+                                                <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                                                    <svg class="w-32 h-32 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6a1 1 0 0 0-1 1v4H8a1 1 0 0 0 0 2h3v3a1 1 0 0 0 2 0v-3h3a1 1 0 0 0 0-2h-3V7a1 1 0 0 0-1-1z"/></svg>
+                                                </div>
+                                                <div class="flex flex-col md:flex-row gap-6">
+                                                    <div class="flex-1">
+                                                        <h4 class="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-400 font-bold text-lg mb-4 flex items-center">
+                                                            <svg class="w-5 h-5 mr-2 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                                            Análise Inteligente de Metas
+                                                        </h4>
+                                                        <div id="ai-insights-content" class="text-sm text-slate-300 leading-relaxed space-y-2">
+                                                            <!-- AI Content Injected Here -->
+                                                        </div>
+                                                    </div>
+                                                    <div class="w-full md:w-1/3 flex flex-col justify-center items-center border-l border-slate-800 pl-6">
+                                                        <div id="ai-chart-container" class="w-full h-40 relative">
+                                                            <!-- Mini Chart -->
+                                                        </div>
+                                                        <p class="text-xs text-slate-500 mt-2 text-center">Visualização Resumida</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-slate-900 rounded-lg border border-slate-700 overflow-hidden">
+                                            <div class="overflow-x-auto">
+                                                <table class="min-w-full text-xs text-left text-slate-300">
+                                                    <thead class="bg-slate-800 text-slate-400 uppercase font-bold">
+                                                        <tr>
+                                                            <th class="px-4 py-3">Cód</th>
+                                                            <th class="px-4 py-3">Vendedor</th>
+                                                            <th class="px-4 py-3">Categoria / Coluna</th>
+                                                            <th class="px-4 py-3 text-right">Valor Atual</th>
+                                                            <th class="px-4 py-3 text-right">Novo Valor</th>
+                                                            <th class="px-4 py-3 text-right">Diferença</th>
+                                                            <th class="px-4 py-3 text-center">Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="import-analysis-table-body" class="divide-y divide-slate-800">
+                                                        <!-- Diff rows injected here -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-4 border-t border-slate-700 flex justify-end gap-3 bg-slate-800 rounded-b-lg">
+                                    <button id="import-goals-cancel-btn" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">Cancelar</button>
+                                    <button id="import-goals-confirm-btn" class="px-6 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                        Carregar Metas
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
 
     <!-- System Diagnosis Modal -->
     <div id="diagnosis-modal" class="modal-overlay hidden z-[9999]">
@@ -2024,7 +2214,7 @@
                         </div>
                         <div>
                             <div class="flex justify-between text-xs font-bold uppercase text-slate-400 mb-1">
-                                <span>Positivação</span>
+                                <span>Pesquisas</span>
                                 <span id="roteiro-progress-pos-text">0,00%</span>
                             </div>
                             <div class="w-full bg-slate-700 rounded-full h-2">
@@ -2075,7 +2265,30 @@
         <div class="mt-4 text-center text-slate-500 text-sm" id="produtos-count"></div>
     </div>
 
-    <div id="ai-insights-full-page" class="hidden"><div id="ai-insights-full-content"></div><button id="ai-insights-back-btn"></button><button id="ai-insights-export-btn"></button></div>
+                        <!-- Ecrã AI Insights Full Page -->
+                        <div id="ai-insights-full-page" class="hidden container mx-auto p-4 sm:p-6 lg:p-8">
+                            <header class="mb-6 -mt-4 -mx-4 sm:-mt-6 sm:-mx-6 lg:-mt-8 lg:-mx-8 p-6 bg-gradient-to-r from-indigo-900 to-slate-900 rounded-b-lg shadow-lg">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-4">
+                                        <button id="ai-insights-back-btn" class="text-white hover:text-indigo-300 transition-colors flex items-center gap-2 font-bold">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                                            Voltar
+                                        </button>
+                                        <div>
+                                            <h1 class="text-2xl font-bold text-white">Análise de Inteligência Artificial</h1>
+                                            <p class="text-slate-300">Insights Detalhados de Metas</p>
+                                        </div>
+                                    </div>
+                                    <button id="ai-insights-export-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg flex items-center gap-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                        Exportar HTML
+                                    </button>
+                                </div>
+                            </header>
+                            <div id="ai-insights-full-content" class="space-y-8">
+                                <!-- AI Content will be injected here -->
+                            </div>
+                        </div>
 
 </div>
 

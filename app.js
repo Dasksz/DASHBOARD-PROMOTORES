@@ -6083,6 +6083,15 @@
         }
 
         function updateGoalsView() {
+            // Fix Autofill Garbage
+            const codCliFilter = document.getElementById('goals-gv-codcli-filter');
+            if (codCliFilter && (codCliFilter.value.includes('http') || codCliFilter.value.includes('supabase'))) {
+                codCliFilter.value = '';
+            }
+
+            // Ensure Data is Calculated
+            calculateGoalsMetrics();
+
             goalsRenderId++;
             const currentRenderId = goalsRenderId;
 
@@ -7936,15 +7945,20 @@ const supervisorGroups = new Map();
                          const codFor = String(item.CODFOR);
                          const desc = normalize(item.DESCRICAO || '');
 
-                         if (['707', '708', '752'].includes(codFor)) {
-                             fornecedorLabel = codFor;
+                         if (codFor === '707') {
+                             fornecedorLabel = 'Extrusados';
+                         } else if (codFor === '708') {
+                             fornecedorLabel = 'Não Extrusados';
+                         } else if (codFor === '752') {
+                             fornecedorLabel = 'Torcida';
                          } else if (codFor === '1119') {
-                             if (desc.includes('TODDYNHO')) fornecedorLabel = '1119_TODDYNHO';
-                             else if (desc.includes('TODDY')) fornecedorLabel = '1119_TODDY';
-                             else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) fornecedorLabel = '1119_QUAKER_KEROCOCO';
-                             else fornecedorLabel = '1119_OUTROS';
+                             if (desc.includes('TODDYNHO')) fornecedorLabel = 'Toddynho';
+                             else if (desc.includes('TODDY')) fornecedorLabel = 'Toddy';
+                             else if (desc.includes('QUAKER')) fornecedorLabel = 'Quaker';
+                             else if (desc.includes('KEROCOCO')) fornecedorLabel = 'Kero Coco';
+                             else fornecedorLabel = 'Outros Foods';
                          } else {
-                             fornecedorLabel = 'PEPSICO_OUTROS';
+                             fornecedorLabel = 'Outros Pepsico';
                          }
                      } else {
                          fornecedorLabel = rowPasta || 'N/A';
@@ -8446,11 +8460,50 @@ const supervisorGroups = new Map();
                     chartTitle = 'Performance por Co-Coordenador';
                 }
 
-                const totalForPercentage = Object.values(chartData).reduce((a, b) => a + b, 0);
-                const personChartTooltipOptions = { plugins: { tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; const value = context.parsed.y; if (value !== null) { label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); if (totalForPercentage > 0) { const percentage = ((value / totalForPercentage) * 100).toFixed(2); label += ` (${percentage}%)`; } } return label; } } } } };
-                
                 salesByPersonTitle.textContent = chartTitle;
-                createChart('salesByPersonChart', 'bar', Object.keys(chartData).map(getFirstName), Object.values(chartData), personChartTooltipOptions);
+
+                const isSinglePromoter = chartTitle === 'Performance por Promotor' && Object.keys(chartData).length === 1;
+
+                if (isSinglePromoter) {
+                    // Destroy existing Chart.js instance if any, to prevent conflict or memory leak
+                    if (window.charts && window.charts['salesByPersonChart']) {
+                        window.charts['salesByPersonChart'].destroy();
+                        delete window.charts['salesByPersonChart'];
+                    }
+                    // Also check Chart registry directly
+                    const chartInstance = Chart.getChart('salesByPersonChart');
+                    if (chartInstance) chartInstance.destroy();
+
+                    const totalRealized = Object.values(chartData)[0] || 0;
+
+                    // Calculate Goal for the visible clients
+                    let totalGoal = 0;
+                    const visibleClients = getHierarchyFilteredClients('main', allClientsData);
+
+                    if (window.globalClientGoals) {
+                        visibleClients.forEach(c => {
+                            const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
+                            const clientGoals = window.globalClientGoals.get(codCli);
+                            if (clientGoals && clientGoals.has('PEPSICO_ALL')) {
+                                totalGoal += (clientGoals.get('PEPSICO_ALL').fat || 0);
+                            }
+                        });
+                    }
+
+                    renderLiquidGauge('salesByPersonChartContainer', totalRealized, totalGoal, 'Meta Geral');
+
+                } else {
+                    // Restore Canvas if needed
+                    const container = document.getElementById('salesByPersonChartContainer');
+                    if (container && !container.querySelector('canvas')) {
+                        container.innerHTML = '<canvas id="salesByPersonChart"></canvas>';
+                    }
+
+                    const totalForPercentage = Object.values(chartData).reduce((a, b) => a + b, 0);
+                    const personChartTooltipOptions = { plugins: { tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; const value = context.parsed.y; if (value !== null) { label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); if (totalForPercentage > 0) { const percentage = ((value / totalForPercentage) * 100).toFixed(2); label += ` (${percentage}%)`; } } return label; } } } } };
+
+                    createChart('salesByPersonChart', 'bar', Object.keys(chartData).map(getFirstName), Object.values(chartData), personChartTooltipOptions);
+                }
 
                 document.getElementById('faturamentoPorFornecedorTitle').textContent = isFiltered ? 'Faturamento por Fornecedor' : 'Faturamento por Categoria';
                 const faturamentoPorFornecedorData = summary.faturamentoPorFornecedor;
@@ -11443,6 +11496,12 @@ const supervisorGroups = new Map();
         }
 
         async function renderView(view, options = {}) {
+            if (view === 'goals' && window.userRole !== 'adm') {
+                alert('Acesso restrito a administradores.');
+                renderView('dashboard');
+                return;
+            }
+
             // Push to history if not navigating back
             if (!options.skipHistory && currentActiveView && currentActiveView !== view) {
                 viewHistory.push(currentActiveView);
@@ -11852,7 +11911,7 @@ const supervisorGroups = new Map();
 
                     // --- PRESERVE MANUAL KEYS ---
                     try {
-                        const keysToPreserve = ['groq_api_key', 'senha_modal'];
+                        const keysToPreserve = ['groq_api_key', 'senha_modal', 'BREVO_API_KEY', 'BREVO_SENDER_EMAIL'];
                         const { data: currentMetadata } = await window.supabaseClient
                             .from('data_metadata')
                             .select('*')
@@ -17183,48 +17242,7 @@ const supervisorGroups = new Map();
 
         // Metrics
         let visitedCount = 0;
-        let positiveCount = 0;
-        
-        // Check Sales on target date
-        // Note: aggregatedOrders.DTPED is a Date object. 
-        // We compare YYYY-MM-DD strings to ignore time.
-        const salesOnDate = new Set();
-        // Construct YYYY-MM-DD from 'date' (which is local midnight)
-        // To ensure consistency, we use getFullYear/getMonth/getDate padding
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        const targetDateStr = `${y}-${m}-${d}`;
-        
-        aggregatedOrders.forEach(order => {
-            if (order.DTPED) {
-                // order.DTPED is Date object. Convert to Local YYYY-MM-DD string for comparison
-                // Or UTC? parseDate generally produces UTC-ish dates if from ISO. 
-                // But let's check parseDate implementation again. 
-                // It usually adds 'Z' to ISO strings -> UTC.
-                // If DTPED came from '2023-10-27T10:00:00', it's a point in time.
-                // Sales happen in local time. 
-                // If DTPED is 2023-10-27, it means sale on 27th.
-                // We should compare the date components.
-                // safely get components
-                const oy = order.DTPED.getUTCFullYear();
-                const om = String(order.DTPED.getUTCMonth() + 1).padStart(2, '0');
-                const od = String(order.DTPED.getUTCDate()).padStart(2, '0');
-                
-                // Wait, if parseDate forced UTC (Z), then getUTC* gives the date in the file.
-                // e.g. CSV has 2023-10-27. parseDate makes 2023-10-27Z.
-                // getUTCDate gives 27. Correct.
-                
-                // BUT targetDateStr was constructed from Local Date components.
-                // If 'date' is 27th (Local), we compare with 27th (from file).
-                // So we compare `oy-om-od` vs `targetDateStr`.
-                
-                const orderDateStr = `${oy}-${om}-${od}`;
-                if (orderDateStr === targetDateStr) {
-                    salesOnDate.add(normalizeKey(order.codcli));
-                }
-            }
-        });
+        let surveyCount = 0;
         
         // Render List
         if (scheduledClients.length === 0) {
@@ -17237,27 +17255,59 @@ const supervisorGroups = new Map();
             
             scheduledClients.forEach(c => {
                 const cod = normalizeKey(c['Código'] || c['codigo_cliente']);
-                const hasSale = salesOnDate.has(cod);
-                if (hasSale) {
-                    visitedCount++;
-                    positiveCount++; // Assuming order implies positivation
+
+                // Check Visits from Memory
+                const clientVisits = myMonthVisits.get(cod) || [];
+
+                // Find visit for THIS date (Local)
+                const todaysVisit = clientVisits.find(v => {
+                    const d = new Date(v.created_at);
+                    return d.getDate() === date.getDate() &&
+                           d.getMonth() === date.getMonth() &&
+                           d.getFullYear() === date.getFullYear();
+                });
+
+                const hasVisit = !!todaysVisit;
+                const hasSurvey = hasVisit && todaysVisit.respostas;
+                const visitedThisMonth = clientVisits.length > 0;
+
+                if (hasVisit) visitedCount++;
+                if (hasSurvey) surveyCount++;
+
+                // Status Tag Logic
+                let statusHtml = `<span class="px-2 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-full">Pendente</span>`;
+                let barColor = 'bg-slate-600';
+
+                if (hasVisit) {
+                    if (todaysVisit.checkout_at) {
+                        statusHtml = `<span class="px-2 py-1 bg-green-900 text-green-300 text-xs font-bold rounded-full">Visitado</span>`;
+                        barColor = 'bg-green-500';
+                    } else {
+                        statusHtml = `<span class="px-2 py-1 bg-orange-900 text-orange-300 text-xs font-bold rounded-full animate-pulse">Em Andamento</span>`;
+                        barColor = 'bg-orange-500';
+                    }
                 }
                 
                 const div = document.createElement('div');
                 div.className = 'p-4 flex items-center justify-between hover:bg-slate-800 cursor-pointer transition-colors';
                 div.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <div class="w-2 h-10 ${hasSale ? 'bg-green-500' : 'bg-slate-600'} rounded-full"></div>
+                        <div class="w-2 h-10 ${barColor} rounded-full"></div>
                         <div>
-                            <div class="text-sm font-bold text-white">${c.fantasia || c.nomeCliente}</div>
+                            <div class="text-sm font-bold text-white flex items-center gap-2">
+                                ${c.fantasia || c.nomeCliente}
+                                ${visitedThisMonth ? `
+                                    <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Visitado este mês">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3 3L22 4"></path>
+                                    </svg>
+                                ` : ''}
+                            </div>
                             <div class="text-xs text-slate-400 font-mono">${cod} • ${c.cidade || ''}</div>
                         </div>
                     </div>
                     <div>
-                        ${hasSale 
-                            ? `<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Positivado</span>`
-                            : `<span class="px-2 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-full">Pendente</span>`
-                        }
+                        ${statusHtml}
                     </div>
                 `;
                 div.onclick = () => openActionModal(cod, c.fantasia || c.nomeCliente);
@@ -17267,13 +17317,13 @@ const supervisorGroups = new Map();
         
         // Update Progress Bars
         const visitPct = scheduledClients.length > 0 ? (visitedCount / scheduledClients.length) * 100 : 0;
-        const posPct = scheduledClients.length > 0 ? (positiveCount / scheduledClients.length) * 100 : 0;
+        const surveyPct = scheduledClients.length > 0 ? (surveyCount / scheduledClients.length) * 100 : 0;
         
         document.getElementById('roteiro-progress-visit-text').textContent = visitPct.toFixed(1) + '%';
         document.getElementById('roteiro-progress-visit-bar').style.width = visitPct + '%';
         
-        document.getElementById('roteiro-progress-pos-text').textContent = posPct.toFixed(1) + '%';
-        document.getElementById('roteiro-progress-pos-bar').style.width = posPct + '%';
+        document.getElementById('roteiro-progress-pos-text').textContent = surveyPct.toFixed(1) + '%';
+        document.getElementById('roteiro-progress-pos-bar').style.width = surveyPct + '%';
     }
 
     // Helper to save itinerary
@@ -17520,6 +17570,9 @@ const supervisorGroups = new Map();
                 let statusColor = 'bg-green-500';
                 if (days !== '-' && parseInt(days) > 30) statusColor = 'bg-red-500';
                 
+                // Check Monthly Visit
+                const visitedThisMonth = myMonthVisits.has(normalizeKey(cod));
+
                 const item = document.createElement('div');
                 // Dark Theme Classes with "Shiny" Hover (Left Border)
                 item.className = 'p-4 flex items-center justify-between transition-all duration-200 cursor-pointer border-b border-slate-800/50 bg-[#0f172a] hover:bg-slate-800/80 border-l-4 border-l-transparent hover:border-l-blue-500 group';
@@ -17529,7 +17582,15 @@ const supervisorGroups = new Map();
                             ${firstLetter}
                         </div>
                         <div>
-                            <h3 class="text-sm font-bold text-white leading-tight">${cod} - ${name}</h3>
+                            <h3 class="text-sm font-bold text-white leading-tight flex items-center gap-2">
+                                ${cod} - ${name}
+                                ${visitedThisMonth ? `
+                                    <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Visitado este mês">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3 3L22 4"></path>
+                                    </svg>
+                                ` : ''}
+                            </h3>
                             <p class="text-xs text-slate-400 font-medium mt-0.5">Fantasia: ${fantasia}</p>
                         </div>
                     </div>
@@ -17869,10 +17930,45 @@ const supervisorGroups = new Map();
     let clienteEmVisitaId = null; // Storing Client Code (text) to match our usage
     let currentActionClientCode = null; // For the modal context
     let currentActionClientName = null; // For refetching modal
+    let myMonthVisits = new Map(); // Map<ClientCode, Array<Visit>>
+
+    async function fetchMyVisits() {
+        const { data: { user } } = await window.supabaseClient.auth.getUser();
+        if (!user) return;
+
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const isoStart = `${y}-${m}-01T00:00:00`; // Local start of month
+
+        const { data, error } = await window.supabaseClient
+            .from('visitas')
+            .select('id, client_code, id_cliente, created_at, checkout_at, respostas')
+            .eq('id_promotor', user.id)
+            .gte('created_at', isoStart);
+
+        if (data) {
+            myMonthVisits.clear();
+            data.forEach(v => {
+                const code = normalizeKey(v.client_code || v.id_cliente);
+                if (!myMonthVisits.has(code)) myMonthVisits.set(code, []);
+                myMonthVisits.get(code).push(v);
+            });
+        }
+    }
 
     async function verificarEstadoVisita() {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
         if (!user) return;
+
+        // Fetch all visits for the month first (background)
+        fetchMyVisits().then(() => {
+            if (isRoteiroMode) renderRoteiroView();
+            // Also refresh list view if visible to show tags
+            if (!isRoteiroMode && document.getElementById('clientes-view') && !document.getElementById('clientes-view').classList.contains('hidden')) {
+                renderClientView();
+            }
+        });
 
         const { data, error } = await window.supabaseClient
             .from('visitas')
@@ -18618,12 +18714,100 @@ const supervisorGroups = new Map();
         chart.appear(1000, 100);
     }
 
+    function renderLiquidGauge(containerId, value, goal, label) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        // Clear previous content
+        container.innerHTML = '';
+
+        let percent = 0;
+        if (goal > 0) {
+            percent = (value / goal) * 100;
+        } else if (value > 0) {
+            percent = 100;
+        }
+
+        const clampedPercent = Math.min(Math.max(percent, 0), 100);
+        const displayPercentage = Math.round(percent);
+
+        const formattedValue = value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 0});
+        const formattedGoal = goal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 0});
+
+        // Determine Text Color Class based on percentage > 55
+        const isFilled = clampedPercent > 55;
+        const percentColorClass = isFilled ? 'text-white drop-shadow-md' : 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]';
+        const subTextColorClass = isFilled ? 'text-cyan-50' : 'text-gray-400';
+        const dividerClass = isFilled ? 'bg-white/50' : 'bg-gray-600';
+
+        const html = `
+            <div class="flex flex-col items-center justify-center w-full h-full p-2">
+                <!-- Cylinder Container -->
+                <div class="relative w-40 h-64 bg-gray-900/80 rounded-full border-[4px] border-gray-700/80 overflow-hidden shadow-[0_0_30px_rgba(6,182,212,0.15)] backdrop-blur-sm">
+
+                    <!-- Inner Background -->
+                    <div class="absolute inset-0 bg-gradient-to-b from-gray-800/30 via-transparent to-black/60 pointer-events-none z-20"></div>
+
+                    <!-- Water Layer -->
+                    <div class="absolute bottom-0 left-0 right-0 w-full transition-all duration-1000 ease-in-out z-10" style="height: ${clampedPercent}%;">
+                        <!-- Back Wave -->
+                        <div class="w-[200%] h-full absolute -left-full -top-3 animate-wave-slow opacity-50">
+                            <svg viewBox="0 0 500 150" preserveAspectRatio="none" class="w-full h-16 fill-cyan-700">
+                                <path d="M0.00,49.98 C149.99,150.00 349.20,-49.98 500.00,49.98 L500.00,150.00 L0.00,150.00 Z" />
+                            </svg>
+                            <div class="w-full h-full bg-cyan-700"></div>
+                        </div>
+
+                        <!-- Front Wave -->
+                        <div class="w-[200%] h-full absolute -left-full -top-5 animate-wave">
+                            <svg viewBox="0 0 500 150" preserveAspectRatio="none" class="w-full h-20 fill-cyan-500">
+                                <path d="M0.00,49.98 C149.99,150.00 349.20,-49.98 500.00,49.98 L500.00,150.00 L0.00,150.00 Z" />
+                            </svg>
+                            <div class="w-full h-full bg-gradient-to-b from-cyan-500 to-blue-600 shadow-[0_0_20px_rgba(6,182,212,0.6)]"></div>
+                        </div>
+                    </div>
+
+                    <!-- Text Overlay -->
+                    <div class="absolute inset-0 flex flex-col items-center justify-center z-30 pointer-events-none">
+                        <span class="text-4xl font-bold tracking-tighter ${percentColorClass} transition-colors duration-500">
+                            ${displayPercentage}%
+                        </span>
+                        <div class="flex flex-col items-center mt-1 text-xs font-semibold ${subTextColorClass} transition-colors duration-500">
+                            <span>${formattedValue}</span>
+                            <div class="h-[1px] w-8 my-1 ${dividerClass}"></div>
+                            <span>${formattedGoal}</span>
+                        </div>
+                    </div>
+
+                    <!-- Glass Reflections -->
+                    <div class="absolute top-4 left-3 bottom-4 w-3 bg-gradient-to-r from-white/10 to-transparent rounded-full blur-[1px] pointer-events-none z-40"></div>
+                    <div class="absolute top-2 left-8 right-8 h-1.5 bg-white/20 rounded-[100%] blur-[3px] pointer-events-none z-40"></div>
+                </div>
+
+                <!-- Footer Legend -->
+                <div class="mt-4 flex items-center justify-between w-40 px-2">
+                    <div class="text-xs text-gray-400">Progresso</div>
+                    <div class="text-sm font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">
+                        ${formattedValue}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = html;
+    }
+
     // Auto-init User Menu on load if ready (for Navbar)
     if (document.readyState === "complete" || document.readyState === "interactive") {
         initWalletView();
         initRackMultiSelect();
         initCustomFileInput();
         verificarEstadoVisita();
+
+        // Enforce Menu Permissions
+        if (window.userRole !== 'adm') {
+            document.querySelectorAll('[data-target="goals"]').forEach(el => el.classList.add('hidden'));
+        }
     }
 
 })();
