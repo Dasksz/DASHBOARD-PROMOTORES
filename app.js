@@ -8434,15 +8434,52 @@ const supervisorGroups = new Map();
 
             if (!chartView.classList.contains('hidden')) {
                 let chartData = summary.vendasPorCoord;
-                let chartTitle = 'Performance por Coordenador';
                 const mainState = hierarchyState['main'];
                 
                 if (mainState.cocoords.size > 0) {
                     chartData = summary.vendasPorPromotor;
-                    chartTitle = 'Performance por Promotor';
                 } else if (mainState.coords.size > 0) {
                     chartData = summary.vendasPorCoCoord;
-                    chartTitle = 'Performance por Co-Coordenador';
+                }
+
+                // Determine Title (Dynamic Logic)
+                let chartTitle = 'Performance';
+                const role = window.userRole || 'promotor';
+                const getName = (map, code) => (map && map.get(code)) || code;
+
+                if (role === 'promotor') {
+                    chartTitle = 'Performance';
+                } else if (mainState.promotors && mainState.promotors.size > 0) {
+                    if (mainState.promotors.size === 1) {
+                        const code = mainState.promotors.values().next().value;
+                        chartTitle = `Performance ${getName(optimizedData.promotorMap, code)}`;
+                    } else {
+                        chartTitle = 'Performance Promotores';
+                    }
+                } else if (mainState.cocoords && mainState.cocoords.size > 0) {
+                    if (role === 'cocoord') {
+                        chartTitle = 'Performance';
+                    } else {
+                        if (mainState.cocoords.size === 1) {
+                            const code = mainState.cocoords.values().next().value;
+                            chartTitle = `Performance ${getName(optimizedData.cocoordMap, code)}`;
+                        } else {
+                            chartTitle = 'Performance Co-coordenadores';
+                        }
+                    }
+                } else if (mainState.coords && mainState.coords.size > 0) {
+                    if (role === 'coord') {
+                        chartTitle = 'Performance';
+                    } else {
+                        if (mainState.coords.size === 1) {
+                            const code = mainState.coords.values().next().value;
+                            chartTitle = `Performance ${getName(optimizedData.coordMap, code)}`;
+                        } else {
+                            chartTitle = 'Performance Coordenadores';
+                        }
+                    }
+                } else {
+                    chartTitle = 'Performance';
                 }
 
                 salesByPersonTitle.textContent = chartTitle;
