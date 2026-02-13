@@ -638,8 +638,8 @@ VALUES ('visitas-images', 'visitas-images', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Security (RLS) for Storage Objects
--- Enable RLS on storage.objects if not already enabled (usually is by default)
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- Note: storage.objects usually has RLS enabled by default.
+-- We skip ALTER TABLE to avoid permission errors (42501) if not owner.
 
 -- Allow authenticated uploads
 DROP POLICY IF EXISTS "Authenticated users can upload images" ON storage.objects;
