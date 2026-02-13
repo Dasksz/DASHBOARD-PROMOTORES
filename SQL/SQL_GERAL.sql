@@ -361,6 +361,12 @@ drop policy IF exists "Users can view own profile" on public.profiles;
 
 drop policy IF exists "Users can update own profile" on public.profiles;
 
+-- Cleanup conflicting/duplicate policies (Performance Fixes)
+drop policy IF exists "Profiles Select" on public.profiles;
+drop policy IF exists "Profiles Insert" on public.profiles;
+drop policy IF exists "Profiles Update" on public.profiles;
+drop policy IF exists "Profiles Delete" on public.profiles;
+
 drop policy IF exists "Profiles Unified Select" on public.profiles;
 
 drop policy IF exists "Profiles Unified Update" on public.profiles;
@@ -494,10 +500,25 @@ to authenticated using (
 
 -- 2. Write Access (INSERT, UPDATE, DELETE) - Admin Only
 DROP POLICY IF EXISTS "Goals Write Access" ON public.goals_distribution;
-create policy "Goals Write Access" on public.goals_distribution
-for all
-to authenticated using (public.is_admin ())
+
+DROP POLICY IF EXISTS "Goals Insert Admin" ON public.goals_distribution;
+create policy "Goals Insert Admin" on public.goals_distribution
+for insert
+to authenticated
 with check (public.is_admin ());
+
+DROP POLICY IF EXISTS "Goals Update Admin" ON public.goals_distribution;
+create policy "Goals Update Admin" on public.goals_distribution
+for update
+to authenticated
+using (public.is_admin ())
+with check (public.is_admin ());
+
+DROP POLICY IF EXISTS "Goals Delete Admin" ON public.goals_distribution;
+create policy "Goals Delete Admin" on public.goals_distribution
+for delete
+to authenticated
+using (public.is_admin ());
 
 -- ==============================================================================
 -- 5. SECURITY FIXES (DYNAMIC SEARCH PATH)
@@ -529,7 +550,9 @@ BEGIN
               'get_detailed_orders',
               'get_coverage_view_data',
               'get_filtered_client_base_json',
-              'get_stock_view_data'
+              'get_stock_view_data',
+              'classify_product_mix',
+              'set_coordenador_email_on_visita'
           )
     LOOP
         EXECUTE format('ALTER FUNCTION %I.%I(%s) SET search_path = public',
@@ -571,14 +594,24 @@ CREATE TABLE IF NOT EXISTS public.visitas (
     cod_cocoord text -- Codigo do Co-Coordenador (Para facilitar envio de email)
 );
 
+-- 7.1.1 Indexes (Performance Optimization)
+CREATE INDEX IF NOT EXISTS idx_visitas_id_promotor ON public.visitas (id_promotor);
+
 -- 7.2 Segurança (RLS)
 ALTER TABLE public.visitas ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Promotores inserem suas visitas" ON public.visitas;
-CREATE POLICY "Promotores inserem suas visitas" ON public.visitas FOR INSERT TO authenticated WITH CHECK (auth.uid() = id_promotor);
+CREATE POLICY "Promotores inserem suas visitas" ON public.visitas FOR INSERT TO authenticated WITH CHECK ((select auth.uid()) = id_promotor);
 
 DROP POLICY IF EXISTS "Promotores veem suas visitas" ON public.visitas;
-CREATE POLICY "Promotores veem suas visitas" ON public.visitas FOR ALL TO authenticated USING (auth.uid() = id_promotor);
+DROP POLICY IF EXISTS "Promotores Select" ON public.visitas;
+CREATE POLICY "Promotores Select" ON public.visitas FOR SELECT TO authenticated USING ((select auth.uid()) = id_promotor);
+
+DROP POLICY IF EXISTS "Promotores Update" ON public.visitas;
+CREATE POLICY "Promotores Update" ON public.visitas FOR UPDATE TO authenticated USING ((select auth.uid()) = id_promotor);
+
+DROP POLICY IF EXISTS "Promotores Delete" ON public.visitas;
+CREATE POLICY "Promotores Delete" ON public.visitas FOR DELETE TO authenticated USING ((select auth.uid()) = id_promotor);
 
 DROP POLICY IF EXISTS "Serviço tem acesso total" ON public.visitas;
 CREATE POLICY "Serviço tem acesso total" ON public.visitas FOR ALL TO service_role USING (true);
