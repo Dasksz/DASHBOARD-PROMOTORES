@@ -6068,6 +6068,15 @@
         }
 
         function updateGoalsView() {
+            // Fix Autofill Garbage
+            const codCliFilter = document.getElementById('goals-gv-codcli-filter');
+            if (codCliFilter && (codCliFilter.value.includes('http') || codCliFilter.value.includes('supabase'))) {
+                codCliFilter.value = '';
+            }
+
+            // Ensure Data is Calculated
+            calculateGoalsMetrics();
+
             goalsRenderId++;
             const currentRenderId = goalsRenderId;
 
@@ -11454,6 +11463,12 @@ const supervisorGroups = new Map();
         }
 
         async function renderView(view, options = {}) {
+            if (view === 'goals' && window.userRole !== 'adm') {
+                alert('Acesso restrito a administradores.');
+                renderView('dashboard');
+                return;
+            }
+
             // Push to history if not navigating back
             if (!options.skipHistory && currentActiveView && currentActiveView !== view) {
                 viewHistory.push(currentActiveView);
@@ -18731,6 +18746,11 @@ const supervisorGroups = new Map();
         initRackMultiSelect();
         initCustomFileInput();
         verificarEstadoVisita();
+
+        // Enforce Menu Permissions
+        if (window.userRole !== 'adm') {
+            document.querySelectorAll('[data-target="goals"]').forEach(el => el.classList.add('hidden'));
+        }
     }
 
 })();
