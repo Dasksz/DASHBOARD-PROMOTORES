@@ -1,6 +1,90 @@
     const SUPABASE_URL = 'https://dldsocponbjthqxhmttj.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZHNvY3BvbmJqdGhxeGhtdHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzgzMzgsImV4cCI6MjA4NTAxNDMzOH0.IGxUEd977uIdhWvMzjDM8ygfISB_Frcf_2air8e3aOs';
 
+    // --- TOAST NOTIFICATION SYSTEM ---
+    window.showToast = function(type, message, title = '') {
+        const container = document.getElementById('toast-container');
+        if (!container) {
+            console.error('Toast container not found!');
+            // Fallback to console if container is missing during critical error
+            console.log(`[${type}] ${message}`);
+            return;
+        }
+
+        // Colors and Icons
+        const variants = {
+            success: {
+                class: 'toast-success',
+                icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+                defaultTitle: 'Sucesso'
+            },
+            error: {
+                class: 'toast-error',
+                icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+                defaultTitle: 'Erro'
+            },
+            info: {
+                class: 'toast-info',
+                icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+                defaultTitle: 'Informação'
+            },
+            warning: {
+                class: 'toast-warning',
+                icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
+                defaultTitle: 'Atenção'
+            }
+        };
+
+        const variant = variants[type] || variants.info;
+        const finalTitle = title || variant.defaultTitle;
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${variant.class}`;
+        toast.innerHTML = `
+            <div class="toast-icon">${variant.icon}</div>
+            <div class="flex-1 min-w-0">
+                <h4 class="toast-title">${finalTitle}</h4>
+                <p class="toast-message">${message}</p>
+            </div>
+            <button class="toast-close-btn" onclick="this.parentElement.remove()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            ${type !== 'error' ? '<div class="toast-progress"></div>' : ''}
+        `;
+
+        container.appendChild(toast);
+
+        // Auto dismiss for non-error
+        if (type !== 'error') {
+            const timeout = 5000; // 5 seconds
+            const progress = toast.querySelector('.toast-progress');
+            if(progress) progress.style.animationDuration = `${timeout}ms`;
+
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.add('hiding');
+                    toast.addEventListener('animationend', () => toast.remove());
+                }
+            }, timeout);
+        }
+    };
+
+    window.handleSupabaseError = function(error) {
+        console.error('Supabase Error:', error);
+        let msg = error.message || "Ocorreu um erro desconhecido.";
+
+        // Translations
+        if (msg.includes("email rate limit exceeded")) {
+            msg = "Muitas tentativas de login. Por favor, aguarde alguns instantes antes de tentar novamente.";
+        } else if (msg.includes("Invalid login credentials")) {
+            msg = "Email ou senha incorretos.";
+        } else if (msg.includes("User already registered")) {
+            msg = "Este email já está cadastrado.";
+        }
+
+        window.showToast('error', msg);
+    };
+
             // Helper to normalize keys (remove leading zeros)
             function normalizeKey(key) {
                 if (!key) return '';
@@ -1050,14 +1134,14 @@
                     if (profileError) {
                         console.error('Erro ao verificar perfil:', profileError);
                         // Fail safe: don't reveal error details, just generic message
-                        alert('Não foi possível verificar o e-mail. Tente novamente mais tarde.');
+                        window.showToast('error', 'Não foi possível verificar o e-mail. Tente novamente mais tarde.');
                         btn.disabled = false; btn.textContent = oldText;
                         return;
                     }
 
                     if (!profile || profile.status !== 'aprovado') {
                         // User not found or not approved
-                        alert('E-mail não encontrado ou cadastro pendente de aprovação.');
+                        window.showToast('error', 'E-mail não encontrado ou cadastro pendente de aprovação.');
                         btn.disabled = false; btn.textContent = oldText;
                         return;
                     }
@@ -1068,9 +1152,9 @@
                     });
 
                     if (error) {
-                        alert('Erro ao enviar email: ' + error.message);
+                        window.handleSupabaseError(error);
                     } else {
-                        alert('Verifique seu e-mail para o link de redefinição de senha.');
+                        window.showToast('success', 'Verifique seu e-mail para o link de redefinição de senha.');
                         // Switch back to login view
                         if (loginFormForgot) loginFormForgot.classList.add('hidden');
                         if (loginFormSignin) loginFormSignin.classList.remove('hidden');
@@ -1078,7 +1162,7 @@
 
                 } catch (err) {
                     console.error('Erro inesperado:', err);
-                    alert('Ocorreu um erro ao processar sua solicitação.');
+                    window.showToast('error', 'Ocorreu um erro ao processar sua solicitação.');
                 } finally {
                     btn.disabled = false; btn.textContent = oldText;
                 }
@@ -1155,7 +1239,7 @@
                 });
 
                 if (error) {
-                    alert('Erro ao entrar: ' + error.message);
+                    window.handleSupabaseError(error);
                     btn.disabled = false; btn.textContent = oldText;
                 } else {
                     // Auth state change will handle the rest
@@ -1175,19 +1259,19 @@
                 // Validate Password
                 // Min 8 chars, 1 upper, 1 lower, 1 special
                 if (password.length < 8) {
-                    alert('A senha deve ter no mínimo 8 caracteres.');
+                    window.showToast('warning', 'A senha deve ter no mínimo 8 caracteres.');
                     return;
                 }
                 if (!/[A-Z]/.test(password)) {
-                    alert('A senha deve conter pelo menos uma letra maiúscula.');
+                    window.showToast('warning', 'A senha deve conter pelo menos uma letra maiúscula.');
                     return;
                 }
                 if (!/[a-z]/.test(password)) {
-                    alert('A senha deve conter pelo menos uma letra minúscula.');
+                    window.showToast('warning', 'A senha deve conter pelo menos uma letra minúscula.');
                     return;
                 }
                 if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-                    alert('A senha deve conter pelo menos um caractere especial.');
+                    window.showToast('warning', 'A senha deve conter pelo menos um caractere especial.');
                     return;
                 }
 
@@ -1210,15 +1294,15 @@
                 });
 
                 if (error) {
-                    alert('Erro ao cadastrar: ' + error.message);
+                    window.handleSupabaseError(error);
                     btn.disabled = false; btn.textContent = oldText;
                     return;
                 }
 
                 if (data && data.user) {
-                    alert('Cadastro realizado! Sua conta aguarda aprovação manual.');
+                    window.showToast('success', 'Cadastro realizado! Sua conta aguarda aprovação manual.');
                     // Reload to show pending screen
-                    window.location.reload();
+                    setTimeout(() => window.location.reload(), 2000);
                 }
             });
         }
@@ -1334,7 +1418,7 @@
                             });
                         }
                     } else {
-                        alert("Erro de conexão: " + err.message);
+                        window.showToast('error', "Erro de conexão: " + err.message);
                         telaLoading.classList.add('hidden');
                         telaPendente.classList.remove('hidden');
                     }
@@ -1390,7 +1474,7 @@
         if (saveBtn) {
             saveBtn.addEventListener('click', async () => {
                 if (window.userRole !== 'adm') {
-                    alert('Apenas usuários com permissão "adm" podem salvar metas.');
+                    window.showToast('warning', 'Apenas usuários com permissão "adm" podem salvar metas.');
                     return;
                 }
 
@@ -1407,7 +1491,7 @@
                     await saveGoalsToSupabase(session.access_token);
                 } catch (error) {
                     console.error(error);
-                    alert('Erro ao salvar metas: ' + error.message);
+                    window.showToast('error', 'Erro ao salvar metas: ' + error.message);
                 } finally {
                     statusText.disabled = false;
                     statusText.innerHTML = originalText;
@@ -1418,7 +1502,7 @@
         if (clearBtn) {
             clearBtn.addEventListener('click', async () => {
                 if (window.userRole !== 'adm') {
-                    alert('Apenas usuários com permissão "adm" podem apagar metas.');
+                    window.showToast('warning', 'Apenas usuários com permissão "adm" podem apagar metas.');
                     return;
                 }
 
@@ -1430,7 +1514,7 @@
                     await clearGoalsFromSupabase(session.access_token);
                 } catch (error) {
                     console.error(error);
-                    alert('Erro ao limpar metas: ' + error.message);
+                    window.showToast('error', 'Erro ao limpar metas: ' + error.message);
                 }
             });
         }
@@ -1490,7 +1574,7 @@
                 throw new Error(`Erro Supabase (${response.status}): ${errorText}`);
             }
 
-            alert('Metas salvas com sucesso!');
+            window.showToast('success', 'Metas salvas com sucesso!');
         }
 
         async function clearGoalsFromSupabase(authToken) {
@@ -1544,10 +1628,10 @@
                 // Vou disparar um evento customizado 'goalsCleared' e ouvir no scopo principal.
                 document.dispatchEvent(new CustomEvent('goalsCleared'));
 
-                alert('Metas limpas com sucesso!');
+                window.showToast('success', 'Metas limpas com sucesso!');
             } catch (err) {
                 console.error('Erro ao limpar metas:', err);
-                alert('Erro ao limpar metas: ' + err.message);
+                window.showToast('error', 'Erro ao limpar metas: ' + err.message);
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
