@@ -8436,11 +8436,50 @@ const supervisorGroups = new Map();
                     chartTitle = 'Performance por Co-Coordenador';
                 }
 
-                const totalForPercentage = Object.values(chartData).reduce((a, b) => a + b, 0);
-                const personChartTooltipOptions = { plugins: { tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; const value = context.parsed.y; if (value !== null) { label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); if (totalForPercentage > 0) { const percentage = ((value / totalForPercentage) * 100).toFixed(2); label += ` (${percentage}%)`; } } return label; } } } } };
-                
                 salesByPersonTitle.textContent = chartTitle;
-                createChart('salesByPersonChart', 'bar', Object.keys(chartData).map(getFirstName), Object.values(chartData), personChartTooltipOptions);
+
+                const isSinglePromoter = chartTitle === 'Performance por Promotor' && Object.keys(chartData).length === 1;
+
+                if (isSinglePromoter) {
+                    // Destroy existing Chart.js instance if any, to prevent conflict or memory leak
+                    if (window.charts && window.charts['salesByPersonChart']) {
+                        window.charts['salesByPersonChart'].destroy();
+                        delete window.charts['salesByPersonChart'];
+                    }
+                    // Also check Chart registry directly
+                    const chartInstance = Chart.getChart('salesByPersonChart');
+                    if (chartInstance) chartInstance.destroy();
+
+                    const totalRealized = Object.values(chartData)[0] || 0;
+
+                    // Calculate Goal for the visible clients
+                    let totalGoal = 0;
+                    const visibleClients = getHierarchyFilteredClients('main', allClientsData);
+
+                    if (window.globalClientGoals) {
+                        visibleClients.forEach(c => {
+                            const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
+                            const clientGoals = window.globalClientGoals.get(codCli);
+                            if (clientGoals && clientGoals.has('PEPSICO_ALL')) {
+                                totalGoal += (clientGoals.get('PEPSICO_ALL').fat || 0);
+                            }
+                        });
+                    }
+
+                    renderLiquidGauge('salesByPersonChartContainer', totalRealized, totalGoal, 'Meta Geral');
+
+                } else {
+                    // Restore Canvas if needed
+                    const container = document.getElementById('salesByPersonChartContainer');
+                    if (container && !container.querySelector('canvas')) {
+                        container.innerHTML = '<canvas id="salesByPersonChart"></canvas>';
+                    }
+
+                    const totalForPercentage = Object.values(chartData).reduce((a, b) => a + b, 0);
+                    const personChartTooltipOptions = { plugins: { tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; const value = context.parsed.y; if (value !== null) { label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); if (totalForPercentage > 0) { const percentage = ((value / totalForPercentage) * 100).toFixed(2); label += ` (${percentage}%)`; } } return label; } } } } };
+
+                    createChart('salesByPersonChart', 'bar', Object.keys(chartData).map(getFirstName), Object.values(chartData), personChartTooltipOptions);
+                }
 
                 document.getElementById('faturamentoPorFornecedorTitle').textContent = isFiltered ? 'Faturamento por Fornecedor' : 'Faturamento por Categoria';
                 const faturamentoPorFornecedorData = summary.faturamentoPorFornecedor;
@@ -18564,6 +18603,89 @@ const supervisorGroups = new Map();
 
         series.appear(1000, 100);
         chart.appear(1000, 100);
+    }
+
+    function renderLiquidGauge(containerId, value, goal, label) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        // Clear previous content
+        container.innerHTML = '';
+
+        let percent = 0;
+        if (goal > 0) {
+            percent = (value / goal) * 100;
+        } else if (value > 0) {
+            percent = 100;
+        }
+
+        const clampedPercent = Math.min(Math.max(percent, 0), 100);
+        const displayPercentage = Math.round(percent);
+
+        const formattedValue = value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 0});
+        const formattedGoal = goal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 0});
+
+        // Determine Text Color Class based on percentage > 55
+        const isFilled = clampedPercent > 55;
+        const percentColorClass = isFilled ? 'text-white drop-shadow-md' : 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]';
+        const subTextColorClass = isFilled ? 'text-cyan-50' : 'text-gray-400';
+        const dividerClass = isFilled ? 'bg-white/50' : 'bg-gray-600';
+
+        const html = `
+            <div class="flex flex-col items-center justify-center w-full h-full p-2">
+                <!-- Cylinder Container -->
+                <div class="relative w-40 h-64 bg-gray-900/80 rounded-full border-[4px] border-gray-700/80 overflow-hidden shadow-[0_0_30px_rgba(6,182,212,0.15)] backdrop-blur-sm">
+
+                    <!-- Inner Background -->
+                    <div class="absolute inset-0 bg-gradient-to-b from-gray-800/30 via-transparent to-black/60 pointer-events-none z-20"></div>
+
+                    <!-- Water Layer -->
+                    <div class="absolute bottom-0 left-0 right-0 w-full transition-all duration-1000 ease-in-out z-10" style="height: ${clampedPercent}%;">
+                        <!-- Back Wave -->
+                        <div class="w-[200%] h-full absolute -left-full -top-3 animate-wave-slow opacity-50">
+                            <svg viewBox="0 0 500 150" preserveAspectRatio="none" class="w-full h-16 fill-cyan-700">
+                                <path d="M0.00,49.98 C149.99,150.00 349.20,-49.98 500.00,49.98 L500.00,150.00 L0.00,150.00 Z" />
+                            </svg>
+                            <div class="w-full h-full bg-cyan-700"></div>
+                        </div>
+
+                        <!-- Front Wave -->
+                        <div class="w-[200%] h-full absolute -left-full -top-5 animate-wave">
+                            <svg viewBox="0 0 500 150" preserveAspectRatio="none" class="w-full h-20 fill-cyan-500">
+                                <path d="M0.00,49.98 C149.99,150.00 349.20,-49.98 500.00,49.98 L500.00,150.00 L0.00,150.00 Z" />
+                            </svg>
+                            <div class="w-full h-full bg-gradient-to-b from-cyan-500 to-blue-600 shadow-[0_0_20px_rgba(6,182,212,0.6)]"></div>
+                        </div>
+                    </div>
+
+                    <!-- Text Overlay -->
+                    <div class="absolute inset-0 flex flex-col items-center justify-center z-30 pointer-events-none">
+                        <span class="text-4xl font-bold tracking-tighter ${percentColorClass} transition-colors duration-500">
+                            ${displayPercentage}%
+                        </span>
+                        <div class="flex flex-col items-center mt-1 text-xs font-semibold ${subTextColorClass} transition-colors duration-500">
+                            <span>${formattedValue}</span>
+                            <div class="h-[1px] w-8 my-1 ${dividerClass}"></div>
+                            <span>${formattedGoal}</span>
+                        </div>
+                    </div>
+
+                    <!-- Glass Reflections -->
+                    <div class="absolute top-4 left-3 bottom-4 w-3 bg-gradient-to-r from-white/10 to-transparent rounded-full blur-[1px] pointer-events-none z-40"></div>
+                    <div class="absolute top-2 left-8 right-8 h-1.5 bg-white/20 rounded-[100%] blur-[3px] pointer-events-none z-40"></div>
+                </div>
+
+                <!-- Footer Legend -->
+                <div class="mt-4 flex items-center justify-between w-40 px-2">
+                    <div class="text-xs text-gray-400">Progresso</div>
+                    <div class="text-sm font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">
+                        ${formattedValue}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = html;
     }
 
     // Auto-init User Menu on load if ready (for Navbar)

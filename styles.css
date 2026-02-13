@@ -418,3 +418,19 @@
     color: #ffffff; /* hover:text-white */
     background-color: rgba(51, 65, 85, 0.5); /* hover:bg-slate-700/50 */
 }
+
+
+/* Liquid Gauge Cylinder Animations */
+@keyframes wave {
+  0% { transform: translateX(0) translateZ(0) scaleY(1); }
+  50% { transform: translateX(25%) translateZ(0) scaleY(0.9); }
+  100% { transform: translateX(50%) translateZ(0) scaleY(1); }
+}
+
+.animate-wave {
+  animation: wave 4s ease-in-out infinite alternate;
+}
+
+.animate-wave-slow {
+  animation: wave 6s ease-in-out infinite alternate-reverse;
+}
