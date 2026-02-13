@@ -13080,6 +13080,35 @@ const supervisorGroups = new Map();
                             }
                             globalClientGoals.set(key, clientMap);
                         }
+
+                        // --- RE-AGGREGATE TOTALS (Fix for Dashboard 0 issue) ---
+                        for (const [clientId, clientMap] of globalClientGoals) {
+                            const getGoal = (k) => clientMap.get(k) || { fat: 0, vol: 0 };
+
+                            const g707 = getGoal('707');
+                            const g708 = getGoal('708');
+                            const g752 = getGoal('752');
+                            const gToddynho = getGoal('1119_TODDYNHO');
+                            const gToddy = getGoal('1119_TODDY');
+                            const gQuaker = getGoal('1119_QUAKER_KEROCOCO');
+
+                            const sumGoals = (list) => {
+                                return list.reduce((acc, curr) => ({
+                                    fat: acc.fat + (curr.fat || 0),
+                                    vol: acc.vol + (curr.vol || 0)
+                                }), { fat: 0, vol: 0 });
+                            };
+
+                            const elmaAll = sumGoals([g707, g708, g752]);
+                            const foodsAll = sumGoals([gToddynho, gToddy, gQuaker]);
+                            const pepsicoAll = sumGoals([g707, g708, g752, gToddynho, gToddy, gQuaker]);
+
+                            clientMap.set('ELMA_ALL', elmaAll);
+                            clientMap.set('FOODS_ALL', foodsAll);
+                            clientMap.set('PEPSICO_ALL', pepsicoAll);
+                        }
+                        // --------------------------------------------------------
+
                         window.globalClientGoals = globalClientGoals;
 
                         if (targetsData && Object.keys(targetsData).length > 0) {
