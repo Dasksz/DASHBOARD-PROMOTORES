@@ -8584,13 +8584,84 @@ const supervisorGroups = new Map();
                     renderLiquidGauge('salesByPersonChartContainer', totalRealized, totalGoal, 'Meta Geral');
                 }
 
-                document.getElementById('faturamentoPorFornecedorTitle').textContent = isFiltered ? 'Faturamento por Fornecedor' : 'Faturamento por Categoria';
-                const faturamentoPorFornecedorData = summary.faturamentoPorFornecedor;
-                const totalFaturamentoFornecedor = Object.values(faturamentoPorFornecedorData).reduce((a, b) => a + b, 0);
-                const fornecedorTooltipOptions = { indexAxis: 'y', plugins: { tooltip: { callbacks: { label: function(context) { let label = context.label || ''; if (label) label += ': '; const value = context.parsed.x; if (value !== null) { label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); if (totalFaturamentoFornecedor > 0) { const percentage = ((value / totalFaturamentoFornecedor) * 100).toFixed(2); label += ` (${percentage}%)`; } } return label; } } } } };
-                const sortedFornecedores = Object.entries(faturamentoPorFornecedorData).sort(([, a], [, b]) => a - b);
-                if (sortedFornecedores.length > 0) createChart('faturamentoPorFornecedorChart', 'bar', sortedFornecedores.map(([name]) => name), sortedFornecedores.map(([, total]) => total), fornecedorTooltipOptions);
-                else showNoDataMessage('faturamentoPorFornecedorChart', 'Sem dados de faturamento.');
+                // --- New Radar Chart Logic ---
+                document.getElementById('faturamentoPorFornecedorTitle').textContent = 'Share por Categoria (Meta)';
+
+                // 1. Calculate Goals for Visible Clients
+                const categoryGoals = {
+                    '707': 0, '708': 0, '752': 0,
+                    '1119_TODDYNHO': 0, '1119_TODDY': 0, '1119_QUAKER_KEROCOCO': 0
+                };
+
+                const visibleClientsForGoals = getHierarchyFilteredClients('main', allClientsData);
+                if (window.globalClientGoals) {
+                    visibleClientsForGoals.forEach(c => {
+                        const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
+                        const clientGoals = window.globalClientGoals.get(codCli);
+                        if (clientGoals) {
+                            for (const key in categoryGoals) {
+                                if (clientGoals.has(key)) {
+                                    categoryGoals[key] += (clientGoals.get(key).fat || 0);
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // 2. Map Actuals (from summary.faturamentoPorFornecedor)
+                const actualsMap = {
+                    '707': summary.faturamentoPorFornecedor['Extrusados'] || 0,
+                    '708': summary.faturamentoPorFornecedor['Não Extrusados'] || 0,
+                    '752': summary.faturamentoPorFornecedor['Torcida'] || 0,
+                    '1119_TODDYNHO': summary.faturamentoPorFornecedor['Toddynho'] || 0,
+                    '1119_TODDY': summary.faturamentoPorFornecedor['Toddy'] || 0,
+                    '1119_QUAKER_KEROCOCO': (summary.faturamentoPorFornecedor['Quaker'] || 0) + (summary.faturamentoPorFornecedor['Kero Coco'] || 0)
+                };
+
+                // 3. Prepare Data for Chart
+                const radarData = [];
+                const categoryLabels = {
+                    '707': 'Extrusados',
+                    '708': 'Não Extrusados',
+                    '752': 'Torcida',
+                    '1119_TODDYNHO': 'Toddynho',
+                    '1119_TODDY': 'Toddy',
+                    '1119_QUAKER_KEROCOCO': 'Quaker / Kero Coco'
+                };
+
+                // Color Palette (Pepsico Brand Colors approximation or distinct colors)
+                const colors = [
+                    0xeab308, // Yellow/Gold
+                    0xf97316, // Orange
+                    0xef4444, // Red
+                    0x3b82f6, // Blue
+                    0x8b5cf6, // Purple
+                    0x10b981  // Emerald
+                ];
+
+                const orderedKeys = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+
+                orderedKeys.forEach((key, index) => {
+                    const goal = categoryGoals[key];
+                    const actual = actualsMap[key];
+                    let pct = 0;
+                    if (goal > 0) {
+                        pct = (actual / goal) * 100;
+                    } else if (actual > 0) {
+                        pct = 100;
+                    }
+
+                    if (window.am5) {
+                        radarData.push({
+                            category: categoryLabels[key],
+                            value: pct,
+                            full: 100,
+                            columnSettings: { fill: window.am5.color(colors[index % colors.length]) }
+                        });
+                    }
+                });
+
+                renderCategoryRadarChart(radarData);
                 updateProductBarChart(summary);
             }
         }
@@ -19216,6 +19287,130 @@ const supervisorGroups = new Map();
         `;
 
         container.innerHTML = html;
+    }
+
+    function renderCategoryRadarChart(data) {
+        // Dispose existing root if present
+        if (window.am5 && window.am5.registry && window.am5.registry.rootElements) {
+             for (let i = window.am5.registry.rootElements.length - 1; i >= 0; i--) {
+                 const r = window.am5.registry.rootElements[i];
+                 if (r.dom && r.dom.id === "faturamentoPorFornecedorChartContainer") {
+                     r.dispose();
+                 }
+             }
+        }
+
+        const container = document.getElementById('faturamentoPorFornecedorChartContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!window.am5 || !window.am5radar) {
+            console.error("amCharts 5 Radar not loaded");
+            return;
+        }
+
+        const am5 = window.am5;
+        const am5xy = window.am5xy;
+        const am5radar = window.am5radar;
+        const am5themes_Animated = window.am5themes_Animated;
+
+        const root = am5.Root.new("faturamentoPorFornecedorChartContainer");
+
+        if (root._logo) {
+            root._logo.dispose();
+        }
+
+        root.setThemes([
+            am5themes_Animated.new(root),
+            window.am5themes_Dark ? window.am5themes_Dark.new(root) : am5themes_Animated.new(root)
+        ]);
+
+        // Create chart
+        const chart = root.container.children.push(am5radar.RadarChart.new(root, {
+            panX: false,
+            panY: false,
+            wheelX: "panX",
+            wheelY: "zoomX",
+            innerRadius: am5.percent(20),
+            startAngle: -90,
+            endAngle: 180
+        }));
+
+        // Cursor
+        const cursor = chart.set("cursor", am5radar.RadarCursor.new(root, {
+            behavior: "zoomX"
+        }));
+        cursor.lineY.set("visible", false);
+
+        // Axes
+        const xRenderer = am5radar.AxisRendererCircular.new(root, {});
+        xRenderer.labels.template.setAll({ radius: 10 });
+        xRenderer.grid.template.setAll({ forceHidden: true });
+
+        const xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+            renderer: xRenderer,
+            min: 0,
+            max: 100,
+            strictMinMax: false,
+            numberFormat: "#'%'",
+            tooltip: am5.Tooltip.new(root, {})
+        }));
+
+        const yRenderer = am5radar.AxisRendererRadial.new(root, {
+            minGridDistance: 20
+        });
+        yRenderer.labels.template.setAll({
+            centerX: am5.p100,
+            fontWeight: "500",
+            fontSize: 12,
+            templateField: "columnSettings"
+        });
+        yRenderer.grid.template.setAll({ forceHidden: true });
+
+        const yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
+            categoryField: "category",
+            renderer: yRenderer
+        }));
+        yAxis.data.setAll(data);
+
+        // Series 1: Meta (Background / 100%)
+        const series1 = chart.series.push(am5radar.RadarColumnSeries.new(root, {
+            xAxis: xAxis,
+            yAxis: yAxis,
+            clustered: false,
+            valueXField: "full",
+            categoryYField: "category",
+            fill: root.interfaceColors.get("alternativeBackground")
+        }));
+        series1.columns.template.setAll({
+            width: am5.p100,
+            fillOpacity: 0.08,
+            strokeOpacity: 0,
+            cornerRadius: 20
+        });
+        series1.data.setAll(data);
+
+        // Series 2: Realizado
+        const series2 = chart.series.push(am5radar.RadarColumnSeries.new(root, {
+            xAxis: xAxis,
+            yAxis: yAxis,
+            clustered: false,
+            valueXField: "value",
+            categoryYField: "category"
+        }));
+        series2.columns.template.setAll({
+            width: am5.p100,
+            strokeOpacity: 0,
+            tooltipText: "{category}: {valueX.formatNumber('#.0')}%",
+            cornerRadius: 20,
+            templateField: "columnSettings"
+        });
+        series2.data.setAll(data);
+
+        // Animation
+        series1.appear(1000);
+        series2.appear(1000);
+        chart.appear(1000, 100);
     }
 
     // Auto-init User Menu on load if ready (for Navbar)
