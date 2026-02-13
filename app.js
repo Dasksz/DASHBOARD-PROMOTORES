@@ -17268,7 +17268,7 @@ const supervisorGroups = new Map();
         // Note: The structure in HTML is: roteiro-main-card -> div (Calendar Header) -> ...
         // We want to inject it in the header row.
 
-        if (header && window.userRole !== 'promotor' && !document.getElementById('roteiro-promoter-filter')) {
+        if (header && (window.userRole || '').toLowerCase() !== 'promotor' && !document.getElementById('roteiro-promoter-filter')) {
             const filterContainer = document.createElement('div');
             filterContainer.className = 'hidden lg:block ml-auto mr-4'; // Desktop only
             filterContainer.innerHTML = `
@@ -17910,10 +17910,85 @@ const supervisorGroups = new Map();
         };
 
         if (searchInput) {
+            // Suggestion Logic Helper
+            const renderRoteiroSuggestions = (query) => {
+                const suggestionsEl = document.getElementById('clientes-search-suggestions');
+                if (!suggestionsEl) return;
+
+                if (!query || query.length < 3) {
+                    suggestionsEl.classList.add('hidden');
+                    return;
+                }
+
+                const results = searchLocalClients(query);
+
+                if (results.length === 0) {
+                    suggestionsEl.classList.add('hidden');
+                    return;
+                }
+
+                suggestionsEl.innerHTML = '';
+                results.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'px-4 py-3 border-b border-slate-700 hover:bg-slate-700 cursor-pointer flex justify-between items-center group';
+                    const code = c['Código'] || c['codigo_cliente'];
+                    const name = c.fantasia || c.nomeCliente || c.razaoSocial || 'Sem Nome';
+                    const city = c.cidade || c.CIDADE || '';
+
+                    const leftDiv = document.createElement('div');
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = "text-sm font-bold text-white group-hover:text-blue-300 transition-colors";
+
+                    const codeSpan = document.createElement('span');
+                    codeSpan.className = "font-mono text-slate-400 mr-2";
+                    codeSpan.textContent = code;
+
+                    titleDiv.appendChild(codeSpan);
+                    titleDiv.appendChild(document.createTextNode(name));
+
+                    const subDiv = document.createElement('div');
+                    subDiv.className = "text-xs text-slate-500";
+                    subDiv.textContent = city;
+
+                    leftDiv.appendChild(titleDiv);
+                    leftDiv.appendChild(subDiv);
+
+                    div.appendChild(leftDiv);
+
+                    div.onclick = () => {
+                        searchInput.value = `${code} - ${name}`; // Visual feedback
+                        handleRoteiroSearch(code); // Trigger search logic
+                        suggestionsEl.classList.add('hidden');
+                    };
+                    suggestionsEl.appendChild(div);
+                });
+                suggestionsEl.classList.remove('hidden');
+            };
+
+            // Hide on click outside (One-time binding check)
+            if (!searchInput._hasRoteiroBlurListener) {
+                document.addEventListener('click', (e) => {
+                    const suggestionsEl = document.getElementById('clientes-search-suggestions');
+                    if (suggestionsEl && !suggestionsEl.contains(e.target) && e.target !== searchInput) {
+                        suggestionsEl.classList.add('hidden');
+                    }
+                });
+                searchInput._hasRoteiroBlurListener = true;
+            }
+
             searchInput.oninput = (e) => {
                 if (isRoteiroMode) {
-                    handleRoteiroSearch(e.target.value);
+                    const val = e.target.value;
+                    if (!val) {
+                        handleRoteiroSearch('');
+                        const suggestionsEl = document.getElementById('clientes-search-suggestions');
+                        if (suggestionsEl) suggestionsEl.classList.add('hidden');
+                    } else {
+                        renderRoteiroSuggestions(val);
+                    }
                 } else {
+                    const suggestionsEl = document.getElementById('clientes-search-suggestions');
+                    if (suggestionsEl) suggestionsEl.classList.add('hidden');
                     renderList(e.target.value);
                 }
             };
