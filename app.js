@@ -11863,7 +11863,7 @@ const supervisorGroups = new Map();
 
                     // --- PRESERVE MANUAL KEYS ---
                     try {
-                        const keysToPreserve = ['groq_api_key', 'senha_modal'];
+                        const keysToPreserve = ['groq_api_key', 'senha_modal', 'BREVO_API_KEY', 'BREVO_SENDER_EMAIL'];
                         const { data: currentMetadata } = await window.supabaseClient
                             .from('data_metadata')
                             .select('*')
