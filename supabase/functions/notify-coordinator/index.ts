@@ -63,6 +63,25 @@ serve(async (req) => {
         console.log('No old_record provided (Insert or fresh state). Proceeding...');
     }
 
+    // 3.5. Validation: Conditional Sending Rule (Off-Route vs Survey)
+    // Rule: Send IF (OffRoute) OR (HasSurvey). Skip otherwise.
+    const answers = record.respostas || {};
+    const isOffRoute = answers.is_off_route === true;
+
+    // Check for actual survey content (exclude system keys)
+    const systemKeys = ['is_off_route', 'foto_url', 'visit_date_ref'];
+    const surveyKeys = Object.keys(answers).filter(k => !systemKeys.includes(k));
+    const hasSurvey = surveyKeys.length > 0;
+
+    console.log(`Validation Check: OffRoute=${isOffRoute}, HasSurvey=${hasSurvey} (${surveyKeys.length} keys)`);
+
+    if (!isOffRoute && !hasSurvey) {
+       console.log('Skipping: In-Route visit without survey answers.');
+       return new Response(JSON.stringify({ message: 'Skipped: No survey for in-route visit' }), {
+         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+       })
+    }
+
     // Initialize Supabase Client with Service Role Key to bypass RLS
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -317,6 +336,14 @@ serve(async (req) => {
         <div style="background-color: #fff1f2; border: 1px solid #fda4af; color: #be123c; padding: 12px; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: 700;">
             ⚠️ MODO TESTE ATIVO<br>
             <span style="font-weight: 400; font-size: 14px;">Destinatário Original: ${originalTargetEmail}</span>
+        </div>
+        ` : ''}
+
+        ${isOffRoute ? `
+        <!-- Off Route Banner -->
+        <div style="background-color: #fff7ed; border: 1px solid #fdba74; color: #9a3412; padding: 12px; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: 700;">
+            ⚠️ VISITA FORA DE ROTA
+            <br><span style="font-weight: 400; font-size: 14px;">Esta visita foi realizada fora da data programada.</span>
         </div>
         ` : ''}
 
