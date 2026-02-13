@@ -18404,11 +18404,16 @@ const supervisorGroups = new Map();
     }
 
     function renderWeeklyComparisonAmChart(weekLabels, currentData, historyData, isTendency) {
-        // Dispose existing root
-        if (weeklyAmChartRoot) {
-            weeklyAmChartRoot.dispose();
-            weeklyAmChartRoot = null;
+        // Dispose existing root (Robust Check)
+        if (window.am5 && window.am5.registry && window.am5.registry.rootElements) {
+             for (let i = window.am5.registry.rootElements.length - 1; i >= 0; i--) {
+                 const r = window.am5.registry.rootElements[i];
+                 if (r.dom && r.dom.id === "weeklyComparisonChartContainer") {
+                     r.dispose();
+                 }
+             }
         }
+        weeklyAmChartRoot = null;
 
         // Clean container (remove any canvas from Chart.js)
         const container = document.getElementById('weeklyComparisonChartContainer');
@@ -18560,10 +18565,16 @@ const supervisorGroups = new Map();
     }
 
     function renderMonthlyComparisonAmChart(labels, dataValues, labelName, colorHex) {
-        if (monthlyAmChartRoot) {
-            monthlyAmChartRoot.dispose();
-            monthlyAmChartRoot = null;
+        // Dispose existing root (Robust Check)
+        if (window.am5 && window.am5.registry && window.am5.registry.rootElements) {
+             for (let i = window.am5.registry.rootElements.length - 1; i >= 0; i--) {
+                 const r = window.am5.registry.rootElements[i];
+                 if (r.dom && r.dom.id === "monthlyComparisonChartContainer") {
+                     r.dispose();
+                 }
+             }
         }
+        monthlyAmChartRoot = null;
 
         const container = document.getElementById('monthlyComparisonChartContainer');
         if (!container) return;
