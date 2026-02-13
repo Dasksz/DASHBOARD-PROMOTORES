@@ -8068,11 +8068,29 @@ const supervisorGroups = new Map();
             // Semantic Palette: Green (Success), Blue (Good), Purple (Neutral/Meta), Amber (Warning), Red (Danger)
             const professionalPalette = ['#22c55e', '#3b82f6', '#a855f7', '#f59e0b', '#ef4444', '#64748b', '#06b6d4', '#ec4899'];
 
+            // Shades of Blue Palette for Sales Chart (Matches Performance)
+            const bluePalette = [
+                '#3b82f6', // blue-500 (Primary)
+                '#2563eb', // blue-600
+                '#60a5fa', // blue-400
+                '#1d4ed8', // blue-700
+                '#93c5fd', // blue-300
+                '#1e40af', // blue-800
+                '#bfdbfe', // blue-200
+                '#1e3a8a', // blue-900
+                '#dbeafe', // blue-100
+                '#eff6ff'  // blue-50
+            ];
+
             let finalDatasets;
             if (Array.isArray(chartData) && chartData.length > 0 && typeof chartData[0] === 'object' && chartData[0].hasOwnProperty('label')) {
                 finalDatasets = chartData.map((dataset, index) => ({ ...dataset, backgroundColor: dataset.backgroundColor || professionalPalette[index % professionalPalette.length], borderColor: dataset.borderColor || professionalPalette[index % professionalPalette.length] }));
             } else {
-                 finalDatasets = [{ data: chartData || [], backgroundColor: canvasId === 'customerStatusChart' ? ['#2dd4bf', '#f59e0b'] : professionalPalette }];
+                 let bgColor = professionalPalette;
+                 if (canvasId === 'customerStatusChart') bgColor = ['#2dd4bf', '#f59e0b'];
+                 else if (canvasId === 'salesByProductBarChart') bgColor = bluePalette;
+
+                 finalDatasets = [{ data: chartData || [], backgroundColor: bgColor }];
             }
 
             let baseOptions = {
