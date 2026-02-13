@@ -550,7 +550,9 @@ BEGIN
               'get_detailed_orders',
               'get_coverage_view_data',
               'get_filtered_client_base_json',
-              'get_stock_view_data'
+              'get_stock_view_data',
+              'classify_product_mix',
+              'set_coordenador_email_on_visita'
           )
     LOOP
         EXECUTE format('ALTER FUNCTION %I.%I(%s) SET search_path = public',
