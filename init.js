@@ -1012,6 +1012,8 @@
         const loginFormSignin = document.getElementById('login-form-signin');
         const loginFormSignup = document.getElementById('login-form-signup');
         const loginFormForgot = document.getElementById('login-form-forgot');
+        const btnTogglePasswordSignup = document.getElementById('btn-toggle-password-signup');
+        const inputPasswordSignup = document.getElementById('signup-password');
 
         // Toggle Logic
         if (btnShowSignup && btnShowSignin) {
@@ -1066,6 +1068,23 @@
                 e.preventDefault();
                 loginFormForgot.classList.add('hidden');
                 loginFormSignin.classList.remove('hidden');
+            });
+        }
+
+        // Password Toggle Logic
+        if (btnTogglePasswordSignup && inputPasswordSignup) {
+            btnTogglePasswordSignup.addEventListener('click', () => {
+                const type = inputPasswordSignup.getAttribute('type') === 'password' ? 'text' : 'password';
+                inputPasswordSignup.setAttribute('type', type);
+                
+                // Toggle Icon
+                if (type === 'text') {
+                    // Eye Off Icon
+                    btnTogglePasswordSignup.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>';
+                } else {
+                    // Eye Icon
+                    btnTogglePasswordSignup.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>';
+                }
             });
         }
 
@@ -1169,30 +1188,57 @@
                 }
 
                 if (data && data.user) {
-                    // Update Profiles table manually with extra fields (Password stored in plain text per request)
-                    // Note: RLS usually prevents update of other users, but here we update OWN profile or wait for trigger?
-                    // The trigger creates the profile. We need to update it.
-                    // Ideally we wait a bit or retry update.
-                    
-                    try {
-                        const { error: updateError } = await supabaseClient
-                            .from('profiles')
-                            .update({
-                                name: name,
-                                phone: phone,
-                                // SECURITY WARNING: Storing passwords in plain text is highly insecure.
-                                // This was explicitly requested by the user ("teremos que modificar a tabela profile para armazenar... senha").
-                                // In a production environment, this should NEVER be done. Supabase Auth handles passwords securely.
-                                password: password 
-                            })
-                            .eq('id', data.user.id);
+                    // Retry logic to ensure Profile exists before updating
+                    const maxRetries = 10;
+                    let retries = 0;
+                    let profileUpdated = false;
 
-                        if (updateError) {
-                            console.error('Erro ao salvar detalhes do perfil:', updateError);
-                            // Not critical, can continue
+                    const updateProfileData = async () => {
+                        try {
+                            // Check if profile exists
+                            const { data: profileCheck, error: checkError } = await supabaseClient
+                                .from('profiles')
+                                .select('id')
+                                .eq('id', data.user.id)
+                                .single();
+
+                            if (profileCheck) {
+                                // Profile exists, perform update
+                                const { error: updateError } = await supabaseClient
+                                    .from('profiles')
+                                    .update({
+                                        name: name,
+                                        phone: phone,
+                                        // SECURITY WARNING: Storing passwords in plain text is highly insecure.
+                                        // Requested by user.
+                                        password: password
+                                    })
+                                    .eq('id', data.user.id);
+
+                                if (!updateError) {
+                                    return true;
+                                } else {
+                                    console.error('Erro ao atualizar perfil:', updateError);
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('Tentativa de atualização falhou:', err);
                         }
-                    } catch (err) {
-                        console.error('Erro update profile:', err);
+                        return false;
+                    };
+
+                    while (retries < maxRetries && !profileUpdated) {
+                        profileUpdated = await updateProfileData();
+                        if (!profileUpdated) {
+                            retries++;
+                            await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
+                        }
+                    }
+
+                    if (!profileUpdated) {
+                        console.error('Falha ao salvar dados adicionais do perfil após várias tentativas.');
+                        // Fallback: try one last blind update just in case select failed due to RLS but update might work? 
+                        // Unlikely if select failed.
                     }
 
                     alert('Cadastro realizado! Sua conta aguarda aprovação manual.');
