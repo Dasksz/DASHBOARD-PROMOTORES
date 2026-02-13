@@ -2195,6 +2195,8 @@
         let goalsSvRenderId = 0;
 
         let charts = {};
+        let weeklyAmChartRoot = null;
+        let monthlyAmChartRoot = null;
         let currentProductMetric = 'faturamento';
         let currentFornecedor = '';
         let currentComparisonFornecedor = 'PEPSICO';
@@ -10143,10 +10145,14 @@ const supervisorGroups = new Map();
                         weeklyComparisonChartContainer.classList.remove('hidden');
                         comparisonChartTitle.textContent = 'Comparativo de Faturamento Semanal';
                         const weekLabels = currentMonthWeeks.map((w, i) => `Semana ${i + 1}`);
-                        createChart('weeklyComparisonChart', 'line', weekLabels, [
-                            { label: useTendencyComparison ? 'Tendência Semanal' : 'Mês Atual', data: weeklyCurrentData, borderColor: '#14b8a6', tension: 0.2, pointRadius: 5, pointBackgroundColor: '#14b8a6', borderWidth: 2.5 },
-                            { label: 'Média Trimestre', data: m.charts.weeklyHistory, borderColor: '#f97316', tension: 0.2, pointRadius: 5, pointBackgroundColor: '#f97316', borderWidth: 2.5 }
-                        ], { plugins: { legend: { display: true, position: 'top', align: 'end' } }, layout: { padding: { bottom: 0 } } });
+
+                        // Destroy Legacy Chart if exists
+                        if (charts['weeklyComparisonChart']) {
+                            charts['weeklyComparisonChart'].destroy();
+                            delete charts['weeklyComparisonChart'];
+                        }
+
+                        renderWeeklyComparisonAmChart(weekLabels, weeklyCurrentData, m.charts.weeklyHistory, useTendencyComparison);
                     } else if (comparisonChartType === 'monthly') {
                         weeklyComparisonChartContainer.classList.add('hidden');
                         monthlyComparisonChartContainer.classList.remove('hidden');
@@ -10169,7 +10175,18 @@ const supervisorGroups = new Map();
                         }
                         monthLabels.push(currentMonthLabel);
                         monthValues.push(currentVal);
-                        createChart('monthlyComparisonChart', 'bar', monthLabels, [{ label: isFat ? 'Faturamento' : 'Clientes Atendidos', data: monthValues, backgroundColor: (context) => { const ctx = context.chart.ctx; const gradient = ctx.createLinearGradient(0, 0, 0, 400); gradient.addColorStop(0, 'rgba(20, 184, 166, 0.8)'); gradient.addColorStop(1, 'rgba(126, 34, 206, 0.8)'); return gradient; }, borderColor: (context) => { const ctx = context.chart.ctx; const gradient = ctx.createLinearGradient(0, 0, 0, 400); gradient.addColorStop(0, '#14b8a6'); gradient.addColorStop(1, '#7e22ce'); return gradient; }, borderWidth: 2 }], { layout: { padding: { top: 20 } }, plugins: { legend: { display: false }, datalabels: { color: '#ffffff', anchor: 'end', align: 'top', offset: 4, font: { weight: 'bold' }, formatter: (value) => { if (isFat) { if (value >= 1000000) return 'R$ ' + (value / 1000000).toFixed(2) + ' M'; return 'R$ ' + (value / 1000).toFixed(0) + 'k'; } else { return value.toLocaleString('pt-BR'); } } }, tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; if (context.parsed.y !== null) { if (isFat) label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y); else label += context.parsed.y.toLocaleString('pt-BR') + ' clientes'; } return label; } } } } });
+                        // Destroy Legacy Chart if exists
+                        if (charts['monthlyComparisonChart']) {
+                            charts['monthlyComparisonChart'].destroy();
+                            delete charts['monthlyComparisonChart'];
+                        }
+
+                        renderMonthlyComparisonAmChart(
+                            monthLabels,
+                            monthValues,
+                            isFat ? 'Faturamento' : 'Clientes Atendidos',
+                            isFat ? 0x3b82f6 : 0x10b981
+                        );
                     }
 
                     // Daily Chart (Simplified re-calc for now, or could optimize further)
@@ -18270,6 +18287,260 @@ const supervisorGroups = new Map();
                 btn.disabled = false; btn.innerHTML = oldHtml;
             }
         });
+    }
+
+    function renderWeeklyComparisonAmChart(weekLabels, currentData, historyData, isTendency) {
+        // Dispose existing root
+        if (weeklyAmChartRoot) {
+            weeklyAmChartRoot.dispose();
+            weeklyAmChartRoot = null;
+        }
+
+        // Clean container (remove any canvas from Chart.js)
+        const container = document.getElementById('weeklyComparisonChartContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // amCharts 5 Logic
+        if (!window.am5) {
+            console.error("amCharts 5 not loaded");
+            return;
+        }
+
+        const am5 = window.am5;
+        const am5xy = window.am5xy;
+        const am5themes_Animated = window.am5themes_Animated;
+        const am5themes_Dark = window.am5themes_Dark;
+
+        const root = am5.Root.new("weeklyComparisonChartContainer");
+        weeklyAmChartRoot = root;
+
+        if (root._logo) {
+            root._logo.dispose();
+        }
+
+        root.setThemes([
+            am5themes_Animated.new(root),
+            am5themes_Dark.new(root)
+        ]);
+
+        const chart = root.container.children.push(
+            am5xy.XYChart.new(root, {
+                panX: true,
+                panY: false,
+                wheelX: "panX",
+                wheelY: "zoomX",
+                layout: root.verticalLayout
+            })
+        );
+
+        // Prepare Data
+        const data = weekLabels.map((label, i) => ({
+            category: label,
+            current: currentData[i] || 0,
+            history: historyData[i] || 0
+        }));
+
+        // X Axis (Weeks)
+        const xRenderer = am5xy.AxisRendererX.new(root, {
+            minGridDistance: 30,
+            minorGridEnabled: true
+        });
+
+        // Clean Look: Hide grid
+        xRenderer.grid.template.set("forceHidden", true);
+
+        const xAxis = chart.xAxes.push(
+            am5xy.CategoryAxis.new(root, {
+                categoryField: "category",
+                renderer: xRenderer,
+                tooltip: am5.Tooltip.new(root, {})
+            })
+        );
+        xAxis.data.setAll(data);
+
+        // Y Axis
+        const yRenderer = am5xy.AxisRendererY.new(root, {});
+        // Clean Look: Hide grid
+        yRenderer.grid.template.set("forceHidden", true);
+
+        const yAxis = chart.yAxes.push(
+            am5xy.ValueAxis.new(root, {
+                renderer: yRenderer
+            })
+        );
+
+        // Series 1: Current (Column) - Indigo
+        const series1 = chart.series.push(
+            am5xy.ColumnSeries.new(root, {
+                name: isTendency ? "Tendência Semanal" : "Mês Atual",
+                xAxis: xAxis,
+                yAxis: yAxis,
+                valueYField: "current",
+                categoryXField: "category",
+                fill: am5.color(0x3f51b5),
+                tooltip: am5.Tooltip.new(root, {
+                    pointerOrientation: "horizontal",
+                    labelText: "{name}: [bold]{valueY}[/]"
+                })
+            })
+        );
+
+        series1.columns.template.setAll({
+            cornerRadiusTL: 5,
+            cornerRadiusTR: 5,
+            fillOpacity: 0.8,
+            strokeWidth: 0
+        });
+
+        series1.data.setAll(data);
+
+        // Series 2: History (Line) - Cyan
+        const series2 = chart.series.push(
+            am5xy.LineSeries.new(root, {
+                name: "Média Trimestre",
+                xAxis: xAxis,
+                yAxis: yAxis,
+                valueYField: "history",
+                categoryXField: "category",
+                stroke: am5.color(0x00e5ff),
+                tooltip: am5.Tooltip.new(root, {
+                    pointerOrientation: "horizontal",
+                    labelText: "{name}: [bold]{valueY}[/]"
+                })
+            })
+        );
+
+        series2.strokes.template.setAll({
+            strokeWidth: 3
+        });
+
+        series2.bullets.push(function () {
+            return am5.Bullet.new(root, {
+                sprite: am5.Circle.new(root, {
+                    radius: 5,
+                    fill: series2.get("stroke")
+                })
+            });
+        });
+
+        series2.data.setAll(data);
+
+        // Cursor
+        const cursor = chart.set("cursor", am5xy.XYCursor.new(root, {
+            behavior: "zoomX"
+        }));
+        cursor.lineY.set("visible", false);
+
+        // Legend
+        const legend = chart.children.push(am5.Legend.new(root, {
+            centerX: am5.p50,
+            x: am5.p50
+        }));
+        legend.data.setAll(chart.series.values);
+
+        // Animation
+        series1.appear(1000, 100);
+        series2.appear(1000, 100);
+        chart.appear(1000, 100);
+    }
+
+    function renderMonthlyComparisonAmChart(labels, dataValues, labelName, colorHex) {
+        if (monthlyAmChartRoot) {
+            monthlyAmChartRoot.dispose();
+            monthlyAmChartRoot = null;
+        }
+
+        const container = document.getElementById('monthlyComparisonChartContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!window.am5) return;
+
+        const am5 = window.am5;
+        const am5xy = window.am5xy;
+        const am5themes_Animated = window.am5themes_Animated;
+        const am5themes_Dark = window.am5themes_Dark;
+
+        const root = am5.Root.new("monthlyComparisonChartContainer");
+        monthlyAmChartRoot = root;
+
+        if (root._logo) root._logo.dispose();
+
+        root.setThemes([
+            am5themes_Animated.new(root),
+            am5themes_Dark.new(root)
+        ]);
+
+        const chart = root.container.children.push(
+            am5xy.XYChart.new(root, {
+                panX: true,
+                panY: false,
+                wheelX: "panX",
+                wheelY: "zoomX",
+                layout: root.verticalLayout
+            })
+        );
+
+        const data = labels.map((l, i) => ({
+            category: l,
+            value: dataValues[i] || 0
+        }));
+
+        const xRenderer = am5xy.AxisRendererX.new(root, {
+            minGridDistance: 30,
+            minorGridEnabled: true
+        });
+        xRenderer.grid.template.set("forceHidden", true);
+
+        const xAxis = chart.xAxes.push(
+            am5xy.CategoryAxis.new(root, {
+                categoryField: "category",
+                renderer: xRenderer,
+                tooltip: am5.Tooltip.new(root, {})
+            })
+        );
+        xAxis.data.setAll(data);
+
+        const yRenderer = am5xy.AxisRendererY.new(root, {});
+        yRenderer.grid.template.set("forceHidden", true);
+
+        const yAxis = chart.yAxes.push(
+            am5xy.ValueAxis.new(root, {
+                renderer: yRenderer
+            })
+        );
+
+        const series = chart.series.push(
+            am5xy.ColumnSeries.new(root, {
+                name: labelName,
+                xAxis: xAxis,
+                yAxis: yAxis,
+                valueYField: "value",
+                categoryXField: "category",
+                fill: am5.color(colorHex),
+                tooltip: am5.Tooltip.new(root, {
+                    labelText: "{categoryX}: [bold]{valueY}[/]"
+                })
+            })
+        );
+
+        series.columns.template.setAll({
+            cornerRadiusTL: 5,
+            cornerRadiusTR: 5,
+            fillOpacity: 0.8,
+            strokeWidth: 0
+        });
+
+        series.data.setAll(data);
+
+        const cursor = chart.set("cursor", am5xy.XYCursor.new(root, {
+            behavior: "zoomX"
+        }));
+        cursor.lineY.set("visible", false);
+
+        series.appear(1000, 100);
+        chart.appear(1000, 100);
     }
 
     // Auto-init User Menu on load if ready (for Navbar)
