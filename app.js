@@ -8035,7 +8035,7 @@ const supervisorGroups = new Map();
         function updateProductBarChart(summary) {
             const metric = currentProductMetric;
             const data = metric === 'faturamento' ? summary.top10ProdutosFaturamento : summary.top10ProdutosPeso;
-            const labels = data.map(p => `(${p.codigo}) ${p.produto}`);
+    const labels = data.map(p => p.codigo);
             const values = data.map(p => p[metric]);
             createChart('salesByProductBarChart', 'bar', labels, values);
         }
@@ -8199,42 +8199,6 @@ const supervisorGroups = new Map();
         }
 
 
-        function updateTrendChart(currentSales, historicalSales) {
-            const currentYear = lastSaleDate.getUTCFullYear();
-            const currentMonth = lastSaleDate.getUTCMonth();
-            const totalWorkingDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-            const passedWorkingDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
-
-            const monthCount = getUniqueMonthCount(historicalSales);
-
-            // Robust calculation: handle potential undefined/NaN in full dataset
-            const pastQuarterRevenue = historicalSales.reduce((sum, sale) => sum + (Number(sale.VLVENDA) || 0), 0);
-            let averageMonthlyRevenue = pastQuarterRevenue / QUARTERLY_DIVISOR;
-            if (isNaN(averageMonthlyRevenue)) averageMonthlyRevenue = 0;
-
-            const currentMonthRevenue = currentSales.reduce((sum, sale) => sum + (Number(sale.VLVENDA) || 0), 0);
-            let trend = passedWorkingDays > 0 && totalWorkingDays > 0 ? (currentMonthRevenue / passedWorkingDays) * totalWorkingDays : 0;
-            if (isNaN(trend)) trend = 0;
-
-            const lineChartDataset = [{ label: 'Valor', data: [averageMonthlyRevenue, trend], fill: true, borderColor: '#14b8a6', backgroundColor: 'rgba(20, 184, 166, 0.1)', tension: 0.2, pointRadius: 6, pointBackgroundColor: '#14b8a6', pointBorderColor: '#FFF', pointBorderWidth: 2, pointHoverRadius: 8 }];
-
-            const formatLabelValue = (v) => {
-                if (typeof v !== 'number' || isNaN(v)) return ''; // Proteção contra valores não numéricos
-                return (v >= 1000000 ? (v / 1000000).toFixed(2) + ' M' : (v / 1000).toFixed(0) + 'k');
-            };
-
-            createChart('trendChart', 'line', ['Média Faturamento Trimestre', 'Tendência Mês Atual'], lineChartDataset, {
-                layout: { padding: { top: 30 } },
-                plugins: {
-                    legend: { display: false },
-                    datalabels: { display: true, anchor: 'end', align: 'top', offset: 8, color: '#cbd5e1', font: { size: 12, weight: 'bold' }, formatter: formatLabelValue }
-                },
-                scales: {
-                    y: { ticks: { callback: function(value) { if (value >= 1000000) return 'R$ ' + (value / 1000000).toFixed(1) + 'M'; return 'R$ ' + (value / 1000) + 'k'; } } },
-                    x: { grid: { display: false } }
-                }
-            });
-        }
 
         function updateAllVisuals() {
             const posicao = posicaoFilter.value;
@@ -8419,7 +8383,6 @@ const supervisorGroups = new Map();
             }
 
             if (!chartView.classList.contains('hidden')) {
-                updateTrendChart(filteredSalesData, filteredHistoryData);
                 let chartData = summary.vendasPorCoord;
                 let chartTitle = 'Performance por Coordenador';
                 const mainState = hierarchyState['main'];
