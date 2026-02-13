@@ -7022,14 +7022,10 @@
                         'total_foods': 'FOODS_ALL',
                         'geral': 'PEPSICO_ALL', // GERAL uses PEPSICO_ALL for Positivação
                         '707': '707', '708': '708', '752': '752',
-                        '1119_TODDYNHO': '1119_TODDY', // Wait, map keys?
+                        '1119_TODDYNHO': '1119_TODDYNHO',
                         '1119_TODDY': '1119_TODDY', // Check keys in globalGoalsMetrics
                         '1119_QUAKER_KEROCOCO': '1119_QUAKER_KEROCOCO'
                     };
-
-                    // Specific Fix for Toddynho Key mismatch if any (1119_TODDYNHO vs 1119_TODDYNHO)
-                    // My previous code used '1119_TODDYNHO'.
-                    posKeys['1119_TODDYNHO'] = '1119_TODDYNHO';
 
                     for (const [colId, data] of Object.entries(seller.data)) {
                         // Priority Check: Explicit Target from Import/Supabase (goalsSellerTargets)
