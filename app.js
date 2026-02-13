@@ -17155,48 +17155,7 @@ const supervisorGroups = new Map();
 
         // Metrics
         let visitedCount = 0;
-        let positiveCount = 0;
-        
-        // Check Sales on target date
-        // Note: aggregatedOrders.DTPED is a Date object. 
-        // We compare YYYY-MM-DD strings to ignore time.
-        const salesOnDate = new Set();
-        // Construct YYYY-MM-DD from 'date' (which is local midnight)
-        // To ensure consistency, we use getFullYear/getMonth/getDate padding
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        const targetDateStr = `${y}-${m}-${d}`;
-        
-        aggregatedOrders.forEach(order => {
-            if (order.DTPED) {
-                // order.DTPED is Date object. Convert to Local YYYY-MM-DD string for comparison
-                // Or UTC? parseDate generally produces UTC-ish dates if from ISO. 
-                // But let's check parseDate implementation again. 
-                // It usually adds 'Z' to ISO strings -> UTC.
-                // If DTPED came from '2023-10-27T10:00:00', it's a point in time.
-                // Sales happen in local time. 
-                // If DTPED is 2023-10-27, it means sale on 27th.
-                // We should compare the date components.
-                // safely get components
-                const oy = order.DTPED.getUTCFullYear();
-                const om = String(order.DTPED.getUTCMonth() + 1).padStart(2, '0');
-                const od = String(order.DTPED.getUTCDate()).padStart(2, '0');
-                
-                // Wait, if parseDate forced UTC (Z), then getUTC* gives the date in the file.
-                // e.g. CSV has 2023-10-27. parseDate makes 2023-10-27Z.
-                // getUTCDate gives 27. Correct.
-                
-                // BUT targetDateStr was constructed from Local Date components.
-                // If 'date' is 27th (Local), we compare with 27th (from file).
-                // So we compare `oy-om-od` vs `targetDateStr`.
-                
-                const orderDateStr = `${oy}-${om}-${od}`;
-                if (orderDateStr === targetDateStr) {
-                    salesOnDate.add(normalizeKey(order.codcli));
-                }
-            }
-        });
+        let surveyCount = 0;
         
         // Render List
         if (scheduledClients.length === 0) {
@@ -17209,27 +17168,59 @@ const supervisorGroups = new Map();
             
             scheduledClients.forEach(c => {
                 const cod = normalizeKey(c['Código'] || c['codigo_cliente']);
-                const hasSale = salesOnDate.has(cod);
-                if (hasSale) {
-                    visitedCount++;
-                    positiveCount++; // Assuming order implies positivation
+
+                // Check Visits from Memory
+                const clientVisits = myMonthVisits.get(cod) || [];
+
+                // Find visit for THIS date (Local)
+                const todaysVisit = clientVisits.find(v => {
+                    const d = new Date(v.created_at);
+                    return d.getDate() === date.getDate() &&
+                           d.getMonth() === date.getMonth() &&
+                           d.getFullYear() === date.getFullYear();
+                });
+
+                const hasVisit = !!todaysVisit;
+                const hasSurvey = hasVisit && todaysVisit.respostas;
+                const visitedThisMonth = clientVisits.length > 0;
+
+                if (hasVisit) visitedCount++;
+                if (hasSurvey) surveyCount++;
+
+                // Status Tag Logic
+                let statusHtml = `<span class="px-2 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-full">Pendente</span>`;
+                let barColor = 'bg-slate-600';
+
+                if (hasVisit) {
+                    if (todaysVisit.checkout_at) {
+                        statusHtml = `<span class="px-2 py-1 bg-green-900 text-green-300 text-xs font-bold rounded-full">Visitado</span>`;
+                        barColor = 'bg-green-500';
+                    } else {
+                        statusHtml = `<span class="px-2 py-1 bg-orange-900 text-orange-300 text-xs font-bold rounded-full animate-pulse">Em Andamento</span>`;
+                        barColor = 'bg-orange-500';
+                    }
                 }
                 
                 const div = document.createElement('div');
                 div.className = 'p-4 flex items-center justify-between hover:bg-slate-800 cursor-pointer transition-colors';
                 div.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <div class="w-2 h-10 ${hasSale ? 'bg-green-500' : 'bg-slate-600'} rounded-full"></div>
+                        <div class="w-2 h-10 ${barColor} rounded-full"></div>
                         <div>
-                            <div class="text-sm font-bold text-white">${c.fantasia || c.nomeCliente}</div>
+                            <div class="text-sm font-bold text-white flex items-center gap-2">
+                                ${c.fantasia || c.nomeCliente}
+                                ${visitedThisMonth ? `
+                                    <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Visitado este mês">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3 3L22 4"></path>
+                                    </svg>
+                                ` : ''}
+                            </div>
                             <div class="text-xs text-slate-400 font-mono">${cod} • ${c.cidade || ''}</div>
                         </div>
                     </div>
                     <div>
-                        ${hasSale 
-                            ? `<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Positivado</span>`
-                            : `<span class="px-2 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-full">Pendente</span>`
-                        }
+                        ${statusHtml}
                     </div>
                 `;
                 div.onclick = () => openActionModal(cod, c.fantasia || c.nomeCliente);
@@ -17239,13 +17230,13 @@ const supervisorGroups = new Map();
         
         // Update Progress Bars
         const visitPct = scheduledClients.length > 0 ? (visitedCount / scheduledClients.length) * 100 : 0;
-        const posPct = scheduledClients.length > 0 ? (positiveCount / scheduledClients.length) * 100 : 0;
+        const surveyPct = scheduledClients.length > 0 ? (surveyCount / scheduledClients.length) * 100 : 0;
         
         document.getElementById('roteiro-progress-visit-text').textContent = visitPct.toFixed(1) + '%';
         document.getElementById('roteiro-progress-visit-bar').style.width = visitPct + '%';
         
-        document.getElementById('roteiro-progress-pos-text').textContent = posPct.toFixed(1) + '%';
-        document.getElementById('roteiro-progress-pos-bar').style.width = posPct + '%';
+        document.getElementById('roteiro-progress-pos-text').textContent = surveyPct.toFixed(1) + '%';
+        document.getElementById('roteiro-progress-pos-bar').style.width = surveyPct + '%';
     }
 
     // Helper to save itinerary
@@ -17492,6 +17483,9 @@ const supervisorGroups = new Map();
                 let statusColor = 'bg-green-500';
                 if (days !== '-' && parseInt(days) > 30) statusColor = 'bg-red-500';
                 
+                // Check Monthly Visit
+                const visitedThisMonth = myMonthVisits.has(normalizeKey(cod));
+
                 const item = document.createElement('div');
                 // Dark Theme Classes with "Shiny" Hover (Left Border)
                 item.className = 'p-4 flex items-center justify-between transition-all duration-200 cursor-pointer border-b border-slate-800/50 bg-[#0f172a] hover:bg-slate-800/80 border-l-4 border-l-transparent hover:border-l-blue-500 group';
@@ -17501,7 +17495,15 @@ const supervisorGroups = new Map();
                             ${firstLetter}
                         </div>
                         <div>
-                            <h3 class="text-sm font-bold text-white leading-tight">${cod} - ${name}</h3>
+                            <h3 class="text-sm font-bold text-white leading-tight flex items-center gap-2">
+                                ${cod} - ${name}
+                                ${visitedThisMonth ? `
+                                    <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Visitado este mês">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3 3L22 4"></path>
+                                    </svg>
+                                ` : ''}
+                            </h3>
                             <p class="text-xs text-slate-400 font-medium mt-0.5">Fantasia: ${fantasia}</p>
                         </div>
                     </div>
@@ -17841,10 +17843,45 @@ const supervisorGroups = new Map();
     let clienteEmVisitaId = null; // Storing Client Code (text) to match our usage
     let currentActionClientCode = null; // For the modal context
     let currentActionClientName = null; // For refetching modal
+    let myMonthVisits = new Map(); // Map<ClientCode, Array<Visit>>
+
+    async function fetchMyVisits() {
+        const { data: { user } } = await window.supabaseClient.auth.getUser();
+        if (!user) return;
+
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const isoStart = `${y}-${m}-01T00:00:00`; // Local start of month
+
+        const { data, error } = await window.supabaseClient
+            .from('visitas')
+            .select('id, client_code, id_cliente, created_at, checkout_at, respostas')
+            .eq('id_promotor', user.id)
+            .gte('created_at', isoStart);
+
+        if (data) {
+            myMonthVisits.clear();
+            data.forEach(v => {
+                const code = normalizeKey(v.client_code || v.id_cliente);
+                if (!myMonthVisits.has(code)) myMonthVisits.set(code, []);
+                myMonthVisits.get(code).push(v);
+            });
+        }
+    }
 
     async function verificarEstadoVisita() {
         const { data: { user } } = await window.supabaseClient.auth.getUser();
         if (!user) return;
+
+        // Fetch all visits for the month first (background)
+        fetchMyVisits().then(() => {
+            if (isRoteiroMode) renderRoteiroView();
+            // Also refresh list view if visible to show tags
+            if (!isRoteiroMode && document.getElementById('clientes-view') && !document.getElementById('clientes-view').classList.contains('hidden')) {
+                renderClientView();
+            }
+        });
 
         const { data, error } = await window.supabaseClient
             .from('visitas')
