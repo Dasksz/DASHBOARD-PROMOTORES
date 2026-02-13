@@ -8035,9 +8035,25 @@ const supervisorGroups = new Map();
         function updateProductBarChart(summary) {
             const metric = currentProductMetric;
             const data = metric === 'faturamento' ? summary.top10ProdutosFaturamento : summary.top10ProdutosPeso;
-    const labels = data.map(p => p.codigo);
+            const labels = data.map(p => p.codigo);
+            const names = data.map(p => p.produto);
             const values = data.map(p => p[metric]);
-            createChart('salesByProductBarChart', 'bar', labels, values);
+
+            const tooltipOptions = {
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                if (!context || !context.length) return '';
+                                const index = context[0].dataIndex;
+                                return `(${labels[index]}) ${names[index]}`;
+                            }
+                        }
+                    }
+                }
+            };
+
+            createChart('salesByProductBarChart', 'bar', labels, values, tooltipOptions);
         }
 
         function renderTable(data) {
