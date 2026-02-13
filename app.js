@@ -7921,15 +7921,20 @@ const supervisorGroups = new Map();
                          const codFor = String(item.CODFOR);
                          const desc = normalize(item.DESCRICAO || '');
 
-                         if (['707', '708', '752'].includes(codFor)) {
-                             fornecedorLabel = codFor;
+                         if (codFor === '707') {
+                             fornecedorLabel = 'Extrusados';
+                         } else if (codFor === '708') {
+                             fornecedorLabel = 'Não Extrusados';
+                         } else if (codFor === '752') {
+                             fornecedorLabel = 'Torcida';
                          } else if (codFor === '1119') {
-                             if (desc.includes('TODDYNHO')) fornecedorLabel = '1119_TODDYNHO';
-                             else if (desc.includes('TODDY')) fornecedorLabel = '1119_TODDY';
-                             else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) fornecedorLabel = '1119_QUAKER_KEROCOCO';
-                             else fornecedorLabel = '1119_OUTROS';
+                             if (desc.includes('TODDYNHO')) fornecedorLabel = 'Toddynho';
+                             else if (desc.includes('TODDY')) fornecedorLabel = 'Toddy';
+                             else if (desc.includes('QUAKER')) fornecedorLabel = 'Quaker';
+                             else if (desc.includes('KEROCOCO')) fornecedorLabel = 'Kero Coco';
+                             else fornecedorLabel = 'Outros Foods';
                          } else {
-                             fornecedorLabel = 'PEPSICO_OUTROS';
+                             fornecedorLabel = 'Outros Pepsico';
                          }
                      } else {
                          fornecedorLabel = rowPasta || 'N/A';
