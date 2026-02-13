@@ -137,16 +137,37 @@
     body { -ms-overflow-style: none; scrollbar-width: none; }
 
     /* Login Screen Facelift */
-    .gatekeeper-card {
-        background: rgba(15, 23, 42, 0.9) !important;
+    .login-container {
+        border: 1px solid rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: #fff !important;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .login-welcome-panel {
+        /* Fancy wave or curve background effect via CSS mask or SVG background if needed,
+           but simple gradient overlay works for now as per design request */
+        position: relative;
+        overflow: hidden;
     }
     
-    .gatekeeper-card h1 { color: #fff !important; }
-    .gatekeeper-card p { color: #94a3b8 !important; }
+    /* Curved Separator for Desktop */
+    @media (min-width: 768px) {
+        .login-welcome-panel::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -50px;
+            bottom: 0;
+            width: 100px;
+            background: #0f172a; /* Match right panel bg */
+            border-radius: 50% 0 0 50%; /* Curve inward */
+            z-index: 5;
+            transform: scaleY(1.5); /* Stretch vertically */
+        }
+    }
+
+    .login-form-panel {
+        z-index: 10;
+    }
 
     /* Helper Utilities */
     .text-glow { text-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
@@ -691,4 +712,14 @@ html.light .bg-green-900\/30 {
     background-color: #dcfce7 !important; /* green-100 */
     border-color: #86efac !important;
     color: #166534 !important; /* green-800 */
+}
+
+/* Login Logo Styling */
+.login-logo-img {
+    border-radius: 1rem; /* Rounded corners for the solid background logo */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+}
+.login-logo-img:hover {
+    transform: scale(1.05);
 }
