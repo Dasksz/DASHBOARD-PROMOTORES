@@ -305,20 +305,46 @@
                 }
             }
 
+            // 3. Granular Cache Check Logic
+            const tablesToFetch = new Set();
             if (!isPromoter && cachedData && metadataRemote) {
-                // Check if remote last_update is same as cached (Standard Logic)
-                const remoteDate = new Date(metadataRemote.last_update).getTime();
-                const cachedDate = new Date(cachedData.metadata ? cachedData.metadata.find(m=>m.key==='last_update')?.value : 0).getTime();
+                // Determine which specific tables need to be updated based on hash comparison
+                const checkTable = (tableName, hashKey, dataKeyInCache) => {
+                    const remoteHash = metadataRemote[hashKey];
+                    const localHash = cachedData.metadata ? cachedData.metadata.find(m => m.key === hashKey)?.value : null;
 
-                // Also check if working days matches, just in case
-                // If remote date is valid and same as cached, use cache
-                // Verificando também se hierarchy existe (Correção de Bug)
-                if (!isNaN(remoteDate) && remoteDate <= cachedDate && cachedData.hierarchy) {
-                    console.log("Usando cache do IndexedDB (Versão atualizada)");
-                    useCache = true;
+                    // If no remote hash (legacy data), or hash mismatch, or data missing in cache -> Fetch
+                    if (!remoteHash || remoteHash !== localHash || !cachedData[dataKeyInCache]) {
+                        console.log(`[Cache] ${tableName} needs update (Remote: ${remoteHash}, Local: ${localHash})`);
+                        tablesToFetch.add(tableName);
+                    } else {
+                        // console.log(`[Cache] ${tableName} is up-to-date.`);
+                    }
+                };
+
+                checkTable('data_detailed', 'hash_detailed', 'detailed');
+                checkTable('data_history', 'hash_history', 'history');
+                checkTable('data_clients', 'hash_clients', 'clients');
+                checkTable('data_orders', 'hash_orders', 'orders'); // Mapped to 'orders' in cache
+                checkTable('data_stock', 'hash_stock', 'stock');
+                checkTable('data_active_products', 'hash_active_products', 'activeProds');
+                checkTable('data_product_details', 'hash_product_details', 'products');
+                checkTable('data_innovations', 'hash_innovations', 'innovations');
+                checkTable('data_hierarchy', 'hash_hierarchy', 'hierarchy');
+
+                // If nothing to fetch, use cache completely
+                if (tablesToFetch.size === 0) {
+                     console.log("Usando cache do IndexedDB (Versão 100% atualizada)");
+                     useCache = true;
                 } else {
-                    console.log("Cache desatualizado ou incompleto. Baixando novos dados...");
+                    console.log(`Cache parcial. Baixando ${tablesToFetch.size} tabelas atualizadas...`);
+                    // We don't set useCache=true here because we need to enter the "fetch" block,
+                    // but we will intelligently merge cached data inside that block.
                 }
+            } else if (!cachedData) {
+                // Full Fetch required
+                console.log("Cache vazio. Baixando tudo...");
+                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy'].forEach(t => tablesToFetch.add(t));
             }
 
             if (useCache) {
@@ -657,7 +683,7 @@
             const colsOrders = 'id,pedido,codcli,cliente_nome,cidade,nome,superv,fornecedores_str,dtped,dtsaida,posicao,vlvenda,totpesoliq,filial,tipovenda,fornecedores_list,codfors_list';
 
             if (useCache) {
-                // LOAD FROM CACHE
+                // LOAD FROM CACHE (Full)
                 detailed = cachedData.detailed;
                 history = cachedData.history;
                 clients = cachedData.clients;
@@ -667,54 +693,26 @@
                 innovations = cachedData.innovations;
                 metadata = metadataRemoteRaw || cachedData.metadata;
                 orders = cachedData.orders;
-                hierarchy = cachedData.hierarchy; // Already loaded or from cache
+                hierarchy = cachedData.hierarchy;
                 clientPromoters = cachedData.clientPromoters || [];
+                clientCoordinates = cachedData.clientCoordinates || [];
 
-                // Refresh Coordinates specifically (Background Update for Cache)
-                try {
-                    const freshCoords = await fetchAll('data_client_coordinates', null, null, 'object', 'client_code');
-                    if (freshCoords && freshCoords.length > 0) {
-                        clientCoordinates = freshCoords;
-                        // Update the cache object for next time
-                        cachedData.clientCoordinates = freshCoords;
-                        // Fire-and-forget save
-                        saveToCache('dashboardData', cachedData).catch(e => console.warn("Background cache save failed", e));
-                        console.log(`[Cache] Coordenadas atualizadas: ${freshCoords.length}`);
-                    } else {
-                        clientCoordinates = cachedData.clientCoordinates || [];
-                    }
-                } catch (e) {
-                    console.warn("[Cache] Falha ao atualizar coordenadas:", e);
-                    clientCoordinates = cachedData.clientCoordinates || [];
-                }
-
-                // Refresh Promoters (Always update cache to ensure wallet changes persist)
-                try {
-                    console.log("[Cache] Atualizando promotores...");
-                    const freshPromoters = await fetchAll('data_client_promoters', null, null, 'object', 'client_code');
-                    // Only update if we got data or empty array (successful fetch)
-                    if (Array.isArray(freshPromoters)) {
-                        clientPromoters = freshPromoters;
-                        cachedData.clientPromoters = freshPromoters;
-                        saveToCache('dashboardData', cachedData).catch(e => console.warn("Background cache save failed (Promoters)", e));
-                        console.log(`[Cache] Promotores atualizados: ${freshPromoters.length}`);
-                    }
-                } catch(e) {
-                    console.warn("[Cache] Falha ao atualizar promotores:", e);
-                    // Fallback to existing cache if fetch fails
-                    if (!clientPromoters) clientPromoters = [];
-                }
+                // Background updates for coordinates/promoters can happen here if needed,
+                // but usually conditional logic handles it if metadata hashes change.
+                // However, Coordinates/Promoters are dynamic and might not have hashes in worker logic?
+                // The worker DOES compute hashes for these if they are part of upload.
+                // But clientCoordinates table is updated by app usage (check-in/geo), so its hash might drift.
+                // For simplicity, we can fetch fresh small tables if critical.
 
             } else {
-                 // FETCH FRESH (Promoter Optimized or Full Load)
+                 // PARTIAL OR FULL FETCH
 
                 // Promoter Filtering Setup
                 let clientFilterCodes = null;
                 if (isPromoter) {
                     const role = window.userRole.trim();
                     console.log(`[Init] Fetching assigned clients for promoter ${role}...`);
-                    // Fetch ONLY clients assigned to this promoter
-                    // 1. Get List of Client Codes from data_client_promoters
+                    // Always fetch fresh promoter assignments for Promoters
                     const myPromoterData = await fetchAll('data_client_promoters', null, null, 'object', 'client_code', (q) => q.ilike('promoter_code', role));
 
                     if (myPromoterData && myPromoterData.length > 0) {
@@ -743,20 +741,37 @@
                      return q;
                 };
 
-                // Always fetch promoters to ensure feature works even for first-time load
+                // Helper to decide source (Cache vs Fetch)
+                const getOrFetch = (tableName, cols, type, format, pk, filter, cacheKey) => {
+                    if (tablesToFetch.has(tableName) || isPromoter) {
+                        // console.log(`[Fetch] Fetching ${tableName}...`);
+                        return fetchAll(tableName, cols, type, format, pk, filter);
+                    } else {
+                        // console.log(`[Fetch] Using cached ${tableName}`);
+                        // Return wrapped in promise to match Promise.all structure
+                        return Promise.resolve(cachedData[cacheKey]);
+                    }
+                };
+
                 const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched] = await Promise.all([
-                    fetchAll('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter),
-                    fetchAll('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter),
-                    fetchAll('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter),
-                    fetchAll('data_product_details', null, null, 'object', 'code'),
-                    fetchAll('data_active_products', null, null, 'object', 'code'),
-                    fetchAll('data_stock', colsStock, 'stock', 'columnar', 'id'),
-                    fetchAll('data_innovations', null, null, 'object', 'id'),
-                    fetchAll('data_metadata', null, null, 'object', 'key'),
-                    fetchAll('data_orders', colsOrders, 'orders', 'object', 'id', applyClientFilter),
+                    getOrFetch('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter, 'detailed'),
+                    getOrFetch('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter, 'history'),
+                    getOrFetch('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter, 'clients'),
+                    getOrFetch('data_product_details', null, null, 'object', 'code', null, 'products'),
+                    getOrFetch('data_active_products', null, null, 'object', 'code', null, 'activeProds'),
+                    getOrFetch('data_stock', colsStock, 'stock', 'columnar', 'id', null, 'stock'),
+                    getOrFetch('data_innovations', null, null, 'object', 'id', null, 'innovations'),
+                    fetchAll('data_metadata', null, null, 'object', 'key'), // Always fetch metadata fresh
+                    getOrFetch('data_orders', colsOrders, 'orders', 'object', 'id', applyClientFilter, 'orders'),
+                    // Always fetch coordinates/promoters fresh or check hash?
+                    // Let's treat them as small tables that are cheap to fetch, OR use conditional logic.
+                    // Since Promoters edit coordinates/assignments often, maybe safer to fetch fresh or use hash?
+                    // Hash logic handles them if they are in 'tablesToFetch'.
+                    // BUT: 'data_client_coordinates' updates frequently outside of bulk upload.
+                    // So we should probably ALWAYS fetch coordinates fresh to ensure syncing.
                     fetchAll('data_client_coordinates', null, null, 'object', 'client_code'),
-                    (hierarchy ? Promise.resolve(hierarchy) : fetchAll('data_hierarchy', null, null, 'object', 'id')),
-                    fetchAll('data_client_promoters', null, null, 'object', 'client_code')
+                    getOrFetch('data_hierarchy', null, null, 'object', 'id', null, 'hierarchy'),
+                    fetchAll('data_client_promoters', null, null, 'object', 'client_code') // Always fresh to sync wallet changes
                 ]);
 
                 detailed = detailedUpper;
@@ -772,13 +787,13 @@
                 hierarchy = hierarchyFetched;
                 clientPromoters = clientPromotersFetched;
 
-                // Salvar no Cache
-                const dataToCache = {
-                    detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters
-                };
-
-                // Salvar de forma assíncrona sem travar UI
-                saveToCache('dashboardData', dataToCache).then(() => console.log('Dados salvos no cache IndexedDB.'));
+                // Update Cache with Merged Data
+                if (!isPromoter) {
+                    const dataToCache = {
+                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters
+                    };
+                    saveToCache('dashboardData', dataToCache).then(() => console.log('Dados atualizados salvos no cache.'));
+                }
             }
 
             loaderText.textContent = 'Processando...';

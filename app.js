@@ -11995,42 +11995,46 @@ const supervisorGroups = new Map();
             };
 
             try {
-                if (data.detailed && data.detailed.length > 0) {
-                    await clearTable('data_detailed');
-                    await uploadBatchParallel('data_detailed', data.detailed, true);
+                // --- HASH CHECK FOR CONDITIONAL UPLOAD ---
+                const { data: remoteMetadata } = await window.supabaseClient.from('data_metadata').select('*');
+                const remoteHashMap = new Map();
+                if (remoteMetadata) {
+                    remoteMetadata.forEach(m => remoteHashMap.set(m.key, m.value));
                 }
-                if (data.history && data.history.length > 0) {
-                    await clearTable('data_history');
-                    await uploadBatchParallel('data_history', data.history, true);
-                }
-                if (data.byOrder && data.byOrder.length > 0) {
-                    await clearTable('data_orders');
-                    await uploadBatchParallel('data_orders', data.byOrder, false);
-                }
-                if (data.clients && data.clients.length > 0) {
-                    await clearTable('data_clients');
-                    await uploadBatchParallel('data_clients', data.clients, true);
-                }
-                if (data.stock && data.stock.length > 0) {
-                    await clearTable('data_stock');
-                    await uploadBatchParallel('data_stock', data.stock, false);
-                }
-                if (data.innovations && data.innovations.length > 0) {
-                    await clearTable('data_innovations');
-                    await uploadBatchParallel('data_innovations', data.innovations, false);
-                }
-                if (data.product_details && data.product_details.length > 0) {
-                    await clearTable('data_product_details', 'code');
-                    await uploadBatchParallel('data_product_details', data.product_details, false);
-                }
-                if (data.active_products && data.active_products.length > 0) {
-                    await clearTable('data_active_products', 'code');
-                    await uploadBatchParallel('data_active_products', data.active_products, false);
-                }
-                if (data.hierarchy && data.hierarchy.length > 0) {
-                    await clearTable('data_hierarchy');
-                    await uploadBatchParallel('data_hierarchy', data.hierarchy, false);
-                }
+
+                const checkHash = (key, newDataHash) => {
+                    const remoteHash = remoteHashMap.get(key);
+                    const localHash = data.metadata.find(m => m.key === key)?.value;
+                    if (remoteHash && localHash && remoteHash === localHash) {
+                        console.log(`[Upload] Hash match for ${key}. Skipping upload.`);
+                        return false;
+                    }
+                    console.log(`[Upload] Hash mismatch for ${key} (Remote: ${remoteHash}, Local: ${localHash}). Uploading...`);
+                    return true;
+                };
+
+                // Helper to perform conditional upload
+                const conditionalUpload = async (table, dataPart, hashKey, isCol, pk = 'id') => {
+                    if (dataPart && (isCol ? dataPart.length > 0 : dataPart.length > 0)) {
+                        if (checkHash(hashKey, null)) {
+                            await clearTable(table, pk);
+                            await uploadBatchParallel(table, dataPart, isCol);
+                        } else {
+                            updateStatus(`Pulando ${table} (Dados idênticos)...`, 100);
+                        }
+                    }
+                };
+
+                await conditionalUpload('data_detailed', data.detailed, 'hash_detailed', true);
+                await conditionalUpload('data_history', data.history, 'hash_history', true);
+                await conditionalUpload('data_orders', data.byOrder, 'hash_orders', false);
+                await conditionalUpload('data_clients', data.clients, 'hash_clients', true);
+                await conditionalUpload('data_stock', data.stock, 'hash_stock', false);
+                await conditionalUpload('data_innovations', data.innovations, 'hash_innovations', false);
+                await conditionalUpload('data_product_details', data.product_details, 'hash_product_details', false, 'code');
+                await conditionalUpload('data_active_products', data.active_products, 'hash_active_products', false, 'code');
+                await conditionalUpload('data_hierarchy', data.hierarchy, 'hash_hierarchy', false);
+
                 if (data.metadata && data.metadata.length > 0) {
                     // Update last_update timestamp
                     const now = new Date();
@@ -12044,16 +12048,15 @@ const supervisorGroups = new Map();
                     // --- PRESERVE MANUAL KEYS ---
                     try {
                         const keysToPreserve = ['groq_api_key', 'senha_modal', 'BREVO_API_KEY', 'BREVO_SENDER_EMAIL'];
-                        const { data: currentMetadata } = await window.supabaseClient
-                            .from('data_metadata')
-                            .select('*')
-                            .in('key', keysToPreserve);
 
-                        if (currentMetadata && currentMetadata.length > 0) {
-                            currentMetadata.forEach(item => {
-                                const existsInNew = data.metadata.some(newM => newM.key === item.key);
-                                if (!existsInNew) {
-                                    data.metadata.push(item);
+                        // We filter from remoteMetadata which we fetched earlier
+                        if (remoteMetadata && remoteMetadata.length > 0) {
+                            remoteMetadata.forEach(item => {
+                                if (keysToPreserve.includes(item.key)) {
+                                    const existsInNew = data.metadata.some(newM => newM.key === item.key);
+                                    if (!existsInNew) {
+                                        data.metadata.push(item);
+                                    }
                                 }
                             });
                         }
@@ -12061,6 +12064,7 @@ const supervisorGroups = new Map();
                         console.warn("[Upload] Failed to preserve manual keys:", e);
                     }
 
+                    // Always upload metadata to update hashes and timestamps
                     await clearTable('data_metadata', 'key');
                     await uploadBatchParallel('data_metadata', data.metadata, false);
 
