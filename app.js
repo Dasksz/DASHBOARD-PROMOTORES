@@ -17132,55 +17132,120 @@ const supervisorGroups = new Map();
         return new Date(nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate());
     }
 
-    function handleRoteiroSearch(query) {
-        if (!query || query.trim() === '') {
-            // Reset to Today if cleared? Or stay? Stay is better UX usually.
-            // renderRoteiroView();
-            // Just re-render current view to clear filter
-            renderRoteiroClients(roteiroDate);
+    // --- NEW: Roteiro Suggestions Logic ---
+    function updateRoteiroSuggestions(query) {
+        const suggestionBox = document.getElementById('clientes-search-suggestions');
+        if (!suggestionBox) return;
+
+        if (!query || query.trim().length < 2) {
+            suggestionBox.classList.add('hidden');
             return;
         }
 
         const term = query.toLowerCase().trim();
+        const matches = [];
+        const limit = 10;
 
-        // 1. Search for Client
-        let matchedClient = null;
+        // Search logic using optimized indices if available
+        if (optimizedData && optimizedData.searchIndices && optimizedData.searchIndices.clients) {
+             const indices = optimizedData.searchIndices.clients;
+             for (let i = 0; i < indices.length; i++) {
+                 const item = indices[i];
+                 if (!item) continue;
+                 // Match Code, Name, Fantasia, City
+                 if (item.nameLower.includes(term) ||
+                     item.code.includes(term) ||
+                     item.cityLower.includes(term) ||
+                     (item.fantasia && item.fantasia.toLowerCase().includes(term))) {
 
-        // Helper to search
-        const check = (c) => {
-            return (c.nomeCliente || '').toLowerCase().includes(term) ||
-                   (c.fantasia || '').toLowerCase().includes(term) ||
-                   (String(c['Código'] || c['codigo_cliente'])).includes(term);
-        };
-
-        if (allClientsData instanceof ColumnarDataset) {
-            for(let i=0; i<allClientsData.length; i++) {
-                const c = allClientsData.get(i);
-                if (check(c)) { matchedClient = c; break; }
-            }
+                     // Get full client object
+                     const client = allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i];
+                     matches.push(client);
+                     if (matches.length >= limit) break;
+                 }
+             }
         } else {
-            matchedClient = allClientsData.find(check);
+             // Fallback
+             const dataset = allClientsData;
+             const len = dataset.length;
+             for (let i = 0; i < len; i++) {
+                 const c = dataset instanceof ColumnarDataset ? dataset.get(i) : dataset[i];
+                 const name = (c.nomeCliente || '').toLowerCase();
+                 const fant = (c.fantasia || '').toLowerCase();
+                 const code = String(c['Código'] || c['codigo_cliente']);
+
+                 if (name.includes(term) || fant.includes(term) || code.includes(term)) {
+                     matches.push(c);
+                     if (matches.length >= limit) break;
+                 }
+             }
         }
 
-        if (matchedClient) {
-            // 2. Calculate Next Date
-            const nextDate = calculateNextRoteiroDate(matchedClient);
+        if (matches.length === 0) {
+            suggestionBox.classList.add('hidden');
+            return;
+        }
 
-            if (nextDate) {
-                // Update Global Date
-                roteiroDate = nextDate;
-                // Render
-                renderRoteiroView(); // Updates Calendar UI
-                // Filter List explicitly? renderRoteiroClients will read the input value.
-            } else {
-                // Client found but no roteiro
-                renderRoteiroClients(roteiroDate, true); // Force empty/special state
-            }
+        suggestionBox.innerHTML = '';
+        matches.forEach(client => {
+            const div = document.createElement('div');
+            div.className = 'px-4 py-3 border-b border-slate-700 hover:bg-slate-700 cursor-pointer flex justify-between items-center group bg-[#0f172a]';
+            const name = client.nomeCliente || client.fantasia || 'Cliente';
+            const code = String(client['Código'] || client['codigo_cliente']);
+            const city = client.cidade || '';
+            const nextDate = calculateNextRoteiroDate(client); // Check if scheduled
+            const scheduledInfo = nextDate ? `<span class="text-xs text-green-400 ml-2">Próx: ${nextDate.toLocaleDateString('pt-BR')}</span>` : '';
+
+            div.innerHTML = `
+                <div>
+                    <div class="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
+                        <span class="font-mono text-slate-400 mr-2">${code}</span>
+                        ${name}
+                        ${scheduledInfo}
+                    </div>
+                    <div class="text-xs text-slate-500">${city}</div>
+                </div>
+            `;
+            div.onclick = () => selectRoteiroSuggestion(client);
+            suggestionBox.appendChild(div);
+        });
+        suggestionBox.classList.remove('hidden');
+    }
+
+    function selectRoteiroSuggestion(client) {
+        const searchInput = document.getElementById('clientes-search');
+        const suggestionBox = document.getElementById('clientes-search-suggestions');
+
+        if (suggestionBox) suggestionBox.classList.add('hidden');
+
+        if (searchInput) {
+            searchInput.value = client.nomeCliente || client.fantasia || '';
+        }
+
+        // Smart Jump
+        const nextDate = calculateNextRoteiroDate(client);
+
+        if (nextDate) {
+            roteiroDate = nextDate;
+            renderRoteiroView();
         } else {
-            // No client found
-            renderRoteiroClients(roteiroDate, true); // Force empty
+            // Render view anyway to apply text filter (which might show nothing or empty state)
+            renderRoteiroClients(roteiroDate);
+            // Optional: User feedback
+            // alert("Cliente selecionado não possui data futura calculada no roteiro.");
         }
     }
+
+    // Global click listener for suggestions
+    document.addEventListener('click', (e) => {
+        const suggestionBox = document.getElementById('clientes-search-suggestions');
+        const searchInput = document.getElementById('clientes-search');
+        if (suggestionBox && !suggestionBox.classList.contains('hidden')) {
+            if (!suggestionBox.contains(e.target) && e.target !== searchInput) {
+                suggestionBox.classList.add('hidden');
+            }
+        }
+    });
 
     function renderRoteiroView() {
         renderRoteiroCalendar();
@@ -17841,7 +17906,7 @@ const supervisorGroups = new Map();
         if (searchInput) {
             searchInput.oninput = (e) => {
                 if (isRoteiroMode) {
-                    handleRoteiroSearch(e.target.value);
+                    updateRoteiroSuggestions(e.target.value);
                 } else {
                     renderList(e.target.value);
                 }
