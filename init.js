@@ -1004,19 +1004,67 @@
         // New Login Elements
         const formSignin = document.getElementById('form-signin');
         const formSignup = document.getElementById('form-signup');
+        const formForgot = document.getElementById('form-forgot');
         const btnShowSignup = document.getElementById('btn-show-signup');
         const btnShowSignin = document.getElementById('btn-show-signin');
+        const btnForgotPassword = document.getElementById('btn-forgot-password');
+        const btnBackToLogin = document.getElementById('btn-back-to-login');
         const loginFormSignin = document.getElementById('login-form-signin');
         const loginFormSignup = document.getElementById('login-form-signup');
+        const loginFormForgot = document.getElementById('login-form-forgot');
 
         // Toggle Logic
         if (btnShowSignup && btnShowSignin) {
             btnShowSignup.addEventListener('click', () => {
                 loginFormSignin.classList.add('hidden');
                 loginFormSignup.classList.remove('hidden');
+                if (loginFormForgot) loginFormForgot.classList.add('hidden');
             });
             btnShowSignin.addEventListener('click', () => {
                 loginFormSignup.classList.add('hidden');
+                loginFormSignin.classList.remove('hidden');
+                if (loginFormForgot) loginFormForgot.classList.add('hidden');
+            });
+        }
+
+        // Forgot Password Submit Logic
+        if (formForgot) {
+            formForgot.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = formForgot.email.value;
+
+                const btn = formForgot.querySelector('button[type="submit"]');
+                const oldText = btn.textContent;
+                btn.disabled = true; btn.textContent = 'Enviando...';
+
+                const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin,
+                });
+
+                if (error) {
+                    alert('Erro ao enviar email: ' + error.message);
+                } else {
+                    alert('Verifique seu e-mail para o link de redefinição de senha.');
+                    // Switch back to login view
+                    if (loginFormForgot) loginFormForgot.classList.add('hidden');
+                    if (loginFormSignin) loginFormSignin.classList.remove('hidden');
+                }
+                btn.disabled = false; btn.textContent = oldText;
+            });
+        }
+
+        // Forgot Password Logic
+        if (btnForgotPassword && btnBackToLogin && loginFormForgot) {
+             btnForgotPassword.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginFormSignin.classList.add('hidden');
+                loginFormSignup.classList.add('hidden');
+                loginFormForgot.classList.remove('hidden');
+            });
+
+            btnBackToLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginFormForgot.classList.add('hidden');
                 loginFormSignin.classList.remove('hidden');
             });
         }
