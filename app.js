@@ -15897,14 +15897,6 @@ const supervisorGroups = new Map();
 
         const closeWalletModal = () => {
             document.getElementById('wallet-client-modal').classList.add('hidden');
-            // Return to Action Modal if flag is set (Navigation Fix)
-            if (window._returnToActionModal && currentActionClientCode) {
-                // Short delay to allow animation frame
-                setTimeout(() => {
-                    openActionModal(currentActionClientCode, currentActionClientName);
-                    window._returnToActionModal = false;
-                }, 50);
-            }
         };
 
         if(modalCancel) modalCancel.onclick = closeWalletModal;
@@ -17943,10 +17935,8 @@ const supervisorGroups = new Map();
         bind(btnPesquisa, () => abrirPesquisa());
         bind(btnGeo, () => openGeoUpdateModal());
         bind(btnDetalhes, () => {
-            window._returnToActionModal = true;
+            // Keep Action Modal open in background to prevent blinking/state loss
             openWalletClientModal(currentActionClientCode);
-            // Delay hiding to prevent background blink
-            setTimeout(() => modal.classList.add('hidden'), 50);
         });
 
         modal.classList.remove('hidden');
@@ -18031,7 +18021,7 @@ const supervisorGroups = new Map();
     let currentGeoLng = null;
 
     function openGeoUpdateModal() {
-        document.getElementById('modal-acoes-visita').classList.add('hidden');
+        // Keep Action Modal open in background
         const modal = document.getElementById('modal-geo-update');
         const loading = document.getElementById('geo-update-loading');
 
@@ -18156,7 +18146,7 @@ const supervisorGroups = new Map();
     }
 
     async function abrirPesquisa() {
-        document.getElementById('modal-acoes-visita').classList.add('hidden');
+        // Keep Action Modal open in background
         const modal = document.getElementById('modal-relatorio');
         const form = document.getElementById('form-visita');
         document.getElementById('visita-atual-id').value = visitaAbertaId;
@@ -18201,16 +18191,10 @@ const supervisorGroups = new Map();
     // --- Navigation Helpers ---
     window.closeResearchModal = function() {
         document.getElementById('modal-relatorio').classList.add('hidden');
-        if (currentActionClientCode) {
-            openActionModal(currentActionClientCode, currentActionClientName);
-        }
     }
 
     window.closeGeoModal = function() {
         document.getElementById('modal-geo-update').classList.add('hidden');
-        if (currentActionClientCode) {
-            openActionModal(currentActionClientCode, currentActionClientName);
-        }
     }
 
     // Bind Form Submit
