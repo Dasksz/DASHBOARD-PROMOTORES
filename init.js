@@ -1004,19 +1004,67 @@
         // New Login Elements
         const formSignin = document.getElementById('form-signin');
         const formSignup = document.getElementById('form-signup');
+        const formForgot = document.getElementById('form-forgot');
         const btnShowSignup = document.getElementById('btn-show-signup');
         const btnShowSignin = document.getElementById('btn-show-signin');
+        const btnForgotPassword = document.getElementById('btn-forgot-password');
+        const btnBackToLogin = document.getElementById('btn-back-to-login');
         const loginFormSignin = document.getElementById('login-form-signin');
         const loginFormSignup = document.getElementById('login-form-signup');
+        const loginFormForgot = document.getElementById('login-form-forgot');
 
         // Toggle Logic
         if (btnShowSignup && btnShowSignin) {
             btnShowSignup.addEventListener('click', () => {
                 loginFormSignin.classList.add('hidden');
                 loginFormSignup.classList.remove('hidden');
+                if (loginFormForgot) loginFormForgot.classList.add('hidden');
             });
             btnShowSignin.addEventListener('click', () => {
                 loginFormSignup.classList.add('hidden');
+                loginFormSignin.classList.remove('hidden');
+                if (loginFormForgot) loginFormForgot.classList.add('hidden');
+            });
+        }
+
+        // Forgot Password Submit Logic
+        if (formForgot) {
+            formForgot.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = formForgot.email.value;
+                
+                const btn = formForgot.querySelector('button[type="submit"]');
+                const oldText = btn.textContent;
+                btn.disabled = true; btn.textContent = 'Enviando...';
+
+                const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin,
+                });
+
+                if (error) {
+                    alert('Erro ao enviar email: ' + error.message);
+                } else {
+                    alert('Verifique seu e-mail para o link de redefinição de senha.');
+                    // Switch back to login view
+                    if (loginFormForgot) loginFormForgot.classList.add('hidden');
+                    if (loginFormSignin) loginFormSignin.classList.remove('hidden');
+                }
+                btn.disabled = false; btn.textContent = oldText;
+            });
+        }
+
+        // Forgot Password Logic
+        if (btnForgotPassword && btnBackToLogin && loginFormForgot) {
+             btnForgotPassword.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginFormSignin.classList.add('hidden');
+                loginFormSignup.classList.add('hidden');
+                loginFormForgot.classList.remove('hidden');
+            });
+
+            btnBackToLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginFormForgot.classList.add('hidden');
                 loginFormSignin.classList.remove('hidden');
             });
         }
@@ -1047,7 +1095,7 @@
                 e.preventDefault();
                 const email = formSignin.email.value;
                 const password = formSignin.password.value;
-
+                
                 const btn = formSignin.querySelector('button[type="submit"]');
                 const oldText = btn.textContent;
                 btn.disabled = true; btn.textContent = 'Entrando...';
@@ -1125,7 +1173,7 @@
                     // Note: RLS usually prevents update of other users, but here we update OWN profile or wait for trigger?
                     // The trigger creates the profile. We need to update it.
                     // Ideally we wait a bit or retry update.
-
+                    
                     try {
                         const { error: updateError } = await supabaseClient
                             .from('profiles')
@@ -1135,7 +1183,7 @@
                                 // SECURITY WARNING: Storing passwords in plain text is highly insecure.
                                 // This was explicitly requested by the user ("teremos que modificar a tabela profile para armazenar... senha").
                                 // In a production environment, this should NEVER be done. Supabase Auth handles passwords securely.
-                                password: password
+                                password: password 
                             })
                             .eq('id', data.user.id);
 
