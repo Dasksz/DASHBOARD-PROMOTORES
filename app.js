@@ -7919,15 +7919,16 @@ const supervisorGroups = new Map();
                          const codFor = String(item.CODFOR);
                          const desc = normalize(item.DESCRICAO || '');
 
-                         if (['707', '708', '752'].includes(codFor)) {
-                             fornecedorLabel = codFor;
-                         } else if (codFor === '1119') {
-                             if (desc.includes('TODDYNHO')) fornecedorLabel = '1119_TODDYNHO';
-                             else if (desc.includes('TODDY')) fornecedorLabel = '1119_TODDY';
-                             else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) fornecedorLabel = '1119_QUAKER_KEROCOCO';
-                             else fornecedorLabel = '1119_OUTROS';
+                         if (codFor === '707') fornecedorLabel = 'EXTRUSADOS';
+                         else if (codFor === '708') fornecedorLabel = 'NÃO EXTRUSADOS';
+                         else if (codFor === '752') fornecedorLabel = 'TORCIDA';
+                         else if (codFor === '1119') {
+                             if (desc.includes('TODDYNHO')) fornecedorLabel = 'TODDYNHO';
+                             else if (desc.includes('TODDY')) fornecedorLabel = 'TODDY';
+                             else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) fornecedorLabel = 'QUAKER/KEROCOCO';
+                             else fornecedorLabel = 'FOODS - OUTROS';
                          } else {
-                             fornecedorLabel = 'PEPSICO_OUTROS';
+                             fornecedorLabel = 'PEPSICO - OUTROS';
                          }
                      } else {
                          fornecedorLabel = rowPasta || 'N/A';
