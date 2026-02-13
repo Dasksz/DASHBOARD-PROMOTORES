@@ -3449,12 +3449,12 @@
             // --- 2. Data Rows ---
             let currentRow = 3;
             const colCellsForGrandTotal = {};
-            svColumns.forEach(c => colCellsForGrandTotal[c.id] = { fat: [], pos: [], vol: [], mix: [], avg: [] });
+            svColumns.forEach(c => colCellsForGrandTotal[c.id] = { fat: [], pos: [], vol: [], mix: [], avg: [], metaFat: [], ajusteFat: [], metaPos: [], ajustePos: [] });
 
             currentGoalsSvData.forEach(sup => {
                 const sellers = sup.sellers;
                 const colCellsForSupTotal = {};
-                svColumns.forEach(c => colCellsForSupTotal[c.id] = { fat: [], pos: [], vol: [], mix: [], avg: [] });
+                svColumns.forEach(c => colCellsForSupTotal[c.id] = { fat: [], pos: [], vol: [], mix: [], avg: [], metaFat: [], ajusteFat: [], metaPos: [], ajustePos: [] });
 
                 sellers.forEach(seller => {
                     const rowData = [createCell(seller.code), createCell(seller.name)];
@@ -3505,8 +3505,10 @@
                                 rowData.push(createCell(posVal, cellStyle, fmtInt));
                             }
 
-                            colCellsForSupTotal[col.id].fat.push(`${getColLet(cIdx + 1)}${excelRow}`);
-                            colCellsForSupTotal[col.id].pos.push(`${getColLet(cIdx + 3)}${excelRow}`);
+                            colCellsForSupTotal[col.id].metaFat.push(`${getColLet(cIdx)}${excelRow}`);
+                            colCellsForSupTotal[col.id].ajusteFat.push(`${getColLet(cIdx + 1)}${excelRow}`);
+                            colCellsForSupTotal[col.id].metaPos.push(`${getColLet(cIdx + 2)}${excelRow}`);
+                            colCellsForSupTotal[col.id].ajustePos.push(`${getColLet(cIdx + 3)}${excelRow}`);
 
                         } else if (col.type === 'tonnage') {
                             rowData.push(createCell(d.avgVol, readOnlyStyle, fmtVol));
@@ -3570,18 +3572,31 @@
                     const getColLet = (idx) => XLSX.utils.encode_col(idx);
 
                     if (col.type === 'standard') {
-                        const rangeFat = colCellsForSupTotal[col.id].fat;
-                        const fFatRange = rangeFat.length > 0 ? `SUM(${rangeFat[0]}:${rangeFat[rangeFat.length-1]})` : "0";
-                        supRowData.push({ t: 'n', v: 0, f: fFatRange, s: { ...totalRowStyle, numFmt: fmtMoney }, z: fmtMoney });
-                        supRowData.push({ t: 'n', v: 0, f: fFatRange, s: { ...totalRowStyle, numFmt: fmtMoney }, z: fmtMoney });
+                        // 1. Meta Fat Total
+                        const rangeMetaFat = colCellsForSupTotal[col.id].metaFat;
+                        const fMetaFat = rangeMetaFat.length > 0 ? `SUM(${rangeMetaFat[0]}:${rangeMetaFat[rangeMetaFat.length-1]})` : "0";
+                        supRowData.push({ t: 'n', v: 0, f: fMetaFat, s: { ...totalRowStyle, numFmt: fmtMoney }, z: fmtMoney });
 
-                        const rangePos = colCellsForSupTotal[col.id].pos;
-                        const fPosRange = rangePos.length > 0 ? `SUM(${rangePos[0]}:${rangePos[rangePos.length-1]})` : "0";
-                        supRowData.push({ t: 'n', v: 0, f: fPosRange, s: { ...totalRowStyle, numFmt: fmtInt }, z: fmtInt });
-                        supRowData.push({ t: 'n', v: 0, f: fPosRange, s: { ...totalRowStyle, numFmt: fmtInt }, z: fmtInt });
+                        // 2. Ajuste Fat Total
+                        const rangeAjusteFat = colCellsForSupTotal[col.id].ajusteFat;
+                        const fAjusteFat = rangeAjusteFat.length > 0 ? `SUM(${rangeAjusteFat[0]}:${rangeAjusteFat[rangeAjusteFat.length-1]})` : "0";
+                        supRowData.push({ t: 'n', v: 0, f: fAjusteFat, s: { ...totalRowStyle, numFmt: fmtMoney }, z: fmtMoney });
 
-                        colCellsForGrandTotal[col.id].fat.push(`${getColLet(cIdx+1)}${excelSupRow}`);
-                        colCellsForGrandTotal[col.id].pos.push(`${getColLet(cIdx+3)}${excelSupRow}`);
+                        // 3. Meta Pos Total
+                        const rangeMetaPos = colCellsForSupTotal[col.id].metaPos;
+                        const fMetaPos = rangeMetaPos.length > 0 ? `SUM(${rangeMetaPos[0]}:${rangeMetaPos[rangeMetaPos.length-1]})` : "0";
+                        supRowData.push({ t: 'n', v: 0, f: fMetaPos, s: { ...totalRowStyle, numFmt: fmtInt }, z: fmtInt });
+
+                        // 4. Ajuste Pos Total
+                        const rangeAjustePos = colCellsForSupTotal[col.id].ajustePos;
+                        const fAjustePos = rangeAjustePos.length > 0 ? `SUM(${rangeAjustePos[0]}:${rangeAjustePos[rangeAjustePos.length-1]})` : "0";
+                        supRowData.push({ t: 'n', v: 0, f: fAjustePos, s: { ...totalRowStyle, numFmt: fmtInt }, z: fmtInt });
+
+                        // Push to Grand Total Arrays
+                        colCellsForGrandTotal[col.id].metaFat.push(`${getColLet(cIdx)}${excelSupRow}`);
+                        colCellsForGrandTotal[col.id].ajusteFat.push(`${getColLet(cIdx+1)}${excelSupRow}`);
+                        colCellsForGrandTotal[col.id].metaPos.push(`${getColLet(cIdx+2)}${excelSupRow}`);
+                        colCellsForGrandTotal[col.id].ajustePos.push(`${getColLet(cIdx+3)}${excelSupRow}`);
 
                     } else if (col.type === 'tonnage') {
                         const rangeAvg = colCellsForSupTotal[col.id].avg;
@@ -3647,15 +3662,25 @@
             const grandRowData = [createCell("GV", grandTotalStyle), createCell("GERAL PRIME", grandTotalStyle)];
             svColumns.forEach(col => {
                 if (col.type === 'standard') {
-                    const rangeFat = colCellsForGrandTotal[col.id].fat;
-                    const fFat = rangeFat.length > 0 ? rangeFat.join("+") : "0";
-                    grandRowData.push({ t: 'n', v: 0, f: fFat, s: { ...grandTotalStyle, numFmt: fmtMoney }, z: fmtMoney });
-                    grandRowData.push({ t: 'n', v: 0, f: fFat, s: { ...grandTotalStyle, numFmt: fmtMoney }, z: fmtMoney });
+                    // 1. Meta Fat Grand Total
+                    const rangeMetaFat = colCellsForGrandTotal[col.id].metaFat;
+                    const fMetaFat = rangeMetaFat.length > 0 ? rangeMetaFat.join("+") : "0";
+                    grandRowData.push({ t: 'n', v: 0, f: fMetaFat, s: { ...grandTotalStyle, numFmt: fmtMoney }, z: fmtMoney });
 
-                    const rangePos = colCellsForGrandTotal[col.id].pos;
-                    const fPos = rangePos.length > 0 ? rangePos.join("+") : "0";
-                    grandRowData.push({ t: 'n', v: 0, f: fPos, s: { ...grandTotalStyle, numFmt: fmtInt }, z: fmtInt });
-                    grandRowData.push({ t: 'n', v: 0, f: fPos, s: { ...grandTotalStyle, numFmt: fmtInt }, z: fmtInt });
+                    // 2. Ajuste Fat Grand Total
+                    const rangeAjusteFat = colCellsForGrandTotal[col.id].ajusteFat;
+                    const fAjusteFat = rangeAjusteFat.length > 0 ? rangeAjusteFat.join("+") : "0";
+                    grandRowData.push({ t: 'n', v: 0, f: fAjusteFat, s: { ...grandTotalStyle, numFmt: fmtMoney }, z: fmtMoney });
+
+                    // 3. Meta Pos Grand Total
+                    const rangeMetaPos = colCellsForGrandTotal[col.id].metaPos;
+                    const fMetaPos = rangeMetaPos.length > 0 ? rangeMetaPos.join("+") : "0";
+                    grandRowData.push({ t: 'n', v: 0, f: fMetaPos, s: { ...grandTotalStyle, numFmt: fmtInt }, z: fmtInt });
+
+                    // 4. Ajuste Pos Grand Total
+                    const rangeAjustePos = colCellsForGrandTotal[col.id].ajustePos;
+                    const fAjustePos = rangeAjustePos.length > 0 ? rangeAjustePos.join("+") : "0";
+                    grandRowData.push({ t: 'n', v: 0, f: fAjustePos, s: { ...grandTotalStyle, numFmt: fmtInt }, z: fmtInt });
 
                 } else if (col.type === 'tonnage') {
                     const rangeAvg = colCellsForGrandTotal[col.id].avg;
