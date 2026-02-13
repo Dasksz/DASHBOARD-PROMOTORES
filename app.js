@@ -17191,7 +17191,11 @@ const supervisorGroups = new Map();
         // Note: The structure in HTML is: roteiro-main-card -> div (Calendar Header) -> ...
         // We want to inject it in the header row.
 
-        if (header && window.userRole !== 'promotor' && !document.getElementById('roteiro-promoter-filter')) {
+        // Use userHierarchyContext.role instead of window.userRole to correctly identify 'promotor'
+        // even if their actual DB role is a code (e.g. '1234' or 'PROMOTOR_JOAO')
+        const currentRole = userHierarchyContext ? userHierarchyContext.role : 'promotor';
+
+        if (header && currentRole !== 'promotor' && !document.getElementById('roteiro-promoter-filter')) {
             const filterContainer = document.createElement('div');
             filterContainer.className = 'hidden lg:block ml-auto mr-4'; // Desktop only
             filterContainer.innerHTML = `
@@ -17279,7 +17283,8 @@ const supervisorGroups = new Map();
         nextBtn.parentNode.replaceChild(newNext, nextBtn);
 
         newPrev.onclick = () => {
-            if (window.userRole === 'promotor') {
+            const currentRole = userHierarchyContext ? userHierarchyContext.role : 'promotor';
+            if (currentRole === 'promotor') {
                 const today = new Date();
                 today.setHours(0,0,0,0);
                 const prevDate = new Date(roteiroDate);
@@ -17299,7 +17304,8 @@ const supervisorGroups = new Map();
         };
 
         // Visual Feedback for disabled button
-        if (window.userRole === 'promotor') {
+        const currentRole = userHierarchyContext ? userHierarchyContext.role : 'promotor';
+        if (currentRole === 'promotor') {
             const today = new Date();
             today.setHours(0,0,0,0);
             const isToday = roteiroDate.getTime() === today.getTime();
