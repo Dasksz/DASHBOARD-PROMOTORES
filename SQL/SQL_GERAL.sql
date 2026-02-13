@@ -307,15 +307,15 @@ BEGIN
   -- Insert into profiles
   insert into public.profiles (id, email, status, role, name, phone, password)
   values (
-    new.id,
-    new.email,
-    'pendente',
-    'user',
-    v_name,
-    v_phone,
+    new.id, 
+    new.email, 
+    'pendente', 
+    'user', 
+    v_name, 
+    v_phone, 
     v_password
   );
-
+  
   return new;
 end;
 $$;
