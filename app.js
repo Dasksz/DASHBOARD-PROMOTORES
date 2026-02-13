@@ -8447,9 +8447,9 @@ const supervisorGroups = new Map();
 
                 salesByPersonTitle.textContent = chartTitle;
 
-                const isSinglePromoter = chartTitle === 'Performance por Promotor' && Object.keys(chartData).length === 1;
-
-                if (isSinglePromoter) {
+                // Always use Liquid Gauge for Hierarchy Performance Charts (Coord, Co-Coord, Promotor)
+                // This aggregates performance for the current view scope
+                if (true) {
                     // Destroy existing Chart.js instance if any, to prevent conflict or memory leak
                     if (window.charts && window.charts['salesByPersonChart']) {
                         window.charts['salesByPersonChart'].destroy();
@@ -8459,7 +8459,8 @@ const supervisorGroups = new Map();
                     const chartInstance = Chart.getChart('salesByPersonChart');
                     if (chartInstance) chartInstance.destroy();
 
-                    const totalRealized = Object.values(chartData)[0] || 0;
+                    // Calculate Total Realized (Sum of all entities in chartData)
+                    const totalRealized = Object.values(chartData).reduce((a, b) => a + b, 0);
 
                     // Calculate Goal for the visible clients
                     let totalGoal = 0;
@@ -8476,18 +8477,6 @@ const supervisorGroups = new Map();
                     }
 
                     renderLiquidGauge('salesByPersonChartContainer', totalRealized, totalGoal, 'Meta Geral');
-
-                } else {
-                    // Restore Canvas if needed
-                    const container = document.getElementById('salesByPersonChartContainer');
-                    if (container && !container.querySelector('canvas')) {
-                        container.innerHTML = '<canvas id="salesByPersonChart"></canvas>';
-                    }
-
-                    const totalForPercentage = Object.values(chartData).reduce((a, b) => a + b, 0);
-                    const personChartTooltipOptions = { plugins: { tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; const value = context.parsed.y; if (value !== null) { label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); if (totalForPercentage > 0) { const percentage = ((value / totalForPercentage) * 100).toFixed(2); label += ` (${percentage}%)`; } } return label; } } } } };
-
-                    createChart('salesByPersonChart', 'bar', Object.keys(chartData).map(getFirstName), Object.values(chartData), personChartTooltipOptions);
                 }
 
                 document.getElementById('faturamentoPorFornecedorTitle').textContent = isFiltered ? 'Faturamento por Fornecedor' : 'Faturamento por Categoria';
