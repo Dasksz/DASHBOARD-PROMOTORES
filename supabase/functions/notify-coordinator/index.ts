@@ -301,7 +301,7 @@ serve(async (req) => {
 
     // Parsing Survey Answers Table
     let answersRows = '';
-    const answers = record.respostas;
+    // const answers = record.respostas; // Removed duplicate declaration (already declared above)
     if (answers && typeof answers === 'object' && Object.keys(answers).length > 0) {
         for (const [key, value] of Object.entries(answers)) {
             // Clean keys if needed (e.g. remove snake_case) or use label map
