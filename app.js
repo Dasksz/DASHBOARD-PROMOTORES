@@ -2338,6 +2338,7 @@
                 'FOODS_ALL': createMetric(),
                 'PEPSICO_ALL': createMetric()
             };
+            globalClientGoals.clear();
 
             const currentDate = lastSaleDate;
             const prevMonthDate = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() - 1, 1));
@@ -6600,13 +6601,6 @@
                 return true;
             });
 
-            if (supervisorsSet.size > 0) {
-                const rcasSet = new Set();
-                supervisorsSet.forEach(sup => {
-                    (optimizedData.rcasBySupervisor.get(sup) || []).forEach(rca => rcasSet.add(rca));
-                });
-                clients = clients.filter(c => c.rcas.some(r => rcasSet.has(r)));
-            }
 
             return clients;
         }
