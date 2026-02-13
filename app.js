@@ -11957,27 +11957,16 @@ const supervisorGroups = new Map();
                         // Using 'in' filter: id=in.(1,2,3...)
                         // URL length limit might be an issue, so we use POST with body filter or strictly URL params carefully.
                         // Supabase REST 'DELETE' supports filtering parameters in URL.
-                        const idsString = ids.join(',');
-                        // Use a smaller batch for actual delete request to keep URL safe (~2000 chars safe usually)
-                        // Actually, let's process this chunk of 5000 in smaller sub-chunks for deletion
-                        const subChunkSize = 200; // conservative for URL length
-                        for (let i = 0; i < ids.length; i += subChunkSize) {
-                            const subIds = ids.slice(i, i + subChunkSize);
-                            const deleteQuery = `${pkColumn}=in.(${subIds.join(',')})`;
-                            
-                            const delRes = await fetch(`${supabaseUrl}/rest/v1/${table}?${deleteQuery}`, {
-                                method: 'DELETE',
-                                headers: {
-                                    'apikey': apiKeyHeader,
-                                    'Authorization': `Bearer ${authToken}`,
-                                    'Content-Type': 'application/json'
-                                }
-                            });
-                            
-                            if (!delRes.ok) {
-                                const err = await delRes.text();
-                                throw new Error(`Erro no Chunked Delete (${table}): ${err}`);
-                            }
+                        // Optimized: Use Supabase Client .delete().in() for larger batches via POST
+                        // This handles up to thousands of IDs in one request without URL length issues
+                        // reducing Database Round-trips and Disk I/O.
+                        const { error: delError } = await window.supabaseClient
+                            .from(table)
+                            .delete()
+                            .in(pkColumn, ids);
+
+                        if (delError) {
+                            throw new Error(`Erro no Chunked Delete (${table}): ${delError.message}`);
                         }
                         
                         updateStatus(`Limpando ${table} (Lote progressivo)...`, 50); // Indeterminate progress
