@@ -19357,13 +19357,15 @@ const supervisorGroups = new Map();
         }));
 
         const yRenderer = am5radar.AxisRendererRadial.new(root, {
-            minGridDistance: 20
+            minGridDistance: 10
         });
         yRenderer.labels.template.setAll({
             centerX: am5.p100,
             fontWeight: "500",
-            fontSize: 12,
-            templateField: "columnSettings"
+            fontSize: 11,
+            templateField: "columnSettings",
+            oversizedBehavior: "truncate",
+            maxWidth: 140
         });
         yRenderer.grid.template.setAll({ forceHidden: true });
 
