@@ -19223,8 +19223,8 @@ const supervisorGroups = new Map();
         const clampedPercent = Math.min(Math.max(percent, 0), 100);
         const displayPercentage = Math.round(percent);
 
-        const formattedValue = value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 0});
-        const formattedGoal = goal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 0});
+        const formattedValue = value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 2, minimumFractionDigits: 2});
+        const formattedGoal = goal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 2, minimumFractionDigits: 2});
 
         // Determine Text Color Class based on percentage > 55
         const isFilled = clampedPercent > 55;
