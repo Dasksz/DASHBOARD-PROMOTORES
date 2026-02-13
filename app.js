@@ -8628,7 +8628,7 @@ const supervisorGroups = new Map();
                     '1119_TODDY': 'Toddy',
                     '1119_QUAKER_KEROCOCO': 'Quaker / Kero Coco'
                 };
-
+                
                 // Color Palette (Pepsico Brand Colors approximation or distinct colors)
                 const colors = [
                     0xeab308, // Yellow/Gold
@@ -8640,7 +8640,7 @@ const supervisorGroups = new Map();
                 ];
 
                 const orderedKeys = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
-
+                
                 orderedKeys.forEach((key, index) => {
                     const goal = categoryGoals[key];
                     const actual = actualsMap[key];
@@ -8648,9 +8648,9 @@ const supervisorGroups = new Map();
                     if (goal > 0) {
                         pct = (actual / goal) * 100;
                     } else if (actual > 0) {
-                        pct = 100;
+                        pct = 100; 
                     }
-
+                    
                     if (window.am5) {
                         radarData.push({
                             category: categoryLabels[key],
@@ -19313,9 +19313,9 @@ const supervisorGroups = new Map();
         const am5xy = window.am5xy;
         const am5radar = window.am5radar;
         const am5themes_Animated = window.am5themes_Animated;
-
+        
         const root = am5.Root.new("faturamentoPorFornecedorChartContainer");
-
+        
         if (root._logo) {
             root._logo.dispose();
         }
@@ -19357,13 +19357,15 @@ const supervisorGroups = new Map();
         }));
 
         const yRenderer = am5radar.AxisRendererRadial.new(root, {
-            minGridDistance: 20
+            minGridDistance: 10
         });
         yRenderer.labels.template.setAll({
             centerX: am5.p100,
             fontWeight: "500",
-            fontSize: 12,
-            templateField: "columnSettings"
+            fontSize: 11,
+            templateField: "columnSettings",
+            oversizedBehavior: "truncate",
+            maxWidth: 140
         });
         yRenderer.grid.template.setAll({ forceHidden: true });
 
