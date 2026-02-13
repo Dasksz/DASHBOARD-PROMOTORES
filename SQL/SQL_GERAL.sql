@@ -594,6 +594,9 @@ CREATE TABLE IF NOT EXISTS public.visitas (
     cod_cocoord text -- Codigo do Co-Coordenador (Para facilitar envio de email)
 );
 
+-- 7.1.1 Indexes (Performance Optimization)
+CREATE INDEX IF NOT EXISTS idx_visitas_id_promotor ON public.visitas (id_promotor);
+
 -- 7.2 Segurança (RLS)
 ALTER TABLE public.visitas ENABLE ROW LEVEL SECURITY;
 
