@@ -418,3 +418,20 @@
     color: #ffffff; /* hover:text-white */
     background-color: rgba(51, 65, 85, 0.5); /* hover:bg-slate-700/50 */
 }
+
+/* Comparison Toggle Buttons */
+.comparison-toggle-btn {
+    color: #94a3b8; /* text-slate-400 */
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.comparison-toggle-btn:hover {
+    color: #e2e8f0; /* text-slate-200 */
+    background-color: rgba(148, 163, 184, 0.1);
+}
+
+.comparison-toggle-btn.active {
+    background-color: #2563eb; /* bg-blue-600 */
+    color: #ffffff; /* text-white */
+}
