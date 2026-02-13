@@ -6151,7 +6151,10 @@
             }
 
             // Ensure Data is Calculated
-            calculateGoalsMetrics();
+            // Only recalculate if globalClientGoals is empty to avoid overwriting loaded Supabase data
+            if (!globalClientGoals || globalClientGoals.size === 0) {
+                calculateGoalsMetrics();
+            }
 
             goalsRenderId++;
             const currentRenderId = goalsRenderId;
@@ -13094,6 +13097,10 @@ const supervisorGroups = new Map();
 
                         console.log('Metas carregadas do Supabase.');
                         updateGoals();
+                        // Se o painel estiver ativo e as metas chegarem, precisamos atualizar o gráfico de Performance
+                        if (typeof currentActiveView !== 'undefined' && currentActiveView === 'dashboard') {
+                            updateDashboard();
+                        }
                     }
                 } catch (err) {
                     console.error('Exceção ao carregar metas:', err);
