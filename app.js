@@ -13267,6 +13267,12 @@ const supervisorGroups = new Map();
             if(goalsGvExportXlsxBtn) {
                 goalsGvExportXlsxBtn.addEventListener('click', exportGoalsCurrentTabXLSX);
             }
+
+            const goalsSvExportXlsxBtn = document.getElementById('goals-sv-export-xlsx-btn');
+            if(goalsSvExportXlsxBtn) {
+                goalsSvExportXlsxBtn.addEventListener('click', exportGoalsSvXLSX);
+            }
+
             document.getElementById('goals-next-page-btn').addEventListener('click', () => {
                 if (goalsTableState.currentPage < goalsTableState.totalPages) {
                     goalsTableState.currentPage++;
