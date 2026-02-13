@@ -15619,10 +15619,10 @@ const supervisorGroups = new Map();
     function initCustomFileInput() {
         const inputGallery = document.getElementById('visita-foto-input');
         const inputCamera = document.getElementById('visita-foto-input-camera');
-
+        
         const btnGallery = document.getElementById('trigger-gallery-btn');
         const btnCamera = document.getElementById('trigger-camera-btn');
-
+        
         const triggerArea = document.getElementById('visita-foto-trigger');
         const preview = document.getElementById('visita-foto-preview');
         const filenameEl = document.getElementById('visita-foto-filename');
@@ -15633,11 +15633,11 @@ const supervisorGroups = new Map();
         // Bind Buttons
         if (btnGallery) btnGallery.onclick = (e) => { e.stopPropagation(); inputGallery.click(); };
         if (btnCamera) btnCamera.onclick = (e) => { e.stopPropagation(); inputCamera.click(); };
-
+        
         // Fallback for clicking the dashed area (Default to Gallery if clicked outside buttons)
         if (triggerArea) triggerArea.onclick = (e) => {
             if (e.target !== btnGallery && e.target !== btnCamera && !btnGallery.contains(e.target) && !btnCamera.contains(e.target)) {
-               // Optional: Do nothing or default? Let's do nothing to force explicit choice,
+               // Optional: Do nothing or default? Let's do nothing to force explicit choice, 
                // or default to gallery. User requested "Camera OR Photo".
                // Explicit buttons handle it.
             }
@@ -15648,7 +15648,7 @@ const supervisorGroups = new Map();
                 filenameEl.textContent = file.name;
                 triggerArea.classList.add('hidden');
                 preview.classList.remove('hidden');
-
+                
                 // Clear the OTHER input to avoid confusion
                 if (sourceInput === inputGallery && inputCamera) inputCamera.value = '';
                 if (sourceInput === inputCamera && inputGallery) inputGallery.value = '';
@@ -15894,17 +15894,9 @@ const supervisorGroups = new Map();
         // Modal Actions
         const modalCancel = document.getElementById('wallet-modal-cancel-btn');
         const modalClose = document.getElementById('wallet-modal-close-btn');
-
+        
         const closeWalletModal = () => {
             document.getElementById('wallet-client-modal').classList.add('hidden');
-            // Return to Action Modal if flag is set (Navigation Fix)
-            if (window._returnToActionModal && currentActionClientCode) {
-                // Short delay to allow animation frame
-                setTimeout(() => {
-                    openActionModal(currentActionClientCode, currentActionClientName);
-                    window._returnToActionModal = false;
-                }, 50);
-            }
         };
 
         if(modalCancel) modalCancel.onclick = closeWalletModal;
@@ -17943,10 +17935,8 @@ const supervisorGroups = new Map();
         bind(btnPesquisa, () => abrirPesquisa());
         bind(btnGeo, () => openGeoUpdateModal());
         bind(btnDetalhes, () => {
-            window._returnToActionModal = true;
+            // Keep Action Modal open in background to prevent blinking/state loss
             openWalletClientModal(currentActionClientCode);
-            // Delay hiding to prevent background blink
-            setTimeout(() => modal.classList.add('hidden'), 50);
         });
 
         modal.classList.remove('hidden');
@@ -18031,7 +18021,7 @@ const supervisorGroups = new Map();
     let currentGeoLng = null;
 
     function openGeoUpdateModal() {
-        document.getElementById('modal-acoes-visita').classList.add('hidden');
+        // Keep Action Modal open in background
         const modal = document.getElementById('modal-geo-update');
         const loading = document.getElementById('geo-update-loading');
 
@@ -18156,7 +18146,7 @@ const supervisorGroups = new Map();
     }
 
     async function abrirPesquisa() {
-        document.getElementById('modal-acoes-visita').classList.add('hidden');
+        // Keep Action Modal open in background
         const modal = document.getElementById('modal-relatorio');
         const form = document.getElementById('form-visita');
         document.getElementById('visita-atual-id').value = visitaAbertaId;
@@ -18201,16 +18191,10 @@ const supervisorGroups = new Map();
     // --- Navigation Helpers ---
     window.closeResearchModal = function() {
         document.getElementById('modal-relatorio').classList.add('hidden');
-        if (currentActionClientCode) {
-            openActionModal(currentActionClientCode, currentActionClientName);
-        }
     }
 
     window.closeGeoModal = function() {
         document.getElementById('modal-geo-update').classList.add('hidden');
-        if (currentActionClientCode) {
-            openActionModal(currentActionClientCode, currentActionClientName);
-        }
     }
 
     // Bind Form Submit
@@ -18236,7 +18220,7 @@ const supervisorGroups = new Map();
             // Handle Photo Upload
             // Check both inputs
             let fotoFile = formData.get('foto_gondola'); // From Gallery Input (name="foto_gondola")
-
+            
             // Check Camera Input manually if main is empty
             if (!fotoFile || fotoFile.size === 0) {
                 const cameraInput = document.getElementById('visita-foto-input-camera');
