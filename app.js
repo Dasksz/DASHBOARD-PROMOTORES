@@ -1,6 +1,21 @@
 (function() {
         const embeddedData = window.embeddedData;
 
+        const loadScript = (src) => {
+            return new Promise((resolve, reject) => {
+                if (document.querySelector(`script[src="${src}"]`)) {
+                    resolve();
+                    return;
+                }
+                const script = document.createElement('script');
+                script.src = src;
+                script.async = true;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        };
+
         // --- CONFIGURATION ---
         const SUPPLIER_CONFIG = {
             inference: {
@@ -9965,6 +9980,7 @@ const supervisorGroups = new Map();
             const currentYear = lastSaleDate.getUTCFullYear();
             const currentMonth = lastSaleDate.getUTCMonth();
             const currentMonthWeeks = getMonthWeeks(currentYear, currentMonth);
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
             const metrics = {
                 current: { fat: 0, peso: 0, clients: 0, mixPepsico: 0, positivacaoSalty: 0, positivacaoFoods: 0 },
@@ -9972,6 +9988,8 @@ const supervisorGroups = new Map();
                 charts: {
                     weeklyCurrent: new Array(currentMonthWeeks.length).fill(0),
                     weeklyHistory: new Array(currentMonthWeeks.length).fill(0),
+                    dailyCurrent: new Array(daysInMonth).fill(0),
+                    dailyHistory: new Array(daysInMonth).fill(0),
                     monthlyData: [],
                     supervisorData: {}
                 },
@@ -10020,6 +10038,11 @@ const supervisorGroups = new Map();
                 if (d) {
                     const wIdx = currentMonthWeeks.findIndex(w => d >= w.start && d <= w.end);
                     if (wIdx !== -1) metrics.charts.weeklyCurrent[wIdx] += val;
+
+                    const day = d.getUTCDate();
+                    if (day >= 1 && day <= daysInMonth) {
+                        metrics.charts.dailyCurrent[day - 1] += val;
+                    }
                 }
             }, () => {
                 // 1.1 Finalize Current KPIs
@@ -10089,6 +10112,12 @@ const supervisorGroups = new Map();
                     if (wIdx !== -1 && wIdx < metrics.charts.weeklyHistory.length) {
                         metrics.charts.weeklyHistory[wIdx] += val;
                     }
+
+                    const day = d.getUTCDate();
+                    if (day >= 1 && day <= daysInMonth) {
+                        metrics.charts.dailyHistory[day - 1] += val;
+                    }
+
                     if (hasOverlap && d >= firstWeekStart && d < firstOfMonth) {
                         metrics.charts.weeklyCurrent[0] += val;
                         metrics.overlapSales.push(s);
@@ -10100,6 +10129,7 @@ const supervisorGroups = new Map();
                     metrics.history.avgFat = metrics.history.fat / QUARTERLY_DIVISOR;
                     metrics.history.avgPeso = metrics.history.peso / QUARTERLY_DIVISOR;
                     metrics.charts.weeklyHistory = metrics.charts.weeklyHistory.map(v => v / QUARTERLY_DIVISOR);
+                    metrics.charts.dailyHistory = metrics.charts.dailyHistory.map(v => v / QUARTERLY_DIVISOR);
                     Object.values(metrics.charts.supervisorData).forEach(d => d.history /= QUARTERLY_DIVISOR);
 
                     // Calculate Day Weights
@@ -10215,7 +10245,10 @@ const supervisorGroups = new Map();
                         monthlyComparisonChartContainer.classList.add('hidden');
                         weeklyComparisonChartContainer.classList.remove('hidden');
                         comparisonChartTitle.textContent = 'Comparativo de Faturamento Semanal';
-                        const weekLabels = currentMonthWeeks.map((w, i) => `Semana ${i + 1}`);
+
+                        // Generate daily labels (timestamps)
+                        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+                        const dailyLabels = Array.from({length: daysInMonth}, (_, i) => new Date(Date.UTC(currentYear, currentMonth, i + 1)).getTime());
 
                         // Destroy Legacy Chart if exists
                         if (charts['weeklyComparisonChart']) {
@@ -10223,7 +10256,7 @@ const supervisorGroups = new Map();
                             delete charts['weeklyComparisonChart'];
                         }
 
-                        renderWeeklyComparisonAmChart(weekLabels, weeklyCurrentData, m.charts.weeklyHistory, useTendencyComparison);
+                        renderWeeklyComparisonAmChart(dailyLabels, m.charts.dailyCurrent, m.charts.dailyHistory, useTendencyComparison);
                     } else if (comparisonChartType === 'monthly') {
                         weeklyComparisonChartContainer.classList.add('hidden');
                         monthlyComparisonChartContainer.classList.remove('hidden');
@@ -10256,7 +10289,7 @@ const supervisorGroups = new Map();
                             monthLabels,
                             monthValues,
                             isFat ? 'Faturamento' : 'Clientes Atendidos',
-                            isFat ? 0x3b82f6 : 0x10b981
+                            isFat ? 0x3f51b5 : 0x10b981
                         );
                     }
 
@@ -10413,7 +10446,7 @@ const supervisorGroups = new Map();
             innovationsMonthCategoryFilter.value = '';
             selectedInnovationsMonthTiposVenda = [];
 
-            selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, [...allSalesData, ...allHistoryData]);
+            selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, allSalesData);
             updateInnovationsMonthView();
         }
 
@@ -11611,7 +11644,7 @@ const supervisorGroups = new Map();
                     case 'inovacoes-mes':
                         showViewElement(innovationsMonthView);
                         if (viewState.inovacoes.dirty) {
-                            selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, [...allSalesData, ...allHistoryData]);
+                            selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, allSalesData);
                             updateInnovationsMonthView();
                             viewState.inovacoes.dirty = false;
                         }
@@ -12263,7 +12296,7 @@ const supervisorGroups = new Map();
                         if (checked) selectedMainSuppliers.push(value);
                         else selectedMainSuppliers = selectedMainSuppliers.filter(s => s !== value);
 
-                        let supplierDataSource = [...allSalesData, ...allHistoryData];
+                        let supplierDataSource = [];
                         if (currentFornecedor) {
                             supplierDataSource = supplierDataSource.filter(s => s.OBSERVACAOFOR === currentFornecedor);
                         }
@@ -12580,7 +12613,7 @@ const supervisorGroups = new Map();
                     if (currentFornecedor === fornecedor) { currentFornecedor = ''; btn.classList.remove('active'); } else { currentFornecedor = fornecedor; fornecedorToggleContainerEl.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
 
                     // Update Supplier Filter Options
-                    let supplierDataSource = [...allSalesData, ...allHistoryData];
+                    let supplierDataSource = [];
                     if (currentFornecedor) {
                         supplierDataSource = supplierDataSource.filter(s => s.OBSERVACAOFOR === currentFornecedor);
                     }
@@ -12921,7 +12954,7 @@ const supervisorGroups = new Map();
                     } else {
                         selectedInnovationsMonthTiposVenda = selectedInnovationsMonthTiposVenda.filter(s => s !== value);
                     }
-                    selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, [...allSalesData, ...allHistoryData]);
+                    selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, allSalesData);
                     debouncedUpdateInnovationsMonth();
                 }
             });
@@ -18403,7 +18436,7 @@ const supervisorGroups = new Map();
         });
     }
 
-    function renderWeeklyComparisonAmChart(weekLabels, currentData, historyData, isTendency) {
+    async function renderWeeklyComparisonAmChart(dailyLabels, currentData, historyData, isTendency) {
         // Dispose existing root
         if (weeklyAmChartRoot) {
             weeklyAmChartRoot.dispose();
@@ -18414,6 +18447,8 @@ const supervisorGroups = new Map();
         const container = document.getElementById('weeklyComparisonChartContainer');
         if (!container) return;
         container.innerHTML = '';
+
+        await loadScript("https://cdn.amcharts.com/lib/5/locales/pt_BR.js");
 
         // amCharts 5 Logic
         if (!window.am5) {
@@ -18428,6 +18463,7 @@ const supervisorGroups = new Map();
 
         const root = am5.Root.new("weeklyComparisonChartContainer");
         weeklyAmChartRoot = root;
+        root.locale = window.am5locales_pt_BR;
 
         if (root._logo) {
             root._logo.dispose();
@@ -18438,35 +18474,45 @@ const supervisorGroups = new Map();
             am5themes_Dark.new(root)
         ]);
 
+        root.dateFormatter.setAll({
+            dateFormat: "dd MMM",
+            dateFields: ["date"]
+        });
+
         const chart = root.container.children.push(
             am5xy.XYChart.new(root, {
                 panX: true,
                 panY: false,
                 wheelX: "panX",
                 wheelY: "zoomX",
-                layout: root.verticalLayout
+                layout: root.verticalLayout,
+                pinchZoomX: true
             })
         );
 
         // Prepare Data
-        const data = weekLabels.map((label, i) => ({
-            category: label,
+        const data = dailyLabels.map((date, i) => ({
+            date: date,
             current: currentData[i] || 0,
             history: historyData[i] || 0
         }));
 
-        // X Axis (Weeks)
+        // X Axis (Date)
         const xRenderer = am5xy.AxisRendererX.new(root, {
-            minGridDistance: 30,
+            minGridDistance: 50,
             minorGridEnabled: true
         });
 
-        // Clean Look: Hide grid
+        // Clean Look: Hide labels/grid? User snippet hid labels but image shows them.
+        // User snippet: xAxis1.get("renderer").labels.template.set("forceHidden", true); (for the HOURLY axis)
+        // But for DAILY axis (xAxis2), it kept them.
+        // I will keep them but hide grid.
         xRenderer.grid.template.set("forceHidden", true);
 
         const xAxis = chart.xAxes.push(
-            am5xy.CategoryAxis.new(root, {
-                categoryField: "category",
+            am5xy.DateAxis.new(root, {
+                maxDeviation: 0.1,
+                baseInterval: { timeUnit: "day", count: 1 },
                 renderer: xRenderer,
                 tooltip: am5.Tooltip.new(root, {})
             })
@@ -18475,8 +18521,14 @@ const supervisorGroups = new Map();
 
         // Y Axis
         const yRenderer = am5xy.AxisRendererY.new(root, {});
-        // Clean Look: Hide grid
+        // Clean Look: Hide labels/grid? User snippet hid them.
+        // yAxis1.get("renderer").labels.template.set("forceHidden", true);
+        // yAxis1.get("renderer").grid.template.set("forceHidden", true);
+        // I will hide grid but keep labels? Or hide all?
+        // User snippet hid everything on Y axis.
+        // Let's hide grid and labels to be super clean as requested ("Interface Limpa").
         yRenderer.grid.template.set("forceHidden", true);
+        yRenderer.labels.template.set("forceHidden", true);
 
         const yAxis = chart.yAxes.push(
             am5xy.ValueAxis.new(root, {
@@ -18485,17 +18537,18 @@ const supervisorGroups = new Map();
         );
 
         // Series 1: Current (Column) - Indigo
+        // In snippet, "Diário" is Column.
         const series1 = chart.series.push(
             am5xy.ColumnSeries.new(root, {
-                name: isTendency ? "Tendência Semanal" : "Mês Atual",
+                name: isTendency ? "Tendência Diária" : "Mês Atual",
                 xAxis: xAxis,
                 yAxis: yAxis,
                 valueYField: "current",
-                categoryXField: "category",
+                valueXField: "date",
                 fill: am5.color(0x3f51b5),
                 tooltip: am5.Tooltip.new(root, {
                     pointerOrientation: "horizontal",
-                    labelText: "{name}: [bold]{valueY}[/]"
+                    labelText: "{name}: [bold]R$ {valueY.formatNumber('#,###.00')}[/]"
                 })
             })
         );
@@ -18503,46 +18556,44 @@ const supervisorGroups = new Map();
         series1.columns.template.setAll({
             cornerRadiusTL: 5,
             cornerRadiusTR: 5,
-            fillOpacity: 0.8,
+            fillOpacity: 0.4, // Reduced opacity as per snippet (0.4)
             strokeWidth: 0
         });
 
         series1.data.setAll(data);
 
         // Series 2: History (Line) - Cyan
+        // Represents "Média Trimestre"
         const series2 = chart.series.push(
             am5xy.LineSeries.new(root, {
                 name: "Média Trimestre",
                 xAxis: xAxis,
                 yAxis: yAxis,
                 valueYField: "history",
-                categoryXField: "category",
+                valueXField: "date",
                 stroke: am5.color(0x00e5ff),
                 tooltip: am5.Tooltip.new(root, {
                     pointerOrientation: "horizontal",
-                    labelText: "{name}: [bold]{valueY}[/]"
+                    labelText: "{name}: [bold]R$ {valueY.formatNumber('#,###.00')}[/]"
                 })
             })
         );
 
         series2.strokes.template.setAll({
-            strokeWidth: 3
+            strokeWidth: 2
         });
 
-        series2.bullets.push(function () {
-            return am5.Bullet.new(root, {
-                sprite: am5.Circle.new(root, {
-                    radius: 5,
-                    fill: series2.get("stroke")
-                })
-            });
-        });
+        // Remove bullets for cleaner look (snippet didn't have bullets on daily line? Wait, snippet had hourly line)
+        // I'll keep bullets but make them small or remove if "Interface Limpa".
+        // Snippet line series didn't add bullets explicitly.
+        // I'll remove bullets to match snippet style.
 
         series2.data.setAll(data);
 
         // Cursor
         const cursor = chart.set("cursor", am5xy.XYCursor.new(root, {
-            behavior: "zoomX"
+            behavior: "zoomX",
+            xAxis: xAxis
         }));
         cursor.lineY.set("visible", false);
 
@@ -18559,7 +18610,7 @@ const supervisorGroups = new Map();
         chart.appear(1000, 100);
     }
 
-    function renderMonthlyComparisonAmChart(labels, dataValues, labelName, colorHex) {
+    async function renderMonthlyComparisonAmChart(labels, dataValues, labelName, colorHex) {
         if (monthlyAmChartRoot) {
             monthlyAmChartRoot.dispose();
             monthlyAmChartRoot = null;
@@ -18568,6 +18619,8 @@ const supervisorGroups = new Map();
         const container = document.getElementById('monthlyComparisonChartContainer');
         if (!container) return;
         container.innerHTML = '';
+
+        await loadScript("https://cdn.amcharts.com/lib/5/locales/pt_BR.js");
 
         if (!window.am5) return;
 
@@ -18578,6 +18631,7 @@ const supervisorGroups = new Map();
 
         const root = am5.Root.new("monthlyComparisonChartContainer");
         monthlyAmChartRoot = root;
+        root.locale = window.am5locales_pt_BR;
 
         if (root._logo) root._logo.dispose();
 
@@ -18625,6 +18679,9 @@ const supervisorGroups = new Map();
             })
         );
 
+        const isCurrency = labelName.includes("Faturamento");
+        const tooltipFormat = isCurrency ? "[bold]R$ {valueY.formatNumber('#,###.00')}[/]" : "[bold]{valueY}[/]";
+
         const series = chart.series.push(
             am5xy.ColumnSeries.new(root, {
                 name: labelName,
@@ -18634,7 +18691,7 @@ const supervisorGroups = new Map();
                 categoryXField: "category",
                 fill: am5.color(colorHex),
                 tooltip: am5.Tooltip.new(root, {
-                    labelText: "{categoryX}: [bold]{valueY}[/]"
+                    labelText: `{categoryX}: ${tooltipFormat}`
                 })
             })
         );
@@ -18642,7 +18699,7 @@ const supervisorGroups = new Map();
         series.columns.template.setAll({
             cornerRadiusTL: 5,
             cornerRadiusTR: 5,
-            fillOpacity: 0.8,
+            fillOpacity: 0.4,
             strokeWidth: 0
         });
 
