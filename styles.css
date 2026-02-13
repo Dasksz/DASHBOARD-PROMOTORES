@@ -419,82 +419,18 @@
     background-color: rgba(51, 65, 85, 0.5); /* hover:bg-slate-700/50 */
 }
 
-/* Liquid Gauge (Water Cylinder Effect) */
-.liquid-gauge-container {
-    width: 240px;
-    height: 240px;
-    background: #0f172a;
-    border-radius: 50%;
-    position: relative;
-    overflow: hidden;
-    margin: 0 auto;
-    border: 4px solid #1e293b;
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2), inset 0 0 40px rgba(0,0,0,0.8);
+
+/* Liquid Gauge Cylinder Animations */
+@keyframes wave {
+  0% { transform: translateX(0) translateZ(0) scaleY(1); }
+  50% { transform: translateX(25%) translateZ(0) scaleY(0.9); }
+  100% { transform: translateX(50%) translateZ(0) scaleY(1); }
 }
 
-.liquid-wave {
-    position: absolute;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background-color: rgba(59, 130, 246, 0.9);
-    border-radius: 40%;
-    animation: spin 6s linear infinite;
-    top: 100%; /* Start Empty */
-    transition: top 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-    opacity: 0.9;
-    z-index: 1;
+.animate-wave {
+  animation: wave 4s ease-in-out infinite alternate;
 }
 
-.liquid-wave:nth-child(2) {
-    border-radius: 42%;
-    background-color: rgba(59, 130, 246, 0.4);
-    animation: spin 10s linear infinite reverse;
-    left: -50%;
-    z-index: 0;
-}
-
-.liquid-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-    text-align: center;
-    pointer-events: none;
-}
-
-.liquid-percent {
-    font-size: 3rem;
-    font-weight: 800;
-    color: white;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-    line-height: 1;
-}
-
-.liquid-label {
-    font-size: 0.875rem;
-    color: #e2e8f0;
-    text-transform: uppercase;
-    font-weight: 600;
-    margin-top: 0.5rem;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-    background: rgba(15, 23, 42, 0.6);
-    padding: 2px 8px;
-    border-radius: 4px;
-}
-
-.liquid-sub {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    margin-top: 0.25rem;
-    font-family: monospace;
-    background: rgba(15, 23, 42, 0.6);
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.animate-wave-slow {
+  animation: wave 6s ease-in-out infinite alternate-reverse;
 }
