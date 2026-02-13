@@ -11842,9 +11842,9 @@ const supervisorGroups = new Map();
                 progressBar.style.width = `${percent}%`;
             };
 
-            // --- OPTIMIZATION: Increased Batch Size & Concurrency ---
-            const BATCH_SIZE = 3000;
-            const CONCURRENT_REQUESTS = 7;
+            // --- OPTIMIZATION: Adjusted Batch Size & Concurrency for Stability ---
+            const BATCH_SIZE = 1000; // Reduced from 3000 to prevent 520 errors on large tables
+            const CONCURRENT_REQUESTS = 3; // Reduced from 7 to prevent DB lock contention
 
             const retryOperation = async (operation, retries = 3, delay = 1000) => {
                 for (let i = 0; i < retries; i++) {
@@ -11881,7 +11881,7 @@ const supervisorGroups = new Map();
 
             const clearTable = async (table, pkColumn = 'id') => {
                 await retryOperation(async () => {
-                    // Tenta limpar usando a função RPC 'truncate_table' (muito mais rápido e sem timeout)
+                    // 1. Tenta limpar usando a função RPC 'truncate_table' (Preferred - Fast)
                     try {
                         const rpcResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/truncate_table`, {
                             method: 'POST',
@@ -11894,30 +11894,97 @@ const supervisorGroups = new Map();
                         });
 
                         if (rpcResponse.ok) {
-                            return; // Sucesso com TRUNCATE
+                            return; // Success
                         } else {
                             const errorText = await rpcResponse.text();
-                            console.warn(`RPC truncate_table falhou para ${table} (Status: ${rpcResponse.status}). Msg: ${errorText}. Tentando DELETE convencional...`);
+                            console.warn(`RPC truncate_table falhou para ${table} (Status: ${rpcResponse.status}). Msg: ${errorText}.`);
                         }
                     } catch (e) {
-                        console.warn(`Erro ao chamar RPC truncate_table para ${table}, tentando DELETE convencional...`, e);
+                        console.warn(`Erro ao chamar RPC truncate_table para ${table}.`, e);
                     }
 
-                    // Fallback: Deleta todas as linhas da tabela
-                    const response = await fetch(`${supabaseUrl}/rest/v1/${table}?${pkColumn}=not.is.null`, {
-                        method: 'DELETE',
-                        headers: {
-                            'apikey': apiKeyHeader,
-                            'Authorization': `Bearer ${authToken}`,
-                            'Content-Type': 'application/json'
+                    // 2. Fallback: DELETE All (Conventional)
+                    // Note: This might timeout for very large tables (e.g., data_history)
+                    try {
+                        const response = await fetch(`${supabaseUrl}/rest/v1/${table}?${pkColumn}=not.is.null`, {
+                            method: 'DELETE',
+                            headers: {
+                                'apikey': apiKeyHeader,
+                                'Authorization': `Bearer ${authToken}`,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'count=exact' // Request count to verify
+                            }
+                        });
+
+                        if (response.ok) {
+                            return; // Success
+                        } else {
+                            const errorText = await response.text();
+                            console.warn(`DELETE convencional falhou para ${table}: ${errorText}. Tentando Chunked Delete...`);
                         }
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`Erro ao limpar tabela ${table}: ${errorText}`);
+                    } catch (e) {
+                        console.warn(`DELETE convencional exceção para ${table}.`, e);
                     }
-                });
+
+                    // 3. Last Resort: Chunked Delete (Slow but Reliable)
+                    // Fetch IDs in batches and delete them
+                    console.log(`[ClearTable] Iniciando exclusão em lote para ${table}...`);
+                    let hasMore = true;
+                    const chunkSize = 5000;
+
+                    while (hasMore) {
+                        // Fetch a chunk of IDs
+                        const selectUrl = `${supabaseUrl}/rest/v1/${table}?select=${pkColumn}&limit=${chunkSize}`;
+                        const selectRes = await fetch(selectUrl, {
+                            method: 'GET',
+                            headers: {
+                                'apikey': apiKeyHeader,
+                                'Authorization': `Bearer ${authToken}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        if (!selectRes.ok) throw new Error(`Erro ao buscar IDs para exclusão em lote de ${table}`);
+                        const rows = await selectRes.json();
+
+                        if (rows.length === 0) {
+                            hasMore = false;
+                            break;
+                        }
+
+                        const ids = rows.map(r => r[pkColumn]);
+                        // Delete these IDs
+                        // Using 'in' filter: id=in.(1,2,3...)
+                        // URL length limit might be an issue, so we use POST with body filter or strictly URL params carefully.
+                        // Supabase REST 'DELETE' supports filtering parameters in URL.
+                        const idsString = ids.join(',');
+                        // Use a smaller batch for actual delete request to keep URL safe (~2000 chars safe usually)
+                        // Actually, let's process this chunk of 5000 in smaller sub-chunks for deletion
+                        const subChunkSize = 200; // conservative for URL length
+                        for (let i = 0; i < ids.length; i += subChunkSize) {
+                            const subIds = ids.slice(i, i + subChunkSize);
+                            const deleteQuery = `${pkColumn}=in.(${subIds.join(',')})`;
+
+                            const delRes = await fetch(`${supabaseUrl}/rest/v1/${table}?${deleteQuery}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'apikey': apiKeyHeader,
+                                    'Authorization': `Bearer ${authToken}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+
+                            if (!delRes.ok) {
+                                const err = await delRes.text();
+                                throw new Error(`Erro no Chunked Delete (${table}): ${err}`);
+                            }
+                        }
+
+                        updateStatus(`Limpando ${table} (Lote progressivo)...`, 50); // Indeterminate progress
+                        // Wait a bit to let DB breathe
+                        await new Promise(r => setTimeout(r, 200));
+                    }
+                }, 5, 2000); // Increased retries (5) and initial delay (2s)
             };
 
             // List of columns that are dates and need conversion from timestamp (ms) to ISO String
