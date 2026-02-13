@@ -17042,11 +17042,12 @@ const supervisorGroups = new Map();
             roteiroContainer.classList.remove('hidden');
             listWrapper.classList.add('hidden');
             
-            // Disable search in roteiro mode or adapt it? For now disable to keep it simple
+            // Enable Search for Smart Roteiro Search
             if(searchInput) {
-                searchInput.disabled = true;
-                searchInput.placeholder = "Modo Roteiro Ativo";
-                searchInput.classList.add('opacity-50', 'cursor-not-allowed');
+                searchInput.disabled = false;
+                searchInput.value = '';
+                searchInput.placeholder = "Pesquisar cliente no roteiro...";
+                searchInput.classList.remove('opacity-50', 'cursor-not-allowed');
             }
 
             renderRoteiroView();
@@ -17061,15 +17062,169 @@ const supervisorGroups = new Map();
 
             if(searchInput) {
                 searchInput.disabled = false;
+                searchInput.value = '';
                 searchInput.placeholder = "Pesquisar...";
                 searchInput.classList.remove('opacity-50', 'cursor-not-allowed');
             }
+            // Trigger normal list render
+            renderClientView();
+        }
+    }
+
+    function calculateNextRoteiroDate(client, fromDate = new Date()) {
+        const freq = client.ITINERARY_FREQUENCY || client.itinerary_frequency;
+        const refDateStr = client.ITINERARY_NEXT_DATE || client.itinerary_next_date;
+
+        if (!freq || !refDateStr) return null;
+
+        let utcRef;
+        if (refDateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [y, m, d] = refDateStr.split('-').map(Number);
+            utcRef = Date.UTC(y, m - 1, d);
+        } else {
+            const d = parseDate(refDateStr);
+            if (!d) return null;
+            utcRef = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+        }
+
+        const utcFrom = Date.UTC(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+
+        // Calculate days difference
+        const diffTime = utcFrom - utcRef;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        // Interval
+        const interval = (freq === 'weekly') ? 7 : (freq === 'biweekly' ? 14 : 0);
+        if (interval === 0) return null;
+
+        // Find smallest N >= 0 such that Ref + (N * Interval) >= From
+        // Ref + X = From -> X = From - Ref = diffDays
+        // We need next valid day >= diffDays that is a multiple of interval
+        // Wait, the modulo logic in renderRoteiroClients uses `diffDays % interval === 0`.
+        // So we need to find the next date where (target - ref) % interval == 0 AND target >= from.
+
+        // Let Offset = diffDays. We need NextOffset >= Offset such that NextOffset % interval == 0.
+        // If Offset is negative (Ref is future), we can just use Ref (Offset 0 relative to Ref, but we need >= From).
+        // Actually simpler:
+        // Current diffDays is the offset from Ref to Today.
+        // We want the next multiple of interval that is >= diffDays.
+
+        let remainder = diffDays % interval;
+        // JS modulo can be negative.
+        // Example: Ref=10th. From=8th. Diff = -2. Interval=7.
+        // We want 10th (Ref).
+        // -2 % 7 = -2.
+
+        let daysToAdd = 0;
+        if (remainder === 0) {
+            daysToAdd = 0; // Today matches
+        } else {
+            // Need to move forward to next multiple
+            if (remainder > 0) {
+                daysToAdd = interval - remainder;
+            } else {
+                daysToAdd = Math.abs(remainder);
+            }
+        }
+
+        const nextDate = new Date(utcFrom + (daysToAdd * 24 * 60 * 60 * 1000));
+        // Add Timezone offset compensation to return local date object 00:00
+        return new Date(nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate());
+    }
+
+    function handleRoteiroSearch(query) {
+        if (!query || query.trim() === '') {
+            // Reset to Today if cleared? Or stay? Stay is better UX usually.
+            // renderRoteiroView();
+            // Just re-render current view to clear filter
+            renderRoteiroClients(roteiroDate);
+            return;
+        }
+
+        const term = query.toLowerCase().trim();
+
+        // 1. Search for Client
+        let matchedClient = null;
+
+        // Helper to search
+        const check = (c) => {
+            return (c.nomeCliente || '').toLowerCase().includes(term) ||
+                   (c.fantasia || '').toLowerCase().includes(term) ||
+                   (String(c['Código'] || c['codigo_cliente'])).includes(term);
+        };
+
+        if (allClientsData instanceof ColumnarDataset) {
+            for(let i=0; i<allClientsData.length; i++) {
+                const c = allClientsData.get(i);
+                if (check(c)) { matchedClient = c; break; }
+            }
+        } else {
+            matchedClient = allClientsData.find(check);
+        }
+
+        if (matchedClient) {
+            // 2. Calculate Next Date
+            const nextDate = calculateNextRoteiroDate(matchedClient);
+
+            if (nextDate) {
+                // Update Global Date
+                roteiroDate = nextDate;
+                // Render
+                renderRoteiroView(); // Updates Calendar UI
+                // Filter List explicitly? renderRoteiroClients will read the input value.
+            } else {
+                // Client found but no roteiro
+                renderRoteiroClients(roteiroDate, true); // Force empty/special state
+            }
+        } else {
+            // No client found
+            renderRoteiroClients(roteiroDate, true); // Force empty
         }
     }
 
     function renderRoteiroView() {
         renderRoteiroCalendar();
         renderRoteiroClients(roteiroDate);
+
+        // Inject Promoter Filter for Desktop if not already present
+        const header = document.querySelector('#roteiro-container header') || document.querySelector('#roteiro-main-card > div:first-child');
+        // Note: The structure in HTML is: roteiro-main-card -> div (Calendar Header) -> ...
+        // We want to inject it in the header row.
+
+        if (header && window.userRole !== 'promotor' && !document.getElementById('roteiro-promoter-filter')) {
+            const filterContainer = document.createElement('div');
+            filterContainer.className = 'hidden lg:block ml-auto mr-4'; // Desktop only
+            filterContainer.innerHTML = `
+                <select id="roteiro-promoter-filter" class="bg-slate-800 border border-slate-700 text-white text-xs rounded-lg p-2 focus:ring-2 focus:ring-purple-500">
+                    <option value="">Todos os Promotores</option>
+                </select>
+            `;
+            // Insert before the Month Title or Date? The header has Prev/Title/Next buttons.
+            // Let's replace the header layout slightly or append.
+            // Current header: Flex (Prev, Month, Next), Date Number.
+            // Let's inject after the buttons group.
+
+            const btnGroup = header.querySelector('div.flex');
+            if(btnGroup) {
+               btnGroup.parentNode.insertBefore(filterContainer, btnGroup.nextSibling);
+            }
+
+            // Populate
+            const select = filterContainer.querySelector('select');
+            if (select && optimizedData.promotorMap) {
+                const sorted = Array.from(optimizedData.promotorMap.entries()).sort((a,b) => a[1].localeCompare(b[1]));
+                sorted.forEach(([code, name]) => {
+                    const opt = document.createElement('option');
+                    opt.value = code;
+                    opt.textContent = name;
+                    select.appendChild(opt);
+                });
+
+                select.addEventListener('change', () => {
+                    renderRoteiroClients(roteiroDate);
+                });
+            }
+        }
     }
 
     function renderRoteiroCalendar() {
@@ -17124,6 +17279,17 @@ const supervisorGroups = new Map();
         nextBtn.parentNode.replaceChild(newNext, nextBtn);
 
         newPrev.onclick = () => {
+            if (window.userRole === 'promotor') {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const prevDate = new Date(roteiroDate);
+                prevDate.setDate(prevDate.getDate() - 1);
+
+                // If trying to go before today, block
+                if (prevDate < today) {
+                    return;
+                }
+            }
             roteiroDate.setDate(roteiroDate.getDate() - 1);
             renderRoteiroView();
         };
@@ -17131,15 +17297,69 @@ const supervisorGroups = new Map();
             roteiroDate.setDate(roteiroDate.getDate() + 1);
             renderRoteiroView();
         };
+
+        // Visual Feedback for disabled button
+        if (window.userRole === 'promotor') {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const isToday = roteiroDate.getTime() === today.getTime();
+            if (isToday) {
+                newPrev.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                newPrev.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        } else {
+            // Ensure enabled for others
+            newPrev.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
     }
 
-    function renderRoteiroClients(date) {
+    function renderRoteiroClients(date, forceEmpty = false) {
         const container = document.getElementById('roteiro-container'); // Container wrapping everything
         const dateDisplay = document.getElementById('roteiro-date-display');
         const countDisplay = document.getElementById('roteiro-client-count');
         const emptyState = document.getElementById('roteiro-empty-state');
         const statsPanel = container.querySelector('.bg-slate-900'); // Stats panel at bottom of card
+        const searchInput = document.getElementById('clientes-search');
         
+        // Check for Off Route (Future Date)
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const viewDate = new Date(date);
+        viewDate.setHours(0,0,0,0);
+        const isOffRoute = viewDate > today;
+
+        let warningBanner = document.getElementById('roteiro-off-route-banner');
+        if (isOffRoute) {
+            if (!warningBanner) {
+                warningBanner = document.createElement('div');
+                warningBanner.id = 'roteiro-off-route-banner';
+                warningBanner.className = 'bg-orange-500/10 border-l-4 border-orange-500 p-4 mb-4 mx-4 rounded-r shadow-lg animate-pulse';
+                warningBanner.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-orange-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-orange-200 font-bold">
+                                Atendimento Fora de Rota
+                            </p>
+                            <p class="text-xs text-orange-300">
+                                Você está visualizando uma data futura. As visitas realizadas aqui serão registradas como fora de rota.
+                            </p>
+                        </div>
+                    </div>
+                `;
+                // Insert before card content
+                const card = document.getElementById('roteiro-main-card');
+                if(card) card.insertBefore(warningBanner, card.firstChild);
+            }
+        } else {
+            if (warningBanner) warningBanner.remove();
+        }
+
         // Remove existing list if any (custom injection point)
         let listContainer = document.getElementById('roteiro-clients-list');
         if (!listContainer) {
@@ -17157,60 +17377,65 @@ const supervisorGroups = new Map();
 
         // Filter Logic
         let clients = [];
+        const searchTerm = (searchInput && searchInput.value) ? searchInput.value.toLowerCase().trim() : '';
+        const promoterFilter = document.getElementById('roteiro-promoter-filter');
+        const selectedPromoter = (promoterFilter && promoterFilter.value) ? promoterFilter.value : null;
+
         try {
-            // Use allClientsData directly to include ANY client with an itinerary, bypassing active/RCA filters
-            // This ensures newly added wallet clients (even if inactive/RCA 53) appear if scheduled.
-            if (allClientsData instanceof ColumnarDataset) {
-                // Optimization: direct loop instead of filter to avoid unnecessary array creation
-                for (let i = 0; i < allClientsData.length; i++) {
-                    const c = allClientsData.get(i);
-                    if (c.ITINERARY_FREQUENCY || c.itinerary_frequency) {
-                        clients.push(c);
-                    }
+            // Use allClientsData directly
+            const dataset = allClientsData;
+            const len = dataset.length;
+            const isColumnar = dataset instanceof ColumnarDataset;
+
+            for (let i = 0; i < len; i++) {
+                const c = isColumnar ? dataset.get(i) : dataset[i];
+
+                // 1. Basic Roteiro Check
+                if (!c.ITINERARY_FREQUENCY && !c.itinerary_frequency) continue;
+
+                // 2. Promoter Filter (Desktop Admin/Coord)
+                if (selectedPromoter) {
+                    const pCode = String(c.PROMOTOR || c.promotor_code || '').trim();
+                    if (pCode !== selectedPromoter) continue;
                 }
-            } else {
-                clients = allClientsData.filter(c => c.ITINERARY_FREQUENCY || c.itinerary_frequency);
+
+                // 3. Search Term Filter (If active)
+                if (searchTerm) {
+                    const match = (c.nomeCliente || '').toLowerCase().includes(searchTerm) ||
+                                  (c.fantasia || '').toLowerCase().includes(searchTerm) ||
+                                  (String(c['Código'] || c['codigo_cliente'])).includes(searchTerm);
+                    if (!match) continue;
+                }
+
+                clients.push(c);
             }
         } catch(e) {
             console.error("[Roteiro] Error getting clients:", e);
         }
+
         const scheduledClients = [];
         
         clients.forEach(c => {
             const freq = c.ITINERARY_FREQUENCY || c.itinerary_frequency;
             const refDateStr = c.ITINERARY_NEXT_DATE || c.itinerary_next_date;
             
-
             if (!freq || !refDateStr) return;
             
-            // Robust Parsing of YYYY-MM-DD to avoid Timezone Offset issues
-            // refDateStr is YYYY-MM-DD. We construct UTC Midnight directly from components.
-            // Using parseDate() (which does new Date(string)) might introduce local offsets depending on how the string is interpreted.
             let utcRef;
             if (refDateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
                 const [y, m, d] = refDateStr.split('-').map(Number);
                 utcRef = Date.UTC(y, m - 1, d);
             } else {
-                // Fallback for unexpected formats
                 const d = parseDate(refDateStr);
                 if (!d) return;
-                // Use UTC components to avoid timezone shift
                 utcRef = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); 
             }
             
-            // Target Date (UI Selection) is local midnight. Construct UTC components from it.
-            // date.getFullYear() gets Local Year.
             const utcTarget = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-            
             const diffTime = utcTarget - utcRef;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
             
             let isScheduled = false;
-            // Modulo logic handles both future and past days correctly if aligned
-            // e.g. ref=Monday, target=Monday+7. diff=7. 7%7=0.
-            // ref=Monday, target=Monday-7. diff=-7. -7%7=0.
-            
             if (freq === 'weekly') {
                 isScheduled = (Math.abs(diffDays) % 7 === 0);
             } else if (freq === 'biweekly') {
@@ -17232,10 +17457,26 @@ const supervisorGroups = new Map();
         let surveyCount = 0;
         
         // Render List
-        if (scheduledClients.length === 0) {
+        if (scheduledClients.length === 0 || forceEmpty) {
             listContainer.innerHTML = '';
             emptyState.classList.remove('hidden');
             statsPanel.classList.add('hidden'); // Hide stats if no clients
+
+            // Custom Message if Searching
+            const emptyTitle = emptyState.querySelector('h3');
+            const emptyDesc = emptyState.querySelector('p');
+
+            if (forceEmpty && searchTerm) {
+                emptyTitle.textContent = "Cliente sem roteiro";
+                emptyDesc.textContent = "O cliente pesquisado não possui agendamento.";
+            } else if (searchTerm) {
+                emptyTitle.textContent = "Nenhum resultado";
+                emptyDesc.textContent = "Nenhum cliente agendado para esta data corresponde à pesquisa.";
+            } else {
+                emptyTitle.textContent = "Dia Livre";
+                emptyDesc.textContent = "Nenhum cliente agendado para esta data.";
+            }
+
         } else {
             emptyState.classList.add('hidden');
             statsPanel.classList.remove('hidden');
@@ -17592,7 +17833,13 @@ const supervisorGroups = new Map();
         };
 
         if (searchInput) {
-            searchInput.oninput = (e) => renderList(e.target.value);
+            searchInput.oninput = (e) => {
+                if (isRoteiroMode) {
+                    handleRoteiroSearch(e.target.value);
+                } else {
+                    renderList(e.target.value);
+                }
+            };
         }
         renderList();
     }
@@ -18102,6 +18349,18 @@ const supervisorGroups = new Map();
                 longitude,
                 status: 'pendente'
             };
+
+            // Determine if Off Route (Logic: Is Roteiro Mode AND Date > Today)
+            // Note: roteiroDate is global
+            if (typeof isRoteiroMode !== 'undefined' && isRoteiroMode) {
+                const today = new Date(); today.setHours(0,0,0,0);
+                const routeRef = new Date(roteiroDate); routeRef.setHours(0,0,0,0);
+
+                if (routeRef > today) {
+                    // Initialize respostas with the flag
+                    payload.respostas = { is_off_route: true };
+                }
+            }
 
             // Include Co-Coordinator Code if available (From Init)
             if (window.userCoCoordCode) {
