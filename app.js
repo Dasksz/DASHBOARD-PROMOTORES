@@ -450,19 +450,69 @@
                     return true;
                 });
             }
-            // If Columnar, we assume the worker already did a good job, OR we might need to implement filtering for ColumnarDataset.
-            // But since 'fromColumnar' was removed/replaced by 'ColumnarDataset' class usage?
-            // Wait, looking at the code above: 'allSalesData = new ColumnarDataset(...)'.
-            // Filtering a ColumnarDataset is hard.
-            // But wait! The worker ALREADY sanitizes via 'processSalesData' logic I added.
+
+            // Handle Columnar Object (Raw)
+            if (data.columns && data.values && typeof data.length === 'number') {
+                const len = data.length;
+                const keepIndices = [];
+                const values = data.values;
+
+                // Identify columns to check (case insensitive check usually handled by worker/init, but here we assume keys match)
+                // Typically 'SUPERV', 'NOME', 'CODUSUR' are uppercase keys from init.js parser.
+                const supervCol = values['SUPERV'] || values['supervisor'] || [];
+                const nomeCol = values['NOME'] || values['nome'] || [];
+                const codUsurCol = values['CODUSUR'] || values['codusur'] || [];
+
+                // If checking columns are completely missing, we assume data is clean or check is not applicable
+                if (!values['SUPERV'] && !values['NOME'] && !values['CODUSUR']) {
+                    return data;
+                }
+
+                for (let i = 0; i < len; i++) {
+                     const superv = String(supervCol[i] || '').trim().toUpperCase();
+                     const nome = String(nomeCol[i] || '').trim().toUpperCase();
+                     const codUsur = String(codUsurCol[i] || '').trim().toUpperCase();
+
+                     if (forbidden.includes(superv) || forbidden.includes(nome) || forbidden.includes(codUsur)) {
+                         continue; // Skip (Garbage)
+                     }
+                     keepIndices.push(i);
+                }
+
+                // If nothing filtered, return original
+                if (keepIndices.length === len) return data;
+
+                // Rebuild
+                const newValues = {};
+                data.columns.forEach(col => {
+                    const oldArr = values[col];
+                    // Defensive: if column array is missing or length mismatch, handle gracefully?
+                    if (!oldArr) {
+                        newValues[col] = [];
+                        return;
+                    }
+
+                    const newArr = new Array(keepIndices.length);
+                    for(let j=0; j<keepIndices.length; j++) {
+                        newArr[j] = oldArr[keepIndices[j]];
+                    }
+                    newValues[col] = newArr;
+                });
+
+                return {
+                    columns: data.columns,
+                    values: newValues,
+                    length: keepIndices.length
+                };
+            }
 
             return data;
         }
 
         if (embeddedData.isColumnar) {
-            allSalesData = new ColumnarDataset(embeddedData.detailed);
-            allHistoryData = new ColumnarDataset(embeddedData.history);
-            allClientsData = new ColumnarDataset(embeddedData.clients);
+            allSalesData = new ColumnarDataset(sanitizeData(embeddedData.detailed));
+            allHistoryData = new ColumnarDataset(sanitizeData(embeddedData.history));
+            allClientsData = new ColumnarDataset(sanitizeData(embeddedData.clients));
         } else {
             allSalesData = sanitizeData(embeddedData.detailed);
             allHistoryData = sanitizeData(embeddedData.history);
