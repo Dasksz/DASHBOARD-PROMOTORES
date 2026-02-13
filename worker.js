@@ -599,6 +599,15 @@
             return { columns, values, length: data.length };
         }
 
+        async function computeHash(dataObj) {
+            const str = JSON.stringify(dataObj);
+            const msgBuffer = new TextEncoder().encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
         self.onmessage = async (event) => {
             const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile } = event.data;
 
@@ -1004,6 +1013,31 @@
                     cod_promotor: String(item['COD PROMOTOR'] || '').trim(),
                     nome_promotor: String(item['PROMOTOR'] || '').trim()
                 })).filter(h => h.cod_coord || h.cod_promotor);
+
+                // --- HASH COMPUTATION FOR CONDITIONAL UPLOADS ---
+                self.postMessage({ type: 'progress', status: 'Gerando assinaturas digitais...', percentage: 98 });
+                const hashes = await Promise.all([
+                    computeHash(columnarDetailed),
+                    computeHash(columnarHistory),
+                    computeHash(columnarClients),
+                    computeHash(aggregatedByOrder),
+                    computeHash(finalStockData),
+                    computeHash(finalActiveProductsData),
+                    computeHash(finalProductDetailsData),
+                    computeHash(finalInnovationsData),
+                    computeHash(finalHierarchyData)
+                ]);
+
+                finalMetadata.push({ key: 'hash_detailed', value: hashes[0] });
+                finalMetadata.push({ key: 'hash_history', value: hashes[1] });
+                finalMetadata.push({ key: 'hash_clients', value: hashes[2] });
+                finalMetadata.push({ key: 'hash_orders', value: hashes[3] });
+                finalMetadata.push({ key: 'hash_stock', value: hashes[4] });
+                finalMetadata.push({ key: 'hash_active_products', value: hashes[5] });
+                finalMetadata.push({ key: 'hash_product_details', value: hashes[6] });
+                finalMetadata.push({ key: 'hash_innovations', value: hashes[7] });
+                finalMetadata.push({ key: 'hash_hierarchy', value: hashes[8] });
+
 
                 self.postMessage({ type: 'progress', status: 'Pronto!', percentage: 100 });
 
