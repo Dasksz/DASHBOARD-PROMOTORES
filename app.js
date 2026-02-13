@@ -8431,11 +8431,50 @@ const supervisorGroups = new Map();
                     chartTitle = 'Performance por Co-Coordenador';
                 }
 
-                const totalForPercentage = Object.values(chartData).reduce((a, b) => a + b, 0);
-                const personChartTooltipOptions = { plugins: { tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; const value = context.parsed.y; if (value !== null) { label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); if (totalForPercentage > 0) { const percentage = ((value / totalForPercentage) * 100).toFixed(2); label += ` (${percentage}%)`; } } return label; } } } } };
-                
                 salesByPersonTitle.textContent = chartTitle;
-                createChart('salesByPersonChart', 'bar', Object.keys(chartData).map(getFirstName), Object.values(chartData), personChartTooltipOptions);
+
+                const isSinglePromoter = chartTitle === 'Performance por Promotor' && Object.keys(chartData).length === 1;
+
+                if (isSinglePromoter) {
+                    // Destroy existing Chart.js instance if any, to prevent conflict or memory leak
+                    if (window.charts && window.charts['salesByPersonChart']) {
+                        window.charts['salesByPersonChart'].destroy();
+                        delete window.charts['salesByPersonChart'];
+                    }
+                    // Also check Chart registry directly
+                    const chartInstance = Chart.getChart('salesByPersonChart');
+                    if (chartInstance) chartInstance.destroy();
+
+                    const totalRealized = Object.values(chartData)[0] || 0;
+
+                    // Calculate Goal for the visible clients
+                    let totalGoal = 0;
+                    const visibleClients = getHierarchyFilteredClients('main', allClientsData);
+
+                    if (window.globalClientGoals) {
+                        visibleClients.forEach(c => {
+                            const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
+                            const clientGoals = window.globalClientGoals.get(codCli);
+                            if (clientGoals && clientGoals.has('PEPSICO_ALL')) {
+                                totalGoal += (clientGoals.get('PEPSICO_ALL').fat || 0);
+                            }
+                        });
+                    }
+
+                    renderLiquidGauge('salesByPersonChartContainer', totalRealized, totalGoal, 'Meta Geral');
+
+                } else {
+                    // Restore Canvas if needed
+                    const container = document.getElementById('salesByPersonChartContainer');
+                    if (container && !container.querySelector('canvas')) {
+                        container.innerHTML = '<canvas id="salesByPersonChart"></canvas>';
+                    }
+
+                    const totalForPercentage = Object.values(chartData).reduce((a, b) => a + b, 0);
+                    const personChartTooltipOptions = { plugins: { tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) label += ': '; const value = context.parsed.y; if (value !== null) { label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); if (totalForPercentage > 0) { const percentage = ((value / totalForPercentage) * 100).toFixed(2); label += ` (${percentage}%)`; } } return label; } } } } };
+
+                    createChart('salesByPersonChart', 'bar', Object.keys(chartData).map(getFirstName), Object.values(chartData), personChartTooltipOptions);
+                }
 
                 document.getElementById('faturamentoPorFornecedorTitle').textContent = isFiltered ? 'Faturamento por Fornecedor' : 'Faturamento por Categoria';
                 const faturamentoPorFornecedorData = summary.faturamentoPorFornecedor;
@@ -18559,6 +18598,50 @@ const supervisorGroups = new Map();
 
         series.appear(1000, 100);
         chart.appear(1000, 100);
+    }
+
+    function renderLiquidGauge(containerId, value, goal, label) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        // Clear previous content
+        container.innerHTML = '';
+
+        // Handle cases where Goal is 0 but we have sales (infinite efficiency?)
+        // Or Goal 0, Sales 0 (0%)
+        let percent = 0;
+        if (goal > 0) {
+            percent = (value / goal) * 100;
+        } else if (value > 0) {
+            percent = 100; // Uncapped if no goal
+        }
+
+        const clampedPercent = Math.min(Math.max(percent, 0), 100);
+
+        // Visual Calibration for Wave Level
+        // 0% -> 100% Top (Empty)
+        // 50% -> 50% Top (Half)
+        // 100% -> -15% Top (Full + Overlap for wave crests)
+        const topPos = 100 - (clampedPercent * 1.15);
+
+        const formattedValue = value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 0});
+        const formattedGoal = goal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 0});
+
+        const html = `
+            <div class="h-full w-full flex flex-col items-center justify-center">
+                <div class="liquid-gauge-container">
+                    <div class="liquid-wave" style="top: ${topPos}%;"></div>
+                    <div class="liquid-wave" style="top: ${topPos}%;"></div>
+                    <div class="liquid-text">
+                        <div class="liquid-percent">${percent.toFixed(1)}%</div>
+                        <div class="liquid-label">${label}</div>
+                        <div class="liquid-sub">${formattedValue} / ${formattedGoal}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = html;
     }
 
     // Auto-init User Menu on load if ready (for Navbar)
