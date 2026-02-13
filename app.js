@@ -7913,7 +7913,25 @@ const supervisorGroups = new Map();
                     const codFor = item.CODFOR;
                     fornecedorLabel = `${fornecedorNome} - ${codFor}`;
                 } else {
-                     fornecedorLabel = item.OBSERVACAOFOR || 'N/A';
+                     // Lógica de "Faturamento por Categoria" detalhada para PEPSICO
+                     const rowPasta = item.OBSERVACAOFOR;
+                     if (rowPasta === 'PEPSICO') {
+                         const codFor = String(item.CODFOR);
+                         const desc = normalize(item.DESCRICAO || '');
+
+                         if (['707', '708', '752'].includes(codFor)) {
+                             fornecedorLabel = codFor;
+                         } else if (codFor === '1119') {
+                             if (desc.includes('TODDYNHO')) fornecedorLabel = '1119_TODDYNHO';
+                             else if (desc.includes('TODDY')) fornecedorLabel = '1119_TODDY';
+                             else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) fornecedorLabel = '1119_QUAKER_KEROCOCO';
+                             else fornecedorLabel = '1119_OUTROS';
+                         } else {
+                             fornecedorLabel = 'PEPSICO_OUTROS';
+                         }
+                     } else {
+                         fornecedorLabel = rowPasta || 'N/A';
+                     }
                 }
 
                 if (!isForbidden(fornecedorLabel)) {
