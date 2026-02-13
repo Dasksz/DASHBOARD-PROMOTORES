@@ -19286,62 +19286,52 @@ const supervisorGroups = new Map();
         const formattedValue = value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 2, minimumFractionDigits: 2});
         const formattedGoal = goal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 2, minimumFractionDigits: 2});
 
-        // Determine Text Color Class based on percentage > 55
-        const isFilled = clampedPercent > 55;
-        const percentColorClass = isFilled ? 'text-white drop-shadow-md' : 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]';
-        const subTextColorClass = isFilled ? 'text-cyan-50' : 'text-gray-400';
-        const dividerClass = isFilled ? 'bg-white/50' : 'bg-gray-600';
-
         const html = `
-            <div class="flex flex-col items-center justify-center w-full h-full p-2">
-                <!-- Cylinder Container -->
-                <div class="relative w-40 h-64 bg-gray-900/80 rounded-full border-[4px] border-gray-700/80 overflow-hidden shadow-[0_0_30px_rgba(6,182,212,0.15)] backdrop-blur-sm">
+            <div class="flex flex-col justify-center w-full h-full px-6 py-2">
+                <!-- Main Horizontal Bar -->
+                <div class="relative w-full h-24 bg-gray-900/80 rounded-2xl border-2 border-gray-700/80 shadow-[0_0_30px_rgba(6,182,212,0.15)] backdrop-blur-sm overflow-hidden flex items-center">
 
-                    <!-- Inner Background -->
-                    <div class="absolute inset-0 bg-gradient-to-b from-gray-800/30 via-transparent to-black/60 pointer-events-none z-20"></div>
+                    <!-- Track Background Gradient -->
+                    <div class="absolute inset-0 bg-gradient-to-r from-gray-800/30 via-transparent to-black/60 pointer-events-none z-0"></div>
 
-                    <!-- Water Layer -->
-                    <div class="absolute bottom-0 left-0 right-0 w-full transition-all duration-1000 ease-in-out z-10" style="height: ${clampedPercent}%;">
-                        <!-- Back Wave -->
-                        <div class="w-[200%] h-full absolute -left-full -top-3 animate-wave-slow opacity-50">
-                            <svg viewBox="0 0 500 150" preserveAspectRatio="none" class="w-full h-16 fill-cyan-700">
-                                <path d="M0.00,49.98 C149.99,150.00 349.20,-49.98 500.00,49.98 L500.00,150.00 L0.00,150.00 Z" />
-                            </svg>
-                            <div class="w-full h-full bg-cyan-700"></div>
-                        </div>
+                    <!-- Liquid Fill -->
+                    <div class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-cyan-600 to-blue-600 transition-all duration-1000 ease-in-out z-10" style="width: ${clampedPercent}%;">
 
-                        <!-- Front Wave -->
-                        <div class="w-[200%] h-full absolute -left-full -top-5 animate-wave">
-                            <svg viewBox="0 0 500 150" preserveAspectRatio="none" class="w-full h-20 fill-cyan-500">
-                                <path d="M0.00,49.98 C149.99,150.00 349.20,-49.98 500.00,49.98 L500.00,150.00 L0.00,150.00 Z" />
-                            </svg>
-                            <div class="w-full h-full bg-gradient-to-b from-cyan-500 to-blue-600 shadow-[0_0_20px_rgba(6,182,212,0.6)]"></div>
+                        <!-- Diagonal Wave Tip -->
+                        <div class="absolute top-[-50%] bottom-[-50%] -right-8 w-16 bg-blue-600 transform skew-x-[-20deg] overflow-hidden flex items-center justify-center">
+                             <!-- Wave Animation (Vertical Ripple on the Edge) -->
+                             <div class="absolute inset-0 w-full h-[200%] -top-1/2 animate-wave-vertical opacity-50">
+                                <svg viewBox="0 0 150 500" preserveAspectRatio="none" class="w-full h-full fill-cyan-300">
+                                    <path d="M49.98,0.00 C150.00,149.99 -49.98,349.20 49.98,500.00 L150.00,500.00 L150.00,0.00 Z" />
+                                </svg>
+                             </div>
                         </div>
                     </div>
 
-                    <!-- Text Overlay -->
-                    <div class="absolute inset-0 flex flex-col items-center justify-center z-30 pointer-events-none">
-                        <span class="text-4xl font-bold tracking-tighter ${percentColorClass} transition-colors duration-500">
-                            ${displayPercentage}%
-                        </span>
-                        <div class="flex flex-col items-center mt-1 text-xs font-semibold ${subTextColorClass} transition-colors duration-500">
-                            <span>${formattedValue}</span>
-                            <div class="h-[1px] w-8 my-1 ${dividerClass}"></div>
-                            <span>${formattedGoal}</span>
+                    <!-- Text Content (Overlay) -->
+                    <div class="absolute inset-0 flex justify-between items-center px-8 z-30 pointer-events-none">
+                        <!-- Left: Info -->
+                        <div class="flex flex-col items-start">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Realizado</span>
+                            <span class="text-2xl font-bold text-white drop-shadow-md">${formattedValue}</span>
+                        </div>
+
+                        <!-- Center: Percentage -->
+                        <div class="flex flex-col items-center">
+                             <span class="text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]">
+                                ${displayPercentage}%
+                            </span>
+                        </div>
+
+                        <!-- Right: Goal -->
+                        <div class="flex flex-col items-end">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meta</span>
+                            <span class="text-xl font-bold text-cyan-400 drop-shadow-sm">${formattedGoal}</span>
                         </div>
                     </div>
 
-                    <!-- Glass Reflections -->
-                    <div class="absolute top-4 left-3 bottom-4 w-3 bg-gradient-to-r from-white/10 to-transparent rounded-full blur-[1px] pointer-events-none z-40"></div>
-                    <div class="absolute top-2 left-8 right-8 h-1.5 bg-white/20 rounded-[100%] blur-[3px] pointer-events-none z-40"></div>
-                </div>
-
-                <!-- Footer Legend -->
-                <div class="mt-4 flex items-center justify-between w-40 px-2">
-                    <div class="text-xs text-gray-400">Progresso</div>
-                    <div class="text-sm font-bold text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">
-                        ${formattedValue}
-                    </div>
+                    <!-- Glass Shine -->
+                    <div class="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/5 to-transparent pointer-events-none z-20"></div>
                 </div>
             </div>
         `;

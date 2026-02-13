@@ -836,3 +836,14 @@ html.light .bg-green-900\/30 {
 .toast-error .toast-icon { color: #ef4444; }
 .toast-info .toast-icon { color: #3b82f6; }
 .toast-warning .toast-icon { color: #f59e0b; }
+
+/* Vertical Wave Animation for Horizontal Liquid Gauge */
+@keyframes wave-vertical {
+  0% { transform: translateY(0) translateZ(0) scaleX(1); }
+  50% { transform: translateY(25%) translateZ(0) scaleX(0.9); }
+  100% { transform: translateY(50%) translateZ(0) scaleX(1); }
+}
+
+.animate-wave-vertical {
+  animation: wave-vertical 4s ease-in-out infinite alternate;
+}
