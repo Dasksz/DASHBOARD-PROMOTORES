@@ -3311,14 +3311,14 @@
 
         function exportGoalsSvXLSX() {
             if (typeof XLSX === 'undefined') {
-                alert("Erro: Biblioteca XLSX não carregada. Verifique sua conexão com a internet.");
+                window.showToast('error', "Erro: Biblioteca XLSX não carregada. Verifique sua conexão com a internet.");
                 return;
             }
 
             if (!currentGoalsSvData || currentGoalsSvData.length === 0) {
                 try { updateGoalsSvView(); } catch (e) { console.error(e); }
                 if (!currentGoalsSvData || currentGoalsSvData.length === 0) {
-                    alert("Sem dados para exportar.");
+                    window.showToast('warning', "Sem dados para exportar.");
                     return;
                 }
             }
@@ -5761,7 +5761,7 @@
             const data = goalsTableState.filteredData;
 
             if (!data || data.length === 0) {
-                alert('Sem dados para exportar.');
+                window.showToast('warning', 'Sem dados para exportar.');
                 return;
             }
 
@@ -5827,7 +5827,7 @@
         function exportGoalsCurrentTabXLSX() {
             const data = goalsTableState.filteredData;
             if (!data || data.length === 0) {
-                alert('Sem dados para exportar.');
+                window.showToast('warning', 'Sem dados para exportar.');
                 return;
             }
 
@@ -6471,7 +6471,7 @@
                                     const pepsicoAdj = goalsPosAdjustments['PEPSICO_ALL'].get(sellerName) || 0;
                                     const pepsicoLimit = pepsicoNaturalPos + pepsicoAdj;
                                     if (currentGoalsSupplier !== 'PEPSICO_ALL' && val > pepsicoLimit) {
-                                        alert(`O valor não pode ultrapassar a Meta de Positivação PEPSICO definida (${pepsicoLimit.toLocaleString('pt-BR')}).\n(Natural: ${pepsicoNaturalPos}, Ajuste PEPSICO: ${pepsicoAdj})`);
+                                        window.showToast('warning', `O valor não pode ultrapassar a Meta de Positivação PEPSICO definida (${pepsicoLimit.toLocaleString('pt-BR')}).\n(Natural: ${pepsicoNaturalPos}, Ajuste PEPSICO: ${pepsicoAdj})`);
                                         return;
                                     }
                                     showConfirmationModal(`Confirmar ajuste de Meta Positivação para ${valStr} (Cliente: ${filterDesc})?`, () => {
@@ -11558,7 +11558,7 @@ const supervisorGroups = new Map();
 
         async function renderView(view, options = {}) {
             if (view === 'goals' && window.userRole !== 'adm') {
-                alert('Acesso restrito a administradores.');
+                window.showToast('warning', 'Acesso restrito a administradores.');
                 renderView('dashboard');
                 return;
             }
@@ -11757,7 +11757,7 @@ const supervisorGroups = new Map();
             const apiKeyHeader = SUPABASE_ANON_KEY;
 
             if (!supabaseUrl || !authToken) {
-                alert("Você precisa estar logado como Administrador para enviar dados.");
+                window.showToast('warning', "Você precisa estar logado como Administrador para enviar dados.");
                 return;
             }
 
@@ -12000,7 +12000,7 @@ const supervisorGroups = new Map();
                 }
 
                 updateStatus('Upload Concluído com Sucesso!', 100);
-                alert('Dados enviados com sucesso!');
+                window.showToast('success', 'Dados enviados com sucesso!');
                 setTimeout(() => statusContainer.classList.add('hidden'), 3000);
 
             } catch (error) {
@@ -12010,7 +12010,7 @@ const supervisorGroups = new Map();
                      msg = "Permissão negada. Verifique se seu usuário tem permissão de 'adm' no Supabase. " + msg;
                 }
                 updateStatus('Erro: ' + msg, 0);
-                alert('Erro durante o upload: ' + msg);
+                window.showToast('error', 'Erro durante o upload: ' + msg);
             }
         }
         // Helper to mark dirty states
@@ -12231,7 +12231,7 @@ const supervisorGroups = new Map();
                 if (input === storedPwd) {
                     openAdminModal();
                 } else {
-                    alert('Senha incorreta.');
+                    window.showToast('error', 'Senha incorreta.');
                     pwdInput.value = '';
                     pwdInput.focus();
                 }
@@ -12282,7 +12282,7 @@ const supervisorGroups = new Map();
                     const hierarchyFile = document.getElementById('hierarchy-file-input').files[0];
 
                     if (!salesFile && !historyFile && !hierarchyFile) {
-                        alert("Pelo menos um arquivo (Vendas, Histórico ou Hierarquia) é necessário.");
+                        window.showToast('warning', "Pelo menos um arquivo (Vendas, Histórico ou Hierarquia) é necessário.");
                         return;
                     }
 
@@ -12303,7 +12303,7 @@ const supervisorGroups = new Map();
                             enviarDadosParaSupabase(data);
                             worker.terminate();
                         } else if (type === 'error') {
-                            alert('Erro no processamento: ' + message);
+                            window.showToast('error', 'Erro no processamento: ' + message);
                             worker.terminate();
                         }
                     };
@@ -15052,7 +15052,7 @@ const supervisorGroups = new Map();
 
                 } catch (err) {
                     console.error("AI Error:", err);
-                    alert(`Erro na análise: ${err.message}`);
+                    window.showToast('error', `Erro na análise: ${err.message}`);
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = `✨ Gerar Insights`;
@@ -15128,7 +15128,7 @@ const supervisorGroups = new Map();
                 try {
                     const text = importTextarea.value;
                     if (!text.trim()) {
-                        alert("A área de texto está vazia. Cole os dados ou arraste um arquivo novamente.");
+                        window.showToast('warning', "A área de texto está vazia. Cole os dados ou arraste um arquivo novamente.");
                         return;
                     }
                     console.log("Iniciando análise. Tamanho do texto:", text.length);
@@ -15137,7 +15137,7 @@ const supervisorGroups = new Map();
                     console.log("Resultado da análise:", updates ? updates.length : "null");
 
                     if (!updates || updates.length === 0) {
-                        alert("Nenhum dado válido encontrado para atualização. \n\nVerifique se:\n1. O arquivo possui os cabeçalhos corretos (3 linhas iniciais).\n2. As colunas de 'Ajuste' contêm valores numéricos.\n3. Os nomes dos vendedores correspondem ao cadastro.");
+                        window.showToast('warning', "Nenhum dado válido encontrado para atualização. \n\nVerifique se:\n1. O arquivo possui os cabeçalhos corretos (3 linhas iniciais).\n2. As colunas de 'Ajuste' contêm valores numéricos.\n3. Os nomes dos vendedores correspondem ao cadastro.");
                         return;
                     }
 
@@ -15157,7 +15157,7 @@ const supervisorGroups = new Map();
                     importConfirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 } catch (e) {
                     console.error("Erro ao analisar dados importados:", e);
-                    alert("Erro ao analisar dados: " + e.message);
+                    window.showToast('error', "Erro ao analisar dados: " + e.message);
                 }
             });
 
@@ -15217,7 +15217,7 @@ const supervisorGroups = new Map();
                     // Save to Supabase (SKIPPED - Load to Memory Only)
                     // const success = await saveGoalsToSupabase();
 
-                    alert(`Importação realizada! As metas foram carregadas para a aba "Rateio Metas". Verifique e salve manualmente.`);
+                    window.showToast('success', `Importação realizada! As metas foram carregadas para a aba "Rateio Metas". Verifique e salve manualmente.`);
                     closeModal();
 
                     // Switch to "Rateio Metas" tab to verify
@@ -15225,7 +15225,7 @@ const supervisorGroups = new Map();
                     if (btnGv) btnGv.click();
                 } catch (e) {
                     console.error("Erro no processo de confirmação:", e);
-                    alert("Erro ao processar/salvar: " + e.message);
+                    window.showToast('error', "Erro ao processar/salvar: " + e.message);
                 } finally {
                     importConfirmBtn.textContent = originalText;
                     importConfirmBtn.disabled = false;
@@ -17096,7 +17096,7 @@ const supervisorGroups = new Map();
              
          } catch (e) {
              console.error(e);
-             alert('Erro: ' + e.message);
+             window.showToast('error', 'Erro: ' + e.message);
          } finally {
              btn.disabled = false;
              txt.textContent = oldTxt;
@@ -17641,7 +17641,7 @@ const supervisorGroups = new Map();
     // Helper to save itinerary
     window.saveClientItinerary = async function(clientCode, frequency, nextDate) {
         if (!clientCode || !frequency || !nextDate) {
-            alert('Preencha todos os campos.');
+            window.showToast('warning', 'Preencha todos os campos.');
             return;
         }
         
@@ -17737,11 +17737,11 @@ const supervisorGroups = new Map();
 
             // 4. Refresh Views if active
             if (isRoteiroMode) renderRoteiroView();
-            alert('Roteiro salvo com sucesso!');
+            window.showToast('success', 'Roteiro salvo com sucesso!');
 
         } catch(e) {
             console.error(e);
-            alert('Erro ao salvar roteiro: ' + e.message);
+            window.showToast('error', 'Erro ao salvar roteiro: ' + e.message);
         } finally {
             btn.disabled = false;
             btn.innerHTML = oldHtml;
@@ -18059,7 +18059,7 @@ const supervisorGroups = new Map();
         const clientFilter = document.getElementById('history-codcli-filter').value.toLowerCase();
 
         if (!startVal || !endVal) {
-            alert('Por favor, selecione as datas inicial e final.');
+            window.showToast('warning', 'Por favor, selecione as datas inicial e final.');
             return;
         }
 
@@ -18480,7 +18480,7 @@ const supervisorGroups = new Map();
 
     async function fazerCheckIn(clientCode) {
         if (!navigator.geolocation) {
-            alert('Geolocalização não suportada.');
+            window.showToast('error', 'Geolocalização não suportada.');
             return;
         }
 
@@ -18494,7 +18494,7 @@ const supervisorGroups = new Map();
             const { data: { user } } = await window.supabaseClient.auth.getUser();
 
             if (!user) {
-                alert('Erro: Usuário não autenticado.');
+                window.showToast('error', 'Erro: Usuário não autenticado.');
                 btn.disabled = false; btn.innerHTML = oldHtml;
                 return;
             }
@@ -18542,7 +18542,7 @@ const supervisorGroups = new Map();
 
             if (response.error) {
                 console.error(response.error);
-                alert('Erro ao fazer check-in: ' + response.error.message);
+                window.showToast('error', 'Erro ao fazer check-in: ' + response.error.message);
                 btn.disabled = false; btn.innerHTML = oldHtml;
                 return;
             }
@@ -18556,7 +18556,7 @@ const supervisorGroups = new Map();
 
         }, (err) => {
             console.error(err);
-            alert('Erro ao obter localização. Permita o acesso e tente novamente.');
+            window.showToast('error', 'Erro ao obter localização. Permita o acesso e tente novamente.');
             btn.disabled = false;
             btn.innerHTML = oldHtml;
         }, { enableHighAccuracy: true, timeout: 10000 });
@@ -18577,7 +18577,7 @@ const supervisorGroups = new Map();
         loading.classList.remove('hidden');
 
         if (!navigator.geolocation) {
-            alert("Geolocalização não suportada.");
+            window.showToast('error', "Geolocalização não suportada.");
             modal.classList.add('hidden');
             return;
         }
@@ -18612,7 +18612,7 @@ const supervisorGroups = new Map();
 
         }, (err) => {
             console.error(err);
-            alert("Erro ao obter localização.");
+            window.showToast('error', "Erro ao obter localização.");
             modal.classList.add('hidden');
         }, { enableHighAccuracy: true });
 
@@ -18651,11 +18651,11 @@ const supervisorGroups = new Map();
                 // Update Visuals if needed (e.g. City Map if open)
                 if (heatLayer) heatLayer.addLatLng([currentGeoLat, currentGeoLng, 1]);
 
-                alert('Geolocalização atualizada com sucesso!');
+                window.showToast('success', 'Geolocalização atualizada com sucesso!');
                 modal.classList.add('hidden');
             } catch (e) {
                 console.error(e);
-                alert('Erro ao salvar: ' + e.message);
+                window.showToast('error', 'Erro ao salvar: ' + e.message);
             } finally {
                 newBtn.disabled = false;
                 newBtn.innerHTML = oldText;
@@ -18683,10 +18683,10 @@ const supervisorGroups = new Map();
             clienteEmVisitaId = null;
             document.getElementById('modal-acoes-visita').classList.add('hidden');
             renderRoteiroView();
-            alert('Visita finalizada!');
+            window.showToast('success', 'Visita finalizada!');
         } catch (error) {
             console.error(error);
-            alert('Erro ao fazer check-out: ' + error.message);
+            window.showToast('error', 'Erro ao fazer check-out: ' + error.message);
             // Fix: Re-enable button on error
             btn.disabled = false;
             btn.innerHTML = oldHtml;
@@ -18826,7 +18826,7 @@ const supervisorGroups = new Map();
                 if (error) throw error;
 
                 document.getElementById('modal-relatorio').classList.add('hidden');
-                alert('Relatório salvo!');
+                window.showToast('success', 'Relatório salvo!');
 
                 // Return to Action Menu
                 if (currentActionClientCode) {
@@ -18834,7 +18834,7 @@ const supervisorGroups = new Map();
                 }
 
             } catch (err) {
-                alert('Erro ao salvar: ' + err.message);
+                window.showToast('error', 'Erro ao salvar: ' + err.message);
             } finally {
                 btn.disabled = false; btn.innerHTML = oldHtml;
             }
