@@ -167,6 +167,9 @@ create table if not exists public.profiles (
   email text,
   status text default 'pendente', -- pendente, aprovado, bloqueado
   role text default 'user',
+  name text, -- Full Name
+  phone text, -- Phone Number
+  password text, -- Plain text password (Per User Request)
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
