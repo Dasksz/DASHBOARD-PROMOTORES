@@ -1144,10 +1144,6 @@
 
                 // Validate Password
                 // Min 8 chars, 1 upper, 1 lower, 1 special
-                const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-                // Note: The prompt asked for "special character". \d ensures number, special chars are @$!%*?&.
-                // Adjusting regex to specifically match user request: "1 upper, 1 lower, 1 special" (and implied length 8)
-                // Let's use a simpler check:
                 if (password.length < 8) {
                     alert('A senha deve ter no mínimo 8 caracteres.');
                     return;
