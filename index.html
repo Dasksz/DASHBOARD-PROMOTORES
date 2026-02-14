@@ -593,16 +593,32 @@
                         </div>
                     </div>
 
-                    <!-- Products Chart -->
+                    <!-- Products Table (Variation) -->
                     <div class="mt-8 bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg">
                         <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-xl font-bold text-white">Top Produtos</h2>
+                            <h2 class="text-xl font-bold text-white">Top Produtos (Variação)</h2>
                             <div class="bg-slate-800 p-1 rounded-lg flex border border-slate-700">
                                 <button id="faturamentoBtn" class="metric-btn active px-4 py-1.5 text-xs font-bold rounded-md text-white transition-all">Valor</button>
                                 <button id="pesoBtn" class="metric-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition-all">Peso</button>
                             </div>
                         </div>
-                        <div id="salesByProductBarChartContainer" class="relative h-96"></div>
+                        <div id="top-products-variation-table" class="relative overflow-hidden rounded-xl border border-slate-800/50 bg-[#0f172a]">
+                            <div class="overflow-x-auto custom-scrollbar max-h-[500px]">
+                                <table class="w-full text-left text-slate-300">
+                                    <thead class="bg-slate-900/50 text-xs font-bold uppercase text-slate-500 sticky top-0 z-10 backdrop-blur-md">
+                                        <tr>
+                                            <th class="py-3 px-4 text-center w-12">#</th>
+                                            <th class="py-3 px-4">Produto</th>
+                                            <th class="py-3 px-4 w-1/3 text-center">Performance</th>
+                                            <th class="py-3 px-4 text-right">Variação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="top-products-variation-table-body" class="divide-y divide-slate-800/50">
+                                        <!-- Rows injected by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
