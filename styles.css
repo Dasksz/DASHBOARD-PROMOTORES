@@ -853,7 +853,7 @@ html.light .bg-green-900\/30 {
     position: relative;
     width: 100%; /* Adjusted for dashboard */
     /* max-width: 1100px; - Let parent control width */
-    height: 350px;
+    height: 280px;
     border-radius: 28px;
     overflow: hidden;
     box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
@@ -889,7 +889,7 @@ html.light .bg-green-900\/30 {
     .content-overlay { padding-left: 30px; }
     .user-greeting { font-size: 2.5rem !important; }
     .sub-text { font-size: 1rem !important; }
-    #banner-container { height: 280px; } /* Optional responsive adjustment */
+    #banner-container { height: 220px; } /* Optional responsive adjustment */
 }
 
 .brand-tag {
