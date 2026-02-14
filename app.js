@@ -563,13 +563,6 @@
         const productDetailsMap = new Map(Object.entries(embeddedData.productDetails || {}));
         const passedWorkingDaysCurrentMonth = embeddedData.passedWorkingDaysCurrentMonth || 1;
 
-        if (embeddedData.lastSaleDate) {
-            const ts = parseInt(embeddedData.lastSaleDate);
-            if (!isNaN(ts) && ts > 0) {
-                lastSaleDate = new Date(ts);
-            }
-        }
-
         const clientsWithSalesThisMonth = new Set();
         // Populate set
         for(let i=0; i<allSalesData.length; i++) {
@@ -2116,6 +2109,7 @@
         const comparisonTendencyToggle = document.getElementById('comparison-tendency-toggle');
 
         const comparisonChartTitle = document.getElementById('comparison-chart-title');
+        const toggleDailyBtn = document.getElementById('toggle-daily-btn');
         const toggleWeeklyBtn = document.getElementById('toggle-weekly-btn');
         const toggleMonthlyBtn = document.getElementById('toggle-monthly-btn');
         const weeklyComparisonChartContainer = document.getElementById('weeklyComparisonChartContainer');
@@ -10159,6 +10153,7 @@ const supervisorGroups = new Map();
                     supervisorData: {}
                 },
                 historicalDayTotals: new Array(7).fill(0), // 0=Sun, 6=Sat
+                currentDayTotals: new Array(7).fill(0), // 0=Sun, 6=Sat
                 overlapSales: []
             };
 
@@ -10203,6 +10198,7 @@ const supervisorGroups = new Map();
                 if (d) {
                     const wIdx = currentMonthWeeks.findIndex(w => d >= w.start && d <= w.end);
                     if (wIdx !== -1) metrics.charts.weeklyCurrent[wIdx] += val;
+                    metrics.currentDayTotals[d.getUTCDay()] += val;
                 }
             }, () => {
                 // 1.1 Finalize Current KPIs
@@ -10441,6 +10437,25 @@ const supervisorGroups = new Map();
                             isFat ? 'Faturamento' : 'Clientes Atendidos',
                             isFat ? 0x3b82f6 : 0x10b981
                         );
+                    } else if (comparisonChartType === 'daily') {
+                        weeklyComparisonChartContainer.classList.remove('hidden');
+                        monthlyComparisonChartContainer.classList.add('hidden');
+                        comparisonChartTitle.textContent = 'Comparativo de Faturamento Diário';
+                        const dayLabels = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+                        // Current Values (Indices 1-6)
+                        const currentDayValues = [1, 2, 3, 4, 5, 6].map(i => m.currentDayTotals[i] || 0);
+
+                        // History Values (Indices 1-6) / 3
+                        const historyDayValues = [1, 2, 3, 4, 5, 6].map(i => (m.historicalDayTotals[i] || 0) / QUARTERLY_DIVISOR);
+
+                        // Destroy Legacy Chart if exists
+                        if (charts['weeklyComparisonChart']) {
+                            charts['weeklyComparisonChart'].destroy();
+                            delete charts['weeklyComparisonChart'];
+                        }
+
+                        renderWeeklyComparisonAmChart(dayLabels, currentDayValues, historyDayValues, false);
                     }
 
                     // Daily Chart (Simplified re-calc for now, or could optimize further)
@@ -11659,8 +11674,12 @@ const supervisorGroups = new Map();
             currentActiveView = view;
 
             // Sync Hash to ensure navigation consistency
-            if (window.location.hash !== '#' + view) {
-                history.pushState(null, null, '#' + view);
+            try {
+                if (window.location.hash !== '#' + view) {
+                    history.pushState(null, null, '#' + view);
+                }
+            } catch (e) {
+                console.warn("History pushState failed", e);
             }
 
             const mobileMenu = document.getElementById('mobile-menu');
@@ -13004,20 +13023,38 @@ const supervisorGroups = new Map();
                 updateComparison();
             });
 
+            const updateToggleStyles = (activeBtn, ...others) => {
+                activeBtn.classList.add('active', 'bg-blue-600', 'text-white');
+                activeBtn.classList.remove('text-slate-400');
+                others.forEach(btn => {
+                    if (btn) {
+                        btn.classList.remove('active', 'bg-blue-600', 'text-white');
+                        btn.classList.add('text-slate-400');
+                    }
+                });
+            };
+
+            if (toggleDailyBtn) {
+                toggleDailyBtn.addEventListener('click', () => {
+                    comparisonChartType = 'daily';
+                    updateToggleStyles(toggleDailyBtn, toggleWeeklyBtn, toggleMonthlyBtn);
+                    document.getElementById('comparison-monthly-metric-container').classList.add('hidden');
+                    updateComparisonView();
+                });
+            }
+
             toggleWeeklyBtn.addEventListener('click', () => {
                 comparisonChartType = 'weekly';
-                toggleWeeklyBtn.classList.add('active');
-                toggleMonthlyBtn.classList.remove('active');
+                updateToggleStyles(toggleWeeklyBtn, toggleDailyBtn, toggleMonthlyBtn);
                 document.getElementById('comparison-monthly-metric-container').classList.add('hidden');
-                updateComparison();
+                updateComparisonView();
             });
 
             toggleMonthlyBtn.addEventListener('click', () => {
                 comparisonChartType = 'monthly';
-                toggleMonthlyBtn.classList.add('active');
-                toggleWeeklyBtn.classList.remove('active');
+                updateToggleStyles(toggleMonthlyBtn, toggleDailyBtn, toggleWeeklyBtn);
                 // The toggle visibility is handled inside updateComparisonView based on mode
-                updateComparison();
+                updateComparisonView();
             });
 
             // New Metric Toggle Listeners
