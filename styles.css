@@ -939,3 +939,37 @@ html.light .bg-green-900\/30 {
     border-radius: 50%;
     box-shadow: 0 0 12px #22c55e;
 }
+
+/* Tooltip Styles */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.tooltip .tooltip-text {
+    visibility: hidden;
+    width: 120px;
+    background-color: rgba(15, 23, 42, 0.95); /* Matches other dark theme elements */
+    color: #fff;
+    text-align: center;
+    padding: 5px 8px;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 50; /* High z-index to stay on top */
+    bottom: 125%; /* Position above */
+    left: 50%;
+    margin-left: -60px; /* Center the tooltip */
+    opacity: 0;
+    transition: opacity 0.3s;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    font-weight: normal;
+    font-size: 0.75rem;
+    pointer-events: none;
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
