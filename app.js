@@ -8272,39 +8272,30 @@ const supervisorGroups = new Map();
 
                 // Rank
                 const tdRank = document.createElement('td');
-                tdRank.className = 'py-3 px-4 text-center text-slate-500 font-mono text-xs font-bold';
+                tdRank.className = 'py-2 px-1 md:py-3 md:px-4 text-center text-slate-500 font-mono text-[10px] md:text-xs font-bold';
                 tdRank.textContent = index + 1;
                 tr.appendChild(tdRank);
 
                 // Produto
                 const tdProduct = document.createElement('td');
-                tdProduct.className = 'py-3 px-4';
+                tdProduct.className = 'py-2 px-1 md:py-3 md:px-4';
                 tdProduct.innerHTML = `
                     <div class="flex flex-col">
-                        <span class="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">${item.name || 'Desconhecido'}</span>
-                        <span class="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">${item.category || ''}</span>
+                        <span class="text-xs md:text-sm font-bold text-white group-hover:text-blue-400 transition-colors">${item.name || 'Desconhecido'}</span>
+                        <span class="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">${item.category || ''}</span>
                     </div>
                 `;
                 tr.appendChild(tdProduct);
 
                 // Performance (Bar)
                 const tdPerf = document.createElement('td');
-                tdPerf.className = 'py-3 px-4 w-1/3 align-middle';
+                tdPerf.className = 'py-2 px-1 md:py-3 md:px-4 w-1/4 md:w-1/3 align-middle';
                 const barWidth = Math.min((item.absVariation / maxVariation) * 100, 100);
                 const barColor = item.variation >= 0 ? 'bg-emerald-500' : 'bg-red-500';
-                const trackColor = 'bg-slate-800'; // Dark track
 
-                tdPerf.innerHTML = `
-                    <div class="h-1.5 w-full ${trackColor} rounded-full overflow-hidden flex ${item.variation < 0 ? 'justify-end' : 'justify-start'}">
-                         <div class="h-full ${barColor} rounded-full" style="width: ${barWidth}%"></div>
-                    </div>
-                `;
-                // Note: The logic above aligns bars: Positive (Left->Right), Negative (Right->Left)?
-                // Usually Variation charts are divergent. But the request image shows simple bars.
-                // Let's stick to simple bars representing Magnitude, color represents sign.
                 // Refined HTML for simple magnitude bar:
                 tdPerf.innerHTML = `
-                    <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-1 md:h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
                         <div class="h-full ${barColor} rounded-full transition-all duration-500" style="width: ${barWidth}%"></div>
                     </div>
                 `;
@@ -8312,13 +8303,13 @@ const supervisorGroups = new Map();
 
                 // Variation Badge
                 const tdVar = document.createElement('td');
-                tdVar.className = 'py-3 px-4 text-right';
+                tdVar.className = 'py-2 px-1 md:py-3 md:px-4 text-right';
                 const badgeBg = item.variation >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20';
                 const arrow = item.variation >= 0 ? '▲' : '▼';
                 const sign = item.variation > 0 ? '+' : '';
 
                 tdVar.innerHTML = `
-                    <span class="inline-flex items-center justify-end px-2.5 py-1 rounded-md text-xs font-bold border ${badgeBg} min-w-[80px]">
+                    <span class="inline-flex items-center justify-end px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-md text-[10px] md:text-xs font-bold border ${badgeBg} min-w-[50px] md:min-w-[80px]">
                         ${sign}${item.variation.toFixed(1)}% ${arrow}
                     </span>
                 `;
@@ -18572,16 +18563,16 @@ const supervisorGroups = new Map();
             else if (statusText === 'B') { statusText = 'Bloqueado'; statusColor = 'text-red-400'; }
 
             tr.innerHTML = `
-                <td class="px-6 py-4 text-xs text-slate-400 font-mono">${dateStr}</td>
-                <td class="px-6 py-4 text-sm text-white font-bold">${order.PEDIDO}</td>
-                <td class="px-6 py-4">
-                    <div class="text-sm text-white">${order.CLIENTE_NOME || 'N/A'}</div>
-                    <div class="text-xs text-slate-500 font-mono">${order.CODCLI}</div>
+                <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 font-mono">${dateStr}</td>
+                <td class="px-2 py-2 md:px-6 md:py-4 text-xs md:text-sm text-white font-bold">${order.PEDIDO}</td>
+                <td class="px-2 py-2 md:px-6 md:py-4">
+                    <div class="text-xs md:text-sm text-white max-w-[100px] md:max-w-none truncate">${order.CLIENTE_NOME || 'N/A'}</div>
+                    <div class="text-[10px] md:text-xs text-slate-500 font-mono">${order.CODCLI}</div>
                 </td>
-                <td class="px-6 py-4 text-xs text-slate-400">${order.NOME || '-'}</td>
-                <td class="px-6 py-4 text-xs text-slate-400">${order.CODFOR || '-'}</td>
-                <td class="px-6 py-4 text-sm text-white font-bold text-right">${valStr}</td>
-                <td class="px-6 py-4 text-xs text-center ${statusColor}">${statusText}</td>
+                <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${order.NOME || '-'}</td>
+                <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${order.CODFOR || '-'}</td>
+                <td class="px-2 py-2 md:px-6 md:py-4 text-xs md:text-sm text-white font-bold text-right">${valStr}</td>
+                <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-center ${statusColor}">${statusText}</td>
             `;
             // Optional: Click to see details (reuse existing modal logic if possible)
             // tr.onclick = ...
@@ -19470,21 +19461,21 @@ const supervisorGroups = new Map();
         const formattedGoal = goal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 2, minimumFractionDigits: 2});
 
         const html = `
-            <div class="flex flex-col justify-center w-full h-full px-6 py-2">
+            <div class="flex flex-col justify-center w-full h-full px-2 md:px-6 py-2">
                 <!-- Main Horizontal Bar -->
-                <div class="relative w-full h-24 bg-gray-900/80 rounded-2xl border-2 border-gray-700/80 shadow-[0_0_30px_rgba(6,182,212,0.15)] backdrop-blur-sm overflow-hidden flex items-center">
+                <div class="relative w-full h-16 md:h-24 bg-gray-900/80 rounded-xl md:rounded-2xl border-2 border-gray-700/80 shadow-[0_0_30px_rgba(253,186,116,0.15)] backdrop-blur-sm overflow-hidden flex items-center">
 
                     <!-- Track Background Gradient -->
                     <div class="absolute inset-0 bg-gradient-to-r from-gray-800/30 via-transparent to-black/60 pointer-events-none z-0"></div>
 
-                    <!-- Liquid Fill -->
-                    <div class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-cyan-600 to-blue-600 transition-all duration-1000 ease-in-out z-10" style="width: ${clampedPercent}%;">
+                    <!-- Liquid Fill (Light Orange) -->
+                    <div class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-orange-200 to-orange-300 transition-all duration-1000 ease-in-out z-10" style="width: ${clampedPercent}%;">
 
                         <!-- Diagonal Wave Tip -->
-                        <div class="absolute top-[-50%] bottom-[-50%] -right-8 w-16 bg-blue-600 transform skew-x-[-20deg] overflow-hidden flex items-center justify-center">
+                        <div class="absolute top-[-50%] bottom-[-50%] -right-8 w-16 bg-orange-300 transform skew-x-[-20deg] overflow-hidden flex items-center justify-center">
                              <!-- Wave Animation (Vertical Ripple on the Edge) -->
                              <div class="absolute inset-0 w-full h-[200%] -top-1/2 animate-wave-vertical opacity-50">
-                                <svg viewBox="0 0 150 500" preserveAspectRatio="none" class="w-full h-full fill-cyan-300">
+                                <svg viewBox="0 0 150 500" preserveAspectRatio="none" class="w-full h-full fill-orange-100">
                                     <path d="M49.98,0.00 C150.00,149.99 -49.98,349.20 49.98,500.00 L150.00,500.00 L150.00,0.00 Z" />
                                 </svg>
                              </div>
@@ -19492,24 +19483,24 @@ const supervisorGroups = new Map();
                     </div>
 
                     <!-- Text Content (Overlay) -->
-                    <div class="absolute inset-0 flex justify-between items-center px-8 z-30 pointer-events-none">
+                    <div class="absolute inset-0 flex justify-between items-center px-4 md:px-8 z-30 pointer-events-none">
                         <!-- Left: Info -->
                         <div class="flex flex-col items-start">
-                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Realizado</span>
-                            <span class="text-2xl font-bold text-white drop-shadow-md">${formattedValue}</span>
+                            <span class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5 md:mb-1">Realizado</span>
+                            <span class="text-sm md:text-2xl font-bold text-white drop-shadow-md">${formattedValue}</span>
                         </div>
 
                         <!-- Center: Percentage -->
                         <div class="flex flex-col items-center">
-                             <span class="text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]">
+                             <span class="text-2xl md:text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_10px_rgba(253,186,116,0.8)]">
                                 ${displayPercentage}%
                             </span>
                         </div>
 
                         <!-- Right: Goal -->
                         <div class="flex flex-col items-end">
-                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meta</span>
-                            <span class="text-xl font-bold text-cyan-400 drop-shadow-sm">${formattedGoal}</span>
+                            <span class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5 md:mb-1">Meta</span>
+                            <span class="text-xs md:text-xl font-bold text-orange-300 drop-shadow-sm">${formattedGoal}</span>
                         </div>
                     </div>
 
