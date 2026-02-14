@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Banner Cheetos Dashboard</title>
+    <title>Banner Cheetos Dashboard - High Fidelity</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -11,24 +11,25 @@
         
         body { 
             margin: 0; 
-            background-color: #0f172a; 
+            background-color: #020617; 
             font-family: 'Inter', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            padding: 20px;
+            overflow: hidden;
         }
 
         #banner-container {
             position: relative;
-            width: 100%;
-            max-width: 1200px;
+            width: 95%;
+            max-width: 1100px;
             height: 350px;
-            border-radius: 24px;
+            border-radius: 28px;
             overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-            background: radial-gradient(circle at 80% 50%, #2e1065 0%, #0f172a 100%);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
+            background: radial-gradient(circle at 75% 50%, #1e1b4b 0%, #020617 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         canvas {
@@ -49,67 +50,63 @@
             flex-direction: column;
             justify-content: center;
             padding-left: 60px; 
-            background: linear-gradient(90deg, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.6) 50%, rgba(15,23,42,0) 100%);
+            background: linear-gradient(90deg, rgba(2,6,23,0.95) 0%, rgba(2,6,23,0.4) 60%, rgba(2,6,23,0) 100%);
             pointer-events: none; 
-            max-width: 50%;
+            max-width: 550px;
+        }
+
+        @media (max-width: 640px) {
+            .content-overlay { padding-left: 30px; }
+            .user-greeting { font-size: 2.5rem !important; }
+            .sub-text { font-size: 1rem !important; }
         }
 
         .brand-tag {
-            background-color: #ff6600;
+            background: linear-gradient(90deg, #ff6600, #ff9900);
             color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
+            padding: 5px 16px;
+            border-radius: 99px;
             font-weight: 800;
             font-size: 0.75rem;
             text-transform: uppercase;
+            letter-spacing: 0.1em;
             width: fit-content;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 10px rgba(255, 102, 0, 0.4);
+            margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3);
         }
 
         .user-greeting {
-            font-size: 3.5rem;
+            font-size: 3.8rem;
             font-weight: 800;
             color: white;
-            line-height: 1.1;
-            text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            line-height: 1;
             font-style: italic;
+            text-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
 
         .sub-text {
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             color: #fbbf24;
             font-weight: 600;
-            margin-top: 8px;
+            margin-top: 10px;
         }
 
         .meta-info {
             font-size: 0.85rem;
             color: #94a3b8;
-            margin-top: 24px;
-            font-family: monospace;
-            opacity: 0.8;
+            margin-top: 30px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            font-family: monospace;
         }
 
         .dot {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             background-color: #22c55e;
             border-radius: 50%;
-            display: inline-block;
-        }
-
-        .animate-fade-in {
-            animation: fadeIn 1s ease-out forwards;
-            opacity: 0;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
+            box-shadow: 0 0 12px #22c55e;
         }
     </style>
 </head>
@@ -117,19 +114,18 @@
 
     <div id="banner-container">
         <div class="content-overlay">
-            <div class="brand-tag animate-fade-in" style="animation-delay: 0.1s;">Dashboard Prime</div>
-            <h1 class="user-greeting animate-fade-in" style="animation-delay: 0.2s;">Olá, Daniel!</h1>
-            <p class="sub-text animate-fade-in" style="animation-delay: 0.4s;">Perigosamente Delicioso.</p>
-            <p class="meta-info animate-fade-in" style="animation-delay: 0.6s;">
-                <span class="dot"></span> Sistema Operacional • Atualizado em 13/02/2026
+            <div class="brand-tag">Dashboard Prime</div>
+            <h1 class="user-greeting">Olá, Daniel!</h1>
+            <p class="sub-text">Perigosamente Delicioso.</p>
+            <p class="meta-info">
+                <span class="dot"></span> Sistema Ativo • 14/02/2026
             </p>
         </div>
     </div>
 
     <script>
         let scene, camera, renderer;
-        let cheetos = [];
-        let fineDust, crumbs; // Duas camadas de pó
+        let cheetos = [], dustParticles;
         let mouseX = 0, mouseY = 0;
         let targetX = 0, targetY = 0;
 
@@ -139,174 +135,184 @@
 
         function init() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x150b2e, 0.015); 
+            scene.fog = new THREE.FogExp2(0x020617, 0.02); 
 
-            camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
             camera.position.z = 25; 
-            camera.position.x = 0; 
             
-            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer = new THREE.WebGLRenderer({ 
+                alpha: true, 
+                antialias: true,
+                precision: "highp",
+                powerPreference: "high-performance"
+            });
+            
             renderer.setSize(width, height);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.setClearColor(0x000000, 0); 
+            
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 0.94; 
             
             container.insertBefore(renderer.domElement, container.firstChild);
 
-            // --- Iluminação ---
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.38); 
             scene.add(ambientLight);
 
-            const mainLight = new THREE.SpotLight(0xffaa00, 2.5);
-            mainLight.position.set(20, 15, 20);
-            mainLight.angle = 0.6;
-            mainLight.penumbra = 0.5;
+            const mainLight = new THREE.DirectionalLight(0xffaa00, 2.1);
+            mainLight.position.set(10, 20, 15);
+            mainLight.castShadow = true;
             scene.add(mainLight);
 
-            const rimLight = new THREE.PointLight(0x4f46e5, 4, 60);
-            rimLight.position.set(-15, 5, 0);
+            const rimLight = new THREE.SpotLight(0x4f46e5, 5.1);
+            rimLight.position.set(-20, 5, -5);
             scene.add(rimLight);
 
-            // --- Cheetos (Código original) ---
-            const cheetoCount = 45; 
-            const cheetoMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0xff7700, 
-                roughness: 0.9,
-                metalness: 0.0,
-                emissive: 0xaa2200,
-                emissiveIntensity: 0.15
-            });
+            createCheetoFactory();
+            createDust();
 
-            for (let i = 0; i < cheetoCount; i++) {
-                const length = 1.8 + Math.random();
-                const radius = 0.35 + Math.random() * 0.15;
-                const geometry = new THREE.CylinderGeometry(radius, radius, length, 8, 10, true);
-                
-                const positionAttribute = geometry.attributes.position;
-                const vertex = new THREE.Vector3();
+            const updateInput = (x, y) => {
+                const rect = container.getBoundingClientRect();
+                mouseX = ((x - rect.left) / width - 0.5) * 2;
+                mouseY = ((y - rect.top) / height - 0.5) * 2;
+            };
 
-                for (let v = 0; v < positionAttribute.count; v++) {
-                    vertex.fromBufferAttribute(positionAttribute, v);
-                    const noise = (Math.random() - 0.5) * 0.18;
-                    vertex.x += noise;
-                    vertex.y += noise;
-                    vertex.z += noise;
-                    const bendAmount = (Math.random() - 0.5) * 0.6;
-                    vertex.x += Math.pow(vertex.y, 2) * bendAmount * 0.2;
-                    positionAttribute.setXYZ(v, vertex.x, vertex.y, vertex.z);
-                }
-                geometry.computeVertexNormals();
-
-                const topGeo = new THREE.SphereGeometry(radius, 8, 8);
-                const botGeo = new THREE.SphereGeometry(radius, 8, 8);
-                topGeo.translate(0, length/2, 0);
-                botGeo.translate(0, -length/2, 0);
-                
-                const group = new THREE.Group();
-                const bodyMesh = new THREE.Mesh(geometry, cheetoMaterial);
-                const topMesh = new THREE.Mesh(topGeo, cheetoMaterial);
-                const botMesh = new THREE.Mesh(botGeo, cheetoMaterial);
-                
-                // Variação de cor
-                const localMat = cheetoMaterial.clone();
-                const colorVar = (Math.random() - 0.5) * 0.08;
-                localMat.color.offsetHSL(0, 0, colorVar);
-                
-                bodyMesh.material = localMat;
-                topMesh.material = localMat;
-                botMesh.material = localMat;
-
-                group.add(bodyMesh);
-                group.add(topMesh);
-                group.add(botMesh);
-
-                resetCheeto(group, true); 
-                cheetos.push(group);
-                scene.add(group);
-            }
-
-            // --- CAMADA 1: Micro-Pó (Fine Dust) ---
-            // Cria uma atmosfera densa e laranja
-            const fineDustCount = 2000;
-            const fineDustGeo = new THREE.BufferGeometry();
-            const finePos = new Float32Array(fineDustCount * 3);
+            container.addEventListener('mousemove', (e) => updateInput(e.clientX, e.clientY));
+            container.addEventListener('touchmove', (e) => {
+                if(e.touches.length > 0) updateInput(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
             
-            for (let i = 0; i < fineDustCount; i++) {
-                finePos[i * 3] = (Math.random() * 70) - 20;     // X
-                finePos[i * 3 + 1] = (Math.random() - 0.5) * 40; // Y
-                finePos[i * 3 + 2] = (Math.random() * 80) - 50;  // Z Profundo
-            }
-            fineDustGeo.setAttribute('position', new THREE.BufferAttribute(finePos, 3));
-            
-            const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/disc.png');
-            
-            const fineDustMat = new THREE.PointsMaterial({
-                size: 0.15, // Pequeno
-                color: 0xff6600, // Laranja Cheetos Vibrante
-                map: sprite,
-                transparent: true,
-                opacity: 0.6, // Mais visível
-                blending: THREE.AdditiveBlending,
-                depthWrite: false
-            });
-            fineDust = new THREE.Points(fineDustGeo, fineDustMat);
-            scene.add(fineDust);
-
-            // --- CAMADA 2: Migalhas (Crumbs) ---
-            // Partículas maiores e mais sólidas
-            const crumbsCount = 400;
-            const crumbsGeo = new THREE.BufferGeometry();
-            const crumbsPos = new Float32Array(crumbsCount * 3);
-            
-            for (let i = 0; i < crumbsCount; i++) {
-                crumbsPos[i * 3] = (Math.random() * 50) - 10;
-                crumbsPos[i * 3 + 1] = (Math.random() - 0.5) * 30;
-                crumbsPos[i * 3 + 2] = (Math.random() * 60) - 30;
-            }
-            crumbsGeo.setAttribute('position', new THREE.BufferAttribute(crumbsPos, 3));
-
-            const crumbsMat = new THREE.PointsMaterial({
-                size: 0.3, // Maior que o pó fino
-                color: 0xff8800, // Laranja um pouco mais dourado
-                map: sprite,
-                transparent: true,
-                opacity: 0.8,
-                blending: THREE.NormalBlending, // Mistura normal para parecer sólido
-                depthWrite: false
-            });
-            crumbs = new THREE.Points(crumbsGeo, crumbsMat);
-            scene.add(crumbs);
-
-            container.addEventListener('mousemove', onContainerMouseMove);
             window.addEventListener('resize', onWindowResize);
-            
             animate();
         }
 
-        function resetCheeto(mesh, isInitial = false) {
-            mesh.position.z = isInitial ? (Math.random() * 80) - 50 : -60 - (Math.random() * 20);
-            mesh.position.x = (Math.random() * 35) - 5; 
-            mesh.position.y = (Math.random() - 0.5) * 20;
-            mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+        // TEXTURA ARENOSA +50%
+        function generateNoiseTexture() {
+            const size = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#ff6600'; 
+            ctx.fillRect(0,0,size,size);
+            
+            const imageData = ctx.getImageData(0,0,size,size);
+            const data = imageData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                // Aumento de 50% na amplitude do ruído (de 160 para 240)
+                const grain = (Math.random() - 0.4) * 240; 
+                data[i] = Math.max(0, Math.min(255, data[i] + grain));
+                data[i+1] = Math.max(0, Math.min(255, data[i+1] + grain * 0.6));
+                data[i+2] = Math.max(0, Math.min(255, data[i+2] + grain * 0.05));
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(2.5, 2.5); // Aumento da densidade dos grãos
+            return texture;
+        }
 
+        function smoothDeform(geometry, seed, yOffset = 0) {
+            const pos = geometry.attributes.position;
+            const vec = new THREE.Vector3();
+            for (let i = 0; i < pos.count; i++) {
+                vec.fromBufferAttribute(pos, i);
+                const absoluteY = vec.y + yOffset;
+                
+                const noise = (
+                    Math.sin(absoluteY * 3.5 + seed) * Math.cos(vec.x * 2.5 + seed) +
+                    Math.sin(vec.z * 4.0 + seed) * 0.5
+                ) * 0.12;
+                
+                const dir = vec.clone().normalize();
+                pos.setXYZ(i, vec.x + dir.x * noise, vec.y + dir.y * noise, vec.z + dir.z * noise);
+            }
+            geometry.computeVertexNormals();
+        }
+
+        function createCheetoFactory() {
+            const noiseTexture = generateNoiseTexture();
+            
+            const material = new THREE.MeshPhysicalMaterial({ 
+                color: 0xff7700,
+                map: noiseTexture,
+                bumpMap: noiseTexture,
+                // BUMP SCALE +50% (de 0.09 para 0.135)
+                bumpScale: 0.135, 
+                roughness: 0.98, 
+                roughnessMap: noiseTexture,
+                metalness: 0.0,
+                clearcoat: 0.0,
+                emissive: 0xff3300,
+                emissiveIntensity: 0.034
+            });
+
+            for (let i = 0; i < 35; i++) {
+                const group = new THREE.Group();
+                const radius = 0.35 + Math.random() * 0.15;
+                const len = 1.6 + Math.random() * 0.8;
+                const seed = Math.random() * 100;
+
+                const bodyGeo = new THREE.CylinderGeometry(radius, radius, len, 32, 20, true);
+                smoothDeform(bodyGeo, seed, 0);
+
+                const capGeo = new THREE.SphereGeometry(radius, 32, 24);
+                
+                const cap1 = new THREE.Mesh(capGeo.clone(), material);
+                const cap2 = new THREE.Mesh(capGeo.clone(), material);
+                const body = new THREE.Mesh(bodyGeo, material);
+
+                cap1.position.y = len/2;
+                cap2.position.y = -len/2;
+                
+                smoothDeform(cap1.geometry, seed, len/2);
+                smoothDeform(cap2.geometry, seed, -len/2);
+
+                cap1.castShadow = cap2.castShadow = body.castShadow = true;
+                group.add(body, cap1, cap2);
+                
+                resetCheeto(group, true);
+                cheetos.push(group);
+                scene.add(group);
+            }
+        }
+
+        function createDust() {
+            const geo = new THREE.BufferGeometry();
+            const count = 1500; 
+            const pos = new Float32Array(count * 3);
+            for (let i = 0; i < count; i++) {
+                pos[i*3] = (Math.random()-0.5)*75;
+                pos[i*3+1] = (Math.random()-0.5)*45;
+                pos[i*3+2] = (Math.random()-0.5)*45;
+            }
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            dustParticles = new THREE.Points(geo, new THREE.PointsMaterial({ 
+                size: 0.1, 
+                color: 0xffcc00, 
+                transparent: true, 
+                opacity: 0.5 
+            }));
+            scene.add(dustParticles);
+        }
+
+        function resetCheeto(mesh, isInitial = false) {
+            mesh.position.z = isInitial ? (Math.random() * 60) - 40 : -60;
+            mesh.position.x = (Math.random() * 60) - 20; 
+            mesh.position.y = (Math.random() - 0.5) * 35;
+            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+            
             mesh.userData = {
-                velZ: 0.02 + (Math.random() * 0.03), 
-                velX: (Math.random() - 0.5) * 0.01,
-                velY: (Math.random() - 0.5) * 0.01,
-                rotVel: new THREE.Vector3(Math.random() * 0.005, Math.random() * 0.005, Math.random() * 0.005)
+                speed: 0.02 + Math.random() * 0.07,
+                rot: new THREE.Vector3((Math.random()-0.5)*0.012, (Math.random()-0.5)*0.012, (Math.random()-0.5)*0.012)
             };
         }
 
-        function onContainerMouseMove(event) {
-            const rect = container.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-            mouseX = (x - width / 2) * 0.05;
-            mouseY = (y - height / 2) * 0.05;
-        }
-
         function onWindowResize() {
-            width = container.clientWidth;
-            height = container.clientHeight;
+            width = container.clientWidth; height = container.clientHeight;
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
             renderer.setSize(width, height);
@@ -318,43 +324,27 @@
             targetX += (mouseX - targetX) * 0.05;
             targetY += (mouseY - targetY) * 0.05;
             
-            camera.position.x = targetX * 0.2;
-            camera.position.y = -targetY * 0.2;
-            camera.lookAt(5, 0, 0); 
+            camera.position.x = targetX * 2.5;
+            camera.position.y = -targetY * 2.5;
+            camera.lookAt(8, 0, 0);
 
-            // Animar Cheetos
             cheetos.forEach(c => {
-                c.position.z += c.userData.velZ;
-                c.position.x += c.userData.velX;
-                c.position.y += c.userData.velY;
-                c.rotation.x += c.userData.rotVel.x;
-                c.rotation.y += c.userData.rotVel.y;
-                
-                if(c.position.z > 30) resetCheeto(c);
+                c.position.z += c.userData.speed;
+                c.rotation.x += c.userData.rot.x;
+                c.rotation.y += c.userData.rot.y;
+                c.rotation.z += c.userData.rot.z;
+                if (c.position.z > 35) resetCheeto(c);
             });
 
-            // Animar Micro-Pó (Lento e fluido)
-            const finePos = fineDust.geometry.attributes.position.array;
-            for(let i = 2; i < finePos.length; i += 3) {
-                finePos[i] += 0.015; // Velocidade suave
-                if (finePos[i] > 30) finePos[i] = -50;
+            if(dustParticles) {
+                dustParticles.rotation.y += 0.0007;
+                dustParticles.rotation.x += 0.0002;
             }
-            fineDust.geometry.attributes.position.needsUpdate = true;
-            fineDust.rotation.z += 0.0003; // Rotação leve da nuvem
-
-            // Animar Migalhas (Um pouco mais rápido que o pó fino)
-            const crumbPos = crumbs.geometry.attributes.position.array;
-            for(let i = 2; i < crumbPos.length; i += 3) {
-                crumbPos[i] += 0.025; // Migalhas caem/voam mais rápido
-                if (crumbPos[i] > 30) crumbPos[i] = -40;
-            }
-            crumbs.geometry.attributes.position.needsUpdate = true;
-            crumbs.rotation.x += 0.001; // Rotação diferente para dar profundidade
 
             renderer.render(scene, camera);
         }
 
-        init();
+        window.onload = init;
     </script>
 </body>
 </html>
