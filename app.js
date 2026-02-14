@@ -19595,6 +19595,10 @@ const supervisorGroups = new Map();
         const root = am5.Root.new("innovations-month-chartContainer");
         innovationsAmChartRoot = root;
 
+        if (root._logo) {
+            root._logo.dispose();
+        }
+
         const themes = [];
         if (am5themes_Animated) themes.push(am5themes_Animated.new(root));
         if (am5themes_Dark) themes.push(am5themes_Dark.new(root));
@@ -19613,7 +19617,9 @@ const supervisorGroups = new Map();
                 idField: "name",
                 linkWithStrength: 0,
                 manyBodyStrength: -20,
-                centerStrength: 0.8
+                centerStrength: 0.8,
+                minRadius: 35,
+                maxRadius: am5.percent(18)
             })
         );
 
