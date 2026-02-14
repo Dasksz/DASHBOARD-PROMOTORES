@@ -12574,7 +12574,7 @@ const supervisorGroups = new Map();
                     }
 
                     // Initialize Worker
-                    const worker = new Worker('worker.js');
+                    const worker = new Worker('js/worker.js');
 
                     document.getElementById('status-container').classList.remove('hidden');
                     document.getElementById('status-text').textContent = "Processando arquivos...";
