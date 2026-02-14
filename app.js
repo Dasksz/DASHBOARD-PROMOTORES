@@ -636,7 +636,9 @@
 
             if(ts > maxDateTs) maxDateTs = ts;
         }
-        const lastSaleDate = maxDateTs > 0 ? new Date(maxDateTs) : new Date();
+        if (!lastSaleDate) {
+            lastSaleDate = maxDateTs > 0 ? new Date(maxDateTs) : new Date();
+        }
         lastSaleDate.setUTCHours(0,0,0,0);
         let maxWorkingDaysStock = 0;
         let sortedWorkingDays = [];
@@ -8147,29 +8149,186 @@ const supervisorGroups = new Map();
             }
         }
 
-        function updateProductBarChart(summary) {
-            const metric = currentProductMetric;
-            const data = metric === 'faturamento' ? summary.top10ProdutosFaturamento : summary.top10ProdutosPeso;
-            const labels = data.map(p => p.codigo);
-            const names = data.map(p => p.produto);
-            const values = data.map(p => p[metric]);
+        function calculateProductVariation(currentData, historyData) {
+            const currentMetric = currentProductMetric || 'faturamento';
 
-            const tooltipOptions = {
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            title: function(context) {
-                                if (!context || !context.length) return '';
-                                const index = context[0].dataIndex;
-                                return `(${labels[index]}) ${names[index]}`;
-                            }
-                        }
-                    }
-                }
+            let maxDate = 0;
+            // Find most recent history date (Previous Month Logic)
+            for(let i=0; i<historyData.length; i++) {
+                const s = historyData[i];
+                const d = parseDate(s.DTPED);
+                if(d && d.getTime() > maxDate) maxDate = d.getTime();
+            }
+
+            if (maxDate === 0) return [];
+
+            const prevMonthDate = new Date(maxDate);
+            const prevMonthIndex = prevMonthDate.getUTCMonth();
+            const prevMonthYear = prevMonthDate.getUTCFullYear();
+
+            const currentMap = new Map();
+
+            const getCategory = (code, supplier) => {
+                if (optimizedData.productPastaMap.has(code)) return optimizedData.productPastaMap.get(code);
+                return resolveSupplierPasta(null, supplier);
             };
 
-            createChart('salesByProductBarChart', 'bar', labels, values, tooltipOptions);
+            // Aggregate Current Data (Already filtered)
+            currentData.forEach(item => {
+                if (!isAlternativeMode(selectedTiposVenda) && item.TIPOVENDA !== '1' && item.TIPOVENDA !== '9') return;
+
+                const code = String(item.PRODUTO);
+                const val = getValueForSale(item, selectedTiposVenda);
+                const weight = Number(item.TOTPESOLIQ) || 0;
+
+                if (!currentMap.has(code)) {
+                    const cat = getCategory(code, item.FORNECEDOR || item.CODFOR);
+                    currentMap.set(code, {
+                        code: code,
+                        name: item.DESCRICAO,
+                        category: cat,
+                        currentVal: 0,
+                        currentWeight: 0,
+                        prevVal: 0,
+                        prevWeight: 0
+                    });
+                }
+                const entry = currentMap.get(code);
+                entry.currentVal += val;
+                entry.currentWeight += weight;
+            });
+
+            // Aggregate History Data (Filtered to Previous Month)
+            historyData.forEach(item => {
+                if (!isAlternativeMode(selectedTiposVenda) && item.TIPOVENDA !== '1' && item.TIPOVENDA !== '9') return;
+
+                const d = parseDate(item.DTPED);
+                if (!d) return;
+
+                if (d.getUTCMonth() === prevMonthIndex && d.getUTCFullYear() === prevMonthYear) {
+                    const code = String(item.PRODUTO);
+                    const val = getValueForSale(item, selectedTiposVenda);
+                    const weight = Number(item.TOTPESOLIQ) || 0;
+
+                    if (!currentMap.has(code)) {
+                        const cat = getCategory(code, item.FORNECEDOR || item.CODFOR);
+                        currentMap.set(code, {
+                            code: code,
+                            name: item.DESCRICAO,
+                            category: cat,
+                            currentVal: 0,
+                            currentWeight: 0,
+                            prevVal: 0,
+                            prevWeight: 0
+                        });
+                    }
+                    const entry = currentMap.get(code);
+                    entry.prevVal += val;
+                    entry.prevWeight += weight;
+                }
+            });
+
+            const results = [];
+            currentMap.forEach(item => {
+                const curr = currentMetric === 'faturamento' ? item.currentVal : item.currentWeight;
+                const prev = currentMetric === 'faturamento' ? item.prevVal : item.prevWeight;
+
+                let variation = 0;
+                if (prev > 0) {
+                    variation = ((curr - prev) / prev) * 100;
+                } else if (curr > 0) {
+                    variation = 100;
+                } else {
+                    variation = 0;
+                }
+
+                if (curr === 0 && prev === 0) return;
+
+                results.push({
+                    ...item,
+                    variation: variation,
+                    absVariation: Math.abs(variation),
+                    metricValue: curr
+                });
+            });
+
+            // Sort by Absolute Variation Descending
+            results.sort((a, b) => b.absVariation - a.absVariation);
+
+            return results.slice(0, 50);
         }
+
+        function renderTopProductsVariationTable(data) {
+            const container = document.getElementById('top-products-variation-table-body');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const maxVariation = Math.max(...data.map(d => d.absVariation)) || 100;
+
+            data.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group';
+
+                // Rank
+                const tdRank = document.createElement('td');
+                tdRank.className = 'py-3 px-4 text-center text-slate-500 font-mono text-xs font-bold';
+                tdRank.textContent = index + 1;
+                tr.appendChild(tdRank);
+
+                // Produto
+                const tdProduct = document.createElement('td');
+                tdProduct.className = 'py-3 px-4';
+                tdProduct.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">${item.name || 'Desconhecido'}</span>
+                        <span class="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">${item.category || ''}</span>
+                    </div>
+                `;
+                tr.appendChild(tdProduct);
+
+                // Performance (Bar)
+                const tdPerf = document.createElement('td');
+                tdPerf.className = 'py-3 px-4 w-1/3 align-middle';
+                const barWidth = Math.min((item.absVariation / maxVariation) * 100, 100);
+                const barColor = item.variation >= 0 ? 'bg-emerald-500' : 'bg-red-500';
+                const trackColor = 'bg-slate-800'; // Dark track
+
+                tdPerf.innerHTML = `
+                    <div class="h-1.5 w-full ${trackColor} rounded-full overflow-hidden flex ${item.variation < 0 ? 'justify-end' : 'justify-start'}">
+                         <div class="h-full ${barColor} rounded-full" style="width: ${barWidth}%"></div>
+                    </div>
+                `;
+                // Note: The logic above aligns bars: Positive (Left->Right), Negative (Right->Left)?
+                // Usually Variation charts are divergent. But the request image shows simple bars.
+                // Let's stick to simple bars representing Magnitude, color represents sign.
+                // Refined HTML for simple magnitude bar:
+                tdPerf.innerHTML = `
+                    <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full ${barColor} rounded-full transition-all duration-500" style="width: ${barWidth}%"></div>
+                    </div>
+                `;
+                tr.appendChild(tdPerf);
+
+                // Variation Badge
+                const tdVar = document.createElement('td');
+                tdVar.className = 'py-3 px-4 text-right';
+                const badgeBg = item.variation >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20';
+                const arrow = item.variation >= 0 ? '▲' : '▼';
+                const sign = item.variation > 0 ? '+' : '';
+
+                tdVar.innerHTML = `
+                    <span class="inline-flex items-center justify-end px-2.5 py-1 rounded-md text-xs font-bold border ${badgeBg} min-w-[80px]">
+                        ${sign}${item.variation.toFixed(1)}% ${arrow}
+                    </span>
+                `;
+                tr.appendChild(tdVar);
+
+                container.appendChild(tr);
+            });
+        }
+
+        // Renamed/Wrapper for compatibility if needed, or update updateAllVisuals directly
+        // updateProductBarChart was replaced.
 
         function renderTable(data) {
             const tableBody = document.getElementById('report-table-body');
@@ -8675,7 +8834,10 @@ const supervisorGroups = new Map();
                 });
 
                 renderCategoryRadarChart(radarData);
-                updateProductBarChart(summary);
+
+                // Variation Table Logic
+                const variationData = calculateProductVariation(filteredSalesData, filteredHistoryData);
+                renderTopProductsVariationTable(variationData);
             }
         }
 
