@@ -19531,11 +19531,15 @@ const supervisorGroups = new Map();
             innovationsAmChartRoot = null;
         }
 
-        // Dispose any potential Chart.js instance on the same container if it existed
-        // (Though standard is to clear container)
         const container = document.getElementById('innovations-month-chartContainer');
         if (!container) return;
         container.innerHTML = '';
+
+        if (!am5 || !am5hierarchy) {
+            console.warn("amCharts 5 or Hierarchy plugin not loaded.");
+            container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Erro ao carregar gráfico.</div>';
+            return;
+        }
 
         if (!tableData || tableData.length === 0) {
             container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Sem dados para exibir.</div>';
@@ -19593,10 +19597,11 @@ const supervisorGroups = new Map();
         const root = am5.Root.new("innovations-month-chartContainer");
         innovationsAmChartRoot = root;
 
-        root.setThemes([
-            am5themes_Animated.new(root),
-            am5themes_Dark.new(root)
-        ]);
+        const themes = [];
+        if (am5themes_Animated) themes.push(am5themes_Animated.new(root));
+        if (am5themes_Dark) themes.push(am5themes_Dark.new(root));
+        
+        root.setThemes(themes);
 
         const containerSeries = root.container.children.push(
             am5.Container.new(root, {
