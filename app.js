@@ -12288,7 +12288,7 @@ const supervisorGroups = new Map();
 
                     const lastUpdateText = document.getElementById('last-update-text');
                     if (lastUpdateText) {
-                        lastUpdateText.textContent = `Dados atualizados em: ${now.toLocaleString('pt-BR')}`;
+                        lastUpdateText.textContent = `Sistema Ativo • ${now.toLocaleString('pt-BR')}`;
                     }
                 }
 

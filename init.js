@@ -1067,7 +1067,7 @@
                 const dateObj = new Date(displayDate);
                 if (!isNaN(dateObj.getTime())) {
                     const formattedDate = dateObj.toLocaleString('pt-BR');
-                    lastUpdateText.textContent = `Dados atualizados em: ${formattedDate}`;
+                    lastUpdateText.textContent = `Sistema Ativo • ${formattedDate}`;
                 }
             }
 
@@ -1372,11 +1372,9 @@
                     // Update Welcome Message
                     const welcomeEl = document.getElementById('welcome-header');
                     if (welcomeEl) {
-                        const userName = session.user.user_metadata.full_name || session.user.user_metadata.name || session.user.email;
-                        welcomeEl.innerHTML = `
-                            <span class="block text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-1 text-glow">Olá, ${userName}</span>
-                            <span class="block text-lg md:text-xl text-blue-200 font-medium tracking-wide opacity-90">Bem-vindo ao Prime Analytics</span>
-                        `;
+                        const fullName = session.user.user_metadata.full_name || session.user.user_metadata.name || session.user.email;
+                        const firstName = (fullName || '').split(' ')[0];
+                        welcomeEl.textContent = `Olá, ${firstName}!`;
                     }
 
                     if (!isAppReady) {

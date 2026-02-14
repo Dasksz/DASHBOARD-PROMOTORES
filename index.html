@@ -26,6 +26,7 @@
 
     <title>Painel de Promotores - PRIME DISTRIBUIÇÃO</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.tailwindcss.com" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0" defer></script>
@@ -397,11 +398,15 @@
     <div id="main-dashboard" class="animate-fade-in-up">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
             
-            <!-- Hero Section -->
-            <div class="hero-section mb-8 p-8 flex flex-col md:flex-row justify-between items-center shadow-2xl">
-                <div class="z-10 text-left">
-                    <h1 id="welcome-header" class="text-3xl md:text-4xl font-extrabold text-white mb-2 text-glow">Bem-vindo ao Prime Analytics</h1>
-                    <p id="last-update-text" class="text-blue-200 text-sm font-medium">Sincronizando dados...</p>
+            <!-- Hero Section (3D Banner) -->
+            <div id="banner-container" class="mb-8">
+                <div class="content-overlay">
+                    <div class="brand-tag">Dashboard Prime</div>
+                    <h1 class="user-greeting" id="welcome-header">Olá!</h1>
+                    <p class="sub-text">Perigosamente Delicioso.</p>
+                    <p class="meta-info">
+                        <span class="dot"></span> <span id="last-update-text">Sistema Ativo • Sincronizando...</span>
+                    </p>
                 </div>
             </div>
 
@@ -2819,6 +2824,7 @@
         animate();
     })();
 </script>
+<script src="banner3d.js" defer></script>
 <script src="init.js?v=6.0.0" defer></script>
 </body>
 </html>

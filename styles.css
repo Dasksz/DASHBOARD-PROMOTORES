@@ -848,48 +848,94 @@ html.light .bg-green-900\/30 {
   animation: wave-vertical 4s ease-in-out infinite alternate;
 }
 
-/* Tooltip Styles */
-.tooltip {
+/* --- Banner 3D Styles (Migrated) --- */
+#banner-container {
     position: relative;
-    display: inline-block;
-    cursor: pointer;
+    width: 100%; /* Adjusted for dashboard */
+    /* max-width: 1100px; - Let parent control width */
+    height: 350px;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
+    background: radial-gradient(circle at 75% 50%, #1e1b4b 0%, #020617 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 2rem; /* Replace mb-8 utility */
 }
 
-.tooltip .tooltip-text {
-    visibility: hidden;
-    width: max-content;
-    min-width: 80px;
-    background-color: #1e293b; /* Slate-800 */
-    color: #fff;
-    text-align: center;
-    border-radius: 6px;
-    padding: 6px 10px;
+#banner-container canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
     position: absolute;
-    z-index: 50;
-    bottom: 125%;
-    left: 50%;
-    transform: translateX(-50%);
-    opacity: 0;
-    transition: opacity 0.3s;
-    border: 1px solid #334155; /* Slate-700 */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    font-size: 0.75rem; /* text-xs */
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.content-overlay {
+    position: relative;
+    z-index: 10;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 60px;
+    background: linear-gradient(90deg, rgba(2,6,23,0.95) 0%, rgba(2,6,23,0.4) 60%, rgba(2,6,23,0) 100%);
+    pointer-events: none;
+    max-width: 550px;
+}
+
+@media (max-width: 640px) {
+    .content-overlay { padding-left: 30px; }
+    .user-greeting { font-size: 2.5rem !important; }
+    .sub-text { font-size: 1rem !important; }
+    #banner-container { height: 280px; } /* Optional responsive adjustment */
+}
+
+.brand-tag {
+    background: linear-gradient(90deg, #ff6600, #ff9900);
+    color: white;
+    padding: 5px 16px;
+    border-radius: 99px;
+    font-weight: 800;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    width: fit-content;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 15px rgba(255, 102, 0, 0.3);
+}
+
+.user-greeting {
+    font-size: 3.8rem;
+    font-weight: 800;
+    color: white;
+    line-height: 1;
+    font-style: italic;
+    text-shadow: 0 10px 20px rgba(0,0,0,0.5);
+}
+
+.sub-text {
+    font-size: 1.3rem;
+    color: #fbbf24;
     font-weight: 600;
-    pointer-events: none; /* Prevent flickering */
+    margin-top: 10px;
 }
 
-.tooltip:hover .tooltip-text {
-    visibility: visible;
-    opacity: 1;
+.meta-info {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin-top: 30px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: monospace;
 }
 
-.tooltip .tooltip-text::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: #334155 transparent transparent transparent;
+.dot {
+    width: 10px;
+    height: 10px;
+    background-color: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 12px #22c55e;
 }
