@@ -8749,7 +8749,7 @@ const supervisorGroups = new Map();
                 }
 
                 // --- New Radar Chart Logic ---
-                document.getElementById('faturamentoPorFornecedorTitle').textContent = 'Share por Categoria (Meta)';
+                document.getElementById('faturamentoPorFornecedorTitle').textContent = 'Share por Categoria';
 
                 // 1. Calculate Goals for Visible Clients
                 const categoryGoals = {
