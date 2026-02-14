@@ -2247,6 +2247,7 @@
         let charts = {};
         let weeklyAmChartRoot = null;
         let monthlyAmChartRoot = null;
+        let innovationsAmChartRoot = null;
         let currentProductMetric = 'faturamento';
         let currentFornecedor = '';
         let currentComparisonFornecedor = 'PEPSICO';
@@ -10873,45 +10874,8 @@ const supervisorGroups = new Map();
             innovationsMonthBonusCoverageValueKpiPrevious.textContent = `${bonusCoveragePercentPrevious.toFixed(2)}%`;
             innovationsMonthBonusCoverageCountKpiPrevious.textContent = `${bonusCoveredCountPrevious.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
 
-            // Chart Update
+            // Prepare Data for Chart and Table
             chartLabels = Object.keys(categoryAnalysis).sort((a,b) => categoryAnalysis[b].coverageCurrent - categoryAnalysis[a].coverageCurrent);
-            const chartDataCurrent = chartLabels.map(cat => categoryAnalysis[cat].coverageCurrent);
-            const chartDataPrevious = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious);
-
-            if (chartLabels.length > 0) {
-                createChart('innovations-month-chart', 'bar', chartLabels, [
-                    { label: 'Mês Anterior', data: chartDataPrevious, backgroundColor: '#f97316' },
-                    { label: 'Mês Atual', data: chartDataCurrent, backgroundColor: '#06b6d4' }
-                ], {
-                    plugins: {
-                        legend: { display: true, position: 'top' },
-                        datalabels: {
-                            anchor: 'end',
-                            align: 'top',
-                            offset: 8,
-                            formatter: (value) => value > 0 ? value.toFixed(1) + '%' : '',
-                            color: '#cbd5e1',
-                            font: { size: 10 }
-                        },
-                         tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed.y !== null) label += context.parsed.y.toFixed(2) + '%';
-                                    return label;
-                                }
-                            }
-                        }
-                    },
-                    scales: { y: { ticks: { callback: (v) => `${v}%` } } },
-                    layout: { padding: { top: 20 } }
-                });
-            } else {
-                showNoDataMessage('innovations-month-chart', 'Sem dados de inovações para exibir com os filtros atuais.');
-            }
-
-            // Table Update
             const tableData = [];
             const activeStockMap = getActiveStockMap(innovationsMonthFilialFilter.value);
 
@@ -10924,13 +10888,7 @@ const supervisorGroups = new Map();
                     const stock = activeStockMap.get(productCode) || 0;
 
                     // Re-calculate per product using the Product Results Sets
-                    // Optimization: productResults[productCode] already contains sets of clients who bought
                     const pRes = productResults[productCode];
-
-                    // IMPORTANT: productResults contains ALL clients who bought.
-                    // We must filter by 'activeClientCodes' if not already done?
-                    // 'processMap' already checked: `if (!activeClientCodes.has(codCli)) return;`
-                    // So the sets in productResults are already filtered by active clients.
 
                     const clientsCurrentCount = pRes ? pRes.current.size : 0;
                     const clientsPreviousCount = pRes ? pRes.previous.size : 0;
@@ -10956,6 +10914,7 @@ const supervisorGroups = new Map();
             tableData.sort((a,b) => b.coverageCurrent - a.coverageCurrent);
             innovationsMonthTableDataForExport = tableData;
 
+            // Render Table
             innovationsMonthTableBody.innerHTML = tableData.map(item => {
                 let variationContent;
                 if (isFinite(item.variation)) {
@@ -10982,6 +10941,9 @@ const supervisorGroups = new Map();
                     </tr>
                 `;
             }).join('');
+
+            // Chart Update (Packed Circle)
+            renderInnovationsPackedCircleChart(tableData);
 
             // Innovations by Client Table
             const innovationsByClientTableHead = document.getElementById('innovations-by-client-table-head');
@@ -19355,6 +19317,128 @@ const supervisorGroups = new Map();
         `;
 
         container.innerHTML = html;
+    }
+
+    function renderInnovationsPackedCircleChart(tableData) {
+        // 1. Dispose existing root
+        if (innovationsAmChartRoot) {
+            innovationsAmChartRoot.dispose();
+            innovationsAmChartRoot = null;
+        }
+
+        // Dispose any potential Chart.js instance on the same container if it existed
+        // (Though standard is to clear container)
+        const container = document.getElementById('innovations-month-chartContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!tableData || tableData.length === 0) {
+            container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Sem dados para exibir.</div>';
+            return;
+        }
+
+        // 2. Transform Data for Packed Circle (Hierarchy)
+        // Root -> Category -> Product
+        const rootData = {
+            name: "Root",
+            children: []
+        };
+
+        const catMap = new Map();
+
+        tableData.forEach(item => {
+            if (!item.categoryName) return;
+
+            if (!catMap.has(item.categoryName)) {
+                catMap.set(item.categoryName, {
+                    name: item.categoryName,
+                    children: []
+                });
+                rootData.children.push(catMap.get(item.categoryName));
+            }
+
+            const catNode = catMap.get(item.categoryName);
+
+            // Value: Using clientsCurrentCount (Positivados).
+            // If count is 0, should we show it? Maybe small?
+            // Packed Circle handles small values, but 0 might be hidden.
+            // Let's use Math.max(item.clientsCurrentCount, 1) if we want to show everything,
+            // or just real count. Real count is better for "performance".
+            // If value is 0, circle won't show.
+
+            const val = item.clientsCurrentCount || 0;
+
+            if (val > 0) {
+                catNode.children.push({
+                    name: item.productName,
+                    value: val,
+                    stock: item.stock,
+                    code: item.productCode
+                });
+            }
+        });
+
+        // If no data after filtering 0s
+        if (rootData.children.every(c => c.children.length === 0)) {
+             container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Nenhum produto positivado neste mês.</div>';
+             return;
+        }
+
+        // 3. Create Chart
+        const root = am5.Root.new("innovations-month-chartContainer");
+        innovationsAmChartRoot = root;
+
+        root.setThemes([
+            am5themes_Animated.new(root),
+            am5themes_Dark.new(root)
+        ]);
+
+        const containerSeries = root.container.children.push(
+            am5.Container.new(root, {
+                width: am5.percent(100),
+                height: am5.percent(100),
+                layout: root.verticalLayout
+            })
+        );
+
+        const series = containerSeries.children.push(
+            am5hierarchy.PackedCircle.new(root, {
+                singleBranchOnly: false,
+                downDepth: 1,
+                topDepth: 1,
+                initialDepth: 1,
+                valueField: "value",
+                categoryField: "name",
+                childDataField: "children",
+                nodePadding: 5
+            })
+        );
+
+        series.data.setAll([rootData]);
+        series.set("selectedDataItem", series.dataItems[0]);
+
+        // Configure Circles
+        series.circles.template.setAll({
+            tooltipText: "[bold]{name}[/]\nPositivação: {value} PDVs\nEstoque: {stock}",
+            templateField: "nodeSettings"
+        });
+
+        // Color by Category (Depth 1)
+        series.nodes.template.setAll({
+            draggable: false
+        });
+
+        // Labels
+        series.labels.template.setAll({
+            fontSize: 10,
+            text: "{name}",
+            oversizedBehavior: "fit",
+            breakWords: true,
+            textAlign: "center"
+        });
+
+        // Animate
+        series.appear(1000, 100);
     }
 
     function renderCategoryRadarChart(data) {
