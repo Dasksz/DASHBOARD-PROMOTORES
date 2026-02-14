@@ -51,7 +51,7 @@
             padding-left: 60px; 
             background: linear-gradient(90deg, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.6) 50%, rgba(15,23,42,0) 100%);
             pointer-events: none; 
-            max-width: 50%; /* Garante que o texto não invada a área dos cheetos */
+            max-width: 50%;
         }
 
         .brand-tag {
@@ -127,7 +127,9 @@
     </div>
 
     <script>
-        let scene, camera, renderer, particles, cheetos = [], dust;
+        let scene, camera, renderer;
+        let cheetos = [];
+        let fineDust, crumbs; // Duas camadas de pó
         let mouseX = 0, mouseY = 0;
         let targetX = 0, targetY = 0;
 
@@ -137,7 +139,6 @@
 
         function init() {
             scene = new THREE.Scene();
-            // Nevoeiro para esconder o nascimento dos objetos no fundo
             scene.fog = new THREE.FogExp2(0x150b2e, 0.015); 
 
             camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
@@ -165,9 +166,8 @@
             rimLight.position.set(-15, 5, 0);
             scene.add(rimLight);
 
-            // --- Gerar Cheetos ---
-            const cheetoCount = 45; // Aumentei um pouco a quantidade
-            
+            // --- Cheetos (Código original) ---
+            const cheetoCount = 45; 
             const cheetoMaterial = new THREE.MeshStandardMaterial({ 
                 color: 0xff7700, 
                 roughness: 0.9,
@@ -177,7 +177,6 @@
             });
 
             for (let i = 0; i < cheetoCount; i++) {
-                // Geometria "crunchy" (mesma lógica anterior)
                 const length = 1.8 + Math.random();
                 const radius = 0.35 + Math.random() * 0.15;
                 const geometry = new THREE.CylinderGeometry(radius, radius, length, 8, 10, true);
@@ -195,7 +194,6 @@
                     vertex.x += Math.pow(vertex.y, 2) * bendAmount * 0.2;
                     positionAttribute.setXYZ(v, vertex.x, vertex.y, vertex.z);
                 }
-                
                 geometry.computeVertexNormals();
 
                 const topGeo = new THREE.SphereGeometry(radius, 8, 8);
@@ -208,6 +206,7 @@
                 const topMesh = new THREE.Mesh(topGeo, cheetoMaterial);
                 const botMesh = new THREE.Mesh(botGeo, cheetoMaterial);
                 
+                // Variação de cor
                 const localMat = cheetoMaterial.clone();
                 const colorVar = (Math.random() - 0.5) * 0.08;
                 localMat.color.offsetHSL(0, 0, colorVar);
@@ -220,40 +219,62 @@
                 group.add(topMesh);
                 group.add(botMesh);
 
-                // Inicializar em posição aleatória ao longo do eixo Z
-                // Para não nascerem todos juntos na primeira vez
                 resetCheeto(group, true); 
-
                 cheetos.push(group);
                 scene.add(group);
             }
 
-            // --- Poeira de Fundo ---
-            const dustGeometry = new THREE.BufferGeometry();
-            const dustCount = 1500;
-            const posArray = new Float32Array(dustCount * 3);
+            // --- CAMADA 1: Micro-Pó (Fine Dust) ---
+            // Cria uma atmosfera densa e laranja
+            const fineDustCount = 2000;
+            const fineDustGeo = new THREE.BufferGeometry();
+            const finePos = new Float32Array(fineDustCount * 3);
             
-            for (let i = 0; i < dustCount; i++) {
-                posArray[i * 3] = (Math.random() * 60) - 20;     
-                posArray[i * 3 + 1] = (Math.random() - 0.5) * 30; 
-                posArray[i * 3 + 2] = (Math.random() * 60) - 40; // Profundidade
+            for (let i = 0; i < fineDustCount; i++) {
+                finePos[i * 3] = (Math.random() * 70) - 20;     // X
+                finePos[i * 3 + 1] = (Math.random() - 0.5) * 40; // Y
+                finePos[i * 3 + 2] = (Math.random() * 80) - 50;  // Z Profundo
             }
-
-            dustGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            fineDustGeo.setAttribute('position', new THREE.BufferAttribute(finePos, 3));
             
             const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/disc.png');
-            const dustMaterial = new THREE.PointsMaterial({
-                size: 0.1,
-                color: 0xffaa00,
+            
+            const fineDustMat = new THREE.PointsMaterial({
+                size: 0.15, // Pequeno
+                color: 0xff6600, // Laranja Cheetos Vibrante
                 map: sprite,
                 transparent: true,
-                opacity: 0.4,
+                opacity: 0.6, // Mais visível
                 blending: THREE.AdditiveBlending,
                 depthWrite: false
             });
+            fineDust = new THREE.Points(fineDustGeo, fineDustMat);
+            scene.add(fineDust);
 
-            dust = new THREE.Points(dustGeometry, dustMaterial);
-            scene.add(dust);
+            // --- CAMADA 2: Migalhas (Crumbs) ---
+            // Partículas maiores e mais sólidas
+            const crumbsCount = 400;
+            const crumbsGeo = new THREE.BufferGeometry();
+            const crumbsPos = new Float32Array(crumbsCount * 3);
+            
+            for (let i = 0; i < crumbsCount; i++) {
+                crumbsPos[i * 3] = (Math.random() * 50) - 10;
+                crumbsPos[i * 3 + 1] = (Math.random() - 0.5) * 30;
+                crumbsPos[i * 3 + 2] = (Math.random() * 60) - 30;
+            }
+            crumbsGeo.setAttribute('position', new THREE.BufferAttribute(crumbsPos, 3));
+
+            const crumbsMat = new THREE.PointsMaterial({
+                size: 0.3, // Maior que o pó fino
+                color: 0xff8800, // Laranja um pouco mais dourado
+                map: sprite,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.NormalBlending, // Mistura normal para parecer sólido
+                depthWrite: false
+            });
+            crumbs = new THREE.Points(crumbsGeo, crumbsMat);
+            scene.add(crumbs);
 
             container.addEventListener('mousemove', onContainerMouseMove);
             window.addEventListener('resize', onWindowResize);
@@ -261,34 +282,17 @@
             animate();
         }
 
-        // Função para posicionar/reposicionar o Cheeto
         function resetCheeto(mesh, isInitial = false) {
-            // Z: Se for inicial, espalha por todo o túnel. Se for reset, manda pro fundo.
             mesh.position.z = isInitial ? (Math.random() * 80) - 50 : -60 - (Math.random() * 20);
-            
-            // X: Focando mais no centro e direita (0 a 30).
             mesh.position.x = (Math.random() * 35) - 5; 
-            
-            // Y: Espalhar verticalmente
             mesh.position.y = (Math.random() - 0.5) * 20;
-
-            // Rotação aleatória
             mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
 
-            // Velocidade
             mesh.userData = {
-                // REDUZIDO DRASTICAMENTE AQUI:
-                // Velocidade Z positiva = vem em direção à câmera (agora muito mais lento)
                 velZ: 0.02 + (Math.random() * 0.03), 
-                
-                // Leve deriva nos outros eixos
-                velX: (Math.random() - 0.5) * 0.01, // Reduzido
-                velY: (Math.random() - 0.5) * 0.01, // Reduzido
-                rotVel: new THREE.Vector3(
-                    Math.random() * 0.005, // Rotação muito mais lenta
-                    Math.random() * 0.005,
-                    Math.random() * 0.005
-                )
+                velX: (Math.random() - 0.5) * 0.01,
+                velY: (Math.random() - 0.5) * 0.01,
+                rotVel: new THREE.Vector3(Math.random() * 0.005, Math.random() * 0.005, Math.random() * 0.005)
             };
         }
 
@@ -296,7 +300,6 @@
             const rect = container.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
-            
             mouseX = (x - width / 2) * 0.05;
             mouseY = (y - height / 2) * 0.05;
         }
@@ -315,36 +318,38 @@
             targetX += (mouseX - targetX) * 0.05;
             targetY += (mouseY - targetY) * 0.05;
             
-            // Câmera mexe levemente com o mouse, mas mantém o foco
             camera.position.x = targetX * 0.2;
             camera.position.y = -targetY * 0.2;
-            camera.lookAt(5, 0, 0); // Olha levemente para a direita
+            camera.lookAt(5, 0, 0); 
 
             // Animar Cheetos
             cheetos.forEach(c => {
-                c.position.z += c.userData.velZ; // Move para frente
+                c.position.z += c.userData.velZ;
                 c.position.x += c.userData.velX;
                 c.position.y += c.userData.velY;
-                
                 c.rotation.x += c.userData.rotVel.x;
                 c.rotation.y += c.userData.rotVel.y;
                 
-                // Se passar da câmera (z > 30), reseta lá pro fundo
-                if(c.position.z > 30) {
-                    resetCheeto(c);
-                }
+                if(c.position.z > 30) resetCheeto(c);
             });
 
-            // Animar Poeira (movimento suave para frente também)
-            const positions = dust.geometry.attributes.position.array;
-            for(let i = 2; i < positions.length; i += 3) {
-                positions[i] += 0.01; // VELOCIDADE DA POEIRA REDUZIDA (era 0.05)
-                if (positions[i] > 30) {
-                    positions[i] = -50; // Reseta poeira
-                }
+            // Animar Micro-Pó (Lento e fluido)
+            const finePos = fineDust.geometry.attributes.position.array;
+            for(let i = 2; i < finePos.length; i += 3) {
+                finePos[i] += 0.015; // Velocidade suave
+                if (finePos[i] > 30) finePos[i] = -50;
             }
-            dust.geometry.attributes.position.needsUpdate = true;
-            dust.rotation.z += 0.0005; // Rotação da poeira mais lenta
+            fineDust.geometry.attributes.position.needsUpdate = true;
+            fineDust.rotation.z += 0.0003; // Rotação leve da nuvem
+
+            // Animar Migalhas (Um pouco mais rápido que o pó fino)
+            const crumbPos = crumbs.geometry.attributes.position.array;
+            for(let i = 2; i < crumbPos.length; i += 3) {
+                crumbPos[i] += 0.025; // Migalhas caem/voam mais rápido
+                if (crumbPos[i] > 30) crumbPos[i] = -40;
+            }
+            crumbs.geometry.attributes.position.needsUpdate = true;
+            crumbs.rotation.x += 0.001; // Rotação diferente para dar profundidade
 
             renderer.render(scene, camera);
         }
