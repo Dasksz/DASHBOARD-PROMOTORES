@@ -239,6 +239,7 @@
 
     // Expose init globally or run on load
     window.initBanner3D = initBanner;
+    window.resizeBanner3D = onWindowResize;
 
     // Run automatically if container exists
     if (document.readyState === 'loading') {
