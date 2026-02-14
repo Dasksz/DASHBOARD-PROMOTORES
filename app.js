@@ -563,14 +563,6 @@
         const productDetailsMap = new Map(Object.entries(embeddedData.productDetails || {}));
         const passedWorkingDaysCurrentMonth = embeddedData.passedWorkingDaysCurrentMonth || 1;
 
-        let lastSaleDate = null;
-        if (embeddedData.lastSaleDate) {
-            const ts = parseInt(embeddedData.lastSaleDate);
-            if (!isNaN(ts) && ts > 0) {
-                lastSaleDate = new Date(ts);
-            }
-        }
-
         const clientsWithSalesThisMonth = new Set();
         // Populate set
         for(let i=0; i<allSalesData.length; i++) {
@@ -2119,6 +2111,7 @@
         const comparisonTendencyToggle = document.getElementById('comparison-tendency-toggle');
 
         const comparisonChartTitle = document.getElementById('comparison-chart-title');
+        const toggleDailyBtn = document.getElementById('toggle-daily-btn');
         const toggleWeeklyBtn = document.getElementById('toggle-weekly-btn');
         const toggleMonthlyBtn = document.getElementById('toggle-monthly-btn');
         const weeklyComparisonChartContainer = document.getElementById('weeklyComparisonChartContainer');
@@ -2250,6 +2243,7 @@
         let charts = {};
         let weeklyAmChartRoot = null;
         let monthlyAmChartRoot = null;
+        let innovationsAmChartRoot = null;
         let currentProductMetric = 'faturamento';
         let currentFornecedor = '';
         let currentComparisonFornecedor = 'PEPSICO';
@@ -10322,6 +10316,7 @@ const supervisorGroups = new Map();
                     supervisorData: {}
                 },
                 historicalDayTotals: new Array(7).fill(0), // 0=Sun, 6=Sat
+                currentDayTotals: new Array(7).fill(0), // 0=Sun, 6=Sat
                 overlapSales: []
             };
 
@@ -10366,6 +10361,7 @@ const supervisorGroups = new Map();
                 if (d) {
                     const wIdx = currentMonthWeeks.findIndex(w => d >= w.start && d <= w.end);
                     if (wIdx !== -1) metrics.charts.weeklyCurrent[wIdx] += val;
+                    metrics.currentDayTotals[d.getUTCDay()] += val;
                 }
             }, () => {
                 // 1.1 Finalize Current KPIs
@@ -10604,6 +10600,25 @@ const supervisorGroups = new Map();
                             isFat ? 'Faturamento' : 'Clientes Atendidos',
                             isFat ? 0x3b82f6 : 0x10b981
                         );
+                    } else if (comparisonChartType === 'daily') {
+                        weeklyComparisonChartContainer.classList.remove('hidden');
+                        monthlyComparisonChartContainer.classList.add('hidden');
+                        comparisonChartTitle.textContent = 'Comparativo de Faturamento Diário';
+                        const dayLabels = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+                        // Current Values (Indices 1-6)
+                        const currentDayValues = [1, 2, 3, 4, 5, 6].map(i => m.currentDayTotals[i] || 0);
+
+                        // History Values (Indices 1-6) / 3
+                        const historyDayValues = [1, 2, 3, 4, 5, 6].map(i => (m.historicalDayTotals[i] || 0) / QUARTERLY_DIVISOR);
+
+                        // Destroy Legacy Chart if exists
+                        if (charts['weeklyComparisonChart']) {
+                            charts['weeklyComparisonChart'].destroy();
+                            delete charts['weeklyComparisonChart'];
+                        }
+
+                        renderWeeklyComparisonAmChart(dayLabels, currentDayValues, historyDayValues, false);
                     }
 
                     // Daily Chart (Simplified re-calc for now, or could optimize further)
@@ -11036,45 +11051,8 @@ const supervisorGroups = new Map();
             innovationsMonthBonusCoverageValueKpiPrevious.textContent = `${bonusCoveragePercentPrevious.toFixed(2)}%`;
             innovationsMonthBonusCoverageCountKpiPrevious.textContent = `${bonusCoveredCountPrevious.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
 
-            // Chart Update
+            // Prepare Data for Chart and Table
             chartLabels = Object.keys(categoryAnalysis).sort((a,b) => categoryAnalysis[b].coverageCurrent - categoryAnalysis[a].coverageCurrent);
-            const chartDataCurrent = chartLabels.map(cat => categoryAnalysis[cat].coverageCurrent);
-            const chartDataPrevious = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious);
-
-            if (chartLabels.length > 0) {
-                createChart('innovations-month-chart', 'bar', chartLabels, [
-                    { label: 'Mês Anterior', data: chartDataPrevious, backgroundColor: '#f97316' },
-                    { label: 'Mês Atual', data: chartDataCurrent, backgroundColor: '#06b6d4' }
-                ], {
-                    plugins: {
-                        legend: { display: true, position: 'top' },
-                        datalabels: {
-                            anchor: 'end',
-                            align: 'top',
-                            offset: 8,
-                            formatter: (value) => value > 0 ? value.toFixed(1) + '%' : '',
-                            color: '#cbd5e1',
-                            font: { size: 10 }
-                        },
-                         tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed.y !== null) label += context.parsed.y.toFixed(2) + '%';
-                                    return label;
-                                }
-                            }
-                        }
-                    },
-                    scales: { y: { ticks: { callback: (v) => `${v}%` } } },
-                    layout: { padding: { top: 20 } }
-                });
-            } else {
-                showNoDataMessage('innovations-month-chart', 'Sem dados de inovações para exibir com os filtros atuais.');
-            }
-
-            // Table Update
             const tableData = [];
             const activeStockMap = getActiveStockMap(innovationsMonthFilialFilter.value);
 
@@ -11087,13 +11065,7 @@ const supervisorGroups = new Map();
                     const stock = activeStockMap.get(productCode) || 0;
 
                     // Re-calculate per product using the Product Results Sets
-                    // Optimization: productResults[productCode] already contains sets of clients who bought
                     const pRes = productResults[productCode];
-
-                    // IMPORTANT: productResults contains ALL clients who bought.
-                    // We must filter by 'activeClientCodes' if not already done?
-                    // 'processMap' already checked: `if (!activeClientCodes.has(codCli)) return;`
-                    // So the sets in productResults are already filtered by active clients.
 
                     const clientsCurrentCount = pRes ? pRes.current.size : 0;
                     const clientsPreviousCount = pRes ? pRes.previous.size : 0;
@@ -11119,6 +11091,7 @@ const supervisorGroups = new Map();
             tableData.sort((a,b) => b.coverageCurrent - a.coverageCurrent);
             innovationsMonthTableDataForExport = tableData;
 
+            // Render Table
             innovationsMonthTableBody.innerHTML = tableData.map(item => {
                 let variationContent;
                 if (isFinite(item.variation)) {
@@ -11145,6 +11118,9 @@ const supervisorGroups = new Map();
                     </tr>
                 `;
             }).join('');
+
+            // Chart Update (Packed Circle)
+            renderInnovationsPackedCircleChart(tableData);
 
             // Innovations by Client Table
             const innovationsByClientTableHead = document.getElementById('innovations-by-client-table-head');
@@ -11822,8 +11798,12 @@ const supervisorGroups = new Map();
             currentActiveView = view;
 
             // Sync Hash to ensure navigation consistency
-            if (window.location.hash !== '#' + view) {
-                history.pushState(null, null, '#' + view);
+            try {
+                if (window.location.hash !== '#' + view) {
+                    history.pushState(null, null, '#' + view);
+                }
+            } catch (e) {
+                console.warn("History pushState failed", e);
             }
 
             const mobileMenu = document.getElementById('mobile-menu');
@@ -13167,20 +13147,38 @@ const supervisorGroups = new Map();
                 updateComparison();
             });
 
+            const updateToggleStyles = (activeBtn, ...others) => {
+                activeBtn.classList.add('active', 'bg-blue-600', 'text-white');
+                activeBtn.classList.remove('text-slate-400');
+                others.forEach(btn => {
+                    if (btn) {
+                        btn.classList.remove('active', 'bg-blue-600', 'text-white');
+                        btn.classList.add('text-slate-400');
+                    }
+                });
+            };
+
+            if (toggleDailyBtn) {
+                toggleDailyBtn.addEventListener('click', () => {
+                    comparisonChartType = 'daily';
+                    updateToggleStyles(toggleDailyBtn, toggleWeeklyBtn, toggleMonthlyBtn);
+                    document.getElementById('comparison-monthly-metric-container').classList.add('hidden');
+                    updateComparisonView();
+                });
+            }
+
             toggleWeeklyBtn.addEventListener('click', () => {
                 comparisonChartType = 'weekly';
-                toggleWeeklyBtn.classList.add('active');
-                toggleMonthlyBtn.classList.remove('active');
+                updateToggleStyles(toggleWeeklyBtn, toggleDailyBtn, toggleMonthlyBtn);
                 document.getElementById('comparison-monthly-metric-container').classList.add('hidden');
-                updateComparison();
+                updateComparisonView();
             });
 
             toggleMonthlyBtn.addEventListener('click', () => {
                 comparisonChartType = 'monthly';
-                toggleMonthlyBtn.classList.add('active');
-                toggleWeeklyBtn.classList.remove('active');
+                updateToggleStyles(toggleMonthlyBtn, toggleDailyBtn, toggleWeeklyBtn);
                 // The toggle visibility is handled inside updateComparisonView based on mode
-                updateComparison();
+                updateComparisonView();
             });
 
             // New Metric Toggle Listeners
@@ -19518,6 +19516,128 @@ const supervisorGroups = new Map();
         `;
 
         container.innerHTML = html;
+    }
+
+    function renderInnovationsPackedCircleChart(tableData) {
+        // 1. Dispose existing root
+        if (innovationsAmChartRoot) {
+            innovationsAmChartRoot.dispose();
+            innovationsAmChartRoot = null;
+        }
+
+        // Dispose any potential Chart.js instance on the same container if it existed
+        // (Though standard is to clear container)
+        const container = document.getElementById('innovations-month-chartContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!tableData || tableData.length === 0) {
+            container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Sem dados para exibir.</div>';
+            return;
+        }
+
+        // 2. Transform Data for Packed Circle (Hierarchy)
+        // Root -> Category -> Product
+        const rootData = {
+            name: "Root",
+            children: []
+        };
+
+        const catMap = new Map();
+
+        tableData.forEach(item => {
+            if (!item.categoryName) return;
+
+            if (!catMap.has(item.categoryName)) {
+                catMap.set(item.categoryName, {
+                    name: item.categoryName,
+                    children: []
+                });
+                rootData.children.push(catMap.get(item.categoryName));
+            }
+
+            const catNode = catMap.get(item.categoryName);
+
+            // Value: Using clientsCurrentCount (Positivados).
+            // If count is 0, should we show it? Maybe small?
+            // Packed Circle handles small values, but 0 might be hidden.
+            // Let's use Math.max(item.clientsCurrentCount, 1) if we want to show everything,
+            // or just real count. Real count is better for "performance".
+            // If value is 0, circle won't show.
+
+            const val = item.clientsCurrentCount || 0;
+
+            if (val > 0) {
+                catNode.children.push({
+                    name: item.productName,
+                    value: val,
+                    stock: item.stock,
+                    code: item.productCode
+                });
+            }
+        });
+
+        // If no data after filtering 0s
+        if (rootData.children.every(c => c.children.length === 0)) {
+             container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Nenhum produto positivado neste mês.</div>';
+             return;
+        }
+
+        // 3. Create Chart
+        const root = am5.Root.new("innovations-month-chartContainer");
+        innovationsAmChartRoot = root;
+
+        root.setThemes([
+            am5themes_Animated.new(root),
+            am5themes_Dark.new(root)
+        ]);
+
+        const containerSeries = root.container.children.push(
+            am5.Container.new(root, {
+                width: am5.percent(100),
+                height: am5.percent(100),
+                layout: root.verticalLayout
+            })
+        );
+
+        const series = containerSeries.children.push(
+            am5hierarchy.PackedCircle.new(root, {
+                singleBranchOnly: false,
+                downDepth: 1,
+                topDepth: 1,
+                initialDepth: 1,
+                valueField: "value",
+                categoryField: "name",
+                childDataField: "children",
+                nodePadding: 5
+            })
+        );
+
+        series.data.setAll([rootData]);
+        series.set("selectedDataItem", series.dataItems[0]);
+
+        // Configure Circles
+        series.circles.template.setAll({
+            tooltipText: "[bold]{name}[/]\nPositivação: {value} PDVs\nEstoque: {stock}",
+            templateField: "nodeSettings"
+        });
+
+        // Color by Category (Depth 1)
+        series.nodes.template.setAll({
+            draggable: false
+        });
+
+        // Labels
+        series.labels.template.setAll({
+            fontSize: 10,
+            text: "{name}",
+            oversizedBehavior: "fit",
+            breakWords: true,
+            textAlign: "center"
+        });
+
+        // Animate
+        series.appear(1000, 100);
     }
 
     function renderCategoryRadarChart(data) {
