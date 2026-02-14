@@ -56,8 +56,10 @@
 
         const updateInput = (x, y) => {
             const rect = container.getBoundingClientRect();
-            mouseX = ((x - rect.left) / width - 0.5) * 2;
-            mouseY = ((y - rect.top) / height - 0.5) * 2;
+            if (rect.width > 0 && rect.height > 0) {
+                mouseX = ((x - rect.left) / rect.width - 0.5) * 2;
+                mouseY = ((y - rect.top) / rect.height - 0.5) * 2;
+            }
         };
 
         container.addEventListener('mousemove', (e) => updateInput(e.clientX, e.clientY));
