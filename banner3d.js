@@ -119,7 +119,7 @@
     }
 
     function generateNoiseTexture() {
-        const size = 512;
+        const size = 256;
         const canvas = document.createElement('canvas');
         canvas.width = size; canvas.height = size;
         const ctx = canvas.getContext('2d');
@@ -184,10 +184,10 @@
             const len = 1.6 + Math.random() * 0.8;
             const seed = Math.random() * 100;
 
-            const bodyGeo = new THREE.CylinderGeometry(radius, radius, len, 32, 20, true);
+            const bodyGeo = new THREE.CylinderGeometry(radius, radius, len, 16, 8, true);
             smoothDeform(bodyGeo, seed, 0);
 
-            const capGeo = new THREE.SphereGeometry(radius, 32, 24);
+            const capGeo = new THREE.SphereGeometry(radius, 16, 16);
             
             const cap1 = new THREE.Mesh(capGeo.clone(), material);
             const cap2 = new THREE.Mesh(capGeo.clone(), material);
@@ -243,11 +243,11 @@
     window.initBanner3D = initBanner;
     window.resizeBanner3D = onWindowResize;
 
-    // Run automatically if container exists
+    // Run automatically if container exists (with delay to prevent blocking main thread)
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initBanner);
+        document.addEventListener('DOMContentLoaded', () => setTimeout(initBanner, 200));
     } else {
-        initBanner();
+        setTimeout(initBanner, 200);
     }
 
 })();
