@@ -8292,7 +8292,7 @@ const supervisorGroups = new Map();
                 tdPerf.className = 'py-2 px-1 md:py-3 md:px-4 w-1/4 md:w-1/3 align-middle';
                 const barWidth = Math.min((item.absVariation / maxVariation) * 100, 100);
                 const barColor = item.variation >= 0 ? 'bg-emerald-500' : 'bg-red-500';
-
+                
                 // Refined HTML for simple magnitude bar:
                 tdPerf.innerHTML = `
                     <div class="h-1 md:h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
@@ -19463,19 +19463,19 @@ const supervisorGroups = new Map();
         const html = `
             <div class="flex flex-col justify-center w-full h-full px-2 md:px-6 py-2">
                 <!-- Main Horizontal Bar -->
-                <div class="relative w-full h-16 md:h-24 bg-gray-900/80 rounded-xl md:rounded-2xl border-2 border-gray-700/80 shadow-[0_0_30px_rgba(253,186,116,0.15)] backdrop-blur-sm overflow-hidden flex items-center">
+                <div class="relative w-full h-16 md:h-24 bg-gray-900/80 rounded-xl md:rounded-2xl border-2 border-gray-700/80 shadow-[0_0_30px_rgba(249,115,22,0.3)] backdrop-blur-sm overflow-hidden flex items-center">
 
                     <!-- Track Background Gradient -->
                     <div class="absolute inset-0 bg-gradient-to-r from-gray-800/30 via-transparent to-black/60 pointer-events-none z-0"></div>
 
-                    <!-- Liquid Fill (Light Orange) -->
-                    <div class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-orange-200 to-orange-300 transition-all duration-1000 ease-in-out z-10" style="width: ${clampedPercent}%;">
+                    <!-- Liquid Fill (Vivid Orange) -->
+                    <div class="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-orange-400 to-orange-500 transition-all duration-1000 ease-in-out z-10" style="width: ${clampedPercent}%;">
 
                         <!-- Diagonal Wave Tip -->
-                        <div class="absolute top-[-50%] bottom-[-50%] -right-8 w-16 bg-orange-300 transform skew-x-[-20deg] overflow-hidden flex items-center justify-center">
+                        <div class="absolute top-[-50%] bottom-[-50%] -right-8 w-16 bg-orange-500 transform skew-x-[-20deg] overflow-hidden flex items-center justify-center">
                              <!-- Wave Animation (Vertical Ripple on the Edge) -->
                              <div class="absolute inset-0 w-full h-[200%] -top-1/2 animate-wave-vertical opacity-50">
-                                <svg viewBox="0 0 150 500" preserveAspectRatio="none" class="w-full h-full fill-orange-100">
+                                <svg viewBox="0 0 150 500" preserveAspectRatio="none" class="w-full h-full fill-orange-300">
                                     <path d="M49.98,0.00 C150.00,149.99 -49.98,349.20 49.98,500.00 L150.00,500.00 L150.00,0.00 Z" />
                                 </svg>
                              </div>
@@ -19492,7 +19492,7 @@ const supervisorGroups = new Map();
 
                         <!-- Center: Percentage -->
                         <div class="flex flex-col items-center">
-                             <span class="text-2xl md:text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_10px_rgba(253,186,116,0.8)]">
+                             <span class="text-2xl md:text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_10px_rgba(251,146,60,0.8)]">
                                 ${displayPercentage}%
                             </span>
                         </div>
@@ -19500,7 +19500,7 @@ const supervisorGroups = new Map();
                         <!-- Right: Goal -->
                         <div class="flex flex-col items-end">
                             <span class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5 md:mb-1">Meta</span>
-                            <span class="text-xs md:text-xl font-bold text-orange-300 drop-shadow-sm">${formattedGoal}</span>
+                            <span class="text-xs md:text-xl font-bold text-orange-400 drop-shadow-sm">${formattedGoal}</span>
                         </div>
                     </div>
 
