@@ -3025,10 +3025,10 @@
 
                     return `
                     <tr class="hover:bg-slate-700/50 border-b border-slate-500 last:border-0">
-                        <td data-label="Cód" class="px-2 py-2 font-medium text-slate-300 text-xs">${escapeHtml(row.codcli)}</td>
-                        <td data-label="Cliente" class="px-2 py-2 text-xs truncate max-w-[150px]" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</td>
-                        <td data-label="Cidade" class="px-2 py-2 text-xs text-slate-300 truncate max-w-[100px]">${escapeHtml(row.city)}</td>
-                        <td data-label="Vendedor" class="px-2 py-2 text-xs text-slate-400 truncate max-w-[100px]">${escapeHtml(getFirstName(row.vendedor))}</td>
+                        <td data-label="Cód" class="px-2 py-2 md:px-4 md:py-2 font-medium text-slate-300 text-[10px] md:text-xs">${escapeHtml(row.codcli)}</td>
+                        <td data-label="Cliente" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[100px] md:max-w-[200px]" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</td>
+                        <td data-label="Cidade" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs text-slate-300 truncate max-w-[80px] hidden md:table-cell">${escapeHtml(row.city)}</td>
+                        <td data-label="Vendedor" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs text-slate-400 truncate max-w-[80px] hidden md:table-cell">${escapeHtml(getFirstName(row.vendedor))}</td>
                         ${saltyCols}
                         ${foodsCols}
                     </tr>
@@ -7776,14 +7776,14 @@ const supervisorGroups = new Map();
 
                     return `
                         <tr class="hover:bg-slate-700/50">
-                            <td data-label="Produto" class="px-2 py-1.5 text-xs">${item.descricao}</td>
-                            <td data-label="Estoque" class="px-2 py-1.5 text-xs text-right">${item.stockQty.toLocaleString('pt-BR')}</td>
-                            <td data-label="Vol Ant (Cx)" class="px-2 py-1.5 text-xs text-right">${item.boxesSoldPreviousMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
-                            <td data-label="Vol Atual (Cx)" class="px-2 py-1.5 text-xs text-right">${item.boxesSoldCurrentMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
-                            <td data-label="Var Vol" class="px-2 py-1.5 text-xs text-right">${boxesVariationContent}</td>
-                            <td data-label="PDV Ant" class="px-2 py-1.5 text-xs text-right">${item.clientsPreviousCount.toLocaleString('pt-BR')}</td>
-                            <td data-label="PDV Atual" class="px-2 py-1.5 text-xs text-right">${item.clientsCurrentCount.toLocaleString('pt-BR')}</td>
-                            <td data-label="Var PDV" class="px-2 py-1.5 text-xs text-right">${pdvVariationContent}</td>
+                            <td data-label="Produto" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[120px] md:max-w-xs" title="${item.descricao}">${item.descricao}</td>
+                            <td data-label="Estoque" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.stockQty.toLocaleString('pt-BR')}</td>
+                            <td data-label="Vol Ant (Cx)" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.boxesSoldPreviousMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
+                            <td data-label="Vol Atual (Cx)" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">${item.boxesSoldCurrentMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
+                            <td data-label="Var Vol" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">${boxesVariationContent}</td>
+                            <td data-label="PDV Ant" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.clientsPreviousCount.toLocaleString('pt-BR')}</td>
+                            <td data-label="PDV Atual" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.clientsCurrentCount.toLocaleString('pt-BR')}</td>
+                            <td data-label="Var PDV" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">${pdvVariationContent}</td>
                         </tr>
                     `;
                 }).join('');
@@ -8272,16 +8272,16 @@ const supervisorGroups = new Map();
 
                 // Rank
                 const tdRank = document.createElement('td');
-                tdRank.className = 'py-2 px-1 md:py-3 md:px-4 text-center text-slate-500 font-mono text-[10px] md:text-xs font-bold';
+                tdRank.className = 'py-1 px-1 md:py-3 md:px-4 text-center text-slate-500 font-mono text-[10px] md:text-xs font-bold';
                 tdRank.textContent = index + 1;
                 tr.appendChild(tdRank);
 
                 // Produto
                 const tdProduct = document.createElement('td');
-                tdProduct.className = 'py-2 px-1 md:py-3 md:px-4';
+                tdProduct.className = 'py-1 px-1 md:py-3 md:px-4';
                 tdProduct.innerHTML = `
                     <div class="flex flex-col">
-                        <span class="text-xs md:text-sm font-bold text-white group-hover:text-blue-400 transition-colors">${item.name || 'Desconhecido'}</span>
+                        <span class="text-[10px] md:text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate max-w-[120px] md:max-w-xs block" title="${item.name || 'Desconhecido'}">${item.name || 'Desconhecido'}</span>
                         <span class="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">${item.category || ''}</span>
                     </div>
                 `;
@@ -8289,7 +8289,7 @@ const supervisorGroups = new Map();
 
                 // Performance (Bar)
                 const tdPerf = document.createElement('td');
-                tdPerf.className = 'py-2 px-1 md:py-3 md:px-4 w-1/4 md:w-1/3 align-middle';
+                tdPerf.className = 'py-1 px-1 md:py-3 md:px-4 w-1/4 md:w-1/3 align-middle hidden md:table-cell';
                 const barWidth = Math.min((item.absVariation / maxVariation) * 100, 100);
                 const barColor = item.variation >= 0 ? 'bg-emerald-500' : 'bg-red-500';
                 
@@ -8303,7 +8303,7 @@ const supervisorGroups = new Map();
 
                 // Variation Badge
                 const tdVar = document.createElement('td');
-                tdVar.className = 'py-2 px-1 md:py-3 md:px-4 text-right';
+                tdVar.className = 'py-1 px-1 md:py-3 md:px-4 text-right';
                 const badgeBg = item.variation >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20';
                 const arrow = item.variation >= 0 ? '▲' : '▼';
                 const sign = item.variation > 0 ? '+' : '';
@@ -8371,55 +8371,58 @@ const supervisorGroups = new Map();
                 };
 
                 const tdPedido = document.createElement('td');
-                tdPedido.className = "px-4 py-2";
+                tdPedido.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm";
                 tdPedido.dataset.label = 'Nº Pedido';
                 tdPedido.appendChild(createLink(row.PEDIDO, 'pedidoId', row.PEDIDO));
                 tr.appendChild(tdPedido);
 
                 const tdCodCli = document.createElement('td');
-                tdCodCli.className = "px-4 py-2";
+                tdCodCli.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm";
                 tdCodCli.dataset.label = 'Cliente';
                 tdCodCli.appendChild(createLink(row.CODCLI, 'codcli', row.CODCLI));
                 tr.appendChild(tdCodCli);
 
                 const tdVendedor = document.createElement('td');
-                tdVendedor.className = "px-4 py-2";
+                tdVendedor.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs hidden md:table-cell";
                 tdVendedor.dataset.label = 'Vendedor';
                 tdVendedor.textContent = getFirstName(row.NOME);
                 tr.appendChild(tdVendedor);
 
                 const tdForn = document.createElement('td');
-                tdForn.className = "px-4 py-2";
+                tdForn.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs hidden md:table-cell";
                 tdForn.dataset.label = 'Fornecedor';
                 tdForn.textContent = row.FORNECEDORES_STR || '';
                 tr.appendChild(tdForn);
 
                 const tdDtPed = document.createElement('td');
-                tdDtPed.className = "px-4 py-2";
+                tdDtPed.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm text-center";
                 tdDtPed.dataset.label = 'Data Pedido';
                 tdDtPed.textContent = formatDate(row.DTPED);
                 tr.appendChild(tdDtPed);
 
+                // tdDtSaida REMOVED to align with header columns (8 headers vs 9 cells)
+                /*
                 const tdDtSaida = document.createElement('td');
-                tdDtSaida.className = "px-4 py-2";
+                tdDtSaida.className = "px-4 py-2 hidden";
                 tdDtSaida.dataset.label = 'Data Saída';
                 tdDtSaida.textContent = formatDate(row.DTSAIDA);
                 tr.appendChild(tdDtSaida);
+                */
 
                 const tdPeso = document.createElement('td');
-                tdPeso.className = "px-4 py-2 text-right";
+                tdPeso.className = "px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm hidden md:table-cell";
                 tdPeso.dataset.label = 'Peso';
                 tdPeso.textContent = (Number(row.TOTPESOLIQ) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' Kg';
                 tr.appendChild(tdPeso);
 
                 const tdValor = document.createElement('td');
-                tdValor.className = "px-4 py-2 text-right";
+                tdValor.className = "px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm";
                 tdValor.dataset.label = 'Total';
                 tdValor.textContent = (Number(row.VLVENDA) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 tr.appendChild(tdValor);
 
                 const tdPosicao = document.createElement('td');
-                tdPosicao.className = "px-4 py-2 text-center";
+                tdPosicao.className = "px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-xs";
                 tdPosicao.dataset.label = 'Status';
                 const badge = getPosicaoBadge(row.POSICAO);
                 if (typeof badge === 'string') tdPosicao.textContent = badge;
@@ -9204,7 +9207,7 @@ const supervisorGroups = new Map();
                     const cidade = data.cidade || data.CIDADE || data['Nome da Cidade'] || 'N/A';
                     const bairro = data.bairro || data.BAIRRO || 'N/A';
 
-                    return `<tr class="hover:bg-slate-700"><td class="px-4 py-2"><a href="#" class="text-teal-400 hover:underline" data-codcli="${data['Código']}">${data['Código']}</a></td><td class="px-4 py-2 flex items-center">${nome}${novoLabel}</td><td class="px-4 py-2 text-right"><div class="tooltip">${data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<span class="tooltip-text" style="width: max-content; transform: translateX(-50%); margin-left: 0;">${tooltipText}</span></div></td><td class="px-4 py-2">${cidade}</td><td class="px-4 py-2">${bairro}</td><td class="px-4 py-2 text-center">${formatDate(data.ultimaCompra)}</td><td class="px-4 py-2">${rcaVal}</td></tr>`
+                    return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${data['Código']}">${data['Código']}</a></td><td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${nome}${novoLabel}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm"><div class="tooltip">${data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<span class="tooltip-text" style="width: max-content; transform: translateX(-50%); margin-left: 0;">${tooltipText}</span></div></td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${bairro}</td><td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(data.ultimaCompra)}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td></tr>`
                 }).join('');
 
                 inactiveClientsList.sort((a, b) => {
@@ -9216,8 +9219,8 @@ const supervisorGroups = new Map();
                 });
 
                 cityInactiveDetailTableBody.innerHTML = inactiveClientsList.slice(0, 500).map(client => {
-                    const novoLabel = client.isNewForInactiveLabel ? `<span class="ml-2 text-xs font-semibold text-purple-400 bg-purple-900/50 px-2 py-0.5 rounded-full">NOVO</span>` : '';
-                    const devolucaoLabel = client.isReturn ? `<span class="ml-2 text-xs font-semibold text-red-400 bg-red-900/50 px-2 py-0.5 rounded-full">DEVOLUÇÃO</span>` : '';
+                    const novoLabel = client.isNewForInactiveLabel ? `<span class="ml-2 text-[9px] md:text-xs font-semibold text-purple-400 bg-purple-900/50 px-1 py-0.5 rounded-full">NOVO</span>` : '';
+                    const devolucaoLabel = client.isReturn ? `<span class="ml-2 text-[9px] md:text-xs font-semibold text-red-400 bg-red-900/50 px-1 py-0.5 rounded-full">DEV</span>` : '';
                     const rcaVal = (client.rcas && client.rcas.length > 0) ? client.rcas[0] : '-';
 
                     const fantasia = client.fantasia || client.FANTASIA || client.Fantasia || '';
@@ -9227,7 +9230,7 @@ const supervisorGroups = new Map();
                     const bairro = client.bairro || client.BAIRRO || 'N/A';
                     const ultCompra = client.ultimaCompra || client['Data da Última Compra'] || client.ULTIMACOMPRA;
 
-                    return `<tr class="hover:bg-slate-700"><td class="px-4 py-2"><a href="#" class="text-teal-400 hover:underline" data-codcli="${client['Código']}">${client['Código']}</a></td><td class="px-4 py-2 flex items-center">${nome}${novoLabel}${devolucaoLabel}</td><td class="px-4 py-2">${cidade}</td><td class="px-4 py-2">${bairro}</td><td class="px-4 py-2 text-center">${formatDate(ultCompra)}</td><td class="px-4 py-2">${rcaVal}</td></tr>`
+                    return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${client['Código']}">${client['Código']}</a></td><td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${nome}${novoLabel}${devolucaoLabel}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${bairro}</td><td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(ultCompra)}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td></tr>`
                 }).join('');
 
                 const cityChartTitleEl = document.getElementById('city-chart-title');
@@ -10725,15 +10728,15 @@ const supervisorGroups = new Map();
                          const rowsHTML = weekKeys.map(weekNum => {
                              const weekTotal = Object.values(salesByWeekAndDay[weekNum]).reduce((a, b) => a + b, 0);
                              grandTotal += weekTotal;
-                             return `<tr class="hover:bg-slate-700"><td class="px-4 py-2">Semana ${weekNum}</td><td class="px-4 py-2 text-right">${weekTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`;
+                             return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">Semana ${weekNum}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${weekTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`;
                          }).join('');
 
-                         weeklySummaryTableBody.innerHTML = rowsHTML + `<tr class="font-bold bg-slate-700/50"><td class="px-4 py-2">Total do Mês</td><td class="px-4 py-2 text-right">${grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`;
+                         weeklySummaryTableBody.innerHTML = rowsHTML + `<tr class="font-bold bg-slate-700/50"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">Total do Mês</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`;
                     }
 
                     // Supervisor Table
                     const supervisorTableBody = document.getElementById('supervisorComparisonTableBody');
-                    const supRows = Object.entries(m.charts.supervisorData).map(([sup, data]) => { const variation = data.history > 0 ? ((data.current - data.history) / data.history) * 100 : (data.current > 0 ? 100 : 0); const colorClass = variation > 0 ? 'text-green-400' : variation < 0 ? 'text-red-400' : 'text-slate-400'; return `<tr class="hover:bg-slate-700"><td class="px-4 py-2">${sup}</td><td class="px-4 py-2 text-right">${data.history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-4 py-2 text-right">${data.current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-4 py-2 text-right ${colorClass}">${variation.toFixed(2)}%</td></tr>`; }).join('');
+                    const supRows = Object.entries(m.charts.supervisorData).map(([sup, data]) => { const variation = data.history > 0 ? ((data.current - data.history) / data.history) * 100 : (data.current > 0 ? 100 : 0); const colorClass = variation > 0 ? 'text-green-400' : variation < 0 ? 'text-red-400' : 'text-slate-400'; return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm truncate max-w-[100px]">${sup}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm ${colorClass}">${variation.toFixed(2)}%</td></tr>`; }).join('');
                     supervisorTableBody.innerHTML = supRows;
                 }, () => currentRenderId !== comparisonRenderId); // Cancel check
             }, () => currentRenderId !== comparisonRenderId); // Cancel check
@@ -11097,16 +11100,16 @@ const supervisorGroups = new Map();
 
                 return `
                     <tr class="hover:bg-slate-700/50">
-                        <td class="px-2 py-1.5 text-xs">${item.categoryName}</td>
-                        <td class="px-2 py-1.5 text-xs">${item.productCode} - ${item.productName}</td>
-                        <td class="px-2 py-1.5 text-xs text-right">${item.stock.toLocaleString('pt-BR')}</td>
-                        <td class="px-2 py-1.5 text-xs text-right">
+                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs hidden md:table-cell">${item.categoryName}</td>
+                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[120px] md:max-w-xs" title="${item.productName}">${item.productCode} - ${item.productName}</td>
+                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.stock.toLocaleString('pt-BR')}</td>
+                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">
                             <div class="tooltip">${item.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${item.clientsPreviousCount} PDVs</span></div>
                         </td>
-                        <td class="px-2 py-1.5 text-xs text-right">
+                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">
                             <div class="tooltip">${item.coverageCurrent.toFixed(2)}%<span class="tooltip-text">${item.clientsCurrentCount} PDVs</span></div>
                         </td>
-                        <td class="px-2 py-1.5 text-xs text-right">${variationContent}</td>
+                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">${variationContent}</td>
                     </tr>
                 `;
             }).join('');
@@ -16670,19 +16673,19 @@ const supervisorGroups = new Map();
                  const tr = document.createElement('tr');
                  tr.className = 'hover:bg-slate-800/50 transition-colors border-b border-slate-800/50';
                  tr.innerHTML = `
-                    <td class="px-6 py-4 font-mono text-xs text-slate-400">${code}</td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm font-bold text-white">${rowFantasia || 'N/A'}</div>
-                        <div class="text-xs text-slate-500">${rowRazao || ''}</div>
+                    <td class="px-2 py-2 md:px-6 md:py-4 font-mono text-[10px] md:text-xs text-slate-400 w-16 md:w-32">${code}</td>
+                    <td class="px-2 py-2 md:px-6 md:py-4">
+                        <div class="text-[10px] md:text-sm font-bold text-white truncate max-w-[120px] md:max-w-none">${rowFantasia || 'N/A'}</div>
+                        <div class="text-[9px] md:text-xs text-slate-500 truncate max-w-[120px] md:max-w-none">${rowRazao || ''}</div>
                     </td>
-                    <td class="px-6 py-4 text-xs text-slate-400">${rowCnpj || ''}</td>
-                    <td class="px-6 py-4 text-center">
+                    <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${rowCnpj || ''}</td>
+                    <td class="px-2 py-2 md:px-6 md:py-4 text-center hidden md:table-cell">
                          <button class="p-2 text-blue-400 hover:text-white hover:bg-blue-600 rounded-lg transition-all" onclick="openWalletClientModal('${code}')">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                          </button>
                     </td>
                     ${walletState.canEdit ? `
-                    <td class="px-6 py-4 text-center">
+                    <td class="px-2 py-2 md:px-6 md:py-4 text-center">
                         <button class="text-red-500 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-colors" onclick="handleWalletAction('${code}', 'remove')">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
