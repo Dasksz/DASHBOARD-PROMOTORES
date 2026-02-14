@@ -34,6 +34,7 @@
         }
 
         let metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [] };
+        let lastSaleDate = null;
         const dateCache = new Map();
 
         // Helper to normalize keys (remove leading zeros) to ensure consistent joins
@@ -19519,6 +19520,11 @@ const supervisorGroups = new Map();
     }
 
     function renderInnovationsPackedCircleChart(tableData) {
+        const am5 = window.am5;
+        const am5hierarchy = window.am5hierarchy;
+        const am5themes_Animated = window.am5themes_Animated;
+        const am5themes_Dark = window.am5themes_Dark;
+
         // 1. Dispose existing root
         if (innovationsAmChartRoot) {
             innovationsAmChartRoot.dispose();
