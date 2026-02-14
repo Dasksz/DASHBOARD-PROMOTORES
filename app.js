@@ -11120,8 +11120,8 @@ const supervisorGroups = new Map();
                 `;
             }).join('');
 
-            // Chart Update (Packed Circle)
-            renderInnovationsPackedCircleChart(tableData);
+            // Chart Update (Force Directed)
+            renderInnovationsChart(tableData);
 
             // Innovations by Client Table
             const innovationsByClientTableHead = document.getElementById('innovations-by-client-table-head');
@@ -19519,7 +19519,7 @@ const supervisorGroups = new Map();
         container.innerHTML = html;
     }
 
-    function renderInnovationsPackedCircleChart(tableData) {
+    function renderInnovationsChart(tableData) {
         const am5 = window.am5;
         const am5hierarchy = window.am5hierarchy;
         const am5themes_Animated = window.am5themes_Animated;
@@ -19537,8 +19537,14 @@ const supervisorGroups = new Map();
 
         if (!am5 || !am5hierarchy) {
             console.warn("amCharts 5 or Hierarchy plugin not loaded.");
-            container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Erro ao carregar gráfico.</div>';
+            container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Erro ao carregar gráfico (Bibliotecas ausentes).</div>';
             return;
+        }
+
+        if (!am5hierarchy.ForceDirected) {
+             console.warn("am5hierarchy.ForceDirected not available.");
+             container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Erro: Tipo de gráfico não suportado.</div>';
+             return;
         }
 
         if (!tableData || tableData.length === 0) {
@@ -19546,10 +19552,10 @@ const supervisorGroups = new Map();
             return;
         }
 
-        // 2. Transform Data for Packed Circle (Hierarchy)
+        // 2. Transform Data for Hierarchy
         // Root -> Category -> Product
         const rootData = {
-            name: "Root",
+            name: "Inovações",
             children: []
         };
 
@@ -19567,14 +19573,6 @@ const supervisorGroups = new Map();
             }
 
             const catNode = catMap.get(item.categoryName);
-
-            // Value: Using clientsCurrentCount (Positivados).
-            // If count is 0, should we show it? Maybe small?
-            // Packed Circle handles small values, but 0 might be hidden.
-            // Let's use Math.max(item.clientsCurrentCount, 1) if we want to show everything,
-            // or just real count. Real count is better for "performance".
-            // If value is 0, circle won't show.
-
             const val = item.clientsCurrentCount || 0;
 
             if (val > 0) {
@@ -19603,39 +19601,39 @@ const supervisorGroups = new Map();
         
         root.setThemes(themes);
 
-        const containerSeries = root.container.children.push(
-            am5.Container.new(root, {
-                width: am5.percent(100),
-                height: am5.percent(100),
-                layout: root.verticalLayout
-            })
-        );
-
-        const series = containerSeries.children.push(
-            am5hierarchy.PackedCircle.new(root, {
+        const series = root.container.children.push(
+            am5hierarchy.ForceDirected.new(root, {
                 singleBranchOnly: false,
                 downDepth: 1,
                 topDepth: 1,
-                initialDepth: 1,
+                initialDepth: 2,
                 valueField: "value",
                 categoryField: "name",
                 childDataField: "children",
-                nodePadding: 5
+                idField: "name",
+                linkWithStrength: 0,
+                manyBodyStrength: -20,
+                centerStrength: 0.8
             })
         );
 
-        series.data.setAll([rootData]);
-        series.set("selectedDataItem", series.dataItems[0]);
-
-        // Configure Circles
-        series.circles.template.setAll({
-            tooltipText: "[bold]{name}[/]\nPositivação: {value} PDVs\nEstoque: {stock}",
-            templateField: "nodeSettings"
+        series.get("colors").setAll({
+            step: 2
         });
 
-        // Color by Category (Depth 1)
+        series.links.template.set("strength", 0.5);
+
+        series.data.setAll([rootData]);
+        
+        // Safety: Only set selected item if data items exist
+        if (series.dataItems && series.dataItems.length > 0) {
+            series.set("selectedDataItem", series.dataItems[0]);
+        }
+
+        // Configure Nodes (Circles)
         series.nodes.template.setAll({
-            draggable: false
+            tooltipText: "[bold]{name}[/]\nPositivação: {value} PDVs\nEstoque: {stock}",
+            draggable: true
         });
 
         // Labels
@@ -19644,7 +19642,8 @@ const supervisorGroups = new Map();
             text: "{name}",
             oversizedBehavior: "fit",
             breakWords: true,
-            textAlign: "center"
+            textAlign: "center",
+            fill: am5.color(0xffffff)
         });
 
         // Animate
