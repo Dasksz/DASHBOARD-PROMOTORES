@@ -1288,10 +1288,44 @@
                         </div>
 
     <!-- Modals (Hidden) -->
-    <!-- Order Details -->
-    <div id="order-details-modal" class="modal-overlay hidden"><div class="bg-modal-content"><button id="modal-close-btn"></button><span id="modal-pedido-id"></span><div id="modal-header-info"></div><tbody id="modal-table-body"></tbody><div id="modal-footer-total"></div></div></div>
-    <!-- Client Details -->
-    <div id="client-details-modal" class="modal-overlay hidden"><div class="bg-modal-content"><button id="client-modal-close-btn"></button><div id="client-modal-content"></div></div></div>
+    <!-- Order Details (Refactored for Valid HTML) -->
+    <div id="order-details-modal" class="modal-overlay hidden">
+        <div class="bg-modal-content w-full max-w-4xl m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 bg-slate-900">
+            <button id="modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="mb-6">
+                <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                    Pedido <span id="modal-pedido-id" class="text-blue-400 font-mono"></span>
+                </h3>
+                <div id="modal-header-info" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-300 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50"></div>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/30">
+                <table class="w-full text-sm text-left text-slate-300">
+                    <thead class="bg-slate-800 text-xs uppercase font-bold text-slate-400">
+                        <tr>
+                            <th class="px-4 py-3">Produto</th>
+                            <th class="px-4 py-3 text-right">Qtd</th>
+                            <th class="px-4 py-3 text-right">Unitário</th>
+                            <th class="px-4 py-3 text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-table-body" class="divide-y divide-slate-700/50"></tbody>
+                </table>
+            </div>
+            <div id="modal-footer-total" class="mt-6 text-right text-2xl font-bold text-green-400"></div>
+        </div>
+    </div>
+
+    <!-- Client Details (Refactored for UI) -->
+    <div id="client-details-modal" class="modal-overlay hidden">
+        <div class="bg-modal-content w-full max-w-2xl m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 bg-slate-900">
+            <button id="client-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div id="client-modal-content"></div>
+        </div>
+    </div>
     <!-- Holidays -->
     <div id="holiday-modal" class="modal-overlay hidden"><div class="bg-modal-content"><button id="holiday-modal-close-btn"></button><div id="calendar-container"></div><button id="holiday-modal-done-btn"></button></div></div>
     <!-- Confirmation -->

@@ -7985,35 +7985,30 @@ const supervisorGroups = new Map();
                 salesByProduct[produto].peso += totPesoLiq;
 
                 let fornecedorLabel;
-                if(isFiltered){
-                    const fornecedorNome = item.FORNECEDOR || 'N/A';
-                    const codFor = item.CODFOR;
-                    fornecedorLabel = `${fornecedorNome} - ${codFor}`;
-                } else {
-                     // Lógica de "Faturamento por Categoria" detalhada para PEPSICO
-                     const rowPasta = item.OBSERVACAOFOR;
-                     if (rowPasta === 'PEPSICO') {
-                         const codFor = String(item.CODFOR);
-                         const desc = normalize(item.DESCRICAO || '');
+                // Sempre usar a lógica detalhada de categoria para manter consistência do gráfico
+                // Lógica de "Faturamento por Categoria" detalhada para PEPSICO
+                const rowPasta = item.OBSERVACAOFOR;
+                if (rowPasta === 'PEPSICO') {
+                    const codFor = String(item.CODFOR);
+                    const desc = normalize(item.DESCRICAO || '');
 
-                         if (codFor === '707') {
-                             fornecedorLabel = 'Extrusados';
-                         } else if (codFor === '708') {
-                             fornecedorLabel = 'Não Extrusados';
-                         } else if (codFor === '752') {
-                             fornecedorLabel = 'Torcida';
-                         } else if (codFor === '1119') {
-                             if (desc.includes('TODDYNHO')) fornecedorLabel = 'Toddynho';
-                             else if (desc.includes('TODDY')) fornecedorLabel = 'Toddy';
-                             else if (desc.includes('QUAKER')) fornecedorLabel = 'Quaker';
-                             else if (desc.includes('KEROCOCO')) fornecedorLabel = 'Kero Coco';
-                             else fornecedorLabel = 'Outros Foods';
-                         } else {
-                             fornecedorLabel = 'Outros Pepsico';
-                         }
-                     } else {
-                         fornecedorLabel = rowPasta || 'N/A';
-                     }
+                    if (codFor === '707') {
+                        fornecedorLabel = 'Extrusados';
+                    } else if (codFor === '708') {
+                        fornecedorLabel = 'Não Extrusados';
+                    } else if (codFor === '752') {
+                        fornecedorLabel = 'Torcida';
+                    } else if (codFor === '1119') {
+                        if (desc.includes('TODDYNHO')) fornecedorLabel = 'Toddynho';
+                        else if (desc.includes('TODDY')) fornecedorLabel = 'Toddy';
+                        else if (desc.includes('QUAKER')) fornecedorLabel = 'Quaker';
+                        else if (desc.includes('KEROCOCO')) fornecedorLabel = 'Kero Coco';
+                        else fornecedorLabel = 'Outros Foods';
+                    } else {
+                        fornecedorLabel = 'Outros Pepsico';
+                    }
+                } else {
+                    fornecedorLabel = rowPasta || 'N/A';
                 }
 
                 if (!isForbidden(fornecedorLabel)) {
@@ -18425,7 +18420,18 @@ const supervisorGroups = new Map();
 
             // Client Check (Hierarchy + Text Search)
             const codCli = normalizeKey(sale.CODCLI);
-            if (!validClientCodes.has(codCli)) return false;
+
+            // RELAXED VALIDATION: Only enforce validClientCodes if strict filtering is needed.
+            // If user is ADM and NO hierarchy filters are active, allow all history (orphans).
+            const state = hierarchyState['history'];
+            const hasHierarchyFilters = state && (state.coords.size > 0 || state.cocoords.size > 0 || state.promotors.size > 0);
+            const isAdmin = window.userRole === 'adm';
+
+            // If not admin, or if filters are active, enforce the set.
+            // If Admin and NO filters, allow everything (don't check validClientCodes).
+            if (!isAdmin || hasHierarchyFilters) {
+                if (!validClientCodes.has(codCli)) return false;
+            }
             
             if (clientFilter) {
                 // We need client name from map
