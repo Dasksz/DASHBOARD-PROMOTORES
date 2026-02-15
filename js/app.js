@@ -18430,7 +18430,31 @@ const supervisorGroups = new Map();
             // If not admin, or if filters are active, enforce the set.
             // If Admin and NO filters, allow everything (don't check validClientCodes).
             if (!isAdmin || hasHierarchyFilters) {
-                if (!validClientCodes.has(codCli)) return false;
+                if (!validClientCodes.has(codCli)) {
+                    // Check Orphan Match (Inactive Client but matches Hierarchy Context)
+                    let isOrphanMatch = false;
+
+                    // Determine Effective Hierarchy Scope
+                    const effectiveCoords = new Set(state ? state.coords : []);
+                    if (userHierarchyContext && userHierarchyContext.role === 'coord') {
+                        if (userHierarchyContext.coord) effectiveCoords.add(userHierarchyContext.coord);
+                    }
+
+                    // Check Sale against Scope (Supervisor Level)
+                    if (effectiveCoords.size > 0) {
+                         const supName = String(sale.SUPERV || '').toUpperCase().trim();
+                         const supCode = String(sale.CODSUPERVISOR || '').toUpperCase().trim();
+
+                         if (supCode && effectiveCoords.has(supCode)) isOrphanMatch = true;
+
+                         if (!isOrphanMatch && supName && typeof optimizedData !== 'undefined' && optimizedData.supervisorCodeByName) {
+                             const mappedCode = optimizedData.supervisorCodeByName.get(supName);
+                             if (mappedCode && effectiveCoords.has(mappedCode)) isOrphanMatch = true;
+                         }
+                    }
+
+                    if (!isOrphanMatch) return false;
+                }
             }
             
             if (clientFilter) {
