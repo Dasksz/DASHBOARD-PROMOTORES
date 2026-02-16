@@ -219,10 +219,10 @@
                 if (role && role !== 'adm' && hierarchy) {
                     const normalizedRole = role.trim().toLowerCase();
                     // Check if this role appears as a 'cod_promotor' in the hierarchy
-                    const hierarchyEntry = hierarchy.find(h => String(h.cod_promotor || '').trim().toLowerCase() === normalizedRole);
+                    const hierarchyEntry = hierarchy.find(h => (h.cod_promotor || '').trim().toLowerCase() === normalizedRole);
                     // Also check if they are NOT a coordinator or co-coordinator
-                    const isCoord = hierarchy.some(h => String(h.cod_coord || '').trim().toLowerCase() === normalizedRole);
-                    const isCocoord = hierarchy.some(h => String(h.cod_cocoord || '').trim().toLowerCase() === normalizedRole);
+                    const isCoord = hierarchy.some(h => (h.cod_coord || '').trim().toLowerCase() === normalizedRole);
+                    const isCocoord = hierarchy.some(h => (h.cod_cocoord || '').trim().toLowerCase() === normalizedRole);
 
                     if (hierarchyEntry && !isCoord && !isCocoord) {
                         isPromoter = true;
@@ -243,9 +243,9 @@
             if (hierarchy && window.userRole) {
                 const normRole = window.userRole.trim().toUpperCase();
                 // Find my entry in hierarchy
-                const myEntry = hierarchy.find(h => String(h.cod_promotor || '').trim().toUpperCase() === normRole);
+                const myEntry = hierarchy.find(h => (h.cod_promotor || '').trim().toUpperCase() === normRole);
                 if (myEntry && myEntry.cod_cocoord) {
-                    window.userCoCoordCode = String(myEntry.cod_cocoord).trim();
+                    window.userCoCoordCode = myEntry.cod_cocoord.trim();
                     console.log(`[Init] Co-Coordinator Code identified: ${window.userCoCoordCode}`);
                     
                     // Fetch Email Immediately (Frontend-First Strategy)
@@ -933,9 +933,9 @@
                     const normalizedRole = role.trim().toLowerCase();
 
                     hierarchy.forEach(h => {
-                        const coord = String(h.cod_coord || '').trim().toLowerCase();
-                        const cocoord = String(h.cod_cocoord || '').trim().toLowerCase();
-                        const promotor = String(h.cod_promotor || '').trim().toLowerCase();
+                        const coord = (h.cod_coord || '').trim().toLowerCase();
+                        const cocoord = (h.cod_cocoord || '').trim().toLowerCase();
+                        const promotor = (h.cod_promotor || '').trim().toLowerCase();
 
                         // If user is coordinator, allow all promoters under them
                         if (coord === normalizedRole) allowedPromoters.add(promotor);
@@ -1066,7 +1066,7 @@
 
             // Inject Logic
             const scriptEl = document.createElement('script');
-            scriptEl.src = 'js/app/app.js';
+            scriptEl.src = 'js/app/app.js?v=' + Date.now();
             scriptEl.onload = () => {
                 loader.classList.add('hidden');
                 document.getElementById('content-wrapper').classList.remove('hidden');
