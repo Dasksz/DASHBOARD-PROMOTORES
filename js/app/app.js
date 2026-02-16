@@ -11014,8 +11014,42 @@ const supervisorGroups = new Map();
                 `;
             }).join('');
 
-            // Chart Update (Force Directed)
-            renderInnovationsChart(tableData);
+            // Chart Update (Bar Chart Replacement)
+            const chartDataCurrent = chartLabels.map(cat => categoryAnalysis[cat].coverageCurrent);
+            const chartDataPrevious = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious);
+
+            if (chartLabels.length > 0) {
+                createChart('innovations-month-chart', 'bar', chartLabels, [
+                    { label: 'Mês Anterior', data: chartDataPrevious, backgroundColor: '#f97316' },
+                    { label: 'Mês Atual', data: chartDataCurrent, backgroundColor: '#06b6d4' }
+                ], {
+                    plugins: {
+                        legend: { display: true, position: 'top' },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            offset: 8,
+                            formatter: (value) => value > 0 ? value.toFixed(1) + '%' : '',
+                            color: '#cbd5e1',
+                            font: { size: 10 }
+                        },
+                         tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) label += context.parsed.y.toFixed(2) + '%';
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: { y: { ticks: { callback: (v) => `${v}%` } } },
+                    layout: { padding: { top: 20 } }
+                });
+            } else {
+                showNoDataMessage('innovations-month-chart', 'Sem dados de inovações para exibir com os filtros atuais.');
+            }
 
             // Innovations by Client Table
             const innovationsByClientTableHead = document.getElementById('innovations-by-client-table-head');
