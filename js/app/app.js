@@ -8001,7 +8001,7 @@ const supervisorGroups = new Map();
             const prevVal = isFat ? item.prevVal : item.prevWeight;
             const currVal = isFat ? item.currentVal : item.currentWeight;
 
-            const format = (v) => isFat 
+            const format = (v) => isFat
                 ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
                 : v.toLocaleString('pt-BR', { minimumFractionDigits: 3 }) + ' kg';
 
@@ -8013,7 +8013,7 @@ const supervisorGroups = new Map();
             const sign = variation > 0 ? '+' : '';
             const arrow = variation >= 0 ? '▲' : '▼';
             const colorClass = variation >= 0 ? 'text-emerald-400' : 'text-red-400';
-            
+
             if (varEl) {
                 varEl.textContent = `${sign}${variation.toFixed(1)}% ${arrow}`;
                 varEl.className = `px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 ${colorClass}`;
@@ -8027,7 +8027,7 @@ const supervisorGroups = new Map();
                 modal.classList.add('hidden');
             };
             if (closeBtn) closeBtn.onclick = close;
-            
+
             // Close on outside click (Generic Modal Logic handles this via setupGlobalEsc or similar, but explicit here helps)
             modal.onclick = (e) => {
                 if (e.target === modal) close();
