@@ -1459,22 +1459,41 @@
         </div>
         </div>
 
-        <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <span id="mix-kpi-title" class="font-bold text-white text-lg">Resumo Geral</span>
-                <div class="flex items-center gap-2">
-                    <label for="mix-kpi-toggle" class="text-sm text-slate-400">Ver Detalhes</label>
-                    <input type="checkbox" id="mix-kpi-toggle" class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-600 ring-offset-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="kpi-card transition transform hover:-translate-y-1 duration-200">
+                <div class="grid grid-cols-3 items-center mb-1">
+                    <div class="col-span-1"></div>
+                    <div class="col-span-1 text-center">
+                        <span id="mix-kpi-title" class="text-slate-300 text-sm font-medium">Total Clientes (Filtro)</span>
+                    </div>
+                    <div class="col-span-1 flex justify-end">
+                        <label for="mix-kpi-toggle" class="flex items-center cursor-pointer" title="Alternar base de cálculo">
+                            <div class="relative">
+                                <input type="checkbox" id="mix-kpi-toggle" class="sr-only peer">
+                                <div class="w-10 h-5 bg-slate-600 rounded-full peer-checked:bg-teal-800 transition-colors"></div>
+                                <div class="absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-full peer-checked:bg-teal-300"></div>
+                            </div>
+                        </label>
+                    </div>
                 </div>
+                <p id="mix-total-clients-kpi" class="text-3xl font-bold text-white my-1">0</p>
+                <p class="text-xs text-slate-300">Base para análise</p>
             </div>
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
-                <div class="p-3 bg-slate-800/50 rounded-lg"><p class="text-xs text-slate-500 uppercase">Total Clientes</p><div id="mix-total-clients-kpi" class="text-xl font-bold text-white">0</div></div>
-                <div class="p-3 bg-slate-800/50 rounded-lg"><p class="text-xs text-slate-500 uppercase">Salgadinho (Pos)</p><div id="mix-salty-count-kpi" class="text-xl font-bold text-blue-400">0</div></div>
-                <div class="p-3 bg-slate-800/50 rounded-lg"><p class="text-xs text-slate-500 uppercase">Food (Pos)</p><div id="mix-foods-count-kpi" class="text-xl font-bold text-green-400">0</div></div>
-                <div class="p-3 bg-slate-800/50 rounded-lg"><p class="text-xs text-slate-500 uppercase">Ambos (Pos)</p><div id="mix-both-count-kpi" class="text-xl font-bold text-purple-400">0</div></div>
+            <div class="kpi-card kpi-glow-base kpi-glow-green transition transform hover:-translate-y-1 duration-200">
+                <p class="text-slate-300 text-sm font-medium">Positivados Salty</p>
+                <p id="mix-salty-kpi" class="text-3xl font-bold text-teal-400 my-1">0%</p>
+                <p id="mix-salty-count-kpi" class="text-xs text-slate-300">0 clientes</p>
             </div>
-            <!-- Hidden value KPIs for toggle logic -->
-            <div class="hidden"><div id="mix-salty-kpi"></div><div id="mix-foods-kpi"></div><div id="mix-both-kpi"></div></div>
+            <div class="kpi-card kpi-glow-base kpi-glow-yellow transition transform hover:-translate-y-1 duration-200">
+                <p class="text-slate-300 text-sm font-medium">Positivados Foods</p>
+                <p id="mix-foods-kpi" class="text-3xl font-bold text-yellow-400 my-1">0%</p>
+                <p id="mix-foods-count-kpi" class="text-xs text-slate-300">0 clientes</p>
+            </div>
+            <div class="kpi-card kpi-glow-base kpi-glow-purple transition transform hover:-translate-y-1 duration-200">
+                <p class="text-slate-300 text-sm font-medium">Mix Ideal (Ambos)</p>
+                <p id="mix-both-kpi" class="text-3xl font-bold text-purple-400 my-1">0%</p>
+                <p id="mix-both-count-kpi" class="text-xs text-slate-300">0 clientes</p>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -1663,24 +1682,27 @@
         </div>
 
         <!-- KPIs -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg text-center">
-                <p class="text-xs text-slate-500 uppercase font-bold">Positivação (Qtde)</p>
-                <h3 id="coverage-selection-coverage-count-kpi" class="text-2xl font-bold text-white">0</h3>
-                <p id="coverage-selection-coverage-count-kpi-previous" class="text-xs text-slate-400 mt-1">Anterior: 0</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="kpi-card kpi-glow-base kpi-glow-blue transition transform hover:-translate-y-1 duration-200">
+                <p class="text-slate-300 text-sm font-medium">Clientes Ativos (Filtro)</p>
+                <p id="coverage-active-clients-kpi" class="text-3xl font-bold text-teal-400 my-1">0</p>
+                <p class="text-xs text-slate-300">Base para os KPIs</p>
             </div>
-            <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg text-center">
-                <p class="text-xs text-slate-500 uppercase font-bold">Positivação (Valor)</p>
-                <h3 id="coverage-selection-coverage-value-kpi" class="text-2xl font-bold text-green-400">R$ 0,00</h3>
-                <p id="coverage-selection-coverage-value-kpi-previous" class="text-xs text-slate-400 mt-1">Anterior: R$ 0,00</p>
+            <div class="kpi-card kpi-glow-base kpi-glow-yellow transition transform hover:-translate-y-1 duration-200">
+                <p class="text-slate-300 text-sm font-medium">Cobertura Mês Anterior</p>
+                <p id="coverage-selection-coverage-value-kpi-previous" class="text-3xl font-bold text-orange-400 my-1">0%</p>
+                <p id="coverage-selection-coverage-count-kpi-previous" class="text-xs text-slate-300">0 de 0 clientes</p>
             </div>
-            <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg text-center">
-                <p class="text-xs text-slate-500 uppercase font-bold">Clientes Ativos</p>
-                <div id="coverage-active-clients-kpi" class="text-2xl font-bold text-blue-400">0</div>
+            <div class="kpi-card kpi-glow-base kpi-glow-green transition transform hover:-translate-y-1 duration-200">
+                <p class="text-slate-300 text-sm font-medium">Cobertura Mês Atual</p>
+                <p id="coverage-selection-coverage-value-kpi" class="text-3xl font-bold text-cyan-400 my-1">0%</p>
+                <p id="coverage-selection-coverage-count-kpi" class="text-xs text-slate-300">0 de 0 clientes</p>
             </div>
-            <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg text-center">
-                <p class="text-xs text-slate-500 uppercase font-bold">Volume (Cx)</p>
-                <div id="coverage-total-boxes" class="text-2xl font-bold text-yellow-400">0</div>
+            <div class="kpi-card kpi-glow-base kpi-glow-purple transition transform hover:-translate-y-1 duration-200">
+                <p class="text-slate-300 text-sm font-medium">Item com Maior Cobertura</p>
+                <p id="coverage-top-coverage-value-kpi" class="text-3xl font-bold text-purple-400 my-1">0%</p>
+                <p id="coverage-top-coverage-product-kpi" class="text-xs text-slate-300 truncate" title="Nenhum item analisado">-</p>
+                <p id="coverage-top-coverage-count-kpi" class="hidden">0</p>
             </div>
         </div>
         
