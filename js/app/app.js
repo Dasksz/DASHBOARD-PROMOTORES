@@ -1473,7 +1473,7 @@
                     let pasta = getVal(i, 'OBSERVACAOFOR');
 
                     const supplier = getVal(i, 'CODFOR');
-                    const client = getVal(i, 'CODCLI');
+                    const client = normalizeKey(getVal(i, 'CODCLI'));
                     const position = getVal(i, 'POSICAO') || 'N/A';
                     const rede = clientRamoMap.get(client) || 'N/A';
                     const tipoVenda = getVal(i, 'TIPOVENDA');
@@ -2067,7 +2067,7 @@
 
             activeClients.forEach(client => {
                 const codCli = String(client['Código'] || client['codigo_cliente']);
-                const clientHistoryIds = optimizedData.indices.history.byClient.get(codCli);
+                const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 // Temp accumulation for this client to ensure Positive Balance check
                 const clientTotals = {}; // key -> { prevFat: 0, monthlyFat: Map<MonthKey, val> }
@@ -2888,7 +2888,7 @@
 
             activeClients.forEach(client => {
                 const codCli = String(client['Código'] || client['codigo_cliente']);
-                const historyIds = optimizedData.indices.history.byClient.get(codCli);
+                const historyIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 if (!clientSubCatHistory.has(codCli)) clientSubCatHistory.set(codCli, new Map());
                 const subCatMap = clientSubCatHistory.get(codCli);
@@ -3433,7 +3433,7 @@
 
             activeClients.forEach(client => {
                 const codCli = String(client['Código'] || client['codigo_cliente']);
-                const historyIds = optimizedData.indices.history.byClient.get(codCli);
+                const historyIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 if (historyIds) {
                     // Bucket by Month
@@ -4514,7 +4514,7 @@
             const clientCodes = new Set(clientsList.map(c => String(c['Código'] || c['codigo_cliente'])));
 
             clientCodes.forEach(codCli => {
-                const historyIds = optimizedData.indices.history.byClient.get(codCli);
+                const historyIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
                 const clientTotals = {};
 
                 if (historyIds) {
@@ -4635,7 +4635,7 @@
                 const rca1 = String(client.rca1 || '').trim();
                 if ((category === 'mix_salty' || category === 'mix_foods') && rca1 === '1001') return;
 
-                const historyIds = optimizedData.indices.history.byClient.get(codCli);
+                const historyIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
                 if (historyIds) {
                     let hasSale = false;
 
@@ -4946,7 +4946,7 @@
                 if (!belongsToActiveSeller) continue;
 
                 // 3. Check History (Positive ELMA: 707, 708, 752)
-                const hIds = optimizedData.indices.history.byClient.get(codCli);
+                const hIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
                 let totalFat = 0;
                 if (hIds) {
                     // hIds is Set<string> (id)
@@ -5037,7 +5037,7 @@
 
                 allActiveClients.forEach(client => {
                     const codCli = String(client['Código'] || client['codigo_cliente']);
-                    const clientHistoryIds = optimizedData.indices.history.byClient.get(codCli);
+                    const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
                     if (clientHistoryIds) {
                         let sumFat = 0;
                         let sumVol = 0;
@@ -5067,7 +5067,7 @@
 
             filteredClients.forEach(client => {
                 const codCli = String(client['Código'] || client['codigo_cliente']);
-                const clientHistoryIds = optimizedData.indices.history.byClient.get(codCli);
+                const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 let sumFat = 0;
                 let sumVol = 0;
@@ -5228,7 +5228,7 @@
 
             filteredClients.forEach(client => {
                 const codCli = String(client['Código'] || client['codigo_cliente']);
-                const clientHistoryIds = optimizedData.indices.history.byClient.get(codCli);
+                const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 if (!distributionMap.has(codCli)) distributionMap.set(codCli, new Map());
                 const clientMap = distributionMap.get(codCli);
@@ -5365,7 +5365,7 @@
             // Count "Meta Pos" (Revenue > 1 in ELMA_ALL: 707, 708, 752) for these clients
             sellerClients.forEach(c => {
                 const codCli = c['Código'];
-                const hIds = optimizedData.indices.history.byClient.get(codCli);
+                const hIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
                 let sumFat = 0;
                 if (hIds) {
                     hIds.forEach(id => {
@@ -5635,7 +5635,7 @@
 
             activeClients.forEach(client => {
                 const codCli = String(client['Código'] || client['codigo_cliente']);
-                const historyIds = optimizedData.indices.history.byClient.get(codCli);
+                const historyIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
                 if (historyIds) {
                     // Check if client bought ANY product in category
                     for (let id of historyIds) {
@@ -5873,7 +5873,7 @@
 
             runAsyncChunked(filteredClients, (client) => {
                 const codCli = String(client['Código'] || client['codigo_cliente']);
-                const clientHistoryIds = optimizedData.indices.history.byClient.get(codCli);
+                const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 let cSumFat = 0; let cSumVol = 0; let cPrevFat = 0; let cPrevVol = 0;
                 const monthlyActivity = new Map();
@@ -6103,7 +6103,7 @@
                                         const rca = c.rcas[0];
                                         const sName = optimizedData.rcaNameByCode.get(rca) || rca;
                                         if (sName === sellerName) {
-                                            const historyIds = optimizedData.indices.history.byClient.get(c['Código']);
+                                            const historyIds = optimizedData.indices.history.byClient.get(normalizeKey(c['Código']));
                                             if (historyIds) {
                                                 for (let id of historyIds) {
                                                     const sale = optimizedData.historyById.get(id);
@@ -6516,7 +6516,7 @@
             // ASYNC LOOP
             runAsyncChunked(filteredClients, (client) => {
                 const codCli = String(client['Código'] || client['codigo_cliente']);
-                const clientHistoryIds = optimizedData.indices.history.byClient.get(codCli);
+                const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 let sellerName = 'N/A';
                 const rcaCode = client.rcas[0];
@@ -6656,7 +6656,7 @@
                     });
                     sellerClients.forEach(c => {
                         // Check if active (Total Fat > 1 in history)
-                        const hIds = optimizedData.indices.history.byClient.get(c['Código']);
+                        const hIds = optimizedData.indices.history.byClient.get(normalizeKey(c['Código']));
                         let totalFat = 0;
                         if(hIds) {
                             for (const id of hIds) {
@@ -8252,7 +8252,7 @@ const supervisorGroups = new Map();
                 if (codcli) {
                     hasFilter = true;
                     if (indices.byClient.has(codcli)) {
-                        setsToIntersect.push(indices.byClient.get(codcli));
+                        setsToIntersect.push(indices.byClient.get(normalizeKey(codcli)));
                     } else {
                         return [];
                     }
@@ -8265,7 +8265,7 @@ const supervisorGroups = new Map();
                     const hierarchyIds = new Set();
                     hierarchyClients.forEach(c => {
                         const code = String(c['Código'] || c['codigo_cliente']);
-                        const ids = indices.byClient.get(code);
+                        const ids = indices.byClient.get(normalizeKey(code));
                         if (ids) ids.forEach(id => hierarchyIds.add(id));
                     });
                     setsToIntersect.push(hierarchyIds);
@@ -8312,7 +8312,7 @@ const supervisorGroups = new Map();
                     hasFilter = true;
                     const redeIds = new Set();
                     clientCodesInRede.forEach(clientCode => {
-                         (indices.byClient.get(clientCode) || []).forEach(id => redeIds.add(id));
+                         (indices.byClient.get(normalizeKey(clientCode)) || []).forEach(id => redeIds.add(id));
                     });
                     setsToIntersect.push(redeIds);
                 }
@@ -12153,8 +12153,8 @@ const supervisorGroups = new Map();
             }
 
             // 2. Update Supplier Filter Options based on Client Data
-            const salesIndices = optimizedData.indices.current.byClient.get(normalizedCode);
-            const historyIndices = optimizedData.indices.history.byClient.get(normalizedCode);
+            const salesIndices = optimizedData.indices.current.byClient.get(normalizeKey(normalizedCode));
+            const historyIndices = optimizedData.indices.history.byClient.get(normalizeKey(normalizedCode));
 
             const filteredRows = [];
             if (salesIndices) salesIndices.forEach(i => filteredRows.push(allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i]));
@@ -14154,7 +14154,7 @@ const supervisorGroups = new Map();
 
             activeClients.forEach(client => {
                 const codCli = String(client["Código"] || client["codigo_cliente"]);
-                const historyIds = optimizedData.indices.history.byClient.get(codCli);
+                const historyIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 if (historyIds) {
                     let clientElmaFat = 0;
@@ -16840,11 +16840,9 @@ const supervisorGroups = new Map();
 
         // Iterate History
         if (allHistoryData instanceof ColumnarDataset) {
-            const indices = optimizedData.indices.history.byClient.get(normalizeKey(codeKey));
+            const indices = optimizedData.indices.history.byClient.get(normalizeKey(normalizeKey(codeKey)));
             if (indices) {
                 indices.forEach(idx => processSaleItem(allHistoryData.get(idx)));
-            } else {
-                for(let i=0; i<allHistoryData.length; i++) processSaleItem(allHistoryData.get(i));
             }
         } else {
             for(let i=0; i<allHistoryData.length; i++) processSaleItem(allHistoryData[i]);
@@ -16852,11 +16850,9 @@ const supervisorGroups = new Map();
 
         // Iterate Current Sales (Month) - Added per user request
         if (allSalesData instanceof ColumnarDataset) {
-            const indices = optimizedData.indices.current.byClient.get(normalizeKey(codeKey));
+            const indices = optimizedData.indices.current.byClient.get(normalizeKey(normalizeKey(codeKey)));
             if (indices) {
                 indices.forEach(idx => processSaleItem(allSalesData.get(idx)));
-            } else {
-                for(let i=0; i<allSalesData.length; i++) processSaleItem(allSalesData.get(i));
             }
         } else {
             for(let i=0; i<allSalesData.length; i++) processSaleItem(allSalesData[i]);
