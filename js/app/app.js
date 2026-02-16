@@ -8046,11 +8046,11 @@ const supervisorGroups = new Map();
                 let price = 0;
                 if (productDetailsMap.has(item.code)) {
                     const details = productDetailsMap.get(item.code);
-                    price = Number(details.preco || details.price || 0);
+                    price = Number(details.preco || details.price || details.PRECO || details.PRICE || details.preco_venda || details.PRECO_VENDA || 0);
                 }
                 if (!price && embeddedData.products) {
                     const p = embeddedData.products.find(x => String(x.code) === String(item.code));
-                    if(p) price = Number(p.preco || p.price || 0);
+                    if(p) price = Number(p.preco || p.price || p.PRECO || p.PRICE || p.preco_venda || p.PRECO_VENDA || 0);
                 }
 
                 const stockVal = totalStock * price;
