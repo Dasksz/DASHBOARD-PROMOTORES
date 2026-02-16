@@ -7827,6 +7827,7 @@ const supervisorGroups = new Map();
                 const code = String(item.PRODUTO);
                 const val = getValueForSale(item, selectedTiposVenda);
                 const weight = Number(item.TOTPESOLIQ) || 0;
+                const qty = Number(item.QTVENDA) || 0;
 
                 if (!currentMap.has(code)) {
                     const cat = getCategory(code, item.FORNECEDOR || item.CODFOR);
@@ -7836,13 +7837,16 @@ const supervisorGroups = new Map();
                         category: cat,
                         currentVal: 0,
                         currentWeight: 0,
+                        currentQty: 0,
                         prevVal: 0,
-                        prevWeight: 0
+                        prevWeight: 0,
+                        prevQty: 0
                     });
                 }
                 const entry = currentMap.get(code);
                 entry.currentVal += val;
                 entry.currentWeight += weight;
+                entry.currentQty += qty;
             });
 
             // Aggregate History Data (Filtered to Previous Month)
@@ -7856,6 +7860,7 @@ const supervisorGroups = new Map();
                     const code = String(item.PRODUTO);
                     const val = getValueForSale(item, selectedTiposVenda);
                     const weight = Number(item.TOTPESOLIQ) || 0;
+                    const qty = Number(item.QTVENDA) || 0;
 
                     if (!currentMap.has(code)) {
                         const cat = getCategory(code, item.FORNECEDOR || item.CODFOR);
@@ -7865,13 +7870,16 @@ const supervisorGroups = new Map();
                             category: cat,
                             currentVal: 0,
                             currentWeight: 0,
+                            currentQty: 0,
                             prevVal: 0,
-                            prevWeight: 0
+                            prevWeight: 0,
+                            prevQty: 0
                         });
                     }
                     const entry = currentMap.get(code);
                     entry.prevVal += val;
                     entry.prevWeight += weight;
+                    entry.prevQty += qty;
                 }
             });
 
@@ -7992,18 +8000,47 @@ const supervisorGroups = new Map();
             const s05 = stockData05.get(item.code) || 0;
             const s08 = stockData08.get(item.code) || 0;
             const totalStock = s05 + s08;
-            if (stockEl) stockEl.textContent = totalStock.toLocaleString('pt-BR');
+
+            const isFat = currentProductMetric === 'faturamento';
+
+            // Calculate Stock Value if needed (Find Price)
+            let stockDisplay = '';
+            if (isFat) {
+                // Find Price
+                let price = 0;
+                if (productDetailsMap.has(item.code)) {
+                    const details = productDetailsMap.get(item.code);
+                    price = Number(details.preco || details.price || 0);
+                }
+                if (!price && embeddedData.products) {
+                    const p = embeddedData.products.find(x => String(x.code) === String(item.code));
+                    if(p) price = Number(p.preco || p.price || 0);
+                }
+
+                const stockVal = totalStock * price;
+                stockDisplay = stockVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            } else {
+                stockDisplay = totalStock.toLocaleString('pt-BR');
+            }
+
+            if (stockEl) {
+                stockEl.textContent = stockDisplay;
+                // Update unit sibling if present
+                if (stockEl.nextElementSibling) {
+                    stockEl.nextElementSibling.textContent = isFat ? '' : 'cx';
+                }
+            }
 
             // Sales Logic
-            const isFat = currentProductMetric === 'faturamento';
-            if (metricLabelEl) metricLabelEl.textContent = isFat ? 'Valor' : 'Volume (Kg)';
+            // If Fat -> Show Value. If Weight -> Show Qty (Boxes) as per user request
+            if (metricLabelEl) metricLabelEl.textContent = isFat ? 'Valor' : 'Caixas';
 
-            const prevVal = isFat ? item.prevVal : item.prevWeight;
-            const currVal = isFat ? item.currentVal : item.currentWeight;
+            const prevVal = isFat ? item.prevVal : item.prevQty;
+            const currVal = isFat ? item.currentVal : item.currentQty;
 
             const format = (v) => isFat
                 ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                : v.toLocaleString('pt-BR', { minimumFractionDigits: 3 }) + ' kg';
+                : v.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) + ' cx';
 
             if (prevEl) prevEl.textContent = format(prevVal);
             if (currEl) currEl.textContent = format(currVal);
