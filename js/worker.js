@@ -908,34 +908,44 @@
                     // Performance: for loop
                     for(let i=0; i<data.length; i++) {
                         const row = data[i];
-                        if (!row.PEDIDO) continue;
-                        if (!orders.has(row.PEDIDO)) {
+                        const pedidoId = row.PEDIDO;
+                        if (!pedidoId) continue;
+
+                        let order = orders.get(pedidoId);
+                        if (!order) {
                             // Restore Client Info for Order Header (needed for Modal)
                             const client = clientMap.get(row.CODCLI);
-                            orders.set(row.PEDIDO, {
-                                ...row,
+                            order = {
+                                PEDIDO: pedidoId,
+                                CODCLI: row.CODCLI,
+                                NOME: row.NOME,
+                                SUPERV: row.SUPERV,
+                                DTPED: row.DTPED,
+                                DTSAIDA: row.DTSAIDA,
+                                POSICAO: row.POSICAO,
+                                FILIAL: row.FILIAL,
                                 TIPOVENDA: String(row.TIPOVENDA || 'N/A'),
                                 CLIENTE_NOME: client ? (client.nomeCliente || client.fantasia) : 'N/A',
                                 CIDADE: client ? client.cidade : 'N/A',
-                                QTVENDA: 0,
                                 VLVENDA: 0,
-                                VLBONIFIC: 0,
                                 TOTPESOLIQ: 0,
                                 FORNECEDORES: new Set(),
                                 CODFORS: new Set()
-                            });
+                            };
+                            orders.set(pedidoId, order);
                         }
-                        const order = orders.get(row.PEDIDO);
-                        order.QTVENDA += (Number(row.QTVENDA) || 0);
-                        order.VLVENDA += (Number(row.VLVENDA) || 0);
-                        order.VLBONIFIC += (Number(row.VLBONIFIC) || 0);
-                        order.TOTPESOLIQ += (Number(row.TOTPESOLIQ) || 0);
+
+                        // Performance: Avoid Number() overhead, data is already parsed
+                        order.VLVENDA += (row.VLVENDA || 0);
+                        order.TOTPESOLIQ += (row.TOTPESOLIQ || 0);
                         if (row.OBSERVACAOFOR) order.FORNECEDORES.add(row.OBSERVACAOFOR);
                         if (row.CODFOR) order.CODFORS.add(row.CODFOR);
                     }
-                    return Array.from(orders.values()).map(order => {
-                        // Construct a clean object matching data_orders schema to avoid "column not found" errors
-                        return {
+
+                    // Performance: Single pass to construct final objects
+                    const result = [];
+                    for (const order of orders.values()) {
+                        result.push({
                             PEDIDO: order.PEDIDO,
                             CODCLI: order.CODCLI,
                             CLIENTE_NOME: order.CLIENTE_NOME,
@@ -950,11 +960,12 @@
                             TOTPESOLIQ: order.TOTPESOLIQ,
                             FILIAL: order.FILIAL,
                             // Added for Filtering
-                            TIPOVENDA: String(order.TIPOVENDA || 'N/A'),
+                            TIPOVENDA: order.TIPOVENDA,
                             FORNECEDORES_LIST: Array.from(order.FORNECEDORES),
                             CODFORS_LIST: Array.from(order.CODFORS)
-                        };
-                    });
+                        });
+                    }
+                    return result;
                 };
                 const aggregatedByOrder = aggregateOrders(finalSalesData);
 
