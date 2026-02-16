@@ -16716,10 +16716,10 @@ const supervisorGroups = new Map();
             }
         };
 
-        // Bind listeners for live update
-        if (itinDateInput) itinDateInput.addEventListener('change', updatePrediction);
+        // Bind listeners for live update (Using onchange to prevent stacking listeners on reopen)
+        if (itinDateInput) itinDateInput.onchange = updatePrediction;
         document.querySelectorAll('input[name="itinerary-day"]').forEach(cb => {
-            cb.addEventListener('change', updatePrediction);
+            cb.onchange = updatePrediction;
         });
         
         if (dateVal) {
