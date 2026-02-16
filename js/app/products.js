@@ -12,7 +12,9 @@ window.App.Products = {
             searchInput._bound = true;
         }
 
-        const prodList = window.AppState.embeddedData.products || []; // Use embeddedData for product list (array)
+        // Use global embeddedData as fallback or AppState property if mapped
+        const prodList = (window.embeddedData && window.embeddedData.products) ? window.embeddedData.products : [];
+
         const filtered = prodList.filter(p => {
             if (!filter) return true;
             const f = filter.toLowerCase();
