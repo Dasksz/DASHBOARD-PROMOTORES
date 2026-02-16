@@ -16052,13 +16052,13 @@ const supervisorGroups = new Map();
                  // Try find name
                  const h = embeddedData.hierarchy || [];
                  const me = h.find(x => 
-                    (x.cod_coord && x.cod_coord.trim().toUpperCase() === role) || 
-                    (x.cod_cocoord && x.cod_cocoord.trim().toUpperCase() === role) ||
-                    (x.cod_promotor && x.cod_promotor.trim().toUpperCase() === role)
+                    (x.cod_coord && String(x.cod_coord).trim().toUpperCase() === role) ||
+                    (x.cod_cocoord && String(x.cod_cocoord).trim().toUpperCase() === role) ||
+                    (x.cod_promotor && String(x.cod_promotor).trim().toUpperCase() === role)
                  );
                  if (me) {
-                      if (me.cod_coord && me.cod_coord.trim().toUpperCase() === role) nameEl.textContent = me.nome_coord;
-                      else if (me.cod_cocoord && me.cod_cocoord.trim().toUpperCase() === role) nameEl.textContent = me.nome_cocoord;
+                      if (me.cod_coord && String(me.cod_coord).trim().toUpperCase() === role) nameEl.textContent = me.nome_coord;
+                      else if (me.cod_cocoord && String(me.cod_cocoord).trim().toUpperCase() === role) nameEl.textContent = me.nome_cocoord;
                       else nameEl.textContent = me.nome_promotor;
                  }
             }
@@ -16133,73 +16133,78 @@ const supervisorGroups = new Map();
     }
 
     window.renderWalletView = function() {
-        initWalletView();
-        
-        // Populate Promoters if empty
-        if (walletState.promoters.length === 0) {
-             const role = (window.userRole || '').trim().toUpperCase();
-             const hierarchy = embeddedData.hierarchy || [];
-             const myPromoters = new Set();
-             let isManager = (role === 'ADM');
+        try {
+            initWalletView();
 
-             hierarchy.forEach(h => {
-                 const c = (h.cod_coord||'').trim().toUpperCase();
-                 const cc = (h.cod_cocoord||'').trim().toUpperCase();
-                 const pRaw = (h.cod_promotor||'').trim(); // Keep raw case
-                 const p = pRaw.toUpperCase(); // For comparison
-                 const pName = h.nome_promotor || pRaw;
+            // Populate Promoters if empty
+            if (walletState.promoters.length === 0) {
+                 const role = (window.userRole || '').trim().toUpperCase();
+                 const hierarchy = embeddedData.hierarchy || [];
+                 const myPromoters = new Set();
+                 let isManager = (role === 'ADM');
 
-                 if (role === 'ADM' || c === role || cc === role) {
-                     if (role !== 'ADM') isManager = true;
-                     if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
-                 } else if (p === role) {
-                     if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
-                 }
-            });
-            
-            walletState.promoters = Array.from(myPromoters).map(s => JSON.parse(s)).sort((a,b) => a.name.localeCompare(b.name));
-            walletState.canEdit = isManager;
-            
-            // UI Toggle based on permission
-            const searchContainer = document.getElementById('wallet-search-container');
-            if (searchContainer) {
-                if (walletState.canEdit) searchContainer.classList.remove('hidden');
-                else searchContainer.classList.add('hidden');
-            }
-            
-            // Build Dropdown
-            const dropdown = document.getElementById('wallet-promoter-dropdown');
-            if (dropdown) {
-                dropdown.innerHTML = '';
-                walletState.promoters.forEach(p => {
-                     const div = document.createElement('div');
-                     div.className = 'px-4 py-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300 hover:text-white border-b border-slate-700/50 last:border-0';
-                     div.textContent = `${p.code} - ${p.name}`;
-                     div.onclick = () => {
-                         selectWalletPromoter(p.code, p.name);
-                         dropdown.classList.add('hidden');
-                     };
-                     dropdown.appendChild(div);
+                 hierarchy.forEach(h => {
+                     const c = String(h.cod_coord||'').trim().toUpperCase();
+                     const cc = String(h.cod_cocoord||'').trim().toUpperCase();
+                     const pRaw = String(h.cod_promotor||'').trim(); // Keep raw case
+                     const p = pRaw.toUpperCase(); // For comparison
+                     const pName = h.nome_promotor || pRaw;
+
+                     if (role === 'ADM' || c === role || cc === role) {
+                         if (role !== 'ADM') isManager = true;
+                         if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
+                     } else if (p === role) {
+                         if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
+                     }
                 });
-            }
-            
-            // Auto Select
-            if (walletState.promoters.length === 1) {
-                selectWalletPromoter(walletState.promoters[0].code, walletState.promoters[0].name);
-                const btn = document.getElementById('wallet-promoter-select-btn');
-                if(btn) {
-                    btn.classList.add('opacity-75', 'cursor-default');
-                    const svg = btn.querySelector('svg');
-                    if(svg) svg.classList.add('hidden');
+
+                walletState.promoters = Array.from(myPromoters).map(s => JSON.parse(s)).sort((a,b) => a.name.localeCompare(b.name));
+                walletState.canEdit = isManager;
+
+                // UI Toggle based on permission
+                const searchContainer = document.getElementById('wallet-search-container');
+                if (searchContainer) {
+                    if (walletState.canEdit) searchContainer.classList.remove('hidden');
+                    else searchContainer.classList.add('hidden');
                 }
-            } else if (walletState.promoters.length > 0) {
-                 if (!walletState.selectedPromoter) {
-                     // Optionally select first
-                 }
+
+                // Build Dropdown
+                const dropdown = document.getElementById('wallet-promoter-dropdown');
+                if (dropdown) {
+                    dropdown.innerHTML = '';
+                    walletState.promoters.forEach(p => {
+                         const div = document.createElement('div');
+                         div.className = 'px-4 py-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300 hover:text-white border-b border-slate-700/50 last:border-0';
+                         div.textContent = `${p.code} - ${p.name}`;
+                         div.onclick = () => {
+                             selectWalletPromoter(p.code, p.name);
+                             dropdown.classList.add('hidden');
+                         };
+                         dropdown.appendChild(div);
+                    });
+                }
+
+                // Auto Select
+                if (walletState.promoters.length === 1) {
+                    selectWalletPromoter(walletState.promoters[0].code, walletState.promoters[0].name);
+                    const btn = document.getElementById('wallet-promoter-select-btn');
+                    if(btn) {
+                        btn.classList.add('opacity-75', 'cursor-default');
+                        const svg = btn.querySelector('svg');
+                        if(svg) svg.classList.add('hidden');
+                    }
+                } else if (walletState.promoters.length > 0) {
+                     if (!walletState.selectedPromoter) {
+                         // Optionally select first
+                     }
+                }
             }
+
+            renderWalletTable();
+        } catch (e) {
+            console.error("Critical error in renderWalletView:", e);
+            if (window.showToast) window.showToast('error', 'Erro ao carregar carteira: ' + e.message);
         }
-        
-        renderWalletTable();
     }
     
     window.selectWalletPromoter = async function(code, name) {
