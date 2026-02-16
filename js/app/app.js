@@ -16695,6 +16695,57 @@ const supervisorGroups = new Map();
             }
         }
 
+        // Bind Frequency Change Logic (Toggle Days)
+        const daysContainer = document.getElementById('itinerary-days-container');
+        const freqRadios = document.querySelectorAll('input[name="itinerary-frequency"]');
+
+        const toggleDaysVisibility = () => {
+            const selected = document.querySelector('input[name="itinerary-frequency"]:checked')?.value;
+            if (selected === 'weekly') {
+                daysContainer.classList.remove('hidden');
+            } else {
+                daysContainer.classList.add('hidden');
+            }
+        };
+
+        freqRadios.forEach(r => {
+            r.onchange = toggleDaysVisibility;
+        });
+
+        // Initialize UI State
+        // 1. Frequency
+        const freq = client.ITINERARY_FREQUENCY || client.itinerary_frequency;
+        if (freq) {
+            const radio = document.querySelector(`input[name="itinerary-frequency"][value="${freq}"]`);
+            if (radio) radio.checked = true;
+        } else {
+            freqRadios.forEach(r => r.checked = false);
+        }
+
+        // 2. Next Date
+        const nextDate = client.ITINERARY_NEXT_DATE || client.itinerary_next_date;
+        if (nextDate) {
+            document.getElementById('itinerary-next-date').value = nextDate;
+        } else {
+            document.getElementById('itinerary-next-date').value = '';
+        }
+
+        // 3. Days (New)
+        const savedDays = client.ITINERARY_DAYS || client.itinerary_days; // Expect string "1,3,5"
+        const dayCheckboxes = document.querySelectorAll('input[name="itinerary-days"]');
+
+        // Reset
+        dayCheckboxes.forEach(cb => cb.checked = false);
+
+        if (savedDays) {
+            const daysArr = String(savedDays).split(',');
+            dayCheckboxes.forEach(cb => {
+                if (daysArr.includes(cb.value)) cb.checked = true;
+            });
+        }
+
+        toggleDaysVisibility(); // Set initial visibility
+
         // Bind Save Button
         if (itinSaveBtn) {
             // Remove old listeners
@@ -16704,7 +16755,15 @@ const supervisorGroups = new Map();
             newBtn.onclick = () => {
                 const selectedFreq = document.querySelector('input[name="itinerary-frequency"]:checked')?.value;
                 const selectedDate = document.getElementById('itinerary-next-date')?.value;
-                saveClientItinerary(codeKey, selectedFreq, selectedDate);
+
+                // Capture Days
+                const selectedDays = [];
+                document.querySelectorAll('input[name="itinerary-days"]:checked').forEach(cb => {
+                    selectedDays.push(cb.value);
+                });
+                const daysStr = selectedDays.join(',');
+
+                saveClientItinerary(codeKey, selectedFreq, selectedDate, daysStr);
             };
         }
 
@@ -17211,6 +17270,7 @@ const supervisorGroups = new Map();
     function calculateNextRoteiroDate(client, fromDate = new Date()) {
         const freq = client.ITINERARY_FREQUENCY || client.itinerary_frequency;
         const refDateStr = client.ITINERARY_NEXT_DATE || client.itinerary_next_date;
+        const daysStr = client.ITINERARY_DAYS || client.itinerary_days;
 
         if (!freq || !refDateStr) return null;
 
@@ -17226,37 +17286,37 @@ const supervisorGroups = new Map();
 
         const utcFrom = Date.UTC(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
 
-        // Calculate days difference
-        const diffTime = utcFrom - utcRef;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // New Logic: Weekly with Specific Days
+        if (freq === 'weekly' && daysStr) {
+             const daysArr = String(daysStr).split(',').map(Number);
+             const startSearch = Math.max(utcFrom, utcRef); // Start checking from Max(Today, StartDate)
 
-        // Interval
+             // Check up to 7 days forward
+             for (let i = 0; i < 7; i++) {
+                 const checkTime = startSearch + (i * 24 * 60 * 60 * 1000);
+                 const checkDate = new Date(checkTime);
+                 const day = checkDate.getUTCDay();
+
+                 if (daysArr.includes(day)) {
+                     return new Date(checkDate.getUTCFullYear(), checkDate.getUTCMonth(), checkDate.getUTCDate());
+                 }
+             }
+             return null; // Should not happen if logic is correct
+        }
+
+        // Legacy Logic (Interval based)
         const interval = (freq === 'weekly') ? 7 : (freq === 'biweekly' ? 14 : 0);
         if (interval === 0) return null;
 
-        // Find smallest N >= 0 such that Ref + (N * Interval) >= From
-        // Ref + X = From -> X = From - Ref = diffDays
-        // We need next valid day >= diffDays that is a multiple of interval
-        // Wait, the modulo logic in renderRoteiroClients uses `diffDays % interval === 0`.
-        // So we need to find the next date where (target - ref) % interval == 0 AND target >= from.
-
-        // Let Offset = diffDays. We need NextOffset >= Offset such that NextOffset % interval == 0.
-        // If Offset is negative (Ref is future), we can just use Ref (Offset 0 relative to Ref, but we need >= From).
-        // Actually simpler:
-        // Current diffDays is the offset from Ref to Today.
-        // We want the next multiple of interval that is >= diffDays.
+        const diffTime = utcFrom - utcRef;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         let remainder = diffDays % interval;
-        // JS modulo can be negative.
-        // Example: Ref=10th. From=8th. Diff = -2. Interval=7.
-        // We want 10th (Ref).
-        // -2 % 7 = -2.
-
         let daysToAdd = 0;
+
         if (remainder === 0) {
             daysToAdd = 0; // Today matches
         } else {
-            // Need to move forward to next multiple
             if (remainder > 0) {
                 daysToAdd = interval - remainder;
             } else {
@@ -17265,7 +17325,6 @@ const supervisorGroups = new Map();
         }
 
         const nextDate = new Date(utcFrom + (daysToAdd * 24 * 60 * 60 * 1000));
-        // Add Timezone offset compensation to return local date object 00:00
         return new Date(nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate());
     }
 
@@ -17574,7 +17633,22 @@ const supervisorGroups = new Map();
             
             let isScheduled = false;
             if (freq === 'weekly') {
-                isScheduled = (Math.abs(diffDays) % 7 === 0);
+                // New Multi-day Logic
+                const daysStr = c.ITINERARY_DAYS || c.itinerary_days;
+                if (daysStr) {
+                    const daysArr = String(daysStr).split(',').map(Number);
+                    // Check if View Date >= Ref Date (Start)
+                    // diffDays >= 0 means date is same or after ref date
+                    if (diffDays >= 0) {
+                        const currentDay = date.getDay(); // 0-6
+                        if (daysArr.includes(currentDay)) {
+                            isScheduled = true;
+                        }
+                    }
+                } else {
+                    // Legacy Weekly (Fixed interval from start date)
+                    isScheduled = (Math.abs(diffDays) % 7 === 0);
+                }
             } else if (freq === 'biweekly') {
                 isScheduled = (Math.abs(diffDays) % 14 === 0);
             }
@@ -17692,12 +17766,17 @@ const supervisorGroups = new Map();
     }
 
     // Helper to save itinerary
-    window.saveClientItinerary = async function(clientCode, frequency, nextDate) {
+    window.saveClientItinerary = async function(clientCode, frequency, nextDate, itineraryDays) {
         if (!clientCode || !frequency || !nextDate) {
-            window.showToast('warning', 'Preencha todos os campos.');
+            window.showToast('warning', 'Preencha frequência e próxima data.');
             return;
         }
         
+        if (frequency === 'weekly' && (!itineraryDays || itineraryDays.length === 0)) {
+             window.showToast('warning', 'Selecione pelo menos um dia de atendimento para roteiro semanal.');
+             return;
+        }
+
         const btn = document.getElementById('save-itinerary-btn');
         const oldHtml = btn.innerHTML;
         btn.disabled = true;
@@ -17724,7 +17803,8 @@ const supervisorGroups = new Map();
             const payload = {
                 client_code: clientCodeNorm,
                 itinerary_frequency: frequency,
-                itinerary_ref_date: nextDate // Date string YYYY-MM-DD
+                itinerary_ref_date: nextDate, // Date string YYYY-MM-DD
+                itinerary_days: itineraryDays
             };
             if (currentPromoter) payload.promoter_code = currentPromoter;
 
@@ -17738,12 +17818,14 @@ const supervisorGroups = new Map();
             if (entry) {
                 entry.itinerary_frequency = frequency;
                 entry.itinerary_ref_date = nextDate;
+                entry.itinerary_days = itineraryDays;
             } else {
                 embeddedData.clientPromoters.push({
                     client_code: clientCodeNorm,
                     promoter_code: currentPromoter,
                     itinerary_frequency: frequency,
-                    itinerary_ref_date: nextDate
+                    itinerary_ref_date: nextDate,
+                    itinerary_days: itineraryDays
                 });
             }
 
@@ -17778,6 +17860,7 @@ const supervisorGroups = new Map();
                     if (clientProxy) {
                         clientProxy.ITINERARY_FREQUENCY = frequency;
                         clientProxy.ITINERARY_NEXT_DATE = nextDate;
+                        clientProxy.ITINERARY_DAYS = itineraryDays;
                     }
                 }
             } else if (Array.isArray(allClientsData)) {
@@ -17785,6 +17868,7 @@ const supervisorGroups = new Map();
                 if (client) {
                     client.ITINERARY_FREQUENCY = frequency;
                     client.ITINERARY_NEXT_DATE = nextDate;
+                    client.ITINERARY_DAYS = itineraryDays;
                 }
             }
 
