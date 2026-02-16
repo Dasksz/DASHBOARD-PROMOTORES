@@ -16683,10 +16683,10 @@ const supervisorGroups = new Map();
         // Live Prediction Logic
         const updatePrediction = () => {
             if (!calcPreview || !itinDateInput) return;
-
+            
             const freq = document.querySelector('input[name="itinerary-frequency"]:checked')?.value;
             const refDate = itinDateInput.value;
-
+            
             if (!freq || !refDate) {
                 calcPreview.textContent = 'Selecione frequência e data para calcular.';
                 return;
@@ -16707,7 +16707,7 @@ const supervisorGroups = new Map();
 
             // Use 'today' as base to find next visit from NOW
             const next = calculateNextRoteiroDate(tempClient, new Date());
-
+            
             if (next) {
                 const options = { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' };
                 calcPreview.innerHTML = `Próximo atendimento previsto: <strong class="text-white">${next.toLocaleDateString('pt-BR', options)}</strong>`;
@@ -16778,7 +16778,7 @@ const supervisorGroups = new Map();
             newBtn.onclick = () => {
                 const selectedFreq = document.querySelector('input[name="itinerary-frequency"]:checked')?.value;
                 const selectedDate = document.getElementById('itinerary-next-date')?.value;
-
+                
                 let selectedDays = [];
                 if (selectedFreq === 'weekly') {
                     document.querySelectorAll('input[name="itinerary-day"]:checked').forEach(cb => {
@@ -17337,12 +17337,12 @@ const supervisorGroups = new Map();
                 // Reference Date Check:
                 // We must ensure the calculated date is >= refDate.
                 const potentialDate = utcFrom + (daysToAdd * 24 * 60 * 60 * 1000);
-
+                
                 if (potentialDate < utcRef) {
                     // If calculated date is before Ref Date, we must start search FROM Ref Date.
                     const refDateObj = new Date(utcRef);
                     const refDay = refDateObj.getUTCDay();
-
+                    
                     let nextDayRef = days.find(d => d >= refDay);
                     let add = 0;
                     if(nextDayRef !== undefined) {
@@ -17711,7 +17711,7 @@ const supervisorGroups = new Map();
                 // Multi-day logic
                 const days = daysStr.split(',').map(Number);
                 const targetDay = new Date(utcTarget).getUTCDay();
-
+                
                 // Only if target date is >= ref date
                 if (utcTarget >= utcRef) {
                     if (days.includes(targetDay)) {
@@ -17722,7 +17722,7 @@ const supervisorGroups = new Map();
                 // Interval logic (Standard)
                 const diffTime = utcTarget - utcRef;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
+                
                 // Ensure date is >= Ref Date (No past scheduling relative to start)
                 if (diffDays >= 0) {
                     if (freq === 'weekly') {
