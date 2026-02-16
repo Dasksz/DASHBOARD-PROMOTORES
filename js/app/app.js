@@ -19657,7 +19657,7 @@ const supervisorGroups = new Map();
                 manyBodyStrength: -20,
                 centerStrength: 0.8,
                 minRadius: 35,
-                maxRadius: am5.percent(18),
+                maxRadius: am5.percent(14.5),
                 velocityDecay: 0.6,
                 initialVelocity: 0.05
             })
