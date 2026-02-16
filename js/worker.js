@@ -306,7 +306,11 @@
         };
 
         const processSalesData = (rawData, clientMap, productMasterMap, newRcaSupervisorMap, stockLinesCollector = null, fallbackDate = null) => {
-            return rawData.map(rawRow => {
+            const result = [];
+            const len = rawData.length;
+
+            for (let i = 0; i < len; i++) {
+                const rawRow = rawData[i];
                 // --- HEADER DETECTION: Ignore rows that look like headers ---
                 // Enhanced robust detection: Check against forbidden keys list
                 const checkHeader = (val) => val && FORBIDDEN_KEYS.includes(val.trim().toUpperCase());
@@ -323,7 +327,7 @@
                     String(rawRow['NOME'] || '').trim().toUpperCase() === 'NOME' ||
                     String(rawRow['TIPOVENDA'] || '').trim().toUpperCase() === 'TIPOVENDA'
                 ) {
-                    return null;
+                    continue;
                 }
 
                 // --- NOVA LÓGICA: Derivação de OBSERVACAOFOR se vazio ---
@@ -360,7 +364,7 @@
                             PASTA: observacaoFor // Adiciona PASTA explicitamente
                         });
                     }
-                    return null; // Remove da listagem principal de vendas
+                    continue; // Remove da listagem principal de vendas
                 }
                 // --- FIM DA MODIFICAÇÃO ---
 
@@ -512,7 +516,7 @@
                 if (filialValue === '5') filialValue = '05';
                 if (filialValue === '8') filialValue = '08';
 
-                return {
+                result.push({
                     PEDIDO: pedido, NOME: vendorName, SUPERV: supervisorName, PRODUTO: productCode,
                     DESCRICAO: String(rawRow['DESCRICAO'] || ''), FORNECEDOR: String(rawRow['FORNECEDOR'] || ''),
                     OBSERVACAOFOR: observacaoFor, CODFOR: String(rawRow['CODFOR'] || '').trim(),
@@ -539,8 +543,9 @@
                     // Adiciona a filial normalizada para permitir filtragem
                     FILIAL: filialValue
                     // --- FIM DA MODIFICAÇÃO ---
-                };
-            }).filter(item => item !== null);
+                });
+            }
+            return result;
         };
 
         function getMaxDate(data) {
