@@ -1,5 +1,6 @@
 (function() {
         const embeddedData = window.embeddedData;
+        const hierarchyState = window.HierarchySystem.state;
 
         // --- CONFIGURATION MOVED TO utils.js ---
         // SUPPLIER_CONFIG, resolveSupplierPasta, GARBAGE_SELLER_KEYWORDS, isGarbageSeller available globally
