@@ -8268,12 +8268,14 @@ const supervisorGroups = new Map();
                 // Rank
                 const tdRank = document.createElement('td');
                 tdRank.className = 'py-1 px-1 md:py-3 md:px-4 text-center text-slate-500 font-mono text-[10px] md:text-xs font-bold';
+                tdRank.setAttribute('data-label', 'Rank');
                 tdRank.textContent = index + 1;
                 tr.appendChild(tdRank);
 
                 // Produto
                 const tdProduct = document.createElement('td');
                 tdProduct.className = 'py-1 px-1 md:py-3 md:px-4';
+                tdProduct.setAttribute('data-label', 'Produto');
                 tdProduct.innerHTML = `
                     <div class="flex flex-col">
                         <span class="text-[10px] md:text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate max-w-[120px] md:max-w-xs block" title="${item.name || 'Desconhecido'}">${item.name || 'Desconhecido'}</span>
@@ -8285,6 +8287,7 @@ const supervisorGroups = new Map();
                 // Performance (Bar)
                 const tdPerf = document.createElement('td');
                 tdPerf.className = 'py-1 px-1 md:py-3 md:px-4 w-1/4 md:w-1/3 align-middle hidden md:table-cell';
+                tdPerf.setAttribute('data-label', 'Perf.');
                 const barWidth = Math.min((item.absVariation / maxVariation) * 100, 100);
                 const barColor = item.variation >= 0 ? 'bg-emerald-500' : 'bg-red-500';
                 
@@ -8299,6 +8302,7 @@ const supervisorGroups = new Map();
                 // Variation Badge
                 const tdVar = document.createElement('td');
                 tdVar.className = 'py-1 px-1 md:py-3 md:px-4 text-right';
+                tdVar.setAttribute('data-label', 'Var.');
                 const badgeBg = item.variation >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20';
                 const arrow = item.variation >= 0 ? '▲' : '▼';
                 const sign = item.variation > 0 ? '+' : '';
@@ -16666,16 +16670,17 @@ const supervisorGroups = new Map();
              if (!promoter || linkedPromoter === targetPromoter) {
                  count++;
                  const tr = document.createElement('tr');
-                 tr.className = 'hover:bg-slate-800/50 transition-colors border-b border-slate-800/50';
+                 tr.className = 'hover:bg-slate-800/50 transition-colors border-b border-slate-800/50 cursor-pointer';
+                 tr.setAttribute('onclick', `openWalletClientModal('${code}')`);
                  tr.innerHTML = `
-                    <td class="px-2 py-2 md:px-6 md:py-4 font-mono text-[10px] md:text-xs text-slate-400 w-16 md:w-32">${code}</td>
-                    <td class="px-2 py-2 md:px-6 md:py-4">
+                    <td data-label="Código" class="px-2 py-1.5 md:px-6 md:py-4 font-mono text-[10px] md:text-xs text-slate-400 w-16 md:w-32">${code}</td>
+                    <td data-label="Cliente" class="px-2 py-1.5 md:px-6 md:py-4">
                         <div class="text-[10px] md:text-sm font-bold text-white truncate max-w-[120px] md:max-w-none">${rowFantasia || 'N/A'}</div>
                         <div class="text-[9px] md:text-xs text-slate-500 truncate max-w-[120px] md:max-w-none">${rowRazao || ''}</div>
                     </td>
-                    <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${rowCnpj || ''}</td>
-                    <td class="px-2 py-2 md:px-6 md:py-4 text-center hidden md:table-cell">
-                         <button class="p-2 text-blue-400 hover:text-white hover:bg-blue-600 rounded-lg transition-all" onclick="openWalletClientModal('${code}')">
+                    <td data-label="CNPJ" class="px-2 py-1.5 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${rowCnpj || ''}</td>
+                    <td class="px-2 py-1.5 md:px-6 md:py-4 text-center hidden md:table-cell">
+                         <button class="p-2 text-blue-400 hover:text-white hover:bg-blue-600 rounded-lg transition-all">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                          </button>
                     </td>
@@ -18596,16 +18601,16 @@ const supervisorGroups = new Map();
             else if (statusText === 'B') { statusText = 'Bloqueado'; statusColor = 'text-red-400'; }
 
             tr.innerHTML = `
-                <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 font-mono">${dateStr}</td>
-                <td class="px-2 py-2 md:px-6 md:py-4 text-xs md:text-sm text-white font-bold">${order.PEDIDO}</td>
-                <td class="px-2 py-2 md:px-6 md:py-4">
-                    <div class="text-xs md:text-sm text-white max-w-[100px] md:max-w-none truncate">${order.CLIENTE_NOME || 'N/A'}</div>
+                <td data-label="Data" class="px-2 py-1.5 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 font-mono">${dateStr}</td>
+                <td data-label="Pedido" class="px-2 py-1.5 md:px-6 md:py-4 text-xs md:text-sm text-white font-bold">${order.PEDIDO}</td>
+                <td data-label="Cliente" class="px-2 py-1.5 md:px-6 md:py-4">
+                    <div class="text-xs md:text-sm text-white max-w-[120px] md:max-w-none truncate">${order.CLIENTE_NOME || 'N/A'}</div>
                     <div class="text-[10px] md:text-xs text-slate-500 font-mono">${order.CODCLI}</div>
                 </td>
-                <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${order.NOME || '-'}</td>
-                <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${order.CODFOR || '-'}</td>
-                <td class="px-2 py-2 md:px-6 md:py-4 text-xs md:text-sm text-white font-bold text-right">${valStr}</td>
-                <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-center ${statusColor}">${statusText}</td>
+                <td data-label="Vendedor" class="px-2 py-1.5 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${order.NOME || '-'}</td>
+                <td data-label="Fornecedor" class="px-2 py-1.5 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${order.CODFOR || '-'}</td>
+                <td data-label="Valor" class="px-2 py-1.5 md:px-6 md:py-4 text-xs md:text-sm text-white font-bold text-right">${valStr}</td>
+                <td data-label="Status" class="px-2 py-1.5 md:px-6 md:py-4 text-[10px] md:text-xs text-center ${statusColor}">${statusText}</td>
             `;
             // Optional: Click to see details (reuse existing modal logic if possible)
             // tr.onclick = ...
