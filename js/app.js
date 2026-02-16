@@ -7753,7 +7753,8 @@ const supervisorGroups = new Map();
 
                 coverageTableDataForExport = filteredTableData;
 
-                coverageTableBody.innerHTML = filteredTableData.slice(0, 500).map(item => {
+                window.currentCoverageData = filteredTableData; // Cache for click handler
+                coverageTableBody.innerHTML = filteredTableData.slice(0, 500).map((item, index) => {
                     let boxesVariationContent;
                     if (isFinite(item.boxesVariation)) {
                         const colorClass = item.boxesVariation >= 0 ? 'text-green-400' : 'text-red-400';
@@ -7775,8 +7776,8 @@ const supervisorGroups = new Map();
                     }
 
                     return `
-                        <tr class="hover:bg-slate-700/50">
-                            <td data-label="Produto" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[120px] md:max-w-xs" title="${item.descricao}">${item.descricao}</td>
+                        <tr class="hover:bg-slate-700/50 cursor-pointer md:cursor-default" onclick="window.handleCoverageRowClick(${index})">
+                            <td data-label="Produto" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[140px] md:max-w-xs" title="${item.descricao}">${item.descricao}</td>
                             <td data-label="Estoque" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.stockQty.toLocaleString('pt-BR')}</td>
                             <td data-label="Vol Ant (Cx)" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.boxesSoldPreviousMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
                             <td data-label="Vol Atual (Cx)" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">${item.boxesSoldCurrentMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
@@ -8265,14 +8266,16 @@ const supervisorGroups = new Map();
             container.innerHTML = '';
 
             const maxVariation = Math.max(...data.map(d => d.absVariation)) || 100;
+            window.currentTopProductsData = data; // Cache
 
             data.forEach((item, index) => {
                 const tr = document.createElement('tr');
-                tr.className = 'border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group';
+                tr.className = 'border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group cursor-pointer md:cursor-default';
+                tr.onclick = () => window.handleTopProductClick(index);
 
                 // Rank
                 const tdRank = document.createElement('td');
-                tdRank.className = 'py-1 px-1 md:py-3 md:px-4 text-center text-slate-500 font-mono text-[10px] md:text-xs font-bold';
+                tdRank.className = 'py-1 px-0.5 md:py-3 md:px-4 text-center text-slate-500 font-mono text-[10px] md:text-xs font-bold w-6 md:w-12';
                 tdRank.textContent = index + 1;
                 tr.appendChild(tdRank);
 
@@ -8281,19 +8284,18 @@ const supervisorGroups = new Map();
                 tdProduct.className = 'py-1 px-1 md:py-3 md:px-4';
                 tdProduct.innerHTML = `
                     <div class="flex flex-col">
-                        <span class="text-[10px] md:text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate max-w-[120px] md:max-w-xs block" title="${item.name || 'Desconhecido'}">${item.name || 'Desconhecido'}</span>
-                        <span class="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">${item.category || ''}</span>
+                        <span class="text-[10px] md:text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate max-w-[140px] md:max-w-xs block" title="${item.name || 'Desconhecido'}">${item.name || 'Desconhecido'}</span>
+                        <span class="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-wide mt-0.5 truncate max-w-[140px] md:max-w-none block">${item.category || ''}</span>
                     </div>
                 `;
                 tr.appendChild(tdProduct);
 
-                // Performance (Bar)
+                // Performance (Bar) - Hidden on Mobile
                 const tdPerf = document.createElement('td');
                 tdPerf.className = 'py-1 px-1 md:py-3 md:px-4 w-1/4 md:w-1/3 align-middle hidden md:table-cell';
                 const barWidth = Math.min((item.absVariation / maxVariation) * 100, 100);
                 const barColor = item.variation >= 0 ? 'bg-emerald-500' : 'bg-red-500';
                 
-                // Refined HTML for simple magnitude bar:
                 tdPerf.innerHTML = `
                     <div class="h-1 md:h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
                         <div class="h-full ${barColor} rounded-full transition-all duration-500" style="width: ${barWidth}%"></div>
@@ -8303,14 +8305,14 @@ const supervisorGroups = new Map();
 
                 // Variation Badge
                 const tdVar = document.createElement('td');
-                tdVar.className = 'py-1 px-1 md:py-3 md:px-4 text-right';
+                tdVar.className = 'py-1 px-0.5 md:py-3 md:px-4 text-right w-20 md:w-auto';
                 const badgeBg = item.variation >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20';
                 const arrow = item.variation >= 0 ? '▲' : '▼';
                 const sign = item.variation > 0 ? '+' : '';
 
                 tdVar.innerHTML = `
-                    <span class="inline-flex items-center justify-end px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-md text-[10px] md:text-xs font-bold border ${badgeBg} min-w-[50px] md:min-w-[80px]">
-                        ${sign}${item.variation.toFixed(1)}% ${arrow}
+                    <span class="inline-flex items-center justify-end px-1 py-0.5 md:px-2.5 md:py-1 rounded-md text-[9px] md:text-xs font-bold border ${badgeBg} whitespace-nowrap">
+                        ${sign}${item.variation.toFixed(0)}% ${arrow}
                     </span>
                 `;
                 tr.appendChild(tdVar);
@@ -8318,6 +8320,28 @@ const supervisorGroups = new Map();
                 container.appendChild(tr);
             });
         }
+
+    window.handleTopProductClick = function(index) {
+        if (window.innerWidth >= 768) return; // Mobile only
+        const item = window.currentTopProductsData[index];
+        if (!item) return;
+
+        openMobileTableDetail(item.name, {
+            'Produto': item.name,
+            'Categoria': item.category || 'N/A',
+            'Valor Atual': (item.current || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            'Valor Histórico': (item.history || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            'Variação': `${item.variation.toFixed(2)}%`,
+            'Diferença': ((item.current || 0) - (item.history || 0)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+        }, {
+            'Produto': 'Produto',
+            'Categoria': 'Categoria',
+            'Valor Atual': 'Valor Atual',
+            'Valor Histórico': 'Média Histórica',
+            'Variação': 'Variação (%)',
+            'Diferença': 'Diferença (R$)'
+        });
+    };
 
         // Renamed/Wrapper for compatibility if needed, or update updateAllVisuals directly
         // updateProductBarChart was replaced.
@@ -8357,29 +8381,57 @@ const supervisorGroups = new Map();
             // Otimização: Usar DocumentFragment para renderização eficiente
             const fragment = document.createDocumentFragment();
 
-            pageData.forEach(row => {
+            window.currentReportPageData = pageData; // Cache for click handler
+
+            pageData.forEach((row, index) => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-700 transition-colors";
+                tr.className = "hover:bg-slate-700 transition-colors cursor-pointer md:cursor-default";
+                tr.onclick = (e) => {
+                    // Prevent conflict with existing links
+                    if (e.target.tagName === 'A') return;
+                    window.handleReportRowClick(index);
+                };
 
                 const createLink = (text, dataAttr, dataVal) => {
                     const a = document.createElement('a');
                     a.href = "#";
-                    a.className = "text-teal-400 hover:underline";
+                    a.className = "text-teal-400 hover:underline md:pointer-events-none"; // Disable link on mobile to prefer row click
                     a.dataset[dataAttr] = escapeHtml(dataVal);
-                    a.textContent = text; // textContent automatically escapes
+                    a.textContent = text;
                     return a;
                 };
 
                 const tdPedido = document.createElement('td');
-                tdPedido.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm";
+                tdPedido.className = "px-1 py-2 md:px-4 md:py-2 text-[10px] md:text-sm w-12 md:w-auto";
                 tdPedido.dataset.label = 'Nº Pedido';
                 tdPedido.appendChild(createLink(row.PEDIDO, 'pedidoId', row.PEDIDO));
                 tr.appendChild(tdPedido);
 
                 const tdCodCli = document.createElement('td');
-                tdCodCli.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm";
+                tdCodCli.className = "px-1 py-2 md:px-4 md:py-2 text-[10px] md:text-sm";
                 tdCodCli.dataset.label = 'Cliente';
-                tdCodCli.appendChild(createLink(row.CODCLI, 'codcli', row.CODCLI));
+                const clientLink = createLink(row.CODCLI, 'codcli', row.CODCLI);
+                clientLink.classList.add('truncate', 'block', 'max-w-[120px]', 'md:max-w-xs', 'font-bold');
+                tdCodCli.appendChild(clientLink);
+                // Append name below code for mobile visual
+                const nameDiv = document.createElement('div');
+                nameDiv.className = "text-[9px] text-slate-400 truncate max-w-[120px] md:hidden";
+                // We don't have client name here directly, only CODCLI?
+                // Wait, report table uses `row.CLIENTE_NOME` if enriched?
+                // Let's check logic: `renderTable` receives `data`.
+                // `data` comes from `getFilteredData`.
+                // In `getFilteredData`, `orders` are used. `orders` are fetched from `data_orders`.
+                // `colsOrders` includes `cliente_nome`.
+                // So yes, row has `cliente_nome` (mapped to UPPERCASE keys in `parseCSVToObjects`?).
+                // Let's assume keys are UPPERCASE based on `mapKeysToUpper` usage elsewhere?
+                // Actually `data_orders` fetch uses `parseCSVToObjects` with `type='orders'`.
+                // `colsOrders` = 'id,pedido,codcli,cliente_nome...'.
+                // If CSV parser uppercases headers: `CLIENTE_NOME`.
+
+                if (row.CLIENTE_NOME) {
+                    nameDiv.textContent = row.CLIENTE_NOME;
+                    tdCodCli.appendChild(nameDiv);
+                }
                 tr.appendChild(tdCodCli);
 
                 const tdVendedor = document.createElement('td');
@@ -8395,7 +8447,7 @@ const supervisorGroups = new Map();
                 tr.appendChild(tdForn);
 
                 const tdDtPed = document.createElement('td');
-                tdDtPed.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm text-center";
+                tdDtPed.className = "px-1 py-2 md:px-4 md:py-2 text-[10px] md:text-sm text-center w-14 md:w-auto";
                 tdDtPed.dataset.label = 'Data Pedido';
                 tdDtPed.textContent = formatDate(row.DTPED);
                 tr.appendChild(tdDtPed);
@@ -8760,7 +8812,22 @@ const supervisorGroups = new Map();
                     '1119_TODDYNHO': 0, '1119_TODDY': 0, '1119_QUAKER_KEROCOCO': 0
                 };
 
-                const visibleClientsForGoals = getHierarchyFilteredClients('main', allClientsData);
+                // Calculate Scope Clients for Goals (Hierarchy + Active + Rede + Specific Client)
+                let visibleClientsForGoals = getHierarchyFilteredClients('main', allClientsData);
+
+                // Filter by Active/Rede (Reuse clientCodesInRede which has Active + Rede logic)
+                // Note: clientCodesInRede is a Set of IDs from clientBaseForCoverage
+                // We use intersection to ensure we only count goals for valid active clients in the current view
+                if (typeof clientCodesInRede !== 'undefined') {
+                    visibleClientsForGoals = visibleClientsForGoals.filter(c => clientCodesInRede.has(c['Código'] || c['codigo_cliente']));
+                }
+
+                // Filter by Specific Client Selection
+                if (codcli) {
+                     const targetCode = normalizeKey(codcli);
+                     visibleClientsForGoals = visibleClientsForGoals.filter(c => normalizeKey(c['Código'] || c['codigo_cliente']) === targetCode);
+                }
+
                 if (window.globalClientGoals) {
                     visibleClientsForGoals.forEach(c => {
                         const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
@@ -9192,8 +9259,9 @@ const supervisorGroups = new Map();
                 const sortedActiveClients = Object.values(salesByActiveClient).sort((a, b) => b.total - a.total);
                 activeClientsForExport = sortedActiveClients;
 
-                cityActiveDetailTableBody.innerHTML = sortedActiveClients.slice(0, 500).map(data => {
-                    const novoLabel = data.isNew ? `<span class="ml-2 text-xs font-semibold text-purple-400 bg-purple-900/50 px-2 py-0.5 rounded-full">NOVO</span>` : '';
+                window.currentCityActiveData = sortedActiveClients; // Cache for click handler
+                cityActiveDetailTableBody.innerHTML = sortedActiveClients.slice(0, 500).map((data, index) => {
+                    const novoLabel = data.isNew ? `<span class="ml-2 text-[9px] md:text-xs font-semibold text-purple-400 bg-purple-900/50 px-1 py-0.5 rounded-full">NOVO</span>` : '';
                     let tooltipParts = [];
                     if (data.pepsico > 0) tooltipParts.push(`PEPSICO: ${data.pepsico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
                     if (data.multimarcas > 0) tooltipParts.push(`MULTIMARCAS: ${data.multimarcas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
@@ -9207,7 +9275,20 @@ const supervisorGroups = new Map();
                     const cidade = data.cidade || data.CIDADE || data['Nome da Cidade'] || 'N/A';
                     const bairro = data.bairro || data.BAIRRO || 'N/A';
 
-                    return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${data['Código']}">${data['Código']}</a></td><td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${nome}${novoLabel}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm"><div class="tooltip">${data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<span class="tooltip-text" style="width: max-content; transform: translateX(-50%); margin-left: 0;">${tooltipText}</span></div></td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${bairro}</td><td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(data.ultimaCompra)}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td></tr>`
+                    return `<tr class="hover:bg-slate-700 cursor-pointer md:cursor-default" onclick="window.handleCityActiveRowClick(${index})">
+                        <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm w-12 md:w-auto"><a href="#" class="text-teal-400 hover:underline md:pointer-events-none" data-codcli="${data['Código']}">${data['Código']}</a></td>
+                        <td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[140px] md:max-w-xs">
+                            <div class="truncate">${nome}</div>
+                            ${novoLabel}
+                        </td>
+                        <td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm font-bold">
+                            <div class="tooltip">${data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<span class="tooltip-text" style="width: max-content; transform: translateX(-50%); margin-left: 0;">${tooltipText}</span></div>
+                        </td>
+                        <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td>
+                        <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${bairro}</td>
+                        <td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(data.ultimaCompra)}</td>
+                        <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td>
+                    </tr>`
                 }).join('');
 
                 inactiveClientsList.sort((a, b) => {
@@ -9218,7 +9299,8 @@ const supervisorGroups = new Map();
                     return (parseDate(b.ultimaCompra) || 0) - (parseDate(a.ultimaCompra) || 0);
                 });
 
-                cityInactiveDetailTableBody.innerHTML = inactiveClientsList.slice(0, 500).map(client => {
+                window.currentCityInactiveData = inactiveClientsList; // Cache for click handler
+                cityInactiveDetailTableBody.innerHTML = inactiveClientsList.slice(0, 500).map((client, index) => {
                     const novoLabel = client.isNewForInactiveLabel ? `<span class="ml-2 text-[9px] md:text-xs font-semibold text-purple-400 bg-purple-900/50 px-1 py-0.5 rounded-full">NOVO</span>` : '';
                     const devolucaoLabel = client.isReturn ? `<span class="ml-2 text-[9px] md:text-xs font-semibold text-red-400 bg-red-900/50 px-1 py-0.5 rounded-full">DEV</span>` : '';
                     const rcaVal = (client.rcas && client.rcas.length > 0) ? client.rcas[0] : '-';
@@ -9230,7 +9312,17 @@ const supervisorGroups = new Map();
                     const bairro = client.bairro || client.BAIRRO || 'N/A';
                     const ultCompra = client.ultimaCompra || client['Data da Última Compra'] || client.ULTIMACOMPRA;
 
-                    return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${client['Código']}">${client['Código']}</a></td><td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${nome}${novoLabel}${devolucaoLabel}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${bairro}</td><td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(ultCompra)}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td></tr>`
+                    return `<tr class="hover:bg-slate-700 cursor-pointer md:cursor-default" onclick="window.handleCityInactiveRowClick(${index})">
+                        <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm w-12 md:w-auto"><a href="#" class="text-teal-400 hover:underline md:pointer-events-none" data-codcli="${client['Código']}">${client['Código']}</a></td>
+                        <td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[140px] md:max-w-xs">
+                            <div class="truncate">${nome}</div>
+                            ${novoLabel}${devolucaoLabel}
+                        </td>
+                        <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td>
+                        <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${bairro}</td>
+                        <td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(ultCompra)}</td>
+                        <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td>
+                    </tr>`
                 }).join('');
 
                 const cityChartTitleEl = document.getElementById('city-chart-title');
@@ -10735,9 +10827,38 @@ const supervisorGroups = new Map();
                     }
 
                     // Supervisor Table
+                    // Supervisor Table
                     const supervisorTableBody = document.getElementById('supervisorComparisonTableBody');
-                    const supRows = Object.entries(m.charts.supervisorData).map(([sup, data]) => { const variation = data.history > 0 ? ((data.current - data.history) / data.history) * 100 : (data.current > 0 ? 100 : 0); const colorClass = variation > 0 ? 'text-green-400' : variation < 0 ? 'text-red-400' : 'text-slate-400'; return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm truncate max-w-[100px]">${sup}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm ${colorClass}">${variation.toFixed(2)}%</td></tr>`; }).join('');
+                    // Cache data
+                    const supDataEntries = Object.entries(m.charts.supervisorData);
+                    window.currentSupervisorComparisonData = supDataEntries.map(([sup, data]) => ({ name: sup, ...data }));
+
+                    const supRows = supDataEntries.map(([sup, data], index) => {
+                        const variation = data.history > 0 ? ((data.current - data.history) / data.history) * 100 : (data.current > 0 ? 100 : 0);
+                        const colorClass = variation > 0 ? 'text-green-400' : variation < 0 ? 'text-red-400' : 'text-slate-400';
+                        return `<tr class="hover:bg-slate-700 cursor-pointer" onclick="window.handleSupervisorComparisonRowClick(${index})"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm truncate max-w-[100px]">${sup}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm hidden md:table-cell">${data.history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm ${colorClass}">${variation.toFixed(2)}%</td></tr>`;
+                    }).join('');
                     supervisorTableBody.innerHTML = supRows;
+
+                    window.handleSupervisorComparisonRowClick = (index) => {
+                        if (window.innerWidth >= 768) return;
+                        const item = window.currentSupervisorComparisonData[index];
+                        if (!item) return;
+
+                        const variation = item.history > 0 ? ((item.current - item.history) / item.history) * 100 : (item.current > 0 ? 100 : 0);
+
+                        window.openMobileTableDetail(item.name, {
+                            'Supervisor': item.name,
+                            'Histórico': item.history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                            'Atual': item.current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                            'Variação': `${variation.toFixed(2)}%`
+                        }, {
+                            'Supervisor': 'Supervisor',
+                            'Histórico': 'Histórico (Média)',
+                            'Atual': 'Faturamento Atual',
+                            'Variação': 'Variação'
+                        });
+                    };
                 }, () => currentRenderId !== comparisonRenderId); // Cancel check
             }, () => currentRenderId !== comparisonRenderId); // Cancel check
         }
@@ -11060,7 +11181,15 @@ const supervisorGroups = new Map();
                     const stock = activeStockMap.get(productCode) || 0;
 
                     // Re-calculate per product using the Product Results Sets
+                    // IMPORTANT: Merge Current + Bonus Current for total coverage
                     const pRes = productResults[productCode];
+
+                    // Note: pRes.current was populated by `processMap(main)` AND `processMap(bonus)` ?
+                    // Let's re-verify processMap logic.
+                    // `processMap` iterates salesMap.
+                    // `productResults[prodCode][targetSetField].add(codCli)`
+                    // If processMap called twice (Main then Bonus), it adds to same set.
+                    // So `pRes.current` is already the UNION. Correct.
 
                     const clientsCurrentCount = pRes ? pRes.current.size : 0;
                     const clientsPreviousCount = pRes ? pRes.previous.size : 0;
@@ -11087,7 +11216,8 @@ const supervisorGroups = new Map();
             innovationsMonthTableDataForExport = tableData;
 
             // Render Table
-            innovationsMonthTableBody.innerHTML = tableData.map(item => {
+            window.currentInnovationsData = tableData; // Cache for click handler
+            innovationsMonthTableBody.innerHTML = tableData.map((item, index) => {
                 let variationContent;
                 if (isFinite(item.variation)) {
                     const colorClass = item.variation >= 0 ? 'text-green-400' : 'text-red-400';
@@ -11099,9 +11229,9 @@ const supervisorGroups = new Map();
                 }
 
                 return `
-                    <tr class="hover:bg-slate-700/50">
+                    <tr class="hover:bg-slate-700/50 cursor-pointer md:cursor-default" onclick="window.handleInnovationsRowClick(${index})">
                         <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs hidden md:table-cell">${item.categoryName}</td>
-                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[120px] md:max-w-xs" title="${item.productName}">${item.productCode} - ${item.productName}</td>
+                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[140px] md:max-w-xs" title="${item.productName}">${item.productCode} - ${item.productName}</td>
                         <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.stock.toLocaleString('pt-BR')}</td>
                         <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">
                             <div class="tooltip">${item.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${item.clientsPreviousCount} PDVs</span></div>
@@ -17440,6 +17570,75 @@ const supervisorGroups = new Map();
          }
     }
     
+    window.handleCityActiveRowClick = function(index) {
+        if (window.innerWidth >= 768) return;
+        const data = window.currentCityActiveData[index];
+        if (!data) return;
+
+        const fantasia = data.fantasia || data.FANTASIA || data.Fantasia || '';
+        const razao = data.razaoSocial || data.Cliente || data.RAZAOSOCIAL || '';
+        const nome = fantasia || razao || 'N/A';
+        const rcaVal = (data.rcas && data.rcas.length > 0) ? data.rcas[0] : '-';
+
+        openMobileTableDetail(nome, {
+            'Código': data['Código'],
+            'Cliente': nome,
+            'Total': data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            'Cidade': data.cidade || 'N/A',
+            'Bairro': data.bairro || 'N/A',
+            'Última Compra': formatDate(data.ultimaCompra),
+            'Vendedor': rcaVal,
+            'Pepsico': data.pepsico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            'Multimarcas': data.multimarcas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            'Outros': data.outros.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+        }, {
+            'Código': 'Código',
+            'Cliente': 'Cliente',
+            'Total': 'Total Compra',
+            'Cidade': 'Cidade',
+            'Bairro': 'Bairro',
+            'Última Compra': 'Última Compra',
+            'Vendedor': 'Vendedor',
+            'Pepsico': 'Mix Pepsico',
+            'Multimarcas': 'Mix Multimarcas',
+            'Outros': 'Outros Mix'
+        });
+    };
+
+    window.handleCityInactiveRowClick = function(index) {
+        if (window.innerWidth >= 768) return;
+        const client = window.currentCityInactiveData[index];
+        if (!client) return;
+
+        const fantasia = client.fantasia || client.FANTASIA || client.Fantasia || '';
+        const razao = client.razaoSocial || client.Cliente || client.RAZAOSOCIAL || '';
+        const nome = fantasia || razao || 'N/A';
+        const rcaVal = (client.rcas && client.rcas.length > 0) ? client.rcas[0] : '-';
+        const ultCompra = client.ultimaCompra || client['Data da Última Compra'] || client.ULTIMACOMPRA;
+
+        let status = 'Sem Compra';
+        if (client.isReturn) status = 'Devolução (Saldo Negativo)';
+        if (client.isNewForInactiveLabel) status = 'Novo (Sem Compra)';
+
+        openMobileTableDetail(nome, {
+            'Código': client['Código'],
+            'Cliente': nome,
+            'Status': status,
+            'Cidade': client.cidade || 'N/A',
+            'Bairro': client.bairro || 'N/A',
+            'Última Compra': formatDate(ultCompra),
+            'Vendedor': rcaVal
+        }, {
+            'Código': 'Código',
+            'Cliente': 'Cliente',
+            'Status': 'Status',
+            'Cidade': 'Cidade',
+            'Bairro': 'Bairro',
+            'Última Compra': 'Última Compra',
+            'Vendedor': 'Vendedor'
+        });
+    };
+
     window.renderView = renderView;
 
     // --- ROTEIRO LOGIC ---
@@ -18088,6 +18287,28 @@ const supervisorGroups = new Map();
     let clientsTableState = { page: 1, limit: 200, filtered: [] };
     let historyTableState = { page: 1, limit: 50, filtered: [], hasSearched: false };
 
+    window.handleInnovationsRowClick = function(index) {
+        if (window.innerWidth >= 768) return; // Mobile only
+        const item = window.currentInnovationsData[index];
+        if (!item) return;
+
+        openMobileTableDetail(item.productName, {
+            'Produto': item.productName,
+            'Categoria': item.categoryName,
+            'Cobertura Atual': `${item.coverageCurrent.toFixed(2)}% (${item.clientsCurrentCount} PDVs)`,
+            'Cobertura Anterior': `${item.coveragePrevious.toFixed(2)}% (${item.clientsPreviousCount} PDVs)`,
+            'Variação': `${isFinite(item.variation) ? item.variation.toFixed(1) + '%' : 'Novo'}`,
+            'Estoque': item.stock.toLocaleString('pt-BR')
+        }, {
+            'Produto': 'Produto',
+            'Categoria': 'Categoria',
+            'Cobertura Atual': 'Cobertura (Mês Atual)',
+            'Cobertura Anterior': 'Cobertura (Mês Anterior)',
+            'Variação': 'Variação',
+            'Estoque': 'Estoque'
+        });
+    };
+
     window.renderClientView = function() {
         const container = document.getElementById('clientes-list-container');
         const countEl = document.getElementById('clientes-count');
@@ -18565,17 +18786,23 @@ const supervisorGroups = new Map();
             else if (statusText === 'P') { statusText = 'Pendente'; statusColor = 'text-orange-400'; }
             else if (statusText === 'B') { statusText = 'Bloqueado'; statusColor = 'text-red-400'; }
 
+            // Abbreviate status
+            let shortStatus = statusText;
+            if(window.innerWidth < 768) { // Mobile check
+                shortStatus = statusText.substring(0, 1);
+            }
+
             tr.innerHTML = `
-                <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 font-mono">${dateStr}</td>
-                <td class="px-2 py-2 md:px-6 md:py-4 text-xs md:text-sm text-white font-bold">${order.PEDIDO}</td>
-                <td class="px-2 py-2 md:px-6 md:py-4">
-                    <div class="text-xs md:text-sm text-white max-w-[100px] md:max-w-none truncate">${order.CLIENTE_NOME || 'N/A'}</div>
-                    <div class="text-[10px] md:text-xs text-slate-500 font-mono">${order.CODCLI}</div>
+                <td class="px-1 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 font-mono w-14 md:w-auto text-center">${dateStr}</td>
+                <td class="px-1 py-2 md:px-6 md:py-4 text-[10px] md:text-sm text-white font-bold w-16 md:w-auto text-center">${order.PEDIDO}</td>
+                <td class="px-1 py-2 md:px-6 md:py-4">
+                    <div class="text-[10px] md:text-sm text-white max-w-[80px] md:max-w-none truncate">${order.CLIENTE_NOME || 'N/A'}</div>
+                    <div class="text-[9px] md:text-xs text-slate-500 font-mono">${order.CODCLI}</div>
                 </td>
                 <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${order.NOME || '-'}</td>
                 <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${order.CODFOR || '-'}</td>
-                <td class="px-2 py-2 md:px-6 md:py-4 text-xs md:text-sm text-white font-bold text-right">${valStr}</td>
-                <td class="px-2 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-center ${statusColor}">${statusText}</td>
+                <td class="px-1 py-2 md:px-6 md:py-4 text-[10px] md:text-sm text-white font-bold text-right w-20 md:w-auto">${valStr}</td>
+                <td class="px-1 py-2 md:px-6 md:py-4 text-[10px] md:text-xs text-center ${statusColor} w-8 md:w-auto" title="${statusText}">${shortStatus}</td>
             `;
             // Optional: Click to see details (reuse existing modal logic if possible)
             // tr.onclick = ...
