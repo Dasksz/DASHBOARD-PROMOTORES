@@ -85,17 +85,6 @@
         window.showToast('error', msg);
     };
 
-            // Helper to normalize keys (remove leading zeros)
-            function normalizeKey(key) {
-                if (!key) return '';
-                const s = String(key).trim();
-                // Remove leading zeros if it's a numeric string
-                if (/^\d+$/.test(s)) {
-                    return String(parseInt(s, 10));
-                }
-                return s;
-            }
-
     // Helper to UPPERCASE keys
     function mapKeysToUpper(data, type) {
         if (!data || data.length === 0) return [];
