@@ -2,7 +2,7 @@ window.App = window.App || {};
 
 window.App.init = function() {
     console.log("App Initializing...");
-    
+
     // Initialize Sub-modules
     if (window.App.Wallet) window.App.Wallet.init();
     if (window.App.Visitas) window.App.Visitas.init();
@@ -22,6 +22,35 @@ window.App.init = function() {
         link.addEventListener('click', (e) => {
             const target = e.target.getAttribute('data-target');
             if (target) window.App.renderView(target);
+        });
+    });
+
+    // Mobile Menu Toggle
+    const mobileMenuBtn = document.getElementById('mobile-menu-toggle');
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (mobileMenuBtn && mobileMenu) {
+        mobileMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                mobileMenu.classList.add('hidden');
+            }
+        });
+    }
+
+    // Bind Mobile Navigation
+    const mobileLinks = document.querySelectorAll('.mobile-nav-link');
+    mobileLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            const target = e.target.getAttribute('data-target');
+            if (target) {
+                window.App.renderView(target);
+                if (mobileMenu) mobileMenu.classList.add('hidden');
+            }
         });
     });
 

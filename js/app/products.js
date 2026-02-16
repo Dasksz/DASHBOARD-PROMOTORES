@@ -12,7 +12,7 @@ window.App.Products = {
             searchInput._bound = true;
         }
 
-        const prodList = window.AppState.embeddedData.products || []; // Use embeddedData for product list (array)
+        const prodList = window.AppState.allProductsData || (window.embeddedData ? window.embeddedData.products : []) || [];
         const filtered = prodList.filter(p => {
             if (!filter) return true;
             const f = filter.toLowerCase();

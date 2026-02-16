@@ -445,6 +445,7 @@ window.Data = {
             window.AppState.allHistoryData = (history && history.columns) ? new window.Utils.ColumnarDataset(history) : history;
             window.AppState.allClientsData = (clients && clients.columns) ? new window.Utils.ColumnarDataset(clients) : clients;
             window.AppState.aggregatedOrders = orders;
+            window.AppState.allProductsData = products; // Available for Products View
 
             // Map Stock
             if (stock && stock.values) {
