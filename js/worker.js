@@ -70,7 +70,7 @@
                     return cached !== null ? new Date(cached) : null;
                 }
             } else if (typeof dateString === 'number') {
-                // Fix: Check if number is a JS Timestamp (large number) or Excel Serial (small number)
+                // Check if number is a JS Timestamp (large number) or Excel Serial (small number)
                 // Excel dates are around 45000 (for year 2023). Timestamps are > 1.6e12
                 if (dateString > 1000000) {
                     return new Date(dateString);
