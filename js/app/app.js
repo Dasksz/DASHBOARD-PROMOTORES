@@ -7833,11 +7833,59 @@ const supervisorGroups = new Map();
             const prevMonthIndex = prevMonthDate.getUTCMonth();
             const prevMonthYear = prevMonthDate.getUTCFullYear();
 
+            // --- PROPORTIONAL RATIO CALCULATION (Current Month vs Previous Month) ---
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+
+            // Calculate Current Month Progress
+            const totalWDCurrent = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+            // Use 'now' (Local) which getPassedWorkingDaysInMonth will interpret as UTC components to match check
+            const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, now);
+
+            const ratio = totalWDCurrent > 0 ? (passedWDCurrent / totalWDCurrent) : 1;
+
+            // Calculate Target Cutoff for Previous Month
+            const totalWDPrev = getWorkingDaysInMonth(prevMonthYear, prevMonthIndex, selectedHolidays);
+            const targetWDPrev = Math.round(totalWDPrev * ratio);
+
+            // Helper to find the day corresponding to target working days
+            const getDayForWorkingDays = (year, month, targetCount, holidays) => {
+                let count = 0;
+                // Iterate from 1st
+                const date = new Date(Date.UTC(year, month, 1));
+                while (date.getUTCMonth() === month) {
+                    const dayOfWeek = date.getUTCDay();
+                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays)) {
+                        count++;
+                    }
+                    if (count >= targetCount) return date.getUTCDate();
+                    date.setUTCDate(date.getUTCDate() + 1);
+                }
+                return date.getUTCDate(); // Fallback to end of month
+            };
+
+            const cutoffDayPrev = getDayForWorkingDays(prevMonthYear, prevMonthIndex, targetWDPrev, selectedHolidays);
+            // ------------------------------------------------------------------------
+
             const currentMap = new Map();
 
             const getCategory = (code, supplier) => {
                 if (optimizedData.productPastaMap.has(code)) return optimizedData.productPastaMap.get(code);
                 return resolveSupplierPasta(null, supplier);
+            };
+
+            const getStockFromMap = (map, code) => {
+                let s = map.get(code);
+                if (s !== undefined) return s;
+                const num = parseInt(code, 10);
+                if (!isNaN(num)) {
+                    const sNoZeros = map.get(String(num));
+                    if (sNoZeros !== undefined) return sNoZeros;
+                }
+                const sString = String(code);
+                if (map.has(sString)) return map.get(sString);
+                return 0;
             };
 
             // Aggregate Current Data (Already filtered)
@@ -7869,7 +7917,7 @@ const supervisorGroups = new Map();
                 entry.currentQty += qty;
             });
 
-            // Aggregate History Data (Filtered to Previous Month)
+            // Aggregate History Data (Filtered to Previous Month AND Cutoff Day)
             historyData.forEach(item => {
                 if (!isAlternativeMode(selectedTiposVenda) && item.TIPOVENDA !== '1' && item.TIPOVENDA !== '9') return;
 
@@ -7877,6 +7925,9 @@ const supervisorGroups = new Map();
                 if (!d) return;
 
                 if (d.getUTCMonth() === prevMonthIndex && d.getUTCFullYear() === prevMonthYear) {
+                    // APPLY CUTOFF FILTER
+                    if (d.getUTCDate() > cutoffDayPrev) return;
+
                     const code = String(item.PRODUTO);
                     const val = getValueForSale(item, selectedTiposVenda);
                     const weight = Number(item.TOTPESOLIQ) || 0;
@@ -7905,6 +7956,13 @@ const supervisorGroups = new Map();
 
             const results = [];
             currentMap.forEach(item => {
+                // Check Stock > 1 Box (Strict)
+                const s05 = getStockFromMap(stockData05, item.code);
+                const s08 = getStockFromMap(stockData08, item.code);
+                const totalStock = s05 + s08;
+
+                if (totalStock <= 1) return; // Skip products with low stock
+
                 const curr = currentMetric === 'faturamento' ? item.currentVal : item.currentWeight;
                 const prev = currentMetric === 'faturamento' ? item.prevVal : item.prevWeight;
 
