@@ -589,19 +589,33 @@
             const keysSet = new Set();
             const limit = Math.min(data.length, 50);
             for(let i=0; i<limit; i++) {
-                Object.keys(data[i]).forEach(k => keysSet.add(k));
-            }
-            const columns = Array.from(keysSet);
-
-            const values = {};
-            columns.forEach(col => values[col] = new Array(data.length));
-
-            for (let i = 0; i < data.length; i++) {
-                for (let j = 0; j < columns.length; j++) {
-                    values[columns[j]][i] = data[i][columns[j]];
+                const keys = Object.keys(data[i]);
+                for(let k=0; k<keys.length; k++) {
+                    keysSet.add(keys[k]);
                 }
             }
-            return { columns, values, length: data.length };
+            const columns = Array.from(keysSet);
+            const numColumns = columns.length;
+            const length = data.length;
+
+            const values = {};
+            const columnArrays = new Array(numColumns);
+
+            // Pre-allocate arrays and store references to avoid object lookup in inner loop
+            for(let j=0; j<numColumns; j++) {
+                const colName = columns[j];
+                const arr = new Array(length);
+                values[colName] = arr;
+                columnArrays[j] = arr;
+            }
+
+            for (let i = 0; i < length; i++) {
+                const row = data[i];
+                for (let j = 0; j < numColumns; j++) {
+                    columnArrays[j][i] = row[columns[j]];
+                }
+            }
+            return { columns, values, length: length };
         }
 
         async function computeHash(dataObj) {
