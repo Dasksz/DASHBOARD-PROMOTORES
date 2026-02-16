@@ -4248,18 +4248,45 @@
             
             const hState = hierarchyState['meta-realizado'];
             if (hState) {
-                // If Coords selected, filter by them
+                // 1. Always try to populate supervisorsSet if Coords are selected (Direct Supervisor Filter)
                 if (hState.coords.size > 0) {
                     hState.coords.forEach(c => {
                         const name = optimizedData.coordMap.get(c);
                         if(name) supervisorsSet.add(name);
                     });
                 }
-                // If Promotors selected (Sellers), filter by them
+
+                // 2. Resolve Promotor codes for sellersSet (Leaf Filter)
+                // Use drill-down logic: Promotor > Co-coord > Coord
+                const validCodes = new Set();
                 if (hState.promotors.size > 0) {
-                    hState.promotors.forEach(p => {
-                        const name = optimizedData.promotorMap.get(p);
-                        if(name) sellersSet.add(name);
+                    hState.promotors.forEach(p => validCodes.add(p));
+                } else if (hState.cocoords.size > 0) {
+                    hState.cocoords.forEach(cc => {
+                        const children = optimizedData.promotorsByCocoord.get(cc);
+                        if (children) children.forEach(p => validCodes.add(p));
+                    });
+                } else if (hState.coords.size > 0) {
+                    hState.coords.forEach(c => {
+                        const cocoords = optimizedData.cocoordsByCoord.get(c);
+                        if (cocoords) {
+                            cocoords.forEach(cc => {
+                                const children = optimizedData.promotorsByCocoord.get(cc);
+                                if (children) children.forEach(p => validCodes.add(p));
+                            });
+                        }
+                    });
+                }
+
+                // 3. Map codes to names in sellersSet
+                if (validCodes.size > 0) {
+                    validCodes.forEach(code => {
+                        const name = optimizedData.promotorMap.get(code);
+                        if (name) sellersSet.add(name);
+
+                        // Also try mapping via rcaNameByCode (fallback)
+                        const rcaName = optimizedData.rcaNameByCode.get(code);
+                        if (rcaName) sellersSet.add(rcaName);
                     });
                 }
             }
