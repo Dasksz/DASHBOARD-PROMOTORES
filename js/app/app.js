@@ -1719,6 +1719,9 @@
                 // Fix: Include razaoSocial and RAZAOSOCIAL in naming priority
                 client.nomeCliente = client.nomeCliente || client.razaoSocial || client.RAZAOSOCIAL || client.Cliente || client.CLIENTE || client.NOMECLIENTE || 'N/A';
 
+                // Fantasia Normalization
+                client.fantasia = client.fantasia || client.FANTASIA || client.Fantasia || client['Nome Fantasia'] || client['NOME FANTASIA'] || client.NOME_FANTASIA || '';
+
                 // RCA Handling
                 // mapKeysToUpper maps 'RCA1' -> 'RCA 1'. Local might use 'rca1'.
                 const rca1 = client.rca1 || client['RCA 1'] || client.RCA1;
@@ -18198,7 +18201,7 @@ const supervisorGroups = new Map();
             subset.forEach((client) => {
                 const cod = String(client['Código'] || client['codigo_cliente']);
                 const name = client.nomeCliente || 'Desconhecido';
-                const fantasia = client.fantasia || '';
+                const fantasia = client.fantasia || client.FANTASIA || client.Fantasia || client['Nome Fantasia'] || '';
                 const firstLetter = name.charAt(0).toUpperCase();
                 
                 let days = '-';
