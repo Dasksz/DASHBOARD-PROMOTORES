@@ -8001,7 +8001,7 @@ const supervisorGroups = new Map();
             const prevVal = isFat ? item.prevVal : item.prevWeight;
             const currVal = isFat ? item.currentVal : item.currentWeight;
 
-            const format = (v) => isFat
+            const format = (v) => isFat 
                 ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
                 : v.toLocaleString('pt-BR', { minimumFractionDigits: 3 }) + ' kg';
 
@@ -8013,7 +8013,7 @@ const supervisorGroups = new Map();
             const sign = variation > 0 ? '+' : '';
             const arrow = variation >= 0 ? '▲' : '▼';
             const colorClass = variation >= 0 ? 'text-emerald-400' : 'text-red-400';
-
+            
             if (varEl) {
                 varEl.textContent = `${sign}${variation.toFixed(1)}% ${arrow}`;
                 varEl.className = `px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 ${colorClass}`;
@@ -8027,7 +8027,7 @@ const supervisorGroups = new Map();
                 modal.classList.add('hidden');
             };
             if (closeBtn) closeBtn.onclick = close;
-
+            
             // Close on outside click (Generic Modal Logic handles this via setupGlobalEsc or similar, but explicit here helps)
             modal.onclick = (e) => {
                 if (e.target === modal) close();
@@ -16052,13 +16052,13 @@ const supervisorGroups = new Map();
                  // Try find name
                  const h = embeddedData.hierarchy || [];
                  const me = h.find(x => 
-                    (x.cod_coord && String(x.cod_coord).trim().toUpperCase() === role) ||
-                    (x.cod_cocoord && String(x.cod_cocoord).trim().toUpperCase() === role) ||
-                    (x.cod_promotor && String(x.cod_promotor).trim().toUpperCase() === role)
+                    (x.cod_coord && x.cod_coord.trim().toUpperCase() === role) || 
+                    (x.cod_cocoord && x.cod_cocoord.trim().toUpperCase() === role) ||
+                    (x.cod_promotor && x.cod_promotor.trim().toUpperCase() === role)
                  );
                  if (me) {
-                      if (me.cod_coord && String(me.cod_coord).trim().toUpperCase() === role) nameEl.textContent = me.nome_coord;
-                      else if (me.cod_cocoord && String(me.cod_cocoord).trim().toUpperCase() === role) nameEl.textContent = me.nome_cocoord;
+                      if (me.cod_coord && me.cod_coord.trim().toUpperCase() === role) nameEl.textContent = me.nome_coord;
+                      else if (me.cod_cocoord && me.cod_cocoord.trim().toUpperCase() === role) nameEl.textContent = me.nome_cocoord;
                       else nameEl.textContent = me.nome_promotor;
                  }
             }
@@ -16133,78 +16133,73 @@ const supervisorGroups = new Map();
     }
 
     window.renderWalletView = function() {
-        try {
-            initWalletView();
+        initWalletView();
+        
+        // Populate Promoters if empty
+        if (walletState.promoters.length === 0) {
+             const role = (window.userRole || '').trim().toUpperCase();
+             const hierarchy = embeddedData.hierarchy || [];
+             const myPromoters = new Set();
+             let isManager = (role === 'ADM');
 
-            // Populate Promoters if empty
-            if (walletState.promoters.length === 0) {
-                 const role = (window.userRole || '').trim().toUpperCase();
-                 const hierarchy = embeddedData.hierarchy || [];
-                 const myPromoters = new Set();
-                 let isManager = (role === 'ADM');
+             hierarchy.forEach(h => {
+                 const c = (h.cod_coord||'').trim().toUpperCase();
+                 const cc = (h.cod_cocoord||'').trim().toUpperCase();
+                 const pRaw = (h.cod_promotor||'').trim(); // Keep raw case
+                 const p = pRaw.toUpperCase(); // For comparison
+                 const pName = h.nome_promotor || pRaw;
 
-                 hierarchy.forEach(h => {
-                     const c = String(h.cod_coord||'').trim().toUpperCase();
-                     const cc = String(h.cod_cocoord||'').trim().toUpperCase();
-                     const pRaw = String(h.cod_promotor||'').trim(); // Keep raw case
-                     const p = pRaw.toUpperCase(); // For comparison
-                     const pName = h.nome_promotor || pRaw;
-
-                     if (role === 'ADM' || c === role || cc === role) {
-                         if (role !== 'ADM') isManager = true;
-                         if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
-                     } else if (p === role) {
-                         if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
-                     }
-                });
-
-                walletState.promoters = Array.from(myPromoters).map(s => JSON.parse(s)).sort((a,b) => a.name.localeCompare(b.name));
-                walletState.canEdit = isManager;
-
-                // UI Toggle based on permission
-                const searchContainer = document.getElementById('wallet-search-container');
-                if (searchContainer) {
-                    if (walletState.canEdit) searchContainer.classList.remove('hidden');
-                    else searchContainer.classList.add('hidden');
-                }
-
-                // Build Dropdown
-                const dropdown = document.getElementById('wallet-promoter-dropdown');
-                if (dropdown) {
-                    dropdown.innerHTML = '';
-                    walletState.promoters.forEach(p => {
-                         const div = document.createElement('div');
-                         div.className = 'px-4 py-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300 hover:text-white border-b border-slate-700/50 last:border-0';
-                         div.textContent = `${p.code} - ${p.name}`;
-                         div.onclick = () => {
-                             selectWalletPromoter(p.code, p.name);
-                             dropdown.classList.add('hidden');
-                         };
-                         dropdown.appendChild(div);
-                    });
-                }
-
-                // Auto Select
-                if (walletState.promoters.length === 1) {
-                    selectWalletPromoter(walletState.promoters[0].code, walletState.promoters[0].name);
-                    const btn = document.getElementById('wallet-promoter-select-btn');
-                    if(btn) {
-                        btn.classList.add('opacity-75', 'cursor-default');
-                        const svg = btn.querySelector('svg');
-                        if(svg) svg.classList.add('hidden');
-                    }
-                } else if (walletState.promoters.length > 0) {
-                     if (!walletState.selectedPromoter) {
-                         // Optionally select first
-                     }
-                }
+                 if (role === 'ADM' || c === role || cc === role) {
+                     if (role !== 'ADM') isManager = true;
+                     if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
+                 } else if (p === role) {
+                     if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
+                 }
+            });
+            
+            walletState.promoters = Array.from(myPromoters).map(s => JSON.parse(s)).sort((a,b) => a.name.localeCompare(b.name));
+            walletState.canEdit = isManager;
+            
+            // UI Toggle based on permission
+            const searchContainer = document.getElementById('wallet-search-container');
+            if (searchContainer) {
+                if (walletState.canEdit) searchContainer.classList.remove('hidden');
+                else searchContainer.classList.add('hidden');
             }
-
-            renderWalletTable();
-        } catch (e) {
-            console.error("Critical error in renderWalletView:", e);
-            if (window.showToast) window.showToast('error', 'Erro ao carregar carteira: ' + e.message);
+            
+            // Build Dropdown
+            const dropdown = document.getElementById('wallet-promoter-dropdown');
+            if (dropdown) {
+                dropdown.innerHTML = '';
+                walletState.promoters.forEach(p => {
+                     const div = document.createElement('div');
+                     div.className = 'px-4 py-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300 hover:text-white border-b border-slate-700/50 last:border-0';
+                     div.textContent = `${p.code} - ${p.name}`;
+                     div.onclick = () => {
+                         selectWalletPromoter(p.code, p.name);
+                         dropdown.classList.add('hidden');
+                     };
+                     dropdown.appendChild(div);
+                });
+            }
+            
+            // Auto Select
+            if (walletState.promoters.length === 1) {
+                selectWalletPromoter(walletState.promoters[0].code, walletState.promoters[0].name);
+                const btn = document.getElementById('wallet-promoter-select-btn');
+                if(btn) {
+                    btn.classList.add('opacity-75', 'cursor-default');
+                    const svg = btn.querySelector('svg');
+                    if(svg) svg.classList.add('hidden');
+                }
+            } else if (walletState.promoters.length > 0) {
+                 if (!walletState.selectedPromoter) {
+                     // Optionally select first
+                 }
+            }
         }
+        
+        renderWalletTable();
     }
     
     window.selectWalletPromoter = async function(code, name) {
@@ -16700,57 +16695,6 @@ const supervisorGroups = new Map();
             }
         }
 
-        // Bind Frequency Change Logic (Toggle Days)
-        const daysContainer = document.getElementById('itinerary-days-container');
-        const freqRadios = document.querySelectorAll('input[name="itinerary-frequency"]');
-
-        const toggleDaysVisibility = () => {
-            const selected = document.querySelector('input[name="itinerary-frequency"]:checked')?.value;
-            if (selected === 'weekly') {
-                daysContainer.classList.remove('hidden');
-            } else {
-                daysContainer.classList.add('hidden');
-            }
-        };
-
-        freqRadios.forEach(r => {
-            r.onchange = toggleDaysVisibility;
-        });
-
-        // Initialize UI State
-        // 1. Frequency
-        const freq = client.ITINERARY_FREQUENCY || client.itinerary_frequency;
-        if (freq) {
-            const radio = document.querySelector(`input[name="itinerary-frequency"][value="${freq}"]`);
-            if (radio) radio.checked = true;
-        } else {
-            freqRadios.forEach(r => r.checked = false);
-        }
-
-        // 2. Next Date
-        const nextDate = client.ITINERARY_NEXT_DATE || client.itinerary_next_date;
-        if (nextDate) {
-            document.getElementById('itinerary-next-date').value = nextDate;
-        } else {
-            document.getElementById('itinerary-next-date').value = '';
-        }
-
-        // 3. Days (New)
-        const savedDays = client.ITINERARY_DAYS || client.itinerary_days; // Expect string "1,3,5"
-        const dayCheckboxes = document.querySelectorAll('input[name="itinerary-days"]');
-
-        // Reset
-        dayCheckboxes.forEach(cb => cb.checked = false);
-
-        if (savedDays) {
-            const daysArr = String(savedDays).split(',');
-            dayCheckboxes.forEach(cb => {
-                if (daysArr.includes(cb.value)) cb.checked = true;
-            });
-        }
-
-        toggleDaysVisibility(); // Set initial visibility
-
         // Bind Save Button
         if (itinSaveBtn) {
             // Remove old listeners
@@ -16760,15 +16704,7 @@ const supervisorGroups = new Map();
             newBtn.onclick = () => {
                 const selectedFreq = document.querySelector('input[name="itinerary-frequency"]:checked')?.value;
                 const selectedDate = document.getElementById('itinerary-next-date')?.value;
-
-                // Capture Days
-                const selectedDays = [];
-                document.querySelectorAll('input[name="itinerary-days"]:checked').forEach(cb => {
-                    selectedDays.push(cb.value);
-                });
-                const daysStr = selectedDays.join(',');
-
-                saveClientItinerary(codeKey, selectedFreq, selectedDate, daysStr);
+                saveClientItinerary(codeKey, selectedFreq, selectedDate);
             };
         }
 
@@ -17275,7 +17211,6 @@ const supervisorGroups = new Map();
     function calculateNextRoteiroDate(client, fromDate = new Date()) {
         const freq = client.ITINERARY_FREQUENCY || client.itinerary_frequency;
         const refDateStr = client.ITINERARY_NEXT_DATE || client.itinerary_next_date;
-        const daysStr = client.ITINERARY_DAYS || client.itinerary_days;
 
         if (!freq || !refDateStr) return null;
 
@@ -17291,37 +17226,37 @@ const supervisorGroups = new Map();
 
         const utcFrom = Date.UTC(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
 
-        // New Logic: Weekly with Specific Days
-        if (freq === 'weekly' && daysStr) {
-             const daysArr = String(daysStr).split(',').map(Number);
-             const startSearch = Math.max(utcFrom, utcRef); // Start checking from Max(Today, StartDate)
-
-             // Check up to 7 days forward
-             for (let i = 0; i < 7; i++) {
-                 const checkTime = startSearch + (i * 24 * 60 * 60 * 1000);
-                 const checkDate = new Date(checkTime);
-                 const day = checkDate.getUTCDay();
-
-                 if (daysArr.includes(day)) {
-                     return new Date(checkDate.getUTCFullYear(), checkDate.getUTCMonth(), checkDate.getUTCDate());
-                 }
-             }
-             return null; // Should not happen if logic is correct
-        }
-
-        // Legacy Logic (Interval based)
-        const interval = (freq === 'weekly') ? 7 : (freq === 'biweekly' ? 14 : 0);
-        if (interval === 0) return null;
-
+        // Calculate days difference
         const diffTime = utcFrom - utcRef;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        let remainder = diffDays % interval;
-        let daysToAdd = 0;
+        // Interval
+        const interval = (freq === 'weekly') ? 7 : (freq === 'biweekly' ? 14 : 0);
+        if (interval === 0) return null;
 
+        // Find smallest N >= 0 such that Ref + (N * Interval) >= From
+        // Ref + X = From -> X = From - Ref = diffDays
+        // We need next valid day >= diffDays that is a multiple of interval
+        // Wait, the modulo logic in renderRoteiroClients uses `diffDays % interval === 0`.
+        // So we need to find the next date where (target - ref) % interval == 0 AND target >= from.
+
+        // Let Offset = diffDays. We need NextOffset >= Offset such that NextOffset % interval == 0.
+        // If Offset is negative (Ref is future), we can just use Ref (Offset 0 relative to Ref, but we need >= From).
+        // Actually simpler:
+        // Current diffDays is the offset from Ref to Today.
+        // We want the next multiple of interval that is >= diffDays.
+
+        let remainder = diffDays % interval;
+        // JS modulo can be negative.
+        // Example: Ref=10th. From=8th. Diff = -2. Interval=7.
+        // We want 10th (Ref).
+        // -2 % 7 = -2.
+
+        let daysToAdd = 0;
         if (remainder === 0) {
             daysToAdd = 0; // Today matches
         } else {
+            // Need to move forward to next multiple
             if (remainder > 0) {
                 daysToAdd = interval - remainder;
             } else {
@@ -17330,6 +17265,7 @@ const supervisorGroups = new Map();
         }
 
         const nextDate = new Date(utcFrom + (daysToAdd * 24 * 60 * 60 * 1000));
+        // Add Timezone offset compensation to return local date object 00:00
         return new Date(nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate());
     }
 
@@ -17638,22 +17574,7 @@ const supervisorGroups = new Map();
             
             let isScheduled = false;
             if (freq === 'weekly') {
-                // New Multi-day Logic
-                const daysStr = c.ITINERARY_DAYS || c.itinerary_days;
-                if (daysStr) {
-                    const daysArr = String(daysStr).split(',').map(Number);
-                    // Check if View Date >= Ref Date (Start)
-                    // diffDays >= 0 means date is same or after ref date
-                    if (diffDays >= 0) {
-                        const currentDay = date.getDay(); // 0-6
-                        if (daysArr.includes(currentDay)) {
-                            isScheduled = true;
-                        }
-                    }
-                } else {
-                    // Legacy Weekly (Fixed interval from start date)
-                    isScheduled = (Math.abs(diffDays) % 7 === 0);
-                }
+                isScheduled = (Math.abs(diffDays) % 7 === 0);
             } else if (freq === 'biweekly') {
                 isScheduled = (Math.abs(diffDays) % 14 === 0);
             }
@@ -17771,17 +17692,12 @@ const supervisorGroups = new Map();
     }
 
     // Helper to save itinerary
-    window.saveClientItinerary = async function(clientCode, frequency, nextDate, itineraryDays) {
+    window.saveClientItinerary = async function(clientCode, frequency, nextDate) {
         if (!clientCode || !frequency || !nextDate) {
-            window.showToast('warning', 'Preencha frequência e próxima data.');
+            window.showToast('warning', 'Preencha todos os campos.');
             return;
         }
         
-        if (frequency === 'weekly' && (!itineraryDays || itineraryDays.length === 0)) {
-             window.showToast('warning', 'Selecione pelo menos um dia de atendimento para roteiro semanal.');
-             return;
-        }
-
         const btn = document.getElementById('save-itinerary-btn');
         const oldHtml = btn.innerHTML;
         btn.disabled = true;
@@ -17808,8 +17724,7 @@ const supervisorGroups = new Map();
             const payload = {
                 client_code: clientCodeNorm,
                 itinerary_frequency: frequency,
-                itinerary_ref_date: nextDate, // Date string YYYY-MM-DD
-                itinerary_days: itineraryDays
+                itinerary_ref_date: nextDate // Date string YYYY-MM-DD
             };
             if (currentPromoter) payload.promoter_code = currentPromoter;
 
@@ -17823,14 +17738,12 @@ const supervisorGroups = new Map();
             if (entry) {
                 entry.itinerary_frequency = frequency;
                 entry.itinerary_ref_date = nextDate;
-                entry.itinerary_days = itineraryDays;
             } else {
                 embeddedData.clientPromoters.push({
                     client_code: clientCodeNorm,
                     promoter_code: currentPromoter,
                     itinerary_frequency: frequency,
-                    itinerary_ref_date: nextDate,
-                    itinerary_days: itineraryDays
+                    itinerary_ref_date: nextDate
                 });
             }
 
@@ -17865,7 +17778,6 @@ const supervisorGroups = new Map();
                     if (clientProxy) {
                         clientProxy.ITINERARY_FREQUENCY = frequency;
                         clientProxy.ITINERARY_NEXT_DATE = nextDate;
-                        clientProxy.ITINERARY_DAYS = itineraryDays;
                     }
                 }
             } else if (Array.isArray(allClientsData)) {
@@ -17873,7 +17785,6 @@ const supervisorGroups = new Map();
                 if (client) {
                     client.ITINERARY_FREQUENCY = frequency;
                     client.ITINERARY_NEXT_DATE = nextDate;
-                    client.ITINERARY_DAYS = itineraryDays;
                 }
             }
 
