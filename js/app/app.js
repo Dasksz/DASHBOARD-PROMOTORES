@@ -18384,6 +18384,7 @@ const supervisorGroups = new Map();
     }
 
     function filterHistoryView() {
+        console.log("[History] Filtering...");
         const startVal = document.getElementById('history-date-start').value;
         const endVal = document.getElementById('history-date-end').value;
         const posFilter = document.getElementById('history-posicao-filter').value;
@@ -18413,10 +18414,13 @@ const supervisorGroups = new Map();
         const checkSale = (sale) => {
             const dtPed = sale.DTPED;
             const d = parseDate(dtPed);
-            if (!d) return false;
+            if (!d) { console.log("Date parse failed", dtPed); return false; }
             
             // Date Check
-            if (d < startDate || d > endDate) return false;
+            if (d < startDate || d > endDate) {
+                // console.log("Date out of range", d, startDate, endDate);
+                return false;
+            }
 
             // Client Check (Hierarchy + Text Search)
             const codCli = normalizeKey(sale.CODCLI);
@@ -18497,12 +18501,13 @@ const supervisorGroups = new Map();
             if (checkSale(s)) results.push(s);
         }
 
-        // Also check detailed sales (current month) if date range covers it?
-        // Usually `allHistoryData` covers past + current? 
-        // If `allSalesData` is separate (detailed view of current month), we should merge?
-        // User said "historico de pedidos disponiveis". 
-        // `allHistoryData` is usually the master set for history analysis. `allSalesData` is detailed items.
-        // Let's stick to `allHistoryData` for "History".
+        // Include Current Sales (allSalesData) as requested
+        if (allSalesData) {
+            for(let i=0; i<allSalesData.length; i++) {
+                const s = allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i];
+                if (checkSale(s)) results.push(s);
+            }
+        }
 
         // Aggregate by Order (Num Pedido)
         const ordersMap = new Map();
