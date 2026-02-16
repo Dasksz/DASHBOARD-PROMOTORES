@@ -8,7 +8,13 @@ window.App.init = function() {
     if (window.App.Visitas) window.App.Visitas.init();
     if (window.App.Goals) window.App.Goals.init();
     if (window.App.Dashboard) window.App.Dashboard.init();
-    if (window.App.Map) window.App.Map.initLeafletMap(); // Lazy load map? Or init now.
+    if (window.App.City) window.App.City.init();
+    if (window.App.Comparison) window.App.Comparison.init();
+    if (window.App.Coverage) window.App.Coverage.init();
+    if (window.App.Mix) window.App.Mix.init();
+    if (window.App.Innovations) window.App.Innovations.init();
+    if (window.App.History) window.App.History.init();
+    // Map is initialized lazily when shown to avoid IndexSizeError
 
     // Bind Navigation
     const navLinks = document.querySelectorAll('.nav-link');
