@@ -805,7 +805,8 @@
                         promoterMap.set(normalizeKey(p.client_code), {
                             code: String(p.promoter_code).trim(),
                             frequency: p.itinerary_frequency || '',
-                            nextDate: p.itinerary_ref_date || ''
+                            nextDate: p.itinerary_ref_date || '',
+                            days: p.itinerary_days || ''
                         });
                     }
                 });
@@ -826,11 +827,16 @@
                     clients.columns.push('ITINERARY_NEXT_DATE');
                     clients.values['ITINERARY_NEXT_DATE'] = new Array(clients.length).fill('');
                 }
+                if (!clients.columns.includes('ITINERARY_DAYS')) {
+                    clients.columns.push('ITINERARY_DAYS');
+                    clients.values['ITINERARY_DAYS'] = new Array(clients.length).fill('');
+                }
 
                 const clientCodes = clients.values['CODIGO_CLIENTE'] || clients.values['Código'];
                 const promoterValues = clients.values['PROMOTOR'];
                 const freqValues = clients.values['ITINERARY_FREQUENCY'];
                 const nextDateValues = clients.values['ITINERARY_NEXT_DATE'];
+                const daysValues = clients.values['ITINERARY_DAYS'];
                 
                 // Fallback: Use RCA 1 if Promotor is missing (Legacy Support)
                 const rcaValues = clients.values['RCA 1'] || clients.values['RCA1'];
@@ -848,6 +854,7 @@
                             promoterValues[i] = promoterData.code;
                             freqValues[i] = promoterData.frequency;
                             nextDateValues[i] = promoterData.nextDate;
+                            daysValues[i] = promoterData.days;
                             updatedCount++;
                         } else if ((!promoterValues[i] || promoterValues[i] === '') && rcaValues && rcaValues[i]) {
                              // Fallback to RCA 1 if explicit Promotor is empty

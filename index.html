@@ -2762,10 +2762,41 @@
                                 </div>
                             </div>
 
+                            <!-- Day Selection Container (Hidden by default, shown for Weekly) -->
+                            <div id="itinerary-days-container" class="hidden">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Dias de Atendimento</label>
+                                <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                    <label class="cursor-pointer select-none">
+                                        <input type="checkbox" name="itinerary-day" value="1" class="peer sr-only">
+                                        <div class="p-2 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-500 transition-all hover:bg-slate-700 text-xs font-bold">SEG</div>
+                                    </label>
+                                    <label class="cursor-pointer select-none">
+                                        <input type="checkbox" name="itinerary-day" value="2" class="peer sr-only">
+                                        <div class="p-2 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-500 transition-all hover:bg-slate-700 text-xs font-bold">TER</div>
+                                    </label>
+                                    <label class="cursor-pointer select-none">
+                                        <input type="checkbox" name="itinerary-day" value="3" class="peer sr-only">
+                                        <div class="p-2 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-500 transition-all hover:bg-slate-700 text-xs font-bold">QUA</div>
+                                    </label>
+                                    <label class="cursor-pointer select-none">
+                                        <input type="checkbox" name="itinerary-day" value="4" class="peer sr-only">
+                                        <div class="p-2 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-500 transition-all hover:bg-slate-700 text-xs font-bold">QUI</div>
+                                    </label>
+                                    <label class="cursor-pointer select-none">
+                                        <input type="checkbox" name="itinerary-day" value="5" class="peer sr-only">
+                                        <div class="p-2 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-500 transition-all hover:bg-slate-700 text-xs font-bold">SEX</div>
+                                    </label>
+                                    <label class="cursor-pointer select-none">
+                                        <input type="checkbox" name="itinerary-day" value="6" class="peer sr-only">
+                                        <div class="p-2 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-500 transition-all hover:bg-slate-700 text-xs font-bold">SÁB</div>
+                                    </label>
+                                </div>
+                            </div>
+
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Próxima Data de Atendimento</label>
                                 <input type="date" id="itinerary-next-date" class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 block">
-                                <p class="mt-2 text-xs text-slate-400">
+                                <p class="mt-2 text-xs text-slate-400" id="itinerary-calc-preview">
                                     Define o dia base para o cálculo das próximas visitas.
                                 </p>
                             </div>

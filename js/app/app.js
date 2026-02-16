@@ -16633,20 +16633,94 @@ const supervisorGroups = new Map();
         const itinFreqInputs = document.querySelectorAll('input[name="itinerary-frequency"]');
         const itinDateInput = document.getElementById('itinerary-next-date');
         const itinSaveBtn = document.getElementById('save-itinerary-btn');
+        const daysContainer = document.getElementById('itinerary-days-container');
+        const calcPreview = document.getElementById('itinerary-calc-preview');
 
         // Reset inputs
         itinFreqInputs.forEach(i => i.checked = false);
         if(itinDateInput) itinDateInput.value = '';
+        document.querySelectorAll('input[name="itinerary-day"]').forEach(cb => cb.checked = false);
 
         // Get Values
         const freqVal = client.ITINERARY_FREQUENCY || client.itinerary_frequency;
         const dateVal = client.ITINERARY_NEXT_DATE || client.itinerary_next_date;
+        const daysVal = client.ITINERARY_DAYS || client.itinerary_days || '';
 
+        // Bind Visibility Toggle
+        itinFreqInputs.forEach(inp => {
+            inp.onchange = () => {
+                if (inp.value === 'weekly') {
+                    if(daysContainer) daysContainer.classList.remove('hidden');
+                } else {
+                    if(daysContainer) daysContainer.classList.add('hidden');
+                }
+                updatePrediction();
+            };
+        });
+
+        // Set Initial Values
         if (freqVal) {
             itinFreqInputs.forEach(i => {
-                if(i.value === freqVal) i.checked = true;
+                if(i.value === freqVal) {
+                    i.checked = true;
+                    // Trigger visibility
+                    if(freqVal === 'weekly' && daysContainer) daysContainer.classList.remove('hidden');
+                    else if (daysContainer) daysContainer.classList.add('hidden');
+                }
+            });
+        } else {
+            // Default hidden
+            if (daysContainer) daysContainer.classList.add('hidden');
+        }
+
+        if (daysVal) {
+            const selected = daysVal.split(',').map(s => s.trim());
+            document.querySelectorAll('input[name="itinerary-day"]').forEach(cb => {
+                cb.checked = selected.includes(cb.value);
             });
         }
+
+        // Live Prediction Logic
+        const updatePrediction = () => {
+            if (!calcPreview || !itinDateInput) return;
+
+            const freq = document.querySelector('input[name="itinerary-frequency"]:checked')?.value;
+            const refDate = itinDateInput.value;
+
+            if (!freq || !refDate) {
+                calcPreview.textContent = 'Selecione frequência e data para calcular.';
+                return;
+            }
+
+            // Create temp client object for calculation
+            const tempClient = {
+                ITINERARY_FREQUENCY: freq,
+                ITINERARY_NEXT_DATE: refDate,
+                ITINERARY_DAYS: ''
+            };
+
+            if (freq === 'weekly') {
+                const days = [];
+                document.querySelectorAll('input[name="itinerary-day"]:checked').forEach(cb => days.push(cb.value));
+                tempClient.ITINERARY_DAYS = days.join(',');
+            }
+
+            // Use 'today' as base to find next visit from NOW
+            const next = calculateNextRoteiroDate(tempClient, new Date());
+
+            if (next) {
+                const options = { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' };
+                calcPreview.innerHTML = `Próximo atendimento previsto: <strong class="text-white">${next.toLocaleDateString('pt-BR', options)}</strong>`;
+            } else {
+                calcPreview.textContent = 'Não foi possível calcular.';
+            }
+        };
+
+        // Bind listeners for live update
+        if (itinDateInput) itinDateInput.addEventListener('change', updatePrediction);
+        document.querySelectorAll('input[name="itinerary-day"]').forEach(cb => {
+            cb.addEventListener('change', updatePrediction);
+        });
         
         if (dateVal) {
             // Auto-update Display Date Logic
@@ -16704,7 +16778,16 @@ const supervisorGroups = new Map();
             newBtn.onclick = () => {
                 const selectedFreq = document.querySelector('input[name="itinerary-frequency"]:checked')?.value;
                 const selectedDate = document.getElementById('itinerary-next-date')?.value;
-                saveClientItinerary(codeKey, selectedFreq, selectedDate);
+
+                let selectedDays = [];
+                if (selectedFreq === 'weekly') {
+                    document.querySelectorAll('input[name="itinerary-day"]:checked').forEach(cb => {
+                        selectedDays.push(cb.value);
+                    });
+                }
+                const daysStr = selectedDays.join(',');
+
+                saveClientItinerary(codeKey, selectedFreq, selectedDate, daysStr);
             };
         }
 
@@ -17211,6 +17294,7 @@ const supervisorGroups = new Map();
     function calculateNextRoteiroDate(client, fromDate = new Date()) {
         const freq = client.ITINERARY_FREQUENCY || client.itinerary_frequency;
         const refDateStr = client.ITINERARY_NEXT_DATE || client.itinerary_next_date;
+        const daysStr = client.ITINERARY_DAYS || client.itinerary_days || '';
 
         if (!freq || !refDateStr) return null;
 
@@ -17225,6 +17309,56 @@ const supervisorGroups = new Map();
         }
 
         const utcFrom = Date.UTC(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+
+        // --- NEW LOGIC: Multiple Days (Weekly Only) ---
+        if (freq === 'weekly' && daysStr) {
+            // daysStr e.g. "1,3,5" (Mon, Wed, Fri)
+            const days = daysStr.split(',').map(Number).sort((a, b) => a - b);
+            if (days.length > 0) {
+                // Find current day of week (0=Sun, 6=Sat)
+                // Note: utcFrom is UTC 00:00. getUTCDay() gives 0-6.
+                const fromDateObj = new Date(utcFrom);
+                const currentDay = fromDateObj.getUTCDay();
+
+                // Find next valid day in cycle
+                // 1. Check days in current week >= currentDay
+                // We want the closest one. If currentDay is in list, we return it (as "next" is today)
+                let nextDay = days.find(d => d >= currentDay);
+                let daysToAdd = 0;
+
+                if (nextDay !== undefined) {
+                    daysToAdd = nextDay - currentDay;
+                } else {
+                    // Wrap around to next week
+                    nextDay = days[0];
+                    daysToAdd = (7 - currentDay) + nextDay;
+                }
+
+                // Reference Date Check:
+                // We must ensure the calculated date is >= refDate.
+                const potentialDate = utcFrom + (daysToAdd * 24 * 60 * 60 * 1000);
+
+                if (potentialDate < utcRef) {
+                    // If calculated date is before Ref Date, we must start search FROM Ref Date.
+                    const refDateObj = new Date(utcRef);
+                    const refDay = refDateObj.getUTCDay();
+
+                    let nextDayRef = days.find(d => d >= refDay);
+                    let add = 0;
+                    if(nextDayRef !== undefined) {
+                        add = nextDayRef - refDay;
+                    } else {
+                        add = (7 - refDay) + days[0];
+                    }
+                    const final = new Date(utcRef + (add * 24 * 60 * 60 * 1000));
+                    return new Date(final.getUTCFullYear(), final.getUTCMonth(), final.getUTCDate());
+                }
+
+                const nextDate = new Date(potentialDate);
+                return new Date(nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate());
+            }
+        }
+        // ----------------------------------------------
 
         // Calculate days difference
         const diffTime = utcFrom - utcRef;
@@ -17555,6 +17689,7 @@ const supervisorGroups = new Map();
         clients.forEach(c => {
             const freq = c.ITINERARY_FREQUENCY || c.itinerary_frequency;
             const refDateStr = c.ITINERARY_NEXT_DATE || c.itinerary_next_date;
+            const daysStr = c.ITINERARY_DAYS || c.itinerary_days || '';
             
             if (!freq || !refDateStr) return;
             
@@ -17569,14 +17704,33 @@ const supervisorGroups = new Map();
             }
             
             const utcTarget = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-            const diffTime = utcTarget - utcRef;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             
             let isScheduled = false;
-            if (freq === 'weekly') {
-                isScheduled = (Math.abs(diffDays) % 7 === 0);
-            } else if (freq === 'biweekly') {
-                isScheduled = (Math.abs(diffDays) % 14 === 0);
+
+            if (freq === 'weekly' && daysStr) {
+                // Multi-day logic
+                const days = daysStr.split(',').map(Number);
+                const targetDay = new Date(utcTarget).getUTCDay();
+
+                // Only if target date is >= ref date
+                if (utcTarget >= utcRef) {
+                    if (days.includes(targetDay)) {
+                        isScheduled = true;
+                    }
+                }
+            } else {
+                // Interval logic (Standard)
+                const diffTime = utcTarget - utcRef;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                // Ensure date is >= Ref Date (No past scheduling relative to start)
+                if (diffDays >= 0) {
+                    if (freq === 'weekly') {
+                        isScheduled = (diffDays % 7 === 0);
+                    } else if (freq === 'biweekly') {
+                        isScheduled = (diffDays % 14 === 0);
+                    }
+                }
             }
             
             if (isScheduled) {
@@ -17692,7 +17846,7 @@ const supervisorGroups = new Map();
     }
 
     // Helper to save itinerary
-    window.saveClientItinerary = async function(clientCode, frequency, nextDate) {
+    window.saveClientItinerary = async function(clientCode, frequency, nextDate, days = '') {
         if (!clientCode || !frequency || !nextDate) {
             window.showToast('warning', 'Preencha todos os campos.');
             return;
@@ -17724,7 +17878,8 @@ const supervisorGroups = new Map();
             const payload = {
                 client_code: clientCodeNorm,
                 itinerary_frequency: frequency,
-                itinerary_ref_date: nextDate // Date string YYYY-MM-DD
+                itinerary_ref_date: nextDate, // Date string YYYY-MM-DD
+                itinerary_days: days
             };
             if (currentPromoter) payload.promoter_code = currentPromoter;
 
@@ -17738,12 +17893,14 @@ const supervisorGroups = new Map();
             if (entry) {
                 entry.itinerary_frequency = frequency;
                 entry.itinerary_ref_date = nextDate;
+                entry.itinerary_days = days;
             } else {
                 embeddedData.clientPromoters.push({
                     client_code: clientCodeNorm,
                     promoter_code: currentPromoter,
                     itinerary_frequency: frequency,
-                    itinerary_ref_date: nextDate
+                    itinerary_ref_date: nextDate,
+                    itinerary_days: days
                 });
             }
 
@@ -17778,6 +17935,7 @@ const supervisorGroups = new Map();
                     if (clientProxy) {
                         clientProxy.ITINERARY_FREQUENCY = frequency;
                         clientProxy.ITINERARY_NEXT_DATE = nextDate;
+                        clientProxy.ITINERARY_DAYS = days;
                     }
                 }
             } else if (Array.isArray(allClientsData)) {
@@ -17785,6 +17943,7 @@ const supervisorGroups = new Map();
                 if (client) {
                     client.ITINERARY_FREQUENCY = frequency;
                     client.ITINERARY_NEXT_DATE = nextDate;
+                    client.ITINERARY_DAYS = days;
                 }
             }
 
