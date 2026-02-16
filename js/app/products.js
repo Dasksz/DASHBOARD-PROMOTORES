@@ -12,7 +12,7 @@ window.App.Products = {
             searchInput._bound = true;
         }
 
-        const prodList = window.AppState.embeddedData.products || []; // Use embeddedData for product list (array)
+        const prodList = window.AppState.allProductsData || (window.embeddedData ? window.embeddedData.products : []) || [];
         const filtered = prodList.filter(p => {
             if (!filter) return true;
             const f = filter.toLowerCase();
@@ -22,17 +22,17 @@ window.App.Products = {
         const limit = 50;
         const subset = filtered.slice(0, limit);
         container.innerHTML = '';
-
+        
         if(countEl) countEl.textContent = `${filtered.length} Produtos${filtered.length > limit ? ` (Exibindo ${limit})` : ''}`;
 
         subset.forEach(prod => {
             const code = prod.code;
             const desc = prod.descricao || 'Sem Descrição';
             const emb = prod.embalagem || 'UN';
-
+            
             const stock05 = window.AppState.stockData05.get(code) || 0;
             const stock08 = window.AppState.stockData08.get(code) || 0;
-
+            
             const item = document.createElement('div');
             item.className = 'p-4 border-b border-slate-800 hover:bg-slate-800 transition-colors';
             item.innerHTML = `
