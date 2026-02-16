@@ -34,9 +34,27 @@
     // Helper to normalize keys (remove leading zeros) to ensure consistent joins
     window.normalizeKey = function(key) {
         if (!key) return '';
+        if (typeof key === 'number') return String(key);
+
         const s = String(key).trim();
-        if (/^\d+$/.test(s)) {
-            return String(parseInt(s, 10));
+        if (s.length === 0) return '';
+
+        // Optimization: avoid regex for numeric check
+        let isNumeric = true;
+        for (let i = 0; i < s.length; i++) {
+            const c = s.charCodeAt(i);
+            if (c < 48 || c > 57) {
+                isNumeric = false;
+                break;
+            }
+        }
+
+        if (isNumeric) {
+            // Only parse if it has leading zeros that matter (length > 1 and starts with 0)
+            if (s.length > 1 && s.charCodeAt(0) === 48) {
+                return String(parseInt(s, 10));
+            }
+            return s;
         }
         return s;
     };
