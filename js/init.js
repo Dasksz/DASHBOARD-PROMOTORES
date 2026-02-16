@@ -1,76 +1,1658 @@
-const SUPABASE_URL = 'https://dldsocponbjthqxhmttj.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZHNvY3BvbmJqdGhxeGhtdHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzgzMzgsImV4cCI6MjA4NTAxNDMzOH0.IGxUEd977uIdhWvMzjDM8ygfISB_Frcf_2air8e3aOs';
+    const SUPABASE_URL = 'https://dldsocponbjthqxhmttj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZHNvY3BvbmJqdGhxeGhtdHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzgzMzgsImV4cCI6MjA4NTAxNDMzOH0.IGxUEd977uIdhWvMzjDM8ygfISB_Frcf_2air8e3aOs';
 
-// Particle Background Logic
-(function(){
-    const canvas = document.getElementById('particle-canvas');
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let particles = [];
+    // --- TOAST NOTIFICATION SYSTEM ---
+    window.showToast = function(type, message, title = '') {
+        const container = document.getElementById('toast-container');
+        if (!container) {
+            console.error('Toast container not found!');
+            // Fallback to console if container is missing during critical error
+            console.log(`[${type}] ${message}`);
+            return;
+        }
 
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        // Colors and Icons
+        const variants = {
+            success: {
+                class: 'toast-success',
+                icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+                defaultTitle: 'Sucesso'
+            },
+            error: {
+                class: 'toast-error',
+                icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+                defaultTitle: 'Erro'
+            },
+            info: {
+                class: 'toast-info',
+                icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+                defaultTitle: 'Informação'
+            },
+            warning: {
+                class: 'toast-warning',
+                icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
+                defaultTitle: 'Atenção'
+            }
+        };
+
+        const variant = variants[type] || variants.info;
+        const finalTitle = title || variant.defaultTitle;
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${variant.class}`;
+        toast.innerHTML = `
+            <div class="toast-icon">${variant.icon}</div>
+            <div class="flex-1 min-w-0">
+                <h4 class="toast-title">${finalTitle}</h4>
+                <p class="toast-message">${message}</p>
+            </div>
+            <button class="toast-close-btn" onclick="this.parentElement.remove()">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            ${type !== 'error' ? '<div class="toast-progress"></div>' : ''}
+        `;
+
+        container.appendChild(toast);
+
+        // Auto dismiss for non-error
+        if (type !== 'error') {
+            const timeout = 5000; // 5 seconds
+            const progress = toast.querySelector('.toast-progress');
+            if(progress) progress.style.animationDuration = `${timeout}ms`;
+
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.add('hiding');
+                    toast.addEventListener('animationend', () => toast.remove());
+                }
+            }, timeout);
+        }
+    };
+
+    window.handleSupabaseError = function(error) {
+        console.error('Supabase Error:', error);
+        let msg = error.message || "Ocorreu um erro desconhecido.";
+
+        // Translations
+        if (msg.includes("email rate limit exceeded")) {
+            msg = "Muitas tentativas de login. Por favor, aguarde alguns instantes antes de tentar novamente.";
+        } else if (msg.includes("Invalid login credentials")) {
+            msg = "Email ou senha incorretos.";
+        } else if (msg.includes("User already registered")) {
+            msg = "Este email já está cadastrado.";
+        }
+
+        window.showToast('error', msg);
+    };
+
+            // Helper to normalize keys (remove leading zeros)
+            function normalizeKey(key) {
+                if (!key) return '';
+                const s = String(key).trim();
+                // Remove leading zeros if it's a numeric string
+                if (/^\d+$/.test(s)) {
+                    return String(parseInt(s, 10));
+                }
+                return s;
+            }
+
+    // Helper to UPPERCASE keys
+    function mapKeysToUpper(data, type) {
+        if (!data || data.length === 0) return [];
+        return data.map(item => {
+            const newItem = {};
+            for (const key in item) {
+                // Mapeamentos específicos se necessário, ou apenas Upper
+                let newKey = key.toUpperCase();
+                // Ajustes finos para corresponder exatamente ao que o script espera
+                if (type === 'clients') {
+                    if (newKey === 'CODIGO_CLIENTE') newKey = 'Código'; // Special case for Clients
+                    if (newKey === 'RCA1') newKey = 'RCA 1';
+                    if (newKey === 'RCA2') newKey = 'RCA 2';
+                    if (newKey === 'NOMECLIENTE') newKey = 'Cliente';
+                    if (newKey === 'RAZAOSOCIAL') newKey = 'razaoSocial'; // Fix: Separate key
+                    if (newKey === 'ULTIMACOMPRA') newKey = 'Data da Última Compra';
+                    if (newKey === 'DATACADASTRO') newKey = 'Data e Hora de Cadastro';
+                    if (newKey === 'INSCRICAOESTADUAL') newKey = 'Insc. Est. / Produtor';
+                    if (newKey === 'CNPJ_CPF') newKey = 'CNPJ/CPF';
+                    if (newKey === 'ENDERECO') newKey = 'Endereço Comercial';
+                    if (newKey === 'TELEFONE') newKey = 'Telefone Comercial';
+                    if (newKey === 'DESCRICAO') newKey = 'Descricao'; // For Client
+                }
+
+                // For Sales/History (Already match mostly, just need verify)
+                if (newKey === 'CLIENTE_NOME') newKey = 'CLIENTE_NOME'; // Keep as is if script uses it
+
+                // Validação de tipos
+                if (item[key] !== null) {
+                    if (newKey === 'DTPED' || newKey === 'DTSAIDA' || newKey === 'Data da Última Compra' || newKey === 'Data e Hora de Cadastro') {
+                         // Ensure it's a valid date string or timestamp
+                         newItem[newKey] = item[key];
+                    } else if (newKey === 'QTVENDA' || newKey === 'VLVENDA' || newKey === 'VLBONIFIC' || newKey === 'TOTPESOLIQ' || newKey === 'ESTOQUECX' || newKey === 'ESTOQUEUNIT') {
+                         // Force numeric conversion for sales metrics
+                         const val = Number(item[key]);
+                         newItem[newKey] = isNaN(val) ? 0 : val;
+                    } else if (newKey === 'FILIAL') {
+                         newItem[newKey] = String(item[key]);
+                    } else {
+                         newItem[newKey] = item[key];
+                    }
+                } else {
+                     newItem[newKey] = item[key];
+                }
+            }
+            return newItem;
+        });
     }
 
-    window.addEventListener('resize', resize);
-    resize();
+    async function carregarDadosDoSupabase(supabaseClient) {
+        isAppReady = true;
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loader-text');
+        const dashboardView = document.getElementById('main-dashboard');
 
-    class Particle {
-        constructor() {
-            this.reset();
+        try {
+            loader.classList.remove('hidden');
+            loaderText.textContent = 'Verificando dados...';
+
+            // --- IndexedDB Cache Logic ---
+            const DB_NAME = 'PrimeDashboardDB_V2';
+            const STORE_NAME = 'data_store';
+            const DB_VERSION = 1;
+
+            const initDB = () => {
+                return idb.openDB(DB_NAME, DB_VERSION, {
+                    upgrade(db) {
+                        if (!db.objectStoreNames.contains(STORE_NAME)) {
+                            db.createObjectStore(STORE_NAME);
+                        }
+                    },
+                });
+            };
+
+            const getFromCache = async (key) => {
+                try {
+                    const db = await initDB();
+                    return await db.get(STORE_NAME, key);
+                } catch (e) {
+                    console.warn('Erro ao ler cache:', e);
+                    return null;
+                }
+            };
+
+            const saveToCache = async (key, value) => {
+                try {
+                    const db = await initDB();
+                    await db.put(STORE_NAME, value, key);
+                } catch (e) {
+                    console.warn('Erro ao salvar cache:', e);
+                }
+            };
+
+            // 1. Fetch Metadata from Supabase first (lightweight)
+            let metadataRemote = null;
+            let metadataRemoteRaw = null;
+            try {
+                const { data, error } = await supabaseClient.from('data_metadata').select('*');
+                if (!error && data && data.length > 0) {
+                    metadataRemoteRaw = data;
+                    metadataRemote = {};
+                    data.forEach(item => metadataRemote[item.key] = item.value);
+                }
+            } catch (e) {
+                console.warn('Erro ao buscar metadados:', e);
+            }
+
+            // 2. Determine Role and Cache Strategy
+            let cachedData = await getFromCache('dashboardData');
+            let useCache = false;
+            let hierarchy = null;
+            let isPromoter = false;
+
+            // Fetch Hierarchy First to determine if user is a promoter
+            const fetchHierarchy = async () => {
+                let hierarchyData = null;
+                // Try to get hierarchy from cache first if available
+                if (cachedData && cachedData.hierarchy && cachedData.hierarchy.length > 0) {
+                     hierarchyData = cachedData.hierarchy;
+                } else {
+                    const { data, error } = await supabaseClient.from('data_hierarchy').select('*');
+                    if (!error) hierarchyData = data;
+                }
+                return hierarchyData;
+            }
+
+            try {
+                hierarchy = await fetchHierarchy();
+
+                // Check Role against Hierarchy
+                const role = window.userRole;
+                if (role && role !== 'adm' && hierarchy) {
+                    const normalizedRole = role.trim().toLowerCase();
+                    // Check if this role appears as a 'cod_promotor' in the hierarchy
+                    const hierarchyEntry = hierarchy.find(h => (h.cod_promotor || '').trim().toLowerCase() === normalizedRole);
+                    // Also check if they are NOT a coordinator or co-coordinator
+                    const isCoord = hierarchy.some(h => (h.cod_coord || '').trim().toLowerCase() === normalizedRole);
+                    const isCocoord = hierarchy.some(h => (h.cod_cocoord || '').trim().toLowerCase() === normalizedRole);
+
+                    if (hierarchyEntry && !isCoord && !isCocoord) {
+                        isPromoter = true;
+                        console.log(`[Init] User detected as Promoter: ${role}. Enabling targeted data fetching.`);
+                    }
+                }
+            } catch (e) {
+                console.warn("Failed to fetch hierarchy for role check:", e);
+            }
+
+            if (isPromoter) {
+                // If Promoter, force refresh to ensure fresh client data
+                console.log("[Init] Promoter role detected. Bypassing global cache.");
+                useCache = false;
+            }
+
+            // Identify and store Co-Coordinator Code for this user
+            if (hierarchy && window.userRole) {
+                const normRole = window.userRole.trim().toUpperCase();
+                // Find my entry in hierarchy
+                const myEntry = hierarchy.find(h => (h.cod_promotor || '').trim().toUpperCase() === normRole);
+                if (myEntry && myEntry.cod_cocoord) {
+                    window.userCoCoordCode = myEntry.cod_cocoord.trim();
+                    console.log(`[Init] Co-Coordinator Code identified: ${window.userCoCoordCode}`);
+                    
+                    // Fetch Email Immediately (Frontend-First Strategy)
+                    const fetchEmail = async () => {
+                        try {
+                            const { data, error } = await supabaseClient
+                                .from('profiles')
+                                .select('email')
+                                .ilike('role', window.userCoCoordCode)
+                                .limit(1)
+                                .maybeSingle();
+                                
+                            if (data && data.email) {
+                                window.userCoCoordEmail = data.email;
+                                console.log(`[Init] Co-Coordinator Email resolved: ${window.userCoCoordEmail}`);
+                            } else {
+                                console.warn(`[Init] Email not found for Co-Coord Code: ${window.userCoCoordCode}`);
+                            }
+                        } catch(e) {
+                            console.error("[Init] Error fetching Co-Coord Email:", e);
+                        }
+                    };
+                    fetchEmail();
+
+                } else {
+                    console.log("[Init] No Co-Coordinator found for this user in hierarchy.");
+                    window.userCoCoordCode = null;
+                    
+                    // Fallback: Fetch General Coord or Admin Email
+                    const fetchFallbackEmail = async () => {
+                        try {
+                            // Try Coord
+                            let { data } = await supabaseClient.from('profiles').select('email').eq('role', 'coord').limit(1).maybeSingle();
+                            if (!data) {
+                                // Try Admin
+                                ({ data } = await supabaseClient.from('profiles').select('email').eq('role', 'adm').limit(1).maybeSingle());
+                            }
+                            
+                            if (data && data.email) {
+                                window.userCoCoordEmail = data.email;
+                                console.log(`[Init] Fallback Email resolved: ${window.userCoCoordEmail}`);
+                            }
+                        } catch(e) { console.error("[Init] Fallback email fetch failed", e); }
+                    };
+                    fetchFallbackEmail();
+                }
+            }
+
+            // 3. Granular Cache Check Logic
+            const tablesToFetch = new Set();
+            if (!isPromoter && cachedData && metadataRemote) {
+                // Determine which specific tables need to be updated based on hash comparison
+                const checkTable = (tableName, hashKey, dataKeyInCache) => {
+                    const remoteHash = metadataRemote[hashKey];
+                    const localHash = cachedData.metadata ? cachedData.metadata.find(m => m.key === hashKey)?.value : null;
+
+                    // If no remote hash (legacy data), or hash mismatch, or data missing in cache -> Fetch
+                    if (!remoteHash || remoteHash !== localHash || !cachedData[dataKeyInCache]) {
+                        console.log(`[Cache] ${tableName} needs update (Remote: ${remoteHash}, Local: ${localHash})`);
+                        tablesToFetch.add(tableName);
+                    } else {
+                        // console.log(`[Cache] ${tableName} is up-to-date.`);
+                    }
+                };
+
+                checkTable('data_detailed', 'hash_detailed', 'detailed');
+                checkTable('data_history', 'hash_history', 'history');
+                checkTable('data_clients', 'hash_clients', 'clients');
+                checkTable('data_orders', 'hash_orders', 'orders'); // Mapped to 'orders' in cache
+                checkTable('data_stock', 'hash_stock', 'stock');
+                checkTable('data_active_products', 'hash_active_products', 'activeProds');
+                checkTable('data_product_details', 'hash_product_details', 'products');
+                checkTable('data_innovations', 'hash_innovations', 'innovations');
+                checkTable('data_hierarchy', 'hash_hierarchy', 'hierarchy');
+
+                // If nothing to fetch, use cache completely
+                if (tablesToFetch.size === 0) {
+                     console.log("Usando cache do IndexedDB (Versão 100% atualizada)");
+                     useCache = true;
+                } else {
+                    console.log(`Cache parcial. Baixando ${tablesToFetch.size} tabelas atualizadas...`);
+                    // We don't set useCache=true here because we need to enter the "fetch" block,
+                    // but we will intelligently merge cached data inside that block.
+                }
+            } else if (!cachedData) {
+                // Full Fetch required
+                console.log("Cache vazio. Baixando tudo...");
+                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy'].forEach(t => tablesToFetch.add(t));
+            }
+
+            if (useCache) {
+                 loaderText.textContent = 'Processando cache...';
+            } else {
+                 loaderText.textContent = 'Buscando dados...';
+            }
+
+            // Shared client map for both parsers
+            const clientMap = {
+                'CODIGO_CLIENTE': 'Código',
+                'RCA1': 'RCA 1',
+                'RCA2': 'RCA 2',
+                'NOMECLIENTE': 'Cliente',
+                'RAZAOSOCIAL': 'razaoSocial',
+                'ULTIMACOMPRA': 'Data da Última Compra',
+                'DATACADASTRO': 'Data e Hora de Cadastro',
+                'INSCRICAOESTADUAL': 'Insc. Est. / Produtor',
+                'CNPJ_CPF': 'CNPJ/CPF',
+                'ENDERECO': 'Endereço Comercial',
+                'TELEFONE': 'Telefone Comercial',
+                'RCAS': 'rcas',
+                'PROMOTOR': 'PROMOTOR'
+            };
+
+            const parseCSVToObjects = (text, type) => {
+                const result = [];
+                let headers = null;
+                let currentVal = '';
+                let currentLine = [];
+                let inQuote = false;
+
+                const pushLine = (lineValues) => {
+                    if (!headers) {
+                        headers = lineValues;
+                        return;
+                    }
+                    if (lineValues.length !== headers.length) return;
+
+                    const obj = {};
+                    for (let j = 0; j < headers.length; j++) {
+                        let header = headers[j].trim().toUpperCase();
+                        let val = lineValues[j];
+
+                        if (type === 'clients' && clientMap[header]) header = clientMap[header];
+                        if (type === 'orders' && ['VLVENDA', 'TOTPESOLIQ', 'VLBONIFIC', 'QTVENDA'].includes(header)) val = val === '' ? 0 : Number(val);
+
+                        // Normalize Client IDs
+                        if (header === 'CODCLI' || header === 'CODIGO_CLIENTE' || header === 'Código') {
+                             val = normalizeKey(val);
+                        }
+
+                        if (val && typeof val === 'string' && val.startsWith('{') && val.endsWith('}')) {
+                            val = val.slice(1, -1).split(',').map(s => s.replace(/^"|"$/g, ''));
+                        }
+
+                        obj[header] = val;
+                    }
+                    result.push(obj);
+                };
+
+                for (let i = 0; i < text.length; i++) {
+                    const char = text[i];
+                    if (inQuote) {
+                        if (char === '"') {
+                            if (i + 1 < text.length && text[i + 1] === '"') { currentVal += '"'; i++; }
+                            else { inQuote = false; }
+                        } else { currentVal += char; }
+                    } else {
+                        if (char === '"') { inQuote = true; }
+                        else if (char === ',') { currentLine.push(currentVal); currentVal = ''; }
+                        else if (char === '\n' || char === '\r') {
+                            if (char === '\r' && i + 1 < text.length && text[i+1] === '\n') i++;
+                            currentLine.push(currentVal); currentVal = '';
+                            pushLine(currentLine); currentLine = [];
+                        } else { currentVal += char; }
+                    }
+                }
+                if (currentLine.length > 0 || currentVal !== '') { currentLine.push(currentVal); pushLine(currentLine); }
+                return result;
+            };
+
+            const parseCSVToColumnar = (text, type, existingColumnar = null) => {
+                const columnar = existingColumnar || { columns: [], values: {}, length: 0 };
+                const hasExistingColumns = columnar.columns.length > 0;
+                let headers = hasExistingColumns ? columnar.columns : null;
+
+                let currentVal = '';
+                let currentLine = [];
+                let inQuote = false;
+
+                // If we already have columns, the first line of this chunk is a repeated header, so we skip it.
+                // If we don't, the first line IS the header.
+                let skipFirstLine = hasExistingColumns;
+                let isFirstLine = true;
+
+                const pushLine = (lineValues) => {
+                    if (lineValues.length === 0 || (lineValues.length === 1 && lineValues[0] === '')) return;
+
+                    if (isFirstLine) {
+                        isFirstLine = false;
+                        if (skipFirstLine) return; // Skip repeated header
+
+                        headers = lineValues.map(h => {
+                            let header = h.trim().toUpperCase();
+                            if (type === 'clients' && clientMap[header]) header = clientMap[header];
+                            return header;
+                        });
+                        columnar.columns = headers;
+                        headers.forEach(h => { if (!columnar.values[h]) columnar.values[h] = []; });
+                        return;
+                    }
+
+                    if (headers && lineValues.length === headers.length) {
+                        for (let j = 0; j < headers.length; j++) {
+                            const header = headers[j];
+                            let val = lineValues[j];
+
+                            if (type === 'sales' || type === 'history') {
+                                if (['QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUECX', 'ESTOQUEUNIT', 'QTVENDA_EMBALAGEM_MASTER'].includes(header)) {
+                                    val = val === '' ? 0 : Number(val);
+                                }
+                            }
+                            // Normalize Client IDs
+                            if (header === 'CODCLI' || header === 'CODIGO_CLIENTE' || header === 'Código') {
+                                 val = normalizeKey(val);
+                            }
+
+                            if (type === 'stock' && header === 'STOCK_QTY') val = val === '' ? 0 : Number(val);
+                            if (type === 'clients' && header === 'rcas') {
+                                if (typeof val === 'string') {
+                                    val = val.trim();
+                                    if (val.startsWith('{')) {
+                                        val = val.slice(1, -1).split(',').map(s => s.replace(/^"|"$/g, ''));
+                                    } else if (val.startsWith('[')) {
+                                        try { val = JSON.parse(val); } catch(e) { val = [val]; }
+                                    } else if (val === '') {
+                                        val = [];
+                                    } else {
+                                        val = [val];
+                                    }
+                                } else if (!val) {
+                                    val = [];
+                                } else if (!Array.isArray(val)) {
+                                    val = [val];
+                                }
+                            }
+
+                            columnar.values[header].push(val);
+                        }
+                        columnar.length++;
+                    }
+                };
+
+                for (let i = 0; i < text.length; i++) {
+                    const char = text[i];
+                    if (inQuote) {
+                        if (char === '"') {
+                            if (i + 1 < text.length && text[i + 1] === '"') { currentVal += '"'; i++; }
+                            else { inQuote = false; }
+                        } else { currentVal += char; }
+                    } else {
+                        if (char === '"') { inQuote = true; }
+                        else if (char === ',') { currentLine.push(currentVal); currentVal = ''; }
+                        else if (char === '\n' || char === '\r') {
+                            if (char === '\r' && i + 1 < text.length && text[i+1] === '\n') i++;
+                            currentLine.push(currentVal); currentVal = '';
+                            pushLine(currentLine); currentLine = [];
+                        } else { currentVal += char; }
+                    }
+                }
+                if (currentLine.length > 0 || currentVal !== '') { currentLine.push(currentVal); pushLine(currentLine); }
+                return columnar;
+            };
+
+            const fetchAll = async (table, columns = null, type = null, format = 'object', pkCol = 'id', filterFunc = null) => {
+                // Config
+                // Keyset Pagination for reliability
+                // Adjusted to 20000 to match Supabase API default limit and ensure pagination loop triggers correctly
+                const pageSize = 20000;
+
+                let result = format === 'columnar' ? { columns: [], values: {}, length: 0 } : [];
+                let hasMore = true;
+                let lastId = null;
+                let pageIndex = 0;
+
+                // Track progress for UI
+                const reportProgress = () => {
+                    const fetched = format === 'columnar' ? result.length : result.length;
+                    console.log(`[${table}] Fetched rows: ${fetched}`);
+                };
+
+                return new Promise((resolve, reject) => {
+                    const processNextPage = async () => {
+                        const fetchWithRetry = async (attempt = 1) => {
+                            try {
+                                let query = supabaseClient.from(table).select(columns || '*').order(pkCol, { ascending: true }).limit(pageSize);
+                                if (lastId !== null) {
+                                    query.gt(pkCol, lastId);
+                                }
+
+                                // Apply optional Supabase filter function (e.g., .in())
+                                if (filterFunc) {
+                                    query = filterFunc(query);
+                                }
+
+                                const promise = columns ? query.csv() : query;
+
+                                // Timeout wrapper (20 seconds)
+                                const timeoutPromise = new Promise((_, reject) =>
+                                    setTimeout(() => reject(new Error('Request timed out')), 30000)
+                                );
+
+                                const response = await Promise.race([promise, timeoutPromise]);
+
+                                if (response.error) throw response.error;
+                                return response.data;
+                            } catch (err) {
+                                if (attempt < 4) { // Retry up to 3 times (1+3=4 total attempts)
+                                    const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+                                    console.warn(`Retrying page ${pageIndex} of ${table} (Attempt ${attempt})... Error: ${err.message}`);
+                                    await new Promise(r => setTimeout(r, delay));
+                                    return fetchWithRetry(attempt + 1);
+                                }
+                                throw err;
+                            }
+                        };
+
+                        try {
+                            const data = await fetchWithRetry();
+                            let chunkLength = 0;
+                            let newObjects = [];
+                            let newColumnar = null;
+
+                            if (columns) {
+                                if (!data || data.length < 5) {
+                                    hasMore = false; // CSV string empty or just header
+                                } else {
+                                    if (format === 'columnar') {
+                                        const preLen = result.length;
+                                        result = parseCSVToColumnar(data, type, result);
+                                        chunkLength = result.length - preLen;
+                                        if (chunkLength === 0) hasMore = false;
+                                    } else {
+                                        newObjects = parseCSVToObjects(data, type);
+                                        chunkLength = newObjects.length;
+                                        result = result.concat(newObjects);
+                                        if (chunkLength === 0) hasMore = false;
+                                    }
+                                }
+                            } else {
+                                if (!data || data.length === 0) {
+                                    hasMore = false;
+                                } else {
+                                    chunkLength = data.length;
+                                    result = result.concat(data);
+                                }
+                            }
+
+                            if (chunkLength < pageSize) {
+                                hasMore = false;
+                            }
+
+                            // Extract lastId for next cursor
+                            if (hasMore) {
+                                if (columns) {
+                                    // Need to find the ID in the processed result
+                                    // Note: parseCSVToColumnar/Objects uppercases keys.
+                                    // We need to look for 'ID' or 'CODE' or whatever pkCol corresponds to
+                                    // But pkCol is raw DB column name (lowercase).
+                                    // CSV header is uppercase.
+                                    // Mapped keys might be different (e.g. clients).
+                                    // Best bet: use the raw PK column name uppercase, unless mapped.
+
+                                    let lookupKey = pkCol.toUpperCase();
+                                    // Handle Client Map special cases if ID was mapped? No, ID is usually ID.
+                                    // Check init.js clientMap: no ID mapping there.
+
+                                    if (format === 'columnar') {
+                                        const colData = result.values[lookupKey];
+                                        if (colData && colData.length > 0) {
+                                            lastId = colData[colData.length - 1];
+                                        } else {
+                                            // Fallback: maybe it wasn't uppercased?
+                                            // Or maybe it's missing. If missing, we can't continue safely.
+                                            console.warn(`Could not find PK column ${lookupKey} in columnar data. Stopping.`);
+                                            hasMore = false;
+                                        }
+                                    } else {
+                                        // Object format
+                                        const lastItem = result[result.length - 1];
+                                        if (lastItem && lastItem[lookupKey] !== undefined) {
+                                            lastId = lastItem[lookupKey];
+                                        } else {
+                                            // Try lowercase
+                                            if (lastItem && lastItem[pkCol] !== undefined) {
+                                                 lastId = lastItem[pkCol];
+                                            } else {
+                                                console.warn(`Could not find PK column ${lookupKey} in object data. Stopping.`);
+                                                hasMore = false;
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // JSON response
+                                    const lastItem = result[result.length - 1];
+                                    lastId = lastItem[pkCol];
+                                }
+                            }
+
+                            pageIndex++;
+                            reportProgress();
+
+                            if (hasMore) {
+                                processNextPage();
+                            } else {
+                                resolve(result);
+                            }
+
+                        } catch (err) {
+                            console.error(`Failed to fetch page ${pageIndex} of ${table}:`, err);
+                            resolve(result); // Return partial result
+                        }
+                    };
+
+                    processNextPage();
+                });
+            };
+
+            let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientPromoters;
+            let clientCoordinates;
+
+            const colsDetailed = 'id,pedido,codcli,nome,superv,codsupervisor,produto,descricao,fornecedor,observacaofor,codfor,codusur,qtvenda,vlvenda,vlbonific,totpesoliq,dtped,dtsaida,posicao,estoqueunit,tipovenda,filial,qtvenda_embalagem_master';
+            const colsClients = 'id,codigo_cliente,rca1,rca2,rcas,cidade,nomecliente,bairro,razaosocial,fantasia,cnpj_cpf,endereco,numero,cep,telefone,email,ramo,ultimacompra,datacadastro,bloqueio,inscricaoestadual';
+            const colsStock = 'id,product_code,filial,stock_qty';
+            const colsOrders = 'id,pedido,codcli,cliente_nome,cidade,nome,superv,fornecedores_str,dtped,dtsaida,posicao,vlvenda,totpesoliq,filial,tipovenda,fornecedores_list,codfors_list';
+
+            if (useCache) {
+                // LOAD FROM CACHE (Full)
+                detailed = cachedData.detailed;
+                history = cachedData.history;
+                clients = cachedData.clients;
+                products = cachedData.products;
+                activeProds = cachedData.activeProds;
+                stock = cachedData.stock;
+                innovations = cachedData.innovations;
+                metadata = metadataRemoteRaw || cachedData.metadata;
+                orders = cachedData.orders;
+                hierarchy = cachedData.hierarchy;
+                clientPromoters = cachedData.clientPromoters || [];
+                clientCoordinates = cachedData.clientCoordinates || [];
+
+                // Background updates for coordinates/promoters can happen here if needed,
+                // but usually conditional logic handles it if metadata hashes change.
+                // However, Coordinates/Promoters are dynamic and might not have hashes in worker logic?
+                // The worker DOES compute hashes for these if they are part of upload.
+                // But clientCoordinates table is updated by app usage (check-in/geo), so its hash might drift.
+                // For simplicity, we can fetch fresh small tables if critical.
+
+            } else {
+                 // PARTIAL OR FULL FETCH
+
+                // Promoter Filtering Setup
+                let clientFilterCodes = null;
+                if (isPromoter) {
+                    const role = window.userRole.trim();
+                    console.log(`[Init] Fetching assigned clients for promoter ${role}...`);
+                    // Always fetch fresh promoter assignments for Promoters
+                    const myPromoterData = await fetchAll('data_client_promoters', null, null, 'object', 'client_code', (q) => q.ilike('promoter_code', role));
+
+                    if (myPromoterData && myPromoterData.length > 0) {
+                        clientFilterCodes = myPromoterData.map(p => normalizeKey(p.client_code)).filter(c => c);
+                        console.log(`[Init] Found ${clientFilterCodes.length} assigned clients.`);
+                    } else {
+                        console.warn(`[Init] No clients found for ${role}. Fetching empty set.`);
+                        clientFilterCodes = [];
+                    }
+                }
+
+                // Filter Functions
+                const applyClientFilter = (q) => {
+                    if (isPromoter && clientFilterCodes !== null) {
+                        if (clientFilterCodes.length === 0) return q.eq('id', '00000000-0000-0000-0000-000000000000');
+                        return q.in('codcli', clientFilterCodes);
+                    }
+                    return q;
+                };
+
+                const applyClientTableFilter = (q) => {
+                     if (isPromoter && clientFilterCodes !== null) {
+                        if (clientFilterCodes.length === 0) return q.eq('id', '00000000-0000-0000-0000-000000000000');
+                        return q.in('codigo_cliente', clientFilterCodes);
+                     }
+                     return q;
+                };
+
+                // Helper to decide source (Cache vs Fetch)
+                const getOrFetch = (tableName, cols, type, format, pk, filter, cacheKey) => {
+                    if (tablesToFetch.has(tableName) || isPromoter) {
+                        // console.log(`[Fetch] Fetching ${tableName}...`);
+                        return fetchAll(tableName, cols, type, format, pk, filter);
+                    } else {
+                        // console.log(`[Fetch] Using cached ${tableName}`);
+                        // Return wrapped in promise to match Promise.all structure
+                        return Promise.resolve(cachedData[cacheKey]);
+                    }
+                };
+
+                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched] = await Promise.all([
+                    getOrFetch('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter, 'detailed'),
+                    getOrFetch('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter, 'history'),
+                    getOrFetch('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter, 'clients'),
+                    getOrFetch('data_product_details', null, null, 'object', 'code', null, 'products'),
+                    getOrFetch('data_active_products', null, null, 'object', 'code', null, 'activeProds'),
+                    getOrFetch('data_stock', colsStock, 'stock', 'columnar', 'id', null, 'stock'),
+                    getOrFetch('data_innovations', null, null, 'object', 'id', null, 'innovations'),
+                    fetchAll('data_metadata', null, null, 'object', 'key'), // Always fetch metadata fresh
+                    getOrFetch('data_orders', colsOrders, 'orders', 'object', 'id', applyClientFilter, 'orders'),
+                    // Always fetch coordinates/promoters fresh or check hash?
+                    // Let's treat them as small tables that are cheap to fetch, OR use conditional logic.
+                    // Since Promoters edit coordinates/assignments often, maybe safer to fetch fresh or use hash?
+                    // Hash logic handles them if they are in 'tablesToFetch'.
+                    // BUT: 'data_client_coordinates' updates frequently outside of bulk upload.
+                    // So we should probably ALWAYS fetch coordinates fresh to ensure syncing.
+                    fetchAll('data_client_coordinates', null, null, 'object', 'client_code'),
+                    getOrFetch('data_hierarchy', null, null, 'object', 'id', null, 'hierarchy'),
+                    fetchAll('data_client_promoters', null, null, 'object', 'client_code') // Always fresh to sync wallet changes
+                ]);
+
+                detailed = detailedUpper;
+                history = historyUpper;
+                clients = clientsUpper;
+                products = productsFetched;
+                activeProds = activeProdsFetched;
+                stock = stockFetched;
+                innovations = innovationsFetched;
+                metadata = metadataFetched;
+                orders = ordersUpper;
+                clientCoordinates = clientCoordinatesFetched;
+                hierarchy = hierarchyFetched;
+                clientPromoters = clientPromotersFetched;
+
+                // Update Cache with Merged Data
+                if (!isPromoter) {
+                    const dataToCache = {
+                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters
+                    };
+                    saveToCache('dashboardData', dataToCache).then(() => console.log('Dados atualizados salvos no cache.'));
+                }
+            }
+
+            loaderText.textContent = 'Processando...';
+
+            // Normalize Client Promoters Keys (Ensure consistency with Clients)
+            if (clientPromoters && clientPromoters.length > 0) {
+                 clientPromoters.forEach(p => {
+                     if (p.client_code) p.client_code = normalizeKey(p.client_code);
+                 });
+            }
+
+            // --- MERGE PROMOTERS INTO CLIENTS ---
+            // Build Map of Promoter Codes and Itinerary Data
+            const promoterMap = new Map();
+            if (clientPromoters && clientPromoters.length > 0) {
+                clientPromoters.forEach(p => {
+                    if (p.client_code && p.promoter_code) {
+                        // Normalize key to match client data
+                        promoterMap.set(normalizeKey(p.client_code), {
+                            code: String(p.promoter_code).trim(),
+                            frequency: p.itinerary_frequency || '',
+                            nextDate: p.itinerary_ref_date || ''
+                        });
+                    }
+                });
+            }
+
+            // Inject into Clients Columnar Data
+            if (clients && clients.values) {
+                // Ensure columns exist
+                if (!clients.columns.includes('PROMOTOR')) {
+                    clients.columns.push('PROMOTOR');
+                    clients.values['PROMOTOR'] = new Array(clients.length).fill('');
+                }
+                if (!clients.columns.includes('ITINERARY_FREQUENCY')) {
+                    clients.columns.push('ITINERARY_FREQUENCY');
+                    clients.values['ITINERARY_FREQUENCY'] = new Array(clients.length).fill('');
+                }
+                if (!clients.columns.includes('ITINERARY_NEXT_DATE')) {
+                    clients.columns.push('ITINERARY_NEXT_DATE');
+                    clients.values['ITINERARY_NEXT_DATE'] = new Array(clients.length).fill('');
+                }
+
+                const clientCodes = clients.values['CODIGO_CLIENTE'] || clients.values['Código'];
+                const promoterValues = clients.values['PROMOTOR'];
+                const freqValues = clients.values['ITINERARY_FREQUENCY'];
+                const nextDateValues = clients.values['ITINERARY_NEXT_DATE'];
+                
+                // Fallback: Use RCA 1 if Promotor is missing (Legacy Support)
+                const rcaValues = clients.values['RCA 1'] || clients.values['RCA1'];
+
+                console.log(`[Init] Merging Promoters. Map Size: ${promoterMap.size}. Clients: ${clients.length}`);
+
+                if (clientCodes) {
+                    let updatedCount = 0;
+                    let fallbackCount = 0;
+                    for (let i = 0; i < clients.length; i++) {
+                        const code = normalizeKey(clientCodes[i]);
+                        const promoterData = promoterMap.get(code);
+                        
+                        if (promoterData) {
+                            promoterValues[i] = promoterData.code;
+                            freqValues[i] = promoterData.frequency;
+                            nextDateValues[i] = promoterData.nextDate;
+                            updatedCount++;
+                        } else if ((!promoterValues[i] || promoterValues[i] === '') && rcaValues && rcaValues[i]) {
+                             // Fallback to RCA 1 if explicit Promotor is empty
+                             promoterValues[i] = String(rcaValues[i]).trim();
+                             fallbackCount++;
+                        }
+                    }
+                    console.log(`[Init] Merge Complete. Updated from New Table: ${updatedCount}. Fallback to RCA1: ${fallbackCount}.`);
+                }
+            }
+            // ------------------------------------
+
+            // Reconstruct Helper Maps
+            const productDetailsMap = {};
+            if (products && products.length) {
+                products.forEach(p => {
+                    productDetailsMap[p.code] = {
+                        descricao: p.descricao,
+                        fornecedor: p.fornecedor,
+                        codfor: p.codfor,
+                        dtCadastro: p.dtcadastro ? new Date(p.dtcadastro).getTime() : null,
+                        ...p
+                    };
+                });
+            }
+
+            const activeProductCodes = activeProds.map(p => p.code);
+
+            const stockMap05 = {};
+            const stockMap08 = {};
+            if (stock && stock.values) {
+                const pCodes = stock.values['PRODUCT_CODE'];
+                const filials = stock.values['FILIAL'];
+                const qtys = stock.values['STOCK_QTY'];
+                const len = stock.length;
+                for(let i = 0; i < len; i++) {
+                    const code = pCodes[i];
+                    const fil = filials[i];
+                    const qty = qtys[i];
+                    if (fil === '05') stockMap05[code] = qty;
+                    if (fil === '08') stockMap08[code] = qty;
+                }
+            }
+
+            // Calculate Last Sale Date (Columnar optimized)
+            let lastSale = 0;
+            if (detailed.values && detailed.values['DTPED']) {
+                const dtpeds = detailed.values['DTPED'];
+                const len = dtpeds.length;
+                for(let i=0; i<len; i++) {
+                    if (dtpeds[i] > lastSale) lastSale = dtpeds[i];
+                }
+            } else if (Array.isArray(detailed) && detailed.length > 0) {
+                 lastSale = detailed.reduce((max, p) => p.DTPED > max ? p.DTPED : max, 0);
+            }
+            if (lastSale === 0) lastSale = Date.now();
+
+            // --- FILTERING LOGIC ---
+            // If user is not 'adm', filter data based on hierarchy
+            const role = window.userRole;
+            let filteredDetailed = detailed;
+            let filteredHistory = history;
+            let filteredClients = clients;
+            let filteredOrders = orders;
+
+            if (role && role !== 'adm') {
+                if (!hierarchy || hierarchy.length === 0) {
+                     console.warn(`[Access Control] Role '${role}' is not admin, but Hierarchy Data is missing. Enforcing empty view for security.`);
+                     // Return empty data if hierarchy not loaded to prevent data leakage
+                     filteredClients = { columns: clients.columns, values: {}, length: 0 };
+                     clients.columns.forEach(c => filteredClients.values[c] = []);
+
+                     filteredDetailed = { columns: detailed.columns, values: {}, length: 0 };
+                     detailed.columns.forEach(c => filteredDetailed.values[c] = []);
+
+                     filteredHistory = { columns: history.columns, values: {}, length: 0 };
+                     history.columns.forEach(c => filteredHistory.values[c] = []);
+
+                     filteredOrders = [];
+                } else {
+                    // Resolve allowed promoters
+                    const allowedPromoters = new Set();
+                    const normalizedRole = role.trim().toLowerCase();
+
+                    hierarchy.forEach(h => {
+                        const coord = (h.cod_coord || '').trim().toLowerCase();
+                        const cocoord = (h.cod_cocoord || '').trim().toLowerCase();
+                        const promotor = (h.cod_promotor || '').trim().toLowerCase();
+
+                        // If user is coordinator, allow all promoters under them
+                        if (coord === normalizedRole) allowedPromoters.add(promotor);
+                        // If user is co-coordinator
+                        else if (cocoord === normalizedRole) allowedPromoters.add(promotor);
+                        // If user is promoter
+                        else if (promotor === normalizedRole) allowedPromoters.add(promotor);
+                    });
+
+                    if (allowedPromoters.size > 0) {
+                        console.log(`[Access Control] Filtering for role '${role}'. Allowed Promoters: ${allowedPromoters.size}`);
+                        console.log(`[Access Control] Allowed Promoters Sample:`, Array.from(allowedPromoters).slice(0, 5));
+
+                        // 1. Filter Clients (Columnar)
+                        const promotorCol = clients.values['PROMOTOR'] || [];
+                        console.log(`[Access Control] Clients Promotor Col Sample (First 5):`, promotorCol.slice(0, 5));
+                        
+                        const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
+                        const allowedClientCodes = new Set();
+
+                        // Rebuild Clients Columnar
+                        const newClientsValues = {};
+                        clients.columns.forEach(c => newClientsValues[c] = []);
+                        let newClientsLen = 0;
+
+                        for(let i=0; i<clients.length; i++) {
+                            const p = String(promotorCol[i] || '').trim().toLowerCase();
+                            if (allowedPromoters.has(p)) {
+                                allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
+                                clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
+                                newClientsLen++;
+                            }
+                        }
+                        console.log(`[Access Control] Client Filter Results: ${newClientsLen} matches out of ${clients.length} clients.`);
+                        console.log(`[Access Control] Allowed Client IDs (Sample):`, Array.from(allowedClientCodes).slice(0, 5));
+                        filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
+
+                        // 2. Filter Detailed (Columnar)
+                        // Check CODCLI against allowedClientCodes
+                        const detCodCliCol = detailed.values['CODCLI'] || [];
+                        const newDetailedValues = {};
+                        detailed.columns.forEach(c => newDetailedValues[c] = []);
+                        let newDetailedLen = 0;
+
+                        for(let i=0; i<detailed.length; i++) {
+                            if (allowedClientCodes.has(normalizeKey(detCodCliCol[i]))) {
+                                detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c][i]));
+                                newDetailedLen++;
+                            }
+                        }
+                        console.log(`[Access Control] Detailed Sales Filter Results: ${newDetailedLen} matches out of ${detailed.length} rows.`);
+                        filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
+
+                        // 3. Filter History (Columnar)
+                        const histCodCliCol = history.values['CODCLI'] || [];
+                        const newHistoryValues = {};
+                        history.columns.forEach(c => newHistoryValues[c] = []);
+                        let newHistoryLen = 0;
+
+                        for(let i=0; i<history.length; i++) {
+                            if (allowedClientCodes.has(normalizeKey(histCodCliCol[i]))) {
+                                history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
+                                newHistoryLen++;
+                            }
+                        }
+                        console.log(`[Access Control] History Sales Filter Results: ${newHistoryLen} matches out of ${history.length} rows.`);
+                        filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
+
+                        // 4. Filter Orders (Array of Objects)
+                        filteredOrders = orders.filter(o => allowedClientCodes.has(normalizeKey(o.codcli)));
+                    } else {
+                        console.warn(`[Access Control] Role '${role}' not found in hierarchy or has no promoters. Showing empty view.`);
+                        // Return empty data if role not found in hierarchy but isn't admin
+                        filteredClients = { columns: clients.columns, values: {}, length: 0 };
+                        clients.columns.forEach(c => filteredClients.values[c] = []);
+
+                        filteredDetailed = { columns: detailed.columns, values: {}, length: 0 };
+                        detailed.columns.forEach(c => filteredDetailed.values[c] = []);
+
+                        filteredHistory = { columns: history.columns, values: {}, length: 0 };
+                        history.columns.forEach(c => filteredHistory.values[c] = []);
+
+                        filteredOrders = [];
+                    }
+                }
+            }
+
+            const embeddedData = {
+                detailed: filteredDetailed,
+                history: filteredHistory,
+                clients: filteredClients,
+                byOrder: filteredOrders,
+                stockMap05: stockMap05,
+                stockMap08: stockMap08,
+                innovationsMonth: innovations,
+                activeProductCodes: activeProductCodes,
+                productDetails: productDetailsMap,
+                metadata: metadata,
+                hierarchy: hierarchy,
+                clientPromoters: clientPromoters,
+                clientCoordinates: clientCoordinates,
+                passedWorkingDaysCurrentMonth: 1,
+                isColumnar: true
+            };
+
+            // Update Generation Date UI
+            const lastUpdateText = document.getElementById('last-update-text');
+            if (lastUpdateText) {
+                let displayDate = lastSale;
+
+                // Try to get from metadata first (Actual Upload Time)
+                if (embeddedData.metadata && Array.isArray(embeddedData.metadata)) {
+                    const metaUpdate = embeddedData.metadata.find(m => m.key === 'last_update');
+                    if (metaUpdate && metaUpdate.value) {
+                        displayDate = metaUpdate.value;
+                    }
+                }
+
+                const dateObj = new Date(displayDate);
+                if (!isNaN(dateObj.getTime())) {
+                    const formattedDate = dateObj.toLocaleString('pt-BR');
+                    lastUpdateText.textContent = `Sistema Ativo • ${formattedDate}`;
+                }
+            }
+
+            window.embeddedData = embeddedData;
+            window.isDataLoaded = true;
+
+            // Inject Logic
+            const scriptEl = document.createElement('script');
+            scriptEl.src = 'js/app/app.js?v=' + Date.now();
+            scriptEl.onload = () => {
+                loader.classList.add('hidden');
+                document.getElementById('content-wrapper').classList.remove('hidden');
+                const topNav = document.getElementById('top-navbar');
+                if (topNav) topNav.classList.remove('hidden');
+            };
+            document.body.appendChild(scriptEl);
+
+        } catch (e) {
+            console.error(e);
+            loaderText.textContent = 'Erro: ' + e.message;
         }
-        reset() {
-            this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-            this.size = Math.random() * 2 + 0.5;
-            this.speedX = Math.random() * 0.5 - 0.25;
-            this.speedY = Math.random() * 0.5 - 0.25;
-            this.opacity = Math.random() * 0.5 + 0.2;
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const { createClient } = supabase;
+        const supabaseClient = window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Gatekeeper Logic
+        const loginButton = document.getElementById('login-button');
+        const telaLogin = document.getElementById('tela-login');
+        const telaLoading = document.getElementById('tela-loading');
+        const telaPendente = document.getElementById('tela-pendente');
+
+        // New Login Elements
+        const formSignin = document.getElementById('form-signin');
+        const formSignup = document.getElementById('form-signup');
+        const formForgot = document.getElementById('form-forgot');
+        const btnShowSignup = document.getElementById('btn-show-signup');
+        const btnShowSignin = document.getElementById('btn-show-signin');
+        const btnForgotPassword = document.getElementById('btn-forgot-password');
+        const btnBackToLogin = document.getElementById('btn-back-to-login');
+        const loginFormSignin = document.getElementById('login-form-signin');
+        const loginFormSignup = document.getElementById('login-form-signup');
+        const loginFormForgot = document.getElementById('login-form-forgot');
+        const btnTogglePasswordSignup = document.getElementById('btn-toggle-password-signup');
+        const inputPasswordSignup = document.getElementById('signup-password');
+
+        // Toggle Logic
+        if (btnShowSignup && btnShowSignin) {
+            btnShowSignup.addEventListener('click', () => {
+                loginFormSignin.classList.add('hidden');
+                loginFormSignup.classList.remove('hidden');
+                if (loginFormForgot) loginFormForgot.classList.add('hidden');
+            });
+            btnShowSignin.addEventListener('click', () => {
+                loginFormSignup.classList.add('hidden');
+                loginFormSignin.classList.remove('hidden');
+                if (loginFormForgot) loginFormForgot.classList.add('hidden');
+            });
         }
-        update() {
-            this.x += this.speedX;
-            this.y += this.speedY;
-            if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
-                this.reset();
+
+        // Forgot Password Submit Logic
+        if (formForgot) {
+            formForgot.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = formForgot.email.value;
+                
+                const btn = formForgot.querySelector('button[type="submit"]');
+                const oldText = btn.textContent;
+                btn.disabled = true; btn.textContent = 'Enviando...';
+
+                // Security Check: Verify if user exists and is approved before sending email
+                try {
+                    const { data: profile, error: profileError } = await supabaseClient
+                        .from('profiles')
+                        .select('status')
+                        .eq('email', email)
+                        .maybeSingle();
+
+                    if (profileError) {
+                        console.error('Erro ao verificar perfil:', profileError);
+                        // Fail safe: don't reveal error details, just generic message
+                        window.showToast('error', 'Não foi possível verificar o e-mail. Tente novamente mais tarde.');
+                        btn.disabled = false; btn.textContent = oldText;
+                        return;
+                    }
+
+                    if (!profile || profile.status !== 'aprovado') {
+                        // User not found or not approved
+                        window.showToast('error', 'E-mail não encontrado ou cadastro pendente de aprovação.');
+                        btn.disabled = false; btn.textContent = oldText;
+                        return;
+                    }
+
+                    // User exists and is approved, proceed with reset
+                    const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                        redirectTo: window.location.origin,
+                    });
+
+                    if (error) {
+                        window.handleSupabaseError(error);
+                    } else {
+                        window.showToast('success', 'Verifique seu e-mail para o link de redefinição de senha.');
+                        // Switch back to login view
+                        if (loginFormForgot) loginFormForgot.classList.add('hidden');
+                        if (loginFormSignin) loginFormSignin.classList.remove('hidden');
+                    }
+
+                } catch (err) {
+                    console.error('Erro inesperado:', err);
+                    window.showToast('error', 'Ocorreu um erro ao processar sua solicitação.');
+                } finally {
+                    btn.disabled = false; btn.textContent = oldText;
+                }
+            });
+        }
+
+        // Forgot Password Logic
+        if (btnForgotPassword && btnBackToLogin && loginFormForgot) {
+             btnForgotPassword.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginFormSignin.classList.add('hidden');
+                loginFormSignup.classList.add('hidden');
+                loginFormForgot.classList.remove('hidden');
+            });
+
+            btnBackToLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginFormForgot.classList.add('hidden');
+                loginFormSignin.classList.remove('hidden');
+            });
+        }
+
+        // Password Toggle Logic
+        if (btnTogglePasswordSignup && inputPasswordSignup) {
+            btnTogglePasswordSignup.addEventListener('click', () => {
+                const type = inputPasswordSignup.getAttribute('type') === 'password' ? 'text' : 'password';
+                inputPasswordSignup.setAttribute('type', type);
+                
+                // Toggle Icon
+                if (type === 'text') {
+                    // Eye Off Icon
+                    btnTogglePasswordSignup.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>';
+                } else {
+                    // Eye Icon
+                    btnTogglePasswordSignup.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>';
+                }
+            });
+        }
+
+        // Logout Button Logic for Pending Screen
+        const logoutButtonPendente = document.getElementById('logout-button-pendente');
+        if (logoutButtonPendente) {
+            logoutButtonPendente.addEventListener('click', async () => {
+                const { error } = await supabaseClient.auth.signOut();
+                if (error) console.error('Erro ao sair:', error);
+                window.location.reload();
+            });
+        }
+
+        // Google Login
+        if (loginButton) {
+            loginButton.addEventListener('click', async () => {
+                await supabaseClient.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: window.location.origin + window.location.pathname }
+                });
+            });
+        }
+
+        // Email/Password Login
+        if (formSignin) {
+            formSignin.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = formSignin.email.value;
+                const password = formSignin.password.value;
+                
+                const btn = formSignin.querySelector('button[type="submit"]');
+                const oldText = btn.textContent;
+                btn.disabled = true; btn.textContent = 'Entrando...';
+
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) {
+                    window.handleSupabaseError(error);
+                    btn.disabled = false; btn.textContent = oldText;
+                } else {
+                    // Auth state change will handle the rest
+                }
+            });
+        }
+
+        // Sign Up Logic
+        if (formSignup) {
+            formSignup.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = formSignup.name.value;
+                const email = formSignup.email.value;
+                const phone = formSignup.phone.value;
+                const password = formSignup.password.value;
+
+                // Validate Password
+                // Min 8 chars, 1 upper, 1 lower, 1 special
+                if (password.length < 8) {
+                    window.showToast('warning', 'A senha deve ter no mínimo 8 caracteres.');
+                    return;
+                }
+                if (!/[A-Z]/.test(password)) {
+                    window.showToast('warning', 'A senha deve conter pelo menos uma letra maiúscula.');
+                    return;
+                }
+                if (!/[a-z]/.test(password)) {
+                    window.showToast('warning', 'A senha deve conter pelo menos uma letra minúscula.');
+                    return;
+                }
+                if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+                    window.showToast('warning', 'A senha deve conter pelo menos um caractere especial.');
+                    return;
+                }
+
+                const btn = formSignup.querySelector('button[type="submit"]');
+                const oldText = btn.textContent;
+                btn.disabled = true; btn.textContent = 'Cadastrando...';
+
+                // Sign Up
+                // Updated: Sending all metadata in signUp options so the database trigger can handle it atomically.
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: name,
+                            phone: phone,
+                            password: password // Security Warning: User requested plain text password storage
+                        }
+                    }
+                });
+
+                if (error) {
+                    window.handleSupabaseError(error);
+                    btn.disabled = false; btn.textContent = oldText;
+                    return;
+                }
+
+                if (data && data.user) {
+                    window.showToast('success', 'Cadastro realizado! Sua conta aguarda aprovação manual.');
+                    // Reload to show pending screen
+                    setTimeout(() => window.location.reload(), 2000);
+                }
+            });
+        }
+
+        let isCheckingProfile = false;
+        let isAppReady = false;
+
+        async function verifyUserProfile(session) {
+            if (window.isDataLoaded) {
+                const telaLoading = document.getElementById('tela-loading');
+                const telaLogin = document.getElementById('tela-login');
+                if (telaLoading) telaLoading.classList.add('hidden');
+                if (telaLogin) telaLogin.classList.add('hidden');
+                return;
+            }
+
+            if (isCheckingProfile || !session) return;
+            isCheckingProfile = true;
+
+            // Only Reset UI to Loading State if App is NOT Ready (Initial Load)
+            if (!isAppReady) {
+                telaLogin.classList.add('hidden');
+                telaPendente.classList.add('hidden');
+                const card = document.getElementById('loading-card-content');
+                if (card) {
+                    card.innerHTML = `
+                        <h2 style="margin-top: 0; font-size: 1.5rem; font-weight: 600;">Carregando...</h2>
+                        <p style="color: #a0aec0;">Verificando credenciais.</p>
+                        <p style="color: #4a5568; font-size: 0.75rem; margin-top: 1rem;">v5.2.1</p>
+                    `;
+                }
+                telaLoading.classList.remove('hidden');
+            }
+
+            try {
+                // Check Profile with Timeout - 15s
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Tempo limite de conexão excedido. Verifique sua internet.')), 15000));
+                const profilePromise = supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+
+                const { data: profile, error } = await Promise.race([profilePromise, timeout]);
+
+                if (error) {
+                    if (error.code !== 'PGRST116') {
+                        throw error;
+                    }
+                }
+
+                if (profile && profile.status === 'aprovado') {
+                    // Store user role globally
+                    window.userRole = profile.role;
+
+                    // Update Welcome Message
+                    const welcomeEl = document.getElementById('welcome-header');
+                    if (welcomeEl) {
+                        const fullName = session.user.user_metadata.full_name || session.user.user_metadata.name || session.user.email;
+                        const firstName = (fullName || '').split(' ')[0];
+                        welcomeEl.textContent = `Olá, ${firstName}!`;
+                    }
+
+                    if (!isAppReady) {
+                        telaLoading.classList.add('hidden');
+                        carregarDadosDoSupabase(supabaseClient);
+                    }
+                    // If App is Ready, we do nothing - keep dashboard active.
+                } else {
+                    // Profile not approved - Enforce Block
+                    telaLoading.classList.add('hidden');
+                    telaPendente.classList.remove('hidden');
+
+                    // Update Pending Message based on specific status
+                    const statusMsg = document.getElementById('pendente-status-msg');
+                    if (statusMsg) {
+                        if (profile && profile.status === 'bloqueado') {
+                            statusMsg.textContent = "Acesso Bloqueado pelo Administrador";
+                            statusMsg.style.color = "#e53e3e"; // Red
+                        } else {
+                            statusMsg.textContent = "Aguardando Liberação";
+                            statusMsg.style.color = "#FF9933"; // Orange
+                        }
+                    }
+
+                    // Hide dashboard content just in case
+                    const contentWrapper = document.getElementById('content-wrapper');
+                    if(contentWrapper) contentWrapper.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error("Error checking profile:", err);
+
+                // If App is Ready (Silent Check), suppress error screen.
+                if (isAppReady) {
+                    console.warn("Background profile check failed. Keeping session active.");
+                    // Optionally show a toast here in future.
+                } else {
+                    // Initial Load Failed - Show Error Screen
+                    const card = document.getElementById('loading-card-content');
+                    if (card) {
+                        card.innerHTML = `
+                            <h2 style="margin-top: 0; font-size: 1.5rem; font-weight: 600; color: #fc8181;">Erro de Conexão</h2>
+                            <p style="color: #a0aec0; margin-bottom: 1.5rem;">${err.message || 'Não foi possível verificar suas credenciais.'}</p>
+                            <button id="retry-connection-btn" class="gatekeeper-btn" style="background-color: #2d3748; border-color: #4a5568;">
+                                Tentar Novamente
+                            </button>
+                            <p style="color: #4a5568; font-size: 0.75rem; margin-top: 1rem;">v5.2.1</p>
+                        `;
+                        // Re-bind retry button
+                        const retryBtn = document.getElementById('retry-connection-btn');
+                        if(retryBtn) {
+                            retryBtn.addEventListener('click', () => {
+                                isCheckingProfile = false; // Reset flag to allow retry
+                                verifyUserProfile(session);
+                            });
+                        }
+                    } else {
+                        window.showToast('error', "Erro de conexão: " + err.message);
+                        telaLoading.classList.add('hidden');
+                        telaPendente.classList.remove('hidden');
+                    }
+                }
+            } finally {
+                isCheckingProfile = false;
             }
         }
-        draw() {
-            ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
 
-    function init() {
-        for (let i = 0; i < 80; i++) {
-            particles.push(new Particle());
-        }
-    }
+        // Visibility Change Listener for Reconnection
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible') {
+                const errorCard = document.getElementById('loading-card-content');
+                // Check if we are showing the connection error screen
+                if (errorCard && errorCard.innerHTML.includes('Erro de Conexão')) {
+                    console.log('Tab became visible and error screen detected. Attempting seamless reconnection...');
 
-    function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        particles.forEach(p => {
-            p.update();
-            p.draw();
+                    const { data } = await supabaseClient.auth.getSession();
+                    if (data && data.session) {
+                        // Force retry without reload
+                        isCheckingProfile = false; // Reset flag to allow auto-retry
+                        verifyUserProfile(data.session);
+                    } else {
+                        // No session? Reload to login
+                        window.location.reload();
+                    }
+                }
+            }
         });
-        requestAnimationFrame(animate);
-    }
 
-    init();
-    animate();
-})();
+        // Auth State Listener
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
+                verifyUserProfile(session);
+            } else {
+                telaLogin.classList.remove('hidden');
+            }
+        });
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Supabase
-    const { createClient } = supabase;
-    window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Initialize Services
-    if (window.Auth) {
-        window.Auth.init();
-    } else {
-        console.error("Auth module not found!");
-    }
-});
+
+
+        // Admin Modal Logic (Moved to app.js to handle access control)
+        const adminBtn = document.getElementById('open-admin-btn');
+        if (adminBtn) {
+            // Logic moved to app.js
+        }
+
+        // Save Goals Logic
+        const saveBtn = document.getElementById('save-goals-btn');
+        const clearBtn = document.getElementById('clear-goals-btn');
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async () => {
+                if (window.userRole !== 'adm') {
+                    window.showToast('warning', 'Apenas usuários com permissão "adm" podem salvar metas.');
+                    return;
+                }
+
+                const statusText = document.getElementById('save-goals-btn');
+                const originalText = statusText.innerHTML;
+                statusText.disabled = true;
+                statusText.innerHTML = 'Salvando...';
+
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (!session) {
+                        throw new Error('Usuário não autenticado.');
+                    }
+                    await saveGoalsToSupabase(session.access_token);
+                } catch (error) {
+                    console.error(error);
+                    window.showToast('error', 'Erro ao salvar metas: ' + error.message);
+                } finally {
+                    statusText.disabled = false;
+                    statusText.innerHTML = originalText;
+                }
+            });
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', async () => {
+                if (window.userRole !== 'adm') {
+                    window.showToast('warning', 'Apenas usuários com permissão "adm" podem apagar metas.');
+                    return;
+                }
+
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (!session) {
+                        throw new Error('Usuário não autenticado.');
+                    }
+                    await clearGoalsFromSupabase(session.access_token);
+                } catch (error) {
+                    console.error(error);
+                    window.showToast('error', 'Erro ao limpar metas: ' + error.message);
+                }
+            });
+        }
+
+        async function saveGoalsToSupabase(authToken) {
+            // Collect Goals Data from Global Window Scope (Populated by app.js)
+            const globalClientGoals = window.globalClientGoals;
+            const goalsTargets = window.goalsTargets;
+
+            if (typeof globalClientGoals === 'undefined' || !globalClientGoals) {
+                throw new Error('Dados de metas não disponíveis (globalClientGoals undefined).');
+            }
+
+            const monthKey = new Date().toISOString().slice(0, 7); // YYYY-MM
+
+            // Convert Map to JSON-friendly format
+            const goalsObj = {};
+            globalClientGoals.forEach((val, key) => {
+                goalsObj[key] = Object.fromEntries(val);
+            });
+
+            // Convert goalsSellerTargets to Object
+            let sellerTargetsObj = {};
+            // Try accessing directly or via window
+            const targetsMap = (typeof goalsSellerTargets !== 'undefined') ? goalsSellerTargets : (window.goalsSellerTargets || new Map());
+
+            targetsMap.forEach((val, key) => {
+                sellerTargetsObj[key] = val;
+            });
+
+            const payload = {
+                month_key: monthKey,
+                supplier: 'ALL', // Global snapshot
+                brand: 'GENERAL', // Fix for Unique Constraint
+                goals_data: {
+                    clients: goalsObj,
+                    targets: goalsTargets,
+                    seller_targets: sellerTargetsObj
+                },
+                updated_at: new Date().toISOString()
+            };
+
+            // Use FETCH directly to allow service_role key without "Forbidden" error in browser
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/goals_distribution?on_conflict=month_key,supplier,brand`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'resolution=merge-duplicates' // upsert behavior
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Erro Supabase (${response.status}): ${errorText}`);
+            }
+
+            window.showToast('success', 'Metas salvas com sucesso!');
+        }
+
+        async function clearGoalsFromSupabase(authToken) {
+            const btn = document.getElementById('clear-goals-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Limpando...';
+            btn.disabled = true;
+
+            const monthKey = new Date().toISOString().slice(0, 7);
+
+            try {
+                // DELETE via REST
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/goals_distribution?month_key=eq.${monthKey}&supplier=eq.ALL&brand=eq.GENERAL`, {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro ao limpar metas (${response.status}): ${errorText}`);
+                }
+
+                // Limpar estado local
+                if(typeof globalClientGoals !== 'undefined') globalClientGoals.clear();
+                if(typeof goalsTargets !== 'undefined') {
+                    for(let k in goalsTargets) goalsTargets[k] = { fat: 0, vol: 0 };
+                }
+
+                // Atualizar UI Input fields
+                const elFat = document.getElementById('goal-global-fat');
+                const elVol = document.getElementById('goal-global-vol');
+                const elMix = document.getElementById('goal-global-mix');
+                const elMixSalty = document.getElementById('goal-global-mix-salty');
+                const elMixFoods = document.getElementById('goal-global-mix-foods');
+
+                if(elFat) elFat.value = '0,00';
+                if(elVol) elVol.value = '0,000';
+                if(elMix) elMix.value = '0';
+                if(elMixSalty) elMixSalty.value = '0';
+                if(elMixFoods) elMixFoods.value = '0';
+
+                // Re-calcular métricas e atualizar tabela (que usará os defaults ou zero)
+                // Precisamos chamar updateGoals(), mas ele está dentro do scopo do module script principal
+                // ou acessível via window se exposto.
+                // VERIFICAÇÃO: updateGoals está definido dentro do scopo 'DOMContentLoaded'.
+                // Precisamos expor ou disparar um evento.
+                // Vou disparar um evento customizado 'goalsCleared' e ouvir no scopo principal.
+                document.dispatchEvent(new CustomEvent('goalsCleared'));
+
+                window.showToast('success', 'Metas limpas com sucesso!');
+            } catch (err) {
+                console.error('Erro ao limpar metas:', err);
+                window.showToast('error', 'Erro ao limpar metas: ' + err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Attach listener for Clear Button - This needs to be inside the DOMContentLoaded where authentication happens or keys are available
+        // But `clearGoalsFromSupabase` needs access to URL/KEY.
+        // Wait, `saveGoalsToSupabase` uses `SUPABASE_URL` which is defined in the script scope above.
+        // I will hook the button click in the authentication handler block (where save-goals-btn is handled).
+    });
