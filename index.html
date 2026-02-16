@@ -1621,11 +1621,48 @@
                                 </div>
                             </div>
 
+                            <!-- Days Selection (Weekly Only) -->
+                            <div id="itinerary-days-container" class="hidden animate-fade-in-down">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Dias de Atendimento</label>
+                                <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                    <!-- Seg -->
+                                    <label class="cursor-pointer">
+                                        <input type="checkbox" name="itinerary-days" value="1" class="peer sr-only">
+                                        <div class="p-2 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center text-xs font-bold peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-500 transition-all hover:bg-slate-700">SEG</div>
+                                    </label>
+                                    <!-- Ter -->
+                                    <label class="cursor-pointer">
+                                        <input type="checkbox" name="itinerary-days" value="2" class="peer sr-only">
+                                        <div class="p-2 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center text-xs font-bold peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-500 transition-all hover:bg-slate-700">TER</div>
+                                    </label>
+                                    <!-- Qua -->
+                                    <label class="cursor-pointer">
+                                        <input type="checkbox" name="itinerary-days" value="3" class="peer sr-only">
+                                        <div class="p-2 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center text-xs font-bold peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-500 transition-all hover:bg-slate-700">QUA</div>
+                                    </label>
+                                    <!-- Qui -->
+                                    <label class="cursor-pointer">
+                                        <input type="checkbox" name="itinerary-days" value="4" class="peer sr-only">
+                                        <div class="p-2 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center text-xs font-bold peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-500 transition-all hover:bg-slate-700">QUI</div>
+                                    </label>
+                                    <!-- Sex -->
+                                    <label class="cursor-pointer">
+                                        <input type="checkbox" name="itinerary-days" value="5" class="peer sr-only">
+                                        <div class="p-2 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center text-xs font-bold peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-500 transition-all hover:bg-slate-700">SEX</div>
+                                    </label>
+                                    <!-- Sáb -->
+                                    <label class="cursor-pointer">
+                                        <input type="checkbox" name="itinerary-days" value="6" class="peer sr-only">
+                                        <div class="p-2 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center text-xs font-bold peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-500 transition-all hover:bg-slate-700">SÁB</div>
+                                    </label>
+                                </div>
+                            </div>
+
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Próxima Data de Atendimento</label>
                                 <input type="date" id="itinerary-next-date" class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 block">
                                 <p class="mt-2 text-xs text-slate-400">
-                                    Define o dia base para o cálculo das próximas visitas.
+                                    Define o dia base/inicial para o cálculo das visitas.
                                 </p>
                             </div>
                         </div>
