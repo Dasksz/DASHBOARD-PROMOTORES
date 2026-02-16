@@ -211,7 +211,6 @@ BEGIN
     ALTER TABLE public.data_product_details ADD COLUMN IF NOT EXISTS pasta text;
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_frequency text;
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_ref_date timestamp with time zone;
-    ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_days text;
     
     -- Ensure 'cod_cocoord' exists in 'visitas'
     ALTER TABLE public.visitas ADD COLUMN IF NOT EXISTS cod_cocoord text;
