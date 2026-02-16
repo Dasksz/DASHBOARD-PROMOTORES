@@ -76,6 +76,18 @@
         border-color: rgba(255,255,255,0.1) !important;
     }
 
+    /* Optimization for Day Selection Toggles */
+    #itinerary-days-container input[type="checkbox"] + div {
+        transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+        will-change: background-color, color, border-color; /* Hint to browser */
+    }
+
+    #itinerary-days-container label {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent; /* Remove delay on mobile touch */
+        touch-action: manipulation; /* Disable double-tap zoom delay */
+    }
+
     /* Hero Section */
     .hero-section {
         background: linear-gradient(to right, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.6)), url('https://images.unsplash.com/photo-1557821552-17105176677c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1932&q=80'); /* Abstract background fallback */
