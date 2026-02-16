@@ -1,5 +1,6 @@
 (function() {
         const embeddedData = window.embeddedData;
+        const hierarchyState = window.HierarchySystem.state;
 
         // --- CONFIGURATION MOVED TO utils.js ---
         // SUPPLIER_CONFIG, resolveSupplierPasta, GARBAGE_SELLER_KEYWORDS, isGarbageSeller available globally
@@ -967,7 +968,7 @@
 
             // --- HIERARCHY LOGIC START (Delegated to Security Module) ---
             window.HierarchySystem.init(embeddedData.hierarchy, embeddedData.clientPromoters);
-
+            
             // Map aliases for backward compatibility with app.js logic
             optimizedData.hierarchyMap = window.HierarchySystem.maps.hierarchyMap;
             optimizedData.clientHierarchyMap = window.HierarchySystem.maps.clientHierarchyMap;
