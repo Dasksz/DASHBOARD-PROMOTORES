@@ -16654,7 +16654,8 @@ const supervisorGroups = new Map();
                 } else {
                     if(daysContainer) daysContainer.classList.add('hidden');
                 }
-                updatePrediction();
+                // Defer calculation to allow UI repaint
+                setTimeout(updatePrediction, 0);
             };
         });
 
