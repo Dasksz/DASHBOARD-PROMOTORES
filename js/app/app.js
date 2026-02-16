@@ -7914,7 +7914,8 @@ const supervisorGroups = new Map();
 
             data.forEach((item, index) => {
                 const tr = document.createElement('tr');
-                tr.className = 'border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group';
+                tr.className = 'border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group cursor-pointer';
+                tr.onclick = () => openProductPerformanceModal(item);
 
                 // Rank
                 const tdRank = document.createElement('td');
@@ -7967,6 +7968,70 @@ const supervisorGroups = new Map();
 
                 container.appendChild(tr);
             });
+        }
+
+        function openProductPerformanceModal(item) {
+            const modal = document.getElementById('product-performance-modal');
+            if (!modal) return;
+
+            // Get Elements
+            const titleEl = document.getElementById('product-performance-title');
+            const codeEl = document.getElementById('product-performance-code');
+            const stockEl = document.getElementById('product-performance-stock');
+            const metricLabelEl = document.getElementById('product-performance-metric-label');
+            const prevEl = document.getElementById('product-performance-prev');
+            const currEl = document.getElementById('product-performance-curr');
+            const varEl = document.getElementById('product-performance-var');
+            const closeBtn = document.getElementById('product-performance-modal-close-btn');
+
+            // Populate
+            if (titleEl) titleEl.textContent = item.name || 'Produto Desconhecido';
+            if (codeEl) codeEl.textContent = `Cód: ${item.code}`;
+
+            // Stock Logic
+            const s05 = stockData05.get(item.code) || 0;
+            const s08 = stockData08.get(item.code) || 0;
+            const totalStock = s05 + s08;
+            if (stockEl) stockEl.textContent = totalStock.toLocaleString('pt-BR');
+
+            // Sales Logic
+            const isFat = currentProductMetric === 'faturamento';
+            if (metricLabelEl) metricLabelEl.textContent = isFat ? 'Valor' : 'Volume (Kg)';
+
+            const prevVal = isFat ? item.prevVal : item.prevWeight;
+            const currVal = isFat ? item.currentVal : item.currentWeight;
+
+            const format = (v) => isFat
+                ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                : v.toLocaleString('pt-BR', { minimumFractionDigits: 3 }) + ' kg';
+
+            if (prevEl) prevEl.textContent = format(prevVal);
+            if (currEl) currEl.textContent = format(currVal);
+
+            // Variation Logic
+            const variation = item.variation;
+            const sign = variation > 0 ? '+' : '';
+            const arrow = variation >= 0 ? '▲' : '▼';
+            const colorClass = variation >= 0 ? 'text-emerald-400' : 'text-red-400';
+
+            if (varEl) {
+                varEl.textContent = `${sign}${variation.toFixed(1)}% ${arrow}`;
+                varEl.className = `px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 ${colorClass}`;
+            }
+
+            // Show
+            modal.classList.remove('hidden');
+
+            // Close Logic
+            const close = () => {
+                modal.classList.add('hidden');
+            };
+            if (closeBtn) closeBtn.onclick = close;
+
+            // Close on outside click (Generic Modal Logic handles this via setupGlobalEsc or similar, but explicit here helps)
+            modal.onclick = (e) => {
+                if (e.target === modal) close();
+            };
         }
 
         // Renamed/Wrapper for compatibility if needed, or update updateAllVisuals directly
