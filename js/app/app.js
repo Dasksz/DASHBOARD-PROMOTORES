@@ -18606,19 +18606,27 @@ const supervisorGroups = new Map();
             else if (statusText === 'B') { statusText = 'Bloqueado'; statusColor = 'text-red-400'; }
 
             tr.innerHTML = `
-                <td data-label="Data" class="px-2 py-1.5 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 font-mono">${dateStr}</td>
-                <td data-label="Pedido" class="px-2 py-1.5 md:px-6 md:py-4 text-xs md:text-sm text-white font-bold">${order.PEDIDO}</td>
-                <td data-label="Cliente" class="px-2 py-1.5 md:px-6 md:py-4">
-                    <div class="text-xs md:text-sm text-white max-w-[120px] md:max-w-none truncate">${order.CLIENTE_NOME || 'N/A'}</div>
+                <td data-label="Data" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 font-mono">${dateStr}</td>
+                <td data-label="Pedido" class="px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold">
+                    <button class="text-blue-400 hover:text-blue-300 hover:underline transition-colors order-link font-mono">${order.PEDIDO}</button>
+                </td>
+                <td data-label="Cliente" class="px-2 py-1.5 md:px-2 md:py-3">
+                    <div class="text-xs md:text-sm text-white max-w-[120px] md:max-w-none truncate" title="${order.CLIENTE_NOME || ''}">${order.CLIENTE_NOME || 'N/A'}</div>
                     <div class="text-[10px] md:text-xs text-slate-500 font-mono">${order.CODCLI}</div>
                 </td>
-                <td data-label="Vendedor" class="px-2 py-1.5 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${order.NOME || '-'}</td>
-                <td data-label="Fornecedor" class="px-2 py-1.5 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${order.CODFOR || '-'}</td>
-                <td data-label="Valor" class="px-2 py-1.5 md:px-6 md:py-4 text-xs md:text-sm text-white font-bold text-right">${valStr}</td>
-                <td data-label="Status" class="px-2 py-1.5 md:px-6 md:py-4 text-[10px] md:text-xs text-center ${statusColor}">${statusText}</td>
+                <td data-label="Vendedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell truncate max-w-[100px]" title="${order.NOME || ''}">${order.NOME || '-'}</td>
+                <td data-label="Fornecedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${order.CODFOR || '-'}</td>
+                <td data-label="Valor" class="px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold text-right">${valStr}</td>
+                <td data-label="Status" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-center ${statusColor}">${statusText}</td>
             `;
-            // Optional: Click to see details (reuse existing modal logic if possible)
-            // tr.onclick = ...
+
+            const btn = tr.querySelector('.order-link');
+            if (btn) {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    openModal(order.PEDIDO);
+                };
+            }
             
             tbody.appendChild(tr);
         });
