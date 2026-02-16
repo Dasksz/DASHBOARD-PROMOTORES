@@ -1894,18 +1894,20 @@
 
         // --- View State Management ---
         const viewState = {
-            dashboard: { dirty: true },
-            pedidos: { dirty: true },
-            comparativo: { dirty: true },
-            cobertura: { dirty: true },
-            cidades: { dirty: true },
-            inovacoes: { dirty: true, cache: null, lastTypesKey: '' },
-            mix: { dirty: true },
-            goals: { dirty: true },
-            metaRealizado: { dirty: true },
-            clientes: { dirty: true },
-            produtos: { dirty: true },
-            consultas: { dirty: true }
+            dashboard: { dirty: true, rendered: false },
+            pedidos: { dirty: true, rendered: false },
+            comparativo: { dirty: true, rendered: false },
+            cobertura: { dirty: true, rendered: false },
+            cidades: { dirty: true, rendered: false },
+            inovacoes: { dirty: true, rendered: false, cache: null, lastTypesKey: '' },
+            mix: { dirty: true, rendered: false },
+            goals: { dirty: true, rendered: false },
+            metaRealizado: { dirty: true, rendered: false },
+            clientes: { dirty: true, rendered: false },
+            produtos: { dirty: true, rendered: false },
+            consultas: { dirty: true, rendered: false },
+            history: { dirty: true, rendered: false },
+            wallet: { dirty: true, rendered: false }
         };
 
         // Render IDs for Race Condition Guard
@@ -11560,10 +11562,6 @@ const supervisorGroups = new Map();
         function showViewElement(el) {
             if (!el) return;
             el.classList.remove('hidden');
-            el.classList.add('animate-fade-in-up');
-            setTimeout(() => {
-                el.classList.remove('animate-fade-in-up');
-            }, 700);
         }
 
         async function renderView(view, options = {}) {
@@ -11641,22 +11639,42 @@ const supervisorGroups = new Map();
                 switch(view) {
                     case 'history':
                         showViewElement(document.getElementById('history-view'));
-                        if (typeof renderHistoryView === 'function') renderHistoryView();
+                        if (viewState.history.dirty || !viewState.history.rendered) {
+                            if (typeof renderHistoryView === 'function') renderHistoryView();
+                            viewState.history.rendered = true;
+                            viewState.history.dirty = false;
+                        }
                         break;
                     case 'clientes':
                         showViewElement(document.getElementById('clientes-view'));
-                        if (typeof renderClientView === 'function') if (typeof renderClientView === "function") renderClientView();
+                        if (viewState.clientes.dirty || !viewState.clientes.rendered) {
+                            if (typeof renderClientView === 'function') renderClientView();
+                            viewState.clientes.rendered = true;
+                            viewState.clientes.dirty = false;
+                        }
                         break;
                     case 'produtos':
                         showViewElement(document.getElementById('produtos-view'));
-                        if (typeof renderProductView === 'function') renderProductView();
+                        if (viewState.produtos.dirty || !viewState.produtos.rendered) {
+                            if (typeof renderProductView === 'function') renderProductView();
+                            viewState.produtos.rendered = true;
+                            viewState.produtos.dirty = false;
+                        }
                         break;
                     case 'consultas':
                         showViewElement(document.getElementById('consultas-view'));
+                        if (viewState.consultas.dirty || !viewState.consultas.rendered) {
+                            viewState.consultas.rendered = true;
+                            viewState.consultas.dirty = false;
+                        }
                         break;
                     case 'wallet':
                         showViewElement(document.getElementById('wallet-view'));
-                        if (typeof renderWalletView === 'function') renderWalletView();
+                        if (viewState.wallet.dirty || !viewState.wallet.rendered) {
+                            if (typeof renderWalletView === 'function') renderWalletView();
+                            viewState.wallet.rendered = true;
+                            viewState.wallet.dirty = false;
+                        }
                         break;
                     case 'dashboard':
                         showViewElement(mainDashboard);
@@ -11667,10 +11685,11 @@ const supervisorGroups = new Map();
                         if (chartView) chartView.classList.remove('hidden');
                         if (tableView) tableView.classList.add('hidden');
                         if (tablePaginationControls) tablePaginationControls.classList.add('hidden');
-                        if (viewState.dashboard.dirty) {
+                        if (viewState.dashboard.dirty || !viewState.dashboard.rendered) {
                             // Defer execution to allow loader to render
                             setTimeout(() => {
                                 updateAllVisuals();
+                                viewState.dashboard.rendered = true;
                                 viewState.dashboard.dirty = false;
                             }, 50);
                         }
@@ -11681,31 +11700,36 @@ const supervisorGroups = new Map();
                         if (chartView) chartView.classList.add('hidden');
                         if (tableView) tableView.classList.remove('hidden');
                         if (tablePaginationControls) tablePaginationControls.classList.remove('hidden');
-                        if (viewState.pedidos.dirty) {
+                        if (viewState.pedidos.dirty || !viewState.pedidos.rendered) {
                             updateAllVisuals();
+                            viewState.pedidos.rendered = true;
                             viewState.pedidos.dirty = false;
                         }
                         break;
                     case 'comparativo':
                         showViewElement(comparisonView);
-                        if (viewState.comparativo.dirty) {
+                        if (viewState.comparativo.dirty || !viewState.comparativo.rendered) {
                             updateAllComparisonFilters();
                             updateComparisonView();
+                            viewState.comparativo.rendered = true;
                             viewState.comparativo.dirty = false;
                         }
                         break;
                     case 'estoque':
                         if (stockView) showViewElement(stockView);
-                        if (viewState.estoque.dirty) {
+                        // Ensure viewState.estoque exists before accessing
+                        if (viewState.estoque && (viewState.estoque.dirty || !viewState.estoque.rendered)) {
                             handleStockFilterChange();
+                            viewState.estoque.rendered = true;
                             viewState.estoque.dirty = false;
                         }
                         break;
                     case 'cobertura':
                         showViewElement(coverageView);
-                        if (viewState.cobertura.dirty) {
+                        if (viewState.cobertura.dirty || !viewState.cobertura.rendered) {
                             updateAllCoverageFilters();
                             updateCoverageView();
+                            viewState.cobertura.rendered = true;
                             viewState.cobertura.dirty = false;
                         }
                         break;
@@ -11713,41 +11737,46 @@ const supervisorGroups = new Map();
                         showViewElement(cityView);
                         // Always trigger background sync if admin
                         syncGlobalCoordinates();
-                        if (viewState.cidades.dirty) {
+                        if (viewState.cidades.dirty || !viewState.cidades.rendered) {
                             updateAllCityFilters();
                             updateCityView();
+                            viewState.cidades.rendered = true;
                             viewState.cidades.dirty = false;
                         }
                         break;
                     case 'inovacoes-mes':
                         showViewElement(innovationsMonthView);
-                        if (viewState.inovacoes.dirty) {
+                        if (viewState.inovacoes.dirty || !viewState.inovacoes.rendered) {
                             selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, [...allSalesData, ...allHistoryData]);
                             updateInnovationsMonthView();
+                            viewState.inovacoes.rendered = true;
                             viewState.inovacoes.dirty = false;
                         }
                         break;
                     case 'mix':
                         showViewElement(document.getElementById('mix-view'));
-                        if (viewState.mix.dirty) {
+                        if (viewState.mix.dirty || !viewState.mix.rendered) {
                             updateAllMixFilters();
                             updateMixView();
+                            viewState.mix.rendered = true;
                             viewState.mix.dirty = false;
                         }
                         break;
                     case 'goals':
                         showViewElement(goalsView);
-                        if (viewState.goals.dirty) {
+                        if (viewState.goals.dirty || !viewState.goals.rendered) {
                             updateGoalsView();
+                            viewState.goals.rendered = true;
                             viewState.goals.dirty = false;
                         }
                         break;
                     case 'meta-realizado':
                         showViewElement(document.getElementById('meta-realizado-view'));
-                        if (viewState.metaRealizado.dirty) {
+                        if (viewState.metaRealizado.dirty || !viewState.metaRealizado.rendered) {
                             // Initial filter logic if needed, similar to other views
 
                             updateMetaRealizadoView();
+                            viewState.metaRealizado.rendered = true;
                             viewState.metaRealizado.dirty = false;
                         }
                         break;
@@ -18334,10 +18363,14 @@ const supervisorGroups = new Map();
 
     function filterHistoryView() {
         console.log("[History] Filtering...");
-        const startVal = document.getElementById('history-date-start').value;
-        const endVal = document.getElementById('history-date-end').value;
+        // UI Elements
+        const startEl = document.getElementById('history-date-start');
+        const endEl = document.getElementById('history-date-end');
+        if (!startEl || !endEl) return;
+
+        const startVal = startEl.value;
+        const endVal = endEl.value;
         const posFilter = document.getElementById('history-posicao-filter').value;
-        const supplierBtn = document.getElementById('history-supplier-filter-text'); // Text based extraction from button
         const clientFilter = document.getElementById('history-codcli-filter').value.toLowerCase();
 
         if (!startVal || !endVal) {
@@ -18350,152 +18383,163 @@ const supervisorGroups = new Map();
         startDate.setUTCHours(0,0,0,0);
         endDate.setUTCHours(23,59,59,999);
 
+        const startTs = startDate.getTime();
+        const endTs = endDate.getTime();
+
+        // Show Loading
+        const tbody = document.getElementById('history-table-body');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-slate-400">Filtrando dados... <span class="animate-spin inline-block ml-2">⏳</span></td></tr>';
+
         // 1. Get Base Data (Hierarchy)
-        // We use 'history' prefix for hierarchy filters
         const clients = getHierarchyFilteredClients('history', allClientsData);
-        const validClientCodes = new Set(clients.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
-
-        // 2. Filter History Data
-        // Use allHistoryData which contains the trimester data
-        const results = [];
-        
-        // Helper to check if a sale matches criteria
-        const checkSale = (sale) => {
-            const dtPed = sale.DTPED;
-            const d = parseDate(dtPed);
-            if (!d) { console.log("Date parse failed", dtPed); return false; }
-            
-            // Date Check
-            if (d < startDate || d > endDate) {
-                // console.log("Date out of range", d, startDate, endDate);
-                return false;
-            }
-
-            // Client Check (Hierarchy + Text Search)
-            const codCli = normalizeKey(sale.CODCLI);
-            
-            // RELAXED VALIDATION: Only enforce validClientCodes if strict filtering is needed.
-            // If user is ADM and NO hierarchy filters are active, allow all history (orphans).
-            const state = hierarchyState['history'];
-            const hasHierarchyFilters = state && (state.coords.size > 0 || state.cocoords.size > 0 || state.promotors.size > 0);
-            const isAdmin = window.userRole === 'adm';
-
-            // If not admin, or if filters are active, enforce the set.
-            // If Admin and NO filters, allow everything (don't check validClientCodes).
-            if (!isAdmin || hasHierarchyFilters) {
-                if (!validClientCodes.has(codCli)) {
-                    // Check Orphan Match (Inactive Client but matches Hierarchy Context)
-                    let isOrphanMatch = false;
-                    
-                    // Determine Effective Hierarchy Scope
-                    const effectiveCoords = new Set(state ? state.coords : []);
-                    if (userHierarchyContext && userHierarchyContext.role === 'coord') {
-                        if (userHierarchyContext.coord) effectiveCoords.add(userHierarchyContext.coord);
-                    }
-
-                    // Check Sale against Scope (Supervisor Level)
-                    if (effectiveCoords.size > 0) {
-                         const supName = String(sale.SUPERV || '').toUpperCase().trim();
-                         const supCode = String(sale.CODSUPERVISOR || '').toUpperCase().trim();
-                         
-                         if (supCode && effectiveCoords.has(supCode)) isOrphanMatch = true;
-                         
-                         if (!isOrphanMatch && supName && typeof optimizedData !== 'undefined' && optimizedData.supervisorCodeByName) {
-                             const mappedCode = optimizedData.supervisorCodeByName.get(supName);
-                             if (mappedCode && effectiveCoords.has(mappedCode)) isOrphanMatch = true;
-                         }
-                    }
-
-                    if (!isOrphanMatch) return false;
-                }
-            }
-            
-            if (clientFilter) {
-                // We need client name from map
-                const clientObj = clientMapForKPIs.get(codCli);
-                const name = clientObj ? (clientObj.nomeCliente || clientObj.fantasia || '') : '';
-                const city = clientObj ? (clientObj.cidade || '') : '';
-                const bairro = clientObj ? (clientObj.bairro || '') : '';
-
-                const terms = clientFilter.split('%').map(t => t.trim()).filter(t => t.length > 0);
-                const match = terms.every(term => {
-                    return codCli.toLowerCase().includes(term) ||
-                           name.toLowerCase().includes(term) ||
-                           city.toLowerCase().includes(term) ||
-                           bairro.toLowerCase().includes(term);
-                });
-
-                if (!match) return false;
-            }
-
-            // Position Check
-            if (posFilter && sale.POSICAO !== posFilter) return false;
-
-            // Supplier Check (Simplified via existing filters logic or button text?)
-            // The button text is "Todos" or "X Selecionados". 
-            // We should use `hierarchyState` or a new supplier state. 
-            // For now, let's assume no supplier filter if button text is 'Todos' or implement supplier filter properly.
-            // Since we reused existing HTML structure but didn't bind specific JS for Supplier Dropdown in History, 
-            // let's skip strict Supplier filtering for this pass unless we bind it.
-            // NOTE: The user asked for "same filters as pedidos".
-            // Ideally we need `setupSupplierFilter('history')`.
-            
-            return true;
-        };
-
-        // Chunked processing for performance? 
-        // For simplicity in this step, synchronous loop.
-        for(let i=0; i<allHistoryData.length; i++) {
-            const s = allHistoryData instanceof ColumnarDataset ? allHistoryData.get(i) : allHistoryData[i];
-            if (checkSale(s)) results.push(s);
+        // Optimize: Use Set of Strings
+        const validClientCodes = new Set();
+        const clientsLen = clients.length;
+        const isColumnar = clients instanceof ColumnarDataset;
+        for(let i=0; i<clientsLen; i++) {
+             const c = isColumnar ? clients.get(i) : clients[i];
+             validClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
         }
 
-        // Include Current Sales (allSalesData) as requested
-        if (allSalesData) {
-            for(let i=0; i<allSalesData.length; i++) {
-                const s = allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i];
-                if (checkSale(s)) results.push(s);
-            }
+        const state = hierarchyState['history'];
+        const hasHierarchyFilters = state && (state.coords.size > 0 || state.cocoords.size > 0 || state.promotors.size > 0);
+        const isAdmin = window.userRole === 'adm';
+        const enforceHierarchy = !isAdmin || hasHierarchyFilters;
+
+        const effectiveCoords = new Set(state ? state.coords : []);
+        if (userHierarchyContext && userHierarchyContext.role === 'coord') {
+            if (userHierarchyContext.coord) effectiveCoords.add(userHierarchyContext.coord);
         }
 
-        // Aggregate by Order (Num Pedido)
+        // Prepare Async Data Sources
+        // We will process allHistoryData AND allSalesData
+        const sources = [allHistoryData];
+        if (allSalesData) sources.push(allSalesData);
+
         const ordersMap = new Map();
-        results.forEach(s => {
-            const key = s.PEDIDO;
-            if (!ordersMap.has(key)) {
-                ordersMap.set(key, {
-                    PEDIDO: key,
-                    DTPED: s.DTPED,
-                    CODCLI: s.CODCLI,
-                    NOME: s.NOME, // Vendedor (RCA)
-                    CODFOR: s.CODFOR, // Can be multiple?
-                    VLVENDA: 0,
-                    POSICAO: s.POSICAO,
-                    CLIENTE_NOME: '' // Need lookup
-                });
+
+        let currentSourceIndex = 0;
+        let currentIndex = 0;
+
+        function processChunk() {
+            const start = performance.now();
+            
+            while (currentSourceIndex < sources.length) {
+                const source = sources[currentSourceIndex];
+                const total = source.length;
+                const isCol = source instanceof ColumnarDataset;
+
+                while (currentIndex < total) {
+                    const s = isCol ? source.get(currentIndex) : source[currentIndex];
+                    currentIndex++;
+                    
+                    // --- INLINE CHECKS FOR PERFORMANCE ---
+
+                    // 1. Date Check (Numeric)
+                    let ts = s.DTPED;
+                    // Fallback if DTPED is string (should rarely happen with worker optimization)
+                    if (typeof ts !== 'number') {
+                         const d = parseDate(ts);
+                         ts = d ? d.getTime() : 0;
+                    }
+
+                    if (ts < startTs || ts > endTs) continue;
+
+                    // 2. Client Check
+                    const codCli = normalizeKey(s.CODCLI);
+
+                    if (enforceHierarchy) {
+                        if (!validClientCodes.has(codCli)) {
+                            // Check Orphan Match
+                            let isOrphanMatch = false;
+                            if (effectiveCoords.size > 0) {
+                                 const supName = String(s.SUPERV || '').toUpperCase().trim();
+                                 const supCode = String(s.CODSUPERVISOR || '').toUpperCase().trim();
+                                 if (supCode && effectiveCoords.has(supCode)) isOrphanMatch = true;
+                                 else if (supName && typeof optimizedData !== 'undefined' && optimizedData.supervisorCodeByName) {
+                                     const mappedCode = optimizedData.supervisorCodeByName.get(supName);
+                                     if (mappedCode && effectiveCoords.has(mappedCode)) isOrphanMatch = true;
+                                 }
+                            }
+                            if (!isOrphanMatch) continue;
+                        }
+                    }
+
+                    // 3. Text Filter Check
+                    if (clientFilter) {
+                        const clientObj = clientMapForKPIs.get(codCli);
+                        // Optimization: Check code first (fastest)
+                        if (!codCli.toLowerCase().includes(clientFilter)) {
+                            // Then check name/city
+                             const name = clientObj ? (clientObj.nomeCliente || clientObj.fantasia || '') : '';
+                             const city = clientObj ? (clientObj.cidade || '') : '';
+                             const bairro = clientObj ? (clientObj.bairro || '') : '';
+                             const terms = clientFilter.split(' ').filter(t => t.length > 0);
+                             const match = terms.every(term => {
+                                return codCli.toLowerCase().includes(term) ||
+                                       name.toLowerCase().includes(term) ||
+                                       city.toLowerCase().includes(term) ||
+                                       bairro.toLowerCase().includes(term);
+                             });
+                             if (!match) continue;
+                        }
+                    }
+
+                    // 4. Position Check
+                    if (posFilter && s.POSICAO !== posFilter) continue;
+
+                    // --- ADD TO RESULTS (AGGREGATE) ---
+                    const key = s.PEDIDO;
+                    if (!ordersMap.has(key)) {
+                        // Resolve Name once
+                         const cObj = clientMapForKPIs.get(codCli);
+                         const cName = cObj ? (cObj.nomeCliente || cObj.fantasia) : 'N/A';
+
+                        ordersMap.set(key, {
+                            PEDIDO: key,
+                            DTPED: s.DTPED, // Keep timestamp
+                            CODCLI: s.CODCLI,
+                            NOME: s.NOME,
+                            CODFOR: s.CODFOR,
+                            VLVENDA: 0,
+                            POSICAO: s.POSICAO,
+                            CLIENTE_NOME: cName
+                        });
+                    }
+                    const o = ordersMap.get(key);
+                    o.VLVENDA += (Number(s.VLVENDA) || 0);
+
+                    // Time Budget Check
+                    if (performance.now() - start > 12) {
+                        setTimeout(processChunk, 0);
+                        return;
+                    }
+                }
+
+                // Finished source
+                currentSourceIndex++;
+                currentIndex = 0;
             }
-            const o = ordersMap.get(key);
-            o.VLVENDA += (Number(s.VLVENDA) || 0);
-        });
 
-        historyTableState.filtered = Array.from(ordersMap.values());
-        
-        // Enrich with Client Name
-        historyTableState.filtered.forEach(o => {
-            const c = clientMapForKPIs.get(normalizeKey(o.CODCLI));
-            if (c) o.CLIENTE_NOME = c.nomeCliente || c.fantasia;
-        });
+            // --- ALL DONE ---
+            finishFiltering();
+        }
 
-        // Sort by Date Desc
-        historyTableState.filtered.sort((a, b) => {
-            const da = parseDate(a.DTPED) || 0;
-            const db = parseDate(b.DTPED) || 0;
-            return db - da;
-        });
+        function finishFiltering() {
+            historyTableState.filtered = Array.from(ordersMap.values());
+            // Sort by Date Desc
+            historyTableState.filtered.sort((a, b) => {
+                // DTPED is timestamp number
+                return (b.DTPED || 0) - (a.DTPED || 0);
+            });
 
-        historyTableState.page = 1;
-        historyTableState.hasSearched = true;
-        renderHistoryTable();
+            historyTableState.page = 1;
+            historyTableState.hasSearched = true;
+            renderHistoryTable();
+        }
+
+        // Start
+        setTimeout(processChunk, 0);
     }
 
     function renderHistoryTable() {
@@ -19610,8 +19654,8 @@ const supervisorGroups = new Map();
                 centerStrength: 0.8,
                 minRadius: 35,
                 maxRadius: am5.percent(14.5),
-                velocityDecay: 0.6,
-                initialVelocity: 0.05
+                velocityDecay: 0.8, // Increased for stability
+                initialVelocity: 0.02 // Decreased for stability
             })
         );
 
