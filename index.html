@@ -1284,374 +1284,6 @@
                             </div>
                         </div>
 
-    <!-- Modals (Hidden) -->
-    <!-- Order Details (Refactored for Valid HTML) -->
-    <div id="order-details-modal" class="modal-overlay hidden">
-        <div class="bg-modal-content w-full max-w-4xl m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 bg-slate-900">
-            <button id="modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <div class="mb-6">
-                <h3 class="text-2xl font-bold text-white flex items-center gap-2">
-                    Pedido <span id="modal-pedido-id" class="text-blue-400 font-mono"></span>
-                </h3>
-                <div id="modal-header-info" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-300 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50"></div>
-            </div>
-            <div class="overflow-y-auto custom-scrollbar rounded-xl border border-slate-700/50 bg-slate-800/30 max-h-[400px]">
-                <table class="w-full text-sm text-left text-slate-300">
-                    <thead class="bg-slate-800 text-xs uppercase font-bold text-slate-400 sticky top-0 z-10">
-                        <tr>
-                            <th class="px-4 py-3">Produto</th>
-                            <th class="px-4 py-3 text-right">Qtd</th>
-                            <th class="px-4 py-3 text-right">Unitário</th>
-                            <th class="px-4 py-3 text-right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="modal-table-body" class="divide-y divide-slate-700/50"></tbody>
-                </table>
-            </div>
-            <div id="modal-footer-total" class="mt-6 text-right text-2xl font-bold text-green-400"></div>
-        </div>
-    </div>
-
-    <!-- Client Details (Refactored for UI) -->
-    <div id="client-details-modal" class="modal-overlay hidden">
-        <div class="bg-modal-content w-full max-w-2xl m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 bg-slate-900">
-            <button id="client-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <div id="client-modal-content"></div>
-        </div>
-    </div>
-    <!-- Holidays -->
-    <div id="holiday-modal" class="modal-overlay hidden"><div class="bg-modal-content"><button id="holiday-modal-close-btn"></button><div id="calendar-container"></div><button id="holiday-modal-done-btn"></button></div></div>
-    <!-- Confirmation -->
-    <div id="confirmation-modal" class="modal-overlay hidden"><div class="bg-modal-content"><p id="confirmation-message"></p><button id="confirmation-cancel-btn"></button><button id="confirmation-confirm-btn"></button></div></div>
-    <!-- Admin Password Modal -->
-    <div id="admin-password-modal" class="modal-overlay hidden z-[2500]">
-        <div class="bg-modal-content max-w-sm w-full m-4 p-6 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900/95 backdrop-blur-md text-center">
-            <h3 class="text-xl font-bold text-white mb-4">Acesso Restrito</h3>
-            <p class="text-slate-400 text-sm mb-6">Insira a senha de administrador para continuar.</p>
-            <input type="password" id="admin-password-input" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white text-center mb-6 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" placeholder="Senha">
-            <div class="flex gap-3">
-                <button id="admin-password-cancel-btn" class="flex-1 py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition-colors">Cancelar</button>
-                <button id="admin-password-confirm-btn" class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-colors">Acessar</button>
-            </div>
-        </div>
-    </div>
-
-                        <!-- Modal Importar Metas -->
-                        <div id="import-goals-modal" class="modal-overlay hidden">
-                            <div class="bg-slate-800 rounded-lg shadow-2xl max-w-6xl w-full m-4 text-slate-300 border border-slate-700 flex flex-col max-h-[90vh]">
-                                <div class="p-4 border-b border-slate-700 flex justify-between items-center">
-                                    <h2 class="text-lg font-bold text-white">Importar / Analisar Planilha de Metas</h2>
-                                    <button id="import-goals-close-btn" class="text-slate-400 hover:text-white text-3xl">&times;</button>
-                                </div>
-                                <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
-                                    <div id="import-drop-zone" class="border-2 border-dashed border-slate-600 rounded-lg p-8 mb-6 flex flex-col items-center justify-center transition-colors hover:border-teal-500 hover:bg-slate-700/30 cursor-pointer">
-                                        <svg class="w-12 h-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                        </svg>
-                                        <p class="text-slate-300 font-medium mb-2">Arraste e solte o arquivo Excel aqui</p>
-                                        <p class="text-slate-500 text-sm mb-4">ou</p>
-                                        <label for="import-goals-file" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg cursor-pointer transition-colors shadow-lg">
-                                            Selecionar Arquivo
-                                        </label>
-                                        <p class="text-xs text-slate-500 mt-4">Formatos suportados: .xlsx, .xls, .csv</p>
-                                    </div>
-                                    <input type="file" id="import-goals-file" class="hidden" accept=".xlsx, .xls, .csv">
-
-                                    <div class="relative flex py-2 items-center mb-4">
-                                        <div class="flex-grow border-t border-slate-700"></div>
-                                        <span class="flex-shrink-0 mx-4 text-slate-500 text-xs uppercase font-bold">Ou colar texto</span>
-                                        <div class="flex-grow border-t border-slate-700"></div>
-                                    </div>
-
-                                    <p class="mb-2 text-sm text-slate-400">Cole abaixo os dados copiados da planilha (Excel/Sheets). Certifique-se de incluir os cabeçalhos das colunas.</p>
-                                    <textarea id="import-goals-textarea" class="w-full h-32 bg-slate-900 border border-slate-600 rounded-lg p-3 text-xs font-mono text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent mb-4" placeholder="Cole os dados aqui..."></textarea>
-
-                                    <div class="flex justify-end gap-4 mb-6">
-                                        <button id="import-goals-analyze-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow-lg">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                                            Analisar
-                                        </button>
-                                    </div>
-
-                                    <!-- Analysis Report Container -->
-                                    <div id="import-analysis-container" class="hidden border-t border-slate-700 pt-6">
-                                        <div class="flex justify-between items-center mb-4">
-                                            <h3 class="text-white font-bold text-lg">Relatório de Análise</h3>
-                                            <div class="flex gap-3 items-center">
-                                                <div id="import-summary-badges" class="flex gap-2">
-                                                    <!-- Badges will be injected here -->
-                                                </div>
-                                                <button id="btn-generate-ai" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-1 px-4 rounded-full text-sm flex items-center shadow-lg transition-all transform hover:scale-105">
-                                                    ✨ Gerar Insights
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <!-- AI Result Container -->
-                                        <div id="ai-insights-result" class="hidden mb-6 p-1 rounded-lg bg-gradient-to-r from-slate-700 to-slate-800 p-[1px]">
-                                            <div class="bg-slate-900 rounded-lg p-6 relative overflow-hidden">
-                                                <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                                                    <svg class="w-32 h-32 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6a1 1 0 0 0-1 1v4H8a1 1 0 0 0 0 2h3v3a1 1 0 0 0 2 0v-3h3a1 1 0 0 0 0-2h-3V7a1 1 0 0 0-1-1z"/></svg>
-                                                </div>
-                                                <div class="flex flex-col md:flex-row gap-6">
-                                                    <div class="flex-1">
-                                                        <h4 class="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-400 font-bold text-lg mb-4 flex items-center">
-                                                            <svg class="w-5 h-5 mr-2 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                                                            Análise Inteligente de Metas
-                                                        </h4>
-                                                        <div id="ai-insights-content" class="text-sm text-slate-300 leading-relaxed space-y-2">
-                                                            <!-- AI Content Injected Here -->
-                                                        </div>
-                                                    </div>
-                                                    <div class="w-full md:w-1/3 flex flex-col justify-center items-center border-l border-slate-800 pl-6">
-                                                        <div id="ai-chart-container" class="w-full h-40 relative">
-                                                            <!-- Mini Chart -->
-                                                        </div>
-                                                        <p class="text-xs text-slate-500 mt-2 text-center">Visualização Resumida</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="bg-slate-900 rounded-lg border border-slate-700 overflow-hidden">
-                                            <div class="overflow-x-auto">
-                                                <table class="min-w-full text-xs text-left text-slate-300">
-                                                    <thead class="bg-slate-800 text-slate-400 uppercase font-bold">
-                                                        <tr>
-                                                            <th class="px-4 py-3">Cód</th>
-                                                            <th class="px-4 py-3">Vendedor</th>
-                                                            <th class="px-4 py-3">Categoria / Coluna</th>
-                                                            <th class="px-4 py-3 text-right">Valor Atual</th>
-                                                            <th class="px-4 py-3 text-right">Novo Valor</th>
-                                                            <th class="px-4 py-3 text-right">Diferença</th>
-                                                            <th class="px-4 py-3 text-center">Status</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="import-analysis-table-body" class="divide-y divide-slate-800">
-                                                        <!-- Diff rows injected here -->
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="p-4 border-t border-slate-700 flex justify-end gap-3 bg-slate-800 rounded-b-lg">
-                                    <button id="import-goals-cancel-btn" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">Cancelar</button>
-                                    <button id="import-goals-confirm-btn" class="px-6 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                                        Carregar Metas
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-    <!-- System Diagnosis Modal -->
-    <div id="diagnosis-modal" class="modal-overlay hidden z-[9999]">
-        <div class="bg-modal-content max-w-4xl w-full m-4">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                    <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Diagnóstico do Sistema
-                </h3>
-                <button id="diagnosis-close-btn" class="text-slate-400 hover:text-white transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="bg-slate-900 rounded-lg p-4 border border-slate-700 max-h-[60vh] overflow-y-auto">
-                <pre id="diagnosis-content" class="text-xs text-green-400 font-mono whitespace-pre-wrap break-all select-all"></pre>
-            </div>
-            <div class="mt-4 flex justify-end gap-2">
-                <button id="diagnosis-copy-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition-colors shadow-lg">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                    Copiar Relatório
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Wallet Client Action Modal -->
-    <div id="wallet-client-modal" class="modal-overlay hidden z-[3000]">
-        <div class="bg-modal-content max-w-2xl w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 overflow-hidden relative flex flex-col h-[90vh]">
-            <!-- Header -->
-            <div class="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-800/50">
-                <div>
-                    <h3 id="wallet-modal-title" class="text-xl font-bold text-white mb-1">Detalhes do Cliente</h3>
-                    <p id="wallet-modal-subtitle" class="text-sm text-slate-400">Visão completa e gestão.</p>
-                </div>
-                <button id="wallet-modal-close-btn" class="text-slate-400 hover:text-white transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-
-            <!-- Tabs Navigation -->
-            <div class="flex border-b border-slate-800 bg-slate-900/50 px-6 overflow-x-auto no-scrollbar">
-                <button data-tab="general" class="wallet-tab-btn active px-4 py-3 text-sm font-medium text-blue-400 border-b-2 border-blue-500 transition-colors whitespace-nowrap">Geral</button>
-                <button data-tab="losses" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Perdas</button>
-                <button data-tab="bonus" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Bonificações</button>
-                <button data-tab="itinerary" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Roteirização</button>
-            </div>
-            
-            <!-- Content Area (Scrollable) -->
-            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
-                
-                <!-- Tab: General -->
-                <div id="wallet-tab-content-general" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
-                            <div class="flex flex-col gap-2">
-                                <div>
-                                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-0.5">Código</p>
-                                    <p class="text-white font-mono font-medium text-sm" id="wallet-modal-code">--</p>
-                                </div>
-                                <div class="pt-2 border-t border-slate-700/50">
-                                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-0.5">RCA</p>
-                                    <p class="text-blue-300 font-medium text-xs leading-tight" id="wallet-modal-seller">--</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
-                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">CNPJ / CPF</p>
-                            <p id="wallet-modal-cnpj" class="text-white font-medium text-sm">--</p>
-                        </div>
-                    </div>
-                    
-                    <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
-                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Razão Social</p>
-                        <p id="wallet-modal-razao" class="text-white font-medium text-sm break-words">--</p>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
-                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Fantasia</p>
-                            <p id="wallet-modal-fantasia" class="text-white font-medium text-sm break-words">--</p>
-                        </div>
-                        <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
-                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Cidade / UF</p>
-                            <p id="wallet-modal-city" class="text-white font-medium text-sm break-words">--</p>
-                        </div>
-                    </div>
-
-                    <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
-                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Endereço Completo</p>
-                        <p id="wallet-modal-address" class="text-slate-300 text-xs break-words">--</p>
-                    </div>
-
-                    <!-- Purchase Summary -->
-                    <div class="mt-6">
-                        <h4 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                            <span class="w-1.5 h-4 bg-green-500 rounded-full"></span>
-                            Histórico de Compras
-                        </h4>
-                        <div class="overflow-hidden rounded-lg border border-slate-700">
-                            <table class="min-w-full text-xs text-left text-slate-300">
-                                <thead class="bg-slate-900 uppercase text-slate-500 font-bold">
-                                    <tr>
-                                        <th class="px-4 py-2">Mês</th>
-                                        <th class="px-4 py-2 text-right">Valor (R$)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="wallet-purchase-history-body" class="divide-y divide-slate-800"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Status / Warning Area -->
-                    <div id="wallet-modal-status-area" class="mt-4 p-4 rounded-lg bg-slate-800 border border-slate-700 hidden">
-                        <div class="flex items-start gap-3">
-                            <div id="wallet-modal-status-icon"></div>
-                            <div>
-                                <h4 id="wallet-modal-status-title" class="text-sm font-bold text-white mb-1"></h4>
-                                <p id="wallet-modal-status-msg" class="text-xs text-slate-300"></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab: Losses (Perdas - Type 5) -->
-                <div id="wallet-tab-content-losses" class="hidden space-y-4">
-                    <div class="p-4 bg-red-900/10 border border-red-900/30 rounded-lg">
-                        <div class="flex justify-between items-center">
-                            <h4 class="text-sm font-bold text-red-400">Total Perdas</h4>
-                            <span id="wallet-total-losses" class="text-lg font-bold text-white">R$ 0,00</span>
-                        </div>
-                    </div>
-                    <div class="space-y-2" id="wallet-losses-list"></div>
-                </div>
-
-                <!-- Tab: Bonus (Bonificação - Type 11) -->
-                <div id="wallet-tab-content-bonus" class="hidden space-y-4">
-                    <div class="p-4 bg-blue-900/10 border border-blue-900/30 rounded-lg">
-                        <div class="flex justify-between items-center">
-                            <h4 class="text-sm font-bold text-blue-400">Total Bonificações</h4>
-                            <span id="wallet-total-bonus" class="text-lg font-bold text-white">R$ 0,00</span>
-                        </div>
-                    </div>
-                    <div class="space-y-2" id="wallet-bonus-list"></div>
-                </div>
-
-                <!-- Tab: Roteirização -->
-                <div id="wallet-tab-content-itinerary" class="hidden space-y-6">
-                    <div class="p-4 bg-slate-800 rounded-lg border border-slate-700">
-                        <h4 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            Configuração de Visita
-                        </h4>
-
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Frequência de Visita</label>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <label class="cursor-pointer">
-                                        <input type="radio" name="itinerary-frequency" value="weekly" class="peer sr-only">
-                                        <div class="p-3 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-500 transition-all hover:bg-slate-700">
-                                            <div class="font-bold text-sm">Semanal</div>
-                                            <div class="text-[10px] opacity-75">7 em 7 dias</div>
-                                        </div>
-                                    </label>
-                                    <label class="cursor-pointer">
-                                        <input type="radio" name="itinerary-frequency" value="biweekly" class="peer sr-only">
-                                        <div class="p-3 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-500 transition-all hover:bg-slate-700">
-                                            <div class="font-bold text-sm">Quinzenal</div>
-                                            <div class="text-[10px] opacity-75">14 em 14 dias</div>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Próxima Data de Atendimento</label>
-                                <input type="date" id="itinerary-next-date" class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 block">
-                                <p class="mt-2 text-xs text-slate-400">
-                                    Define o dia base para o cálculo das próximas visitas.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="mt-6 pt-4 border-t border-slate-700 flex justify-end">
-                            <button id="save-itinerary-btn" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-colors flex items-center gap-2 text-sm">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                Salvar Roteiro
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Footer Action -->
-            <div class="p-6 border-t border-slate-800 flex justify-end gap-3 bg-slate-800/30">
-                <button id="wallet-modal-cancel-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition-colors border border-slate-700 text-sm">Fechar</button>
-                <button id="wallet-modal-action-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm">
-                    <span id="wallet-modal-action-text">Confirmar</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Extra Views -->
     <div id="innovations-month-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
         <header class="mb-8 border-b border-slate-800 pb-4 flex justify-between items-end">
             <h1 class="text-3xl font-bold text-white">Inovações (Mês Atual)</h1>
@@ -2793,6 +2425,423 @@
     </div>
 </div>
 
+    <!-- Modals (Hidden) -->
+    <!-- Order Details (Refactored for Valid HTML) -->
+    <div id="order-details-modal" class="modal-overlay hidden">
+        <div class="bg-modal-content w-full max-w-4xl m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 bg-slate-900">
+            <button id="modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="mb-6">
+                <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                    Pedido <span id="modal-pedido-id" class="text-blue-400 font-mono"></span>
+                </h3>
+                <div id="modal-header-info" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-300 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50"></div>
+            </div>
+            <div class="overflow-y-auto custom-scrollbar rounded-xl border border-slate-700/50 bg-slate-800/30 max-h-[400px]">
+                <table class="w-full text-sm text-left text-slate-300">
+                    <thead class="bg-slate-800 text-xs uppercase font-bold text-slate-400 sticky top-0 z-10">
+                        <tr>
+                            <th class="px-4 py-3">Produto</th>
+                            <th class="px-4 py-3 text-right">Qtd</th>
+                            <th class="px-4 py-3 text-right">Unitário</th>
+                            <th class="px-4 py-3 text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-table-body" class="divide-y divide-slate-700/50"></tbody>
+                </table>
+            </div>
+            <div id="modal-footer-total" class="mt-6 text-right text-2xl font-bold text-green-400"></div>
+        </div>
+    </div>
+
+    <!-- Client Details (Refactored for UI) -->
+    <div id="client-details-modal" class="modal-overlay hidden">
+        <div class="bg-modal-content w-full max-w-2xl m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 bg-slate-900">
+            <button id="client-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div id="client-modal-content"></div>
+        </div>
+    </div>
+    <!-- Holidays -->
+    <div id="holiday-modal" class="modal-overlay hidden"><div class="bg-modal-content"><button id="holiday-modal-close-btn"></button><div id="calendar-container"></div><button id="holiday-modal-done-btn"></button></div></div>
+    <!-- Confirmation -->
+    <div id="confirmation-modal" class="modal-overlay hidden"><div class="bg-modal-content"><p id="confirmation-message"></p><button id="confirmation-cancel-btn"></button><button id="confirmation-confirm-btn"></button></div></div>
+    <!-- Admin Password Modal -->
+    <div id="admin-password-modal" class="modal-overlay hidden z-[2500]">
+        <div class="bg-modal-content max-w-sm w-full m-4 p-6 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900/95 backdrop-blur-md text-center">
+            <h3 class="text-xl font-bold text-white mb-4">Acesso Restrito</h3>
+            <p class="text-slate-400 text-sm mb-6">Insira a senha de administrador para continuar.</p>
+            <input type="password" id="admin-password-input" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white text-center mb-6 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" placeholder="Senha">
+            <div class="flex gap-3">
+                <button id="admin-password-cancel-btn" class="flex-1 py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition-colors">Cancelar</button>
+                <button id="admin-password-confirm-btn" class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-colors">Acessar</button>
+            </div>
+        </div>
+    </div>
+
+                        <!-- Modal Importar Metas -->
+                        <div id="import-goals-modal" class="modal-overlay hidden">
+                            <div class="bg-slate-800 rounded-lg shadow-2xl max-w-6xl w-full m-4 text-slate-300 border border-slate-700 flex flex-col max-h-[90vh]">
+                                <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                                    <h2 class="text-lg font-bold text-white">Importar / Analisar Planilha de Metas</h2>
+                                    <button id="import-goals-close-btn" class="text-slate-400 hover:text-white text-3xl">&times;</button>
+                                </div>
+                                <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
+                                    <div id="import-drop-zone" class="border-2 border-dashed border-slate-600 rounded-lg p-8 mb-6 flex flex-col items-center justify-center transition-colors hover:border-teal-500 hover:bg-slate-700/30 cursor-pointer">
+                                        <svg class="w-12 h-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                        </svg>
+                                        <p class="text-slate-300 font-medium mb-2">Arraste e solte o arquivo Excel aqui</p>
+                                        <p class="text-slate-500 text-sm mb-4">ou</p>
+                                        <label for="import-goals-file" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg cursor-pointer transition-colors shadow-lg">
+                                            Selecionar Arquivo
+                                        </label>
+                                        <p class="text-xs text-slate-500 mt-4">Formatos suportados: .xlsx, .xls, .csv</p>
+                                    </div>
+                                    <input type="file" id="import-goals-file" class="hidden" accept=".xlsx, .xls, .csv">
+
+                                    <div class="relative flex py-2 items-center mb-4">
+                                        <div class="flex-grow border-t border-slate-700"></div>
+                                        <span class="flex-shrink-0 mx-4 text-slate-500 text-xs uppercase font-bold">Ou colar texto</span>
+                                        <div class="flex-grow border-t border-slate-700"></div>
+                                    </div>
+
+                                    <p class="mb-2 text-sm text-slate-400">Cole abaixo os dados copiados da planilha (Excel/Sheets). Certifique-se de incluir os cabeçalhos das colunas.</p>
+                                    <textarea id="import-goals-textarea" class="w-full h-32 bg-slate-900 border border-slate-600 rounded-lg p-3 text-xs font-mono text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent mb-4" placeholder="Cole os dados aqui..."></textarea>
+
+                                    <div class="flex justify-end gap-4 mb-6">
+                                        <button id="import-goals-analyze-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow-lg">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                            Analisar
+                                        </button>
+                                    </div>
+
+                                    <!-- Analysis Report Container -->
+                                    <div id="import-analysis-container" class="hidden border-t border-slate-700 pt-6">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h3 class="text-white font-bold text-lg">Relatório de Análise</h3>
+                                            <div class="flex gap-3 items-center">
+                                                <div id="import-summary-badges" class="flex gap-2">
+                                                    <!-- Badges will be injected here -->
+                                                </div>
+                                                <button id="btn-generate-ai" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-1 px-4 rounded-full text-sm flex items-center shadow-lg transition-all transform hover:scale-105">
+                                                    ✨ Gerar Insights
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- AI Result Container -->
+                                        <div id="ai-insights-result" class="hidden mb-6 p-1 rounded-lg bg-gradient-to-r from-slate-700 to-slate-800 p-[1px]">
+                                            <div class="bg-slate-900 rounded-lg p-6 relative overflow-hidden">
+                                                <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                                                    <svg class="w-32 h-32 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6a1 1 0 0 0-1 1v4H8a1 1 0 0 0 0 2h3v3a1 1 0 0 0 2 0v-3h3a1 1 0 0 0 0-2h-3V7a1 1 0 0 0-1-1z"/></svg>
+                                                </div>
+                                                <div class="flex flex-col md:flex-row gap-6">
+                                                    <div class="flex-1">
+                                                        <h4 class="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-400 font-bold text-lg mb-4 flex items-center">
+                                                            <svg class="w-5 h-5 mr-2 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                                            Análise Inteligente de Metas
+                                                        </h4>
+                                                        <div id="ai-insights-content" class="text-sm text-slate-300 leading-relaxed space-y-2">
+                                                            <!-- AI Content Injected Here -->
+                                                        </div>
+                                                    </div>
+                                                    <div class="w-full md:w-1/3 flex flex-col justify-center items-center border-l border-slate-800 pl-6">
+                                                        <div id="ai-chart-container" class="w-full h-40 relative">
+                                                            <!-- Mini Chart -->
+                                                        </div>
+                                                        <p class="text-xs text-slate-500 mt-2 text-center">Visualização Resumida</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-slate-900 rounded-lg border border-slate-700 overflow-hidden">
+                                            <div class="overflow-x-auto">
+                                                <table class="min-w-full text-xs text-left text-slate-300">
+                                                    <thead class="bg-slate-800 text-slate-400 uppercase font-bold">
+                                                        <tr>
+                                                            <th class="px-4 py-3">Cód</th>
+                                                            <th class="px-4 py-3">Vendedor</th>
+                                                            <th class="px-4 py-3">Categoria / Coluna</th>
+                                                            <th class="px-4 py-3 text-right">Valor Atual</th>
+                                                            <th class="px-4 py-3 text-right">Novo Valor</th>
+                                                            <th class="px-4 py-3 text-right">Diferença</th>
+                                                            <th class="px-4 py-3 text-center">Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="import-analysis-table-body" class="divide-y divide-slate-800">
+                                                        <!-- Diff rows injected here -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-4 border-t border-slate-700 flex justify-end gap-3 bg-slate-800 rounded-b-lg">
+                                    <button id="import-goals-cancel-btn" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">Cancelar</button>
+                                    <button id="import-goals-confirm-btn" class="px-6 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                        Carregar Metas
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+    <!-- System Diagnosis Modal -->
+    <div id="diagnosis-modal" class="modal-overlay hidden z-[9999]">
+        <div class="bg-modal-content max-w-4xl w-full m-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Diagnóstico do Sistema
+                </h3>
+                <button id="diagnosis-close-btn" class="text-slate-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="bg-slate-900 rounded-lg p-4 border border-slate-700 max-h-[60vh] overflow-y-auto">
+                <pre id="diagnosis-content" class="text-xs text-green-400 font-mono whitespace-pre-wrap break-all select-all"></pre>
+            </div>
+            <div class="mt-4 flex justify-end gap-2">
+                <button id="diagnosis-copy-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition-colors shadow-lg">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    Copiar Relatório
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Client Action Modal -->
+    <div id="wallet-client-modal" class="modal-overlay hidden z-[3000]">
+        <div class="bg-modal-content max-w-2xl w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 overflow-hidden relative flex flex-col h-[90vh]">
+            <!-- Header -->
+            <div class="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-800/50">
+                <div>
+                    <h3 id="wallet-modal-title" class="text-xl font-bold text-white mb-1">Detalhes do Cliente</h3>
+                    <p id="wallet-modal-subtitle" class="text-sm text-slate-400">Visão completa e gestão.</p>
+                </div>
+                <button id="wallet-modal-close-btn" class="text-slate-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="flex border-b border-slate-800 bg-slate-900/50 px-6 overflow-x-auto no-scrollbar">
+                <button data-tab="general" class="wallet-tab-btn active px-4 py-3 text-sm font-medium text-blue-400 border-b-2 border-blue-500 transition-colors whitespace-nowrap">Geral</button>
+                <button data-tab="losses" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Perdas</button>
+                <button data-tab="bonus" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Bonificações</button>
+                <button data-tab="itinerary" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Roteirização</button>
+            </div>
+
+            <!-- Content Area (Scrollable) -->
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+
+                <!-- Tab: General -->
+                <div id="wallet-tab-content-general" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                            <div class="flex flex-col gap-2">
+                                <div>
+                                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-0.5">Código</p>
+                                    <p class="text-white font-mono font-medium text-sm" id="wallet-modal-code">--</p>
+                                </div>
+                                <div class="pt-2 border-t border-slate-700/50">
+                                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-0.5">RCA</p>
+                                    <p class="text-blue-300 font-medium text-xs leading-tight" id="wallet-modal-seller">--</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">CNPJ / CPF</p>
+                            <p id="wallet-modal-cnpj" class="text-white font-medium text-sm">--</p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Razão Social</p>
+                        <p id="wallet-modal-razao" class="text-white font-medium text-sm break-words">--</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Fantasia</p>
+                            <p id="wallet-modal-fantasia" class="text-white font-medium text-sm break-words">--</p>
+                        </div>
+                        <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                            <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Cidade / UF</p>
+                            <p id="wallet-modal-city" class="text-white font-medium text-sm break-words">--</p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-800 rounded-lg border border-slate-700">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Endereço Completo</p>
+                        <p id="wallet-modal-address" class="text-slate-300 text-xs break-words">--</p>
+                    </div>
+
+                    <!-- Purchase Summary -->
+                    <div class="mt-6">
+                        <h4 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                            <span class="w-1.5 h-4 bg-green-500 rounded-full"></span>
+                            Histórico de Compras
+                        </h4>
+                        <div class="overflow-hidden rounded-lg border border-slate-700">
+                            <table class="min-w-full text-xs text-left text-slate-300">
+                                <thead class="bg-slate-900 uppercase text-slate-500 font-bold">
+                                    <tr>
+                                        <th class="px-4 py-2">Mês</th>
+                                        <th class="px-4 py-2 text-right">Valor (R$)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wallet-purchase-history-body" class="divide-y divide-slate-800"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Status / Warning Area -->
+                    <div id="wallet-modal-status-area" class="mt-4 p-4 rounded-lg bg-slate-800 border border-slate-700 hidden">
+                        <div class="flex items-start gap-3">
+                            <div id="wallet-modal-status-icon"></div>
+                            <div>
+                                <h4 id="wallet-modal-status-title" class="text-sm font-bold text-white mb-1"></h4>
+                                <p id="wallet-modal-status-msg" class="text-xs text-slate-300"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Losses (Perdas - Type 5) -->
+                <div id="wallet-tab-content-losses" class="hidden space-y-4">
+                    <div class="p-4 bg-red-900/10 border border-red-900/30 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <h4 class="text-sm font-bold text-red-400">Total Perdas</h4>
+                            <span id="wallet-total-losses" class="text-lg font-bold text-white">R$ 0,00</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2" id="wallet-losses-list"></div>
+                </div>
+
+                <!-- Tab: Bonus (Bonificação - Type 11) -->
+                <div id="wallet-tab-content-bonus" class="hidden space-y-4">
+                    <div class="p-4 bg-blue-900/10 border border-blue-900/30 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <h4 class="text-sm font-bold text-blue-400">Total Bonificações</h4>
+                            <span id="wallet-total-bonus" class="text-lg font-bold text-white">R$ 0,00</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2" id="wallet-bonus-list"></div>
+                </div>
+
+                <!-- Tab: Roteirização -->
+                <div id="wallet-tab-content-itinerary" class="hidden space-y-6">
+                    <div class="p-4 bg-slate-800 rounded-lg border border-slate-700">
+                        <h4 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Configuração de Visita
+                        </h4>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Frequência de Visita</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="itinerary-frequency" value="weekly" class="peer sr-only">
+                                        <div class="p-3 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-500 transition-all hover:bg-slate-700">
+                                            <div class="font-bold text-sm">Semanal</div>
+                                            <div class="text-[10px] opacity-75">7 em 7 dias</div>
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="itinerary-frequency" value="biweekly" class="peer sr-only">
+                                        <div class="p-3 rounded-lg border border-slate-600 bg-slate-700/50 text-slate-400 text-center peer-checked:bg-purple-600 peer-checked:text-white peer-checked:border-purple-500 transition-all hover:bg-slate-700">
+                                            <div class="font-bold text-sm">Quinzenal</div>
+                                            <div class="text-[10px] opacity-75">14 em 14 dias</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Próxima Data de Atendimento</label>
+                                <input type="date" id="itinerary-next-date" class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 block">
+                                <p class="mt-2 text-xs text-slate-400">
+                                    Define o dia base para o cálculo das próximas visitas.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-slate-700 flex justify-end">
+                            <button id="save-itinerary-btn" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-lg shadow-lg transition-colors flex items-center gap-2 text-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Salvar Roteiro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer Action -->
+            <div class="p-6 border-t border-slate-800 flex justify-end gap-3 bg-slate-800/30">
+                <button id="wallet-modal-cancel-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium transition-colors border border-slate-700 text-sm">Fechar</button>
+                <button id="wallet-modal-action-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm">
+                    <span id="wallet-modal-action-text">Confirmar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extra Views -->
+
+    <!-- Product Performance Modal -->
+    <div id="product-performance-modal" class="modal-overlay hidden z-[3200]">
+        <div class="bg-modal-content w-full max-w-md m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 bg-slate-900">
+            <button id="product-performance-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="mb-6">
+                <h3 class="text-xl font-bold text-white leading-tight" id="product-performance-title">Nome do Produto</h3>
+                <p class="text-sm text-slate-400 font-mono mt-1" id="product-performance-code">Cód: 0000</p>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Stock Info -->
+                <div class="p-4 bg-slate-800 rounded-xl border border-slate-700">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Estoque Atual</span>
+                        <div class="flex items-baseline gap-1">
+                            <span id="product-performance-stock" class="text-2xl font-bold text-blue-400">0</span>
+                            <span class="text-xs text-slate-400">un</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sales Comparison -->
+                <div class="p-4 bg-slate-800 rounded-xl border border-slate-700">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Vendas (<span id="product-performance-metric-label">Valor</span>)</p>
+
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-slate-300">Mês Anterior</span>
+                            <span id="product-performance-prev" class="text-sm font-bold text-white">--</span>
+                        </div>
+                        <div class="w-full h-px bg-slate-700/50"></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-slate-300">Mês Atual</span>
+                            <span id="product-performance-curr" class="text-sm font-bold text-white">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Variation -->
+                <div class="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 flex justify-between items-center">
+                    <span class="text-sm font-bold text-slate-400">Variação</span>
+                    <span id="product-performance-var" class="px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 text-slate-300">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
 <!-- Toast Notification Container -->
 <div id="toast-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 w-80 sm:w-96 pointer-events-none"></div>
 
