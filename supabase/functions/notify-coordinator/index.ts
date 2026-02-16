@@ -102,22 +102,36 @@ serve(async (req) => {
     let targetEmail = record.coordenador_email;
 
     // --- Metadata Lookup ---
-    try {
-        const { data: pProfile } = await supabase.from('profiles').select('email, role').eq('id', record.id_promotor).single();
-        if (pProfile) {
-             // Try to resolve name from Hierarchy
-             const { data: hInfo } = await supabase.from('data_hierarchy').select('nome_promotor').ilike('cod_promotor', (pProfile.role || '').trim()).maybeSingle();
-             if (hInfo?.nome_promotor) promoterName = hInfo.nome_promotor;
-             else if (pProfile.email) promoterName = pProfile.email.split('@')[0]; // Simple fallback
-        }
-    } catch(e) { console.error('Meta lookup failed', e); }
+    const lookupPromoterMeta = async () => {
+        try {
+            const { data: pProfile } = await supabase.from('profiles').select('email, role').eq('id', record.id_promotor).single();
+            if (pProfile) {
+                 // Try to resolve name from Hierarchy
+                 const { data: hInfo } = await supabase.from('data_hierarchy').select('nome_promotor').ilike('cod_promotor', (pProfile.role || '').trim()).maybeSingle();
+                 if (hInfo?.nome_promotor) return hInfo.nome_promotor;
+                 else if (pProfile.email) return pProfile.email.split('@')[0]; // Simple fallback
+            }
+        } catch(e) { console.error('Meta lookup failed', e); }
+        return null;
+    };
 
-    try {
-        if (record.client_code) {
-            const { data: cInfo } = await supabase.from('data_clients').select('fantasia, razaosocial').eq('codigo_cliente', record.client_code).maybeSingle();
-            if (cInfo) clientName = cInfo.fantasia || cInfo.razaosocial || clientName;
-        }
-    } catch(e) { console.error('Client meta lookup failed', e); }
+    const lookupClientMeta = async () => {
+        try {
+            if (record.client_code) {
+                const { data: cInfo } = await supabase.from('data_clients').select('fantasia, razaosocial').eq('codigo_cliente', record.client_code).maybeSingle();
+                if (cInfo) return cInfo.fantasia || cInfo.razaosocial || null;
+            }
+        } catch(e) { console.error('Client meta lookup failed', e); }
+        return null;
+    };
+
+    const [resolvedPromoterName, resolvedClientName] = await Promise.all([
+        lookupPromoterMeta(),
+        lookupClientMeta()
+    ]);
+
+    if (resolvedPromoterName) promoterName = resolvedPromoterName;
+    if (resolvedClientName) clientName = resolvedClientName;
 
 
     // 4. Resolve Coordinator Email (Robust Logic)
