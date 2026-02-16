@@ -8614,18 +8614,28 @@ const supervisorGroups = new Map();
                         if (sup === 'PEPSICO') return ['PEPSICO_ALL'];
                         if (sup === 'ELMA CHIPS' || sup === 'ELMA') return ['ELMA_ALL'];
                         if (sup === 'FOODS') return ['FOODS_ALL'];
+
+                        // Mappings for Descriptive Names (Virtual Categories)
+                        if (sup === 'EXTRUSADOS') return ['707'];
+                        if (sup === 'NÃO EXTRUSADOS' || sup === 'NAO EXTRUSADOS') return ['708'];
+                        if (sup === 'TORCIDA') return ['752'];
+                        if (sup === 'TODDYNHO') return ['1119_TODDYNHO'];
+                        if (sup === 'TODDY') return ['1119_TODDY'];
+                        if (sup === 'QUAKER' || sup === 'KEROCOCO' || sup.includes('QUAKER')) return ['1119_QUAKER_KEROCOCO'];
+
                         if (window.globalGoalsMetrics && window.globalGoalsMetrics[sup]) return [sup];
-                        if (['707', '708', '752'].includes(sup)) return [sup];
+                        if (['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'].includes(sup)) return [sup];
                         if (sup === '1119') return ['FOODS_ALL'];
                         return [];
                     };
 
-                    if (currentFornecedor) {
-                        mapSupplierToKey(currentFornecedor).forEach(k => activeGoalKeys.add(k));
-                    } else if (selectedMainSuppliers && selectedMainSuppliers.length > 0) {
+                    // Prioritize specific selected suppliers (Drill-down) over global folder filter
+                    if (selectedMainSuppliers && selectedMainSuppliers.length > 0) {
                         selectedMainSuppliers.forEach(s => {
                             mapSupplierToKey(s).forEach(k => activeGoalKeys.add(k));
                         });
+                    } else if (currentFornecedor) {
+                        mapSupplierToKey(currentFornecedor).forEach(k => activeGoalKeys.add(k));
                     }
 
                     // Default to PEPSICO_ALL if no specific keys found
