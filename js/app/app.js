@@ -8508,14 +8508,57 @@ const supervisorGroups = new Map();
 
                     // Calculate Goal for the visible clients
                     let totalGoal = 0;
-                    const visibleClients = getHierarchyFilteredClients('main', allClientsData);
+                    // Apply hierarchy filter first
+                    let goalClients = getHierarchyFilteredClients('main', allClientsData);
+
+                    // Apply Rede/Active Filter (Intersect with Universe)
+                    if (clientCodesInRede) {
+                         goalClients = goalClients.filter(c => clientCodesInRede.has(c['Código']));
+                    }
+
+                    // Apply Client Filter (Single)
+                    if (codcli) {
+                         const searchKey = normalizeKey(codcli);
+                         goalClients = goalClients.filter(c => normalizeKey(String(c['Código'] || c['codigo_cliente'])) === searchKey);
+                    }
+
+                    // Determine Goal Keys based on Supplier Filters
+                    const activeGoalKeys = new Set();
+
+                    const mapSupplierToKey = (s) => {
+                        const sup = String(s).toUpperCase();
+                        if (sup === 'PEPSICO') return ['PEPSICO_ALL'];
+                        if (sup === 'ELMA CHIPS' || sup === 'ELMA') return ['ELMA_ALL'];
+                        if (sup === 'FOODS') return ['FOODS_ALL'];
+                        if (window.globalGoalsMetrics && window.globalGoalsMetrics[sup]) return [sup];
+                        if (['707', '708', '752'].includes(sup)) return [sup];
+                        if (sup === '1119') return ['FOODS_ALL'];
+                        return [];
+                    };
+
+                    if (currentFornecedor) {
+                        mapSupplierToKey(currentFornecedor).forEach(k => activeGoalKeys.add(k));
+                    } else if (selectedMainSuppliers && selectedMainSuppliers.length > 0) {
+                        selectedMainSuppliers.forEach(s => {
+                            mapSupplierToKey(s).forEach(k => activeGoalKeys.add(k));
+                        });
+                    }
+
+                    // Default to PEPSICO_ALL if no specific keys found
+                    if (activeGoalKeys.size === 0) {
+                        activeGoalKeys.add('PEPSICO_ALL');
+                    }
 
                     if (window.globalClientGoals) {
-                        visibleClients.forEach(c => {
+                        goalClients.forEach(c => {
                             const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
                             const clientGoals = window.globalClientGoals.get(codCli);
-                            if (clientGoals && clientGoals.has('PEPSICO_ALL')) {
-                                totalGoal += (clientGoals.get('PEPSICO_ALL').fat || 0);
+                            if (clientGoals) {
+                                activeGoalKeys.forEach(key => {
+                                    if (clientGoals.has(key)) {
+                                        totalGoal += (clientGoals.get(key).fat || 0);
+                                    }
+                                });
                             }
                         });
                     }
