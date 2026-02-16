@@ -215,6 +215,12 @@ BEGIN
     
     -- Ensure 'cod_cocoord' exists in 'visitas'
     ALTER TABLE public.visitas ADD COLUMN IF NOT EXISTS cod_cocoord text;
+
+    -- Ensure 'profiles' columns exist
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS name text;
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone text;
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password text;
+
     -- promotor column removed from data_clients in new schema
 END $$;
 
@@ -724,3 +730,105 @@ CREATE POLICY "Users can delete own images"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (bucket_id = 'visitas-images' AND auth.uid() = owner);
+-- ==============================================================================
+-- MANUAL WEBHOOK SETUP USING PG_NET
+--
+-- Description:
+-- This script manually sets up an HTTP POST trigger using the 'pg_net' extension.
+-- This bypasses the need to enable "Database Webhooks" in the Supabase Dashboard,
+-- ensuring the 'notify-coordinator' Edge Function is called immediately upon
+-- checkout updates.
+--
+-- Instructions:
+-- Run this script in the Supabase SQL Editor.
+-- ==============================================================================
+
+-- 1. Enable pg_net extension (if not already enabled)
+CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA extensions;
+
+-- 2. Define the Trigger Function
+CREATE OR REPLACE FUNCTION public.trigger_notify_coordinator_http()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_url text := 'https://dldsocponbjthqxhmttj.supabase.co/functions/v1/notify-coordinator';
+  v_api_key text := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZHNvY3BvbmJqdGhxeGhtdHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzgzMzgsImV4cCI6MjA4NTAxNDMzOH0.IGxUEd977uIdhWvMzjDM8ygfISB_Frcf_2air8e3aOs'; -- Anon Key from init.js
+  v_payload jsonb;
+  v_request_id int;
+BEGIN
+  -- Construct Payload matching Supabase Webhook format
+  v_payload := jsonb_build_object(
+    'type', 'UPDATE',
+    'table', 'visitas',
+    'schema', 'public',
+    'record', row_to_json(NEW),
+    'old_record', row_to_json(OLD)
+  );
+
+  -- Send HTTP POST via pg_net
+  -- Note: net.http_post is asynchronous
+  SELECT net.http_post(
+    url := v_url,
+    body := v_payload,
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || v_api_key
+    )
+  ) INTO v_request_id;
+
+  RAISE NOTICE 'Manual Webhook Fired via pg_net. Request ID: %', v_request_id;
+
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'Failed to send manual webhook: %', SQLERRM;
+  RETURN NEW;
+END;
+$$;
+
+-- 3. Create the Trigger on 'visitas' table
+DROP TRIGGER IF EXISTS "manual_webhook_notify_coordinator" ON public.visitas;
+
+CREATE TRIGGER "manual_webhook_notify_coordinator"
+AFTER UPDATE ON public.visitas
+FOR EACH ROW
+-- Only fire when checkout_at changes from null to a value (Checkout event)
+WHEN (OLD.checkout_at IS NULL AND NEW.checkout_at IS NOT NULL)
+EXECUTE FUNCTION public.trigger_notify_coordinator_http();
+
+-- Confirmation (Use SELECT instead of RAISE NOTICE for top-level output compatibility)
+SELECT 'Manual pg_net webhook configured successfully on public.visitas' as status;
+
+
+-- ==============================================================================
+-- 9. OPTIONAL CONFIGURATIONS
+-- ==============================================================================
+
+/*
+-- ============================================================================
+-- SCRIPT DE CONFIGURAÇÃO DE EMAIL VIA BREVO (Antigo Sendinblue)
+-- ============================================================================
+-- A Brevo oferece um plano gratuito de 300 emails/dia e permite enviar
+-- emails usando apenas um remetente verificado (ex: seu gmail), sem precisar
+-- de um domínio próprio verificado.
+--
+-- INSTRUÇÕES:
+-- 1. Crie uma conta gratuita em https://www.brevo.com/
+-- 2. Verifique o seu email (ex: backofficeprimeios@gmail.com) na Brevo.
+-- 3. Vá em Configurações > SMTP & API e crie uma nova Chave de API (v3).
+-- 4. Substitua 'SUA_CHAVE_API_V3_AQUI' abaixo pela chave gerada.
+-- 5. Substitua 'seu_email_verificado@gmail.com' pelo seu email verificado.
+
+INSERT INTO public.data_metadata (key, value)
+VALUES
+    ('BREVO_API_KEY', 'SUA_CHAVE_API_V3_AQUI'),
+    ('BREVO_SENDER_EMAIL', 'seu_email_verificado@gmail.com')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+
+-- OBS: Se configurar a Brevo, o sistema usará ela automaticamente no lugar do Resend.
+-- Para voltar ao Resend, basta deletar essas chaves:
+-- DELETE FROM public.data_metadata WHERE key IN ('BREVO_API_KEY', 'BREVO_SENDER_EMAIL');
+
+*/
