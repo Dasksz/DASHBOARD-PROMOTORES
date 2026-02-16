@@ -58,18 +58,13 @@ window.App.Goals = {
         window.AppState.globalGoalsMetrics = metrics;
         window.AppState.globalClientGoals.clear();
 
-        const currentDate = window.AppState.lastSaleDate;
+        const currentDate = window.AppState.lastSaleDate || new Date(); // Fallback if null
         const prevMonthDate = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() - 1, 1));
         const prevMonthIndex = prevMonthDate.getUTCMonth();
         const prevMonthYear = prevMonthDate.getUTCFullYear();
 
         // Filter Active Clients
         const activeClients = window.App.Filters.getActiveClientsData ? window.App.Filters.getActiveClientsData() : window.AppState.allClientsData;
-        // Note: getActiveClientsData logic is: exclude RCA 53/Empty unless Americanas.
-        // I should probably ensure that logic is available. It was defined in app.js closure.
-        // I will re-implement minimal filtering here if App.Filters doesn't have it yet or rely on raw.
-        // Actually, `window.App.Dashboard` might not be ready.
-        // Let's implement robust check.
 
         const validClients = [];
         const len = window.AppState.allClientsData.length;
@@ -85,7 +80,9 @@ window.App.Goals = {
         }
 
         const historyIndex = window.AppState.optimizedData.indices.history.byClient;
-        const historyData = window.AppState.optimizedData.historyById; // IndexMap or Dataset
+
+        // Safety check for historyIndex
+        if (!historyIndex) return;
 
         validClients.forEach(client => {
             const codCli = window.Utils.normalizeKey(client['Código'] || client['codigo_cliente']);
@@ -94,12 +91,6 @@ window.App.Goals = {
 
             if (clientHistoryIds) {
                 clientHistoryIds.forEach(idx => {
-                    // historyData might be IndexMap or Dataset
-                    // If IndexMap, getIndex is needed if we iterate IDs from Set.
-                    // indices.history.byClient returns Set of indices (integers) in my new logic!
-                    // Wait, `processDatasetForIndices` pushed `id` which was `i` (index).
-                    // So `clientHistoryIds` is Set<number>.
-
                     // Direct access
                     const sale = isColumnar ? window.AppState.allHistoryData.get(idx) : window.AppState.allHistoryData[idx];
 
@@ -121,7 +112,10 @@ window.App.Goals = {
 
                     if (key && metrics[key]) {
                         const d = window.Utils.parseDate(sale.DTPED);
-                        const isPrevMonth = d && d.getUTCMonth() === prevMonthIndex && d.getUTCFullYear() === prevMonthYear;
+                        // Check valid date
+                        if(!d) return;
+
+                        const isPrevMonth = d.getUTCMonth() === prevMonthIndex && d.getUTCFullYear() === prevMonthYear;
                         const type = String(sale.TIPOVENDA);
 
                         if (type === '1' || type === '9') {
@@ -216,12 +210,6 @@ window.App.Goals = {
                 goalsObj[key] = Object.fromEntries(val);
             });
 
-            // We need goalsTargets from Rules or State (if mutable)
-            // Assuming we use Rules constant if not modified in UI?
-            // Actually app logic allowed modifying inputs which should update state.
-            // But I didn't port the input binding yet.
-            // For now, save what we have.
-
             const payload = {
                 month_key: monthKey,
                 supplier: 'ALL',
@@ -229,7 +217,6 @@ window.App.Goals = {
                 goals_data: {
                     clients: goalsObj,
                     targets: window.Rules.GOALS_TARGETS,
-                    // seller_targets: ... (skipped for brevity, or assume empty)
                 },
                 updated_at: new Date().toISOString()
             };
@@ -257,8 +244,6 @@ window.App.Goals = {
             if (error) throw error;
 
             window.AppState.globalClientGoals.clear();
-            // Trigger update UI?
-            // window.App.Goals.updateGoalsGvTable(); // if visible
             window.Utils.showToast('success', 'Metas limpas!');
         } catch (e) {
             window.Utils.showToast('error', e.message);

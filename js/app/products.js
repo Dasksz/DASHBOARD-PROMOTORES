@@ -1,32 +1,24 @@
 window.App = window.App || {};
+window.App.Products = {
+    render: function(filter = '') {
+        const container = document.getElementById('produtos-list-container');
+        const countEl = document.getElementById('produtos-count');
+        const searchInput = document.getElementById('produtos-search');
+        if (!container) return;
 
-window.App.init = function() {
-    console.log("App Initializing...");
-    
-    // Initialize Data Structures for Filters
-    if (window.App.Filters && window.App.Filters.initData) {
-        window.App.Filters.initData();
-    }
+        // Bind Search once
+        if (searchInput && !searchInput._bound) {
+            searchInput.addEventListener('input', (e) => this.render(e.target.value));
+            searchInput._bound = true;
+        }
 
-    // Initialize Sub-modules
-    if (window.App.Wallet) window.App.Wallet.init();
-    if (window.App.Visitas) window.App.Visitas.init();
-    if (window.App.Goals) window.App.Goals.init();
-    if (window.App.Dashboard) window.App.Dashboard.init();
-    if (window.App.City) window.App.City.init();
-    if (window.App.Comparison) window.App.Comparison.init();
-    if (window.App.Coverage) window.App.Coverage.init();
-    if (window.App.Mix) window.App.Mix.init();
-    if (window.App.Innovations) window.App.Innovations.init();
-    if (window.App.History) window.App.History.init();
-    // Map is initialized lazily when shown to avoid IndexSizeError
+        // Use global embeddedData as fallback or AppState property if mapped
+        const prodList = (window.embeddedData && window.embeddedData.products) ? window.embeddedData.products : [];
 
-    // Bind Navigation
-    const navLinks = document.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            const target = e.target.getAttribute('data-target');
-            if (target) window.App.renderView(target);
+        const filtered = prodList.filter(p => {
+            if (!filter) return true;
+            const f = filter.toLowerCase();
+            return (p.descricao || '').toLowerCase().includes(f) || (String(p.code || '')).includes(f);
         });
     });
 
