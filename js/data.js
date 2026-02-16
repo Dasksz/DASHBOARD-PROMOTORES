@@ -284,7 +284,7 @@ window.Data = {
         window.Auth.isAppReady = true;
         const loader = document.getElementById('loader');
         const loaderText = document.getElementById('loader-text');
-
+        
         loader.classList.remove('hidden');
         loaderText.textContent = 'Verificando dados...';
 
@@ -441,11 +441,11 @@ window.Data = {
             loaderText.textContent = 'Processando...';
 
             // Populate Global State
-            window.AppState.allSalesData = detailed;
-            window.AppState.allHistoryData = history;
-            window.AppState.allClientsData = clients;
+            window.AppState.allSalesData = (detailed && detailed.columns) ? new window.Utils.ColumnarDataset(detailed) : detailed;
+            window.AppState.allHistoryData = (history && history.columns) ? new window.Utils.ColumnarDataset(history) : history;
+            window.AppState.allClientsData = (clients && clients.columns) ? new window.Utils.ColumnarDataset(clients) : clients;
             window.AppState.aggregatedOrders = orders;
-
+            
             // Map Stock
             if (stock && stock.values) {
                 const pCodes = stock.values['PRODUCT_CODE'];
@@ -461,7 +461,7 @@ window.Data = {
             window.AppState.innovationsMonthData = innovations;
             window.AppState.clientPromoters = clientPromoters || [];
             window.AppState.clientCoordinatesMap.clear();
-
+            
             if (clientCoordinates) {
                 clientCoordinates.forEach(c => {
                     const code = window.Utils.normalizeKey(c.client_code);
@@ -475,13 +475,13 @@ window.Data = {
 
             // Expose for Legacy Compatibility (if anything still references it directly)
             window.embeddedData = {
-                detailed, history, clients, byOrder: orders,
-                stockMap05: Object.fromEntries(window.AppState.stockData05),
+                detailed, history, clients, byOrder: orders, 
+                stockMap05: Object.fromEntries(window.AppState.stockData05), 
                 stockMap08: Object.fromEntries(window.AppState.stockData08),
                 products, activeProds, innovations, metadata, hierarchy, clientPromoters, clientCoordinates,
                 isColumnar: true
             };
-
+            
             this.isDataLoaded = true;
 
             // Trigger App Logic
@@ -522,7 +522,7 @@ window.Data = {
                 document.getElementById('content-wrapper').classList.remove('hidden');
                 const topNav = document.getElementById('top-navbar');
                 if (topNav) topNav.classList.remove('hidden');
-
+                
                 // Initialize App
                 if (window.App && window.App.init) {
                     window.App.init();
