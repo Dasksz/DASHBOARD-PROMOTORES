@@ -1,6 +1,5 @@
 (function() {
         const embeddedData = window.embeddedData;
-        const hierarchyState = window.HierarchySystem.state;
 
         // --- CONFIGURATION MOVED TO utils.js ---
         // SUPPLIER_CONFIG, resolveSupplierPasta, GARBAGE_SELLER_KEYWORDS, isGarbageSeller available globally
@@ -10,11 +9,16 @@
 
         // --- HELPER: Alternative Sales Type Logic ---
         function isAlternativeMode(selectedTypes) {
-            return window.BusinessRules.isAlternativeMode(selectedTypes);
+            if (!selectedTypes || selectedTypes.length === 0) return false;
+            // "Alternative Mode" is active ONLY if we have selected types AND none of them are 1 or 9.
+            return !selectedTypes.includes('1') && !selectedTypes.includes('9');
         }
 
         function getValueForSale(sale, selectedTypes) {
-            return window.BusinessRules.getValueForSale(sale, selectedTypes);
+            if (isAlternativeMode(selectedTypes)) {
+                return Number(sale.VLBONIFIC) || 0;
+            }
+            return Number(sale.VLVENDA) || 0;
         }
         // ---------------------------------------------
 
@@ -922,13 +926,321 @@
 
         let sellerDetailsMap = new Map();
 
-        // --- HIERARCHY FILTER SYSTEM (Delegated to Security Module) ---
+        // --- HIERARCHY FILTER SYSTEM ---
+        const hierarchyState = {}; // Map<viewPrefix, { coords: Set, cocoords: Set, promotors: Set }>
+
         function getHierarchyFilteredClients(viewPrefix, sourceClients = allClientsData) {
-            return window.HierarchySystem.getFilteredClients(viewPrefix, sourceClients, window.userHierarchyContext || {});
+            const state = hierarchyState[viewPrefix];
+            if (!state) return sourceClients;
+
+            const { coords, cocoords, promotors } = state;
+
+            let effectiveCoords = new Set(coords);
+            let effectiveCoCoords = new Set(cocoords);
+            let effectivePromotors = new Set(promotors);
+
+            // Apply User Context Constraints implicitly?
+            if (userHierarchyContext.role === 'coord') effectiveCoords.add(userHierarchyContext.coord);
+            if (userHierarchyContext.role === 'cocoord') {
+                effectiveCoords.add(userHierarchyContext.coord);
+                effectiveCoCoords.add(userHierarchyContext.cocoord);
+            }
+            if (userHierarchyContext.role === 'promotor') {
+                effectiveCoords.add(userHierarchyContext.coord);
+                effectiveCoCoords.add(userHierarchyContext.cocoord);
+                effectivePromotors.add(userHierarchyContext.promotor);
+            }
+
+            const isColumnar = sourceClients instanceof ColumnarDataset;
+            const result = [];
+            const len = sourceClients.length;
+
+            if (viewPrefix === 'main') {
+            }
+
+            let missingNodeCount = 0;
+
+            for(let i=0; i<len; i++) {
+                const client = isColumnar ? sourceClients.get(i) : sourceClients[i];
+                const codCli = normalizeKey(client['Código'] || client['codigo_cliente']);
+                const node = optimizedData.clientHierarchyMap.get(codCli);
+
+                if (!node) {
+                    missingNodeCount++;
+                    // FIX: Allow Orphans for Admins if no filters are active
+                    if (userHierarchyContext.role === 'adm') {
+                        const hasFilters = effectiveCoords.size > 0 || effectiveCoCoords.size > 0 || effectivePromotors.size > 0;
+                        if (!hasFilters) {
+                            result.push(client);
+                        }
+                    }
+                    continue; 
+                }
+
+                // Check Coord
+                if (effectiveCoords.size > 0 && !effectiveCoords.has(node.coord.code)) continue;
+                // Check CoCoord
+                if (effectiveCoCoords.size > 0 && !effectiveCoCoords.has(node.cocoord.code)) continue;
+                // Check Promotor
+                if (effectivePromotors.size > 0 && !effectivePromotors.has(node.promotor.code)) continue;
+
+                result.push(client);
+            }
+
+            if (viewPrefix === 'main') {
+            }
+            return result;
+        }
+
+        function updateFilterButtonText(element, selectedSet, defaultLabel) {
+            if (!element) return;
+            if (selectedSet.size === 0) {
+                element.textContent = defaultLabel;
+            } else if (selectedSet.size === 1) {
+                // Find the label for the single selected value?
+                // We don't have the label map easily accessible here without passing it.
+                // For simplicity, showing count or generic text.
+                // Or if we want the label, we'd need to lookup in optimizedData maps.
+                // Let's iterate the set to get the value.
+                const val = selectedSet.values().next().value;
+                // Try to resolve name
+                let name = val;
+                if (optimizedData.coordMap.has(val)) name = optimizedData.coordMap.get(val);
+                else if (optimizedData.cocoordMap.has(val)) name = optimizedData.cocoordMap.get(val);
+                else if (optimizedData.promotorMap.has(val)) name = optimizedData.promotorMap.get(val);
+                
+                element.textContent = name;
+            } else {
+                element.textContent = `${selectedSet.size} selecionados`;
+            }
+        }
+
+        function updateHierarchyDropdown(viewPrefix, level) {
+            const state = hierarchyState[viewPrefix];
+            const els = {
+                coord: { dd: document.getElementById(`${viewPrefix}-coord-filter-dropdown`), text: document.getElementById(`${viewPrefix}-coord-filter-text`) },
+                cocoord: { dd: document.getElementById(`${viewPrefix}-cocoord-filter-dropdown`), text: document.getElementById(`${viewPrefix}-cocoord-filter-text`) },
+                promotor: { dd: document.getElementById(`${viewPrefix}-promotor-filter-dropdown`), text: document.getElementById(`${viewPrefix}-promotor-filter-text`) }
+            };
+
+            const target = els[level];
+            if (!target.dd) return;
+
+            let options = [];
+            // Determine available options based on parent selection
+            if (level === 'coord') {
+                // Show all Coords (or restricted)
+                if (userHierarchyContext.role === 'adm') {
+                    options = Array.from(optimizedData.coordMap.entries()).map(([k, v]) => ({ value: k, label: v }));
+                } else {
+                    // Restricted: Only show own
+                    if (userHierarchyContext.coord) {
+                        options = [{ value: userHierarchyContext.coord, label: optimizedData.coordMap.get(userHierarchyContext.coord) || userHierarchyContext.coord }];
+                    }
+                }
+            } else if (level === 'cocoord') {
+                // Show CoCoords belonging to selected Coords
+                let parentCoords = state.coords;
+                // If no parent selected, and ADM, show ALL. If restricted, show allowed.
+                // If restricted, state.coords might be empty initially, but user context implies restriction.
+                
+                let allowedCoords = parentCoords;
+                if (allowedCoords.size === 0) {
+                    if (userHierarchyContext.role === 'adm') {
+                        // All coords
+                        allowedCoords = new Set(optimizedData.coordMap.keys());
+                    } else if (userHierarchyContext.coord) {
+                        allowedCoords = new Set([userHierarchyContext.coord]);
+                    }
+                }
+
+                const validCodes = new Set();
+                allowedCoords.forEach(c => {
+                    const children = optimizedData.cocoordsByCoord.get(c);
+                    if(children) children.forEach(child => validCodes.add(child));
+                });
+
+                // Apply User Context Restriction for CoCoord level
+                if (userHierarchyContext.role === 'cocoord' || userHierarchyContext.role === 'promotor') {
+                    // Restrict to own cocoord
+                    if (userHierarchyContext.cocoord && validCodes.has(userHierarchyContext.cocoord)) {
+                        validCodes.clear();
+                        validCodes.add(userHierarchyContext.cocoord);
+                    } else {
+                        validCodes.clear(); // Should not happen if data consistent
+                    }
+                }
+
+                options = Array.from(validCodes).map(c => ({ value: c, label: optimizedData.cocoordMap.get(c) || c }));
+            } else if (level === 'promotor') {
+                // Show Promotors belonging to selected CoCoords
+                let parentCoCoords = state.cocoords;
+                
+                let allowedCoCoords = parentCoCoords;
+                if (allowedCoCoords.size === 0) {
+                    // Need to resolve relevant CoCoords from relevant Coords
+                    let relevantCoords = state.coords;
+                    if (relevantCoords.size === 0) {
+                         if (userHierarchyContext.role === 'adm') relevantCoords = new Set(optimizedData.coordMap.keys());
+                         else if (userHierarchyContext.coord) relevantCoords = new Set([userHierarchyContext.coord]);
+                    }
+
+                    const validCoCoords = new Set();
+                    relevantCoords.forEach(c => {
+                        const children = optimizedData.cocoordsByCoord.get(c);
+                        if(children) children.forEach(child => validCoCoords.add(child));
+                    });
+                    
+                    // Filter by User Context
+                    if (userHierarchyContext.role === 'cocoord' || userHierarchyContext.role === 'promotor') {
+                         if (userHierarchyContext.cocoord) {
+                             // Only keep own
+                             if (validCoCoords.has(userHierarchyContext.cocoord)) {
+                                 validCoCoords.clear();
+                                 validCoCoords.add(userHierarchyContext.cocoord);
+                             }
+                         }
+                    }
+                    allowedCoCoords = validCoCoords;
+                }
+
+                const validCodes = new Set();
+                allowedCoCoords.forEach(c => {
+                    const children = optimizedData.promotorsByCocoord.get(c);
+                    if(children) children.forEach(child => validCodes.add(child));
+                });
+
+                // Apply User Context Restriction for Promotor level
+                if (userHierarchyContext.role === 'promotor') {
+                    if (userHierarchyContext.promotor && validCodes.has(userHierarchyContext.promotor)) {
+                        validCodes.clear();
+                        validCodes.add(userHierarchyContext.promotor);
+                    }
+                }
+
+                options = Array.from(validCodes).map(c => ({ value: c, label: optimizedData.promotorMap.get(c) || c }));
+            }
+
+            // Sort
+            if (options) options.sort((a, b) => a.label.localeCompare(b.label));
+            else options = [];
+
+            // Render
+            let html = '';
+            const selectedSet = state[level + 's']; // coords, cocoords, promotors
+            options.forEach(opt => {
+                const checked = selectedSet.has(opt.value) ? 'checked' : '';
+                html += `
+                    <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer">
+                        <span class="text-xs text-slate-300 truncate mr-2">${opt.label}</span>
+                        <input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500 focus:ring-offset-slate-800">
+                    </label>
+                `;
+            });
+            target.dd.innerHTML = html;
+            
+            // Update Text Label
+            let label = 'Todos';
+            if (level === 'coord') label = 'Coordenador';
+            if (level === 'cocoord') label = 'Co-Coord';
+            if (level === 'promotor') label = 'Promotor';
+
+            updateFilterButtonText(target.text, selectedSet, label);
         }
 
         function setupHierarchyFilters(viewPrefix, onUpdate) {
-            window.HierarchySystem.setupFilters(viewPrefix, window.userHierarchyContext || {}, onUpdate);
+            // Init State
+            if (!hierarchyState[viewPrefix]) {
+                hierarchyState[viewPrefix] = { coords: new Set(), cocoords: new Set(), promotors: new Set() };
+            }
+            const state = hierarchyState[viewPrefix];
+
+            const els = {
+                coord: { btn: document.getElementById(`${viewPrefix}-coord-filter-btn`), dd: document.getElementById(`${viewPrefix}-coord-filter-dropdown`) },
+                cocoord: { btn: document.getElementById(`${viewPrefix}-cocoord-filter-btn`), dd: document.getElementById(`${viewPrefix}-cocoord-filter-dropdown`) },
+                promotor: { btn: document.getElementById(`${viewPrefix}-promotor-filter-btn`), dd: document.getElementById(`${viewPrefix}-promotor-filter-dropdown`) }
+            };
+
+            const bindToggle = (el) => {
+                if (el.btn && el.dd) {
+                    el.btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Close others
+                        Object.values(els).forEach(x => { if(x.dd && x !== el) x.dd.classList.add('hidden'); });
+                        el.dd.classList.toggle('hidden');
+                    });
+                }
+            };
+            bindToggle(els.coord);
+            bindToggle(els.cocoord);
+            bindToggle(els.promotor);
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', (e) => {
+                Object.values(els).forEach(x => {
+                    if (x.dd && !x.dd.classList.contains('hidden')) {
+                        if (x.btn && !x.btn.contains(e.target) && !x.dd.contains(e.target)) {
+                            x.dd.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+
+            const bindChange = (level, nextLevel, nextNextLevel) => {
+                const el = els[level];
+                if (el && el.dd) {
+                    el.dd.addEventListener('change', (e) => {
+                        if (e.target.type === 'checkbox') {
+                            const val = e.target.value;
+                            const set = state[level + 's'];
+                            if (e.target.checked) set.add(val); else set.delete(val);
+                            
+                            // Update Button Text
+                            updateHierarchyDropdown(viewPrefix, level); // Re-render self? No, just text. But re-rendering handles text.
+                            
+                            // Cascade Clear
+                            if (nextLevel) {
+                                state[nextLevel + 's'].clear();
+                                updateHierarchyDropdown(viewPrefix, nextLevel);
+                            }
+                            if (nextNextLevel) {
+                                state[nextNextLevel + 's'].clear();
+                                updateHierarchyDropdown(viewPrefix, nextNextLevel);
+                            }
+
+                            if (onUpdate) onUpdate();
+                        }
+                    });
+                }
+            };
+
+            bindChange('coord', 'cocoord', 'promotor');
+            bindChange('cocoord', 'promotor', null);
+            bindChange('promotor', null, null);
+
+            // Initial Population
+            updateHierarchyDropdown(viewPrefix, 'coord');
+            updateHierarchyDropdown(viewPrefix, 'cocoord');
+            updateHierarchyDropdown(viewPrefix, 'promotor');
+            
+            // Auto-select for restricted users?
+            // If I am Coord, my Coord ID is userHierarchyContext.coord.
+            // Should I pre-select it?
+            // If I pre-select it, `getHierarchyFilteredClients` uses it.
+            // If I DON'T pre-select it (empty set), `getHierarchyFilteredClients` applies it anyway via context.
+            // Visually, it's better if it shows "My Name" instead of "Coordenador" (which implies All/None).
+            // So yes, let's pre-select.
+            
+            if (userHierarchyContext.role !== 'adm') {
+                if (userHierarchyContext.coord) state.coords.add(userHierarchyContext.coord);
+                if (userHierarchyContext.cocoord) state.cocoords.add(userHierarchyContext.cocoord);
+                if (userHierarchyContext.promotor) state.promotors.add(userHierarchyContext.promotor);
+                
+                // Refresh UI to show checkmarks and text
+                updateHierarchyDropdown(viewPrefix, 'coord');
+                updateHierarchyDropdown(viewPrefix, 'cocoord');
+                updateHierarchyDropdown(viewPrefix, 'promotor');
+            }
         }
 
         function initializeOptimizedDataStructures() {
@@ -966,18 +1278,81 @@
             optimizedData.supervisorCodeByName = new Map();
             optimizedData.productPastaMap = new Map();
 
-            // --- HIERARCHY LOGIC START (Delegated to Security Module) ---
-            window.HierarchySystem.init(embeddedData.hierarchy, embeddedData.clientPromoters);
-            
-            // Map aliases for backward compatibility with app.js logic
-            optimizedData.hierarchyMap = window.HierarchySystem.maps.hierarchyMap;
-            optimizedData.clientHierarchyMap = window.HierarchySystem.maps.clientHierarchyMap;
-            optimizedData.coordMap = window.HierarchySystem.maps.coordMap;
-            optimizedData.cocoordMap = window.HierarchySystem.maps.cocoordMap;
-            optimizedData.promotorMap = window.HierarchySystem.maps.promotorMap;
-            optimizedData.coordsByCocoord = window.HierarchySystem.maps.coordsByCocoord;
-            optimizedData.cocoordsByCoord = window.HierarchySystem.maps.cocoordsByCoord;
-            optimizedData.promotorsByCocoord = window.HierarchySystem.maps.promotorsByCocoord;
+            // --- HIERARCHY LOGIC START ---
+            optimizedData.hierarchyMap = new Map(); // Promotor Code -> Hierarchy Node
+            optimizedData.clientHierarchyMap = new Map(); // Client Code -> Hierarchy Node
+            optimizedData.coordMap = new Map(); // Coord Code -> Name
+            optimizedData.cocoordMap = new Map(); // CoCoord Code -> Name
+            optimizedData.promotorMap = new Map(); // Promotor Code -> Name
+            optimizedData.coordsByCocoord = new Map(); // CoCoord Code -> Coord Code
+            optimizedData.cocoordsByCoord = new Map(); // Coord Code -> Set<CoCoord Code>
+            optimizedData.promotorsByCocoord = new Map(); // CoCoord Code -> Set<Promotor Code>
+
+            if (embeddedData.hierarchy) {
+                embeddedData.hierarchy.forEach(h => {
+                    // Robust key access (Handle lowercase/uppercase/mapped variations)
+                    const getVal = (keys) => {
+                        for (const k of keys) {
+                            if (h[k] !== undefined && h[k] !== null) return String(h[k]);
+                        }
+                        return '';
+                    };
+
+                    const coordCode = getVal(['cod_coord', 'COD_COORD', 'COD COORD.']).trim().toUpperCase();
+                    const coordName = (getVal(['nome_coord', 'NOME_COORD', 'COORDENADOR']) || coordCode).toUpperCase();
+                    
+                    const cocoordCode = getVal(['cod_cocoord', 'COD_COCOORD', 'COD CO-COORD.']).trim().toUpperCase();
+                    const cocoordName = (getVal(['nome_cocoord', 'NOME_COCOORD', 'CO-COORDENADOR']) || cocoordCode).toUpperCase();
+                    
+                    const promotorCode = getVal(['cod_promotor', 'COD_PROMOTOR', 'COD PROMOTOR']).trim().toUpperCase();
+                    const promotorName = (getVal(['nome_promotor', 'NOME_PROMOTOR', 'PROMOTOR']) || promotorCode).toUpperCase();
+
+                    if (coordCode) {
+                        optimizedData.coordMap.set(coordCode, coordName);
+                        if (!optimizedData.cocoordsByCoord.has(coordCode)) optimizedData.cocoordsByCoord.set(coordCode, new Set());
+                        if (cocoordCode) optimizedData.cocoordsByCoord.get(coordCode).add(cocoordCode);
+                    }
+                    if (cocoordCode) {
+                        optimizedData.cocoordMap.set(cocoordCode, cocoordName);
+                        if (coordCode) optimizedData.coordsByCocoord.set(cocoordCode, coordCode);
+                        if (!optimizedData.promotorsByCocoord.has(cocoordCode)) optimizedData.promotorsByCocoord.set(cocoordCode, new Set());
+                        if (promotorCode) optimizedData.promotorsByCocoord.get(cocoordCode).add(promotorCode);
+                    }
+                    if (promotorCode) optimizedData.promotorMap.set(promotorCode, promotorName);
+
+                    if (promotorCode) {
+                        optimizedData.hierarchyMap.set(promotorCode, {
+                            coord: { code: coordCode, name: coordName },
+                            cocoord: { code: cocoordCode, name: cocoordName },
+                            promotor: { code: promotorCode, name: promotorName }
+                        });
+                    }
+                });
+            }
+
+            if (embeddedData.clientPromoters) {
+                let matchCount = 0;
+                let sampleLogged = false;
+                embeddedData.clientPromoters.forEach(cp => {
+                    let clientCode = String(cp.client_code).trim();
+                    // Normalize client code to match dataset (remove leading zeros)
+                    if (/^\d+$/.test(clientCode)) {
+                        clientCode = String(parseInt(clientCode, 10));
+                    }
+
+                    const promotorCode = String(cp.promoter_code).trim().toUpperCase();
+                    const hierarchyNode = optimizedData.hierarchyMap.get(promotorCode);
+                    if (hierarchyNode) {
+                        optimizedData.clientHierarchyMap.set(clientCode, hierarchyNode);
+                        matchCount++;
+                    } else if (!sampleLogged) {
+                        console.warn(`[DEBUG] Hierarchy Node Not Found for Promotor: ${promotorCode} (Client: ${clientCode})`);
+                        sampleLogged = true;
+                    }
+                });
+            } else {
+                console.warn("[DEBUG] embeddedData.clientPromoters is missing or empty.");
+            }
             // --- HIERARCHY LOGIC END ---
 
             // Access via accessor method for potential ColumnarDataset
@@ -1007,9 +1382,11 @@
                 // Normalize access for rest of the code
                 client.rca1 = rca1;
 
-                // Apply Business Rules Overrides (e.g. Americanas)
-                const overrideRca = window.BusinessRules.applyClientOverrides(client);
-                if (overrideRca === '1001') {
+                const razaoSocial = client.razaoSocial || client.RAZAOSOCIAL || client.Cliente || ''; // Fallback
+
+                if (razaoSocial.toUpperCase().includes('AMERICANAS')) {
+                    client.rca1 = '1001';
+                    client.rcas = ['1001'];
                     americanasCodCli = codCli;
                     // Ensure global mapping for Import/Analysis lookup
                     optimizedData.rcaCodeByName.set('AMERICANAS', '1001');
@@ -1703,12 +2080,21 @@
                             if (idx === undefined) return;
 
                             const codUsur = historyValues['CODUSUR'][idx];
-                            // EXCEPTION: Check Business Rules for Exclusion
-                            if (window.BusinessRules.shouldExcludeSale({CODUSUR: codUsur}, codCli)) return;
+                             // EXCEPTION: Exclude Balcão (53) sales for Client 9569 from Summary Metrics
+                            if (String(codCli).trim() === '9569' && (String(codUsur).trim() === '53' || String(codUsur).trim() === '053')) return;
 
+                            let key = null;
                             const codFor = String(historyValues['CODFOR'][idx]);
-                            const desc = historyValues['DESCRICAO'][idx];
-                            const key = window.BusinessRules.classifyGoalCategory(codFor, desc);
+
+                            if (codFor === '707') key = '707';
+                            else if (codFor === '708') key = '708';
+                            else if (codFor === '752') key = '752';
+                            else if (codFor === '1119') {
+                                const desc = normalize(historyValues['DESCRICAO'][idx] || '');
+                                if (desc.includes('TODDYNHO')) key = '1119_TODDYNHO';
+                                else if (desc.includes('TODDY')) key = '1119_TODDY';
+                                else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = '1119_QUAKER_KEROCOCO';
+                            }
 
                             if (key && globalGoalsMetrics[key]) {
                                 const dtPed = historyValues['DTPED'][idx];
@@ -1754,11 +2140,21 @@
                         // Fallback: Original Logic
                         clientHistoryIds.forEach(id => {
                             const sale = optimizedData.historyById.get(id);
-                            // EXCEPTION: Check Business Rules for Exclusion
-                            if (window.BusinessRules.shouldExcludeSale(sale, codCli)) return;
+                            // EXCEPTION: Exclude Balcão (53) sales for Client 9569 from Summary Metrics
+                            if (String(codCli).trim() === '9569' && (String(sale.CODUSUR).trim() === '53' || String(sale.CODUSUR).trim() === '053')) return;
 
+                            let key = null;
                             const codFor = String(sale.CODFOR);
-                            const key = window.BusinessRules.classifyGoalCategory(codFor, sale.DESCRICAO);
+
+                            if (codFor === '707') key = '707';
+                            else if (codFor === '708') key = '708';
+                            else if (codFor === '752') key = '752';
+                            else if (codFor === '1119') {
+                                const desc = normalize(sale.DESCRICAO || '');
+                                if (desc.includes('TODDYNHO')) key = '1119_TODDYNHO';
+                                else if (desc.includes('TODDY')) key = '1119_TODDY';
+                                else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = '1119_QUAKER_KEROCOCO';
+                            }
 
                             if (key && globalGoalsMetrics[key]) {
                                 const d = parseDate(sale.DTPED);
