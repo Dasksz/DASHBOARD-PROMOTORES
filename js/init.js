@@ -320,6 +320,7 @@
                 checkTable('data_product_details', 'hash_product_details', 'products');
                 checkTable('data_innovations', 'hash_innovations', 'innovations');
                 checkTable('data_hierarchy', 'hash_hierarchy', 'hierarchy');
+                checkTable('data_client_promoters', 'hash_client_promoters', 'clientPromoters');
 
                 // If nothing to fetch, use cache completely
                 if (tablesToFetch.size === 0) {
@@ -333,7 +334,7 @@
             } else if (!cachedData) {
                 // Full Fetch required
                 console.log("Cache vazio. Baixando tudo...");
-                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy'].forEach(t => tablesToFetch.add(t));
+                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters'].forEach(t => tablesToFetch.add(t));
             }
 
             if (useCache) {
@@ -760,7 +761,7 @@
                     // So we should probably ALWAYS fetch coordinates fresh to ensure syncing.
                     fetchAll('data_client_coordinates', null, null, 'object', 'client_code'),
                     getOrFetch('data_hierarchy', null, null, 'object', 'id', null, 'hierarchy'),
-                    fetchAll('data_client_promoters', null, null, 'object', 'client_code') // Always fresh to sync wallet changes
+                    getOrFetch('data_client_promoters', null, null, 'object', 'client_code', null, 'clientPromoters')
                 ]);
 
                 detailed = detailedUpper;
