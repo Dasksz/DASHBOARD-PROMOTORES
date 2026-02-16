@@ -3568,7 +3568,6 @@
             const suppliersSet = new Set(selectedMetaRealizadoSuppliers);
             const pasta = currentMetaRealizadoPasta;
 
-            // --- Fix: Define supervisorsSet and sellersSet ---
             const supervisorsSet = new Set();
             const sellersSet = new Set();
 
