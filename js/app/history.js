@@ -9,6 +9,7 @@ window.App.History = {
 
     init: function() {
         window.App.Filters.setupHierarchyFilters('history', null);
+        window.App.Filters.setupGenericFilters('history');
         const filterBtn = document.getElementById('history-filter-btn');
         if(filterBtn) filterBtn.addEventListener('click', () => this.filter());
 

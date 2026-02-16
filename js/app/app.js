@@ -3,6 +3,11 @@ window.App = window.App || {};
 window.App.init = function() {
     console.log("App Initializing...");
 
+    // Initialize Data Structures for Filters
+    if (window.App.Filters && window.App.Filters.initData) {
+        window.App.Filters.initData();
+    }
+
     // Initialize Sub-modules
     if (window.App.Wallet) window.App.Wallet.init();
     if (window.App.Visitas) window.App.Visitas.init();
@@ -62,7 +67,7 @@ window.App.renderView = function(viewName) {
     console.log("Rendering View:", viewName);
     
     // Hide all views
-    const views = ['main-dashboard', 'city-view', 'comparison-view', 'goals-view', 'wallet-view', 'coverage-view', 'history-view', 'clientes-view', 'produtos-view'];
+    const views = ['main-dashboard', 'city-view', 'comparison-view', 'goals-view', 'wallet-view', 'coverage-view', 'history-view', 'clientes-view', 'produtos-view', 'mix-view', 'innovations-month-view'];
     views.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -80,6 +85,8 @@ window.App.renderView = function(viewName) {
         case 'history': targetId = 'history-view'; break;
         case 'clientes': targetId = 'clientes-view'; break;
         case 'produtos': targetId = 'produtos-view'; break;
+        case 'mix': targetId = 'mix-view'; break;
+        case 'inovacoes-mes': targetId = 'innovations-month-view'; break;
         default: targetId = 'main-dashboard';
     }
 

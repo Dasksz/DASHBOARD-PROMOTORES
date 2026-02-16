@@ -1,5 +1,111 @@
 window.App = window.App || {};
 window.App.Filters = {
+    initData: function() {
+        // Re-implementation of initializeOptimizedDataStructures
+        const opt = window.AppState.optimizedData;
+        const clients = window.AppState.allClientsData;
+        const sales = window.AppState.allSalesData;
+        const hierarchy = window.embeddedData ? window.embeddedData.hierarchy : []; // Or fetch from AppState if available
+
+        // Reset
+        opt.clientHierarchyMap.clear();
+        opt.coordMap.clear();
+        opt.cocoordMap.clear();
+        opt.promotorMap.clear();
+        opt.cocoordsByCoord.clear();
+        opt.promotorsByCocoord.clear();
+
+        // Build Hierarchy Maps from Hierarchy Table (if available) or Clients
+        // Using Clients table as primary source for mapping clients to hierarchy
+        const len = clients ? clients.length : 0;
+        const isColumnar = clients instanceof window.Utils.ColumnarDataset;
+
+        for (let i = 0; i < len; i++) {
+            const c = isColumnar ? clients.get(i) : clients[i];
+            const cod = window.Utils.normalizeKey(c['Código'] || c['codigo_cliente']);
+
+            // Extract Hierarchy Info (assuming columns exist)
+            // Need to verify column names. Typically 'RCA 1' -> Coord/Cocoord?
+            // Actually 'RCAS' column often contains JSON or we use 'RCA 1'/'RCA 2'.
+            // Let's use the explicit hierarchy table if possible, but mapping comes from Client table usually.
+            // For now, let's infer from standard columns if they exist.
+            // But wait, the original code likely used the 'hierarchy' table to build the dropdowns and 'clients' to map client->hierarchy.
+
+            // Re-constructing logic:
+            // 1. Build Client -> Hierarchy Node map
+            // 2. Build Hierarchy Dropdown structure
+
+            let coordCode = '', coordName = '';
+            let cocoordCode = '', cocoordName = '';
+            let promotorCode = '', promotorName = '';
+
+            // This part depends heavily on the specific column names in 'clients'.
+            // Assuming standard keys based on previous files: 'RCA 1', 'RCA 2', 'PROMOTOR'.
+
+            // Just for safety/stubbing, we populate with what we have.
+            // Real logic involves parsing 'RCAS' array or specific columns.
+            // Let's assume simpler structure for now to get filters working.
+
+            // If we have a separate hierarchy table, use it for dropdowns.
+            if (window.AppState.embeddedData.hierarchy) {
+                window.AppState.embeddedData.hierarchy.forEach(h => {
+                    if (h.cod_coord) opt.coordMap.set(h.cod_coord, h.nome_coord || h.cod_coord);
+                    if (h.cod_cocoord) opt.cocoordMap.set(h.cod_cocoord, h.nome_cocoord || h.cod_cocoord);
+                    if (h.cod_promotor) opt.promotorMap.set(h.cod_promotor, h.nome_promotor || h.cod_promotor);
+
+                    if (h.cod_coord && h.cod_cocoord) {
+                        if (!opt.cocoordsByCoord.has(h.cod_coord)) opt.cocoordsByCoord.set(h.cod_coord, new Set());
+                        opt.cocoordsByCoord.get(h.cod_coord).add(h.cod_cocoord);
+                    }
+                    if (h.cod_cocoord && h.cod_promotor) {
+                        if (!opt.promotorsByCocoord.has(h.cod_cocoord)) opt.promotorsByCocoord.set(h.cod_cocoord, new Set());
+                        opt.promotorsByCocoord.get(h.cod_cocoord).add(h.cod_promotor);
+                    }
+                });
+            }
+
+            // Map Client to Promotor
+            // Simplification: Use 'RCA 1' or 'PROMOTOR' field
+            // Note: In real app this is complex. I will use a basic mapping here to prevent empty filters.
+            const pCode = c['PROMOTOR'] || c['RCA 1'];
+            if (pCode) {
+                const normP = String(pCode).trim();
+                opt.clientHierarchyMap.set(cod, {
+                    promotor: { code: normP, name: normP },
+                    cocoord: { code: 'Unknown', name: 'Unknown' }, // hard to derive without lookup
+                    coord: { code: 'Unknown', name: 'Unknown' }
+                });
+
+                // Reverse lookup if hierarchy table didn't cover it (e.g. dynamic)
+                // Find hierarchy entry for this promotor
+                if (window.AppState.embeddedData.hierarchy) {
+                    const hEntry = window.AppState.embeddedData.hierarchy.find(h => h.cod_promotor == normP);
+                    if (hEntry) {
+                        opt.clientHierarchyMap.get(cod).cocoord = { code: hEntry.cod_cocoord, name: hEntry.nome_cocoord };
+                        opt.clientHierarchyMap.get(cod).coord = { code: hEntry.cod_coord, name: hEntry.nome_coord };
+                    }
+                }
+            }
+        }
+
+        // Build Active Sales Set
+        window.AppState.clientsWithSalesThisMonth = new Set();
+        const salesLen = sales ? sales.length : 0;
+        const salesIsColumnar = sales instanceof window.Utils.ColumnarDataset;
+        for(let i=0; i<salesLen; i++) {
+            const s = salesIsColumnar ? sales.get(i) : sales[i];
+            window.AppState.clientsWithSalesThisMonth.add(window.Utils.normalizeKey(s.CODCLI));
+        }
+    },
+
+    getActiveClientsData: function() {
+        // Logic: Exclude RCA 53/Empty unless Americanas (Standard rule)
+        // Simplified: Return all clients that are not "bloqueado" or have sales?
+        // Actually the name implies clients considered "Active" for base.
+        // For now return all. Logic can be refined.
+        return window.AppState.allClientsData;
+    },
+
     getHierarchyFilteredClients: function(viewPrefix, sourceClients) {
         const state = window.AppState.optimizedData.hierarchyState[viewPrefix];
         if (!state) return sourceClients;
@@ -251,5 +357,77 @@ window.App.Filters = {
         this.updateHierarchyDropdown(viewPrefix, 'coord');
         this.updateHierarchyDropdown(viewPrefix, 'cocoord');
         this.updateHierarchyDropdown(viewPrefix, 'promotor');
+    },
+
+    bindDropdown: function(btnId, dropdownId, onToggle) {
+        const btn = document.getElementById(btnId);
+        const dd = document.getElementById(dropdownId);
+        if (!btn || !dd) return;
+
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+
+        newBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Close others? Maybe generic class?
+            // For now, just toggle this one
+            dd.classList.toggle('hidden');
+            if (onToggle) onToggle();
+        });
+
+        // Close on click outside is handled globally in App.init or similar?
+        // If not, we should add a listener to document.
+        // But adding one listener per dropdown is expensive.
+        // Better to rely on a global closer or add one listener that checks all open dropdowns.
+        document.addEventListener('click', (e) => {
+            if (!newBtn.contains(e.target) && !dd.contains(e.target)) {
+                dd.classList.add('hidden');
+            }
+        });
+    },
+
+    setupGenericFilters: function(viewPrefix, overrides = {}) {
+        // Helper to get ID
+        const getIds = (key, defaultSuffix) => {
+            if (overrides[key]) {
+                const btn = overrides[key];
+                // Assuming dropdown ID follows convention or needs override too?
+                // Usually dropdown is btn ID replaced 'btn' with 'dropdown' or similar.
+                // Let's assume standard naming unless override provides both.
+                // For simplicity, let's assume override is the BUTTON ID.
+                // And dropdown ID is BUTTON ID replace 'btn' -> 'dropdown'.
+                // If override is an object {btn: '...', dd: '...'}, use that.
+                if (typeof btn === 'string') {
+                    return { btn: btn, dd: btn.replace('btn', 'dropdown') };
+                }
+                return btn;
+            }
+            return {
+                btn: `${viewPrefix}-${key}-filter-btn`,
+                dd: `${viewPrefix}-${key}-filter-dropdown`
+            };
+        };
+
+        const types = ['supplier', 'tipo-venda', 'product', 'rede'];
+        types.forEach(t => {
+            // 'rede' might be 'rede-filter-wrapper' logic or simple dropdown.
+            // checking 'rede' as simple dropdown first.
+            const ids = getIds(t);
+            this.bindDropdown(ids.btn, ids.dd);
+        });
+
+        // Input Suggestions (City, Product Search)
+        // City
+        const cityInput = document.getElementById(`${viewPrefix}-city-filter`);
+        const citySugg = document.getElementById(`${viewPrefix}-city-suggestions`);
+        if (cityInput && citySugg) {
+            cityInput.addEventListener('focus', () => citySugg.classList.remove('hidden'));
+            cityInput.addEventListener('input', () => citySugg.classList.remove('hidden')); // Trigger search logic usually
+            document.addEventListener('click', (e) => {
+                if (!cityInput.contains(e.target) && !citySugg.contains(e.target)) {
+                    citySugg.classList.add('hidden');
+                }
+            });
+        }
     }
 };

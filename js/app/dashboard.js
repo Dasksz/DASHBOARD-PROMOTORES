@@ -1,7 +1,11 @@
 window.App = window.App || {};
 window.App.Dashboard = {
     init: function() {
-        // Bind Dashboard specific events if any
+        window.App.Filters.setupHierarchyFilters('main', () => this.render());
+        window.App.Filters.setupGenericFilters('main', {
+            'tipo-venda': 'tipo-venda-filter-btn',
+            'supplier': 'fornecedor-filter-btn'
+        });
     },
 
     render: function() {

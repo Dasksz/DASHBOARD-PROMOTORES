@@ -3,6 +3,7 @@ window.App.Comparison = {
     init: function() {
         // Bind Filters
         window.App.Filters.setupHierarchyFilters('comparison', () => this.render());
+        window.App.Filters.setupGenericFilters('comparison');
 
         const toggles = ['toggle-daily-btn', 'toggle-weekly-btn', 'toggle-monthly-btn'];
         toggles.forEach(id => {
