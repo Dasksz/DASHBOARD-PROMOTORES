@@ -441,9 +441,9 @@ window.Data = {
             loaderText.textContent = 'Processando...';
 
             // Populate Global State
-            window.AppState.allSalesData = detailed;
-            window.AppState.allHistoryData = history;
-            window.AppState.allClientsData = clients;
+            window.AppState.allSalesData = (detailed && detailed.columns) ? new window.Utils.ColumnarDataset(detailed) : detailed;
+            window.AppState.allHistoryData = (history && history.columns) ? new window.Utils.ColumnarDataset(history) : history;
+            window.AppState.allClientsData = (clients && clients.columns) ? new window.Utils.ColumnarDataset(clients) : clients;
             window.AppState.aggregatedOrders = orders;
 
             // Map Stock
