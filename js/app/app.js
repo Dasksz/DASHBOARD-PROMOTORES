@@ -1488,7 +1488,25 @@
                     if (!bySupervisor.has(supervisor)) bySupervisor.set(supervisor, new Set()); bySupervisor.get(supervisor).add(id);
                     if (!byRca.has(rca)) byRca.set(rca, new Set()); byRca.get(rca).add(id);
                     if (!byPasta.has(pasta)) byPasta.set(pasta, new Set()); byPasta.get(pasta).add(id);
-                    if (supplier) { if (!bySupplier.has(supplier)) bySupplier.set(supplier, new Set()); bySupplier.get(supplier).add(id); }
+                    if (supplier) {
+                        if (!bySupplier.has(supplier)) bySupplier.set(supplier, new Set());
+                        bySupplier.get(supplier).add(id);
+
+                        // Virtual Categories Logic (Shared with Meta vs Realizado)
+                        // 1119 Split: TODDYNHO, TODDY, QUAKER/KEROCOCO
+                        if (supplier === '1119') {
+                            const desc = String(getVal(i, 'DESCRICAO') || '').toUpperCase();
+                            let virtualKey = null;
+                            if (desc.includes('TODDYNHO')) virtualKey = '1119_TODDYNHO';
+                            else if (desc.includes('TODDY')) virtualKey = '1119_TODDY';
+                            else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) virtualKey = '1119_QUAKER_KEROCOCO';
+
+                            if (virtualKey) {
+                                if (!bySupplier.has(virtualKey)) bySupplier.set(virtualKey, new Set());
+                                bySupplier.get(virtualKey).add(id);
+                            }
+                        }
+                    }
                     if (client) { if (!byClient.has(client)) byClient.set(client, new Set()); byClient.get(client).add(id); }
                     if (tipoVenda) { if (!byTipoVenda.has(tipoVenda)) byTipoVenda.set(tipoVenda, new Set()); byTipoVenda.get(tipoVenda).add(id); }
                     if (position) { if (!byPosition.has(position)) byPosition.set(position, new Set()); byPosition.get(position).add(id); }
@@ -7996,9 +8014,25 @@ const supervisorGroups = new Map();
             if (titleEl) titleEl.textContent = item.name || 'Produto Desconhecido';
             if (codeEl) codeEl.textContent = `Cód: ${item.code}`;
 
-            // Stock Logic
-            const s05 = stockData05.get(item.code) || 0;
-            const s08 = stockData08.get(item.code) || 0;
+            // Stock Logic (Robust Lookup)
+            const getStockFromMap = (map, code) => {
+                let s = map.get(code);
+                if (s !== undefined) return s;
+                // Try number string (remove leading zeros)
+                const num = parseInt(code, 10);
+                if (!isNaN(num)) {
+                    const sNoZeros = map.get(String(num));
+                    if (sNoZeros !== undefined) return sNoZeros;
+                }
+                // Try as-is string (in case code passed as number)
+                const sString = String(code);
+                if (map.has(sString)) return map.get(sString);
+
+                return 0;
+            };
+
+            const s05 = getStockFromMap(stockData05, item.code);
+            const s08 = getStockFromMap(stockData08, item.code);
             const totalStock = s05 + s08;
 
             const isFat = currentProductMetric === 'faturamento';
@@ -9126,7 +9160,7 @@ const supervisorGroups = new Map();
             });
 
             // Special Handling for Meta Realizado: Inject Virtual Categories
-            if (filterType === 'metaRealizado') {
+            if (filterType === 'metaRealizado' || filterType === 'main') {
                 if (suppliers.has('707')) suppliers.set('707', 'EXTRUSADOS');
                 if (suppliers.has('708')) suppliers.set('708', 'NÃO EXTRUSADOS');
                 if (suppliers.has('752')) suppliers.set('752', 'TORCIDA');
@@ -9151,7 +9185,8 @@ const supervisorGroups = new Map();
 
                     let displayName = name;
                     // For all pages except 'Meta Vs. Realizado', prefix Code to Name
-                    if (filterType !== 'metaRealizado') {
+                    // Request: Main (Visão Geral) should match Meta vs Realizado nomenclature (No Prefix, Split 1119)
+                    if (filterType !== 'metaRealizado' && filterType !== 'main') {
                         // Ensure we don't double prefix if name already starts with code (rare but possible in data)
                         if (!name.startsWith(cod)) {
                             displayName = `${cod} ${name}`;
