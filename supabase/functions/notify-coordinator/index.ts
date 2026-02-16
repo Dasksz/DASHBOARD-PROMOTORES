@@ -89,6 +89,13 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     )
 
+    // Start fetching API keys concurrently
+    const apiKeysPromise = supabase
+      .from('data_metadata')
+      .select('key, value')
+      .in('key', ['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'RESEND_TEST_EMAIL', 'BREVO_API_KEY', 'BREVO_SENDER_EMAIL'])
+      .then((res) => res)
+
     // Metadata for Email Content
     let promoterName = record.id_promotor; // Fallback
     let clientName = record.client_code || record.id_cliente; // Fallback
@@ -244,10 +251,8 @@ serve(async (req) => {
     }
 
     // 5. Fetch API Key AND From Email from Metadata
-    const { data: keyData, error: keyError } = await supabase
-      .from('data_metadata')
-      .select('key, value')
-      .in('key', ['RESEND_API_KEY', 'RESEND_FROM_EMAIL', 'RESEND_TEST_EMAIL', 'BREVO_API_KEY', 'BREVO_SENDER_EMAIL'])
+    // Await the promise initiated at the start
+    const { data: keyData, error: keyError } = await apiKeysPromise
 
     if (keyError || !keyData) {
       console.error('Error fetching API Key:', keyError)
