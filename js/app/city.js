@@ -8,6 +8,13 @@ window.App.City = {
                 const mapContainer = document.getElementById('city-map-container');
                 mapContainer.classList.toggle('hidden');
                 if (!mapContainer.classList.contains('hidden')) {
+                    // Initialize Map Lazily
+                    if (window.App.Map) {
+                        window.App.Map.initLeafletMap();
+                        if (window.App.Map.leafletMap) {
+                            setTimeout(() => window.App.Map.leafletMap.invalidateSize(), 100);
+                        }
+                    }
                     this.render(); // Trigger map update
                 }
             });
