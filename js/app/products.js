@@ -1,55 +1,121 @@
 window.App = window.App || {};
-window.App.Products = {
-    render: function(filter = '') {
-        const container = document.getElementById('produtos-list-container');
-        const countEl = document.getElementById('produtos-count');
-        const searchInput = document.getElementById('produtos-search');
-        if (!container) return;
 
-        // Bind Search once
-        if (searchInput && !searchInput._bound) {
-            searchInput.addEventListener('input', (e) => this.render(e.target.value));
-            searchInput._bound = true;
-        }
+window.App.init = function() {
+    console.log("App Initializing...");
+    
+    // Initialize Data Structures for Filters
+    if (window.App.Filters && window.App.Filters.initData) {
+        window.App.Filters.initData();
+    }
 
-        const prodList = window.AppState.allProductsData || (window.embeddedData ? window.embeddedData.products : []) || [];
-        const filtered = prodList.filter(p => {
-            if (!filter) return true;
-            const f = filter.toLowerCase();
-            return (p.descricao || '').toLowerCase().includes(f) || (String(p.code || '')).includes(f);
+    // Initialize Sub-modules
+    if (window.App.Wallet) window.App.Wallet.init();
+    if (window.App.Visitas) window.App.Visitas.init();
+    if (window.App.Goals) window.App.Goals.init();
+    if (window.App.Dashboard) window.App.Dashboard.init();
+    if (window.App.City) window.App.City.init();
+    if (window.App.Comparison) window.App.Comparison.init();
+    if (window.App.Coverage) window.App.Coverage.init();
+    if (window.App.Mix) window.App.Mix.init();
+    if (window.App.Innovations) window.App.Innovations.init();
+    if (window.App.History) window.App.History.init();
+    // Map is initialized lazily when shown to avoid IndexSizeError
+
+    // Bind Navigation
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            const target = e.target.getAttribute('data-target');
+            if (target) window.App.renderView(target);
+        });
+    });
+
+    // Mobile Menu Toggle
+    const mobileMenuBtn = document.getElementById('mobile-menu-toggle');
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (mobileMenuBtn && mobileMenu) {
+        mobileMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            mobileMenu.classList.toggle('hidden');
         });
 
-        const limit = 50;
-        const subset = filtered.slice(0, limit);
-        container.innerHTML = '';
-        
-        if(countEl) countEl.textContent = `${filtered.length} Produtos${filtered.length > limit ? ` (Exibindo ${limit})` : ''}`;
-
-        subset.forEach(prod => {
-            const code = prod.code;
-            const desc = prod.descricao || 'Sem Descrição';
-            const emb = prod.embalagem || 'UN';
-            
-            const stock05 = window.AppState.stockData05.get(code) || 0;
-            const stock08 = window.AppState.stockData08.get(code) || 0;
-            
-            const item = document.createElement('div');
-            item.className = 'p-4 border-b border-slate-800 hover:bg-slate-800 transition-colors';
-            item.innerHTML = `
-                <div class="flex justify-between">
-                    <h3 class="text-sm font-bold text-white">${code} - ${desc}</h3>
-                    <span class="text-xs text-slate-400">${emb}</span>
-                </div>
-                <div class="flex justify-between text-xs text-slate-500 mt-1">
-                    <span>Estoque 05: <b class="text-blue-400">${stock05}</b></span>
-                    <span>Estoque 08: <b class="text-blue-400">${stock08}</b></span>
-                </div>
-            `;
-            container.appendChild(item);
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                mobileMenu.classList.add('hidden');
+            }
         });
+    }
+
+    // Bind Mobile Navigation
+    const mobileLinks = document.querySelectorAll('.mobile-nav-link');
+    mobileLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            const target = e.target.getAttribute('data-target');
+            if (target) {
+                window.App.renderView(target);
+                if (mobileMenu) mobileMenu.classList.add('hidden');
+            }
+        });
+    });
+
+    // Initial View
+    window.App.renderView('dashboard');
+};
+
+window.App.renderView = function(viewName) {
+    console.log("Rendering View:", viewName);
+    
+    // Hide all views
+    const views = ['main-dashboard', 'city-view', 'comparison-view', 'goals-view', 'wallet-view', 'coverage-view', 'history-view', 'clientes-view', 'produtos-view', 'mix-view', 'innovations-month-view'];
+    views.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+
+    // Show Target
+    let targetId = '';
+    switch(viewName) {
+        case 'dashboard': targetId = 'main-dashboard'; break;
+        case 'cidades': targetId = 'city-view'; break;
+        case 'comparativo': targetId = 'comparison-view'; break;
+        case 'goals': targetId = 'goals-view'; break;
+        case 'wallet': targetId = 'wallet-view'; break; // Helper alias if needed
+        case 'cobertura': targetId = 'coverage-view'; break;
+        case 'history': targetId = 'history-view'; break;
+        case 'clientes': targetId = 'clientes-view'; break;
+        case 'produtos': targetId = 'produtos-view'; break;
+        case 'mix': targetId = 'mix-view'; break;
+        case 'inovacoes-mes': targetId = 'innovations-month-view'; break;
+        default: targetId = 'main-dashboard';
+    }
+
+    const el = document.getElementById(targetId);
+    if (el) el.classList.remove('hidden');
+
+    // Trigger Specific Render Logic
+    if (viewName === 'dashboard') {
+        if (window.App.Dashboard) window.App.Dashboard.render();
+    } else if (viewName === 'cidades') {
+        if (window.App.City) window.App.City.render();
+    } else if (viewName === 'comparativo') {
+        if (window.App.Comparison) window.App.Comparison.render();
+    } else if (viewName === 'cobertura') {
+        if (window.App.Coverage) window.App.Coverage.render();
+    } else if (viewName === 'mix') {
+        if (window.App.Mix) window.App.Mix.render();
+    } else if (viewName === 'inovacoes-mes') {
+        if (window.App.Innovations) window.App.Innovations.render();
+    } else if (viewName === 'goals') {
+        if (window.App.Goals) window.App.Goals.calculateGoalsMetrics();
+    } else if (viewName === 'history') {
+        if (window.renderHistoryView) window.renderHistoryView();
+    } else if (viewName === 'clientes') {
+        if (window.renderClientView) window.renderClientView();
+    } else if (viewName === 'produtos') {
+        if (window.renderProductView) window.renderProductView();
     }
 };
 
-window.renderProductView = function() {
-    window.App.Products.render();
-};
+// Alias for legacy HTML onclicks
+window.renderView = window.App.renderView;
