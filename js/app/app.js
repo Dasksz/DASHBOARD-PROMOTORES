@@ -8039,31 +8039,15 @@ const supervisorGroups = new Map();
 
             const isFat = currentProductMetric === 'faturamento';
 
-            // Calculate Stock Value if needed (Find Price)
-            let stockDisplay = '';
-            if (isFat) {
-                // Find Price
-                let price = 0;
-                if (productDetailsMap.has(item.code)) {
-                    const details = productDetailsMap.get(item.code);
-                    price = Number(details.preco || details.price || details.PRECO || details.PRICE || details.preco_venda || details.PRECO_VENDA || 0);
-                }
-                if (!price && embeddedData.products) {
-                    const p = embeddedData.products.find(x => String(x.code) === String(item.code));
-                    if(p) price = Number(p.preco || p.price || p.PRECO || p.PRICE || p.preco_venda || p.PRECO_VENDA || 0);
-                }
-
-                const stockVal = totalStock * price;
-                stockDisplay = stockVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            } else {
-                stockDisplay = totalStock.toLocaleString('pt-BR');
-            }
+            // Always display Stock as Quantity (Units/Boxes) to match Coverage view
+            // and avoid confusion with "R$ 0,00" if price is missing or zero.
+            let stockDisplay = totalStock.toLocaleString('pt-BR');
 
             if (stockEl) {
                 stockEl.textContent = stockDisplay;
-                // Update unit sibling if present
+                // Update unit sibling if present (Always show unit 'cx' or similar for stock)
                 if (stockEl.nextElementSibling) {
-                    stockEl.nextElementSibling.textContent = isFat ? '' : 'cx';
+                    stockEl.nextElementSibling.textContent = 'cx';
                 }
             }
 
