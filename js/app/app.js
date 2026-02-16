@@ -19637,7 +19637,8 @@ const supervisorGroups = new Map();
         }
 
         const themes = [];
-        if (am5themes_Animated) themes.push(am5themes_Animated.new(root));
+        // OPTIMIZATION: Disable Animated theme to improve FPS on low-end devices
+        // if (am5themes_Animated) themes.push(am5themes_Animated.new(root));
         if (am5themes_Dark) themes.push(am5themes_Dark.new(root));
         
         root.setThemes(themes);
@@ -19656,7 +19657,9 @@ const supervisorGroups = new Map();
                 manyBodyStrength: -20,
                 centerStrength: 0.8,
                 minRadius: 35,
-                maxRadius: am5.percent(18)
+                maxRadius: am5.percent(18),
+                velocityDecay: 0.6,
+                initialVelocity: 0.05
             })
         );
 

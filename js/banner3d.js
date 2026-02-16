@@ -84,8 +84,15 @@
     }
 
     function animate() {
+        const container = document.getElementById('banner-container');
         // Stop if container removed (view switch)
-        if (!document.getElementById('banner-container')) return;
+        if (!container) return;
+
+        // Optimization: Pause rendering if not visible (e.g. hidden by tabs)
+        if (container.offsetParent === null) {
+            setTimeout(animate, 500); // Slow poll until visible
+            return;
+        }
 
         animationId = requestAnimationFrame(animate);
 
