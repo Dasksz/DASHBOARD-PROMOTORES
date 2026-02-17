@@ -1848,6 +1848,7 @@
         const coverageSelectionCoverageCountKpi = document.getElementById('coverage-selection-coverage-count-kpi');
         const coverageTopCoverageValueKpi = document.getElementById('coverage-top-coverage-value-kpi');
         const coverageTopCoverageProductKpi = document.getElementById('coverage-top-coverage-product-kpi');
+        const coverageTopCoverageCountKpi = document.getElementById('coverage-top-coverage-count-kpi');
         const coverageTotalBoxesEl = document.getElementById('coverage-total-boxes');
 
         const coverageTableBody = document.getElementById('coverage-table-body');
@@ -7414,6 +7415,10 @@ const supervisorGroups = new Map();
                 coverageTopCoverageValueKpi.textContent = `${topCoverageItem.coverage.toFixed(2)}%`;
                 coverageTopCoverageProductKpi.textContent = topCoverageItem.name;
                 coverageTopCoverageProductKpi.title = topCoverageItem.name;
+                if (coverageTopCoverageCountKpi) {
+                    coverageTopCoverageCountKpi.textContent = `${topCoverageItem.clients.toLocaleString('pt-BR')} PDVs`;
+                    coverageTopCoverageCountKpi.classList.remove('hidden');
+                }
 
                 let selectionCoveredCountCurrent = 0;
                 clientSelectionValueCurrent.forEach(val => { if (val >= 1) selectionCoveredCountCurrent++; });
