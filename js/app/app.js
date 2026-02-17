@@ -15270,7 +15270,7 @@ const supervisorGroups = new Map();
                 }
 
                 if (type === 'pos' || type === 'mix') {
-                    // FIX: Do not mask missing data. If manual targets exist for seller, do not fall back to defaults.
+                    // Do not mask missing data: If manual targets exist for seller, explicit 0 is returned instead of falling back to calculated defaults.
                     if (targets) {
                         // Manual Override Exists for this Seller
                         if (targets[category] !== undefined) {
