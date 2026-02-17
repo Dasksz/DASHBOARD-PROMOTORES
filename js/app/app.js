@@ -10965,10 +10965,11 @@ const supervisorGroups = new Map();
             const currentSelectionKey = currentSelection.slice().sort().join(',');
 
             // Caching Strategy: Reuse maps if Tipo Venda selection hasn't changed
-            let mapsCurrent, mapsPrevious;
+            let mapsCurrent, mapsPrevious, mapsPrevious2;
             if (viewState.inovacoes.lastTypesKey === currentSelectionKey && viewState.inovacoes.cache) {
                 mapsCurrent = viewState.inovacoes.cache.mapsCurrent;
                 mapsPrevious = viewState.inovacoes.cache.mapsPrevious;
+                mapsPrevious2 = viewState.inovacoes.cache.mapsPrevious2;
             } else {
                 const mainTypes = currentSelection.filter(t => t !== '5' && t !== '11');
                 const bonusTypes = currentSelection.filter(t => t === '5' || t === '11');
@@ -10976,41 +10977,53 @@ const supervisorGroups = new Map();
                 // Optimized Map Building (2 passes instead of 4)
                 mapsCurrent = buildInnovationSalesMaps(allSalesData, mainTypes, bonusTypes);
 
-                // Filter History for Previous Month Only (Current Month - 1)
+                // Calculate Date Ranges for T-1 (Prev) and T-2 (Prev-Prev)
                 const currentYear = lastSaleDate.getUTCFullYear();
                 const currentMonth = lastSaleDate.getUTCMonth();
-                // Start of Prev Month
-                const prevMonthDate = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
-                const startTs = prevMonthDate.getTime();
-                // End of Prev Month (Start of Current Month)
-                const currentMonthStartDate = new Date(Date.UTC(currentYear, currentMonth, 1));
-                const endTs = currentMonthStartDate.getTime();
 
-                const previousMonthData = allHistoryData.filter(item => {
-                    const val = item.DTPED;
-                    let ts = 0;
-                    if (typeof val === 'number') {
-                        if (val < 100000) {
-                             ts = Math.round((val - 25569) * 86400 * 1000);
+                // T-1: Previous Month
+                const prevMonthStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+                const prevMonthEnd = new Date(Date.UTC(currentYear, currentMonth, 1));
+                const tsPrevStart = prevMonthStart.getTime();
+                const tsPrevEnd = prevMonthEnd.getTime();
+
+                // T-2: Previous Previous Month
+                const prev2MonthStart = new Date(Date.UTC(currentYear, currentMonth - 2, 1));
+                const prev2MonthEnd = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+                const tsPrev2Start = prev2MonthStart.getTime();
+                const tsPrev2End = prev2MonthEnd.getTime();
+
+                // Filter History Data
+                const filterHistory = (start, end) => {
+                    return allHistoryData.filter(item => {
+                        const val = item.DTPED;
+                        let ts = 0;
+                        if (typeof val === 'number') {
+                            if (val < 100000) {
+                                 ts = Math.round((val - 25569) * 86400 * 1000);
+                            } else {
+                                 ts = val;
+                            }
                         } else {
-                             ts = val;
+                            const d = parseDate(val);
+                            if(d) ts = d.getTime();
                         }
-                    } else {
-                        const d = parseDate(val);
-                        if(d) ts = d.getTime();
-                    }
-                    return ts >= startTs && ts < endTs;
-                });
+                        return ts >= start && ts < end;
+                    });
+                };
+
+                const previousMonthData = filterHistory(tsPrevStart, tsPrevEnd);
+                const previousMonthData2 = filterHistory(tsPrev2Start, tsPrev2End);
 
                 mapsPrevious = buildInnovationSalesMaps(previousMonthData, mainTypes, bonusTypes);
+                mapsPrevious2 = buildInnovationSalesMaps(previousMonthData2, mainTypes, bonusTypes);
 
                 viewState.inovacoes.lastTypesKey = currentSelectionKey;
-                viewState.inovacoes.cache = { mapsCurrent, mapsPrevious };
+                viewState.inovacoes.cache = { mapsCurrent, mapsPrevious, mapsPrevious2 };
             }
 
             // Structures to hold results
-            // categoryResults[catName] = { current: Set<CodCli>, previous: Set<CodCli>, bonusCurrent: Set<CodCli>, bonusPrevious: Set<CodCli> }
-            // productResults[prodCode] = { current: Set<CodCli> } -> For Top Item Logic
+            // categoryResults[catName] = { current: Set, previous: Set, previous2: Set, ... }
             const categoryResults = {};
             const productResults = {};
 
@@ -11018,62 +11031,55 @@ const supervisorGroups = new Map();
                 categoryResults[cat] = {
                     current: new Set(),
                     previous: new Set(),
+                    previous2: new Set(),
                     bonusCurrent: new Set(),
-                    bonusPrevious: new Set()
+                    bonusPrevious: new Set(),
+                    bonusPrevious2: new Set()
                 };
                 categories[cat].productCodes.forEach(p => {
-                    productResults[p] = { current: new Set(), previous: new Set() };
+                    productResults[p] = { current: new Set(), previous: new Set(), previous2: new Set() };
                 });
             }
 
             // Helper to process maps and populate sets
-            const processMap = (salesMap, isCurrent, isBonus) => {
+            const processMap = (salesMap, periodType, isBonus) => {
+                // periodType: 'current', 'previous', 'previous2'
                 salesMap.forEach((productsMap, codCli) => {
                     // Only count if client is in the filtered active list
                     if (!activeClientCodes.has(codCli)) return;
 
                     productsMap.forEach((rcas, prodCode) => {
                         const category = globalProductToCategoryMap ? globalProductToCategoryMap.get(prodCode) : null;
-                        if (!category) return; // Should not happen if innovation data is consistent
-
-
-                        const targetSetField = isCurrent ? 'current' : 'previous';
+                        if (!category) return;
 
                         // Add to Category Set (Normal or Bonus)
                         if (categoryResults[category]) {
-                            if (isBonus) {
-                                categoryResults[category][isCurrent ? 'bonusCurrent' : 'bonusPrevious'].add(codCli);
-                            } else {
-                                categoryResults[category][targetSetField].add(codCli);
-                            }
+                            const targetSet = isBonus
+                                ? (periodType === 'current' ? 'bonusCurrent' : (periodType === 'previous' ? 'bonusPrevious' : 'bonusPrevious2'))
+                                : periodType;
+
+                            categoryResults[category][targetSet].add(codCli);
                         }
 
                         // Add to Product Set (For Top Item Logic)
                         if (productResults[prodCode]) {
-                            productResults[prodCode][targetSetField].add(codCli);
+                            productResults[prodCode][periodType].add(codCli);
                         }
                     });
                 });
             };
 
-            // Process all 4 maps efficiently (Looping over Sales, not all Clients)
-            processMap(mapsCurrent.mainMap, true, false);
-            processMap(mapsCurrent.bonusMap, true, true);
-            processMap(mapsPrevious.mainMap, false, false);
-            processMap(mapsPrevious.bonusMap, false, true);
+            // Process all 6 maps efficiently
+            processMap(mapsCurrent.mainMap, 'current', false);
+            processMap(mapsCurrent.bonusMap, 'current', true);
+            processMap(mapsPrevious.mainMap, 'previous', false);
+            processMap(mapsPrevious.bonusMap, 'previous', true);
+            processMap(mapsPrevious2.mainMap, 'previous2', false);
+            processMap(mapsPrevious2.bonusMap, 'previous2', true);
 
             // Consolidate Results
             const categoryAnalysis = {};
             let topCoverageItem = { name: '-', coverage: 0, clients: 0 };
-
-            // Consolidate Product Results for Top Item
-            // We need to merge Main and Bonus for product coverage if needed,
-            // but `processMap` populated `productResults` separately for main/bonus?
-            // Wait, `processMap` handles Main and Bonus calls sequentially.
-            // `productResults[prodCode].current` is a Set.
-            // If we call processMap for Main, it adds clients.
-            // If we call processMap for Bonus, it adds clients to SAME Set.
-            // So `productResults` automatically handles the UNION of Main and Bonus coverage per product.
 
             if (selectedCategory && categories[selectedCategory]) {
                 categories[selectedCategory].products.forEach(product => {
@@ -11089,13 +11095,6 @@ const supervisorGroups = new Map();
             } else {
                 // Top Category Logic
                 for (const cat in categoryResults) {
-                    const set = categoryResults[cat].current; // Main coverage
-                    // Wait, original logic: "gotItCurrent" if sales OR bonus.
-                    // My categoryResults structure separates them. I need to union them for the metric?
-                    // Original logic:
-                    // clientsWhoGotAnyVisibleProductCurrent.add(codcli) if (Sales OR Bonus) of ANY product in category.
-
-                    // Let's create a Union Set for the category coverage metric
                     const unionSet = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
                     const count = unionSet.size;
                     const coverage = activeClientsCount > 0 ? (count / activeClientsCount) * 100 : 0;
@@ -11115,7 +11114,7 @@ const supervisorGroups = new Map();
             for (const cat in categoryResults) {
                 if (selectedCategory && cat !== selectedCategory) continue;
 
-                // Merge sets into global KPI sets
+                // Merge sets into global KPI sets (KPIs only track T vs T-1 for now, but we have T-2 data available)
                 categoryResults[cat].current.forEach(c => clientsWhoGotAnyVisibleProductCurrent.add(c));
                 categoryResults[cat].previous.forEach(c => clientsWhoGotAnyVisibleProductPrevious.add(c));
                 categoryResults[cat].bonusCurrent.forEach(c => clientsWhoGotBonusAnyVisibleProductCurrent.add(c));
@@ -11124,21 +11123,22 @@ const supervisorGroups = new Map();
                 // Prepare Analysis Object for Chart/Table
                 const currentUnion = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
                 const previousUnion = new Set([...categoryResults[cat].previous, ...categoryResults[cat].bonusPrevious]);
-
-                // NOTE: The chart/table in original code used "coverageCurrent" derived from
-                // (clientsCurrentCount / activeClientsCount).
-                // clientsCurrentCount was incremented if (Sales OR Bonus).
+                const previous2Union = new Set([...categoryResults[cat].previous2, ...categoryResults[cat].bonusPrevious2]);
 
                 const countCurr = currentUnion.size;
                 const countPrev = previousUnion.size;
+                const countPrev2 = previous2Union.size;
 
                 const covCurr = activeClientsCount > 0 ? (countCurr / activeClientsCount) * 100 : 0;
                 const covPrev = activeClientsCount > 0 ? (countPrev / activeClientsCount) * 100 : 0;
+                const covPrev2 = activeClientsCount > 0 ? (countPrev2 / activeClientsCount) * 100 : 0;
+
                 const varPct = covPrev > 0 ? ((covCurr - covPrev) / covPrev) * 100 : (covCurr > 0 ? Infinity : 0);
 
                 categoryAnalysis[cat] = {
                     coverageCurrent: covCurr,
                     coveragePrevious: covPrev,
+                    coveragePrevious2: covPrev2,
                     variation: varPct,
                     clientsCount: countCurr,
                     clientsPreviousCount: countPrev
@@ -11329,14 +11329,23 @@ const supervisorGroups = new Map();
                 innovationsMonthTableBody._hasToggleListener = true;
             }
 
-            // Chart Update (Bar Chart Replacement)
+            // Dynamic Labels
+            const monthNames = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+            const currentMonthIdx = lastSaleDate.getUTCMonth();
+            const labelT = monthNames[currentMonthIdx];
+            const labelT1 = monthNames[(currentMonthIdx - 1 + 12) % 12];
+            const labelT2 = monthNames[(currentMonthIdx - 2 + 12) % 12];
+
+            // Chart Update (Bar Chart Replacement - 3 Columns)
             const chartDataCurrent = chartLabels.map(cat => categoryAnalysis[cat].coverageCurrent);
             const chartDataPrevious = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious);
+            const chartDataPrevious2 = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious2);
 
             if (chartLabels.length > 0) {
                 createChart('innovations-month-chart', 'bar', chartLabels, [
-                    { label: 'Mês Anterior', data: chartDataPrevious, backgroundColor: '#f97316' },
-                    { label: 'Mês Atual', data: chartDataCurrent, backgroundColor: '#06b6d4' }
+                    { label: labelT2, data: chartDataPrevious2, backgroundColor: '#3b82f6' }, // Blue
+                    { label: labelT1, data: chartDataPrevious, backgroundColor: '#f97316' }, // Orange
+                    { label: labelT, data: chartDataCurrent, backgroundColor: '#06b6d4' }   // Cyan
                 ], {
                     plugins: {
                         legend: { display: true, position: 'top' },
