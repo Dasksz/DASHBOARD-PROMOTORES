@@ -276,9 +276,11 @@
         } else if (typeof dateString === 'number') {
             // Se for um número (formato Excel ou Timestamp)
             // Excel Serial Date (approx < 50000 for current dates, Timestamp is > 1000000000000)
-            if (dateString < 100000) return new Date(Math.round((dateString - 25569) * 86400 * 1000));
-            // Timestamp
-            return new Date(dateString);
+            // Heuristic: Values > 1,000,000 are treated as JS Timestamps (ms since 1970). Smaller values are Excel Serial Dates.
+            if (dateString > 1000000) {
+                return new Date(dateString);
+            }
+            return new Date(Math.round((dateString - 25569) * 86400 * 1000));
         } else {
             return null;
         }
