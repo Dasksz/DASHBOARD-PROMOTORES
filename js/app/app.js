@@ -11263,7 +11263,7 @@ const supervisorGroups = new Map();
                             <svg class="w-4 h-4 transform transition-transform text-slate-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                             <span class="uppercase tracking-wide">${catGroup.name}</span>
                         </td>
-                        <td class="px-2 py-3 text-xs text-slate-400 text-center italic hidden md:table-cell">${catGroup.items.length} Produtos</td>
+                        <td class="px-2 py-3 text-xs text-slate-400 text-left italic hidden md:table-cell">${catGroup.items.length} Produtos</td>
                         <td class="px-2 py-3 text-xs text-right font-mono font-bold text-blue-400 hidden md:table-cell">${catGroup.stock.toLocaleString('pt-BR')}</td>
                         <td class="px-2 py-3 text-xs text-right">
                             <div class="tooltip">${catGroup.metrics.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.clientsPreviousCount} PDVs</span></div>
@@ -11291,13 +11291,11 @@ const supervisorGroups = new Map();
                     
                     return `
                     <tr class="hidden bg-slate-900/50 hover:bg-slate-800/50 ${borderClass} border-l border-r border-slate-700" data-parent="${catId}">
-                        <td class="hidden md:table-cell border-r border-slate-700/30"></td> <!-- Desktop Spacer (Aligns with Categoria) -->
-                        <td class="px-2 py-2 text-[10px] md:text-xs pl-4 md:pl-4"> <!-- Aligns with Produto -->
-                             <div class="flex items-center">
-                                <div class="w-1.5 h-1.5 rounded-full bg-slate-600 mr-2 md:hidden flex-shrink-0"></div> <!-- Mobile bullet -->
-                                <div class="truncate max-w-[200px] md:max-w-none text-slate-300" title="${item.productName}">
-                                    <span class="font-mono text-slate-500 mr-1 text-[9px] md:text-[10px]">${item.productCode}</span> ${item.productName}
-                                </div>
+                        <td class="hidden md:table-cell"></td> <!-- Spacer for indentation on desktop -->
+                        <td class="px-2 py-2 text-[10px] md:text-xs flex items-center">
+                             <div class="w-1.5 h-1.5 rounded-full bg-slate-600 mr-2 md:hidden"></div> <!-- Mobile bullet -->
+                             <div class="truncate max-w-[200px] md:max-w-none text-slate-300" title="${item.productName}">
+                                <span class="font-mono text-slate-500 mr-1 text-[9px] md:text-[10px]">${item.productCode}</span> ${item.productName}
                              </div>
                         </td>
                         <td class="px-2 py-2 text-[10px] md:text-xs text-right font-mono text-slate-400 hidden md:table-cell">${item.stock.toLocaleString('pt-BR')}</td>
