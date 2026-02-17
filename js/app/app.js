@@ -11221,33 +11221,103 @@ const supervisorGroups = new Map();
             tableData.sort((a,b) => b.coverageCurrent - a.coverageCurrent);
             innovationsMonthTableDataForExport = tableData;
 
-            // Render Table
-            innovationsMonthTableBody.innerHTML = tableData.map(item => {
+            // --- Grouping Logic for Expandable Table ---
+            const groupedTableData = {};
+            tableData.forEach(item => {
+                const cat = item.categoryName;
+                if (!groupedTableData[cat]) {
+                    groupedTableData[cat] = {
+                        name: cat,
+                        stock: 0,
+                        items: [],
+                        metrics: categoryAnalysis[cat] || { coverageCurrent: 0, coveragePrevious: 0, variation: 0, clientsCount: 0, clientsPreviousCount: 0 }
+                    };
+                }
+                groupedTableData[cat].items.push(item);
+                groupedTableData[cat].stock += item.stock;
+            });
+
+            const sortedCategories = Object.values(groupedTableData).sort((a, b) => b.metrics.coverageCurrent - a.metrics.coverageCurrent);
+
+            // Render Table with Expandable Rows
+            innovationsMonthTableBody.innerHTML = sortedCategories.map((catGroup, index) => {
+                const catId = `cat-group-${index}`;
+
                 let variationContent;
-                if (isFinite(item.variation)) {
-                    const colorClass = item.variation >= 0 ? 'text-green-400' : 'text-red-400';
-                    variationContent = `<span class="${colorClass}">${item.variation.toFixed(1)}%</span>`;
-                } else if (item.coverageCurrent > 0) {
+                if (isFinite(catGroup.metrics.variation)) {
+                    const colorClass = catGroup.metrics.variation >= 0 ? 'text-green-400' : 'text-red-400';
+                    variationContent = `<span class="${colorClass}">${catGroup.metrics.variation.toFixed(1)}%</span>`;
+                } else if (catGroup.metrics.coverageCurrent > 0) {
                     variationContent = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/30 text-purple-300">Novo</span>`;
                 } else {
                     variationContent = `<span>-</span>`;
                 }
 
-                return `
-                    <tr class="hover:bg-slate-700/50">
-                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs hidden md:table-cell">${item.categoryName}</td>
-                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[120px] md:max-w-xs" title="${item.productName}">${item.productCode} - ${item.productName}</td>
-                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.stock.toLocaleString('pt-BR')}</td>
-                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">
-                            <div class="tooltip">${item.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${item.clientsPreviousCount} PDVs</span></div>
+                const catRow = `
+                    <tr class="bg-slate-800/80 hover:bg-slate-700 cursor-pointer transition-colors border-b border-slate-700/50" data-toggle="${catId}">
+                        <td class="px-2 py-3 text-xs font-bold text-white flex items-center gap-2">
+                            <svg class="w-4 h-4 transform transition-transform text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            ${catGroup.name}
                         </td>
-                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">
-                            <div class="tooltip">${item.coverageCurrent.toFixed(2)}%<span class="tooltip-text">${item.clientsCurrentCount} PDVs</span></div>
+                        <td class="px-2 py-3 text-xs text-slate-400 text-center italic hidden md:table-cell">${catGroup.items.length} Produtos</td>
+                        <td class="px-2 py-3 text-xs text-right font-mono font-bold text-blue-300 hidden md:table-cell">${catGroup.stock.toLocaleString('pt-BR')}</td>
+                        <td class="px-2 py-3 text-xs text-right">
+                            <div class="tooltip">${catGroup.metrics.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.clientsPreviousCount} PDVs</span></div>
                         </td>
-                        <td class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">${variationContent}</td>
+                        <td class="px-2 py-3 text-xs text-right">
+                            <div class="tooltip">${catGroup.metrics.coverageCurrent.toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.clientsCount} PDVs</span></div>
+                        </td>
+                        <td class="px-2 py-3 text-xs text-right font-bold">${variationContent}</td>
                     </tr>
                 `;
+
+                const productRows = catGroup.items.map(item => {
+                    let prodVarContent;
+                    if (isFinite(item.variation)) {
+                        const colorClass = item.variation >= 0 ? 'text-green-400' : 'text-red-400';
+                        prodVarContent = `<span class="${colorClass}">${item.variation.toFixed(1)}%</span>`;
+                    } else if (item.coverageCurrent > 0) {
+                        prodVarContent = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/30 text-purple-300">Novo</span>`;
+                    } else {
+                        prodVarContent = `<span>-</span>`;
+                    }
+
+                    return `
+                    <tr class="hidden bg-slate-900/30 hover:bg-slate-800/50 border-b border-slate-800/50" data-parent="${catId}">
+                        <td class="px-2 py-2 text-[10px] md:text-xs pl-8 border-l-2 border-slate-700 hidden md:table-cell"></td>
+                        <td class="px-2 py-2 text-[10px] md:text-xs text-slate-300 truncate max-w-[200px]" title="${item.productName}">
+                            <span class="font-mono text-slate-500 mr-1">${item.productCode}</span> ${item.productName}
+                        </td>
+                        <td class="px-2 py-2 text-[10px] md:text-xs text-right font-mono text-slate-400 hidden md:table-cell">${item.stock.toLocaleString('pt-BR')}</td>
+                        <td class="px-2 py-2 text-[10px] md:text-xs text-right text-slate-500">
+                            <div class="tooltip">${item.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${item.clientsPreviousCount} PDVs</span></div>
+                        </td>
+                        <td class="px-2 py-2 text-[10px] md:text-xs text-right text-slate-300">
+                            <div class="tooltip">${item.coverageCurrent.toFixed(2)}%<span class="tooltip-text">${item.clientsCurrentCount} PDVs</span></div>
+                        </td>
+                        <td class="px-2 py-2 text-[10px] md:text-xs text-right">${prodVarContent}</td>
+                    </tr>
+                    `;
+                }).join('');
+
+                return catRow + productRows;
             }).join('');
+
+            // Expand/Collapse Listener (Idempotent)
+            if (!innovationsMonthTableBody._hasToggleListener) {
+                innovationsMonthTableBody.addEventListener('click', (e) => {
+                    const toggleRow = e.target.closest('tr[data-toggle]');
+                    if (toggleRow) {
+                        const catId = toggleRow.getAttribute('data-toggle');
+                        const icon = toggleRow.querySelector('svg');
+                        const children = innovationsMonthTableBody.querySelectorAll(`tr[data-parent="${catId}"]`);
+
+                        if (icon) icon.classList.toggle('rotate-90');
+                        children.forEach(row => row.classList.toggle('hidden'));
+                    }
+                });
+                innovationsMonthTableBody._hasToggleListener = true;
+            }
 
             // Chart Update (Bar Chart Replacement)
             const chartDataCurrent = chartLabels.map(cat => categoryAnalysis[cat].coverageCurrent);
