@@ -2737,8 +2737,9 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape');
 
-            const supervisor = document.getElementById('mix-supervisor-filter-text').textContent;
-            const vendedor = document.getElementById('mix-vendedor-filter-text').textContent;
+            const coord = document.getElementById('mix-coord-filter-text')?.textContent || 'Todos';
+            const cocoord = document.getElementById('mix-cocoord-filter-text')?.textContent || 'Todos';
+            const promotor = document.getElementById('mix-promotor-filter-text')?.textContent || 'Todos';
             const city = document.getElementById('mix-city-filter').value.trim();
             const generationDate = new Date().toLocaleString('pt-BR');
 
@@ -2747,7 +2748,7 @@
             doc.setFontSize(10);
             doc.setTextColor(10);
             doc.text(`Data de Emissão: ${generationDate}`, 14, 30);
-            doc.text(`Filtros: Supervisor: ${supervisor} | Vendedor: ${vendedor} | Cidade: ${city || 'Todas'}`, 14, 36);
+            doc.text(`Filtros: Coordenador: ${coord} | Co-Coordenador: ${cocoord} | Promotor: ${promotor} | Cidade: ${city || 'Todas'}`, 14, 36);
 
             // Determine dynamic columns
             const saltyCols = MIX_SALTY_CATEGORIES.map(c => c.substring(0, 8)); // Truncate headers
@@ -11508,8 +11509,9 @@ const supervisorGroups = new Map();
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape');
 
-            const supervisor = document.getElementById('innovations-month-supervisor-filter-text').textContent;
-            const vendedor = document.getElementById('innovations-month-vendedor-filter-text').textContent;
+            const coord = document.getElementById('innovations-month-coord-filter-text')?.textContent || 'Todos';
+            const cocoord = document.getElementById('innovations-month-cocoord-filter-text')?.textContent || 'Todos';
+            const promotor = document.getElementById('innovations-month-promotor-filter-text')?.textContent || 'Todos';
             const filial = innovationsMonthFilialFilter.options[innovationsMonthFilialFilter.selectedIndex].text;
             const cidade = innovationsMonthCityFilter.value.trim();
             const categoria = innovationsMonthCategoryFilter.value || 'Todas';
@@ -11521,7 +11523,7 @@ const supervisorGroups = new Map();
             doc.setTextColor(10);
             doc.text(`Data de Emissão: ${generationDate}`, 14, 30);
 
-            let filterText = `Filtros Aplicados: Supervisor: ${supervisor} | Vendedor: ${vendedor} | Filial: ${filial} | Cidade: ${cidade || 'Todas'} | Categoria: ${categoria}`;
+            let filterText = `Filtros Aplicados: Coordenador: ${coord} | Co-Coordenador: ${cocoord} | Promotor: ${promotor} | Filial: ${filial} | Cidade: ${cidade || 'Todas'} | Categoria: ${categoria}`;
             const splitFilters = doc.splitTextToSize(filterText, 270);
             doc.text(splitFilters, 14, 36);
 
@@ -11678,8 +11680,9 @@ const supervisorGroups = new Map();
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape');
 
-            const supervisor = document.getElementById('coverage-supervisor-filter-text').textContent;
-            const vendedor = document.getElementById('coverage-vendedor-filter-text').textContent;
+            const coord = document.getElementById('coverage-coord-filter-text')?.textContent || 'Todos';
+            const cocoord = document.getElementById('coverage-cocoord-filter-text')?.textContent || 'Todos';
+            const promotor = document.getElementById('coverage-promotor-filter-text')?.textContent || 'Todos';
             const filial = coverageFilialFilter.options[coverageFilialFilter.selectedIndex].text;
             const cidade = coverageCityFilter.value.trim();
             const supplierText = document.getElementById('coverage-supplier-filter-text').textContent;
@@ -11691,7 +11694,7 @@ const supervisorGroups = new Map();
             doc.setTextColor(10);
             doc.text(`Data de Emissão: ${generationDate}`, 14, 30);
 
-            let filterText = `Filtros Aplicados: Supervisor: ${supervisor} | Vendedor: ${vendedor} | Filial: ${filial} | Cidade: ${cidade || 'Todas'} | Fornecedor: ${supplierText}`;
+            let filterText = `Filtros Aplicados: Coordenador: ${coord} | Co-Coordenador: ${cocoord} | Promotor: ${promotor} | Filial: ${filial} | Cidade: ${cidade || 'Todas'} | Fornecedor: ${supplierText}`;
             const splitFilters = doc.splitTextToSize(filterText, 270);
             doc.text(splitFilters, 14, 36);
 
@@ -11842,17 +11845,20 @@ const supervisorGroups = new Map();
         function exportClientsPDF(clientList, title, filename, includeFaturamento) {
              if (clientList.length === 0) return;
             const { jsPDF } = window.jspdf; const doc = new jsPDF();
-            const supervisor = document.getElementById('city-supervisor-filter-text').textContent;
-            const vendedor = document.getElementById('city-vendedor-filter-text').textContent;
+            const coord = document.getElementById('city-coord-filter-text')?.textContent || 'Todos';
+            const cocoord = document.getElementById('city-cocoord-filter-text')?.textContent || 'Todos';
+            const promotor = document.getElementById('city-promotor-filter-text')?.textContent || 'Todos';
             const city = cityNameFilter.value.trim();
             const generationDate = new Date().toLocaleString('pt-BR'); const today = new Date();
             const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toLocaleDateString('pt-BR');
             const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toLocaleDateString('pt-BR');
             doc.setFontSize(18); doc.text(title, 14, 22); doc.setFontSize(11); doc.setTextColor(10);
             doc.text(`Período de Análise: ${firstDay} a ${lastDay}`, 14, 32);
-            doc.text(`Supervisor: ${supervisor}`, 14, 38); doc.text(`Vendedor: ${vendedor}`, 14, 44);
-            doc.text(`Cidade: ${city || 'Todas'}`, 14, 50);
-            doc.text(`Data de Emissão: ${generationDate}`, 14, 56);
+            doc.text(`Coordenador: ${coord}`, 14, 38);
+            doc.text(`Co-Coordenador: ${cocoord}`, 14, 44);
+            doc.text(`Promotor: ${promotor}`, 14, 50);
+            doc.text(`Cidade: ${city || 'Todas'}`, 14, 56);
+            doc.text(`Data de Emissão: ${generationDate}`, 14, 62);
             const tableColumn = ["Código", "Cliente", "Bairro", "Cidade", "Últ. Compra"];
             if (includeFaturamento) tableColumn.splice(2, 0, "Faturamento");
 
