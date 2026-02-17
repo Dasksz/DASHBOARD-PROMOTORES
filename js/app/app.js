@@ -1373,7 +1373,7 @@
 
                 // Name Normalization
                 // mapKeysToUpper maps 'NOMECLIENTE' -> 'Cliente'. Local/Worker might produce 'nomeCliente'.
-                // Fix: Include razaoSocial and RAZAOSOCIAL in naming priority
+                // Verified: Include razaoSocial and RAZAOSOCIAL in naming priority
                 client.nomeCliente = client.nomeCliente || client.razaoSocial || client.RAZAOSOCIAL || client.Cliente || client.CLIENTE || client.NOMECLIENTE || 'N/A';
 
                 // RCA Handling
