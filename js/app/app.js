@@ -1808,7 +1808,7 @@
         const citySupplierFilterBtn = document.getElementById('city-supplier-filter-btn');
         const citySupplierFilterText = document.getElementById('city-supplier-filter-text');
         const citySupplierFilterDropdown = document.getElementById('city-supplier-filter-dropdown');
-        const cityNameFilter = document.getElementById('city-name-filter');
+        // cityNameFilter removed
         function getActiveClientsData() {
             try {
                 const res = allClientsData.filter(c => {
@@ -1825,12 +1825,12 @@
             }
         }
         const cityCodCliFilter = document.getElementById('city-codcli-filter');
-        const citySuggestions = document.getElementById('city-suggestions');
+        const cityCodCliFilterSuggestions = document.getElementById('city-codcli-filter-suggestions');
         const clearCityFiltersBtn = document.getElementById('clear-city-filters-btn');
         const totalFaturamentoCidadeEl = document.getElementById('total-faturamento-cidade');
         const totalClientesCidadeEl = document.getElementById('total-clientes-cidade');
-        const cityActiveDetailTableBody = document.getElementById('city-active-detail-table-body');
-        const cityInactiveDetailTableBody = document.getElementById('city-inactive-detail-table-body');
+        // cityActiveDetailTableBody removed
+        // cityInactiveDetailTableBody removed
 
         const cityRedeGroupContainer = document.getElementById('city-rede-group-container');
         const cityComRedeBtn = document.getElementById('city-com-rede-btn');
@@ -1853,8 +1853,8 @@
         const positivacaoSupplierFilterBtn = document.getElementById('positivacao-supplier-filter-btn');
         const positivacaoSupplierFilterText = document.getElementById('positivacao-supplier-filter-text');
         const positivacaoSupplierFilterDropdown = document.getElementById('positivacao-supplier-filter-dropdown');
-        const positivacaoNameFilter = document.getElementById('positivacao-name-filter');
-        const positivacaoSuggestions = document.getElementById('positivacao-suggestions');
+        const positivacaoCodCliFilter = document.getElementById('positivacao-codcli-filter');
+        const positivacaoCodCliFilterSuggestions = document.getElementById('positivacao-codcli-filter-suggestions');
         const clearPositivacaoFiltersBtn = document.getElementById('clear-positivacao-filters-btn');
 
         const comparisonSupervisorFilter = document.getElementById('comparison-supervisor-filter');
@@ -9006,8 +9006,7 @@ const supervisorGroups = new Map();
         function getCityFilteredData(options = {}) {
             const { excludeFilter = null } = options;
 
-            const cityInput = cityNameFilter.value.trim().toLowerCase();
-            const codCli = cityCodCliFilter.value.trim();
+            const clientFilter = cityCodCliFilter.value.trim().toLowerCase();
             const tiposVendaSet = new Set(selectedCityTiposVenda);
 
             // New Hierarchy Logic
@@ -9029,19 +9028,25 @@ const supervisorGroups = new Map();
                  // No filtering of clients list based on supplier for now.
             }
 
-            if (excludeFilter !== 'city' && cityInput) {
-                clients = clients.filter(c => (c.cidade || c.CIDADE) && (c.cidade || c.CIDADE).toLowerCase() === cityInput);
-            }
+            if (excludeFilter !== 'client' && clientFilter) {
+                 clients = clients.filter(c => {
+                    const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
+                    if (code.includes(clientFilter)) return true;
 
-            if (excludeFilter !== 'codcli' && codCli) {
-                 clients = clients.filter(c => String(c['Código']) === codCli);
+                    const name = (c.nomeCliente || '').toLowerCase();
+                    const city = (c.cidade || '').toLowerCase();
+                    const bairro = (c.bairro || '').toLowerCase();
+                    const cnpj = String(c['CNPJ/CPF'] || c.cnpj_cpf || '').replace(/\D/g, '');
+
+                    return name.includes(clientFilter) || city.includes(clientFilter) || bairro.includes(clientFilter) || cnpj.includes(clientFilter);
+                 });
             }
 
             // Normalize keys for robust filtering against normalized indices
             const clientCodes = new Set(clients.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
 
             const filters = {
-                city: cityInput,
+                city: null, // Relies on clientCodes
                 tipoVenda: tiposVendaSet,
                 clientCodes: clientCodes,
                 supplier: new Set(selectedCitySuppliers)
@@ -9127,14 +9132,6 @@ const supervisorGroups = new Map();
             }
         }
 
-        function validateCityFilter() {
-            const selectedCity = cityNameFilter.value;
-            if (!selectedCity) return;
-            const { clients } = getCityFilteredData({ excludeFilter: 'city' });
-            const availableCities = [...new Set(clients.map(c => c.cidade).filter(Boolean))];
-            if (!availableCities.includes(selectedCity)) cityNameFilter.value = '';
-        }
-
         function updateCityView() {
             cityRenderId++;
             const currentRenderId = cityRenderId;
@@ -9142,7 +9139,7 @@ const supervisorGroups = new Map();
             updateCityMap();
 
             let { clients: clientsForAnalysis, sales: salesForAnalysis } = getCityFilteredData();
-            const cidadeFiltro = cityNameFilter.value.trim();
+            const clientFilter = cityCodCliFilter.value.trim();
 
             const referenceDate = lastSaleDate;
             const currentMonth = referenceDate.getUTCMonth();
@@ -9197,8 +9194,6 @@ const supervisorGroups = new Map();
             });
 
             // Show Loading
-            cityActiveDetailTableBody.innerHTML = getSkeletonRows(6, 5);
-            cityInactiveDetailTableBody.innerHTML = getSkeletonRows(6, 5);
 
             const activeClientsList = [];
             const inactiveClientsList = [];
@@ -9258,24 +9253,6 @@ const supervisorGroups = new Map();
                 const sortedActiveClients = Object.values(salesByActiveClient).sort((a, b) => b.total - a.total);
                 activeClientsForExport = sortedActiveClients;
 
-                cityActiveDetailTableBody.innerHTML = sortedActiveClients.slice(0, 500).map(data => {
-                    const novoLabel = data.isNew ? `<span class="ml-2 text-xs font-semibold text-purple-400 bg-purple-900/50 px-2 py-0.5 rounded-full">NOVO</span>` : '';
-                    let tooltipParts = [];
-                    if (data.pepsico > 0) tooltipParts.push(`PEPSICO: ${data.pepsico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
-                    if (data.multimarcas > 0) tooltipParts.push(`MULTIMARCAS: ${data.multimarcas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
-                    if (data.outros > 0.001) tooltipParts.push(`OUTROS: ${data.outros.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
-                    const tooltipText = tooltipParts.length > 0 ? tooltipParts.join('<br>') : 'Sem detalhamento de categoria';
-                    const rcaVal = (data.rcas && data.rcas.length > 0) ? data.rcas[0] : '-';
-
-                    const fantasia = data.fantasia || data.FANTASIA || data.Fantasia || '';
-                    const razao = data.razaoSocial || data.Cliente || data.RAZAOSOCIAL || '';
-                    const nome = fantasia || razao || 'N/A';
-                    const cidade = data.cidade || data.CIDADE || data['Nome da Cidade'] || 'N/A';
-                    const bairro = data.bairro || data.BAIRRO || 'N/A';
-
-                    return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${data['Código']}">${data['Código']}</a></td><td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${nome}${novoLabel}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm"><div class="tooltip">${data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<span class="tooltip-text" style="width: max-content; transform: translateX(-50%); margin-left: 0;">${tooltipText}</span></div></td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${bairro}</td><td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(data.ultimaCompra)}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td></tr>`
-                }).join('');
-
                 inactiveClientsList.sort((a, b) => {
                     if (a.isReturn && !b.isReturn) return -1;
                     if (!a.isReturn && b.isReturn) return 1;
@@ -9284,20 +9261,6 @@ const supervisorGroups = new Map();
                     return (parseDate(b.ultimaCompra) || 0) - (parseDate(a.ultimaCompra) || 0);
                 });
 
-                cityInactiveDetailTableBody.innerHTML = inactiveClientsList.slice(0, 500).map(client => {
-                    const novoLabel = client.isNewForInactiveLabel ? `<span class="ml-2 text-[9px] md:text-xs font-semibold text-purple-400 bg-purple-900/50 px-1 py-0.5 rounded-full">NOVO</span>` : '';
-                    const devolucaoLabel = client.isReturn ? `<span class="ml-2 text-[9px] md:text-xs font-semibold text-red-400 bg-red-900/50 px-1 py-0.5 rounded-full">DEV</span>` : '';
-                    const rcaVal = (client.rcas && client.rcas.length > 0) ? client.rcas[0] : '-';
-
-                    const fantasia = client.fantasia || client.FANTASIA || client.Fantasia || '';
-                    const razao = client.razaoSocial || client.Cliente || client.RAZAOSOCIAL || '';
-                    const nome = fantasia || razao || 'N/A';
-                    const cidade = client.cidade || client.CIDADE || client['Nome da Cidade'] || 'N/A';
-                    const bairro = client.bairro || client.BAIRRO || 'N/A';
-                    const ultCompra = client.ultimaCompra || client['Data da Última Compra'] || client.ULTIMACOMPRA;
-
-                    return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${client['Código']}">${client['Código']}</a></td><td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${nome}${novoLabel}${devolucaoLabel}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${bairro}</td><td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(ultCompra)}</td><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td></tr>`
-                }).join('');
 
                 const cityChartTitleEl = document.getElementById('city-chart-title');
                 const cityChartOptions = { indexAxis: 'y', scales: { x: { grace: '15%' } }, plugins: { datalabels: { align: 'end', anchor: 'end', color: '#cbd5e1', font: { size: 14, weight: 'bold' }, formatter: (value) => (value / 1000).toFixed(1) + 'k', offset: 8 } } };
@@ -9308,35 +9271,20 @@ const supervisorGroups = new Map();
                     totalClientesCidadeEl.textContent = clientsForAnalysis.length.toLocaleString('pt-BR');
                 }
 
-                if (cidadeFiltro) {
-                    cityChartTitleEl.textContent = 'Top 10 Bairros';
-                    const salesByBairro = {};
-                    salesForAnalysis.forEach(sale => {
-                        let bairro = sale.BAIRRO;
-                        if (!bairro && sale.CODCLI) {
-                            const c = clientMapForKPIs.get(String(sale.CODCLI));
-                            if (c) bairro = c.bairro || c.BAIRRO || c['Bairro'];
-                        }
-                        bairro = bairro || 'N/A';
-                        salesByBairro[bairro] = (salesByBairro[bairro] || 0) + sale.VLVENDA;
-                    });
-                    const sortedBairros = Object.entries(salesByBairro).sort(([, a], [, b]) => b - a).slice(0, 10);
-                    createChart('salesByClientInCityChart', 'bar', sortedBairros.map(([name]) => name), sortedBairros.map(([, total]) => total), cityChartOptions);
-                } else {
-                    cityChartTitleEl.textContent = 'Top 10 Cidades';
-                    const salesByCity = {};
-                    salesForAnalysis.forEach(sale => {
-                        let cidade = sale.CIDADE;
-                        if (!cidade && sale.CODCLI) {
-                            const c = clientMapForKPIs.get(String(sale.CODCLI));
-                            if (c) cidade = c.cidade || c.CIDADE || c['Nome da Cidade'];
-                        }
-                        cidade = cidade || 'N/A';
-                        salesByCity[cidade] = (salesByCity[cidade] || 0) + sale.VLVENDA;
-                    });
-                    const sortedCidades = Object.entries(salesByCity).sort(([, a], [, b]) => b - a).slice(0, 10);
-                    createChart('salesByClientInCityChart', 'bar', sortedCidades.map(([name]) => name), sortedCidades.map(([, total]) => total), cityChartOptions);
-                }
+                // Always show Top 10 Cities logic (simplified)
+                cityChartTitleEl.textContent = 'Top 10 Cidades';
+                const salesByCity = {};
+                salesForAnalysis.forEach(sale => {
+                    let cidade = sale.CIDADE;
+                    if (!cidade && sale.CODCLI) {
+                        const c = clientMapForKPIs.get(String(sale.CODCLI));
+                        if (c) cidade = c.cidade || c.CIDADE || c['Nome da Cidade'];
+                    }
+                    cidade = cidade || 'N/A';
+                    salesByCity[cidade] = (salesByCity[cidade] || 0) + sale.VLVENDA;
+                });
+                const sortedCidades = Object.entries(salesByCity).sort(([, a], [, b]) => b - a).slice(0, 10);
+                createChart('salesByClientInCityChart', 'bar', sortedCidades.map(([name]) => name), sortedCidades.map(([, total]) => total), cityChartOptions);
             }, () => currentRenderId !== cityRenderId);
         }
 
@@ -12220,7 +12168,7 @@ const supervisorGroups = new Map();
 
             // This function now runs after the loader is visible
             const updateContent = () => {
-                [mainDashboard, cityView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view'), document.getElementById('clientes-view'), document.getElementById('produtos-view'), document.getElementById('consultas-view'), document.getElementById('history-view')].forEach(el => {
+                [mainDashboard, cityView, positivacaoView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view'), document.getElementById('clientes-view'), document.getElementById('produtos-view'), document.getElementById('consultas-view'), document.getElementById('history-view')].forEach(el => {
                     if(el) el.classList.add('hidden');
                 });
 
@@ -12345,6 +12293,17 @@ const supervisorGroups = new Map();
                         // Always trigger background sync if admin
                         syncGlobalCoordinates();
                         if (viewState.cidades.dirty || !viewState.cidades.rendered) {
+                            // Setup Typeahead
+                            if (cityCodCliFilter && !cityCodCliFilter._hasTypeahead) {
+                                setupClientTypeahead('city-codcli-filter', 'city-codcli-filter-suggestions', () => {
+                                    handleCityFilterChange();
+                                });
+                                cityCodCliFilter.addEventListener('input', (e) => {
+                                    if (!e.target.value) handleCityFilterChange();
+                                });
+                                cityCodCliFilter._hasTypeahead = true;
+                            }
+
                             updateAllCityFilters();
                             updateCityView();
                             viewState.cidades.rendered = true;
@@ -12355,6 +12314,8 @@ const supervisorGroups = new Map();
                         showViewElement(positivacaoView);
                         if (viewState.positivacao.dirty || !viewState.positivacao.rendered) {
                             renderPositivacaoView();
+                            updateAllPositivacaoFilters();
+                            updatePositivacaoView();
                             viewState.positivacao.rendered = true;
                             viewState.positivacao.dirty = false;
                         }
@@ -13340,30 +13301,8 @@ const supervisorGroups = new Map();
                 });
             }
 
-            const debouncedCitySearch = debounce(() => {
-                const { clients } = getCityFilteredData({ excludeFilter: 'city' });
-                updateCitySuggestions(cityNameFilter, citySuggestions, clients);
-            }, 300);
-
-            if (cityNameFilter) {
-                cityNameFilter.addEventListener('input', (e) => {
-                    e.target.value = e.target.value.replace(/[0-9]/g, '');
-                    debouncedCitySearch();
-                });
-                cityNameFilter.addEventListener('focus', () => {
-                    const { clients } = getCityFilteredData({ excludeFilter: 'city' });
-                    citySuggestions.classList.remove('manual-hide');
-                    updateCitySuggestions(cityNameFilter, citySuggestions, clients);
-                });
-                cityNameFilter.addEventListener('blur', () => setTimeout(() => citySuggestions.classList.add('hidden'), 150));
-                cityNameFilter.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        citySuggestions.classList.add('hidden', 'manual-hide');
-                        handleCityFilterChange();
-                        e.target.blur();
-                    }
-                });
-            }
+            // debouncedCitySearch removed
+            // cityNameFilter listeners removed
 
             document.addEventListener('click', (e) => {
                 if (supervisorFilterBtn && supervisorFilterDropdown && !supervisorFilterBtn.contains(e.target) && !supervisorFilterDropdown.contains(e.target)) supervisorFilterDropdown.classList.add('hidden');
@@ -13384,7 +13323,7 @@ const supervisorGroups = new Map();
 
                 if (e.target.closest('[data-pedido-id]')) { e.preventDefault(); openModal(e.target.closest('[data-pedido-id]').dataset.pedidoId); }
                 if (e.target.closest('[data-codcli]')) { e.preventDefault(); openClientModal(e.target.closest('[data-codcli]').dataset.codcli); }
-                if (e.target.closest('#city-suggestions > div')) { if(cityNameFilter) cityNameFilter.value = e.target.textContent; citySuggestions.classList.add('hidden'); updateCityView(); }
+                // Old city suggestions listener removed
                 if (e.target.closest('#comparison-city-suggestions > div')) { if(comparisonCityFilter) comparisonCityFilter.value = e.target.textContent; comparisonCitySuggestions.classList.add('hidden'); updateAllComparisonFilters(); updateComparisonView(); }
                 else if (comparisonCityFilter && !comparisonCityFilter.contains(e.target)) comparisonCitySuggestions.classList.add('hidden');
             });
@@ -20545,16 +20484,16 @@ const supervisorGroups = new Map();
                 positivacaoRedeFilterDropdown._hasListener = true;
             }
 
-            // City Input
-            if (positivacaoNameFilter && !positivacaoNameFilter._hasListener) {
-                let timeout = null;
-                positivacaoNameFilter.addEventListener('input', (e) => {
-                    if (timeout) clearTimeout(timeout);
-                    timeout = setTimeout(() => {
-                        handlePositivacaoFilterChange({ excludeFilter: 'city' });
-                    }, 400);
+            // Client Typeahead
+            setupClientTypeahead('positivacao-codcli-filter', 'positivacao-codcli-filter-suggestions', (code) => {
+                handlePositivacaoFilterChange({ excludeFilter: 'client' });
+            });
+            // Manual Input listener for clearing
+            if (positivacaoCodCliFilter && !positivacaoCodCliFilter._hasListener) {
+                positivacaoCodCliFilter.addEventListener('input', (e) => {
+                    if (!e.target.value) handlePositivacaoFilterChange({ excludeFilter: 'client' });
                 });
-                positivacaoNameFilter._hasListener = true;
+                positivacaoCodCliFilter._hasListener = true;
             }
 
             if (clearPositivacaoFiltersBtn && !clearPositivacaoFiltersBtn._hasListener) {
@@ -20573,18 +20512,17 @@ const supervisorGroups = new Map();
             // 1. Hierarchy Filter (Base)
             let clients = getHierarchyFilteredClients('positivacao', allClientsData);
 
-            // 2. Filter by Rede, City, etc.
+            // 2. Filter by Rede, Client, etc.
             const isComRede = positivacaoRedeGroupFilter === 'com_rede';
             const isSemRede = positivacaoRedeGroupFilter === 'sem_rede';
             const redeSet = (isComRede && selectedPositivacaoRedes.length > 0) ? new Set(selectedPositivacaoRedes) : null;
-            const cityFilter = positivacaoNameFilter.value.trim().toLowerCase();
+            const clientFilter = positivacaoCodCliFilter.value.trim().toLowerCase();
 
-            if (mixRedeGroupFilter || cityFilter) { // Reuse logic structure
-                 // Using loop for performance
+            if (positivacaoRedeGroupFilter || clientFilter) {
                  const temp = [];
                  const len = clients.length;
                  const checkRede = excludeFilter !== 'rede';
-                 const checkCity = excludeFilter !== 'city' && !!cityFilter;
+                 const checkClient = excludeFilter !== 'client' && !!clientFilter;
 
                  for(let i=0; i<len; i++) {
                      const c = clients[i];
@@ -20596,12 +20534,14 @@ const supervisorGroups = new Map();
                             if (c.ramo && c.ramo !== 'N/A') continue;
                         }
                      }
-                     if (checkCity) {
-                         // Check Name, City, Code
-                         const name = (c.nomeCliente || '').toLowerCase();
-                         const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
-                         const city = (c.cidade || '').toLowerCase();
-                         if (!name.includes(cityFilter) && !code.includes(cityFilter) && !city.includes(cityFilter)) continue;
+                     if (checkClient) {
+                        const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
+                        const name = (c.nomeCliente || '').toLowerCase();
+                        const city = (c.cidade || '').toLowerCase();
+                        const bairro = (c.bairro || '').toLowerCase();
+                        const cnpj = String(c['CNPJ/CPF'] || c.cnpj_cpf || '').replace(/\D/g, '');
+
+                        if (!code.includes(clientFilter) && !name.includes(clientFilter) && !city.includes(clientFilter) && !bairro.includes(clientFilter) && !cnpj.includes(clientFilter)) continue;
                      }
                      temp.push(c);
                  }
@@ -20609,8 +20549,6 @@ const supervisorGroups = new Map();
             }
 
             // Get matching sales
-            // Since we need sales for "Ativos" calculation, we filter sales by these clients.
-            // Using indices is faster.
             const clientCodes = new Set();
             for(let i=0; i<clients.length; i++) clientCodes.add(clients[i]['Código']);
 
@@ -20624,7 +20562,6 @@ const supervisorGroups = new Map();
 
         function updateAllPositivacaoFilters(options = {}) {
             const { skipFilter = null } = options;
-            // Rede
             if (skipFilter !== 'rede') {
                  const { clients } = getPositivacaoFilteredData({ excludeFilter: 'rede' });
                  if (positivacaoRedeGroupFilter === 'com_rede') {
@@ -20647,16 +20584,15 @@ const supervisorGroups = new Map();
             selectedPositivacaoPromotors = [];
             selectedPositivacaoRedes = [];
             positivacaoRedeGroupFilter = '';
-            positivacaoNameFilter.value = '';
+            positivacaoCodCliFilter.value = '';
 
-            // Reset UI
             if (positivacaoRedeGroupContainer) {
                 positivacaoRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
                 positivacaoRedeGroupContainer.querySelector('button[data-group=""]').classList.add('active');
             }
             if (positivacaoRedeFilterDropdown) positivacaoRedeFilterDropdown.classList.add('hidden');
 
-            setupHierarchyFilters('positivacao'); // Resets checkboxes
+            setupHierarchyFilters('positivacao');
             updateAllPositivacaoFilters();
             updatePositivacaoView();
         }
@@ -20665,15 +20601,13 @@ const supervisorGroups = new Map();
             positivacaoRenderId++;
             const currentRenderId = positivacaoRenderId;
 
-            // Show Loading
             if (positivacaoActiveDetailTableBody) positivacaoActiveDetailTableBody.innerHTML = getSkeletonRows(7, 5);
             if (positivacaoInactiveDetailTableBody) positivacaoInactiveDetailTableBody.innerHTML = getSkeletonRows(6, 5);
 
             const { clients, sales } = getPositivacaoFilteredData();
 
-            // Calculate Totals per Client
-            const clientTotals = new Map(); // Cod -> Total
-            const clientDetails = new Map(); // Cod -> { pepsico, multimarcas, etc }
+            const clientTotals = new Map();
+            const clientDetails = new Map();
 
             sales.forEach(s => {
                 const cod = s.CODCLI;
@@ -20682,10 +20616,7 @@ const supervisorGroups = new Map();
 
                 if (!clientDetails.has(cod)) clientDetails.set(cod, { pepsico: 0, multimarcas: 0 });
                 const d = clientDetails.get(cod);
-                // Categorize
-                // Using PASTA logic or explicit mapping
-                // Assuming logic from City View
-                const pasta = s.OBSERVACAOFOR || s.PASTA; // Should be normalized
+                const pasta = s.OBSERVACAOFOR || s.PASTA;
                 if (pasta === 'PEPSICO') d.pepsico += val;
                 else if (pasta === 'MULTIMARCAS') d.multimarcas += val;
             });
@@ -20697,14 +20628,11 @@ const supervisorGroups = new Map();
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const total = clientTotals.get(cod) || 0;
 
-                // New/Return Logic
-                // New if cadastrado this month/year?
-                // Logic copied from City:
                 const registrationDate = parseDate(c.dataCadastro);
                 const now = lastSaleDate;
                 const isNew = registrationDate && registrationDate.getUTCMonth() === now.getUTCMonth() && registrationDate.getUTCFullYear() === now.getUTCFullYear();
 
-                if (total >= 1) { // Threshold
+                if (total >= 1) {
                     const det = clientDetails.get(cod) || { pepsico: 0, multimarcas: 0 };
                     activeList.push({
                         ...c,
@@ -20715,14 +20643,13 @@ const supervisorGroups = new Map();
                         isNew
                     });
                 } else {
-                    c.isReturn = (total < 0); // Not really return if < 0? City view logic says so.
+                    c.isReturn = (total < 0);
                     c.isNewForInactiveLabel = isNew && !parseDate(c.ultimaCompra);
                     inactiveList.push(c);
                 }
             }, () => {
                 if (currentRenderId !== positivacaoRenderId) return;
 
-                // Render Active
                 activeList.sort((a, b) => b.total - a.total);
                 if (positivacaoActiveDetailTableBody) {
                     positivacaoActiveDetailTableBody.innerHTML = activeList.slice(0, 500).map(data => {
@@ -20754,7 +20681,6 @@ const supervisorGroups = new Map();
                     }).join('');
                 }
 
-                // Render Inactive
                 inactiveList.sort((a, b) => (parseDate(b.ultimaCompra) || 0) - (parseDate(a.ultimaCompra) || 0));
                 if (positivacaoInactiveDetailTableBody) {
                     positivacaoInactiveDetailTableBody.innerHTML = inactiveList.slice(0, 500).map(client => {

@@ -718,11 +718,16 @@
                             <div id="positivacao-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                         </div>
 
-                        <!-- Cidade Input -->
-                        <div class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
-                            <input type="text" id="positivacao-name-filter" placeholder="Buscar..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-full p-2.5">
-                            <div id="positivacao-suggestions" class="absolute z-30 w-full bg-slate-800 border border-slate-700 rounded-lg mt-1 hidden max-h-48 overflow-y-auto custom-scrollbar text-white shadow-xl"></div>
+                        <!-- Cliente Input -->
+                        <div id="positivacao-codcli-filter-wrapper" class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
+                            <div class="relative">
+                                <div id="positivacao-codcli-search-icon" class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
+                                    <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </div>
+                                <input type="text" id="positivacao-codcli-filter" placeholder="Código, Nome, CNPJ..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-full pl-10 p-2.5 transition-all" autocomplete="off">
+                                <div id="positivacao-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
+                            </div>
                         </div>
 
                         <!-- Clear -->
@@ -734,7 +739,6 @@
                      <div class="hidden">
                         <button id="positivacao-supplier-filter-btn"></button><div id="positivacao-supplier-filter-dropdown"></div>
                         <button id="positivacao-tipo-venda-filter-btn"></button><div id="positivacao-tipo-venda-filter-dropdown"></div>
-                        <input id="positivacao-codcli-filter">
                      </div>
                 </div>
                 </div>
@@ -829,11 +833,16 @@
                             <div id="city-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                         </div>
 
-                        <!-- Cidade Input -->
-                        <div class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
-                            <input type="text" id="city-name-filter" placeholder="Buscar..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-full p-2.5">
-                            <div id="city-suggestions" class="absolute z-30 w-full bg-slate-800 border border-slate-700 rounded-lg mt-1 hidden max-h-48 overflow-y-auto custom-scrollbar text-white shadow-xl"></div>
+                        <!-- Cliente Input -->
+                        <div id="city-codcli-filter-wrapper" class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
+                            <div class="relative">
+                                <div id="city-codcli-search-icon" class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
+                                    <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </div>
+                                <input type="text" id="city-codcli-filter" placeholder="Código, Nome, CNPJ..." class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block w-full pl-10 p-2.5 transition-all" autocomplete="off">
+                                <div id="city-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
+                            </div>
                         </div>
 
                         <!-- Clear -->
@@ -845,7 +854,6 @@
                      <div class="hidden">
                         <button id="city-supplier-filter-btn"></button><div id="city-supplier-filter-dropdown"></div>
                         <button id="city-tipo-venda-filter-btn"></button><div id="city-tipo-venda-filter-dropdown"></div>
-                        <input id="city-codcli-filter">
                      </div>
                 </div>
                 </div>
@@ -881,27 +889,6 @@
                     </div>
                 </div>
 
-                <!-- Tables Container -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-                    <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
-                        <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
-                            <h3 class="font-bold text-white">Clientes Ativos</h3>
-
-                        </div>
-                        <div class="overflow-x-auto custom-scrollbar max-h-96">
-                            <table class="min-w-full text-sm text-left text-slate-300"><tbody id="city-active-detail-table-body" class="divide-y divide-slate-800"></tbody></table>
-                        </div>
-                    </div>
-                    <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
-                        <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
-                            <h3 class="font-bold text-white">Sem Compra (Mês)</h3>
-
-                        </div>
-                        <div class="overflow-x-auto custom-scrollbar max-h-96">
-                            <table class="min-w-full text-sm text-left text-slate-300"><tbody id="city-inactive-detail-table-body" class="divide-y divide-slate-800"></tbody></table>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
