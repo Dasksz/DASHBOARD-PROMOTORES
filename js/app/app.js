@@ -1757,6 +1757,7 @@
 
         const mainDashboard = document.getElementById('main-dashboard');
         const cityView = document.getElementById('city-view');
+        const positivacaoView = document.getElementById('positivacao-view');
         const comparisonView = document.getElementById('comparison-view');
         const stockView = document.getElementById('stock-view');
 
@@ -1839,6 +1840,22 @@
         const cityTipoVendaFilterBtn = document.getElementById('city-tipo-venda-filter-btn');
         const cityTipoVendaFilterText = document.getElementById('city-tipo-venda-filter-text');
         const cityTipoVendaFilterDropdown = document.getElementById('city-tipo-venda-filter-dropdown');
+
+        const positivacaoActiveDetailTableBody = document.getElementById('positivacao-active-detail-table-body');
+        const positivacaoInactiveDetailTableBody = document.getElementById('positivacao-inactive-detail-table-body');
+        const positivacaoRedeGroupContainer = document.getElementById('positivacao-rede-group-container');
+        const positivacaoComRedeBtn = document.getElementById('positivacao-com-rede-btn');
+        const positivacaoComRedeBtnText = document.getElementById('positivacao-com-rede-btn-text');
+        const positivacaoRedeFilterDropdown = document.getElementById('positivacao-rede-filter-dropdown');
+        const positivacaoTipoVendaFilterBtn = document.getElementById('positivacao-tipo-venda-filter-btn');
+        const positivacaoTipoVendaFilterText = document.getElementById('positivacao-tipo-venda-filter-text');
+        const positivacaoTipoVendaFilterDropdown = document.getElementById('positivacao-tipo-venda-filter-dropdown');
+        const positivacaoSupplierFilterBtn = document.getElementById('positivacao-supplier-filter-btn');
+        const positivacaoSupplierFilterText = document.getElementById('positivacao-supplier-filter-text');
+        const positivacaoSupplierFilterDropdown = document.getElementById('positivacao-supplier-filter-dropdown');
+        const positivacaoNameFilter = document.getElementById('positivacao-name-filter');
+        const positivacaoSuggestions = document.getElementById('positivacao-suggestions');
+        const clearPositivacaoFiltersBtn = document.getElementById('clear-positivacao-filters-btn');
 
         const comparisonSupervisorFilter = document.getElementById('comparison-supervisor-filter');
         const comparisonVendedorFilterText = document.getElementById('comparison-vendedor-filter-text');
@@ -1953,6 +1970,7 @@
         // --- FAB Management ---
         const viewFabMap = {
             'cidades': 'city-fab-container',
+            'positivacao': 'city-fab-container', // Reuse City FAB
             'inovacoes-mes': 'innovations-fab-container',
             'mix': 'mix-fab-container',
             'meta-realizado': 'meta-realizado-fab-container',
@@ -2011,13 +2029,15 @@
             produtos: { dirty: true, rendered: false },
             consultas: { dirty: true, rendered: false },
             history: { dirty: true, rendered: false },
-            wallet: { dirty: true, rendered: false }
+            wallet: { dirty: true, rendered: false },
+            positivacao: { dirty: true, rendered: false }
         };
 
         // Render IDs for Race Condition Guard
         let mixRenderId = 0;
         let coverageRenderId = 0;
         let cityRenderId = 0;
+        let positivacaoRenderId = 0;
         let comparisonRenderId = 0;
         let goalsRenderId = 0;
         let goalsSvRenderId = 0;
@@ -2039,6 +2059,9 @@
         let selectedCityCoords = [];
         let selectedCityCoCoords = [];
         let selectedCityPromotors = [];
+        let selectedPositivacaoCoords = [];
+        let selectedPositivacaoCoCoords = [];
+        let selectedPositivacaoPromotors = [];
         let selectedComparisonCoords = [];
         let selectedComparisonCoCoords = [];
         let selectedComparisonPromotors = [];
@@ -2067,20 +2090,24 @@
         let selectedMainSuppliers = [];
         let selectedTiposVenda = [];
         var selectedCitySuppliers = [];
+        let selectedPositivacaoSuppliers = [];
         let selectedComparisonSuppliers = [];
         let selectedComparisonProducts = [];
         let selectedCoverageTiposVenda = [];
         let selectedComparisonTiposVenda = [];
         let selectedCityTiposVenda = [];
+        let selectedPositivacaoTiposVenda = [];
         let historicalBests = {};
         let selectedHolidays = [];
 
         let selectedMainRedes = [];
         let selectedCityRedes = [];
+        let selectedPositivacaoRedes = [];
         let selectedComparisonRedes = [];
 
         let mainRedeGroupFilter = '';
         let cityRedeGroupFilter = '';
+        let positivacaoRedeGroupFilter = '';
         let comparisonRedeGroupFilter = '';
 
         let selectedInnovationsMonthTiposVenda = [];
@@ -12324,6 +12351,14 @@ const supervisorGroups = new Map();
                             viewState.cidades.dirty = false;
                         }
                         break;
+                    case 'positivacao':
+                        showViewElement(positivacaoView);
+                        if (viewState.positivacao.dirty || !viewState.positivacao.rendered) {
+                            renderPositivacaoView();
+                            viewState.positivacao.rendered = true;
+                            viewState.positivacao.dirty = false;
+                        }
+                        break;
                     case 'inovacoes-mes':
                         showViewElement(innovationsMonthView);
                         if (viewState.inovacoes.dirty || !viewState.inovacoes.rendered) {
@@ -20480,4 +20515,266 @@ const supervisorGroups = new Map();
         }
     }
 
+        function renderPositivacaoView() {
+            setupHierarchyFilters('positivacao', () => handlePositivacaoFilterChange({ excludeFilter: 'hierarchy' }));
+
+            // Setup other filters listeners
+            if (positivacaoComRedeBtn && !positivacaoComRedeBtn._hasListener) {
+                positivacaoRedeGroupContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('button');
+                    if (!btn) return;
+
+                    const group = btn.dataset.group;
+                    positivacaoRedeGroupFilter = group;
+
+                    positivacaoRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    if (group === 'com_rede') {
+                        positivacaoRedeFilterDropdown.classList.remove('hidden');
+                    } else {
+                        positivacaoRedeFilterDropdown.classList.add('hidden');
+                    }
+                    handlePositivacaoFilterChange({ excludeFilter: 'rede' });
+                });
+                positivacaoComRedeBtn._hasListener = true;
+            }
+
+            if (positivacaoRedeFilterDropdown && !positivacaoRedeFilterDropdown._hasListener) {
+                positivacaoRedeFilterDropdown.addEventListener('change', () => handlePositivacaoFilterChange({ excludeFilter: 'rede' }));
+                positivacaoRedeFilterDropdown._hasListener = true;
+            }
+
+            // City Input
+            if (positivacaoNameFilter && !positivacaoNameFilter._hasListener) {
+                let timeout = null;
+                positivacaoNameFilter.addEventListener('input', (e) => {
+                    if (timeout) clearTimeout(timeout);
+                    timeout = setTimeout(() => {
+                        handlePositivacaoFilterChange({ excludeFilter: 'city' });
+                    }, 400);
+                });
+                positivacaoNameFilter._hasListener = true;
+            }
+
+            if (clearPositivacaoFiltersBtn && !clearPositivacaoFiltersBtn._hasListener) {
+                clearPositivacaoFiltersBtn.addEventListener('click', resetPositivacaoFilters);
+                clearPositivacaoFiltersBtn._hasListener = true;
+            }
+
+            // Initial Update
+            updateAllPositivacaoFilters();
+            updatePositivacaoView();
+        }
+
+        function getPositivacaoFilteredData(options = {}) {
+            const { excludeFilter = null } = options;
+
+            // 1. Hierarchy Filter (Base)
+            let clients = getHierarchyFilteredClients('positivacao', allClientsData);
+
+            // 2. Filter by Rede, City, etc.
+            const isComRede = positivacaoRedeGroupFilter === 'com_rede';
+            const isSemRede = positivacaoRedeGroupFilter === 'sem_rede';
+            const redeSet = (isComRede && selectedPositivacaoRedes.length > 0) ? new Set(selectedPositivacaoRedes) : null;
+            const cityFilter = positivacaoNameFilter.value.trim().toLowerCase();
+
+            if (mixRedeGroupFilter || cityFilter) { // Reuse logic structure
+                 // Using loop for performance
+                 const temp = [];
+                 const len = clients.length;
+                 const checkRede = excludeFilter !== 'rede';
+                 const checkCity = excludeFilter !== 'city' && !!cityFilter;
+
+                 for(let i=0; i<len; i++) {
+                     const c = clients[i];
+                     if (checkRede) {
+                        if (isComRede) {
+                            if (!c.ramo || c.ramo === 'N/A') continue;
+                            if (redeSet && !redeSet.has(c.ramo)) continue;
+                        } else if (isSemRede) {
+                            if (c.ramo && c.ramo !== 'N/A') continue;
+                        }
+                     }
+                     if (checkCity) {
+                         // Check Name, City, Code
+                         const name = (c.nomeCliente || '').toLowerCase();
+                         const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
+                         const city = (c.cidade || '').toLowerCase();
+                         if (!name.includes(cityFilter) && !code.includes(cityFilter) && !city.includes(cityFilter)) continue;
+                     }
+                     temp.push(c);
+                 }
+                 clients = temp;
+            }
+
+            // Get matching sales
+            // Since we need sales for "Ativos" calculation, we filter sales by these clients.
+            // Using indices is faster.
+            const clientCodes = new Set();
+            for(let i=0; i<clients.length; i++) clientCodes.add(clients[i]['Código']);
+
+            const filters = {
+                clientCodes: clientCodes
+            };
+            const sales = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters);
+
+            return { clients, sales };
+        }
+
+        function updateAllPositivacaoFilters(options = {}) {
+            const { skipFilter = null } = options;
+            // Rede
+            if (skipFilter !== 'rede') {
+                 const { clients } = getPositivacaoFilteredData({ excludeFilter: 'rede' });
+                 if (positivacaoRedeGroupFilter === 'com_rede') {
+                     selectedPositivacaoRedes = updateRedeFilter(positivacaoRedeFilterDropdown, positivacaoComRedeBtnText, selectedPositivacaoRedes, clients);
+                 }
+            }
+        }
+
+        function handlePositivacaoFilterChange(options = {}) {
+            if (window.positivacaoUpdateTimeout) clearTimeout(window.positivacaoUpdateTimeout);
+            window.positivacaoUpdateTimeout = setTimeout(() => {
+                updateAllPositivacaoFilters(options);
+                updatePositivacaoView();
+            }, 10);
+        }
+
+        function resetPositivacaoFilters() {
+            selectedPositivacaoCoords = [];
+            selectedPositivacaoCoCoords = [];
+            selectedPositivacaoPromotors = [];
+            selectedPositivacaoRedes = [];
+            positivacaoRedeGroupFilter = '';
+            positivacaoNameFilter.value = '';
+
+            // Reset UI
+            if (positivacaoRedeGroupContainer) {
+                positivacaoRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                positivacaoRedeGroupContainer.querySelector('button[data-group=""]').classList.add('active');
+            }
+            if (positivacaoRedeFilterDropdown) positivacaoRedeFilterDropdown.classList.add('hidden');
+
+            setupHierarchyFilters('positivacao'); // Resets checkboxes
+            updateAllPositivacaoFilters();
+            updatePositivacaoView();
+        }
+
+        function updatePositivacaoView() {
+            positivacaoRenderId++;
+            const currentRenderId = positivacaoRenderId;
+
+            // Show Loading
+            if (positivacaoActiveDetailTableBody) positivacaoActiveDetailTableBody.innerHTML = getSkeletonRows(7, 5);
+            if (positivacaoInactiveDetailTableBody) positivacaoInactiveDetailTableBody.innerHTML = getSkeletonRows(6, 5);
+
+            const { clients, sales } = getPositivacaoFilteredData();
+
+            // Calculate Totals per Client
+            const clientTotals = new Map(); // Cod -> Total
+            const clientDetails = new Map(); // Cod -> { pepsico, multimarcas, etc }
+
+            sales.forEach(s => {
+                const cod = s.CODCLI;
+                const val = Number(s.VLVENDA) || 0;
+                clientTotals.set(cod, (clientTotals.get(cod) || 0) + val);
+
+                if (!clientDetails.has(cod)) clientDetails.set(cod, { pepsico: 0, multimarcas: 0 });
+                const d = clientDetails.get(cod);
+                // Categorize
+                // Using PASTA logic or explicit mapping
+                // Assuming logic from City View
+                const pasta = s.OBSERVACAOFOR || s.PASTA; // Should be normalized
+                if (pasta === 'PEPSICO') d.pepsico += val;
+                else if (pasta === 'MULTIMARCAS') d.multimarcas += val;
+            });
+
+            const activeList = [];
+            const inactiveList = [];
+
+            runAsyncChunked(clients, (c) => {
+                const cod = String(c['Código'] || c['codigo_cliente']);
+                const total = clientTotals.get(cod) || 0;
+
+                // New/Return Logic
+                // New if cadastrado this month/year?
+                // Logic copied from City:
+                const registrationDate = parseDate(c.dataCadastro);
+                const now = lastSaleDate;
+                const isNew = registrationDate && registrationDate.getUTCMonth() === now.getUTCMonth() && registrationDate.getUTCFullYear() === now.getUTCFullYear();
+
+                if (total >= 1) { // Threshold
+                    const det = clientDetails.get(cod) || { pepsico: 0, multimarcas: 0 };
+                    activeList.push({
+                        ...c,
+                        total,
+                        pepsico: det.pepsico,
+                        multimarcas: det.multimarcas,
+                        outros: total - det.pepsico - det.multimarcas,
+                        isNew
+                    });
+                } else {
+                    c.isReturn = (total < 0); // Not really return if < 0? City view logic says so.
+                    c.isNewForInactiveLabel = isNew && !parseDate(c.ultimaCompra);
+                    inactiveList.push(c);
+                }
+            }, () => {
+                if (currentRenderId !== positivacaoRenderId) return;
+
+                // Render Active
+                activeList.sort((a, b) => b.total - a.total);
+                if (positivacaoActiveDetailTableBody) {
+                    positivacaoActiveDetailTableBody.innerHTML = activeList.slice(0, 500).map(data => {
+                        const novoLabel = data.isNew ? `<span class="ml-2 text-xs font-semibold text-purple-400 bg-purple-900/50 px-2 py-0.5 rounded-full">NOVO</span>` : '';
+                        let tooltipParts = [];
+                        if (data.pepsico > 0) tooltipParts.push(`PEPSICO: ${data.pepsico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+                        if (data.multimarcas > 0) tooltipParts.push(`MULTIMARCAS: ${data.multimarcas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+                        if (data.outros > 0.001) tooltipParts.push(`OUTROS: ${data.outros.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+                        const tooltipText = tooltipParts.length > 0 ? tooltipParts.join('<br>') : 'Sem detalhamento';
+
+                        const rcaVal = (data.rcas && data.rcas.length > 0) ? data.rcas[0] : '-';
+                        const nome = data.fantasia || data.nomeCliente || 'N/A';
+                        const cidade = data.cidade || 'N/A';
+                        const bairro = data.bairro || 'N/A';
+
+                        return `<tr class="hover:bg-slate-700">
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${data['Código']}">${data['Código']}</a></td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${nome}${novoLabel}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">
+                                <div class="tooltip">${data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    <span class="tooltip-text" style="width: max-content; transform: translateX(-50%); margin-left: 0;">${tooltipText}</span>
+                                </div>
+                            </td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${bairro}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(data.ultimaCompra)}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td>
+                        </tr>`;
+                    }).join('');
+                }
+
+                // Render Inactive
+                inactiveList.sort((a, b) => (parseDate(b.ultimaCompra) || 0) - (parseDate(a.ultimaCompra) || 0));
+                if (positivacaoInactiveDetailTableBody) {
+                    positivacaoInactiveDetailTableBody.innerHTML = inactiveList.slice(0, 500).map(client => {
+                        const novoLabel = client.isNewForInactiveLabel ? `<span class="ml-2 text-[9px] md:text-xs font-semibold text-purple-400 bg-purple-900/50 px-1 py-0.5 rounded-full">NOVO</span>` : '';
+                        const rcaVal = (client.rcas && client.rcas.length > 0) ? client.rcas[0] : '-';
+                        const nome = client.fantasia || client.nomeCliente || 'N/A';
+                        const cidade = client.cidade || 'N/A';
+                        const bairro = client.bairro || 'N/A';
+                        const ultCompra = client.ultimaCompra || client['Data da Última Compra'];
+
+                        return `<tr class="hover:bg-slate-700">
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${client['Código']}">${client['Código']}</a></td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${nome}${novoLabel}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${bairro}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(ultCompra)}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td>
+                        </tr>`;
+                    }).join('');
+                }
+            });
+        }
 })();
