@@ -7192,7 +7192,8 @@ const supervisorGroups = new Map();
 
             const activeClientsForCoverage = clients;
             const activeClientsCount = activeClientsForCoverage.length;
-            const activeClientCodes = new Set(activeClientsForCoverage.map(c => c['Código']));
+            // Normalize keys for robust Set matching
+            const activeClientCodes = new Set(activeClientsForCoverage.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
 
             coverageActiveClientsKpi.textContent = activeClientsCount.toLocaleString('pt-BR');
 
@@ -7248,7 +7249,9 @@ const supervisorGroups = new Map();
                 // Coverage Map (Inverted for Performance)
                 if (!productClientsCurrent.has(s.PRODUTO)) productClientsCurrent.set(s.PRODUTO, new Map());
                 const clientMap = productClientsCurrent.get(s.PRODUTO);
-                clientMap.set(s.CODCLI, (clientMap.get(s.CODCLI) || 0) + val);
+                // Use normalized key for consistency
+                const buyerKey = normalizeKey(s.CODCLI);
+                clientMap.set(buyerKey, (clientMap.get(buyerKey) || 0) + val);
 
                 // Box Quantity Map
                 boxesSoldCurrentMap.set(s.PRODUTO, (boxesSoldCurrentMap.get(s.PRODUTO) || 0) + s.QTVENDA_EMBALAGEM_MASTER);
@@ -7271,7 +7274,9 @@ const supervisorGroups = new Map();
                     // Coverage Map (Inverted for Performance)
                     if (!productClientsPrevious.has(s.PRODUTO)) productClientsPrevious.set(s.PRODUTO, new Map());
                     const clientMap = productClientsPrevious.get(s.PRODUTO);
-                    clientMap.set(s.CODCLI, (clientMap.get(s.CODCLI) || 0) + val);
+                    // Use normalized key for consistency
+                    const buyerKey = normalizeKey(s.CODCLI);
+                    clientMap.set(buyerKey, (clientMap.get(buyerKey) || 0) + val);
 
                     // Box Quantity Map (only if prev month)
                     boxesSoldPreviousMap.set(s.PRODUTO, (boxesSoldPreviousMap.get(s.PRODUTO) || 0) + s.QTVENDA_EMBALAGEM_MASTER);
@@ -8901,7 +8906,8 @@ const supervisorGroups = new Map();
                  clients = clients.filter(c => String(c['Código']) === codCli);
             }
 
-            const clientCodes = new Set(clients.map(c => c['Código']));
+            // Normalize keys for robust filtering against normalized indices
+            const clientCodes = new Set(clients.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
 
             const filters = {
                 city: cityInput,
