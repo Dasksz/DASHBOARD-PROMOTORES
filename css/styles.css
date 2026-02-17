@@ -222,6 +222,11 @@
         box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
     }
 
+    .kpi-glow-orange {
+        background-image: linear-gradient(var(--card-bg, #1d2347), var(--card-bg, #1d2347)), linear-gradient(135deg, #f97316, #ea580c); /* Orange-500 to Orange-600 */
+        box-shadow: 0 0 15px rgba(249, 115, 22, 0.4);
+    }
+
     /* Loading Spinner */
     .spinner-orange { border: 3px solid rgba(255, 255, 255, 0.1); border-top: 3px solid #dc2626; } /* Red for Prime */
 
