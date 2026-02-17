@@ -1460,7 +1460,7 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <div class="kpi-card transition transform hover:-translate-y-1 duration-200">
+            <div class="kpi-card text-center transition transform hover:-translate-y-1 duration-200">
                 <div class="grid grid-cols-3 items-center mb-1">
                     <div class="col-span-1"></div>
                     <div class="col-span-1 text-center">
@@ -1470,28 +1470,28 @@
                         <label for="mix-kpi-toggle" class="flex items-center cursor-pointer" title="Alternar base de cálculo">
                             <div class="relative">
                                 <input type="checkbox" id="mix-kpi-toggle" class="sr-only peer">
-                                <div class="w-10 h-5 bg-slate-600 rounded-full peer-checked:bg-teal-800 transition-colors"></div>
-                                <div class="absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-full peer-checked:bg-teal-300"></div>
+                                <div class="w-10 h-5 bg-slate-600 rounded-full peer-checked:bg-orange-800 transition-colors"></div>
+                                <div class="absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-full peer-checked:bg-orange-300"></div>
                             </div>
                         </label>
                     </div>
                 </div>
-                <p id="mix-total-clients-kpi" class="text-3xl font-bold text-white my-1">0</p>
+                <p id="mix-total-clients-kpi" class="text-3xl font-bold text-orange-400 my-1">0</p>
                 <p class="text-xs text-slate-300">Base para análise</p>
             </div>
-            <div class="kpi-card kpi-glow-base kpi-glow-green transition transform hover:-translate-y-1 duration-200">
+            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
                 <p class="text-slate-300 text-sm font-medium">Positivados Salty</p>
-                <p id="mix-salty-kpi" class="text-3xl font-bold text-teal-400 my-1">0%</p>
+                <p id="mix-salty-kpi" class="text-3xl font-bold text-orange-400 my-1">0%</p>
                 <p id="mix-salty-count-kpi" class="text-xs text-slate-300">0 clientes</p>
             </div>
-            <div class="kpi-card kpi-glow-base kpi-glow-yellow transition transform hover:-translate-y-1 duration-200">
+            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
                 <p class="text-slate-300 text-sm font-medium">Positivados Foods</p>
-                <p id="mix-foods-kpi" class="text-3xl font-bold text-yellow-400 my-1">0%</p>
+                <p id="mix-foods-kpi" class="text-3xl font-bold text-orange-400 my-1">0%</p>
                 <p id="mix-foods-count-kpi" class="text-xs text-slate-300">0 clientes</p>
             </div>
-            <div class="kpi-card kpi-glow-base kpi-glow-purple transition transform hover:-translate-y-1 duration-200">
+            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
                 <p class="text-slate-300 text-sm font-medium">Mix Ideal (Ambos)</p>
-                <p id="mix-both-kpi" class="text-3xl font-bold text-purple-400 my-1">0%</p>
+                <p id="mix-both-kpi" class="text-3xl font-bold text-orange-400 my-1">0%</p>
                 <p id="mix-both-count-kpi" class="text-xs text-slate-300">0 clientes</p>
             </div>
         </div>
@@ -1512,11 +1512,25 @@
                 <table class="min-w-full text-sm text-left text-slate-300">
                     <thead class="text-[10px] md:text-xs text-slate-400 uppercase bg-slate-900 sticky top-0">
                         <tr>
-                            <th class="px-2 py-2 md:px-4 md:py-3">Cliente</th>
-                            <th class="px-2 py-2 md:px-4 md:py-3 hidden md:table-cell">Cidade</th>
-                            <th class="px-2 py-2 md:px-4 md:py-3 text-center">Salgadinho</th>
-                            <th class="px-2 py-2 md:px-4 md:py-3 text-center">Food</th>
-                            <th class="px-2 py-2 md:px-4 md:py-3 text-center">Status</th>
+                            <th rowspan="2" class="px-2 py-2 md:px-4 md:py-3 w-16 text-center border-r border-slate-800">Cód</th>
+                            <th rowspan="2" class="px-2 py-2 md:px-4 md:py-3 border-r border-slate-800">Cliente</th>
+                            <th rowspan="2" class="px-2 py-2 md:px-4 md:py-3 hidden md:table-cell border-r border-slate-800">Cidade</th>
+                            <th rowspan="2" class="px-2 py-2 md:px-4 md:py-3 hidden md:table-cell border-r border-slate-800">Vendedor</th>
+                            <th colspan="5" class="px-2 py-1 text-center bg-teal-900/30 text-teal-400 border-r border-slate-800 border-b border-slate-800">MIX SALTY</th>
+                            <th colspan="4" class="px-2 py-1 text-center bg-yellow-900/30 text-yellow-400 border-b border-slate-800">MIX FOODS</th>
+                        </tr>
+                        <tr>
+                            <!-- Salty Sub-headers -->
+                            <th class="px-2 py-2 text-center w-16 border-r border-slate-800 text-[9px] md:text-[10px]">CHEETOS</th>
+                            <th class="px-2 py-2 text-center w-16 border-r border-slate-800 text-[9px] md:text-[10px]">DORITOS</th>
+                            <th class="px-2 py-2 text-center w-16 border-r border-slate-800 text-[9px] md:text-[10px]">FANDAN</th>
+                            <th class="px-2 py-2 text-center w-16 border-r border-slate-800 text-[9px] md:text-[10px]">RUFFLES</th>
+                            <th class="px-2 py-2 text-center w-16 border-r border-slate-800 text-[9px] md:text-[10px]">TORCIDA</th>
+                            <!-- Foods Sub-headers -->
+                            <th class="px-2 py-2 text-center w-16 border-r border-slate-800 text-[9px] md:text-[10px]">TODDYNHO</th>
+                            <th class="px-2 py-2 text-center w-16 border-r border-slate-800 text-[9px] md:text-[10px]">TODDY</th>
+                            <th class="px-2 py-2 text-center w-16 border-r border-slate-800 text-[9px] md:text-[10px]">QUAKER</th>
+                            <th class="px-2 py-2 text-center w-16 text-[9px] md:text-[10px]">KEROCOCO</th>
                         </tr>
                     </thead>
                     <tbody id="mix-table-body" class="divide-y divide-slate-800"></tbody>
@@ -1683,24 +1697,24 @@
 
         <!-- KPIs -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <div class="kpi-card kpi-glow-base kpi-glow-blue transition transform hover:-translate-y-1 duration-200">
+            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
                 <p class="text-slate-300 text-sm font-medium">Clientes Ativos (Filtro)</p>
-                <p id="coverage-active-clients-kpi" class="text-3xl font-bold text-teal-400 my-1">0</p>
+                <p id="coverage-active-clients-kpi" class="text-3xl font-bold text-orange-400 my-1">0</p>
                 <p class="text-xs text-slate-300">Base para os KPIs</p>
             </div>
-            <div class="kpi-card kpi-glow-base kpi-glow-yellow transition transform hover:-translate-y-1 duration-200">
+            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
                 <p class="text-slate-300 text-sm font-medium">Cobertura Mês Anterior</p>
                 <p id="coverage-selection-coverage-value-kpi-previous" class="text-3xl font-bold text-orange-400 my-1">0%</p>
                 <p id="coverage-selection-coverage-count-kpi-previous" class="text-xs text-slate-300">0 de 0 clientes</p>
             </div>
-            <div class="kpi-card kpi-glow-base kpi-glow-green transition transform hover:-translate-y-1 duration-200">
+            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
                 <p class="text-slate-300 text-sm font-medium">Cobertura Mês Atual</p>
-                <p id="coverage-selection-coverage-value-kpi" class="text-3xl font-bold text-cyan-400 my-1">0%</p>
+                <p id="coverage-selection-coverage-value-kpi" class="text-3xl font-bold text-orange-400 my-1">0%</p>
                 <p id="coverage-selection-coverage-count-kpi" class="text-xs text-slate-300">0 de 0 clientes</p>
             </div>
-            <div class="kpi-card kpi-glow-base kpi-glow-purple transition transform hover:-translate-y-1 duration-200">
+            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
                 <p class="text-slate-300 text-sm font-medium">Item com Maior Cobertura</p>
-                <p id="coverage-top-coverage-value-kpi" class="text-3xl font-bold text-purple-400 my-1">0%</p>
+                <p id="coverage-top-coverage-value-kpi" class="text-3xl font-bold text-orange-400 my-1">0%</p>
                 <p id="coverage-top-coverage-product-kpi" class="text-xs text-slate-300 truncate" title="Nenhum item analisado">-</p>
                 <p id="coverage-top-coverage-count-kpi" class="hidden">0</p>
             </div>
