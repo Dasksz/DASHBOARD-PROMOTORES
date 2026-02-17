@@ -11169,7 +11169,7 @@ const supervisorGroups = new Map();
             innovationsMonthTopCoverageKpi.textContent = topCoverageItem.name;
             innovationsMonthTopCoverageKpi.title = topCoverageItem.name;
             innovationsMonthTopCoverageCountKpi.textContent = `${topCoverageItem.clients.toLocaleString('pt-BR')} PDVs`;
-            document.getElementById('innovations-month-top-coverage-title').textContent = selectedCategory ? 'Produto Maior Cobertura' : 'Categoria Maior Cobertura';
+            document.getElementById('innovations-month-top-coverage-title').textContent = selectedCategory ? 'Produto Maior Cobertura' : 'Categ. Maior Cobertura';
 
             innovationsMonthSelectionCoverageValueKpi.textContent = `${selectionCoveragePercentCurrent.toFixed(2)}%`;
             innovationsMonthSelectionCoverageCountKpi.textContent = `${selectionCoveredCountCurrent.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')}`;
