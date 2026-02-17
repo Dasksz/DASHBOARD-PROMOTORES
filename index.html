@@ -1346,29 +1346,52 @@
         </div>
 
         <!-- KPIs Block -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg text-center">
-                <p class="text-xs text-slate-500 uppercase font-bold">Clientes Ativos</p>
-                <div id="innovations-month-active-clients-kpi" class="text-2xl font-bold text-white">0</div>
-            </div>
-            <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg text-center">
-                <p id="innovations-month-top-coverage-title" class="text-xs text-slate-500 uppercase font-bold">Top Cobertura</p>
-                <div id="innovations-month-top-coverage-kpi" class="text-sm text-white truncate font-bold"></div>
-                <div class="flex justify-center gap-2 mt-1 text-xs text-slate-400">
-                    <span id="innovations-month-top-coverage-count-kpi">0</span>
-                    <span>|</span>
-                    <span id="innovations-month-top-coverage-value-kpi">R$ 0</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- 1. Clientes Ativos -->
+            <div class="kpi-card kpi-glow-blue p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Clientes Ativos</p>
+                        <h3 id="innovations-month-active-clients-kpi" class="text-3xl font-bold text-white">0</h3>
+                        <p class="text-slate-500 text-xs mt-1">Base de Cálculo</p>
+                    </div>
+                    <div class="p-2 bg-blue-500/10 rounded-lg"><svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
                 </div>
             </div>
-            <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg text-center">
-                <p class="text-xs text-slate-500 uppercase font-bold">Seleção (Valor)</p>
-                <h3 id="innovations-month-selection-coverage-value-kpi" class="text-2xl font-bold text-green-400">R$ 0,00</h3>
-                <p id="innovations-month-selection-coverage-value-kpi-previous" class="text-xs text-slate-400 mt-1">Anterior: R$ 0,00</p>
+            <!-- 2. Top Cobertura -->
+            <div class="kpi-card kpi-glow-yellow p-6">
+                <div class="flex justify-between items-start">
+                    <div class="overflow-hidden pr-2">
+                        <p id="innovations-month-top-coverage-title" class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Top Cobertura</p>
+                        <h3 id="innovations-month-top-coverage-kpi" class="text-xl font-bold text-white truncate leading-tight mt-1 mb-1">--</h3>
+                        <p class="text-slate-500 text-xs mt-1 flex gap-2">
+                            <span id="innovations-month-top-coverage-count-kpi">0</span> | <span id="innovations-month-top-coverage-value-kpi">R$ 0</span>
+                        </p>
+                    </div>
+                    <div class="p-2 bg-yellow-500/10 rounded-lg flex-shrink-0"><svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg></div>
+                </div>
             </div>
-            <div class="bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg text-center">
-                <p class="text-xs text-slate-500 uppercase font-bold">Seleção (Qtde)</p>
-                <h3 id="innovations-month-selection-coverage-count-kpi" class="text-2xl font-bold text-blue-400">0</h3>
-                <p id="innovations-month-selection-coverage-count-kpi-previous" class="text-xs text-slate-400 mt-1">Anterior: 0</p>
+            <!-- 3. Seleção (Valor) -->
+            <div class="kpi-card kpi-glow-green p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Seleção (Valor)</p>
+                        <h3 id="innovations-month-selection-coverage-value-kpi" class="text-3xl font-bold text-white">R$ 0,00</h3>
+                        <p id="innovations-month-selection-coverage-value-kpi-previous" class="text-slate-500 text-xs mt-1">Anterior: R$ 0,00</p>
+                    </div>
+                    <div class="p-2 bg-green-500/10 rounded-lg"><svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                </div>
+            </div>
+            <!-- 4. Seleção (Qtde) -->
+            <div class="kpi-card kpi-glow-purple p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Seleção (Qtde)</p>
+                        <h3 id="innovations-month-selection-coverage-count-kpi" class="text-3xl font-bold text-white">0</h3>
+                        <p id="innovations-month-selection-coverage-count-kpi-previous" class="text-slate-500 text-xs mt-1">Anterior: 0</p>
+                    </div>
+                    <div class="p-2 bg-purple-500/10 rounded-lg"><svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>
+                </div>
             </div>
         </div>
         <div class="hidden">
@@ -1460,39 +1483,58 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <div class="kpi-card text-center transition transform hover:-translate-y-1 duration-200">
-                <div class="grid grid-cols-3 items-center mb-1">
-                    <div class="col-span-1"></div>
-                    <div class="col-span-1 text-center">
-                        <span id="mix-kpi-title" class="text-slate-300 text-sm font-medium">Total Clientes (Filtro)</span>
+            <!-- 1. Total Clientes -->
+            <div class="kpi-card kpi-glow-blue p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                             <p id="mix-kpi-title" class="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Clientes (Filtro)</p>
+                             <label for="mix-kpi-toggle" class="flex items-center cursor-pointer" title="Alternar base de cálculo">
+                                <div class="relative">
+                                    <input type="checkbox" id="mix-kpi-toggle" class="sr-only peer">
+                                    <div class="w-8 h-4 bg-slate-600 rounded-full peer-checked:bg-blue-600 transition-colors"></div>
+                                    <div class="absolute left-0.5 top-0.5 bg-white w-3 h-3 rounded-full transition-transform peer-checked:translate-x-full"></div>
+                                </div>
+                            </label>
+                        </div>
+                        <h3 id="mix-total-clients-kpi" class="text-3xl font-bold text-white">0</h3>
+                        <p class="text-slate-500 text-xs mt-1">Base para análise</p>
                     </div>
-                    <div class="col-span-1 flex justify-end">
-                        <label for="mix-kpi-toggle" class="flex items-center cursor-pointer" title="Alternar base de cálculo">
-                            <div class="relative">
-                                <input type="checkbox" id="mix-kpi-toggle" class="sr-only peer">
-                                <div class="w-10 h-5 bg-slate-600 rounded-full peer-checked:bg-orange-800 transition-colors"></div>
-                                <div class="absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-full peer-checked:bg-orange-300"></div>
-                            </div>
-                        </label>
-                    </div>
+                    <div class="p-2 bg-blue-500/10 rounded-lg"><svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
                 </div>
-                <p id="mix-total-clients-kpi" class="text-3xl font-bold text-orange-400 my-1">0</p>
-                <p class="text-xs text-slate-300">Base para análise</p>
             </div>
-            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
-                <p class="text-slate-300 text-sm font-medium">Positivados Salty</p>
-                <p id="mix-salty-kpi" class="text-3xl font-bold text-orange-400 my-1">0%</p>
-                <p id="mix-salty-count-kpi" class="text-xs text-slate-300">0 clientes</p>
+            <!-- 2. Positivados Salty -->
+            <div class="kpi-card kpi-glow-orange p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Positivados Salty</p>
+                        <h3 id="mix-salty-kpi" class="text-3xl font-bold text-white">0%</h3>
+                        <p id="mix-salty-count-kpi" class="text-slate-500 text-xs mt-1">0 clientes</p>
+                    </div>
+                    <div class="p-2 bg-orange-500/10 rounded-lg"><svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>
+                </div>
             </div>
-            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
-                <p class="text-slate-300 text-sm font-medium">Positivados Foods</p>
-                <p id="mix-foods-kpi" class="text-3xl font-bold text-orange-400 my-1">0%</p>
-                <p id="mix-foods-count-kpi" class="text-xs text-slate-300">0 clientes</p>
+            <!-- 3. Positivados Foods -->
+            <div class="kpi-card kpi-glow-yellow p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Positivados Foods</p>
+                        <h3 id="mix-foods-kpi" class="text-3xl font-bold text-white">0%</h3>
+                        <p id="mix-foods-count-kpi" class="text-slate-500 text-xs mt-1">0 clientes</p>
+                    </div>
+                    <div class="p-2 bg-yellow-500/10 rounded-lg"><svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>
+                </div>
             </div>
-            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
-                <p class="text-slate-300 text-sm font-medium">Mix Ideal (Ambos)</p>
-                <p id="mix-both-kpi" class="text-3xl font-bold text-orange-400 my-1">0%</p>
-                <p id="mix-both-count-kpi" class="text-xs text-slate-300">0 clientes</p>
+            <!-- 4. Mix Ideal -->
+            <div class="kpi-card kpi-glow-green p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Mix Ideal (Ambos)</p>
+                        <h3 id="mix-both-kpi" class="text-3xl font-bold text-white">0%</h3>
+                        <p id="mix-both-count-kpi" class="text-slate-500 text-xs mt-1">0 clientes</p>
+                    </div>
+                    <div class="p-2 bg-green-500/10 rounded-lg"><svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg></div>
+                </div>
             </div>
         </div>
 
@@ -1697,26 +1739,50 @@
 
         <!-- KPIs -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
-                <p class="text-slate-300 text-sm font-medium">Clientes Ativos (Filtro)</p>
-                <p id="coverage-active-clients-kpi" class="text-3xl font-bold text-orange-400 my-1">0</p>
-                <p class="text-xs text-slate-300">Base para os KPIs</p>
+            <!-- 1. Clientes Ativos -->
+            <div class="kpi-card kpi-glow-blue p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Clientes Ativos (Filtro)</p>
+                        <h3 id="coverage-active-clients-kpi" class="text-3xl font-bold text-white">0</h3>
+                        <p class="text-slate-500 text-xs mt-1">Base para os KPIs</p>
+                    </div>
+                    <div class="p-2 bg-blue-500/10 rounded-lg"><svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
+                </div>
             </div>
-            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
-                <p class="text-slate-300 text-sm font-medium">Cobertura Mês Anterior</p>
-                <p id="coverage-selection-coverage-value-kpi-previous" class="text-3xl font-bold text-orange-400 my-1">0%</p>
-                <p id="coverage-selection-coverage-count-kpi-previous" class="text-xs text-slate-300">0 de 0 clientes</p>
+            <!-- 2. Mês Anterior -->
+            <div class="kpi-card kpi-glow-purple p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Cobertura Mês Anterior</p>
+                        <h3 id="coverage-selection-coverage-value-kpi-previous" class="text-3xl font-bold text-white">0%</h3>
+                        <p id="coverage-selection-coverage-count-kpi-previous" class="text-slate-500 text-xs mt-1">0 de 0 clientes</p>
+                    </div>
+                    <div class="p-2 bg-purple-500/10 rounded-lg"><svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                </div>
             </div>
-            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
-                <p class="text-slate-300 text-sm font-medium">Cobertura Mês Atual</p>
-                <p id="coverage-selection-coverage-value-kpi" class="text-3xl font-bold text-orange-400 my-1">0%</p>
-                <p id="coverage-selection-coverage-count-kpi" class="text-xs text-slate-300">0 de 0 clientes</p>
+            <!-- 3. Mês Atual -->
+            <div class="kpi-card kpi-glow-green p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Cobertura Mês Atual</p>
+                        <h3 id="coverage-selection-coverage-value-kpi" class="text-3xl font-bold text-white">0%</h3>
+                        <p id="coverage-selection-coverage-count-kpi" class="text-slate-500 text-xs mt-1">0 de 0 clientes</p>
+                    </div>
+                    <div class="p-2 bg-green-500/10 rounded-lg"><svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                </div>
             </div>
-            <div class="kpi-card kpi-glow-base kpi-glow-orange text-center transition transform hover:-translate-y-1 duration-200">
-                <p class="text-slate-300 text-sm font-medium">Item com Maior Cobertura</p>
-                <p id="coverage-top-coverage-value-kpi" class="text-3xl font-bold text-orange-400 my-1">0%</p>
-                <p id="coverage-top-coverage-product-kpi" class="text-xs text-slate-300 truncate" title="Nenhum item analisado">-</p>
-                <p id="coverage-top-coverage-count-kpi" class="hidden">0</p>
+            <!-- 4. Top Item -->
+            <div class="kpi-card kpi-glow-yellow p-6">
+                <div class="flex justify-between items-start">
+                    <div class="overflow-hidden pr-2">
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Item com Maior Cobertura</p>
+                        <h3 id="coverage-top-coverage-value-kpi" class="text-3xl font-bold text-white">0%</h3>
+                        <p id="coverage-top-coverage-product-kpi" class="text-slate-500 text-xs mt-1 truncate">-</p>
+                        <p id="coverage-top-coverage-count-kpi" class="hidden">0</p>
+                    </div>
+                    <div class="p-2 bg-yellow-500/10 rounded-lg flex-shrink-0"><svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg></div>
+                </div>
             </div>
         </div>
         
