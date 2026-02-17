@@ -2605,10 +2605,10 @@
 
                 if (mixKpiMode === 'atendidos') {
                     baseClientCount = getPositiveClientsWithNewLogic(sales);
-                    if (kpiTitleEl) kpiTitleEl.textContent = 'Clientes Atendidos';
+                    if (kpiTitleEl) kpiTitleEl.textContent = 'POSIIVADOS';
                 } else {
                     baseClientCount = clients.length;
-                    if (kpiTitleEl) kpiTitleEl.textContent = 'Total Clientes (Filtro)';
+                    if (kpiTitleEl) kpiTitleEl.textContent = 'BASE';
                 }
 
                 const saltyPct = baseClientCount > 0 ? (positivadosSalty / baseClientCount) * 100 : 0;
