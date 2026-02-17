@@ -19445,7 +19445,8 @@ const supervisorGroups = new Map();
         } catch (error) {
             console.error(error);
             window.showToast('error', 'Erro ao fazer check-out: ' + error.message);
-            // Fix: Re-enable button on error
+        } finally {
+            // Fix: Re-enable button on error and success
             btn.disabled = false;
             btn.innerHTML = oldHtml;
         }
