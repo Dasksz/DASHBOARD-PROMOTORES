@@ -1926,7 +1926,7 @@
         let currentFornecedor = '';
         let currentComparisonFornecedor = 'PEPSICO';
         let useTendencyComparison = false;
-        let comparisonChartType = 'weekly';
+        let comparisonChartType = 'daily';
         let comparisonMonthlyMetric = 'faturamento';
         let activeClientsForExport = [];
         let selectedMainCoords = [];
@@ -8339,6 +8339,28 @@ const supervisorGroups = new Map();
             return count > 0 ? count : 1;
         }
 
+        function isWorkingDay(date, holidays) {
+            const dayOfWeek = date.getUTCDay();
+            return dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays);
+        }
+
+        function getWorkingDayIndex(date, holidays) {
+            if (!isWorkingDay(date, holidays)) return -1;
+
+            const month = date.getUTCMonth();
+            const year = date.getUTCFullYear();
+            let index = 0;
+            const d = new Date(Date.UTC(year, month, 1));
+
+            while (d <= date) {
+                if (isWorkingDay(d, holidays)) {
+                    index++;
+                }
+                d.setUTCDate(d.getUTCDate() + 1);
+            }
+            return index;
+        }
+
 
 
         function updateAllVisuals() {
@@ -10509,13 +10531,212 @@ const supervisorGroups = new Map();
                         weeklyComparisonChartContainer.classList.remove('hidden');
                         monthlyComparisonChartContainer.classList.add('hidden');
                         comparisonChartTitle.textContent = 'Comparativo de Faturamento Diário';
-                        const dayLabels = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
-                        // Current Values (Indices 1-6)
-                        const currentDayValues = [1, 2, 3, 4, 5, 6].map(i => m.currentDayTotals[i] || 0);
+                        // --- NEW DAILY CHART LOGIC ---
 
-                        // History Values (Indices 1-6) / 3
-                        const historyDayValues = [1, 2, 3, 4, 5, 6].map(i => (m.historicalDayTotals[i] || 0) / QUARTERLY_DIVISOR);
+                        // 1. Prepare Current Month Data (Chronological)
+                        const daysInMonth = new Date(Date.UTC(currentYear, currentMonth + 1, 0)).getUTCDate();
+                        const currentDailyTimeline = []; // { dayLabel, value, isWorkingDay, workingDayIndex, dateObj }
+
+                        // We iterate all days to determine the axis
+                        for (let d = 1; d <= daysInMonth; d++) {
+                            const dateObj = new Date(Date.UTC(currentYear, currentMonth, d));
+                            const isWDay = isWorkingDay(dateObj, selectedHolidays);
+
+                            // Check if sales exist for this specific day
+                            // We can check metrics.charts.weeklyCurrent but that's aggregated.
+                            // We need per-day sales. We calculated m.currentDayTotals (aggregated by weekday), not by date.
+                            // Let's re-scan currentSales for daily totals (or we could have done it in the main loop).
+                            // Optimization: Do it in main loop or here? Main loop didn't store by date.
+                            // Since we have currentSales available, let's filter/reduce efficiently or use a map.
+
+                            // Let's build a map for current month sales by Day (1-31)
+                            // Ideally this should be in the main loop, but refactoring that is risky.
+                            // We can do a quick pass here.
+                        }
+
+                        const currentSalesByDay = new Array(daysInMonth + 1).fill(0);
+                        currentSales.forEach(s => {
+                            if (!isAlternativeMode(selectedComparisonTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                            const d = parseDate(s.DTPED);
+                            if (d && d.getUTCMonth() === currentMonth && d.getUTCFullYear() === currentYear) {
+                                currentSalesByDay[d.getUTCDate()] += getValueForSale(s, selectedComparisonTiposVenda);
+                            }
+                        });
+
+                        // 2. Prepare History Averages by Working Day Index
+                        // We need average for 1st WD, 2nd WD, etc.
+                        const historyWorkingDaySums = new Map(); // Index -> Sum
+                        const historyWorkingDayCounts = new Map(); // Index -> Count of Months contributing
+
+                        // Also need M-1 (Previous Month) data specifically for Overflow logic
+                        const prevMonthDate = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+                        const prevMonthIndex = prevMonthDate.getUTCMonth();
+                        const prevMonthYear = prevMonthDate.getUTCFullYear();
+                        const prevMonthSalesByWDIndex = new Map(); // WDIndex -> Value
+                        let prevMonthMaxWDIndex = 0;
+
+                        // Process History Sales again? Or use the existing loop data?
+                        // Existing loop aggregated to `metrics.history.fat` etc. but not granular enough.
+                        // We need to re-scan historySales.
+
+                        // Scan History
+                        const historySalesByMonthDay = new Map(); // "YYYY-MM-DD" -> Value
+                        historySales.forEach(s => {
+                            if (!isAlternativeMode(selectedComparisonTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                            const d = parseDate(s.DTPED);
+                            if (d) {
+                                const key = d.toISOString().split('T')[0];
+                                const val = getValueForSale(s, selectedComparisonTiposVenda);
+                                historySalesByMonthDay.set(key, (historySalesByMonthDay.get(key) || 0) + val);
+                            }
+                        });
+
+                        // Now iterate months in history (last 3) to map to Working Day Indices
+                        // Identify unique months in history
+                        const uniqueMonths = new Set();
+                        historySalesByMonthDay.forEach((v, k) => uniqueMonths.add(k.substring(0, 7)));
+
+                        uniqueMonths.forEach(mKey => {
+                            const [yStr, mStr] = mKey.split('-');
+                            const y = parseInt(yStr);
+                            const m = parseInt(mStr) - 1; // 0-indexed
+
+                            const isPrevMonth = (y === prevMonthYear && m === prevMonthIndex);
+
+                            const daysInM = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+                            let wdIndex = 0;
+
+                            for (let d = 1; d <= daysInM; d++) {
+                                const dateObj = new Date(Date.UTC(y, m, d));
+                                if (isWorkingDay(dateObj, selectedHolidays)) {
+                                    wdIndex++;
+                                    const val = historySalesByMonthDay.get(dateObj.toISOString().split('T')[0]) || 0;
+
+                                    historyWorkingDaySums.set(wdIndex, (historyWorkingDaySums.get(wdIndex) || 0) + val);
+                                    historyWorkingDayCounts.set(wdIndex, (historyWorkingDayCounts.get(wdIndex) || 0) + 1);
+
+                                    if (isPrevMonth) {
+                                        prevMonthSalesByWDIndex.set(wdIndex, val);
+                                        prevMonthMaxWDIndex = Math.max(prevMonthMaxWDIndex, wdIndex);
+                                    }
+                                }
+                            }
+                        });
+
+                        // 3. Construct Axis and Datasets
+                        let currentWDCounter = 0;
+                        const labels = [];
+                        const currentData = [];
+                        const historyData = [];
+
+                        for (let d = 1; d <= daysInMonth; d++) {
+                            const dateObj = new Date(Date.UTC(currentYear, currentMonth, d));
+                            const isWDay = isWorkingDay(dateObj, selectedHolidays);
+                            const val = currentSalesByDay[d];
+                            const hasSales = val > 0;
+
+                            if (isWDay) {
+                                currentWDCounter++;
+                            }
+
+                            // Rule: Show if Working Day OR Has Sales
+                            // Note: "começar no primeiro dia útil". We enforce this by filtering?
+                            // User said: "esse 'diário' irá começar no primeiro dia útil do mês".
+                            // But also "caso tenha venda em algum dia que não seja um dia útil, esse dia deve aparecer".
+                            // If day 1 is Sat (non-working) and has sales, it appears.
+                            // If day 1 is Sat (non-working) and NO sales, it is skipped.
+                            // If day 1 is Mon (working), it appears.
+
+                            // What if Day 1/2 are weekends without sales? They are skipped.
+                            // The chart naturally starts at the first added point.
+
+                            if (isWDay || hasSales) {
+                                labels.push(d.toString());
+                                currentData.push(val);
+
+                                // History Value Logic
+                                if (isWDay) {
+                                    // It is the Nth working day. Get average.
+                                    let avg = 0;
+                                    if (historyWorkingDayCounts.has(currentWDCounter)) {
+                                        avg = historyWorkingDaySums.get(currentWDCounter) / historyWorkingDayCounts.get(currentWDCounter);
+                                    } else {
+                                        // OVERFLOW LOGIC
+                                        // "repetir o valor feito nos últimos dias uteis do mês anterior"
+                                        // Calculate offset from max available in M-1
+                                        // If M-1 had 20 days. We are at 21.
+                                        // We want 19th of M-1? User said: "no caso seria o dia 19º e dia 20º útil." for 2 extra days.
+                                        // It implies using the tail of M-1.
+                                        // Let's assume we map backwards from end.
+
+                                        if (prevMonthMaxWDIndex > 0) {
+                                            const overflowAmount = currentWDCounter - prevMonthMaxWDIndex;
+                                            // If overflow is 1 (21st day, max 20), we want 19th? (Max - 1)
+                                            // If overflow is 2 (22nd day, max 20), we want 20th? (Max)
+                                            // Wait, the example: "o mês atual tem 22... a 'média' para esses dois dias será na verdade o que foi realizado nos últimos dois dias uteis do mês anterior"
+                                            // Days 21 and 22.
+                                            // "últimos dois dias uteis": 19 and 20.
+                                            // So 21 -> 19, 22 -> 20.
+                                            // Formula: targetIndex = PrevMax - (TotalOverflow - CurrentOverflowIndex) ?? No.
+                                            // Let TotalCurrentWD = estimated total? No we are iterating.
+
+                                            // Simpler Interpretation:
+                                            // Just repeat the last few values?
+                                            // Let's look at the mapping:
+                                            // 21 -> 19
+                                            // 22 -> 20
+                                            // It seems we map the overflow window [21, 22] to [19, 20].
+                                            // This is `Index - 2`. Where 2 is the difference?
+                                            // Or is it dynamic based on how many extra days?
+                                            // "se acontecer de o mês atual ter mais dias uteis... iremos repetir o valor feito nos últimos dias uteis"
+
+                                            // Implementation Strategy:
+                                            // We don't know total days yet in the loop. But we know `currentWDCounter`.
+                                            // We assume the overflowing days are contiguous at the end.
+                                            // BUT we are processing day by day.
+                                            // If we are at index 21, and max was 20.
+                                            // We need to look back.
+                                            // Maybe just use `PrevMax - 1` for odd overflow and `PrevMax` for even? No.
+
+                                            // Let's try to map strictly to the *end* of the previous series.
+                                            // But we don't know how many *more* days we will have total.
+                                            // Actually we do: `getWorkingDaysInMonth` for current month.
+                                            const totalCurrentWorkingDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+                                            const overflowCount = totalCurrentWorkingDays - prevMonthMaxWDIndex;
+
+                                            if (overflowCount > 0) {
+                                                // We are in the overflow zone?
+                                                // Only if currentWDCounter > prevMonthMaxWDIndex.
+                                                // Map index:
+                                                // We want to map range [PrevMax+1 ... TotalCurr] -> [PrevMax - OverflowCount + 1 ... PrevMax]
+                                                // Let's check example:
+                                                // PrevMax=20. TotalCurr=22. Overflow=2.
+                                                // Range [21, 22] -> [19, 20].
+                                                // 21 -> 20 - 2 + (21 - 20) = 18 + 1 = 19. Correct.
+                                                // 22 -> 20 - 2 + (22 - 20) = 18 + 2 = 20. Correct.
+
+                                                const mappedIndex = prevMonthMaxWDIndex - overflowCount + (currentWDCounter - prevMonthMaxWDIndex);
+
+                                                if (mappedIndex > 0) {
+                                                    // Use M-1 value
+                                                    avg = prevMonthSalesByWDIndex.get(mappedIndex) || 0;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    historyData.push(avg);
+                                } else {
+                                    // Non-working day (e.g. Saturday with sales)
+                                    // Average line should not exist or be 0.
+                                    // Setting to null breaks the line in Chart.js/AmCharts usually.
+                                    // If we put 0, it dips.
+                                    // "o gráfico ainda deve trazer essa linha de média trimestral, que será calculada por dia..."
+                                    // I'll put null to imply no goal/average for off-days.
+                                    historyData.push(null);
+                                }
+                            }
+                        }
 
                         // Destroy Legacy Chart if exists
                         if (charts['weeklyComparisonChart']) {
@@ -10523,7 +10744,7 @@ const supervisorGroups = new Map();
                             delete charts['weeklyComparisonChart'];
                         }
 
-                        renderWeeklyComparisonAmChart(dayLabels, currentDayValues, historyDayValues, false);
+                        renderWeeklyComparisonAmChart(labels, currentData, historyData, false);
                     }
 
                     // Daily Chart (Simplified re-calc for now, or could optimize further)
@@ -13149,6 +13370,11 @@ const supervisorGroups = new Map();
                 // The toggle visibility is handled inside updateComparisonView based on mode
                 updateComparisonView();
             });
+
+            // Initialize Toggle Styles for Default View (Daily)
+            if (toggleDailyBtn) {
+                updateToggleStyles(toggleDailyBtn, toggleWeeklyBtn, toggleMonthlyBtn);
+            }
 
             // New Metric Toggle Listeners
             const toggleMonthlyFatBtn = document.getElementById('toggle-monthly-fat-btn');
