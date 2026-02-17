@@ -19175,7 +19175,13 @@ const supervisorGroups = new Map();
                 });
 
                 // Update Visuals if needed (e.g. City Map if open)
-                if (heatLayer) heatLayer.addLatLng([currentGeoLat, currentGeoLng, 1]);
+                if (heatLayer) {
+                    if (heatLayer._map) {
+                        heatLayer.addLatLng([currentGeoLat, currentGeoLng, 1]);
+                    } else {
+                        heatLayer._latlngs.push([currentGeoLat, currentGeoLng, 1]);
+                    }
+                }
 
                 window.showToast('success', 'Geolocalização atualizada com sucesso!');
                 modal.classList.add('hidden');
