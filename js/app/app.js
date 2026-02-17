@@ -11265,14 +11265,14 @@ const supervisorGroups = new Map();
                             <span class="uppercase tracking-wide">${catGroup.name}</span>
                         </td>
                         <td class="px-2 py-3 text-xs text-slate-400 text-left italic hidden md:table-cell">${catGroup.items.length} Produtos</td>
-                        <td class="px-2 py-3 text-xs text-right font-mono font-bold text-blue-400 hidden md:table-cell">${catGroup.stock.toLocaleString('pt-BR')}</td>
-                        <td class="px-2 py-3 text-xs text-right">
+                        <td class="px-2 py-3 text-sm text-center font-mono font-bold text-blue-400 hidden md:table-cell">${catGroup.stock.toLocaleString('pt-BR')}</td>
+                        <td class="px-2 py-3 text-xs text-center">
                             <div class="tooltip">${catGroup.metrics.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.clientsPreviousCount} PDVs</span></div>
                         </td>
-                        <td class="px-2 py-3 text-xs text-right">
+                        <td class="px-2 py-3 text-xs text-center">
                             <div class="tooltip font-bold text-white">${catGroup.metrics.coverageCurrent.toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.clientsCount} PDVs</span></div>
                         </td>
-                        <td class="px-2 py-3 text-xs text-right font-bold">${variationContent}</td>
+                        <td class="px-2 py-3 text-xs text-center font-bold">${variationContent}</td>
                     </tr>
                 `;
 
@@ -11299,14 +11299,14 @@ const supervisorGroups = new Map();
                                 <span class="font-mono text-slate-500 mr-1 text-[9px] md:text-[10px]">${item.productCode}</span> ${item.productName}
                              </div>
                         </td>
-                        <td class="px-2 py-2 text-[10px] md:text-xs text-right font-mono text-slate-400 hidden md:table-cell">${item.stock.toLocaleString('pt-BR')}</td>
-                        <td class="px-2 py-2 text-[10px] md:text-xs text-right text-slate-500">
+                        <td class="px-2 py-2 text-xs md:text-sm text-center font-mono text-slate-400 hidden md:table-cell">${item.stock.toLocaleString('pt-BR')}</td>
+                        <td class="px-2 py-2 text-[10px] md:text-xs text-center text-slate-500">
                             <div class="tooltip">${item.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${item.clientsPreviousCount} PDVs</span></div>
                         </td>
-                        <td class="px-2 py-2 text-[10px] md:text-xs text-right text-slate-300">
+                        <td class="px-2 py-2 text-[10px] md:text-xs text-center text-slate-300">
                             <div class="tooltip">${item.coverageCurrent.toFixed(2)}%<span class="tooltip-text">${item.clientsCurrentCount} PDVs</span></div>
                         </td>
-                        <td class="px-2 py-2 text-[10px] md:text-xs text-right">${prodVarContent}</td>
+                        <td class="px-2 py-2 text-[10px] md:text-xs text-center">${prodVarContent}</td>
                     </tr>
                     `;
                 }).join('');
@@ -11345,7 +11345,7 @@ const supervisorGroups = new Map();
             if (chartLabels.length > 0) {
                 createChart('innovations-month-chart', 'bar', chartLabels, [
                     { label: labelT2, data: chartDataPrevious2, backgroundColor: '#3b82f6' }, // Blue
-                    { label: labelT1, data: chartDataPrevious, backgroundColor: '#f97316' }, // Orange
+                    { label: labelT1, data: chartDataPrevious, backgroundColor: '#eab308' }, // Dark Mustard
                     { label: labelT, data: chartDataCurrent, backgroundColor: '#06b6d4' }   // Cyan
                 ], {
                     plugins: {
