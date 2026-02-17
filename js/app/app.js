@@ -3709,13 +3709,6 @@
 
             // --- FIX: Ensure all sellers with Manual Targets are present in goalsBySeller ---
             goalsSellerTargets.forEach((targets, sellerName) => {
-                // Check if seller matches current filters
-                if (supervisorsSet.size > 0) {
-                    const supervisorName = (sellerDetailsMap.get(optimizedData.rcaCodeByName.get(sellerName) || '') || {}).supervisor;
-                    if (!supervisorName || !supervisorsSet.has(supervisorName)) return;
-                }
-                if (sellersSet.size > 0 && !sellersSet.has(sellerName)) return;
-
                 // Add to map if missing
                 if (!goalsBySeller.has(sellerName)) {
                     goalsBySeller.set(sellerName, { totalFat: 0, totalVol: 0, totalPos: 0 });
