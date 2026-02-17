@@ -278,6 +278,87 @@
         let clientLastBranch = new Map();
         let clientRamoMap = new Map();
 
+        // --- EXPORT HELPERS ---
+        function exportToExcel(sheets, fileName) {
+            if (typeof XLSX === 'undefined') {
+                alert('Biblioteca XLSX não carregada.');
+                return;
+            }
+            const wb = XLSX.utils.book_new();
+            let hasData = false;
+
+            for (const [name, data] of Object.entries(sheets)) {
+                if (data && data.length > 0) {
+                    // Sanitize data for Excel if needed (e.g. remove internal keys)
+                    const cleanData = data.map(row => {
+                        const newRow = {};
+                        Object.keys(row).forEach(k => {
+                            if (k !== 'raw' && k !== 'meta' && typeof row[k] !== 'function') {
+                                newRow[k] = row[k];
+                            }
+                        });
+                        return newRow;
+                    });
+                    const ws = XLSX.utils.json_to_sheet(cleanData);
+                    XLSX.utils.book_append_sheet(wb, ws, name.substring(0, 31)); // Sheet names max 31 chars
+                    hasData = true;
+                }
+            }
+
+            if (!hasData) {
+                alert('Sem dados para exportar.');
+                return;
+            }
+
+            XLSX.writeFile(wb, `${fileName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        function setupFab(containerId, pdfHandler, excelHandler) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const mainBtn = container.querySelector('.fab-btn');
+            const pdfBtn = container.querySelector('.fab-item[data-action="pdf"]');
+            const excelBtn = container.querySelector('.fab-item[data-action="excel"]');
+
+            if (mainBtn) {
+                // Remove old listeners just in case
+                const newMain = mainBtn.cloneNode(true);
+                mainBtn.parentNode.replaceChild(newMain, mainBtn);
+
+                newMain.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    container.classList.toggle('active');
+                });
+            }
+
+            // Global click to close
+            document.addEventListener('click', (e) => {
+                if (!container.contains(e.target)) {
+                    container.classList.remove('active');
+                }
+            });
+
+            if (pdfBtn && pdfHandler) {
+                const newPdf = pdfBtn.cloneNode(true);
+                pdfBtn.parentNode.replaceChild(newPdf, pdfBtn);
+                newPdf.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    container.classList.remove('active');
+                    pdfHandler();
+                });
+            }
+
+            if (excelBtn && excelHandler) {
+                const newExcel = excelBtn.cloneNode(true);
+                excelBtn.parentNode.replaceChild(newExcel, excelBtn);
+                newExcel.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    container.classList.remove('active');
+                    excelHandler();
+                });
+            }
+        }
+
         const QUARTERLY_DIVISOR = 3;
 
         // Optimized lastSaleDate calculation to avoid mapping huge array
@@ -1869,6 +1950,28 @@
 
         const goalsSvSupervisorFilterText = document.getElementById('goals-sv-supervisor-filter-text');
 
+        // --- FAB Management ---
+        const viewFabMap = {
+            'cidades': 'city-fab-container',
+            'inovacoes-mes': 'innovations-fab-container',
+            'mix': 'mix-fab-container',
+            'meta-realizado': 'meta-realizado-fab-container',
+            'cobertura': 'coverage-fab-container'
+        };
+
+        function updateFabVisibility(viewName) {
+            // Hide all first
+            Object.values(viewFabMap).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+
+            const activeFabId = viewFabMap[viewName];
+            if (activeFabId) {
+                const el = document.getElementById(activeFabId);
+                if (el) el.classList.remove('hidden');
+            }
+        }
 
         const modal = document.getElementById('order-details-modal');
         const modalCloseBtn = document.getElementById('modal-close-btn');
@@ -12040,6 +12143,8 @@ const supervisorGroups = new Map();
         }
 
         async function renderView(view, options = {}) {
+            updateFabVisibility(view);
+
             if (view === 'goals' && window.userRole !== 'adm') {
                 window.showToast('warning', 'Acesso restrito a administradores.');
                 renderView('dashboard');
@@ -13550,14 +13655,47 @@ const supervisorGroups = new Map();
             }
 
 
-            const exportActiveBtn = document.getElementById('export-active-pdf-btn');
-            if (exportActiveBtn) {
-                exportActiveBtn.addEventListener('click', () => exportClientsPDF(activeClientsForExport, 'Relatório de Clientes Ativos no Mês', 'clientes_ativos', true));
-            }
+            // FAB Setup for City View (Custom with multiple PDF options)
+            setupFab('city-fab-container', null, null); // Setup toggle only
 
-            const exportInactiveBtn = document.getElementById('export-inactive-pdf-btn');
-            if (exportInactiveBtn) {
-                exportInactiveBtn.addEventListener('click', () => exportClientsPDF(inactiveClientsForExport, 'Relatório de Clientes Sem Vendas no Mês', 'clientes_sem_vendas', false));
+            const cityFab = document.getElementById('city-fab-container');
+            if (cityFab) {
+                const pdfActiveBtn = cityFab.querySelector('[data-action="pdf-active"]');
+                const pdfInactiveBtn = cityFab.querySelector('[data-action="pdf-inactive"]');
+                const excelBtn = cityFab.querySelector('[data-action="excel"]');
+
+                if (pdfActiveBtn) {
+                    const newBtn = pdfActiveBtn.cloneNode(true);
+                    pdfActiveBtn.parentNode.replaceChild(newBtn, pdfActiveBtn);
+                    newBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        cityFab.classList.remove('active');
+                        exportClientsPDF(activeClientsForExport, 'Relatório de Clientes Ativos no Mês', 'clientes_ativos', true);
+                    });
+                }
+
+                if (pdfInactiveBtn) {
+                    const newBtn = pdfInactiveBtn.cloneNode(true);
+                    pdfInactiveBtn.parentNode.replaceChild(newBtn, pdfInactiveBtn);
+                    newBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        cityFab.classList.remove('active');
+                        exportClientsPDF(inactiveClientsForExport, 'Relatório de Clientes Inativos (Sem Compra)', 'clientes_inativos', false);
+                    });
+                }
+
+                if (excelBtn) {
+                    const newBtn = excelBtn.cloneNode(true);
+                    excelBtn.parentNode.replaceChild(newBtn, excelBtn);
+                    newBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        cityFab.classList.remove('active');
+                        const sheets = {};
+                        if(activeClientsForExport && activeClientsForExport.length) sheets['Ativos'] = activeClientsForExport;
+                        if(inactiveClientsForExport && inactiveClientsForExport.length) sheets['Inativos'] = inactiveClientsForExport;
+                        exportToExcel(sheets, 'Relatorio_Cidade');
+                    });
+                }
             }
 
             if (modalCloseBtn) modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
@@ -13608,7 +13746,13 @@ const supervisorGroups = new Map();
 
             innovationsMonthFilialFilter.addEventListener('change', debouncedUpdateInnovationsMonth);
             clearInnovationsMonthFiltersBtn.addEventListener('click', () => { resetInnovationsMonthFilters(); markDirty('inovacoes'); });
-            exportInnovationsMonthPdfBtn.addEventListener('click', exportInnovationsMonthPDF);
+
+            setupFab('innovations-fab-container',
+                exportInnovationsMonthPDF,
+                () => {
+                    exportToExcel({'Inovacoes': innovationsMonthTableDataForExport}, 'Inovacoes_Mes');
+                }
+            );
 
             innovationsMonthTipoVendaFilterBtn.addEventListener('click', () => innovationsMonthTipoVendaFilterDropdown.classList.toggle('hidden'));
             innovationsMonthTipoVendaFilterDropdown.addEventListener('change', (e) => {
@@ -13625,7 +13769,12 @@ const supervisorGroups = new Map();
             });
 
 
-            document.getElementById('export-coverage-pdf-btn').addEventListener('click', exportCoveragePDF);
+            setupFab('coverage-fab-container',
+                exportCoveragePDF,
+                () => {
+                    exportToExcel({'Cobertura': coverageTableDataForExport}, 'Cobertura');
+                }
+            );
 
             const coverageChartToggleBtn = document.getElementById('coverage-chart-toggle-btn');
             if (coverageChartToggleBtn) {
@@ -14167,8 +14316,17 @@ const supervisorGroups = new Map();
                 }
             });
 
-            document.getElementById('export-meta-realizado-pdf-btn').addEventListener('click', exportMetaRealizadoPDF);
-            document.getElementById('export-meta-realizado-pdf-btn-bottom').addEventListener('click', exportMetaRealizadoPDF);
+            setupFab('meta-realizado-fab-container',
+                exportMetaRealizadoPDF,
+                () => {
+                    // Prepare data for Meta Realizado
+                    const sheets = {};
+                    if(metaRealizadoDataForExport && metaRealizadoDataForExport.sellers && metaRealizadoDataForExport.sellers.length) sheets['Vendedores'] = metaRealizadoDataForExport.sellers;
+                    if(metaRealizadoDataForExport && metaRealizadoDataForExport.clients && metaRealizadoDataForExport.clients.length) sheets['Clientes'] = metaRealizadoDataForExport.clients;
+                    exportToExcel(sheets, 'Meta_Realizado');
+                }
+            );
+
             document.getElementById('meta-realizado-clients-next-page-btn').addEventListener('click', () => {
                 if (metaRealizadoClientsTableState.currentPage < metaRealizadoClientsTableState.totalPages) {
                     metaRealizadoClientsTableState.currentPage++;
@@ -14298,8 +14456,12 @@ const supervisorGroups = new Map();
             const clearMixFiltersBtn = document.getElementById('clear-mix-filters-btn');
             if (clearMixFiltersBtn) clearMixFiltersBtn.addEventListener('click', () => { resetMixFilters(); markDirty('mix'); });
 
-            const exportMixPdfBtn = document.getElementById('export-mix-pdf-btn');
-            if (exportMixPdfBtn) exportMixPdfBtn.addEventListener('click', exportMixPDF);
+            setupFab('mix-fab-container',
+                exportMixPDF,
+                () => {
+                    exportToExcel({'Mix': mixTableDataForExport}, 'Analise_Mix');
+                }
+            );
 
             const mixKpiToggle = document.getElementById('mix-kpi-toggle');
             if (mixKpiToggle) {
