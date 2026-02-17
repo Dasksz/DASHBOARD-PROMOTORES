@@ -786,7 +786,7 @@
                     <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
                         <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
                             <h3 class="font-bold text-white">Clientes Ativos</h3>
-                            <button id="export-active-pdf-btn" class="text-xs bg-blue-600 hover:bg-blue-500 text-white py-1.5 px-3 rounded-md">PDF</button>
+
                         </div>
                         <div class="overflow-x-auto custom-scrollbar max-h-96">
                             <table class="min-w-full text-sm text-left text-slate-300"><tbody id="city-active-detail-table-body" class="divide-y divide-slate-800"></tbody></table>
@@ -795,7 +795,7 @@
                     <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
                         <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
                             <h3 class="font-bold text-white">Sem Compra (Mês)</h3>
-                            <button id="export-inactive-pdf-btn" class="text-xs bg-blue-600 hover:bg-blue-500 text-white py-1.5 px-3 rounded-md">PDF</button>
+
                         </div>
                         <div class="overflow-x-auto custom-scrollbar max-h-96">
                             <table class="min-w-full text-sm text-left text-slate-300"><tbody id="city-inactive-detail-table-body" class="divide-y divide-slate-800"></tbody></table>
@@ -1287,7 +1287,7 @@
     <div id="innovations-month-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
         <header class="mb-8 border-b border-slate-800 pb-4 flex justify-between items-end">
             <h1 class="text-3xl font-bold text-white">Inovações</h1>
-            <button id="export-innovations-month-pdf-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Exportar PDF</button>
+
         </header>
 
         <!-- Filters Block -->
@@ -1426,7 +1426,7 @@
     <div id="mix-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
         <header class="mb-8 border-b border-slate-800 pb-4 flex justify-between items-end">
             <h1 class="text-3xl font-bold text-white">Análise de Mix</h1>
-            <button id="export-mix-pdf-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Exportar PDF</button>
+
         </header>
 
         <div class="filter-wrapper-sentinel">
@@ -1588,7 +1588,7 @@
     <div id="meta-realizado-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
         <header class="mb-8 border-b border-slate-800 pb-4 flex justify-between items-end">
             <h1 class="text-3xl font-bold text-white">Meta vs Realizado</h1>
-            <button id="export-meta-realizado-pdf-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Exportar PDF</button>
+
         </header>
 
         <div class="filter-wrapper-sentinel">
@@ -1661,7 +1661,7 @@
             <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden flex flex-col h-[600px]">
                 <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
                     <h3 class="font-bold text-white">Detalhamento por Cliente</h3>
-                    <button id="export-meta-realizado-pdf-btn-bottom" class="text-xs bg-slate-700 text-white px-2 py-1 rounded">PDF</button>
+
                 </div>
                 <div class="overflow-auto custom-scrollbar flex-1">
                     <table id="metaRealizadoClientsTableContainer" class="min-w-full text-sm text-left text-slate-300">
@@ -1680,7 +1680,7 @@
     <div id="coverage-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
         <header class="mb-8 border-b border-slate-800 pb-4 flex justify-between items-end">
             <h1 class="text-3xl font-bold text-white">Análise de Cobertura</h1>
-            <button id="export-coverage-pdf-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Exportar PDF</button>
+
         </header>
 
         <div class="filter-wrapper-sentinel">
@@ -3046,5 +3046,85 @@
 <script src="js/banner3d.js" defer></script>
 <script src="js/app/utils.js" defer></script>
 <script src="js/init.js?v=6.0.0" defer></script>
+
+<div class="fab-container hidden" id="city-fab-container">
+    <div class="fab-menu">
+        <button class="fab-item" data-action="pdf-active">
+            <svg class="w-4 h-4 fab-icon-pdf" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>PDF (Ativos)</span>
+        </button>
+        <button class="fab-item" data-action="pdf-inactive">
+            <svg class="w-4 h-4 fab-icon-pdf" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>PDF (Inativos)</span>
+        </button>
+        <button class="fab-item" data-action="excel">
+            <svg class="w-4 h-4 fab-icon-excel" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>EXCEL</span>
+        </button>
+    </div>
+    <button class="fab-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+    </button>
+</div>
+<div class="fab-container hidden" id="innovations-fab-container">
+    <div class="fab-menu">
+        <button class="fab-item" data-action="pdf">
+            <svg class="w-4 h-4 fab-icon-pdf" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>PDF</span>
+        </button>
+        <button class="fab-item" data-action="excel">
+            <svg class="w-4 h-4 fab-icon-excel" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>EXCEL</span>
+        </button>
+    </div>
+    <button class="fab-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+    </button>
+</div>
+<div class="fab-container hidden" id="mix-fab-container">
+    <div class="fab-menu">
+        <button class="fab-item" data-action="pdf">
+            <svg class="w-4 h-4 fab-icon-pdf" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>PDF</span>
+        </button>
+        <button class="fab-item" data-action="excel">
+            <svg class="w-4 h-4 fab-icon-excel" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>EXCEL</span>
+        </button>
+    </div>
+    <button class="fab-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+    </button>
+</div>
+<div class="fab-container hidden" id="meta-realizado-fab-container">
+    <div class="fab-menu">
+        <button class="fab-item" data-action="pdf">
+            <svg class="w-4 h-4 fab-icon-pdf" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>PDF</span>
+        </button>
+        <button class="fab-item" data-action="excel">
+            <svg class="w-4 h-4 fab-icon-excel" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>EXCEL</span>
+        </button>
+    </div>
+    <button class="fab-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+    </button>
+</div>
+<div class="fab-container hidden" id="coverage-fab-container">
+    <div class="fab-menu">
+        <button class="fab-item" data-action="pdf">
+            <svg class="w-4 h-4 fab-icon-pdf" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>PDF</span>
+        </button>
+        <button class="fab-item" data-action="excel">
+            <svg class="w-4 h-4 fab-icon-excel" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span>EXCEL</span>
+        </button>
+    </div>
+    <button class="fab-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+    </button>
+</div>
 </body>
 </html>
