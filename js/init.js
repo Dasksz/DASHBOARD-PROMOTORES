@@ -1092,38 +1092,66 @@
         const supabaseClient = window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Gatekeeper Logic
-        const loginButton = document.getElementById('login-button');
+        const loginButton = document.getElementById('login-google-btn');
         const telaLogin = document.getElementById('tela-login');
         const telaLoading = document.getElementById('tela-loading');
         const telaPendente = document.getElementById('tela-pendente');
 
-        // New Login Elements
-        const formSignin = document.getElementById('form-signin');
-        const formSignup = document.getElementById('form-signup');
-        const formForgot = document.getElementById('form-forgot');
-        const btnShowSignup = document.getElementById('btn-show-signup');
-        const btnShowSignin = document.getElementById('btn-show-signin');
-        const btnForgotPassword = document.getElementById('btn-forgot-password');
-        const btnBackToLogin = document.getElementById('btn-back-to-login');
-        const loginFormSignin = document.getElementById('login-form-signin');
-        const loginFormSignup = document.getElementById('login-form-signup');
-        const loginFormForgot = document.getElementById('login-form-forgot');
-        const btnTogglePasswordSignup = document.getElementById('btn-toggle-password-signup');
-        const inputPasswordSignup = document.getElementById('signup-password');
-        const btnTogglePasswordSignin = document.getElementById('btn-toggle-password-signin');
+        // New Login Elements (Updated IDs)
+        const formSignin = document.getElementById('loginForm');
+        const formSignup = document.getElementById('signupForm');
+        const formForgot = document.getElementById('forgotForm');
+        
+        // Links / Buttons
+        const linkSignup = document.getElementById('link-signup'); 
+        const linkLoginFromSignup = document.getElementById('link-login-from-signup');
+        const linkForgot = document.getElementById('link-forgot');
+        const linkLoginFromForgot = document.getElementById('link-login-from-forgot');
+        
+        // Views
+        const viewLogin = document.getElementById('view-login');
+        const viewSignup = document.getElementById('view-signup');
+        const viewForgot = document.getElementById('view-forgot');
+        
+        // Password Toggles
+        const btnTogglePasswordSignin = document.getElementById('togglePassword');
         const inputPasswordSignin = document.getElementById('password');
+        // Signup toggle removed in new design
+        const btnTogglePasswordSignup = null; 
+        const inputPasswordSignup = document.getElementById('signup-password');
 
         // Toggle Logic
-        if (btnShowSignup && btnShowSignin) {
-            btnShowSignup.addEventListener('click', () => {
-                loginFormSignin.classList.add('hidden');
-                loginFormSignup.classList.remove('hidden');
-                if (loginFormForgot) loginFormForgot.classList.add('hidden');
+        if (linkSignup && viewLogin && viewSignup) {
+            linkSignup.addEventListener('click', (e) => {
+                e.preventDefault();
+                viewLogin.classList.add('hidden');
+                viewSignup.classList.remove('hidden');
+                if (viewForgot) viewForgot.classList.add('hidden');
             });
-            btnShowSignin.addEventListener('click', () => {
-                loginFormSignup.classList.add('hidden');
-                loginFormSignin.classList.remove('hidden');
-                if (loginFormForgot) loginFormForgot.classList.add('hidden');
+        }
+
+        if (linkLoginFromSignup && viewLogin && viewSignup) {
+            linkLoginFromSignup.addEventListener('click', (e) => {
+                e.preventDefault();
+                viewSignup.classList.add('hidden');
+                viewLogin.classList.remove('hidden');
+            });
+        }
+
+        if (linkForgot && viewLogin && viewForgot) {
+            linkForgot.addEventListener('click', (e) => {
+                e.preventDefault();
+                viewLogin.classList.add('hidden');
+                viewSignup.classList.add('hidden');
+                viewForgot.classList.remove('hidden');
+            });
+        }
+
+        if (linkLoginFromForgot && viewLogin && viewForgot) {
+            linkLoginFromForgot.addEventListener('click', (e) => {
+                e.preventDefault();
+                viewForgot.classList.add('hidden');
+                viewLogin.classList.remove('hidden');
             });
         }
 
@@ -1131,7 +1159,7 @@
         if (formForgot) {
             formForgot.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const email = formForgot.email.value;
+                const email = document.getElementById('forgot-email').value;
                 
                 const btn = formForgot.querySelector('button[type="submit"]');
                 const oldText = btn.textContent;
@@ -1187,7 +1215,7 @@
             btnTogglePasswordSignin.addEventListener('click', () => {
                 const type = inputPasswordSignin.getAttribute('type') === 'password' ? 'text' : 'password';
                 inputPasswordSignin.setAttribute('type', type);
-
+                
                 // Toggle Icon
                 if (type === 'text') {
                     // Eye Off Icon
@@ -1199,21 +1227,6 @@
             });
         }
 
-        // Forgot Password Logic
-        if (btnForgotPassword && btnBackToLogin && loginFormForgot) {
-             btnForgotPassword.addEventListener('click', (e) => {
-                e.preventDefault();
-                loginFormSignin.classList.add('hidden');
-                loginFormSignup.classList.add('hidden');
-                loginFormForgot.classList.remove('hidden');
-            });
-
-            btnBackToLogin.addEventListener('click', (e) => {
-                e.preventDefault();
-                loginFormForgot.classList.add('hidden');
-                loginFormSignin.classList.remove('hidden');
-            });
-        }
 
         // Password Toggle Logic
         if (btnTogglePasswordSignup && inputPasswordSignup) {
@@ -1256,8 +1269,8 @@
         if (formSignin) {
             formSignin.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const email = formSignin.email.value;
-                const password = formSignin.password.value;
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
                 
                 const btn = formSignin.querySelector('button[type="submit"]');
                 const oldText = btn.textContent;
@@ -1281,10 +1294,10 @@
         if (formSignup) {
             formSignup.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const name = formSignup.name.value;
-                const email = formSignup.email.value;
-                const phone = formSignup.phone.value;
-                const password = formSignup.password.value;
+                const name = document.getElementById('signup-name').value;
+                const email = document.getElementById('signup-email').value;
+                const phone = ''; 
+                const password = document.getElementById('signup-password').value;
 
                 // Validate Password
                 // Min 8 chars, 1 upper, 1 lower, 1 special
@@ -1484,7 +1497,7 @@
             } else {
                 const contentWrapper = document.getElementById('content-wrapper');
                 const topNavbar = document.getElementById('top-navbar');
-
+                
                 if (contentWrapper) contentWrapper.classList.add('hidden');
                 if (topNavbar) topNavbar.classList.add('hidden');
                 if (telaLogin) telaLogin.classList.remove('hidden');
