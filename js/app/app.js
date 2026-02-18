@@ -13019,12 +13019,9 @@ const supervisorGroups = new Map();
                     debouncedUpdateDashboard();
                 });
                 codcliFilter.addEventListener('input', (e) => {
-                    const val = e.target.value.trim();
-                    if (val && clientMapForKPIs.has(normalizeKey(val))) {
-                         handleClientFilterCascade(val, 'main');
+                    if (!e.target.value) {
+                         debouncedUpdateDashboard();
                     }
-
-                    debouncedUpdateDashboard();
                 });
                 // Make Lupa Icon Interactive
                 const codcliSearchIcon = document.getElementById('codcli-search-icon');
@@ -13049,13 +13046,11 @@ const supervisorGroups = new Map();
                     }
                 });
                 goalsGvCodcliFilter.addEventListener('input', (e) => {
-                    const val = e.target.value.trim();
-                    if (val && clientMapForKPIs.has(normalizeKey(val))) {
-                         handleClientFilterCascade(val, 'goals-gv');
-                    }
-                    if (typeof updateGoalsView === 'function') {
-                        goalsTableState.currentPage = 1;
-                        updateGoalsView();
+                    if (!e.target.value) {
+                        if (typeof updateGoalsView === 'function') {
+                            goalsTableState.currentPage = 1;
+                            updateGoalsView();
+                        }
                     }
                 });
                 // Make Goals Lupa Icon Interactive
