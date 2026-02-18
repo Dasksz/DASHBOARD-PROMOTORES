@@ -925,10 +925,19 @@ html.light .bg-green-900\/30 {
 }
 
 @media (max-width: 640px) {
-    .content-overlay { padding-left: 30px; }
-    .user-greeting { font-size: 2.5rem !important; }
-    .sub-text { font-size: 1rem !important; }
-    #banner-container { height: 220px; } /* Optional responsive adjustment */
+    .content-overlay { padding-left: 20px; }
+    .user-greeting { font-size: 1.5rem !important; }
+    .sub-text { font-size: 0.8rem !important; }
+    .brand-tag {
+        font-size: 0.6rem;
+        padding: 3px 10px;
+        margin-bottom: 8px;
+    }
+    .meta-info {
+        margin-top: 15px;
+        font-size: 0.7rem;
+    }
+    #banner-container { height: 140px; } /* 40% reduction approx from 220px to 140px based on user request */
 }
 
 .brand-tag {
