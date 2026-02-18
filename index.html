@@ -105,48 +105,21 @@
 
         /* Background Animation from Design */
         body {
-            background: #050a18;
-        }
-        .bg-animated {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -2;
-            background: radial-gradient(circle at 50% 50%, #1a2a4a 0%, #050a18 100%);
-            animation: pulseBg 10s ease infinite alternate;
-        }
-        @keyframes pulseBg {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.1); }
-        }
-        #particle-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            pointer-events: none;
+            background: transparent;
         }
     </style>
 </head>
 <body class="text-slate-300 antialiased overflow-x-hidden">
 
-<!-- Fundo Animado -->
-<div class="bg-animated"></div>
-<canvas id="particle-canvas"></canvas>
+<!-- Fundo Estático (Unificado) -->
+<div class="fixed inset-0 z-[-1] bg-[#050505]">
+    <div class="absolute inset-0" style="background-image: radial-gradient(at 0% 0%, rgba(255, 94, 0, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(255, 0, 0, 0.1) 0px, transparent 50%);"></div>
+    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-orange/10 rounded-full blur-[100px] animate-pulse-slow"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[100px] animate-pulse-slow" style="animation-delay: 2s"></div>
+</div>
 
 <!-- Tela de Login (New Design) -->
 <div id="tela-login" class="fixed inset-0 z-[2000] hidden flex items-center justify-center p-4">
-    
-    <!-- Background specific to Login -->
-    <div class="absolute inset-0 bg-[#050505]">
-        <div class="absolute inset-0" style="background-image: radial-gradient(at 0% 0%, rgba(255, 94, 0, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(255, 0, 0, 0.1) 0px, transparent 50%);"></div>
-        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-orange/10 rounded-full blur-[100px] animate-pulse-slow"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[100px] animate-pulse-slow" style="animation-delay: 2s"></div>
-    </div>
 
     <!-- LOGIN VIEW -->
     <div id="view-login" class="glass-card w-full max-w-md rounded-2xl p-6 relative z-10 transition-all duration-300">
@@ -3147,68 +3120,6 @@
 <!-- Toast Notification Container -->
 <div id="toast-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 w-80 sm:w-96 pointer-events-none"></div>
 
-<script>
-    // --- Lógica das Partículas Flutuantes ---
-    (function(){
-        const canvas = document.getElementById('particle-canvas');
-        if(!canvas) return;
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-
-        window.addEventListener('resize', resize);
-        resize();
-
-        class Particle {
-            constructor() {
-                this.reset();
-            }
-            reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2 + 0.5;
-                this.speedX = Math.random() * 0.5 - 0.25;
-                this.speedY = Math.random() * 0.5 - 0.25;
-                this.opacity = Math.random() * 0.5 + 0.2;
-            }
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
-                    this.reset();
-                }
-            }
-            draw() {
-                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        function init() {
-            for (let i = 0; i < 80; i++) {
-                particles.push(new Particle());
-            }
-        }
-
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach(p => {
-                p.update();
-                p.draw();
-            });
-            requestAnimationFrame(animate);
-        }
-
-        init();
-        animate();
-    })();
-</script>
 <script src="js/banner3d.js" defer></script>
 <script src="js/app/utils.js" defer></script>
 <script src="js/init.js?v=6.0.0" defer></script>
