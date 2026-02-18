@@ -199,6 +199,19 @@ create table if not exists public.data_client_promoters (
   promoter_code text
 );
 
+-- 1.15 Tabela de Títulos (Inadimplência)
+create table if not exists public.data_titulos (
+  id uuid default uuid_generate_v4 () primary key,
+  cod_cliente text,
+  vl_receber numeric,
+  qt_tit_receber numeric,
+  vl_titulos numeric,
+  qt_titulos numeric,
+  municipio text,
+  dt_vencimento timestamp with time zone,
+  updated_at timestamp with time zone default now()
+);
+
 -- Ensure columns exist (Idempotency for older schemas)
 do $$
 BEGIN
@@ -272,7 +285,7 @@ BEGIN
   IF table_name NOT IN (
     'data_detailed', 'data_history', 'data_clients', 'data_orders', 
     'data_product_details', 'data_active_products', 'data_stock', 
-    'data_innovations', 'data_metadata', 'goals_distribution', 'data_hierarchy'
+    'data_innovations', 'data_metadata', 'goals_distribution', 'data_hierarchy', 'data_titulos'
   ) THEN
     RAISE EXCEPTION 'Invalid table name.';
   END IF;
@@ -436,7 +449,8 @@ BEGIN
             'data_product_details',
             'data_stock',
             'data_hierarchy',
-            'data_client_promoters'
+            'data_client_promoters',
+            'data_titulos'
         )
     LOOP
         -- Cleanup

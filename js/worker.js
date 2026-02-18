@@ -10,7 +10,8 @@
             clients: [], // Validation relaxed to support variable headers (aliases handled in processing)
             products: ['Código', 'Qtde embalagem master(Compra)', 'Descrição', 'Nome do fornecedor', 'Fornecedor', 'Dt.Cadastro'],
             history: ['CODCLI', 'NOME', 'SUPERV', 'PEDIDO', 'CODUSUR', 'CODSUPERVISOR', 'DTPED', 'DTSAIDA', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'POSICAO', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX'],
-            hierarchy: ['COD COORD.', 'COORDENADOR', 'COD CO-COORD.', 'CO-COORDENADOR', 'COD PROMOTOR', 'PROMOTOR']
+            hierarchy: ['COD COORD.', 'COORDENADOR', 'COD CO-COORD.', 'CO-COORDENADOR', 'COD PROMOTOR', 'PROMOTOR'],
+            titulos: ['CODCLI', 'VLRECEBER', 'DTVENC', 'VLTITULOS']
         };
 
         const columnFormats = {
@@ -54,6 +55,12 @@
             },
             hierarchy: {
                 // All text, no validation needed besides existence
+            },
+            titulos: {
+                'CODCLI': 'number',
+                'VLRECEBER': 'number',
+                'VLTITULOS': 'number',
+                'DTVENC': 'date'
             }
         };
 
@@ -645,17 +652,18 @@
         }
 
         self.onmessage = async (event) => {
-            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile } = event.data;
+            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile } = event.data;
 
             try {
                 self.postMessage({ type: 'progress', status: 'Lendo arquivos...', percentage: 10 });
-                const [salesDataRaw, clientsDataRaw, productsDataRaw, historyDataRaw, innovationsDataRaw, hierarchyDataRaw] = await Promise.all([
+                const [salesDataRaw, clientsDataRaw, productsDataRaw, historyDataRaw, innovationsDataRaw, hierarchyDataRaw, titulosDataRaw] = await Promise.all([
                     readFile(salesFile, 'sales'),
                     readFile(clientsFile, 'clients'),
                     readFile(productsFile, 'products'),
                     readFile(historyFile, 'history'),
                     readFile(innovationsFile, 'innovations'),
-                    readFile(hierarchyFile, 'hierarchy')
+                    readFile(hierarchyFile, 'hierarchy'),
+                    readFile(titulosFile, 'titulos')
                 ]);
 
 
@@ -1061,6 +1069,17 @@
                     nome_promotor: String(item['PROMOTOR'] || '').trim()
                 })).filter(h => h.cod_coord || h.cod_promotor);
 
+                // Process Titulos Data
+                const finalTitulosData = titulosDataRaw.map(item => {
+                    const dt = parseDate(item['DTVENC']);
+                    return {
+                        cod_cliente: normalizeKey(item['CODCLI']),
+                        vl_receber: parseBrazilianNumber(item['VLRECEBER']),
+                        vl_titulos: parseBrazilianNumber(item['VLTITULOS']),
+                        dt_vencimento: dt ? dt.toISOString().split('T')[0] : null
+                    };
+                }).filter(t => t.cod_cliente);
+
                 // --- HASH COMPUTATION FOR CONDITIONAL UPLOADS ---
                 self.postMessage({ type: 'progress', status: 'Gerando assinaturas digitais...', percentage: 98 });
                 const hashes = await Promise.all([
@@ -1072,7 +1091,8 @@
                     computeHash(finalActiveProductsData),
                     computeHash(finalProductDetailsData),
                     computeHash(finalInnovationsData),
-                    computeHash(finalHierarchyData)
+                    computeHash(finalHierarchyData),
+                    computeHash(finalTitulosData)
                 ]);
 
                 finalMetadata.push({ key: 'hash_detailed', value: hashes[0] });
@@ -1084,6 +1104,7 @@
                 finalMetadata.push({ key: 'hash_product_details', value: hashes[6] });
                 finalMetadata.push({ key: 'hash_innovations', value: hashes[7] });
                 finalMetadata.push({ key: 'hash_hierarchy', value: hashes[8] });
+                finalMetadata.push({ key: 'hash_titulos', value: hashes[9] });
 
 
                 self.postMessage({ type: 'progress', status: 'Pronto!', percentage: 100 });
@@ -1099,6 +1120,7 @@
                         stock: finalStockData,
                         innovations: finalInnovationsData,
                         hierarchy: finalHierarchyData,
+                        titulos: finalTitulosData,
                         product_details: finalProductDetailsData,
                         active_products: finalActiveProductsData,
                         metadata: finalMetadata,
