@@ -2116,7 +2116,7 @@
 
         let currentGoalsSupplier = 'PEPSICO_ALL';
         let currentGoalsBrand = null;
-        let currentGoalsSvSupplier = window.SUPPLIER_CODES.EXTRUSADOS; // Default '707'
+        let currentGoalsSvSupplier = window.SUPPLIER_CODES.EXTRUSADOS; // Default window.SUPPLIER_CODES.ELMA[0]
         let currentGoalsSvBrand = null;
         let currentGoalsSvData = [];
         let goalsTableState = {
@@ -3010,7 +3010,7 @@
 
         function distributeSellerGoal(sellerName, categoryId, newTotalValue, metric = 'fat') {
             // metric: 'fat' or 'vol'
-            // categoryId: '707', '1119_TODDY', 'tonelada_elma', etc.
+            // categoryId: window.SUPPLIER_CODES.ELMA[0], window.SUPPLIER_CODES.VIRTUAL.TODDY, 'tonelada_elma', etc.
 
             const sellerCode = optimizedData.rcaCodeByName.get(sellerName);
             if (!sellerCode) { console.warn(`[Goals] Seller not found: ${sellerName}`); return; }
@@ -3051,13 +3051,13 @@
                         // Check against all target categories
                         targetCategories.forEach(subCat => {
                             let isMatch = false;
-                            if (subCat === '707' && codFor === '707') isMatch = true;
-                            else if (subCat === '708' && codFor === '708') isMatch = true;
-                            else if (subCat === '752' && codFor === '752') isMatch = true;
-                            else if (codFor === '1119') {
-                                if (subCat === '1119_TODDYNHO' && desc.includes('TODDYNHO')) isMatch = true;
-                                else if (subCat === '1119_TODDY' && desc.includes('TODDY')) isMatch = true;
-                                else if (subCat === '1119_QUAKER_KEROCOCO' && (desc.includes('QUAKER') || desc.includes('KEROCOCO'))) isMatch = true;
+                            if (subCat === window.SUPPLIER_CODES.ELMA[0] && codFor === window.SUPPLIER_CODES.ELMA[0]) isMatch = true;
+                            else if (subCat === window.SUPPLIER_CODES.ELMA[1] && codFor === window.SUPPLIER_CODES.ELMA[1]) isMatch = true;
+                            else if (subCat === window.SUPPLIER_CODES.ELMA[2] && codFor === window.SUPPLIER_CODES.ELMA[2]) isMatch = true;
+                            else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
+                                if (subCat === window.SUPPLIER_CODES.VIRTUAL.TODDYNHO && desc.includes('TODDYNHO')) isMatch = true;
+                                else if (subCat === window.SUPPLIER_CODES.VIRTUAL.TODDY && desc.includes('TODDY')) isMatch = true;
+                                else if (subCat === window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO && (desc.includes('QUAKER') || desc.includes('KEROCOCO'))) isMatch = true;
                             }
 
                             if (isMatch) {
@@ -3751,11 +3751,11 @@
                     let valid = false;
                     if (pasta === 'PEPSICO') valid = true;
                     else if (pasta === 'ELMA') valid = window.SUPPLIER_CODES.ELMA.includes(sup);
-                    else if (pasta === 'FOODS') valid = window.SUPPLIER_CODES.VIRTUAL_LIST.includes(sup) || sup === '1119';
+                    else if (pasta === 'FOODS') valid = window.SUPPLIER_CODES.VIRTUAL_LIST.includes(sup) || sup === window.SUPPLIER_CODES.FOODS[0];
 
                     if (valid) {
-                        if (sup === '1119') {
-                            goalKeys.push('1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO');
+                        if (sup === window.SUPPLIER_CODES.FOODS[0]) {
+                            goalKeys.push(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO, window.SUPPLIER_CODES.VIRTUAL.TODDY, window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO);
                         } else {
                             goalKeys.push(sup);
                         }
@@ -3867,10 +3867,10 @@
                         }
                     } else if (suppliersSet.size === 1) {
                         const sup = [...suppliersSet][0];
-                        if (sup === '1119_TODDYNHO') overrideKey = '1119_TODDYNHO';
-                        else if (sup === '1119_TODDY') overrideKey = '1119_TODDY';
-                        else if (sup === '1119_QUAKER' || sup === '1119_QUAKER_KEROCOCO') overrideKey = '1119_QUAKER_KEROCOCO';
-                        else if (sup === '1119') {
+                        if (sup === window.SUPPLIER_CODES.VIRTUAL.TODDYNHO) overrideKey = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
+                        else if (sup === window.SUPPLIER_CODES.VIRTUAL.TODDY) overrideKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                        else if (sup === '1119_QUAKER' || sup === window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO) overrideKey = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
+                        else if (sup === window.SUPPLIER_CODES.FOODS[0]) {
                              if (allFoodsSelected) overrideKey = 'total_foods';
                         }
                         else overrideKey = sup;
@@ -4002,7 +4002,7 @@
                 if (pasta === 'ELMA') {
                     if (!window.SUPPLIER_CODES.ELMA.includes(codFor)) continue;
                 } else if (pasta === 'FOODS') {
-                    if (codFor !== '1119') continue;
+                    if (codFor !== window.SUPPLIER_CODES.FOODS[0]) continue;
                 }
                 // If pasta === 'PEPSICO', we include all (already filtered for PEPSICO rowPasta)
 
@@ -4030,11 +4030,11 @@
                         supplierMatch = true;
                     }
                     // 2. Virtual Category Logic for 1119 (Foods)
-                    else if (codFor === '1119') {
+                    else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
                         const desc = normalize(s.DESCRICAO || '');
-                        if (suppliersSet.has('1119_TODDYNHO') && desc.includes('TODDYNHO')) supplierMatch = true;
-                        else if (suppliersSet.has('1119_TODDY') && desc.includes('TODDY') && !desc.includes('TODDYNHO')) supplierMatch = true;
-                        else if (suppliersSet.has('1119_QUAKER_KEROCOCO') && (desc.includes('QUAKER') || desc.includes('KEROCOCO'))) supplierMatch = true;
+                        if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO) && desc.includes('TODDYNHO')) supplierMatch = true;
+                        else if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.TODDY) && desc.includes('TODDY') && !desc.includes('TODDYNHO')) supplierMatch = true;
+                        else if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO) && (desc.includes('QUAKER') || desc.includes('KEROCOCO'))) supplierMatch = true;
                     }
 
                     if (!supplierMatch) continue;
@@ -4484,7 +4484,7 @@
 
                 const codFor = String(s.CODFOR);
                 if (pasta === 'ELMA' && !window.SUPPLIER_CODES.ELMA.includes(codFor)) continue;
-                if (pasta === 'FOODS' && codFor !== '1119') continue;
+                if (pasta === 'FOODS' && codFor !== window.SUPPLIER_CODES.FOODS[0]) continue;
 
                 // Supervisor/Seller/Supplier Filter on SALE row
                 if (supervisorsSet.size > 0 && !supervisorsSet.has(s.SUPERV)) continue;
@@ -4663,12 +4663,12 @@
             });
 
             const metricsMap = {
-                '707': createMetric(),
-                '708': createMetric(),
-                '752': createMetric(),
-                '1119_TODDYNHO': createMetric(),
-                '1119_TODDY': createMetric(),
-                '1119_QUAKER_KEROCOCO': createMetric(),
+                [window.SUPPLIER_CODES.ELMA[0]]: createMetric(),
+                [window.SUPPLIER_CODES.ELMA[1]]: createMetric(),
+                [window.SUPPLIER_CODES.ELMA[2]]: createMetric(),
+                [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]: createMetric(),
+                [window.SUPPLIER_CODES.VIRTUAL.TODDY]: createMetric(),
+                [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: createMetric(),
                 'ELMA_ALL': createMetric(),
                 'FOODS_ALL': createMetric(),
                 'PEPSICO_ALL': createMetric()
@@ -4693,21 +4693,21 @@
                         let key = null;
                         const codFor = String(sale.CODFOR);
 
-                        if (codFor === '707') key = '707';
-                        else if (codFor === '708') key = '708';
-                        else if (codFor === '752') key = '752';
-                        else if (codFor === '1119') {
+                        if (codFor === window.SUPPLIER_CODES.ELMA[0]) key = window.SUPPLIER_CODES.ELMA[0];
+                        else if (codFor === window.SUPPLIER_CODES.ELMA[1]) key = window.SUPPLIER_CODES.ELMA[1];
+                        else if (codFor === window.SUPPLIER_CODES.ELMA[2]) key = window.SUPPLIER_CODES.ELMA[2];
+                        else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
                             const desc = normalize(sale.DESCRICAO || '');
-                            if (desc.includes('TODDYNHO')) key = '1119_TODDYNHO';
-                            else if (desc.includes('TODDY')) key = '1119_TODDY';
-                            else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = '1119_QUAKER_KEROCOCO';
+                            if (desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
+                            else if (desc.includes('TODDY')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                            else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
                         }
 
                         const keysToProcess = [];
                         if (key && metricsMap[key]) keysToProcess.push(key);
 
                         if (window.SUPPLIER_CODES.ELMA.includes(codFor)) keysToProcess.push('ELMA_ALL');
-                        if (codFor === '1119') keysToProcess.push('FOODS_ALL');
+                        if (codFor === window.SUPPLIER_CODES.FOODS[0]) keysToProcess.push('FOODS_ALL');
                         if (window.SUPPLIER_CODES.PEPSICO.includes(codFor)) keysToProcess.push('PEPSICO_ALL');
 
                         keysToProcess.forEach(procKey => {
@@ -4820,13 +4820,13 @@
                         const desc = (sale.DESCRICAO || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 
                         if (category === 'pepsico_all') {
-                             if (window.SUPPLIER_CODES.ELMA.includes(codFor) || (codFor === '1119' && (desc.includes('TODDYNHO') || desc.includes('TODDY') || desc.includes('QUAKER') || desc.includes('KEROCOCO')))) {
+                             if (window.SUPPLIER_CODES.ELMA.includes(codFor) || (codFor === window.SUPPLIER_CODES.FOODS[0] && (desc.includes('TODDYNHO') || desc.includes('TODDY') || desc.includes('QUAKER') || desc.includes('KEROCOCO')))) {
                                  hasSale = true;
                              }
                         } else if (category === 'total_elma') {
                              if (window.SUPPLIER_CODES.ELMA.includes(codFor)) hasSale = true;
                         } else if (category === 'total_foods') {
-                             if (codFor === '1119' && (desc.includes('TODDYNHO') || desc.includes('TODDY') || desc.includes('QUAKER') || desc.includes('KEROCOCO'))) hasSale = true;
+                             if (codFor === window.SUPPLIER_CODES.FOODS[0] && (desc.includes('TODDYNHO') || desc.includes('TODDY') || desc.includes('QUAKER') || desc.includes('KEROCOCO'))) hasSale = true;
                         } else if (category === window.SUPPLIER_CODES.ELMA[0] && codFor === window.SUPPLIER_CODES.ELMA[0]) hasSale = true;
                         else if (category === window.SUPPLIER_CODES.ELMA[1] && codFor === window.SUPPLIER_CODES.ELMA[1]) hasSale = true;
                         else if (category === window.SUPPLIER_CODES.ELMA[2] && codFor === window.SUPPLIER_CODES.ELMA[2]) hasSale = true;
@@ -4888,12 +4888,12 @@
 
             // 2. Sum up Revenue/Volume targets from `globalClientGoals` (Standard logic)
             const summaryGoalsSums = {
-                '707': { fat: 0, vol: 0 },
-                '708': { fat: 0, vol: 0 },
-                '752': { fat: 0, vol: 0 },
-                '1119_TODDYNHO': { fat: 0, vol: 0 },
-                '1119_TODDY': { fat: 0, vol: 0 },
-                '1119_QUAKER_KEROCOCO': { fat: 0, vol: 0 }
+                [window.SUPPLIER_CODES.ELMA[0]]: { fat: 0, vol: 0 },
+                [window.SUPPLIER_CODES.ELMA[1]]: { fat: 0, vol: 0 },
+                [window.SUPPLIER_CODES.ELMA[2]]: { fat: 0, vol: 0 },
+                [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]: { fat: 0, vol: 0 },
+                [window.SUPPLIER_CODES.VIRTUAL.TODDY]: { fat: 0, vol: 0 },
+                [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: { fat: 0, vol: 0 }
             };
 
             filteredSummaryClients.forEach(c => {
@@ -4951,12 +4951,12 @@
             };
 
             const summaryItems = [
-                { title: 'Extrusados', supplier: '707', brand: null, color: 'teal' },
-                { title: 'Não Extrusados', supplier: '708', brand: null, color: 'blue' },
-                { title: 'Torcida', supplier: '752', brand: null, color: 'purple' },
-                { title: 'Toddynho', supplier: '1119', brand: 'TODDYNHO', color: 'orange' },
-                { title: 'Toddy', supplier: '1119', brand: 'TODDY', color: 'amber' },
-                { title: 'Quaker / Kerococo', supplier: '1119', brand: 'QUAKER_KEROCOCO', color: 'cyan' }
+                { title: 'Extrusados', supplier: window.SUPPLIER_CODES.ELMA[0], brand: null, color: 'teal' },
+                { title: 'Não Extrusados', supplier: window.SUPPLIER_CODES.ELMA[1], brand: null, color: 'blue' },
+                { title: 'Torcida', supplier: window.SUPPLIER_CODES.ELMA[2], brand: null, color: 'purple' },
+                { title: 'Toddynho', supplier: window.SUPPLIER_CODES.FOODS[0], brand: 'TODDYNHO', color: 'orange' },
+                { title: 'Toddy', supplier: window.SUPPLIER_CODES.FOODS[0], brand: 'TODDY', color: 'amber' },
+                { title: 'Quaker / Kerococo', supplier: window.SUPPLIER_CODES.FOODS[0], brand: 'QUAKER_KEROCOCO', color: 'cyan' }
             ];
 
             let totalFat = 0;
@@ -5171,7 +5171,7 @@
                     if (!window.SUPPLIER_CODES.ELMA.includes(codFor)) return false;
                 } else if (supplier === 'FOODS_ALL') {
                     // Include all brands of 1119 that are in sub-tabs
-                    if (codFor !== '1119') return false;
+                    if (codFor !== window.SUPPLIER_CODES.FOODS[0]) return false;
                     // No brand filtering here, assuming 1119 contains mostly Foods
                 } else {
                     if (codFor !== supplier) return false;
@@ -5412,11 +5412,11 @@
                             const codFor = String(sale.CODFOR);
 
                             // Special handling for broken down categories (FOODS)
-                            if (codFor === '1119') {
+                            if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
                                 const desc = normalize(sale.DESCRICAO || '');
-                                if (desc.includes('TODDYNHO')) saleKey = '1119_TODDYNHO';
-                                else if (desc.includes('TODDY')) saleKey = '1119_TODDY';
-                                else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) saleKey = '1119_QUAKER_KEROCOCO';
+                                if (desc.includes('TODDYNHO')) saleKey = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
+                                else if (desc.includes('TODDY')) saleKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                                else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) saleKey = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
                                 else if (targetKey.startsWith('1119_')) saleKey = null; // If targeting a sub-brand but this product doesn't match, exclude it
                             }
 
@@ -5503,9 +5503,9 @@
             }
 
             // Default to Tab Name
-            if (currentGoalsSupplier === '707') return 'EXTRUSADOS';
-            if (currentGoalsSupplier === '708') return 'NÃO EXTRUSADOS';
-            if (currentGoalsSupplier === '752') return 'TORCIDA';
+            if (currentGoalsSupplier === window.SUPPLIER_CODES.ELMA[0]) return 'EXTRUSADOS';
+            if (currentGoalsSupplier === window.SUPPLIER_CODES.ELMA[1]) return 'NÃO EXTRUSADOS';
+            if (currentGoalsSupplier === window.SUPPLIER_CODES.ELMA[2]) return 'TORCIDA';
             if (currentGoalsBrand) return currentGoalsBrand;
 
             return 'filtro atual';
@@ -5788,7 +5788,7 @@
             const checkSale = (codFor, desc) => {
                 if (category === 'pepsico_all') return window.SUPPLIER_CODES.PEPSICO.includes(codFor);
                 if (category === 'total_elma') return window.SUPPLIER_CODES.ELMA.includes(codFor);
-                if (category === 'total_foods') return codFor === '1119';
+                if (category === 'total_foods') return codFor === window.SUPPLIER_CODES.FOODS[0];
 
                 // Specifics
                 if (category === window.SUPPLIER_CODES.ELMA[0]) return codFor === window.SUPPLIER_CODES.ELMA[0];
@@ -6019,7 +6019,7 @@
                 const codFor = String(sale.CODFOR);
                 if (supplier === 'PEPSICO_ALL') { if (!window.SUPPLIER_CODES.PEPSICO.includes(codFor)) return false; }
                 else if (supplier === 'ELMA_ALL') { if (!window.SUPPLIER_CODES.ELMA.includes(codFor)) return false; }
-                else if (supplier === 'FOODS_ALL') { if (codFor !== '1119') return false; }
+                else if (supplier === 'FOODS_ALL') { if (codFor !== window.SUPPLIER_CODES.FOODS[0]) return false; }
                 else {
                     if (codFor !== supplier) return false;
                     if (brand) {
@@ -6075,7 +6075,7 @@
                                     const codFor = String(sale.CODFOR);
 
                                     if (currentGoalsSupplier === 'ELMA_ALL') {
-                                        if (codFor !== '707' && codFor !== '708') includeInMix = false;
+                                        if (codFor !== window.SUPPLIER_CODES.ELMA[0] && codFor !== window.SUPPLIER_CODES.ELMA[1]) includeInMix = false;
                                     }
 
                                     if (includeInMix) {
@@ -6714,14 +6714,14 @@
                         let matchedCats = [];
 
                         // Determine which categories this sale belongs to
-                        if (codFor === '707') matchedCats.push('707');
-                        else if (codFor === '708') matchedCats.push('708');
-                        else if (codFor === '752') matchedCats.push('752');
-                        else if (codFor === '1119') {
+                        if (codFor === window.SUPPLIER_CODES.ELMA[0]) matchedCats.push(window.SUPPLIER_CODES.ELMA[0]);
+                        else if (codFor === window.SUPPLIER_CODES.ELMA[1]) matchedCats.push(window.SUPPLIER_CODES.ELMA[1]);
+                        else if (codFor === window.SUPPLIER_CODES.ELMA[2]) matchedCats.push(window.SUPPLIER_CODES.ELMA[2]);
+                        else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
                             const desc = norm(sale.DESCRICAO || '');
-                            if (desc.includes('TODDYNHO')) matchedCats.push('1119_TODDYNHO');
-                            else if (desc.includes('TODDY')) matchedCats.push('1119_TODDY');
-                            else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) matchedCats.push('1119_QUAKER_KEROCOCO');
+                            if (desc.includes('TODDYNHO')) matchedCats.push(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO);
+                            else if (desc.includes('TODDY')) matchedCats.push(window.SUPPLIER_CODES.VIRTUAL.TODDY);
+                            else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) matchedCats.push(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO);
                         }
 
                         if (matchedCats.length > 0) {
@@ -6772,10 +6772,10 @@
                 });
 
                 // Calculate Aggregate Positivation for Client (Unique Client Count)
-                let clientElmaFat = (clientCatTotals['707']?.fat || 0) + (clientCatTotals['708']?.fat || 0) + (clientCatTotals['752']?.fat || 0);
+                let clientElmaFat = (clientCatTotals[window.SUPPLIER_CODES.ELMA[0]]?.fat || 0) + (clientCatTotals[window.SUPPLIER_CODES.ELMA[1]]?.fat || 0) + (clientCatTotals[window.SUPPLIER_CODES.ELMA[2]]?.fat || 0);
                 if (clientElmaFat >= 1) sellerObj.elmaPos++;
 
-                let clientFoodsFat = (clientCatTotals['1119_TODDYNHO']?.fat || 0) + (clientCatTotals['1119_TODDY']?.fat || 0) + (clientCatTotals['1119_QUAKER_KEROCOCO']?.fat || 0);
+                let clientFoodsFat = (clientCatTotals[window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]?.fat || 0) + (clientCatTotals[window.SUPPLIER_CODES.VIRTUAL.TODDY]?.fat || 0) + (clientCatTotals[window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]?.fat || 0);
                 if (clientFoodsFat >= 1) sellerObj.foodsPos++;
 
             }, () => {
@@ -6910,16 +6910,16 @@
                     // 1. Positivation Adjustments
                     // Map Column ID -> Adjustment Key
                     // IDs: 'total_elma'->'ELMA_ALL', 'total_foods'->'FOODS_ALL', 'geral'->'PEPSICO_ALL'
-                    //      '707'->'707', etc.
+                    //      window.SUPPLIER_CODES.ELMA[0]->window.SUPPLIER_CODES.ELMA[0], etc.
 
                     const posKeys = {
                         'total_elma': 'ELMA_ALL',
                         'total_foods': 'FOODS_ALL',
                         'geral': 'PEPSICO_ALL', // GERAL uses PEPSICO_ALL for Positivação
-                        '707': '707', '708': '708', '752': '752',
-                        '1119_TODDYNHO': '1119_TODDYNHO',
-                        '1119_TODDY': '1119_TODDY', // Check keys in globalGoalsMetrics
-                        '1119_QUAKER_KEROCOCO': '1119_QUAKER_KEROCOCO'
+                        [window.SUPPLIER_CODES.ELMA[0]]: window.SUPPLIER_CODES.ELMA[0], [window.SUPPLIER_CODES.ELMA[1]]: window.SUPPLIER_CODES.ELMA[1], [window.SUPPLIER_CODES.ELMA[2]]: window.SUPPLIER_CODES.ELMA[2],
+                        [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]: window.SUPPLIER_CODES.VIRTUAL.TODDYNHO,
+                        [window.SUPPLIER_CODES.VIRTUAL.TODDY]: window.SUPPLIER_CODES.VIRTUAL.TODDY, // Check keys in globalGoalsMetrics
+                        [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO
                     };
 
                     for (const [colId, data] of Object.entries(seller.data)) {
@@ -7820,13 +7820,13 @@ const supervisorGroups = new Map();
                     const codFor = String(item.CODFOR);
                     const desc = normalize(item.DESCRICAO || '');
 
-                    if (codFor === '707') {
+                    if (codFor === window.SUPPLIER_CODES.ELMA[0]) {
                         fornecedorLabel = 'Extrusados';
-                    } else if (codFor === '708') {
+                    } else if (codFor === window.SUPPLIER_CODES.ELMA[1]) {
                         fornecedorLabel = 'Não Extrusados';
-                    } else if (codFor === '752') {
+                    } else if (codFor === window.SUPPLIER_CODES.ELMA[2]) {
                         fornecedorLabel = 'Torcida';
-                    } else if (codFor === '1119') {
+                    } else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
                         if (desc.includes('TODDYNHO')) fornecedorLabel = 'Toddynho';
                         else if (desc.includes('TODDY')) fornecedorLabel = 'Toddy';
                         else if (desc.includes('QUAKER')) fornecedorLabel = 'Quaker';
@@ -8769,16 +8769,16 @@ const supervisorGroups = new Map();
                         if (sup === 'FOODS') return ['FOODS_ALL'];
 
                         // Mappings for Descriptive Names (Virtual Categories)
-                        if (sup === 'EXTRUSADOS') return ['707'];
-                        if (sup === 'NÃO EXTRUSADOS' || sup === 'NAO EXTRUSADOS') return ['708'];
-                        if (sup === 'TORCIDA') return ['752'];
-                        if (sup === 'TODDYNHO') return ['1119_TODDYNHO'];
-                        if (sup === 'TODDY') return ['1119_TODDY'];
-                        if (sup === 'QUAKER' || sup === 'KEROCOCO' || sup.includes('QUAKER')) return ['1119_QUAKER_KEROCOCO'];
+                        if (sup === 'EXTRUSADOS') return [window.SUPPLIER_CODES.ELMA[0]];
+                        if (sup === 'NÃO EXTRUSADOS' || sup === 'NAO EXTRUSADOS') return [window.SUPPLIER_CODES.ELMA[1]];
+                        if (sup === 'TORCIDA') return [window.SUPPLIER_CODES.ELMA[2]];
+                        if (sup === 'TODDYNHO') return [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO];
+                        if (sup === 'TODDY') return [window.SUPPLIER_CODES.VIRTUAL.TODDY];
+                        if (sup === 'QUAKER' || sup === 'KEROCOCO' || sup.includes('QUAKER')) return [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO];
 
                         if (window.globalGoalsMetrics && window.globalGoalsMetrics[sup]) return [sup];
                         if (window.SUPPLIER_CODES.ALL_GOALS.includes(sup)) return [sup];
-                        if (sup === '1119') return ['FOODS_ALL'];
+                        if (sup === window.SUPPLIER_CODES.FOODS[0]) return ['FOODS_ALL'];
                         return [];
                     };
 
@@ -8818,8 +8818,8 @@ const supervisorGroups = new Map();
 
                 // 1. Calculate Goals for Visible Clients
                 const categoryGoals = {
-                    '707': 0, '708': 0, '752': 0,
-                    '1119_TODDYNHO': 0, '1119_TODDY': 0, '1119_QUAKER_KEROCOCO': 0
+                    [window.SUPPLIER_CODES.ELMA[0]]: 0, [window.SUPPLIER_CODES.ELMA[1]]: 0, [window.SUPPLIER_CODES.ELMA[2]]: 0,
+                    [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]: 0, [window.SUPPLIER_CODES.VIRTUAL.TODDY]: 0, [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: 0
                 };
 
                 const visibleClientsForGoals = getHierarchyFilteredClients('main', allClientsData);
@@ -8839,23 +8839,23 @@ const supervisorGroups = new Map();
 
                 // 2. Map Actuals (from summary.faturamentoPorFornecedor)
                 const actualsMap = {
-                    '707': summary.faturamentoPorFornecedor['Extrusados'] || 0,
-                    '708': summary.faturamentoPorFornecedor['Não Extrusados'] || 0,
-                    '752': summary.faturamentoPorFornecedor['Torcida'] || 0,
-                    '1119_TODDYNHO': summary.faturamentoPorFornecedor['Toddynho'] || 0,
-                    '1119_TODDY': summary.faturamentoPorFornecedor['Toddy'] || 0,
-                    '1119_QUAKER_KEROCOCO': (summary.faturamentoPorFornecedor['Quaker'] || 0) + (summary.faturamentoPorFornecedor['Kero Coco'] || 0)
+                    [window.SUPPLIER_CODES.ELMA[0]]: summary.faturamentoPorFornecedor['Extrusados'] || 0,
+                    [window.SUPPLIER_CODES.ELMA[1]]: summary.faturamentoPorFornecedor['Não Extrusados'] || 0,
+                    [window.SUPPLIER_CODES.ELMA[2]]: summary.faturamentoPorFornecedor['Torcida'] || 0,
+                    [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]: summary.faturamentoPorFornecedor['Toddynho'] || 0,
+                    [window.SUPPLIER_CODES.VIRTUAL.TODDY]: summary.faturamentoPorFornecedor['Toddy'] || 0,
+                    [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: (summary.faturamentoPorFornecedor['Quaker'] || 0) + (summary.faturamentoPorFornecedor['Kero Coco'] || 0)
                 };
 
                 // 3. Prepare Data for Chart
                 const radarData = [];
                 const categoryLabels = {
-                    '707': 'Extrusados',
-                    '708': 'Não Extrusados',
-                    '752': 'Torcida',
-                    '1119_TODDYNHO': 'Toddynho',
-                    '1119_TODDY': 'Toddy',
-                    '1119_QUAKER_KEROCOCO': 'Quaker / Kero Coco'
+                    [window.SUPPLIER_CODES.ELMA[0]]: 'Extrusados',
+                    [window.SUPPLIER_CODES.ELMA[1]]: 'Não Extrusados',
+                    [window.SUPPLIER_CODES.ELMA[2]]: 'Torcida',
+                    [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]: 'Toddynho',
+                    [window.SUPPLIER_CODES.VIRTUAL.TODDY]: 'Toddy',
+                    [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: 'Quaker / Kero Coco'
                 };
                 
                 // Color Palette (Pepsico Brand Colors approximation or distinct colors)
@@ -9386,15 +9386,15 @@ const supervisorGroups = new Map();
 
             // Special Handling for Meta Realizado: Inject Virtual Categories
             if (filterType === 'metaRealizado' || filterType === 'main') {
-                if (suppliers.has('707')) suppliers.set('707', 'EXTRUSADOS');
-                if (suppliers.has('708')) suppliers.set('708', 'NÃO EXTRUSADOS');
-                if (suppliers.has('752')) suppliers.set('752', 'TORCIDA');
+                if (suppliers.has(window.SUPPLIER_CODES.ELMA[0])) suppliers.set(window.SUPPLIER_CODES.ELMA[0], 'EXTRUSADOS');
+                if (suppliers.has(window.SUPPLIER_CODES.ELMA[1])) suppliers.set(window.SUPPLIER_CODES.ELMA[1], 'NÃO EXTRUSADOS');
+                if (suppliers.has(window.SUPPLIER_CODES.ELMA[2])) suppliers.set(window.SUPPLIER_CODES.ELMA[2], 'TORCIDA');
 
-                if (suppliers.has('1119')) {
-                    suppliers.delete('1119');
-                    suppliers.set('1119_TODDYNHO', 'TODDYNHO');
-                    suppliers.set('1119_TODDY', 'TODDY');
-                    suppliers.set('1119_QUAKER_KEROCOCO', 'QUAKER/KEROCOCO');
+                if (suppliers.has(window.SUPPLIER_CODES.FOODS[0])) {
+                    suppliers.delete(window.SUPPLIER_CODES.FOODS[0]);
+                    suppliers.set(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO, 'TODDYNHO');
+                    suppliers.set(window.SUPPLIER_CODES.VIRTUAL.TODDY, 'TODDY');
+                    suppliers.set(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO, 'QUAKER/KEROCOCO');
                 }
             }
 
@@ -9681,7 +9681,7 @@ const supervisorGroups = new Map();
             const firstOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
             const hasOverlap = firstWeekStart < firstOfMonth;
 
-            const pepsicoCodfors = new Set(['707', '708']);
+            const pepsicoCodfors = new Set([window.SUPPLIER_CODES.ELMA[0], window.SUPPLIER_CODES.ELMA[1]]);
             const saltyCategories = ['CHEETOS', 'DORITOS', 'FANDANGOS', 'RUFFLES', 'TORCIDA'];
             const foodsCategories = ['TODDYNHO', 'TODDY ', 'QUAKER', 'KEROCOCO'];
 
@@ -9691,7 +9691,7 @@ const supervisorGroups = new Map();
             // --- FILTER: Foods Description Logic (Same as Metas) ---
             const isValidFoodsProduct = (codFor, desc) => {
                 // Apply strict description check ONLY for Supplier 1119 (Foods)
-                if (codFor !== '1119') return true;
+                if (codFor !== window.SUPPLIER_CODES.FOODS[0]) return true;
 
                 const d = norm(desc || '');
                 // Check if it matches ANY of the Foods sub-brands (Toddynho, Toddy, Quaker/Kerococo)
@@ -10330,7 +10330,7 @@ const supervisorGroups = new Map();
             const firstWeekStart = currentMonthWeeks[0].start;
             const firstOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
             const hasOverlap = firstWeekStart < firstOfMonth;
-            const pepsicoCodfors = new Set(['707', '708']);
+            const pepsicoCodfors = new Set([window.SUPPLIER_CODES.ELMA[0], window.SUPPLIER_CODES.ELMA[1]]);
             const saltyCategories = ['CHEETOS', 'DORITOS', 'FANDANGOS', 'RUFFLES', 'TORCIDA'];
             const foodsCategories = ['TODDYNHO', 'TODDY ', 'QUAKER', 'KEROCOCO'];
             const norm = (s) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase() : '';
@@ -13809,12 +13809,12 @@ const supervisorGroups = new Map();
                         for (const [clientId, clientMap] of globalClientGoals) {
                             const getGoal = (k) => clientMap.get(k) || { fat: 0, vol: 0 };
 
-                            const g707 = getGoal('707');
-                            const g708 = getGoal('708');
-                            const g752 = getGoal('752');
-                            const gToddynho = getGoal('1119_TODDYNHO');
-                            const gToddy = getGoal('1119_TODDY');
-                            const gQuaker = getGoal('1119_QUAKER_KEROCOCO');
+                            const g707 = getGoal(window.SUPPLIER_CODES.ELMA[0]);
+                            const g708 = getGoal(window.SUPPLIER_CODES.ELMA[1]);
+                            const g752 = getGoal(window.SUPPLIER_CODES.ELMA[2]);
+                            const gToddynho = getGoal(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO);
+                            const gToddy = getGoal(window.SUPPLIER_CODES.VIRTUAL.TODDY);
+                            const gQuaker = getGoal(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO);
 
                             const sumGoals = (list) => {
                                 return list.reduce((acc, curr) => ({
@@ -14961,12 +14961,12 @@ const supervisorGroups = new Map();
             const normalizeGoalCategory = (catKey) => {
                 if (!catKey) return null;
                 catKey = catKey.toUpperCase();
-                if (catKey.includes('NÃO EXTRUSADOS') || catKey.includes('NAO EXTRUSADOS')) return '708';
-                if (catKey.includes('EXTRUSADOS')) return '707';
-                if (catKey.includes('TORCIDA')) return '752';
-                if (catKey.includes('TODDYNHO')) return '1119_TODDYNHO';
-                if (catKey.includes('TODDY')) return '1119_TODDY';
-                if (catKey.includes('QUAKER') || catKey.includes('KEROCOCO')) return '1119_QUAKER_KEROCOCO';
+                if (catKey.includes('NÃO EXTRUSADOS') || catKey.includes('NAO EXTRUSADOS')) return window.SUPPLIER_CODES.ELMA[1];
+                if (catKey.includes('EXTRUSADOS')) return window.SUPPLIER_CODES.ELMA[0];
+                if (catKey.includes('TORCIDA')) return window.SUPPLIER_CODES.ELMA[2];
+                if (catKey.includes('TODDYNHO')) return window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
+                if (catKey.includes('TODDY')) return window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                if (catKey.includes('QUAKER') || catKey.includes('KEROCOCO')) return window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
                 if (catKey === 'KG ELMA' || catKey === 'KG_ELMA') return 'tonelada_elma';
                 if (catKey === 'KG FOODS' || catKey === 'KG_FOODS') return 'tonelada_foods';
                 if (catKey === 'TOTAL ELMA' || catKey === 'TOTAL_ELMA') return 'total_elma';
@@ -14975,7 +14975,7 @@ const supervisorGroups = new Map();
                 if (catKey === 'MIX FOODS' || catKey === 'MIX_FOODS') return 'mix_foods';
                 if (catKey === 'PEPSICO_ALL_POS' || catKey === 'PEPSICO_ALL' || catKey === 'GERAL') return 'pepsico_all';
 
-                const validIds = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO', 'tonelada_elma', 'tonelada_foods', 'total_elma', 'total_foods', 'mix_salty', 'mix_foods', 'pepsico_all'];
+                const validIds = [window.SUPPLIER_CODES.ELMA[0], window.SUPPLIER_CODES.ELMA[1], window.SUPPLIER_CODES.ELMA[2], window.SUPPLIER_CODES.VIRTUAL.TODDYNHO, window.SUPPLIER_CODES.VIRTUAL.TODDY, window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO, 'tonelada_elma', 'tonelada_foods', 'total_elma', 'total_foods', 'mix_salty', 'mix_foods', 'pepsico_all'];
                 if (validIds.includes(catKey.toLowerCase())) return catKey.toLowerCase();
                 return null;
             };
@@ -15212,7 +15212,7 @@ const supervisorGroups = new Map();
                 });
 
                 // 3. Positivation
-                const posCats = ['pepsico_all', 'total_elma', 'total_foods', '707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                const posCats = ['pepsico_all', 'total_elma', 'total_foods', window.SUPPLIER_CODES.ELMA[0], window.SUPPLIER_CODES.ELMA[1], window.SUPPLIER_CODES.ELMA[2], window.SUPPLIER_CODES.VIRTUAL.TODDYNHO, window.SUPPLIER_CODES.VIRTUAL.TODDY, window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO];
                 posCats.forEach(cat => {
                     const val = getPriorityValue(cat, 'POS');
                     if (!isNaN(val)) updates.push({ type: 'pos', seller: sellerName, category: cat, val: Math.round(val) });
@@ -15591,12 +15591,12 @@ const supervisorGroups = new Map();
                     // Helper to resolve human-readable category name
                     const resolveCategoryName = (catCode) => {
                         const map = {
-                            '707': 'Extrusados',
-                            '708': 'Não Extrusados',
-                            '752': 'Torcida',
-                            '1119_TODDYNHO': 'Toddynho',
-                            '1119_TODDY': 'Toddy',
-                            '1119_QUAKER_KEROCOCO': 'Quaker/Kero Coco',
+                            [window.SUPPLIER_CODES.ELMA[0]]: 'Extrusados',
+                            [window.SUPPLIER_CODES.ELMA[1]]: 'Não Extrusados',
+                            [window.SUPPLIER_CODES.ELMA[2]]: 'Torcida',
+                            [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]: 'Toddynho',
+                            [window.SUPPLIER_CODES.VIRTUAL.TODDY]: 'Toddy',
+                            [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: 'Quaker/Kero Coco',
                             'tonelada_elma': 'Elma Chips',
                             'tonelada_foods': 'Foods',
                             'total_elma': 'Elma Chips',
