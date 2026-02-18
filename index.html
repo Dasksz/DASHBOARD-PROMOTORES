@@ -80,19 +80,24 @@
         }
 
         .input-field {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.4) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
             transition: all 0.3s ease;
         }
         
         .input-field:focus {
-            border-color: #FF5E00;
+            border-color: #FF5E00 !important;
             box-shadow: 0 0 0 2px rgba(255, 94, 0, 0.2);
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.6) !important;
         }
 
         .logo-glow {
             filter: drop-shadow(0 0 10px rgba(255, 94, 0, 0.6));
+            transition: transform 0.3s ease;
+        }
+
+        .logo-glow:hover {
+            transform: scale(1.05);
         }
 
         /* Esconder spinner por padrão */
