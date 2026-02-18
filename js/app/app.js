@@ -15242,6 +15242,460 @@ const supervisorGroups = new Map();
                     dropZone.innerHTML = `
                         <svg class="w-12 h-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <p class="text-slate-300 font-medium mb-2">Arraste e solte o arquivo Excel aqui</p>
+                        <p class="text-slate-500 text-sm mb-4">ou</p>
+                        <label for="import-goals-file" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg cursor-pointer transition-colors shadow-lg">
+                            Selecionar Arquivo
+                        </label>
+                        <p class="text-xs text-slate-500 mt-4">Formatos suportados: .xlsx, .xls, .csv</p>
+                    `;
+                }
+            });
+
+            const closeModal = () => {
+                importModal.classList.add('hidden');
+            };
+
+            importCloseBtn.addEventListener('click', closeModal);
+            importCancelBtn.addEventListener('click', closeModal);
+
+            // Drag & Drop Logic
+            if (dropZone) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, preventDefaults, false);
+                });
+
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, () => {
+                        dropZone.classList.add('bg-slate-700/50', 'border-teal-500');
+                    });
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, () => {
+                        dropZone.classList.remove('bg-slate-700/50', 'border-teal-500');
+                    });
+                });
+
+                dropZone.addEventListener('drop', (e) => {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    handleFiles(files);
+                });
+            }
+
+            if (fileInput) {
+                fileInput.addEventListener('change', (e) => {
+                    handleFiles(e.target.files);
+                });
+            }
+
+            function handleFiles(files) {
+                if (files.length === 0) return;
+                const file = files[0];
+
+                // Visual Feedback: Loading
+                if (dropZone) {
+                    dropZone.innerHTML = `
+                        <div class="flex flex-col items-center justify-center">
+                            <svg class="animate-spin h-10 w-10 text-teal-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p class="text-slate-300 font-medium animate-pulse">Carregando ${file.name}...</p>
+                        </div>
+                    `;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+
+                        const sheetName = workbook.SheetNames[0];
+                        const sheet = workbook.Sheets[sheetName];
+
+                        // Convert to TSV for the parser
+                        const tsv = XLSX.utils.sheet_to_csv(sheet, {FS: "\t"});
+
+                        // Update UI
+                        importTextarea.value = tsv;
+                        if (dropZone) {
+                            dropZone.innerHTML = `
+                                <svg class="w-12 h-12 text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <p class="text-green-400 font-bold mb-2">Sucesso!</p>
+                                <p class="text-slate-400 text-sm">${file.name} carregado.</p>
+                            `;
+                        }
+
+                        // Auto-analyze
+                        setTimeout(() => importAnalyzeBtn.click(), 500);
+
+                    } catch (err) {
+                        console.error(err);
+                        if (dropZone) {
+                            dropZone.innerHTML = `
+                                <svg class="w-12 h-12 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                <p class="text-red-400 font-bold mb-2">Erro!</p>
+                                <p class="text-slate-400 text-sm">Falha ao ler o arquivo.</p>
+                            `;
+                        }
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+
+            function resolveGoalCategory(category) {
+                // Returns list of leaf categories and metric type hint if needed
+                if (category === 'tonelada_elma') return ['707', '708', '752'];
+                if (category === 'tonelada_foods') return ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                if (category === 'total_elma') return ['707', '708', '752'];
+                if (category === 'total_foods') return ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                return [category];
+            }
+
+            function getSellerCurrentGoal(sellerName, category, type) {
+                const sellerCode = optimizedData.rcaCodeByName.get(sellerName);
+                if (!sellerCode) return 0;
+
+                // Check for Overrides FIRST
+                const targets = goalsSellerTargets.get(sellerName);
+                if (type === 'rev' && targets && targets[`${category}_FAT`] !== undefined) {
+                    return targets[`${category}_FAT`];
+                }
+                if (type === 'vol' && targets && targets[`${category}_VOL`] !== undefined) {
+                    return targets[`${category}_VOL`];
+                }
+
+                if (type === 'pos' || type === 'mix') {
+                    // FIX: Return Default Calculated Value if Manual Target is Missing
+                    if (targets && targets[category] !== undefined) {
+                        return targets[category];
+                    } else {
+                        // Calculate Default
+                        const defaults = calculateSellerDefaults(sellerName);
+                        if (category === 'total_elma') return defaults.elmaPos;
+                        if (category === 'total_foods') return defaults.foodsPos;
+                        if (category === 'mix_salty') return defaults.mixSalty;
+                        if (category === 'mix_foods') return defaults.mixFoods;
+                        // Fallback for leaf components? Currently Pos adjustments are manual.
+                        // If category is a leaf (e.g. 707), default adjustment is 0 (Natural Base is not stored here).
+                        // Note: parseGoalsSvStructure sends '707', '708' etc for Positivação.
+                        // We assume 0 for leaf adjustments if not set.
+                        return 0;
+                    }
+                }
+
+                if (type === 'rev' || type === 'vol') {
+                    // Aggregate from globalClientGoals
+                    const clients = optimizedData.clientsByRca.get(sellerCode) || [];
+                    const activeClients = clients.filter(c => {
+                        const cod = String(c['Código'] || c['codigo_cliente']);
+                        const rca1 = String(c.rca1 || '').trim();
+                        const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                        return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(cod));
+                    });
+
+                    let total = 0;
+                    const leafCategories = resolveGoalCategory(category);
+
+                    activeClients.forEach(client => {
+                        const codCli = String(client['Código'] || client['codigo_cliente']);
+                        const clientGoals = globalClientGoals.get(codCli);
+                        if (clientGoals) {
+                            leafCategories.forEach(leaf => {
+                                const goal = clientGoals.get(leaf);
+                                if (goal) {
+                                    if (type === 'rev') total += (goal.fat || 0);
+                                    else if (type === 'vol') total += (goal.vol || 0);
+                                }
+                            });
+                        }
+                    });
+                    return total;
+                }
+                return 0;
+            }
+
+            // --- AI Insights Logic ---
+                        async function generateAiInsights() {
+                const btn = document.getElementById('btn-generate-ai');
+
+                if (!pendingImportUpdates || pendingImportUpdates.length === 0) return;
+
+                // UI Loading State
+                btn.disabled = true;
+                btn.innerHTML = `<svg class="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Analisando...`;
+
+                // Show loading overlay
+                const pageLoader = document.getElementById('page-transition-loader');
+                const loaderText = document.getElementById('loader-text');
+                if (pageLoader && loaderText) {
+                    loaderText.textContent = "A Inteligência Artificial está analisando os dados...";
+                    pageLoader.classList.remove('hidden');
+                }
+
+                try {
+                    // 1. Prepare Data Context (Grouped by Supervisor, Strict Types, Top 5)
+                    const supervisorsMap = new Map(); // Map<SupervisorName, { total_fat_diff, sellers: [] }>
+
+                    // Helper to get or create supervisor entry
+                    const getSupervisorEntry = (supervisorName) => {
+                        if (!supervisorsMap.has(supervisorName)) {
+                            supervisorsMap.set(supervisorName, {
+                                name: supervisorName,
+                                total_fat_diff: 0,
+                                sellers: []
+                            });
+                        }
+                        return supervisorsMap.get(supervisorName);
+                    };
+
+                    // Helper to resolve human-readable category name
+                    const resolveCategoryName = (catCode) => {
+                        const map = {
+                            '707': 'Extrusados',
+                            '708': 'Não Extrusados',
+                            '752': 'Torcida',
+                            '1119_TODDYNHO': 'Toddynho',
+                            '1119_TODDY': 'Toddy',
+                            '1119_QUAKER_KEROCOCO': 'Quaker/Kero Coco',
+                            'tonelada_elma': 'Elma Chips',
+                            'tonelada_foods': 'Foods',
+                            'total_elma': 'Elma Chips',
+                            'total_foods': 'Foods',
+                            'mix_salty': 'Mix Salty',
+                            'mix_foods': 'Mix Foods'
+                        };
+                        return map[catCode] || catCode;
+                    };
+
+                    // Helper to resolve history (simplified for context)
+                    const getSellerHistorySimple = (sellerName, type, category) => {
+                       // Note: Full history calculation is expensive. We can use the 'current' logic as baseline if history isn't cached.
+                       // For accurate comparison, we should use the same logic as renderImportTable if possible, or fetch from history data.
+                       // Here we simply return 0 if strict calculation is too heavy, relying on the 'diff' already calculated in pendingImportUpdates?
+                       // Actually pendingImportUpdates doesn't store history, it stores 'val' (new).
+                       // We can compute history on the fly for the top items only? No, we need to sort first.
+                       // Let's rely on 'getSellerCurrentGoal' as the "Old" value (which is Current Target).
+                       // The Prompt asks for comparison with "History".
+                       // getSellerCurrentGoal returns the *Current Goal* before update.
+                       // The AI prompt usually compares New Goal vs History Avg.
+                       // Let's provide [Current Goal] and [New Goal]. The AI can infer "Change".
+                       return getSellerCurrentGoal(sellerName, category, type);
+                    };
+
+                    // Process Updates
+                    for (const u of pendingImportUpdates) {
+                        // Filter out supervisors/aggregates
+                        const upperUName = u.seller.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+                        if (upperUName === 'BALCAO' || upperUName === 'BALCÃO' ||
+                            upperUName.includes('TOTAL') || upperUName.includes('SUPERVISOR') || upperUName.includes('GERAL') ||
+                            optimizedData.rcasBySupervisor.has(upperUName) || optimizedData.rcasBySupervisor.has(u.seller)) {
+                            continue;
+                        }
+
+                        // Determine Supervisor
+                        const sellerCode = optimizedData.rcaCodeByName.get(u.seller);
+                        let supervisorName = 'Sem Supervisor';
+                        if (u.seller === 'AMERICANAS') {
+                            supervisorName = 'BALCAO';
+                        } else if (sellerCode) {
+                            const details = sellerDetailsMap.get(sellerCode);
+                            if (details && details.supervisor) supervisorName = details.supervisor;
+                        }
+
+                        const oldVal = getSellerCurrentGoal(u.seller, u.category, u.type);
+                        const diff = u.val - oldVal;
+                        const impact = Math.abs(diff);
+
+                        // FILTER: Ignore 0 variation globally (Irrelevant info)
+                        if (Math.abs(diff) < 0.01) continue;
+
+                        // Define Unit explicitly
+                        let unit = '';
+                        if (u.type === 'rev') unit = 'R$';
+                        else if (u.type === 'vol') unit = 'Kg';
+                        else unit = 'Clientes'; // Pos and Mix count as clients
+
+                        // Add to Supervisor Group
+                        const supervisorEntry = getSupervisorEntry(supervisorName);
+
+                        // We aggregate items per seller? Or just list variations?
+                        // Requirement: "list the main variations of 5 sellers".
+                        // It's better to list *Variations* as items.
+                        // One seller might have huge Rev change AND huge Vol change.
+
+                        supervisorEntry.sellers.push({
+                            seller: u.seller,
+                            category: u.category,
+                            metric_type: u.type,
+                            unit: unit,
+                            old_value: oldVal,
+                            new_value: u.val,
+                            diff: diff,
+                            impact: impact
+                        });
+                    }
+
+                    const optimizedContext = { supervisors: [] };
+
+                    supervisorsMap.forEach(sup => {
+                        // Sort by Impact (Magnitude of change)
+                        sup.sellers.sort((a, b) => b.impact - a.impact);
+
+                        // Deduplicate Variations (same seller + same metric)
+                        const seen = new Set();
+                        const uniqueVariations = [];
+
+                        for (const v of sup.sellers) {
+                            const catName = resolveCategoryName(v.category);
+                            let metricName = '';
+                            if (v.unit === 'R$') metricName = `Faturamento (${catName})`;
+                            else if (v.unit === 'Kg') metricName = `Volume (${catName})`;
+                            else metricName = `Positivação (${catName})`;
+
+                            // Create unique signature
+                            const sig = `${v.seller}|${metricName}`;
+
+                            if (!seen.has(sig)) {
+                                seen.add(sig);
+                                // Attach resolved metric name for later use
+                                v._resolvedMetricName = metricName;
+                                uniqueVariations.push(v);
+                            }
+                        }
+
+                        // Apply Limits: 5 for BALCAO, 10 for Others
+                        const limit = sup.name === 'BALCAO' ? 5 : 10;
+                        const topVariations = uniqueVariations.slice(0, limit).map(v => {
+                            return {
+                                seller: v.seller,
+                                metric: v._resolvedMetricName,
+                                details: `${v.unit} ${Math.round(v.old_value)} -> ${Math.round(v.new_value)} (Diff: ${v.diff > 0 ? '+' : ''}${Math.round(v.diff)})`
+                            };
+                        });
+
+                        optimizedContext.supervisors.push({
+                            name: sup.name,
+                            top_variations: topVariations
+                        });
+                    });
+
+                    const promptText = `
+                        Atue como um Gerente Nacional de Vendas da Prime Distribuição.
+                        Analise as alterações de metas propostas (Proposed Goals).
+
+                        Dados: ${JSON.stringify(optimizedContext)}
+
+                        Gere um relatório JSON estritamente com esta estrutura:
+                        {
+                            "global_summary": "Resumo executivo da estratégia geral percebida nas alterações. Use emojis.",
+                            "supervisors": [
+                                {
+                                    "name": "Nome do Supervisor",
+                                    "analysis": "Parágrafo de análise estratégica sobre este time. Identifique se o foco é agressividade em vendas, recuperação de volume ou cobertura.",
+                                    "variations": [
+                                        {
+                                            "seller": "Nome Vendedor",
+                                            "metric": "O nome completo da métrica (ex: Faturamento (Extrusados))",
+                                            "change_display": "Texto ex: R$ 50k -> R$ 60k (+10k)",
+                                            "insight": "Comentário curto sobre o impacto (ex: 'Aumento agressivo', 'Ajuste conservador')"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+
+                        Regras:
+                        1. "variations" deve conter EXATAMENTE os itens enviados no contexto.
+                        2. Use o nome COMPLETO da métrica fornecido no input (ex: "Faturamento (Extrusados)"). NÃO simplifique para apenas "Faturamento".
+                        3. Retorne APENAS o JSON.
+                    `;
+
+                    // 2. Call API
+                    const metaEntry = embeddedData.metadata ? embeddedData.metadata.find(m => m.key === 'groq_api_key') : null;
+                    const API_KEY = metaEntry ? metaEntry.value : null;
+
+                    if (!API_KEY) throw new Error("Chave de API não configurada.");
+
+                    const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: "llama-3.3-70b-versatile",
+                            messages: [{ role: "user", content: promptText }]
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.error.message);
+
+                    const aiText = data.choices[0].message.content;
+
+                    // 3. Render Output
+                    let result;
+                    try {
+                        const jsonStart = aiText.indexOf('{');
+                        const jsonEnd = aiText.lastIndexOf('}');
+                        result = JSON.parse(aiText.substring(jsonStart, jsonEnd + 1));
+
+                        // Deduplicate Variations (Post-Processing)
+                        if (result.supervisors) {
+                            result.supervisors.forEach(sup => {
+                                if (sup.variations) {
+                                    const uniqueMap = new Map();
+                                    const cleanVariations = [];
+
+                                    sup.variations.forEach(v => {
+                                        // Create signature: Seller + Metric Name
+                                        // Normalize strings to avoid case/space issues
+                                        const sig = `${v.seller}_${v.metric}`.trim().toLowerCase();
+
+                                        if (!uniqueMap.has(sig)) {
+                                            uniqueMap.set(sig, true);
+                                            cleanVariations.push(v);
+                                        }
+                                    });
+
+                                    // Enforce Limits (Safety Net)
+                                    // If AI hallucinates or context structure varies, ensure BALCAO/Americanas is capped at 5
+                                    // Other supervisors can show up to 10
+                                    const isBalcao = sup.name && (sup.name.toUpperCase() === 'BALCAO' || sup.name.toUpperCase().includes('AMERICANAS'));
+                                    const limit = isBalcao ? 5 : 10;
+
+                                    sup.variations = cleanVariations.slice(0, limit);
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error("AI JSON Parse Error", e);
+                        // Fallback simple structure
+                        result = { global_summary: aiText, supervisors: [] };
+                    }
+
+                    renderAiFullPage(result);
+
+                } catch (err) {
+                    console.error("AI Error:", err);
+                    window.showToast('warning', `Erro na análise: ${err.message}`);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = `✨ Gerar Insights`;
+                    if (pageLoader) pageLoader.classList.add('hidden');
+                }
+            }
+
 
             function renderAiSummaryChart(fatDiff) {
                 const chartContainer = document.getElementById('ai-chart-container');
