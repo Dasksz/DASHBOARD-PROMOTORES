@@ -207,7 +207,6 @@ create table if not exists public.data_titulos (
   qt_tit_receber numeric,
   vl_titulos numeric,
   qt_titulos numeric,
-  municipio text,
   dt_vencimento timestamp with time zone,
   updated_at timestamp with time zone default now()
 );

@@ -11,7 +11,7 @@
             products: ['Código', 'Qtde embalagem master(Compra)', 'Descrição', 'Nome do fornecedor', 'Fornecedor', 'Dt.Cadastro'],
             history: ['CODCLI', 'NOME', 'SUPERV', 'PEDIDO', 'CODUSUR', 'CODSUPERVISOR', 'DTPED', 'DTSAIDA', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'POSICAO', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX'],
             hierarchy: ['COD COORD.', 'COORDENADOR', 'COD CO-COORD.', 'CO-COORDENADOR', 'COD PROMOTOR', 'PROMOTOR'],
-            titulos: ['CODCLI', 'VLRECEBER', 'DTVENC', 'VLTITULOS']
+            titulos: ['CODCLI', 'VLRECEBER', 'DTVENC', 'VLTITULOS', 'QTTITRECEBER', 'QTTITULOS']
         };
 
         const columnFormats = {
@@ -60,6 +60,8 @@
                 'CODCLI': 'number',
                 'VLRECEBER': 'number',
                 'VLTITULOS': 'number',
+                'QTTITRECEBER': 'number',
+                'QTTITULOS': 'number',
                 'DTVENC': 'date'
             }
         };
@@ -1075,7 +1077,9 @@
                     return {
                         cod_cliente: normalizeKey(item['CODCLI']),
                         vl_receber: parseBrazilianNumber(item['VLRECEBER']),
+                        qt_tit_receber: parseBrazilianNumber(item['QTTITRECEBER']),
                         vl_titulos: parseBrazilianNumber(item['VLTITULOS']),
+                        qt_titulos: parseBrazilianNumber(item['QTTITULOS']),
                         dt_vencimento: dt ? dt.toISOString().split('T')[0] : null
                     };
                 }).filter(t => t.cod_cliente);
