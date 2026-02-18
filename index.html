@@ -284,7 +284,7 @@
 
 <!-- Tela Pendente -->
 <div id="tela-pendente" class="flex-center-overlay z-[2000] hidden">
-    <div class="gatekeeper-card p-8 rounded-2xl shadow-xl max-w-sm w-full text-center bg-[#0f172a]/90 backdrop-blur-md border border-white/10">
+    <div class="gatekeeper-card p-8 rounded-2xl shadow-xl max-w-sm w-full text-center glass-panel/90 backdrop-blur-md border border-white/10">
         <img src="imagens/logo.svg" alt="Logo" class="w-24 h-24 mx-auto mb-4 object-contain" style="width: 6rem; height: 6rem;">
         <h1 class="text-xl font-bold text-white">Acesso Restrito</h1>
         <div class="flex flex-col items-center justify-center my-6">
@@ -296,14 +296,14 @@
 </div>
 
 <!-- Loader Geral (Overlay) -->
-<div id="loader" class="hidden fixed inset-0 z-[3000] flex flex-col items-center justify-center bg-slate-900/10">
+<div id="loader" class="hidden fixed inset-0 z-[3000] flex flex-col items-center justify-center glass-panel/10">
     <div id="loader-spinner" class="spinner-orange w-12 h-12 border-4 border-t-brand-red animate-spin"></div>
     <p id="loader-text" class="text-white mt-4 text-lg font-medium tracking-wide animate-pulse">Processando...</p>
 </div>
 
 <!-- Admin Uploader Modal -->
 <div id="admin-uploader-modal" class="modal-overlay hidden">
-        <div class="bg-modal-content rounded-2xl shadow-2xl max-w-lg w-full m-4 border border-slate-700 relative text-center p-8 backdrop-blur-md bg-slate-900/90">
+        <div class="bg-modal-content rounded-2xl shadow-2xl max-w-lg w-full m-4 border border-slate-700 relative text-center p-8 backdrop-blur-md glass-panel/90">
             <button id="admin-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -423,7 +423,7 @@
 </nav>
 
 <!-- Mobile Menu Dropdown -->
-<div id="mobile-menu" class="fixed top-16 left-0 w-full bg-[#0f172a] border-b border-slate-700 z-40 hidden lg:hidden shadow-xl">
+<div id="mobile-menu" class="fixed top-16 left-0 w-full glass-panel border-b border-slate-700 z-40 hidden lg:hidden shadow-xl">
     <div class="grid grid-cols-2 gap-2 p-4">
         <button data-target="dashboard" class="mobile-nav-link p-3 rounded-lg bg-slate-800 text-slate-300 text-sm font-medium text-center hover:bg-slate-700">Visão Geral</button>
         <button data-target="pedidos" class="mobile-nav-link p-3 rounded-lg bg-slate-800 text-slate-300 text-sm font-medium text-center hover:bg-slate-700">Pedidos</button>
@@ -437,7 +437,7 @@
 </div>
 
 <div id="content-wrapper" class="hidden min-h-screen pt-20 transition-all duration-300 flex flex-col">
-    <div id="page-transition-loader" class="fixed inset-0 bg-slate-900/10 z-[9999] flex items-center justify-center hidden">
+    <div id="page-transition-loader" class="fixed inset-0 glass-panel/10 z-[9999] flex items-center justify-center hidden">
         <div class="flex flex-col items-center">
             <div class="spinner-orange w-12 h-12 border-4"></div>
             <span id="loader-text" class="text-white text-lg mt-4 font-medium">Carregando...</span>
@@ -523,7 +523,7 @@
 
             <!-- Filters -->
             <div class="filter-wrapper-sentinel">
-            <div id="main-filters" class="sticky-filters mb-8 p-6 bg-[#0f172a] rounded-2xl shadow-lg border border-slate-800/50">
+            <div id="main-filters" class="sticky-filters mb-8 p-6 glass-filter-box rounded-2xl shadow-lg border border-slate-800/50">
                 <div class="flex flex-wrap gap-4 items-end">
                     <!-- Rede Filter -->
                     <div id="main-rede-filter-wrapper" class="relative flex-1 min-w-[260px] z-20">
@@ -645,18 +645,18 @@
 
                     <!-- Secondary Charts -->
                     <div class="flex flex-col gap-8">
-                        <div class="w-full bg-[#0f172a] p-2 rounded-2xl border border-slate-800/50 shadow-lg">
+                        <div class="w-full glass-panel p-2 rounded-2xl border border-slate-800/50 shadow-lg">
                             <h2 id="sales-by-person-title" class="text-lg font-bold text-white mb-2 text-center">Performance por Supervisor</h2>
                             <div id="salesByPersonChartContainer" class="relative h-40"></div>
                         </div>
-                        <div class="w-full bg-[#0f172a] p-2 rounded-2xl border border-slate-800/50 shadow-lg">
+                        <div class="w-full glass-panel p-2 rounded-2xl border border-slate-800/50 shadow-lg">
                             <h2 id="faturamentoPorFornecedorTitle" class="text-lg font-bold text-white mb-6 text-center">Share por Categoria</h2>
                             <div id="faturamentoPorFornecedorChartContainer" class="relative h-80"></div>
                         </div>
                     </div>
 
                     <!-- Products Table (Variation) -->
-                    <div class="mt-8 bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg">
+                    <div class="mt-8 glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-xl font-bold text-white">Top Produtos</h2>
                             <div class="bg-slate-800 p-1 rounded-lg flex border border-slate-700">
@@ -664,10 +664,10 @@
                                 <button id="pesoBtn" class="metric-btn px-4 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition-all">Peso</button>
                             </div>
                         </div>
-                        <div id="top-products-variation-table" class="relative overflow-hidden rounded-xl border border-slate-800/50 bg-[#0f172a]">
+                        <div id="top-products-variation-table" class="relative overflow-hidden rounded-xl border border-slate-800/50 glass-panel">
                             <div class="overflow-x-auto custom-scrollbar max-h-[500px]">
                                 <table class="w-full text-left text-slate-300">
-                                    <thead class="bg-slate-900/50 text-[10px] md:text-xs font-bold uppercase text-slate-500 sticky top-0 z-10 backdrop-blur-md">
+                                    <thead class="glass-panel/50 text-[10px] md:text-xs font-bold uppercase text-slate-500 sticky top-0 z-10 backdrop-blur-md">
                                         <tr>
                                             <th class="py-1 px-1 md:py-3 md:px-4 text-center w-8 md:w-12">#</th>
                                             <th class="py-1 px-1 md:py-3 md:px-4">Produto</th>
@@ -686,10 +686,10 @@
 
                 <!-- Table View (Hidden by default, triggered by Pedidos Nav) -->
                 <div id="tableView" class="hidden animate-fade-in-up">
-                    <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
+                    <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
                         <div class="overflow-x-auto custom-scrollbar" style="max-height: 70vh;">
                             <table class="min-w-full text-sm text-left text-slate-300">
-                                <thead class="text-[10px] md:text-xs text-slate-400 uppercase bg-slate-900 sticky top-0 z-10">
+                                <thead class="text-[10px] md:text-xs text-slate-400 uppercase glass-panel sticky top-0 z-10">
                                     <tr>
                                         <th class="px-2 py-2 md:px-6 md:py-4 font-bold tracking-wider">Nº</th>
                                         <th class="px-2 py-2 md:px-6 md:py-4 font-bold tracking-wider">Cliente</th>
@@ -704,7 +704,7 @@
                                 <tbody id="report-table-body" class="divide-y divide-slate-800/50"></tbody>
                             </table>
                         </div>
-                        <div id="table-pagination-controls" class="hidden p-4 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
+                        <div id="table-pagination-controls" class="hidden p-4 glass-panel border-t border-slate-800 flex justify-between items-center">
                             <button id="prev-page-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
                             <span id="page-info-text" class="text-slate-400 text-xs font-medium"></span>
                             <button id="next-page-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
@@ -728,7 +728,7 @@
 
             <div id="positivacao-view-content">
                 <div class="filter-wrapper-sentinel">
-                <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+                <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
                      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
                         <!-- Rede -->
                         <div id="positivacao-rede-filter-wrapper" class="relative lg:col-span-2 z-20">
@@ -801,27 +801,27 @@
 
                 <!-- Tables Container -->
                 <div class="grid grid-cols-1 gap-8 mt-8">
-                    <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
-                        <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
+                    <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
+                        <div class="p-4 glass-panel border-b border-slate-800 flex justify-between items-center">
                             <h3 class="font-bold text-white">POSITIVADOS</h3>
                         </div>
                         <div class="overflow-x-auto custom-scrollbar max-h-96">
                             <table class="min-w-full text-sm text-left text-slate-300"><tbody id="positivacao-active-detail-table-body" class="divide-y divide-slate-800"></tbody></table>
                         </div>
-                        <div id="positivacao-active-pagination" class="p-3 bg-slate-900 border-t border-slate-800 flex justify-between items-center text-xs">
+                        <div id="positivacao-active-pagination" class="p-3 glass-panel border-t border-slate-800 flex justify-between items-center text-xs">
                             <button id="positivacao-active-prev-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1 px-3 rounded disabled:opacity-50 transition-colors">Ant</button>
                             <span id="positivacao-active-page-info" class="text-slate-400 font-medium"></span>
                             <button id="positivacao-active-next-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1 px-3 rounded disabled:opacity-50 transition-colors">Prox</button>
                         </div>
                     </div>
-                    <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
-                        <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
+                    <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
+                        <div class="p-4 glass-panel border-b border-slate-800 flex justify-between items-center">
                             <h3 class="font-bold text-white">Ñ POSITIVADOS</h3>
                         </div>
                         <div class="overflow-x-auto custom-scrollbar max-h-96">
                             <table class="min-w-full text-sm text-left text-slate-300"><tbody id="positivacao-inactive-detail-table-body" class="divide-y divide-slate-800"></tbody></table>
                         </div>
-                        <div id="positivacao-inactive-pagination" class="p-3 bg-slate-900 border-t border-slate-800 flex justify-between items-center text-xs">
+                        <div id="positivacao-inactive-pagination" class="p-3 glass-panel border-t border-slate-800 flex justify-between items-center text-xs">
                             <button id="positivacao-inactive-prev-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1 px-3 rounded disabled:opacity-50 transition-colors">Ant</button>
                             <span id="positivacao-inactive-page-info" class="text-slate-400 font-medium"></span>
                             <button id="positivacao-inactive-next-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1 px-3 rounded disabled:opacity-50 transition-colors">Prox</button>
@@ -850,7 +850,7 @@
                 <!-- Filters (Restyling minimal needed as classes are utility based, but ensure containers match) -->
                 <!-- Simplified filters block for brevity, ensuring ID matches -->
                 <div class="filter-wrapper-sentinel">
-                <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+                <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
                      <!-- ... Filters Content (Copied from original but wrapper IDs preserved) ... -->
                      <!-- To save tokens, I will trust the JS to populate the dropdowns/inputs if IDs match.
                           I need to make sure the structure is there. -->
@@ -924,7 +924,7 @@
                 </div>
                 </div>
 
-                <div id="city-map-container" class="hidden bg-[#0f172a] p-1 rounded-2xl shadow-lg border border-slate-800 h-[600px] relative z-0 mb-8">
+                <div id="city-map-container" class="hidden glass-panel p-1 rounded-2xl shadow-lg border border-slate-800 h-[600px] relative z-0 mb-8">
                     <div id="leaflet-map" class="w-full h-full rounded-xl z-0"></div>
                     <div id="map-loading-overlay" class="absolute inset-0 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl hidden z-[1000]">
                         <div class="spinner-orange mb-4"></div>
@@ -933,7 +933,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    <div class="bg-[#0f172a] p-2 rounded-2xl border border-slate-800/50 shadow-lg">
+                    <div class="glass-panel p-2 rounded-2xl border border-slate-800/50 shadow-lg">
                         <div class="flex justify-between items-center mb-6">
                             <h2 id="city-chart-title" class="text-lg font-bold text-white">Top Cidades</h2>
                             <div class="text-right">
@@ -943,7 +943,7 @@
                         </div>
                         <div id="salesByClientInCityChartContainer" class="relative h-96"></div>
                     </div>
-                    <div class="bg-[#0f172a] p-2 rounded-2xl border border-slate-800/50 shadow-lg">
+                    <div class="glass-panel p-2 rounded-2xl border border-slate-800/50 shadow-lg">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-lg font-bold text-white">Status da Carteira</h2>
                             <div class="text-right">
@@ -969,7 +969,7 @@
         <!-- Retaining IDs for JS logic: comparison-rede-group-container, comparison-com-rede-btn, etc. -->
         <!-- Simplified block for structure -->
         <div class="filter-wrapper-sentinel">
-        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
             <div id="comparison-fornecedor-toggle-container" class="flex justify-center gap-4 mb-6">
                 <button data-fornecedor="PEPSICO" class="fornecedor-btn active px-6 py-2 rounded-lg transition-all">PEPSICO</button>
                 <button data-fornecedor="MULTIMARCAS" class="fornecedor-btn px-6 py-2 rounded-lg transition-all">MULTIMARCAS</button>
@@ -1073,7 +1073,7 @@
 
         <div id="comparison-kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"></div>
 
-        <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
             <div class="flex justify-between items-center mb-6">
                 <h2 id="comparison-chart-title" class="text-xl font-bold text-white">Comparativo Semanal</h2>
                 <div id="comparison-chart-toggle" class="bg-slate-800 p-1 rounded-lg">
@@ -1089,16 +1089,16 @@
             <div id="monthlyComparisonChartContainer" class="relative h-96 hidden"></div>
         </div>
         
-        <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
             <h2 class="text-lg font-bold text-white mb-4 text-center">Faturamento por Dia da Semana</h2>
             <div id="dailyWeeklyComparisonChartContainer" class="relative h-96"></div>
         </div>
 
-        <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
             <h2 class="text-lg font-bold text-white mb-4 text-center">Resumo Semanal</h2>
             <div class="overflow-x-auto custom-scrollbar">
                 <table class="min-w-full text-sm text-left text-slate-300">
-                     <thead class="text-[10px] md:text-xs text-slate-400 uppercase bg-slate-900">
+                     <thead class="text-[10px] md:text-xs text-slate-400 uppercase glass-panel">
                         <tr>
                             <th class="px-2 py-2 md:px-4 md:py-3">Período</th>
                             <th class="px-2 py-2 md:px-4 md:py-3 text-right">Fat.</th>
@@ -1109,7 +1109,7 @@
             </div>
         </div>
 
-        <div class="bg-[#0f172a] p-2 rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="glass-panel p-2 rounded-2xl border border-slate-800/50 shadow-lg">
             <h2 class="text-lg font-bold text-white mb-4">Variação por Supervisor</h2>
             <div class="overflow-x-auto custom-scrollbar">
                 <table class="min-w-full text-sm text-left text-slate-300"><tbody id="supervisorComparisonTableBody" class="divide-y divide-slate-800"></tbody></table>
@@ -1196,7 +1196,7 @@
                                 <!-- Summary Content -->
                                 <div id="goals-summary-content" class="hidden mb-6">
                                     <!-- Independent Filters for Summary -->
-                                    <div class="mb-4 p-4 bg-[#1d2347] rounded-lg shadow-sm border border-slate-700 flex flex-col lg:flex-row justify-between items-center gap-4">
+                                    <div class="mb-4 p-4 glass-panel rounded-lg shadow-sm border border-slate-700 flex flex-col lg:flex-row justify-between items-center gap-4">
                                         <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto items-end">
                                             <div id="goals-summary-supervisor-filter-wrapper" class="relative w-full sm:w-64">
                                                 <label for="goals-summary-supervisor-filter-btn" class="block mb-2 text-sm font-medium text-slate-400">Supervisor</label>
@@ -1253,7 +1253,7 @@
                                     <div class="bg-[#064e3b] kpi-glow-base kpi-glow-green rounded-lg p-3 relative overflow-hidden group shadow-md">
                                         <label class="text-[10px] font-bold text-green-300 uppercase tracking-wider mb-1 block">META FATURAMENTO (R$)</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="goal-global-fat" class="w-full bg-[#0f172a] border border-green-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-green-500" value="0,00">
+                                            <input type="text" id="goal-global-fat" class="w-full glass-panel border border-green-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-green-500" value="0,00">
                                             <button id="btn-distribute-fat" class="bg-green-600 hover:bg-green-500 text-white px-3 rounded flex items-center justify-center transition-colors">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                                             </button>
@@ -1267,7 +1267,7 @@
                                     <div class="bg-[#1e2a5a] kpi-glow-base kpi-glow-blue rounded-lg p-3 relative overflow-hidden group shadow-md">
                                         <label class="text-[10px] font-bold text-blue-300 uppercase tracking-wider mb-1 block">META VOLUME (KG)</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="goal-global-vol" class="w-full bg-[#0f172a] border border-blue-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-blue-500" value="0,000">
+                                            <input type="text" id="goal-global-vol" class="w-full glass-panel border border-blue-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-blue-500" value="0,000">
                                             <button id="btn-distribute-vol" class="bg-[#FF5E00] hover:bg-[#CC4A00] text-white px-3 rounded flex items-center justify-center transition-colors">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                                             </button>
@@ -1281,7 +1281,7 @@
                                     <div class="bg-[#3b0764] kpi-glow-base kpi-glow-purple rounded-lg p-3 relative overflow-hidden group shadow-md">
                                         <label class="text-[10px] font-bold text-purple-300 uppercase tracking-wider mb-1 block">META POSITIVAÇÃO</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="goal-global-mix" class="w-full bg-[#0f172a] border border-purple-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-purple-500" value="0" readonly>
+                                            <input type="text" id="goal-global-mix" class="w-full glass-panel border border-purple-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-purple-500" value="0" readonly>
                                             <button id="btn-distribute-mix" class="bg-purple-600 hover:bg-purple-500 text-white px-3 rounded flex items-center justify-center transition-colors" style="display: none;">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                                             </button>
@@ -1295,7 +1295,7 @@
                                     <div id="card-mix-salty" class="hidden bg-[#064e3b] kpi-glow-base kpi-glow-green rounded-lg p-3 relative overflow-hidden group shadow-md">
                                         <label class="text-[10px] font-bold text-emerald-300 uppercase tracking-wider mb-1 block">META MIX SALTY</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="goal-global-mix-salty" class="w-full bg-[#0f172a] border border-emerald-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-emerald-500" value="0" readonly>
+                                            <input type="text" id="goal-global-mix-salty" class="w-full glass-panel border border-emerald-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-emerald-500" value="0" readonly>
                                             <button id="btn-distribute-mix-salty" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 rounded flex items-center justify-center transition-colors" style="display: none;">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                                             </button>
@@ -1308,7 +1308,7 @@
                                     <div id="card-mix-foods" class="hidden bg-[#713f12] kpi-glow-base kpi-glow-yellow rounded-lg p-3 relative overflow-hidden group shadow-md">
                                         <label class="text-[10px] font-bold text-yellow-300 uppercase tracking-wider mb-1 block">META MIX FOODS</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="goal-global-mix-foods" class="w-full bg-[#0f172a] border border-yellow-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-yellow-500" value="0" readonly>
+                                            <input type="text" id="goal-global-mix-foods" class="w-full glass-panel border border-yellow-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-yellow-500" value="0" readonly>
                                             <button id="btn-distribute-mix-foods" class="bg-yellow-600 hover:bg-yellow-500 text-white px-3 rounded flex items-center justify-center transition-colors" style="display: none;">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                                             </button>
@@ -1326,7 +1326,7 @@
                                 </div>
 
                                 <!-- Filters -->
-                                <div class="mb-4 p-4 bg-[#1d2347] rounded-lg shadow-sm border border-slate-700">
+                                <div class="mb-4 p-4 glass-panel rounded-lg shadow-sm border border-slate-700">
                                     <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
                                         <div id="goals-gv-supervisor-filter-wrapper" class="relative">
                                             <label for="goals-gv-supervisor-filter-btn" class="block mb-2 text-sm font-medium text-slate-400">Supervisor</label>
@@ -1353,10 +1353,10 @@
                                 </div>
 
                                 <!-- Main Table -->
-                                <div id="goals-table-container" class="bg-[#1d2347] border border-slate-700 shadow-sm rounded-lg overflow-hidden">
+                                <div id="goals-table-container" class="glass-panel border border-slate-700 shadow-sm rounded-lg overflow-hidden">
                                     <div class="overflow-auto custom-scrollbar" style="max-height: 60vh;">
                                         <table class="min-w-full text-sm text-left text-slate-300 border-collapse">
-                                            <thead class="text-xs uppercase sticky top-0 z-20 bg-[#0f172a] text-slate-400">
+                                            <thead class="text-xs uppercase sticky top-0 z-20 glass-panel text-slate-400">
                                                 <tr>
                                                     <th rowspan="2" class="px-2 py-2 text-center w-16 border-r border-b border-slate-700">CÓD</th>
                                                     <th rowspan="2" class="px-3 py-2 text-left w-48 border-r border-b border-slate-700">CLIENTE</th>
@@ -1404,7 +1404,7 @@
 
                             <!-- Tab Content: Meta SV -->
                             <div id="goals-sv-content" class="hidden">
-                                <div class="mb-6 p-4 bg-[#1d2347] rounded-lg shadow-sm border border-slate-700">
+                                <div class="mb-6 p-4 glass-panel rounded-lg shadow-sm border border-slate-700">
                                     <div class="flex flex-col md:flex-row justify-between items-end gap-4">
                                         <div class="relative w-full md:w-64">
                                             <label for="goals-sv-supervisor-filter-btn" class="block mb-2 text-sm font-medium text-slate-400">Supervisor</label>
@@ -1426,7 +1426,7 @@
                                 </div>
 
                                 <!-- Consolidated Table (SV) -->
-                                <div id="goals-sv-table-container" class="bg-[#1d2347] border border-slate-700 shadow-sm rounded-lg overflow-hidden">
+                                <div id="goals-sv-table-container" class="glass-panel border border-slate-700 shadow-sm rounded-lg overflow-hidden">
                                     <div class="overflow-auto custom-scrollbar" style="max-height: 75vh;">
                                         <table class="min-w-full text-sm text-left text-slate-300 border-collapse" id="goals-sv-main-table">
                                             <!-- Headers populated by JS -->
@@ -1445,7 +1445,7 @@
 
         <!-- Filters Block -->
         <div class="filter-wrapper-sentinel">
-        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <!-- Coordenador -->
                 <div id="innovations-month-coord-filter-wrapper" class="relative">
@@ -1554,13 +1554,13 @@
              <div id="innovations-month-bonus-coverage-count-kpi-previous"></div>
         </div>
 
-        <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
             <div id="innovations-month-chartContainer" class="relative h-96 w-full"></div>
         </div>
-        <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
+        <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
             <div class="overflow-x-auto custom-scrollbar">
                 <table class="min-w-full text-sm text-left text-slate-300">
-                    <thead class="text-[10px] md:text-xs text-slate-400 uppercase bg-slate-900">
+                    <thead class="text-[10px] md:text-xs text-slate-400 uppercase glass-panel">
                         <tr>
                             <th class="px-2 py-2 md:px-4 md:py-3 text-left hidden md:table-cell">Categoria</th>
                             <th class="px-2 py-2 md:px-4 md:py-3 text-left">Produto</th>
@@ -1583,7 +1583,7 @@
         </header>
 
         <div class="filter-wrapper-sentinel">
-        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="flex flex-wrap gap-4 items-end">
                 <div id="mix-rede-filter-wrapper" class="relative flex-1 min-w-[260px] z-20">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
@@ -1692,20 +1692,20 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <div class="bg-[#0f172a] p-2 rounded-2xl border border-slate-800/50 shadow-lg">
+            <div class="glass-panel p-2 rounded-2xl border border-slate-800/50 shadow-lg">
                 <h2 class="text-xl font-bold text-white mb-6">Distribuição de Mix</h2>
                 <div id="mixDistributionChartContainer" class="relative h-80 w-full"></div>
             </div>
-            <div class="bg-[#0f172a] p-2 rounded-2xl border border-slate-800/50 shadow-lg">
+            <div class="glass-panel p-2 rounded-2xl border border-slate-800/50 shadow-lg">
                 <h2 class="text-xl font-bold text-white mb-6">Performance por Vendedor</h2>
                 <div id="mixSellerChartContainer" class="relative h-80 w-full"></div>
             </div>
         </div>
 
-        <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
+        <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
             <div class="overflow-x-auto custom-scrollbar max-h-96">
                 <table class="min-w-full text-sm text-left text-slate-300">
-                    <thead class="text-[10px] md:text-xs text-slate-400 uppercase bg-slate-900 sticky top-0">
+                    <thead class="text-[10px] md:text-xs text-slate-400 uppercase glass-panel sticky top-0">
                         <tr>
                             <th rowspan="2" class="px-2 py-2 md:px-4 md:py-3 w-16 text-center border-r border-slate-800">Cód</th>
                             <th rowspan="2" class="px-2 py-2 md:px-4 md:py-3 border-r border-slate-800">Cliente</th>
@@ -1731,7 +1731,7 @@
                     <tbody id="mix-table-body" class="divide-y divide-slate-800"></tbody>
                 </table>
             </div>
-            <div id="mix-pagination-controls" class="p-4 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
+            <div id="mix-pagination-controls" class="p-4 glass-panel border-t border-slate-800 flex justify-between items-center">
                 <button id="mix-prev-page-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
                 <span id="mix-page-info-text" class="text-slate-400 text-xs font-medium"></span>
                 <button id="mix-next-page-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
@@ -1745,7 +1745,7 @@
         </header>
 
         <div class="filter-wrapper-sentinel">
-        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="flex flex-wrap gap-4 items-end">
                 <!-- Coordenador -->
                 <div id="meta-realizado-coord-filter-wrapper" class="relative flex-1 min-w-[200px]">
@@ -1781,7 +1781,7 @@
         </div>
         </div>
 
-        <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
             <div class="flex justify-between items-center mb-6">
                 <h2 id="metaRealizadoChartTitle" class="text-xl font-bold text-white">Progresso Geral</h2>
                 <button id="metaRealizadoMetricToggleBtn" class="bg-slate-800 text-slate-300 text-xs px-3 py-1 rounded border border-slate-700">Alternar Métrica</button>
@@ -1800,29 +1800,29 @@
 
         <div class="grid grid-cols-1 gap-8">
             <!-- Summary Table -->
-            <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden flex flex-col h-[600px]">
-                <div class="p-4 bg-slate-900 border-b border-slate-800"><h3 class="font-bold text-white">Resumo por Vendedor</h3></div>
+            <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden flex flex-col h-[600px]">
+                <div class="p-4 glass-panel border-b border-slate-800"><h3 class="font-bold text-white">Resumo por Vendedor</h3></div>
                 <div class="overflow-auto custom-scrollbar flex-1">
                     <table id="metaRealizadoTableContainer" class="min-w-full text-sm text-left text-slate-300">
-                        <thead id="meta-realizado-table-head" class="text-xs text-slate-400 uppercase bg-slate-900 sticky top-0"></thead>
+                        <thead id="meta-realizado-table-head" class="text-xs text-slate-400 uppercase glass-panel sticky top-0"></thead>
                         <tbody id="meta-realizado-table-body" class="divide-y divide-slate-800"></tbody>
                     </table>
                 </div>
             </div>
 
             <!-- Detail Table -->
-            <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden flex flex-col h-[600px]">
-                <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
+            <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden flex flex-col h-[600px]">
+                <div class="p-4 glass-panel border-b border-slate-800 flex justify-between items-center">
                     <h3 class="font-bold text-white">Detalhamento por Cliente</h3>
 
                 </div>
                 <div class="overflow-auto custom-scrollbar flex-1">
                     <table id="metaRealizadoClientsTableContainer" class="min-w-full text-sm text-left text-slate-300">
-                        <thead id="meta-realizado-clients-table-head" class="text-xs text-slate-400 uppercase bg-slate-900 sticky top-0"></thead>
+                        <thead id="meta-realizado-clients-table-head" class="text-xs text-slate-400 uppercase glass-panel sticky top-0"></thead>
                         <tbody id="meta-realizado-clients-table-body" class="divide-y divide-slate-800"></tbody>
                     </table>
                 </div>
-                <div id="meta-realizado-clients-pagination-controls" class="p-3 bg-slate-900 border-t border-slate-800 flex justify-between items-center text-xs">
+                <div id="meta-realizado-clients-pagination-controls" class="p-3 glass-panel border-t border-slate-800 flex justify-between items-center text-xs">
                     <button id="meta-realizado-clients-prev-page-btn" class="bg-slate-800 text-white px-3 py-1 rounded disabled:opacity-50">Ant</button>
                     <span id="meta-realizado-clients-page-info-text" class="text-slate-400"></span>
                     <button id="meta-realizado-clients-next-page-btn" class="bg-slate-800 text-white px-3 py-1 rounded disabled:opacity-50">Prox</button>
@@ -1837,7 +1837,7 @@
         </header>
 
         <div class="filter-wrapper-sentinel">
-        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div id="coverage-coord-filter-wrapper" class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
@@ -1940,17 +1940,17 @@
         </div>
         
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-             <div class="lg:col-span-2 bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg">
+             <div class="lg:col-span-2 glass-panel p-4 rounded-xl border border-slate-800/50 shadow-lg">
                 <p class="text-xs text-slate-500 uppercase font-bold mb-2">Top Produto (Valor)</p>
                 <div id="coverage-top-coverage-value-kpi" class="text-sm text-white truncate"></div>
              </div>
-             <div class="lg:col-span-2 bg-[#0f172a] p-4 rounded-xl border border-slate-800/50 shadow-lg">
+             <div class="lg:col-span-2 glass-panel p-4 rounded-xl border border-slate-800/50 shadow-lg">
                 <p class="text-xs text-slate-500 uppercase font-bold mb-2">Top Produto (Positivação)</p>
                 <div id="coverage-top-coverage-product-kpi" class="text-sm text-white truncate"></div>
              </div>
         </div>
 
-        <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
             <div class="flex justify-between items-center mb-6">
                 <h2 id="coverage-chart-title" class="text-xl font-bold text-white">Cobertura por Cidade</h2>
                 <button id="coverage-chart-toggle-btn" class="bg-slate-800 text-slate-300 text-xs px-3 py-1 rounded">Alternar</button>
@@ -1958,15 +1958,15 @@
             <div id="coverageCityChartContainer" class="relative h-96 w-full"></div>
         </div>
 
-        <div class="bg-[#0f172a] p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
             <h2 class="text-xl font-bold text-white mb-6">Ranking de Vendedores</h2>
             <div id="coverageSellerChartContainer" class="relative h-96 w-full"></div>
         </div>
 
-        <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
+        <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
             <div class="overflow-x-auto custom-scrollbar max-h-96">
                 <table class="min-w-full text-sm text-left text-slate-300">
-                    <thead class="text-[10px] md:text-xs text-slate-400 uppercase bg-slate-900 sticky top-0">
+                    <thead class="text-[10px] md:text-xs text-slate-400 uppercase glass-panel sticky top-0">
                         <tr>
                             <th class="px-2 py-2 md:px-4 md:py-3 text-left">Produto</th>
                             <th class="px-2 py-2 md:px-4 md:py-3 text-right hidden md:table-cell">Estoque</th>
@@ -1995,7 +1995,7 @@
 
         <!-- Controls Section -->
         <div class="filter-wrapper-sentinel">
-        <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+        <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
              <div class="flex flex-col md:flex-row gap-6">
                 <!-- Promoter Selector (For Coords) -->
                 <div id="wallet-promoter-select-container" class="flex-1 min-w-[250px]">
@@ -2030,8 +2030,8 @@
         </div>
 
         <!-- Portfolio Table -->
-        <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
-             <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
+        <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
+             <div class="p-4 glass-panel border-b border-slate-800 flex justify-between items-center">
                 <h3 id="wallet-table-title" class="font-bold text-white flex items-center gap-2">
                     Carteira Atual
                     <span id="wallet-count-badge" class="bg-[#FF5E00] text-white text-xs px-2 py-0.5 rounded-full">0</span>
@@ -2039,7 +2039,7 @@
             </div>
             <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
                 <table class="min-w-full text-sm text-left text-slate-300">
-                    <thead class="text-[10px] md:text-xs text-slate-400 uppercase bg-slate-900 sticky top-0 z-10 shadow-md">
+                    <thead class="text-[10px] md:text-xs text-slate-400 uppercase glass-panel sticky top-0 z-10 shadow-md">
                         <tr>
                             <th class="px-2 py-2 md:px-6 md:py-4 font-bold tracking-wider w-16 md:w-32">Cód.</th>
                             <th class="px-2 py-2 md:px-6 md:py-4 font-bold tracking-wider">Cliente</th>
@@ -2134,7 +2134,7 @@
         </header>
 
         <div class="filter-wrapper-sentinel">
-            <div class="sticky-filters mb-6 p-6 bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg">
+            <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <!-- Date Range -->
                     <div>
@@ -2195,8 +2195,8 @@
         </div>
 
         <!-- Results Table -->
-        <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
-            <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
+        <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
+            <div class="p-4 glass-panel border-b border-slate-800 flex justify-between items-center">
                 <h3 class="font-bold text-white flex items-center gap-2">
                     Resultados
                     <span id="history-count-badge" class="bg-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded-full">0</span>
@@ -2204,7 +2204,7 @@
             </div>
             <div class="overflow-x-auto custom-scrollbar" style="max-height: 70vh;">
                 <table class="min-w-full text-sm text-left text-slate-300">
-                    <thead class="text-xs text-slate-400 uppercase bg-slate-900 sticky top-0 z-10">
+                    <thead class="text-xs text-slate-400 uppercase glass-panel sticky top-0 z-10">
                         <tr>
                             <th class="px-2 py-2 md:px-2 md:py-3 font-bold tracking-wider text-[10px] md:text-xs">Data</th>
                             <th class="px-2 py-2 md:px-2 md:py-3 font-bold tracking-wider text-[10px] md:text-xs">Nº Pedido</th>
@@ -2230,7 +2230,7 @@
                 </table>
             </div>
             <!-- Pagination -->
-            <div id="history-pagination-controls" class="hidden p-4 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
+            <div id="history-pagination-controls" class="hidden p-4 glass-panel border-t border-slate-800 flex justify-between items-center">
                 <button id="history-prev-page-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
                 <span id="history-page-info-text" class="text-slate-400 text-xs font-medium"></span>
                 <button id="history-next-page-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
@@ -2256,7 +2256,7 @@
 
         <!-- Roteiro View Container (Hidden by default) -->
         <div id="roteiro-container" class="hidden mb-6 animate-fade-in-up">
-            <div id="roteiro-main-card" class="bg-[#0f172a] text-slate-300 rounded-xl shadow-lg overflow-hidden mb-6 border border-slate-800">
+            <div id="roteiro-main-card" class="glass-panel text-slate-300 rounded-xl shadow-lg overflow-hidden mb-6 border border-slate-800">
                 <!-- Calendar Header -->
                 <div class="p-4 border-b border-slate-800 flex justify-between items-center">
                     <div class="flex items-center gap-2">
@@ -2273,7 +2273,7 @@
                 </div>
 
                 <!-- Daily Stats -->
-                <div class="p-4 bg-slate-900 border-t border-slate-800">
+                <div class="p-4 glass-panel border-t border-slate-800">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-sm font-bold text-white" id="roteiro-date-display">-- de --</span>
                         <span class="text-sm text-slate-400" id="roteiro-client-count">0 clientes</span>
@@ -2313,7 +2313,7 @@
         </div>
 
         <div id="clientes-list-view-wrapper">
-            <div class="bg-[#0f172a] rounded-xl shadow-lg overflow-hidden border border-slate-800">
+            <div class="glass-panel rounded-xl shadow-lg overflow-hidden border border-slate-800">
                 <div id="clientes-list-container" class="divide-y divide-slate-800">
                     <!-- List Items injected by JS -->
                 </div>
@@ -2371,7 +2371,7 @@
 
 <!-- MODAL DE RELATORIO / PESQUISA -->
 <div id="modal-relatorio" class="modal-overlay hidden z-[3000]">
-    <div class="bg-modal-content max-w-lg w-full m-4 p-6 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 max-h-[90vh] overflow-y-auto custom-scrollbar">
+    <div class="bg-modal-content max-w-lg w-full m-4 p-6 rounded-2xl shadow-2xl border border-slate-700 glass-panel max-h-[90vh] overflow-y-auto custom-scrollbar">
         <div class="flex justify-between items-start mb-6 border-b border-slate-800 pb-4">
             <h3 class="text-xl font-bold text-white">Relatório de Visita</h3>
             <span class="text-slate-400 hover:text-white cursor-pointer text-2xl leading-none" onclick="closeResearchModal()">&times;</span>
@@ -2576,7 +2576,7 @@
 
 <!-- MODAL DE ACOES DA VISITA (MINI MENU REFACTORED) -->
 <div id="modal-acoes-visita" class="modal-overlay hidden z-[2900]">
-    <div class="bg-modal-content max-w-sm w-full m-4 p-0 rounded-3xl shadow-2xl border border-slate-700 bg-slate-900 overflow-hidden relative transform transition-all">
+    <div class="bg-modal-content max-w-sm w-full m-4 p-0 rounded-3xl shadow-2xl border border-slate-700 glass-panel overflow-hidden relative transform transition-all">
         <!-- Header with Client Info -->
         <div class="p-6 pb-4 bg-gradient-to-b from-slate-800 to-slate-900">
             <div class="flex justify-between items-start mb-4">
@@ -2659,7 +2659,7 @@
 
 <!-- MODAL DE ATUALIZACAO DE GEO -->
 <div id="modal-geo-update" class="modal-overlay hidden z-[3100]">
-    <div class="bg-modal-content max-w-md w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 overflow-hidden relative">
+    <div class="bg-modal-content max-w-md w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 glass-panel overflow-hidden relative">
         <div class="p-4 border-b border-slate-800 bg-slate-800/50 flex justify-between items-center">
             <h3 class="text-lg font-bold text-white">Atualizar Posição</h3>
             <button class="text-slate-400 hover:text-white" onclick="closeGeoModal()">
@@ -2668,12 +2668,12 @@
         </div>
         <div class="relative h-64 bg-slate-800">
             <div id="geo-update-map" class="w-full h-full z-0"></div>
-            <div id="geo-update-loading" class="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center z-10">
+            <div id="geo-update-loading" class="absolute inset-0 glass-panel/80 flex flex-col items-center justify-center z-10">
                 <div class="spinner-orange mb-2"></div>
                 <span class="text-sm text-slate-300">Obtendo localização...</span>
             </div>
         </div>
-        <div class="p-4 bg-slate-900 border-t border-slate-800">
+        <div class="p-4 glass-panel border-t border-slate-800">
             <p class="text-xs text-slate-400 mb-4 text-center">Verifique se o pino está na posição correta do estabelecimento.</p>
             <button id="btn-confirm-geo-update" class="w-full py-3 px-4 bg-[#FF5E00] hover:bg-[#CC4A00] text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
@@ -2686,7 +2686,7 @@
     <!-- Modals (Hidden) -->
     <!-- Order Details (Refactored for Valid HTML) -->
     <div id="order-details-modal" class="modal-overlay hidden z-[9999]">
-        <div class="bg-modal-content w-full max-w-4xl m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="bg-modal-content w-full max-w-4xl m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 glass-panel max-h-[90vh] overflow-y-auto custom-scrollbar">
             <button id="modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -2715,7 +2715,7 @@
 
     <!-- Client Details (Refactored for UI) -->
     <div id="client-details-modal" class="modal-overlay hidden">
-        <div class="bg-modal-content w-full max-w-2xl m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 bg-slate-900">
+        <div class="bg-modal-content w-full max-w-2xl m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 glass-panel">
             <button id="client-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -2728,7 +2728,7 @@
     <div id="confirmation-modal" class="modal-overlay hidden"><div class="bg-modal-content"><p id="confirmation-message"></p><button id="confirmation-cancel-btn"></button><button id="confirmation-confirm-btn"></button></div></div>
     <!-- Admin Password Modal -->
     <div id="admin-password-modal" class="modal-overlay hidden z-[2500]">
-        <div class="bg-modal-content max-w-sm w-full m-4 p-6 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900/95 backdrop-blur-md text-center">
+        <div class="bg-modal-content max-w-sm w-full m-4 p-6 rounded-2xl shadow-2xl border border-slate-700 glass-panel/95 backdrop-blur-md text-center">
             <h3 class="text-xl font-bold text-white mb-4">Acesso Restrito</h3>
             <p class="text-slate-400 text-sm mb-6">Insira a senha de administrador para continuar.</p>
             <input type="password" id="admin-password-input" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white text-center mb-6 focus:ring-2 focus:ring-[#FF5E00] focus:border-transparent outline-none transition-all" placeholder="Senha">
@@ -2767,7 +2767,7 @@
                                     </div>
 
                                     <p class="mb-2 text-sm text-slate-400">Cole abaixo os dados copiados da planilha (Excel/Sheets). Certifique-se de incluir os cabeçalhos das colunas.</p>
-                                    <textarea id="import-goals-textarea" class="w-full h-32 bg-slate-900 border border-slate-600 rounded-lg p-3 text-xs font-mono text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent mb-4" placeholder="Cole os dados aqui..."></textarea>
+                                    <textarea id="import-goals-textarea" class="w-full h-32 glass-panel border border-slate-600 rounded-lg p-3 text-xs font-mono text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent mb-4" placeholder="Cole os dados aqui..."></textarea>
 
                                     <div class="flex justify-end gap-4 mb-6">
                                         <button id="import-goals-analyze-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow-lg">
@@ -2792,7 +2792,7 @@
 
                                         <!-- AI Result Container -->
                                         <div id="ai-insights-result" class="hidden mb-6 p-1 rounded-lg bg-gradient-to-r from-slate-700 to-slate-800 p-[1px]">
-                                            <div class="bg-slate-900 rounded-lg p-6 relative overflow-hidden">
+                                            <div class="glass-panel rounded-lg p-6 relative overflow-hidden">
                                                 <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                                                     <svg class="w-32 h-32 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6a1 1 0 0 0-1 1v4H8a1 1 0 0 0 0 2h3v3a1 1 0 0 0 2 0v-3h3a1 1 0 0 0 0-2h-3V7a1 1 0 0 0-1-1z"/></svg>
                                                 </div>
@@ -2816,7 +2816,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="bg-slate-900 rounded-lg border border-slate-700 overflow-hidden">
+                                        <div class="glass-panel rounded-lg border border-slate-700 overflow-hidden">
                                             <div class="overflow-x-auto">
                                                 <table class="min-w-full text-xs text-left text-slate-300">
                                                     <thead class="bg-slate-800 text-slate-400 uppercase font-bold">
@@ -2859,7 +2859,7 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <div class="bg-slate-900 rounded-lg p-4 border border-slate-700 max-h-[60vh] overflow-y-auto">
+            <div class="glass-panel rounded-lg p-4 border border-slate-700 max-h-[60vh] overflow-y-auto">
                 <pre id="diagnosis-content" class="text-xs text-green-400 font-mono whitespace-pre-wrap break-all select-all"></pre>
             </div>
             <div class="mt-4 flex justify-end gap-2">
@@ -2873,7 +2873,7 @@
 
     <!-- Wallet Client Action Modal -->
     <div id="wallet-client-modal" class="modal-overlay hidden z-[3000]">
-        <div class="bg-modal-content max-w-2xl w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 bg-slate-900 overflow-hidden relative flex flex-col h-[90vh]">
+        <div class="bg-modal-content max-w-2xl w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 glass-panel overflow-hidden relative flex flex-col h-[90vh]">
             <!-- Header -->
             <div class="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-800/50">
                 <div>
@@ -2886,7 +2886,7 @@
             </div>
 
             <!-- Tabs Navigation -->
-            <div class="flex border-b border-slate-800 bg-slate-900/50 px-6 overflow-x-auto no-scrollbar">
+            <div class="flex border-b border-slate-800 glass-panel/50 px-6 overflow-x-auto no-scrollbar">
                 <button data-tab="general" class="wallet-tab-btn active px-4 py-3 text-sm font-medium text-[#FF5E00] border-b-2 border-[#FF5E00] transition-colors whitespace-nowrap">Geral</button>
                 <button data-tab="losses" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Perdas</button>
                 <button data-tab="bonus" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Bonificações</button>
@@ -2946,7 +2946,7 @@
                         </h4>
                         <div class="overflow-hidden rounded-lg border border-slate-700">
                             <table class="min-w-full text-xs text-left text-slate-300">
-                                <thead class="bg-slate-900 uppercase text-slate-500 font-bold">
+                                <thead class="glass-panel uppercase text-slate-500 font-bold">
                                     <tr>
                                         <th class="px-4 py-2">Mês</th>
                                         <th class="px-4 py-2 text-right">Valor (R$)</th>
@@ -3053,7 +3053,7 @@
 
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Próxima Data de Atendimento</label>
-                                <input type="date" id="itinerary-next-date" class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 block">
+                                <input type="date" id="itinerary-next-date" class="w-full glass-panel border border-slate-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 block">
                                 <p class="mt-2 text-xs text-slate-400" id="itinerary-calc-preview">
                                     Define o dia base para o cálculo das próximas visitas.
                                 </p>
@@ -3085,7 +3085,7 @@
 
     <!-- Product Performance Modal -->
     <div id="product-performance-modal" class="modal-overlay hidden z-[3200]">
-        <div class="bg-modal-content w-full max-w-md m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 bg-slate-900">
+        <div class="bg-modal-content w-full max-w-md m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 glass-panel">
             <button id="product-performance-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>

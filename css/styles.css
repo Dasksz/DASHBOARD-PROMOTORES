@@ -1132,3 +1132,150 @@ html.light .bg-green-900\/30 {
         right: 2px;
     }
 }
+
+/* --- GLASSMORPHISM SYSTEM --- */
+.glass-panel {
+    background-color: rgba(10, 10, 10, 0.6) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+    color: #f1f5f9 !important; /* Lighter text base */
+}
+
+.glass-panel-heavy {
+    background-color: rgba(15, 23, 42, 0.85) !important; /* Darker/More Opaque for Contrast */
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Override Text Colors inside Glass Panels for Readability */
+.glass-panel .text-slate-400,
+.glass-panel-heavy .text-slate-400 {
+    color: #cbd5e1 !important; /* Lighter Slate-300 equivalent */
+}
+
+.glass-panel .text-slate-500,
+.glass-panel-heavy .text-slate-500 {
+    color: #94a3b8 !important; /* Lighter Slate-400 equivalent */
+}
+
+.glass-panel h1, .glass-panel h2, .glass-panel h3,
+.glass-panel-heavy h1, .glass-panel-heavy h2, .glass-panel-heavy h3 {
+    color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+
+/* --- KPI CARD GLASS OVERRIDES --- */
+.kpi-card {
+    background-color: rgba(23, 23, 23, 0.4) !important; /* Slightly more transparent than full panels */
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1) !important;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.kpi-card:hover {
+    background-color: rgba(23, 23, 23, 0.6) !important; /* Darken slightly on hover */
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Redefine KPI Glow Variants for Glass */
+.kpi-glow-blue {
+    /* Transparent center with blue tinted edges via border/shadow */
+    background-image: none !important;
+    border-color: rgba(59, 130, 246, 0.3) !important;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 20px rgba(59, 130, 246, 0.05) !important;
+}
+
+.kpi-glow-green {
+    background-image: none !important;
+    border-color: rgba(34, 197, 94, 0.3) !important;
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.15), inset 0 0 20px rgba(34, 197, 94, 0.05) !important;
+}
+
+.kpi-glow-yellow {
+    background-image: none !important;
+    border-color: rgba(234, 179, 8, 0.3) !important;
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.15), inset 0 0 20px rgba(234, 179, 8, 0.05) !important;
+}
+
+.kpi-glow-purple {
+    background-image: none !important;
+    border-color: rgba(168, 85, 247, 0.3) !important;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.15), inset 0 0 20px rgba(168, 85, 247, 0.05) !important;
+}
+
+.kpi-glow-orange {
+    background-image: none !important;
+    border-color: rgba(249, 115, 22, 0.3) !important;
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.15), inset 0 0 20px rgba(249, 115, 22, 0.05) !important;
+}
+
+
+/* --- FILTER GLASS CONTAINER STYLES --- */
+.glass-filter-box {
+    background-color: rgba(30, 41, 59, 0.5) !important; /* Slightly bluish/slate tint */
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+    border-radius: 1rem !important;
+    padding: 1.5rem !important;
+    margin-bottom: 2rem !important;
+}
+
+/* Ensure inputs inside filter box have contrast */
+.glass-filter-box label {
+    color: #e2e8f0 !important; /* Lighter text for labels */
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+.glass-filter-box input,
+.glass-filter-box select,
+.glass-filter-box button:not(.bg-slate-700):not(.bg-\[\#FF5E00\]):not(.group-btn) {
+    background-color: rgba(15, 23, 42, 0.7) !important; /* Darker background for inputs */
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+}
+
+.glass-filter-box input:focus,
+.glass-filter-box select:focus {
+    background-color: rgba(15, 23, 42, 0.9) !important;
+    border-color: #FF5E00 !important;
+    box-shadow: 0 0 0 2px rgba(255, 94, 0, 0.3) !important;
+}
+
+
+/* --- GLASS TABLE OVERRIDES --- */
+.glass-panel table thead th {
+    background-color: rgba(30, 41, 59, 0.5) !important; /* Slightly distinct header for tables */
+    color: #f1f5f9 !important; /* White text for headers */
+    text-shadow: 0 1px 1px rgba(0,0,0,0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.glass-panel table tbody tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.02) !important; /* Subtle striping */
+}
+
+.glass-panel table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important; /* Hover effect */
+}
+
+.glass-panel table td {
+    color: #e2e8f0 !important; /* Light text for data */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Specific text color adjustments for low contrast elements */
+.glass-panel .text-slate-300 { color: #e2e8f0 !important; }
+.glass-panel .text-slate-400 { color: #cbd5e1 !important; }
+.glass-panel .text-slate-500 { color: #94a3b8 !important; }
+.glass-panel .text-gray-400 { color: #cbd5e1 !important; }
+.glass-panel .text-gray-500 { color: #94a3b8 !important; }
