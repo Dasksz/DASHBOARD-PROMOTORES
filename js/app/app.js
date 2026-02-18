@@ -1323,21 +1323,25 @@
             const clientToCurrentSellerMap = new Map();
             let americanasCodCli = null;
 
-            // Use ONLY History Data for identifying Supervisor (User Request)
-            // Identify Supervisor for each Seller based on the *Latest* sale in History
-            const historyData = allHistoryData; // Using variable for clarity
-            for (let i = 0; i < historyData.length; i++) {
-                const s = historyData instanceof ColumnarDataset ? historyData.get(i) : historyData[i];
-                const codUsur = s.CODUSUR;
-                // Ignorar 'INATIVOS' e 'AMERICANAS' para evitar poluição do mapa de supervisores com lógica de fallback
-                if (codUsur && s.NOME !== 'INATIVOS' && s.NOME !== 'AMERICANAS') {
-                    const dt = parseDate(s.DTPED);
-                    const ts = dt ? dt.getTime() : 0;
-                    const lastTs = sellerLastSaleDateMap.get(codUsur) || 0;
+            // Use History AND Current Data for identifying Supervisor (Optimized)
+            // Identify Supervisor for each Seller based on the *Latest* sale
+            const sources = [allHistoryData, allSalesData];
 
-                    if (ts >= lastTs || !sellerDetailsMap.has(codUsur)) {
-                        sellerLastSaleDateMap.set(codUsur, ts);
-                        sellerDetailsMap.set(codUsur, { name: s.NOME, supervisor: s.SUPERV });
+            for (const source of sources) {
+                if (!source) continue;
+                for (let i = 0; i < source.length; i++) {
+                    const s = source instanceof ColumnarDataset ? source.get(i) : source[i];
+                    const codUsur = s.CODUSUR;
+                    // Ignorar 'INATIVOS' e 'AMERICANAS' para evitar poluição do mapa de supervisores com lógica de fallback
+                    if (codUsur && s.NOME !== 'INATIVOS' && s.NOME !== 'AMERICANAS') {
+                        const dt = parseDate(s.DTPED);
+                        const ts = dt ? dt.getTime() : 0;
+                        const lastTs = sellerLastSaleDateMap.get(codUsur) || 0;
+
+                        if (ts >= lastTs || !sellerDetailsMap.has(codUsur)) {
+                            sellerLastSaleDateMap.set(codUsur, ts);
+                            sellerDetailsMap.set(codUsur, { name: s.NOME, supervisor: s.SUPERV });
+                        }
                     }
                 }
             }
@@ -1404,6 +1408,8 @@
                 });
             }
 
+            optimizedData.clientPromotersMap = new Map(); // Fast lookup for modal
+
             if (embeddedData.clientPromoters) {
                 let matchCount = 0;
                 let sampleLogged = false;
@@ -1413,6 +1419,9 @@
                     if (/^\d+$/.test(clientCode)) {
                         clientCode = String(parseInt(clientCode, 10));
                     }
+
+                    // Populate Map for O(1) Access
+                    optimizedData.clientPromotersMap.set(normalizeKey(clientCode), cp);
 
                     const promotorCode = String(cp.promoter_code).trim().toUpperCase();
                     const hierarchyNode = optimizedData.hierarchyMap.get(promotorCode);
@@ -1495,12 +1504,22 @@
 
                 const rawCnpj = client['CNPJ/CPF'] || client.cnpj_cpf || client.CNPJ || '';
                 const cleanCnpj = String(rawCnpj).replace(/[^0-9]/g, '');
+
+                // Calculate isActive status for search optimization
+                // Logic: Americanas OR (Not Balcão AND Not Inactive) OR Has Sales
+                const isAmericanas = (client.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const rca1Val = String(client.rca1 || '').trim();
+                const isActive = (isAmericanas || rca1Val !== '53' || clientsWithSalesThisMonth.has(codCli));
+
                 optimizedData.searchIndices.clients[i] = {
+                    i: i, // Store index for O(1) retrieval
                     code: codCli,
+                    name: client.nomeCliente || '', // Store original name for sorting
                     nameLower: (client.nomeCliente || '').toLowerCase(),
                     cityLower: (client.cidade || '').toLowerCase(),
                     bairroLower: (client.bairro || '').toLowerCase(),
-                    cnpj: cleanCnpj
+                    cnpj: cleanCnpj,
+                    isActive: isActive
                 };
             }
 
@@ -1804,6 +1823,37 @@
         // cityNameFilter removed
         function getActiveClientsData() {
             try {
+                // Optimized path for ColumnarDataset to avoid Proxy creation overhead during filtering
+                if (allClientsData instanceof ColumnarDataset) {
+                    const results = [];
+                    const data = allClientsData._data;
+                    const len = allClientsData.length;
+
+                    // Resolve columns efficiently
+                    const colCode = data['Código'] || data['codigo_cliente'] || [];
+                    const colRca1 = data['rca1'] || data['RCA 1'] || data['RCA1'] || [];
+                    const colRazao = data['razaoSocial'] || data['RAZAOSOCIAL'] || data['Cliente'] || data['CLIENTE'] || [];
+
+                    for (let i = 0; i < len; i++) {
+                        const codcli = String(colCode[i] || '');
+                        const rca1 = String(colRca1[i] || '').trim();
+
+                        let isAmericanas = false;
+                        const razao = colRazao[i];
+                        if (razao && typeof razao === 'string' && razao.toUpperCase().includes('AMERICANAS')) {
+                            isAmericanas = true;
+                        }
+
+                        // Use the exact same logic as original
+                        const keep = (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(codcli));
+
+                        if (keep) {
+                            results.push(allClientsData.get(i));
+                        }
+                    }
+                    return results;
+                }
+
                 const res = allClientsData.filter(c => {
                     const codcli = String(c['Código'] || c['codigo_cliente']);
                     const rca1 = String(c.rca1 || '').trim();
@@ -17204,7 +17254,15 @@ const supervisorGroups = new Map();
 
         // Merge Itinerary Data from embeddedData.clientPromoters (Memory Cache)
         // This ensures we show the latest Saved data even if data_clients table is stale
-        if (embeddedData.clientPromoters) {
+        if (optimizedData.clientPromotersMap) {
+             // O(1) Lookup
+             const promoData = optimizedData.clientPromotersMap.get(normalizeKey(clientCode));
+             if (promoData) {
+                 client.itinerary_frequency = promoData.itinerary_frequency;
+                 client.itinerary_next_date = promoData.itinerary_ref_date;
+             }
+        } else if (embeddedData.clientPromoters) {
+             // Fallback if Map not ready (unlikely)
              const promoData = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === normalizeKey(clientCode));
              if (promoData) {
                  client.itinerary_frequency = promoData.itinerary_frequency;
@@ -17251,33 +17309,11 @@ const supervisorGroups = new Map();
 
         // Fallback: If name is missing or "INATIVOS", try to find a valid name in current sales
         if (!resolvedName || resolvedName.toUpperCase() === 'INATIVOS') {
-            // Check Seller Details Map first (History based)
+            // Check Seller Details Map (Populated from History AND Current Sales now)
             if (sellerDetailsMap && sellerDetailsMap.has(rca1)) {
                 const details = sellerDetailsMap.get(rca1);
                 if (details && details.name && details.name.toUpperCase() !== 'INATIVOS') {
                     resolvedName = details.name;
-                }
-            }
-            
-            // Still invalid? Scan current sales for this RCA (Expensive but robust fallback)
-            if (!resolvedName || resolvedName.toUpperCase() === 'INATIVOS') {
-                if (allSalesData instanceof ColumnarDataset) {
-                     const codUsurArr = allSalesData._data['CODUSUR'];
-                     const nomeArr = allSalesData._data['NOME'];
-                     if (codUsurArr && nomeArr) {
-                         for(let i=0; i < allSalesData.length; i++) {
-                             if (String(codUsurArr[i]) === rca1) {
-                                 const n = String(nomeArr[i]);
-                                 if (n && n.toUpperCase() !== 'INATIVOS') {
-                                     resolvedName = n;
-                                     break;
-                                 }
-                             }
-                         }
-                     }
-                } else if (Array.isArray(allSalesData)) {
-                    const match = allSalesData.find(s => String(s.CODUSUR) === rca1 && s.NOME && s.NOME.toUpperCase() !== 'INATIVOS');
-                    if (match) resolvedName = match.NOME;
                 }
             }
         }
@@ -18747,30 +18783,44 @@ const supervisorGroups = new Map();
                 // Reset to page 1 on new filter
                 clientsTableState.page = 1;
                 const filter = (filterValue !== null ? filterValue : (searchInput ? searchInput.value : '')).toLowerCase();
-                const clients = getActiveClientsData();
-                clientsTableState.filtered = clients.filter(c => {
-                    if (!filter) return true;
-                    const terms = filter.split('%').map(t => t.trim()).filter(t => t.length > 0);
-                    if (terms.length === 0) return true;
 
-                    return terms.every(term => {
-                        return (c.nomeCliente || '').toLowerCase().includes(term) ||
-                               (c.fantasia || '').toLowerCase().includes(term) ||
-                               (String(c['Código'] || c['codigo_cliente'])).toLowerCase().includes(term) ||
-                               (c.cidade || '').toLowerCase().includes(term) ||
-                               (c.bairro || '').toLowerCase().includes(term);
+                // OPTIMIZATION: Use pre-calculated search indices to avoid Proxy overhead
+                const searchData = optimizedData.searchIndices.clients || [];
+
+                if (!filter) {
+                    clientsTableState.filtered = searchData.filter(c => c.isActive);
+                } else {
+                    // Split by space for standard search behavior
+                    const terms = filter.split(' ').map(t => t.trim()).filter(t => t.length > 0);
+
+                    clientsTableState.filtered = searchData.filter(c => {
+                        if (!c.isActive) return false;
+                        if (terms.length === 0) return true;
+
+                        return terms.every(term => {
+                            return c.code.includes(term) ||
+                                   c.nameLower.includes(term) ||
+                                   c.cityLower.includes(term) ||
+                                   c.bairroLower.includes(term) ||
+                                   c.cnpj.includes(term);
+                        });
                     });
-                });
+                }
                 
-                // Sort by Name
-                clientsTableState.filtered.sort((a, b) => (a.nomeCliente || '').localeCompare(b.nomeCliente || ''));
+                // Sort by Name (using pre-stored name)
+                clientsTableState.filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
             }
 
             const total = clientsTableState.filtered.length;
             const start = (clientsTableState.page - 1) * clientsTableState.limit;
             const end = start + clientsTableState.limit;
-            const subset = clientsTableState.filtered.slice(start, end);
+            const subsetIndices = clientsTableState.filtered.slice(start, end);
             const totalPages = Math.ceil(total / clientsTableState.limit) || 1;
+
+            // Map back to full Client Objects (Proxies) for rendering
+            const subset = subsetIndices.map(item => {
+                 return allClientsData instanceof ColumnarDataset ? allClientsData.get(item.i) : allClientsData[item.i];
+            });
 
             // Update Counts
             if (countEl) countEl.textContent = `${total} Clientes (Página ${clientsTableState.page} de ${totalPages})`;
@@ -18905,6 +18955,7 @@ const supervisorGroups = new Map();
                 searchInput._hasRoteiroBlurListener = true;
             }
 
+            let searchTimeout;
             searchInput.oninput = (e) => {
                 if (isRoteiroMode) {
                     const val = e.target.value;
@@ -18918,7 +18969,11 @@ const supervisorGroups = new Map();
                 } else {
                     const suggestionsEl = document.getElementById('clientes-search-suggestions');
                     if (suggestionsEl) suggestionsEl.classList.add('hidden');
-                    renderList(e.target.value);
+
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        renderList(e.target.value);
+                    }, 300);
                 }
             };
         }
