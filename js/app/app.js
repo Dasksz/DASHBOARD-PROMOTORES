@@ -1969,8 +1969,8 @@
 
         // --- FAB Management ---
         const viewFabMap = {
-            'cidades': 'city-fab-container',
-            'positivacao': 'city-fab-container', // Reuse City FAB
+            'cidades': null,
+            'positivacao': 'positivacao-fab-container',
             'inovacoes-mes': 'innovations-fab-container',
             'mix': 'mix-fab-container',
             'meta-realizado': 'meta-realizado-fab-container',
