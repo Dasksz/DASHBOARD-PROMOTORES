@@ -169,7 +169,6 @@ create table if not exists public.profiles (
   role text default 'user',
   name text, -- Full Name
   phone text, -- Phone Number
-  password text, -- Plain text password (Per User Request)
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
@@ -219,7 +218,6 @@ BEGIN
     -- Ensure 'profiles' columns exist
     ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS name text;
     ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone text;
-    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password text;
 
     -- promotor column removed from data_clients in new schema
 END $$;
@@ -304,23 +302,20 @@ set
 DECLARE
   v_name text;
   v_phone text;
-  v_password text;
 BEGIN
   -- Extract metadata
   v_name := new.raw_user_meta_data ->> 'full_name';
   v_phone := new.raw_user_meta_data ->> 'phone';
-  v_password := new.raw_user_meta_data ->> 'password';
 
   -- Insert into profiles
-  insert into public.profiles (id, email, status, role, name, phone, password)
+  insert into public.profiles (id, email, status, role, name, phone)
   values (
     new.id, 
     new.email, 
     'pendente', 
     'user', 
     v_name, 
-    v_phone, 
-    v_password
+    v_phone
   );
   
   return new;
