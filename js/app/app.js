@@ -979,21 +979,14 @@
                         </div>
                     `;
 
-                    // SVG Pin Icon
-                    const svgIcon = L.divIcon({
-                        className: 'bg-transparent border-0', // Remove default styles
-                        html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="30" height="40" fill="${markerColor}" stroke="white" stroke-width="1.5" style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.3));">
-                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-                                <circle cx="12" cy="9" r="2.5" fill="white"/>
-                               </svg>`,
-                        iconSize: [30, 40],
-                        iconAnchor: [15, 40],
-                        tooltipAnchor: [0, -35]
-                    });
-
-                    const marker = L.marker([coords.lat, coords.lng], {
-                        icon: svgIcon,
-                        opacity: 1
+                    // Canvas Circle Marker (Performance Optimization)
+                    const marker = L.circleMarker([coords.lat, coords.lng], {
+                        radius: 6,
+                        fillColor: markerColor,
+                        color: "#ffffff",
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.8
                     });
 
                     marker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, 0] });
