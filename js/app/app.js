@@ -20951,13 +20951,13 @@ const supervisorGroups = new Map();
             criticalDate.setDate(today.getDate() - 60);
 
             for (let i=0; i<len; i++) {
-                const codCli = normalizeKey(getVal(i, 'COD_CLIENTE'));
+                const codCli = normalizeKey(getVal(i, 'cod_cliente'));
 
                 if (allowedClientCodes.has(codCli)) {
                     // Match!
-                    const valReceber = Number(getVal(i, 'VL_RECEBER')) || 0;
-                    const valOriginal = Number(getVal(i, 'VL_TITULOS')) || 0;
-                    const dtVenc = parseDate(getVal(i, 'DT_VENCIMENTO'));
+                    const valReceber = Number(getVal(i, 'vl_receber')) || 0;
+                    const valOriginal = Number(getVal(i, 'vl_titulos')) || 0;
+                    const dtVenc = parseDate(getVal(i, 'dt_vencimento'));
 
                     totalReceber += valReceber;
 
