@@ -1,0 +1,6 @@
+127.0.0.1 - - [18/Feb/2026 20:10:45] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [18/Feb/2026 20:10:45] "GET /imagens/logo.svg HTTP/1.1" 200 -
+127.0.0.1 - - [18/Feb/2026 20:10:45] "GET /css/styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [18/Feb/2026 20:10:46] "GET /js/banner3d.js HTTP/1.1" 200 -
+127.0.0.1 - - [18/Feb/2026 20:10:46] "GET /js/init.js?v=6.0.0 HTTP/1.1" 200 -
+127.0.0.1 - - [18/Feb/2026 20:10:46] "GET /js/app/utils.js HTTP/1.1" 200 -
