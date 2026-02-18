@@ -1152,12 +1152,12 @@ html.light .bg-green-900\/30 {
 }
 
 /* Override Text Colors inside Glass Panels for Readability */
-.glass-panel .text-slate-400,
+.glass-panel .text-slate-400, 
 .glass-panel-heavy .text-slate-400 {
     color: #cbd5e1 !important; /* Lighter Slate-300 equivalent */
 }
 
-.glass-panel .text-slate-500,
+.glass-panel .text-slate-500, 
 .glass-panel-heavy .text-slate-500 {
     color: #94a3b8 !important; /* Lighter Slate-400 equivalent */
 }
@@ -1188,7 +1188,7 @@ html.light .bg-green-900\/30 {
 /* Redefine KPI Glow Variants for Glass */
 .kpi-glow-blue {
     /* Transparent center with blue tinted edges via border/shadow */
-    background-image: none !important;
+    background-image: none !important; 
     border-color: rgba(59, 130, 246, 0.3) !important;
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 20px rgba(59, 130, 246, 0.05) !important;
 }
@@ -1236,15 +1236,15 @@ html.light .bg-green-900\/30 {
     text-shadow: 0 1px 2px rgba(0,0,0,0.8);
 }
 
-.glass-filter-box input,
-.glass-filter-box select,
+.glass-filter-box input, 
+.glass-filter-box select, 
 .glass-filter-box button:not(.bg-slate-700):not(.bg-\[\#FF5E00\]):not(.group-btn) {
     background-color: rgba(15, 23, 42, 0.7) !important; /* Darker background for inputs */
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
     color: #ffffff !important;
 }
 
-.glass-filter-box input:focus,
+.glass-filter-box input:focus, 
 .glass-filter-box select:focus {
     background-color: rgba(15, 23, 42, 0.9) !important;
     border-color: #FF5E00 !important;
@@ -1305,4 +1305,44 @@ html.light .bg-green-900\/30 {
 /* Specific fix for inputs that might still be dark text on dark bg */
 .glass-panel input::placeholder {
     color: #94a3b8 !important; /* Lighter placeholder */
+}
+
+
+/* --- GLASS UTILITIES --- */
+/* Lightweight glass for list items/rows (no border/shadow) */
+.bg-glass {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: background-color 0.2s ease;
+}
+
+.bg-glass:hover, .hover\:bg-glass:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Glass Inputs Specific Override */
+.glass-input {
+    background-color: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(4px);
+}
+.glass-input:focus {
+    border-color: #FF5E00 !important;
+    background-color: rgba(15, 23, 42, 0.8) !important;
+}
+
+/* Glass Table Row Alternate */
+.glass-table-row-even {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Glass Border Utility */
+.border-glass {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Text on Glass */
+.text-glass-secondary {
+    color: rgba(255, 255, 255, 0.6) !important;
 }
