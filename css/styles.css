@@ -387,10 +387,12 @@
         }
         tr {
             margin-bottom: 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            background-color: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem; /* rounded-xl */
+            background-color: rgba(15, 23, 42, 0.6); /* glass effect */
+            backdrop-filter: blur(8px);
             overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
         }
         td {
             display: flex;

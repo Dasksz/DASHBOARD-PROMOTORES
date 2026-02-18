@@ -4130,7 +4130,7 @@
             // Build Headers
             let headerHTML = `
                 <tr>
-                    <th rowspan="2" class="px-3 py-2 text-left bg-[#161e3d] z-50 sticky left-0 border-r border-b border-slate-700 w-32 shadow-lg">VENDEDOR</th>
+                    <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy z-50 sticky left-0 border-r border-b border-slate-700 w-32 shadow-lg">VENDEDOR</th>
                     <th colspan="2" class="px-2 py-1 text-center bg-blue-900/30 text-blue-400 border-r border-slate-700 border-b-0">GERAL</th>
             `;
 
@@ -4165,7 +4165,7 @@
                 const realTotalStr = row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
                 let cells = `
-                    <td class="px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 bg-[#1d2347] z-30 truncate" title="${row.name}">${getFirstName(row.name)}</td>
+                    <td class="px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 glass-panel-heavy z-30 truncate" title="${row.name}">${getFirstName(row.name)}</td>
                     <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs" title="Meta Contratual Mensal">${metaTotalStr}</td>
                     <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs">${realTotalStr}</td>
                 `;
@@ -4626,10 +4626,10 @@
             // 1. Build Headers (Same logic as Seller Table but with Client Info)
             let headerHTML = `
                 <tr>
-                    <th rowspan="2" class="px-2 py-2 text-center bg-[#161e3d] border-r border-b border-slate-700 w-16">CÓD</th>
-                    <th rowspan="2" class="px-3 py-2 text-left bg-[#161e3d] border-r border-b border-slate-700 min-w-[200px]">CLIENTE</th>
-                    <th rowspan="2" class="px-3 py-2 text-left bg-[#161e3d] border-r border-b border-slate-700 w-32">VENDEDOR</th>
-                    <th rowspan="2" class="px-3 py-2 text-left bg-[#161e3d] border-r border-b border-slate-700 w-32">CIDADE</th>
+                    <th rowspan="2" class="px-2 py-2 text-center glass-panel-heavy border-r border-b border-slate-700 w-16">CÓD</th>
+                    <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 min-w-[200px]">CLIENTE</th>
+                    <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 w-32">VENDEDOR</th>
+                    <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 w-32">CIDADE</th>
                     <th colspan="2" class="px-2 py-1 text-center bg-blue-900/30 text-blue-400 border-r border-slate-700 border-b-0">GERAL</th>
             `;
 
@@ -5042,7 +5042,7 @@
                 const textColor = styleClass.split(' ')[1];
 
                 return `
-                    <div class="bg-[#1e2a5a] border-l-4 ${styleClass.split(' ')[0]} rounded-r-lg p-4 shadow-md transition hover:-translate-y-1">
+                    <div class="glass-panel border-l-4 ${styleClass.split(' ')[0]} rounded-r-lg p-4 shadow-md transition hover:-translate-y-1">
                         <h3 class="font-bold text-lg text-white mb-3 border-b border-slate-700 pb-2">${item.title}</h3>
                         <div class="space-y-4">
                             <div>
@@ -7174,13 +7174,13 @@ const supervisorGroups = new Map();
                         svColumns.forEach(col => {
                             const d = seller.data[col.id] || { metaFat: 0, metaVol: 0, metaPos: 0, avgVol: 0, avgMix: 0, metaMix: 0, avgFat: 0, monthlyValues: {} };
                             if (col.type === 'standard') {
-                                const isReadOnly = col.isAgg; const inputClass = isReadOnly ? 'text-slate-400 font-bold opacity-70' : 'text-yellow-300'; const readonlyAttr = 'readonly disabled'; const cellBg = isReadOnly ? 'bg-glass' : 'bg-[#1e293b]';
+                                const isReadOnly = col.isAgg; const inputClass = isReadOnly ? 'text-slate-400 font-bold opacity-70' : 'text-yellow-300'; const readonlyAttr = 'readonly disabled'; const cellBg = isReadOnly ? 'bg-glass' : 'bg-glass';
                                 quarterMonths.forEach(m => bodyHTML += `<td class="px-1 py-1 text-right text-slate-400 border-r border-white/10/50 text-[10px] bg-blue-900/5">${(d.monthlyValues[m.key] || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`);
                                 bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 bg-blue-900/10 font-medium">${d.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right ${col.colorClass} border-r border-white/10/50 text-xs font-mono">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 ${cellBg} border-r border-white/10/50"><input type="text" value="${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none ${inputClass} text-xs font-mono" ${readonlyAttr}></td><td class="px-1 py-1 text-center text-slate-300 border-r border-white/10/50">${d.metaPos}</td><td class="px-1 py-1 ${cellBg} border-r border-white/10/50"><input type="text" value="${d.metaPos}" class="goals-sv-input bg-transparent text-center w-full outline-none ${inputClass} text-xs font-mono" ${readonlyAttr}></td>`;
                             } else if (col.type === 'tonnage') {
-                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-mono text-xs">${d.avgVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold font-mono text-xs">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 bg-[#1e293b] border-r border-white/10/50"><input type="text" value="${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled></td>`;
+                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-mono text-xs">${d.avgVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold font-mono text-xs">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 bg-glass border-r border-white/10/50"><input type="text" value="${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled></td>`;
                             } else if (col.type === 'mix') {
-                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50">${d.avgMix.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold">${d.metaMix}</td><td class="px-1 py-1 bg-[#1e293b] border-r border-white/10/50"><input type="text" value="${d.metaMix}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled></td>`;
+                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50">${d.avgMix.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold">${d.metaMix}</td><td class="px-1 py-1 bg-glass border-r border-white/10/50"><input type="text" value="${d.metaMix}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled></td>`;
                             } else if (col.type === 'geral') {
                                 bodyHTML += `<td class="px-1 py-1 text-right text-slate-400 border-r border-white/10/50 font-mono text-xs">${d.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right text-white font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="fat" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-fat">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right text-white font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="ton" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-ton">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-center text-white font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="pos" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-pos">${d.metaPos}</td>`;
                             } else if (col.type === 'pedev') {
@@ -18385,7 +18385,7 @@ const supervisorGroups = new Map();
         const dateDisplay = document.getElementById('roteiro-date-display');
         const countDisplay = document.getElementById('roteiro-client-count');
         const emptyState = document.getElementById('roteiro-empty-state');
-        const statsPanel = container.querySelector('.bg-slate-900'); // Stats panel at bottom of card
+        const statsPanel = document.getElementById('roteiro-stats-panel'); // Stats panel at bottom of card
         const searchInput = document.getElementById('clientes-search');
         
         // Check for Off Route (Future Date)
