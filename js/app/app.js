@@ -8345,6 +8345,13 @@ const supervisorGroups = new Map();
         // Renamed/Wrapper for compatibility if needed, or update updateAllVisuals directly
         // updateProductBarChart was replaced.
 
+        function isHoliday(date, holidays) {
+            if (!holidays || !Array.isArray(holidays)) return false;
+            // Assuming holidays are stored as 'YYYY-MM-DD' strings (from UTC date)
+            const dateString = date.toISOString().split('T')[0];
+            return holidays.includes(dateString);
+        }
+
         function getWorkingDaysInMonth(year, month, holidays) {
             let count = 0;
             const date = new Date(Date.UTC(year, month, 1));
