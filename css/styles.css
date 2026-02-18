@@ -1306,3 +1306,43 @@ html.light .bg-green-900\/30 {
 .glass-panel input::placeholder {
     color: #94a3b8 !important; /* Lighter placeholder */
 }
+
+
+/* --- GLASS UTILITIES --- */
+/* Lightweight glass for list items/rows (no border/shadow) */
+.bg-glass {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: background-color 0.2s ease;
+}
+
+.bg-glass:hover, .hover\:bg-glass:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Glass Inputs Specific Override */
+.glass-input {
+    background-color: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(4px);
+}
+.glass-input:focus {
+    border-color: #FF5E00 !important;
+    background-color: rgba(15, 23, 42, 0.8) !important;
+}
+
+/* Glass Table Row Alternate */
+.glass-table-row-even {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Glass Border Utility */
+.border-glass {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Text on Glass */
+.text-glass-secondary {
+    color: rgba(255, 255, 255, 0.6) !important;
+}

@@ -2659,7 +2659,7 @@
         function getSkeletonRows(cols, rows = 5) {
             let html = '';
             for (let i = 0; i < rows; i++) {
-                html += `<tr class="border-b border-slate-800/50">`;
+                html += `<tr class="border-b border-white/10/50">`;
                 for (let j = 0; j < cols; j++) {
                     // Empty data-label for skeleton to prevent "null" text on mobile, just shows bar
                     html += `<td class="p-4" data-label=""><div class="skeleton h-4 w-full"></div></td>`;
@@ -2885,7 +2885,7 @@
 
                 // Append Footer with Totals
                 tableHTML += `
-                    <tr class="bg-slate-800 font-bold border-t-2 border-slate-500 text-xs sticky bottom-0 z-20">
+                    <tr class="glass-panel-heavy font-bold border-t-2 border-slate-500 text-xs sticky bottom-0 z-20">
                         <td colspan="4" class="px-2 py-3 text-right text-white">TOTAL POSITIVADOS:</td>
                         <td colspan="${MIX_SALTY_CATEGORIES.length}" class="px-2 py-3 text-center text-teal-400 text-sm border-l border-slate-500">${positivadosSalty}</td>
                         <td colspan="${MIX_FOODS_CATEGORIES.length}" class="px-2 py-3 text-center text-yellow-400 text-sm border-l border-slate-500">${positivadosFoods}</td>
@@ -6503,8 +6503,8 @@
                     if (paginationControls) paginationControls.classList.add('hidden');
                 } else {
                     const rows = pageData.map(item => {
-                        const monthCells = quarterMonths.map(m => `<td class="px-2 py-2 text-right text-slate-400 border-r border-slate-800/50 text-[10px] bg-blue-900/5">${(item.monthlyValues[m.key] || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`).join('');
-                        return `<tr class="hover:bg-slate-800 group transition-colors border-b border-slate-800"><td class="px-2 py-2 text-center border-r border-slate-800 bg-[#151c36] text-xs text-slate-300">${item.cod}</td><td class="px-2 py-2 text-left border-r border-slate-800 bg-[#151c36] text-xs font-bold text-white truncate max-w-[200px]" title="${item.name}">${(item.name || '').substring(0, 30)}</td><td class="px-2 py-2 text-left border-r border-slate-800 bg-[#151c36] text-[10px] text-slate-400 uppercase">${getFirstName(item.seller)}</td>${monthCells}<td class="px-2 py-2 text-right text-slate-300 font-medium bg-blue-900/10 border-r border-slate-800/50 text-xs">${item.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-2 py-2 text-center text-blue-400 text-xs bg-blue-900/10 border-r border-slate-800/50">${(item.shareFat * 100).toFixed(2)}%</td><td class="px-2 py-2 text-right font-bold text-blue-200 bg-blue-900/20 border-r border-slate-800 text-xs">${item.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-2 py-2 text-right text-slate-300 font-medium bg-orange-900/10 border-r border-slate-800/50 text-xs">${item.avgVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-2 py-2 text-center text-orange-400 text-xs bg-orange-900/10 border-r border-slate-800/50">${(item.shareVol * 100).toFixed(2)}%</td><td class="px-2 py-2 text-right font-bold text-orange-200 bg-orange-900/20 border-r border-slate-800 text-xs">${item.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-2 py-2 text-center font-bold text-purple-300 bg-purple-900/10 text-xs">${(item.mixPdv || 0).toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td></tr>`;
+                        const monthCells = quarterMonths.map(m => `<td class="px-2 py-2 text-right text-slate-400 border-r border-white/10/50 text-[10px] bg-blue-900/5">${(item.monthlyValues[m.key] || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`).join('');
+                        return `<tr class="hover:bg-white/5 group transition-colors border-b border-white/10"><td class="px-2 py-2 text-center border-r border-white/10 bg-glass text-xs text-slate-300">${item.cod}</td><td class="px-2 py-2 text-left border-r border-white/10 bg-glass text-xs font-bold text-white truncate max-w-[200px]" title="${item.name}">${(item.name || '').substring(0, 30)}</td><td class="px-2 py-2 text-left border-r border-white/10 bg-glass text-[10px] text-slate-400 uppercase">${getFirstName(item.seller)}</td>${monthCells}<td class="px-2 py-2 text-right text-slate-300 font-medium bg-blue-900/10 border-r border-white/10/50 text-xs">${item.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-2 py-2 text-center text-blue-400 text-xs bg-blue-900/10 border-r border-white/10/50">${(item.shareFat * 100).toFixed(2)}%</td><td class="px-2 py-2 text-right font-bold text-blue-200 bg-blue-900/20 border-r border-white/10 text-xs">${item.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-2 py-2 text-right text-slate-300 font-medium bg-orange-900/10 border-r border-white/10/50 text-xs">${item.avgVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-2 py-2 text-center text-orange-400 text-xs bg-orange-900/10 border-r border-white/10/50">${(item.shareVol * 100).toFixed(2)}%</td><td class="px-2 py-2 text-right font-bold text-orange-200 bg-orange-900/20 border-r border-white/10 text-xs">${item.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-2 py-2 text-center font-bold text-purple-300 bg-purple-900/10 text-xs">${(item.mixPdv || 0).toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td></tr>`;
                     }).join('');
                     goalsGvTableBody.innerHTML = rows;
                     if (paginationControls) {
@@ -7127,7 +7127,7 @@ const supervisorGroups = new Map();
                 // Render HTML
                 if (!mainTable) return;
                 const monthsCount = quarterMonths.length;
-                let headerHTML = `<thead class="text-[10px] uppercase sticky top-0 z-20 bg-[#0f172a] text-slate-400"><tr><th rowspan="3" class="px-2 py-2 text-center w-16 border-r border-b border-slate-700">CÓD</th><th rowspan="3" class="px-3 py-2 text-left w-48 border-r border-b border-slate-700">VENDEDOR</th>`;
+                let headerHTML = `<thead class="text-[10px] uppercase sticky top-0 z-20 glass-panel text-slate-400"><tr><th rowspan="3" class="px-2 py-2 text-center w-16 border-r border-b border-slate-700">CÓD</th><th rowspan="3" class="px-3 py-2 text-left w-48 border-r border-b border-slate-700">VENDEDOR</th>`;
                 svColumns.forEach(col => {
                     let colspan = 2;
                     if (col.type === 'standard') colspan = monthsCount + 1 + 4;
@@ -7136,11 +7136,11 @@ const supervisorGroups = new Map();
                 });
                 headerHTML += `</tr><tr>`;
                 svColumns.forEach(col => {
-                    if (col.type === 'standard') headerHTML += `<th colspan="${monthsCount + 1}" class="px-1 py-1 text-center border-r border-slate-700/50 bg-slate-800/50">HISTÓRICO FAT.</th><th colspan="2" class="px-1 py-1 text-center border-r border-slate-700/50 bg-slate-800/50">FATURAMENTO</th><th colspan="2" class="px-1 py-1 text-center border-r border-slate-700 bg-slate-800/50">POSITIVAÇÃO</th>`;
-                    else if (col.type === 'tonnage') headerHTML += `<th class="px-1 py-1 text-right border-r border-slate-700/50 bg-slate-800/50">MÉDIA TRIM.</th><th colspan="2" class="px-1 py-1 text-center border-r border-slate-700 bg-slate-800/50">META KG</th>`;
-                    else if (col.type === 'mix') headerHTML += `<th class="px-1 py-1 text-right border-r border-slate-700/50 bg-slate-800/50">MÉDIA TRIM.</th><th colspan="2" class="px-1 py-1 text-center border-r border-slate-700 bg-slate-800/50">META MIX</th>`;
-                    else if (col.type === 'geral') headerHTML += `<th colspan="2" class="px-1 py-1 text-center border-r border-slate-700/50 bg-slate-800/50">FATURAMENTO</th><th class="px-1 py-1 text-center border-r border-slate-700/50 bg-slate-800/50">KG</th><th class="px-1 py-1 text-center border-r border-slate-700 bg-slate-800/50">POSITIVAÇÃO</th>`;
-                    else if (col.type === 'pedev') headerHTML += `<th class="px-1 py-1 text-center border-r border-slate-700/50 bg-slate-800/50">META</th>`;
+                    if (col.type === 'standard') headerHTML += `<th colspan="${monthsCount + 1}" class="px-1 py-1 text-center border-r border-slate-700/50 bg-glass">HISTÓRICO FAT.</th><th colspan="2" class="px-1 py-1 text-center border-r border-slate-700/50 bg-glass">FATURAMENTO</th><th colspan="2" class="px-1 py-1 text-center border-r border-slate-700 bg-glass">POSITIVAÇÃO</th>`;
+                    else if (col.type === 'tonnage') headerHTML += `<th class="px-1 py-1 text-right border-r border-slate-700/50 bg-glass">MÉDIA TRIM.</th><th colspan="2" class="px-1 py-1 text-center border-r border-slate-700 bg-glass">META KG</th>`;
+                    else if (col.type === 'mix') headerHTML += `<th class="px-1 py-1 text-right border-r border-slate-700/50 bg-glass">MÉDIA TRIM.</th><th colspan="2" class="px-1 py-1 text-center border-r border-slate-700 bg-glass">META MIX</th>`;
+                    else if (col.type === 'geral') headerHTML += `<th colspan="2" class="px-1 py-1 text-center border-r border-slate-700/50 bg-glass">FATURAMENTO</th><th class="px-1 py-1 text-center border-r border-slate-700/50 bg-glass">KG</th><th class="px-1 py-1 text-center border-r border-slate-700 bg-glass">POSITIVAÇÃO</th>`;
+                    else if (col.type === 'pedev') headerHTML += `<th class="px-1 py-1 text-center border-r border-slate-700/50 bg-glass">META</th>`;
                 });
                 headerHTML += `</tr><tr>`;
                 const gearIcon = ``; /* Removed Icon as per request to remove editing option, but kept column structure */
@@ -7155,7 +7155,7 @@ const supervisorGroups = new Map();
                 });
                 headerHTML += `</tr></thead>`;
 
-                let bodyHTML = `<tbody class="divide-y divide-slate-800 bg-[#151c36]">`;
+                let bodyHTML = `<tbody class="divide-y divide-slate-800 bg-glass">`;
                 // Grand Totals calc
                 const grandTotals = {}; svColumns.forEach(col => { grandTotals[col.id] = { metaFat: 0, metaVol: 0, metaPos: 0, avgVol: 0, avgMix: 0, metaMix: 0, avgFat: 0, monthlyValues: {} }; quarterMonths.forEach(m => grandTotals[col.id].monthlyValues[m.key] = 0); });
 
@@ -7170,27 +7170,27 @@ const supervisorGroups = new Map();
 
                     sup.sellers.sort((a, b) => (b.data['total_elma']?.metaFat || 0) - (a.data['total_elma']?.metaFat || 0));
                     sup.sellers.forEach(seller => {
-                        bodyHTML += `<tr class="hover:bg-slate-800 border-b border-slate-800"><td class="px-2 py-1 text-center text-slate-400 font-mono">${seller.code}</td><td class="px-2 py-1 text-left text-white font-medium truncate max-w-[200px]" title="${seller.name}">${getFirstName(seller.name)}</td>`;
+                        bodyHTML += `<tr class="hover:bg-white/5 border-b border-white/10"><td class="px-2 py-1 text-center text-slate-400 font-mono">${seller.code}</td><td class="px-2 py-1 text-left text-white font-medium truncate max-w-[200px]" title="${seller.name}">${getFirstName(seller.name)}</td>`;
                         svColumns.forEach(col => {
                             const d = seller.data[col.id] || { metaFat: 0, metaVol: 0, metaPos: 0, avgVol: 0, avgMix: 0, metaMix: 0, avgFat: 0, monthlyValues: {} };
                             if (col.type === 'standard') {
-                                const isReadOnly = col.isAgg; const inputClass = isReadOnly ? 'text-slate-400 font-bold opacity-70' : 'text-yellow-300'; const readonlyAttr = 'readonly disabled'; const cellBg = isReadOnly ? 'bg-[#151c36]' : 'bg-[#1e293b]';
-                                quarterMonths.forEach(m => bodyHTML += `<td class="px-1 py-1 text-right text-slate-400 border-r border-slate-800/50 text-[10px] bg-blue-900/5">${(d.monthlyValues[m.key] || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`);
-                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-slate-800/50 bg-blue-900/10 font-medium">${d.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right ${col.colorClass} border-r border-slate-800/50 text-xs font-mono">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 ${cellBg} border-r border-slate-800/50"><input type="text" value="${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none ${inputClass} text-xs font-mono" ${readonlyAttr}></td><td class="px-1 py-1 text-center text-slate-300 border-r border-slate-800/50">${d.metaPos}</td><td class="px-1 py-1 ${cellBg} border-r border-slate-800/50"><input type="text" value="${d.metaPos}" class="goals-sv-input bg-transparent text-center w-full outline-none ${inputClass} text-xs font-mono" ${readonlyAttr}></td>`;
+                                const isReadOnly = col.isAgg; const inputClass = isReadOnly ? 'text-slate-400 font-bold opacity-70' : 'text-yellow-300'; const readonlyAttr = 'readonly disabled'; const cellBg = isReadOnly ? 'bg-glass' : 'bg-[#1e293b]';
+                                quarterMonths.forEach(m => bodyHTML += `<td class="px-1 py-1 text-right text-slate-400 border-r border-white/10/50 text-[10px] bg-blue-900/5">${(d.monthlyValues[m.key] || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`);
+                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 bg-blue-900/10 font-medium">${d.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right ${col.colorClass} border-r border-white/10/50 text-xs font-mono">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 ${cellBg} border-r border-white/10/50"><input type="text" value="${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none ${inputClass} text-xs font-mono" ${readonlyAttr}></td><td class="px-1 py-1 text-center text-slate-300 border-r border-white/10/50">${d.metaPos}</td><td class="px-1 py-1 ${cellBg} border-r border-white/10/50"><input type="text" value="${d.metaPos}" class="goals-sv-input bg-transparent text-center w-full outline-none ${inputClass} text-xs font-mono" ${readonlyAttr}></td>`;
                             } else if (col.type === 'tonnage') {
-                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-slate-800/50 font-mono text-xs">${d.avgVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-right text-slate-300 border-r border-slate-800/50 font-bold font-mono text-xs">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 bg-[#1e293b] border-r border-slate-800/50"><input type="text" value="${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled></td>`;
+                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-mono text-xs">${d.avgVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold font-mono text-xs">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 bg-[#1e293b] border-r border-white/10/50"><input type="text" value="${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled></td>`;
                             } else if (col.type === 'mix') {
-                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-slate-800/50">${d.avgMix.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td><td class="px-1 py-1 text-right text-slate-300 border-r border-slate-800/50 font-bold">${d.metaMix}</td><td class="px-1 py-1 bg-[#1e293b] border-r border-slate-800/50"><input type="text" value="${d.metaMix}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled></td>`;
+                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50">${d.avgMix.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold">${d.metaMix}</td><td class="px-1 py-1 bg-[#1e293b] border-r border-white/10/50"><input type="text" value="${d.metaMix}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled></td>`;
                             } else if (col.type === 'geral') {
-                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-400 border-r border-slate-800/50 font-mono text-xs">${d.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right text-white font-bold border-r border-slate-800/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="fat" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-fat">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right text-white font-bold border-r border-slate-800/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="ton" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-ton">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-center text-white font-bold border-r border-slate-800/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="pos" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-pos">${d.metaPos}</td>`;
+                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-400 border-r border-white/10/50 font-mono text-xs">${d.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right text-white font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="fat" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-fat">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right text-white font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="ton" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-ton">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-center text-white font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="pos" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-pos">${d.metaPos}</td>`;
                             } else if (col.type === 'pedev') {
-                                bodyHTML += `<td class="px-1 py-1 text-center text-pink-400 font-bold border-r border-slate-800/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="pedev" data-field="pos" id="pedev-${seller.id || seller.name.replace(/\s+/g,'_')}-pos">${d.metaPos}</td>`;
+                                bodyHTML += `<td class="px-1 py-1 text-center text-pink-400 font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="pedev" data-field="pos" id="pedev-${seller.id || seller.name.replace(/\s+/g,'_')}-pos">${d.metaPos}</td>`;
                             }
                         });
                         bodyHTML += `</tr>`;
                     });
 
-                    bodyHTML += `<tr class="bg-slate-800 font-bold border-b border-slate-600"><td class="px-2 py-2 text-center text-slate-400 font-mono">${sup.code}</td><td class="px-2 py-2 text-left text-white uppercase tracking-wider">${sup.name}</td>`;
+                    bodyHTML += `<tr class="glass-panel-heavy font-bold border-b border-slate-600"><td class="px-2 py-2 text-center text-slate-400 font-mono">${sup.code}</td><td class="px-2 py-2 text-left text-white uppercase tracking-wider">${sup.name}</td>`;
                     svColumns.forEach(col => {
                         const d = sup.totals[col.id]; const color = col.id.includes('total') || col.type === 'tonnage' || col.type === 'mix' ? 'text-white' : 'text-slate-300';
                         if (col.type === 'standard') {
@@ -7205,7 +7205,7 @@ const supervisorGroups = new Map();
                 });
 
                 // Grand Total
-                bodyHTML += `<tr class="bg-[#0f172a] font-bold text-white border-t-2 border-slate-500 sticky bottom-0 z-20"><td class="px-2 py-3 text-center uppercase tracking-wider">GV</td><td class="px-2 py-3 text-left uppercase tracking-wider">Geral PRIME</td>`;
+                bodyHTML += `<tr class="glass-panel font-bold text-white border-t-2 border-slate-500 sticky bottom-0 z-20"><td class="px-2 py-3 text-center uppercase tracking-wider">GV</td><td class="px-2 py-3 text-left uppercase tracking-wider">Geral PRIME</td>`;
                 svColumns.forEach(col => {
                     // Use recalculated grandTotalRow.totals instead of summed grandTotals
                     const d = grandTotalRow.totals[col.id] || { metaFat: 0, metaVol: 0, metaPos: 0, avgVol: 0, avgMix: 0, metaMix: 0, avgFat: 0 };
@@ -8207,7 +8207,7 @@ const supervisorGroups = new Map();
 
             data.forEach((item, index) => {
                 const tr = document.createElement('tr');
-                tr.className = 'border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors group cursor-pointer';
+                tr.className = 'border-b border-white/10/50 hover:bg-white/5/30 transition-colors group cursor-pointer';
                 tr.onclick = () => openProductPerformanceModal(item);
 
                 // Rank
@@ -8238,7 +8238,7 @@ const supervisorGroups = new Map();
                 
                 // Refined HTML for simple magnitude bar:
                 tdPerf.innerHTML = `
-                    <div class="h-1 md:h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-1 md:h-1.5 w-full glass-panel-heavy rounded-full overflow-hidden">
                         <div class="h-full ${barColor} rounded-full transition-all duration-500" style="width: ${barWidth}%"></div>
                     </div>
                 `;
@@ -8971,7 +8971,7 @@ const supervisorGroups = new Map();
                 for (let i = 0; i < tiposVendaToShow.length; i++) {
                     const s = tiposVendaToShow[i];
                     const isChecked = selectedArray.includes(s);
-                    htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 bg-slate-800 border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${s}" ${isChecked ? 'checked' : ''}><span class="ml-2">${s}</span></label>`);
+                    htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${s}" ${isChecked ? 'checked' : ''}><span class="ml-2">${s}</span></label>`);
                 }
                 dropdown.innerHTML = htmlParts.join('');
             }
@@ -8992,7 +8992,7 @@ const supervisorGroups = new Map();
             for (let i = 0; i < redesToShow.length; i++) {
                 const r = redesToShow[i];
                 const isChecked = validSelected.includes(r);
-                htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 bg-slate-800 border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${r}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-sm">${r}</span></label>`);
+                htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${r}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-sm">${r}</span></label>`);
             }
             dropdown.innerHTML = htmlParts.join('');
 
@@ -9468,7 +9468,7 @@ const supervisorGroups = new Map();
                         }
                     }
 
-                    htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 bg-slate-800 border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${cod}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-xs">${displayName}</span></label>`);
+                    htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${cod}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-xs">${displayName}</span></label>`);
                 }
                 dropdown.innerHTML = htmlParts.join('');
             }
@@ -10306,7 +10306,7 @@ const supervisorGroups = new Map();
                     const isChecked = selectedArray.includes(code);
                     htmlParts.push(`
                         <label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer">
-                            <input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 bg-slate-800 border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${code}" ${isChecked ? 'checked' : ''}>
+                            <input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${code}" ${isChecked ? 'checked' : ''}>
                             <span class="ml-2 text-xs">(${code}) ${name}</span>
                         </label>`);
                 }
@@ -11384,7 +11384,7 @@ const supervisorGroups = new Map();
 
                 const catRow = `
                     ${spacerRow}
-                    <tr class="bg-slate-800 hover:bg-slate-700 cursor-pointer transition-colors border border-slate-700 rounded-lg group" data-toggle="${catId}">
+                    <tr class="glass-panel-heavy hover:bg-slate-700 cursor-pointer transition-colors border border-slate-700 rounded-lg group" data-toggle="${catId}">
                         <td class="px-3 py-3 text-xs font-bold text-white flex items-center gap-2">
                             <svg class="w-4 h-4 transform transition-transform text-slate-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                             <span class="uppercase tracking-wide">${catGroup.name}</span>
@@ -11413,10 +11413,10 @@ const supervisorGroups = new Map();
                     }
 
                     const isLast = pIdx === catGroup.items.length - 1;
-                    const borderClass = isLast ? 'border-b border-slate-700' : 'border-b border-slate-800/50';
+                    const borderClass = isLast ? 'border-b border-slate-700' : 'border-b border-white/10/50';
                     
                     return `
-                    <tr class="hidden bg-slate-900/50 hover:bg-slate-800/50 ${borderClass} border-l border-r border-slate-700" data-parent="${catId}">
+                    <tr class="hidden bg-slate-900/50 hover:bg-glass ${borderClass} border-l border-r border-slate-700" data-parent="${catId}">
                         <td class="hidden md:table-cell"></td> <!-- Spacer for indentation on desktop -->
                         <td class="px-2 py-2 text-[10px] md:text-xs flex items-center">
                              <div class="w-1.5 h-1.5 rounded-full bg-slate-600 mr-2 md:hidden"></div> <!-- Mobile bullet -->
@@ -12231,10 +12231,10 @@ const supervisorGroups = new Map();
                 document.querySelectorAll('.mobile-nav-link').forEach(link => {
                     if (link.dataset.target === view) {
                         link.classList.add('bg-[#FF5E00]', 'text-white');
-                        link.classList.remove('bg-slate-800', 'text-slate-300');
+                        link.classList.remove('glass-panel-heavy', 'text-slate-300');
                     } else {
                         link.classList.remove('bg-[#FF5E00]', 'text-white');
-                        link.classList.add('bg-slate-800', 'text-slate-300');
+                        link.classList.add('glass-panel-heavy', 'text-slate-300');
                     }
                 });
 
@@ -12839,7 +12839,7 @@ const supervisorGroups = new Map();
                             </div>
                             <div class="text-xs text-slate-500">${city} • ${doc}</div>
                         </div>
-                         <div class="p-2 bg-slate-800 rounded-full group-hover:bg-[#FF5E00] transition-colors text-slate-400 group-hover:text-white">
+                         <div class="p-2 glass-panel-heavy rounded-full group-hover:bg-[#FF5E00] transition-colors text-slate-400 group-hover:text-white">
                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </div>
                     `;
@@ -16236,7 +16236,7 @@ const supervisorGroups = new Map();
                         <p class="text-lg text-slate-300 leading-relaxed">${data.global_summary || 'Análise indisponível.'}</p>
                     </div>
 
-                    <div id="ai-full-page-chart-container" class="mt-8 mb-8 h-80 bg-slate-800 rounded-xl p-4 border border-slate-700 relative">
+                    <div id="ai-full-page-chart-container" class="mt-8 mb-8 h-80 glass-panel-heavy rounded-xl p-4 border border-slate-700 relative">
                         <canvas id="aiFullPageSummaryChart"></canvas>
                     </div>
 
@@ -16246,8 +16246,8 @@ const supervisorGroups = new Map();
                 if (data.supervisors) {
                     data.supervisors.forEach(sup => {
                         html += `
-                            <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-md flex flex-col">
-                                <div class="p-5 border-b border-slate-700 bg-slate-800/50">
+                            <div class="glass-panel-heavy rounded-xl border border-slate-700 overflow-hidden shadow-md flex flex-col">
+                                <div class="p-5 border-b border-slate-700 bg-glass">
                                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                                         <div class="w-2 h-8 bg-blue-500 rounded-full"></div>
                                         ${sup.name}
@@ -16262,7 +16262,7 @@ const supervisorGroups = new Map();
                                     <div>
                                         <div class="flex justify-between items-center mb-3">
                                             <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Detalhamento por Vendedor</h4>
-                                            <span class="text-xs text-slate-500 bg-slate-800 border border-slate-700 px-2 py-1 rounded-full">Top ${sup.variations ? sup.variations.length : 0} Variações</span>
+                                            <span class="text-xs text-slate-500 glass-panel-heavy border border-slate-700 px-2 py-1 rounded-full">Top ${sup.variations ? sup.variations.length : 0} Variações</span>
                                         </div>
                                         <div class="overflow-x-auto rounded-lg border border-slate-700/50">
                                             <table class="w-full text-sm text-left text-slate-300">
@@ -16274,7 +16274,7 @@ const supervisorGroups = new Map();
                                                         <th class="px-4 py-3 font-semibold tracking-wide">Insight</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody class="divide-y divide-slate-700/50 bg-slate-800/30">
+                                                <tbody class="divide-y divide-slate-700/50 glass-panel-heavy/30">
                         `;
 
                         if (sup.variations) {
@@ -17177,7 +17177,7 @@ const supervisorGroups = new Map();
                      }
 
                      const mobileCard = document.createElement('div');
-                     mobileCard.className = 'flex items-center gap-3 p-3 bg-[#0f172a] hover:bg-slate-800/50 transition-colors cursor-pointer border-b border-slate-800/50';
+                     mobileCard.className = 'flex items-center gap-3 p-3 glass-panel hover:bg-glass transition-colors cursor-pointer border-b border-white/10/50';
                      mobileCard.setAttribute('onclick', `openWalletClientModal('${code}')`);
 
                      mobileCard.innerHTML = `
@@ -17212,7 +17212,7 @@ const supervisorGroups = new Map();
 
                      // --- Desktop Row (Existing Logic) ---
                      const tr = document.createElement('tr');
-                     tr.className = 'hover:bg-slate-800/50 transition-colors border-b border-slate-800/50 cursor-pointer';
+                     tr.className = 'hover:bg-glass transition-colors border-b border-white/10/50 cursor-pointer';
                      tr.setAttribute('onclick', `openWalletClientModal('${code}')`);
                      tr.innerHTML = `
                         <td data-label="Código" class="px-2 py-1.5 md:px-6 md:py-4 font-mono text-[10px] md:text-xs text-slate-400 w-16 md:w-32">${code}</td>
@@ -17284,7 +17284,7 @@ const supervisorGroups = new Map();
                     </div>
                     <div class="text-xs text-slate-500">${c.cidade || ''} • ${c.cnpj_cpf || ''}</div>
                 </div>
-                 <div class="p-2 bg-slate-800 rounded-full group-hover:bg-[#FF5E00] transition-colors text-slate-400 group-hover:text-white">
+                 <div class="p-2 glass-panel-heavy rounded-full group-hover:bg-[#FF5E00] transition-colors text-slate-400 group-hover:text-white">
                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
             `;
@@ -17708,7 +17708,7 @@ const supervisorGroups = new Map();
                 
                 // Create Month Header
                 const row = document.createElement('div');
-                row.className = 'bg-slate-800 rounded-lg overflow-hidden border border-slate-700/50';
+                row.className = 'glass-panel-heavy rounded-lg overflow-hidden border border-slate-700/50';
                 
                 const header = document.createElement('div');
                 header.className = 'p-3 flex justify-between items-center cursor-pointer hover:bg-slate-700 transition-colors';
@@ -17736,7 +17736,7 @@ const supervisorGroups = new Map();
                 let detailsHtml = '<table class="w-full text-left text-slate-400"><thead><tr class="text-[10px] uppercase border-b border-slate-700/50"><th class="py-1">Prod</th><th class="py-1 text-right">Qtd</th><th class="py-1 text-right">Valor</th></tr></thead><tbody>';
                 prodMap.forEach((v, k) => {
                     detailsHtml += `
-                        <tr class="border-b border-slate-800/50 last:border-0">
+                        <tr class="border-b border-white/10/50 last:border-0">
                             <td class="py-1 pr-2 truncate max-w-[150px]" title="${v.desc}">${k} - ${v.desc}</td>
                             <td class="py-1 text-right font-mono">${v.qty}</td>
                             <td class="py-1 text-right font-mono text-slate-200">${v.val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
@@ -18055,7 +18055,7 @@ const supervisorGroups = new Map();
 
         if (isRoteiroMode) {
             btn.classList.add('bg-purple-600', 'border-purple-500');
-            btn.classList.remove('bg-slate-800', 'border-slate-700', 'hover:bg-slate-700');
+            btn.classList.remove('glass-panel-heavy', 'border-slate-700', 'hover:bg-slate-700');
             btn.querySelector('svg').classList.add('text-white');
             btn.querySelector('svg').classList.remove('text-purple-400');
             
@@ -18073,7 +18073,7 @@ const supervisorGroups = new Map();
             renderRoteiroView();
         } else {
             btn.classList.remove('bg-purple-600', 'border-purple-500');
-            btn.classList.add('bg-slate-800', 'border-slate-700', 'hover:bg-slate-700');
+            btn.classList.add('glass-panel-heavy', 'border-slate-700', 'hover:bg-slate-700');
             btn.querySelector('svg').classList.remove('text-white');
             btn.querySelector('svg').classList.add('text-purple-400');
 
@@ -18266,7 +18266,7 @@ const supervisorGroups = new Map();
             const filterContainer = document.createElement('div');
             filterContainer.className = 'hidden lg:block ml-auto mr-4'; // Desktop only
             filterContainer.innerHTML = `
-                <select id="roteiro-promoter-filter" class="bg-slate-800 border border-slate-700 text-white text-xs rounded-lg p-2 focus:ring-2 focus:ring-purple-500">
+                <select id="roteiro-promoter-filter" class="glass-panel-heavy border border-slate-700 text-white text-xs rounded-lg p-2 focus:ring-2 focus:ring-purple-500">
                     <option value="">Todos os Promotores</option>
                 </select>
             `;
@@ -18324,7 +18324,7 @@ const supervisorGroups = new Map();
             const isToday = d.toDateString() === new Date().toDateString();
             
             const dayEl = document.createElement('div');
-            dayEl.className = `flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer min-w-[50px] transition-colors ${isSelected ? 'bg-purple-600 text-white shadow-lg scale-110' : 'text-slate-400 hover:bg-slate-800'}`;
+            dayEl.className = `flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer min-w-[50px] transition-colors ${isSelected ? 'bg-purple-600 text-white shadow-lg scale-110' : 'text-slate-400 hover:bg-white/5'}`;
             
             dayEl.innerHTML = `
                 <span class="text-[10px] font-bold tracking-wider ${isToday && !isSelected ? 'text-purple-600' : ''}">${weekDays[d.getDay()]}</span>
@@ -18594,7 +18594,7 @@ const supervisorGroups = new Map();
                 if (hasSurvey) surveyCount++;
 
                 // Status Tag Logic
-                let statusHtml = `<span class="px-2 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-full">Pendente</span>`;
+                let statusHtml = `<span class="px-2 py-1 glass-panel-heavy text-slate-400 text-xs font-bold rounded-full">Pendente</span>`;
                 let barColor = 'bg-slate-600';
 
                 if (hasVisit) {
@@ -18608,7 +18608,7 @@ const supervisorGroups = new Map();
                 }
                 
                 const div = document.createElement('div');
-                div.className = 'p-4 flex items-center justify-between hover:bg-slate-800 cursor-pointer transition-colors';
+                div.className = 'p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors';
                 div.innerHTML = `
                     <div class="flex items-center gap-3">
                         <div class="w-2 h-10 ${barColor} rounded-full"></div>
@@ -18781,7 +18781,7 @@ const supervisorGroups = new Map();
             // Sync state visual
             if (isRoteiroMode) {
                 newBtn.classList.add('bg-purple-600', 'border-purple-500');
-                newBtn.classList.remove('bg-slate-800', 'border-slate-700', 'hover:bg-slate-700');
+                newBtn.classList.remove('glass-panel-heavy', 'border-slate-700', 'hover:bg-slate-700');
                 newBtn.querySelector('svg').classList.add('text-white');
                 newBtn.querySelector('svg').classList.remove('text-purple-400');
                 
@@ -18807,11 +18807,11 @@ const supervisorGroups = new Map();
         if (!paginationContainer) {
             paginationContainer = document.createElement('div');
             paginationContainer.id = 'clients-pagination';
-            paginationContainer.className = 'p-4 flex justify-between items-center bg-[#0f172a] border-t border-slate-800 mt-4';
+            paginationContainer.className = 'p-4 flex justify-between items-center glass-panel border-t border-white/10 mt-4';
             paginationContainer.innerHTML = `
-                <button id="client-prev-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
+                <button id="client-prev-btn" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
                 <span id="client-page-info" class="text-slate-400 text-xs font-medium"></span>
-                <button id="client-next-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
+                <button id="client-next-btn" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
             `;
             container.parentNode.appendChild(paginationContainer);
 
@@ -18913,7 +18913,7 @@ const supervisorGroups = new Map();
 
                 const item = document.createElement('div');
                 // Dark Theme Classes with "Shiny" Hover (Left Border)
-                item.className = 'p-4 flex items-center justify-between transition-all duration-200 cursor-pointer border-b border-slate-800/50 bg-[#0f172a] hover:bg-slate-800/80 border-l-4 border-l-transparent hover:border-l-[#FF5E00] group';
+                item.className = 'p-4 flex items-center justify-between transition-all duration-200 cursor-pointer border-b border-white/10/50 glass-panel hover:bg-white/5/80 border-l-4 border-l-transparent hover:border-l-[#FF5E00] group';
                 item.innerHTML = `
                     <div class="flex items-center gap-4">
                         <div class="w-10 h-10 rounded-full ${statusColor} flex items-center justify-center text-white font-bold text-lg shadow-lg ring-2 ring-slate-800 group-hover:ring-slate-600 transition-all">
@@ -18932,7 +18932,7 @@ const supervisorGroups = new Map();
                             <p class="text-xs text-slate-400 font-medium mt-0.5">Fantasia: ${window.escapeHtml(fantasia)}</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 text-slate-500 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                    <div class="flex items-center gap-2 text-slate-500 glass-panel-heavy px-3 py-1 rounded-full border border-slate-700">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         <span class="text-xs font-bold text-slate-300">${window.escapeHtml(days)}</span>
                     </div>
@@ -19301,7 +19301,7 @@ const supervisorGroups = new Map();
 
         subset.forEach(order => {
             const tr = document.createElement('tr');
-            tr.className = 'hover:bg-slate-800/50 transition-colors border-b border-slate-800 last:border-0';
+            tr.className = 'hover:bg-glass transition-colors border-b border-white/10 last:border-0';
             
             const dateStr = formatDate(order.DTPED);
             const valStr = (order.VLVENDA || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -19382,7 +19382,7 @@ const supervisorGroups = new Map();
 
                 const item = document.createElement('div');
                 // Dark Theme Styling
-                item.className = 'p-4 border-b border-slate-800 hover:bg-slate-800 transition-colors';
+                item.className = 'p-4 border-b border-white/10 hover:bg-white/5 transition-colors';
                 item.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <h3 class="text-sm font-bold text-white leading-tight flex-1">${window.escapeHtml(code)} - ${window.escapeHtml(desc)}</h3>
@@ -19520,7 +19520,7 @@ const supervisorGroups = new Map();
                 statusText.textContent = 'Em Andamento';
                 statusText.className = 'text-sm font-bold text-green-400 animate-pulse';
                 statusCard.classList.add('border-green-500/30', 'bg-green-500/5');
-                statusCard.classList.remove('border-slate-700/50', 'bg-slate-800/50');
+                statusCard.classList.remove('border-slate-700/50', 'bg-glass');
             } else {
                 // Visit open for ANOTHER client
                 btnCheckIn.classList.remove('hidden');
@@ -19532,7 +19532,7 @@ const supervisorGroups = new Map();
                 statusText.textContent = 'Outra Visita Ativa';
                 statusText.className = 'text-sm font-bold text-orange-400';
                 statusCard.classList.remove('border-green-500/30', 'bg-green-500/5');
-                statusCard.classList.add('border-slate-700/50', 'bg-slate-800/50');
+                statusCard.classList.add('border-slate-700/50', 'bg-glass');
             }
         } else {
             // No open visit
@@ -19548,7 +19548,7 @@ const supervisorGroups = new Map();
             statusText.textContent = 'Não Iniciada';
             statusText.className = 'text-sm font-bold text-slate-400';
             statusCard.classList.remove('border-green-500/30', 'bg-green-500/5');
-            statusCard.classList.add('border-slate-700/50', 'bg-slate-800/50');
+            statusCard.classList.add('border-slate-700/50', 'bg-glass');
         }
 
         // Bind Actions (Clean old listeners via cloning)
