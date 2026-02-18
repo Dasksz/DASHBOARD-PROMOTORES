@@ -1284,7 +1284,7 @@ html.light .bg-green-900\/30 {
 
 /* Update Modal Content to be Glass */
 .bg-modal-content {
-    background-color: rgba(15, 23, 42, 0.8) !important; /* Semi-transparent slate */
+    background-color: rgba(20, 20, 20, 0.95) !important; /* Neutral Dark Gray */
     backdrop-filter: blur(16px) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;

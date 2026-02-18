@@ -8223,7 +8223,7 @@ const supervisorGroups = new Map();
                 tdProduct.setAttribute('data-label', 'Produto');
                 tdProduct.innerHTML = `
                     <div class="flex flex-col">
-                        <span class="text-[10px] md:text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate max-w-[120px] md:max-w-xs block" title="${item.name || 'Desconhecido'}">${item.name || 'Desconhecido'}</span>
+                        <span class="text-[10px] md:text-sm font-bold text-white group-hover:text-[#FF5E00] transition-colors truncate max-w-[120px] md:max-w-xs block" title="${item.name || 'Desconhecido'}">${item.name || 'Desconhecido'}</span>
                         <span class="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">${item.category || ''}</span>
                     </div>
                 `;
@@ -17092,12 +17092,7 @@ const supervisorGroups = new Map();
         const empty = document.getElementById('wallet-empty-state');
         const badge = document.getElementById('wallet-count-badge');
         
-        // Toggle Action Header
-        const actionHeader = document.getElementById('wallet-table-action-header');
-        if (actionHeader) {
-            if (walletState.canEdit) actionHeader.classList.remove('hidden');
-            else actionHeader.classList.add('hidden');
-        }
+        // Toggle Action Header (Removed as per user request)
         
         if (!tbody) return;
         tbody.innerHTML = '';
@@ -17414,10 +17409,10 @@ const supervisorGroups = new Map();
 
             tabs.forEach(t => {
                 if (t.dataset.tab === tabName) {
-                    t.classList.add('active', 'text-blue-400', 'border-blue-500');
+                    t.classList.add('active', 'text-[#FF5E00]', 'border-[#FF5E00]');
                     t.classList.remove('text-slate-400', 'border-transparent');
                 } else {
-                    t.classList.remove('active', 'text-blue-400', 'border-blue-500');
+                    t.classList.remove('active', 'text-[#FF5E00]', 'border-[#FF5E00]');
                     t.classList.add('text-slate-400', 'border-transparent');
                 }
             });
@@ -19317,7 +19312,7 @@ const supervisorGroups = new Map();
             tr.innerHTML = `
                 <td data-label="Data" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 font-mono">${window.escapeHtml(dateStr)}</td>
                 <td data-label="Pedido" class="px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold">
-                    <button class="text-blue-400 hover:text-blue-300 hover:underline transition-colors order-link font-mono">${window.escapeHtml(order.PEDIDO)}</button>
+                    <button class="text-[#FF5E00] hover:text-[#CC4A00] hover:underline transition-colors order-link font-mono">${window.escapeHtml(order.PEDIDO)}</button>
                 </td>
                 <td data-label="Cliente" class="px-2 py-1.5 md:px-2 md:py-3">
                     <div class="text-xs md:text-sm text-white max-w-[120px] md:max-w-none truncate" title="${window.escapeHtml(order.CLIENTE_NOME || '')}">${window.escapeHtml(order.CLIENTE_NOME || 'N/A')}</div>
@@ -19393,7 +19388,7 @@ const supervisorGroups = new Map();
                     </div>
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-slate-500">Cód. fábrica: ${window.escapeHtml(prod.cod_fabrica || code)}</span>
-                        <span class="font-bold text-blue-400">Est.: ${totalStock}</span>
+                        <span class="font-bold text-[#FF5E00]">Est.: ${totalStock}</span>
                     </div>
                     <div class="flex gap-2 mt-3 opacity-60 hover:opacity-100 transition-opacity">
                         <button class="p-1.5 bg-slate-700 text-lime-400 rounded hover:bg-slate-600 border border-slate-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg></button>
