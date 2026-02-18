@@ -929,9 +929,10 @@ html.light .bg-green-900\/30 {
     .user-greeting { font-size: 1.5rem !important; }
     .sub-text { font-size: 0.8rem !important; }
     .brand-tag {
-        font-size: 0.6rem;
-        padding: 3px 10px;
-        margin-bottom: 8px;
+        font-size: 0.5rem !important;
+        padding: 2px 8px !important;
+        margin-bottom: 6px !important;
+        white-space: nowrap !important;
     }
     .meta-info {
         margin-top: 15px;
