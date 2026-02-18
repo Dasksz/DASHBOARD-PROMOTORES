@@ -121,7 +121,7 @@
         left: 0;
         width: 0%;
         height: 2px;
-        background: linear-gradient(90deg, #3b82f6, #dc2626);
+        background: linear-gradient(90deg, #FF5E00, #dc2626);
         transition: width 0.3s ease;
     }
 
@@ -182,7 +182,7 @@
     }
 
     /* Helper Utilities */
-    .text-glow { text-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+    .text-glow { text-shadow: 0 0 20px rgba(255, 94, 0, 0.5); }
     .border-gradient { border-image: linear-gradient(to right, #1e3a8a, #dc2626) 1; }
 
     /* Sticky Header overrides */
@@ -228,7 +228,7 @@
     }
 
     /* Loading Spinner */
-    .spinner-orange { border: 3px solid rgba(255, 255, 255, 0.1); border-top: 3px solid #dc2626; } /* Red for Prime */
+    .spinner-orange { border: 3px solid rgba(255, 255, 255, 0.1); border-top: 3px solid #FF5E00; } /* Orange for Prime */
 
     /* Modal Overlay */
     .modal-overlay { 
@@ -253,8 +253,8 @@
         border-radius: 0.5rem !important;
     }
     input:focus, select:focus {
-        border-color: #3b82f6 !important;
-        ring: 2px solid rgba(59, 130, 246, 0.5) !important;
+        border-color: #FF5E00 !important;
+        ring: 2px solid rgba(255, 94, 0, 0.5) !important;
     }
 
     /* Date Picker Icon High Contrast */
@@ -437,7 +437,7 @@
 }
 
 .fornecedor-btn.active {
-    background-color: #2563eb !important; /* bg-blue-600 */
+    background-color: #FF5E00 !important; /* bg-brand-orange */
     color: #ffffff !important; /* text-white */
     font-weight: 700 !important; /* font-bold */
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
@@ -467,7 +467,7 @@
     transition: all 0.2s ease;
 }
 .group-btn.active {
-    background-color: #2563eb !important; /* bg-blue-600 */
+    background-color: #FF5E00 !important; /* bg-brand-orange */
     color: #ffffff !important; /* text-white */
 }
 .group-btn:not(.active) {
