@@ -752,6 +752,11 @@
                         <div class="overflow-x-auto custom-scrollbar max-h-96">
                             <table class="min-w-full text-sm text-left text-slate-300"><tbody id="positivacao-active-detail-table-body" class="divide-y divide-slate-800"></tbody></table>
                         </div>
+                        <div id="positivacao-active-pagination" class="p-3 bg-slate-900 border-t border-slate-800 flex justify-between items-center text-xs">
+                            <button id="positivacao-active-prev-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1 px-3 rounded disabled:opacity-50 transition-colors">Ant</button>
+                            <span id="positivacao-active-page-info" class="text-slate-400 font-medium"></span>
+                            <button id="positivacao-active-next-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1 px-3 rounded disabled:opacity-50 transition-colors">Prox</button>
+                        </div>
                     </div>
                     <div class="bg-[#0f172a] rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
                         <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
@@ -759,6 +764,11 @@
                         </div>
                         <div class="overflow-x-auto custom-scrollbar max-h-96">
                             <table class="min-w-full text-sm text-left text-slate-300"><tbody id="positivacao-inactive-detail-table-body" class="divide-y divide-slate-800"></tbody></table>
+                        </div>
+                        <div id="positivacao-inactive-pagination" class="p-3 bg-slate-900 border-t border-slate-800 flex justify-between items-center text-xs">
+                            <button id="positivacao-inactive-prev-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1 px-3 rounded disabled:opacity-50 transition-colors">Ant</button>
+                            <span id="positivacao-inactive-page-info" class="text-slate-400 font-medium"></span>
+                            <button id="positivacao-inactive-next-btn" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-1 px-3 rounded disabled:opacity-50 transition-colors">Prox</button>
                         </div>
                     </div>
                 </div>
@@ -3134,7 +3144,7 @@
 <script src="js/app/utils.js" defer></script>
 <script src="js/init.js?v=6.0.0" defer></script>
 
-<div class="fab-container hidden" id="city-fab-container">
+<div class="fab-container hidden" id="positivacao-fab-container">
     <div class="fab-menu">
         <button class="fab-item" data-action="pdf-active">
             <svg class="w-4 h-4 fab-icon-pdf" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
