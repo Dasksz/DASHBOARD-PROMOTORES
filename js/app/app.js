@@ -12207,7 +12207,8 @@ const supervisorGroups = new Map();
                 'clientes': 'Clientes',
                 'produtos': 'Produtos',
                 'consultas': 'Consultas',
-                'history': 'Histórico de Pedidos'
+                'history': 'Histórico de Pedidos',
+                'titulos': 'Títulos em Aberto'
             };
             const friendlyName = viewNameMap[view] || 'a página';
 
@@ -12215,7 +12216,7 @@ const supervisorGroups = new Map();
 
             // This function now runs after the loader is visible
             const updateContent = () => {
-                [mainDashboard, cityView, positivacaoView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view'), document.getElementById('clientes-view'), document.getElementById('produtos-view'), document.getElementById('consultas-view'), document.getElementById('history-view')].forEach(el => {
+                [mainDashboard, cityView, positivacaoView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view'), document.getElementById('clientes-view'), document.getElementById('produtos-view'), document.getElementById('consultas-view'), document.getElementById('history-view'), document.getElementById('titulos-view')].forEach(el => {
                     if(el) el.classList.add('hidden');
                 });
 
@@ -12366,6 +12367,10 @@ const supervisorGroups = new Map();
                             viewState.positivacao.rendered = true;
                             viewState.positivacao.dirty = false;
                         }
+                        break;
+                    case 'titulos':
+                        showViewElement(document.getElementById('titulos-view'));
+                        if (typeof renderTitulosView === 'function') renderTitulosView();
                         break;
                     case 'inovacoes-mes':
                         showViewElement(innovationsMonthView);
@@ -12576,6 +12581,8 @@ const supervisorGroups = new Map();
 
             // List of columns that are dates and need conversion from timestamp (ms) to ISO String
             const dateColumns = new Set(['dtped', 'dtsaida', 'ultimacompra', 'datacadastro', 'dtcadastro', 'updated_at']);
+            // Special handling for string dates in titulos (dt_vencimento comes as string YYYY-MM-DD from worker)
+            const stringDateColumns = new Set(['dt_vencimento']);
 
             const formatValue = (key, value) => {
                 if (dateColumns.has(key) && typeof value === 'number') {
@@ -12584,6 +12591,10 @@ const supervisorGroups = new Map();
                     } catch (e) {
                         return null;
                     }
+                }
+                // Don't format string dates that are already ISO-ish or simple YYYY-MM-DD
+                if (stringDateColumns.has(key)) {
+                    return value;
                 }
                 return value;
             };
@@ -12688,6 +12699,12 @@ const supervisorGroups = new Map();
                 await conditionalUpload('data_product_details', data.product_details, 'hash_product_details', false, 'code');
                 await conditionalUpload('data_active_products', data.active_products, 'hash_active_products', false, 'code');
                 await conditionalUpload('data_hierarchy', data.hierarchy, 'hash_hierarchy', false);
+                // Make Titulos Optional: Only upload if data is present
+                if (data.titulos && data.titulos.length > 0) {
+                    await conditionalUpload('data_titulos', data.titulos, 'hash_titulos', false);
+                } else {
+                    console.log("[Upload] Skipping Titulos (No data provided).");
+                }
 
                 if (data.metadata && data.metadata.length > 0) {
                     // Update last_update timestamp
@@ -12946,7 +12963,33 @@ const supervisorGroups = new Map();
                 if (mobileMenu && mobileMenu.classList.contains('open')) {
                     toggleMobileMenu(); // Assuming this function exists in scope
                 }
+
+                // Reset Optional Uploads UI
+                const container = document.getElementById('optional-uploads-container');
+                const icon = document.getElementById('optional-uploads-icon');
+                if (container) container.classList.add('hidden');
+                if (icon) icon.style.transform = 'rotate(0deg)';
             };
+
+            // Optional Uploads Toggle Logic
+            const toggleOptionalBtn = document.getElementById('toggle-optional-uploads-btn');
+            if (toggleOptionalBtn) {
+                // Clone to remove old listeners if any
+                const newBtn = toggleOptionalBtn.cloneNode(true);
+                toggleOptionalBtn.parentNode.replaceChild(newBtn, toggleOptionalBtn);
+
+                newBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const container = document.getElementById('optional-uploads-container');
+                    const icon = document.getElementById('optional-uploads-icon');
+                    if (container) {
+                        container.classList.toggle('hidden');
+                        if (icon) {
+                            icon.style.transform = container.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(90deg)';
+                        }
+                    }
+                });
+            }
 
             const checkPassword = () => {
                 const input = pwdInput.value;
@@ -13009,8 +13052,10 @@ const supervisorGroups = new Map();
                     const historyFile = document.getElementById('history-file-input').files[0];
                     const innovationsFile = document.getElementById('innovations-file-input').files[0];
                     const hierarchyFile = document.getElementById('hierarchy-file-input').files[0];
+                    const titulosFile = document.getElementById('titulos-file-input').files[0];
 
                     if (!salesFile && !historyFile && !hierarchyFile) {
+                        // Titulos is optional, not required for basic operation
                         window.showToast('warning', "Pelo menos um arquivo (Vendas, Histórico ou Hierarquia) é necessário.");
                         return;
                     }
@@ -13021,7 +13066,7 @@ const supervisorGroups = new Map();
                     document.getElementById('status-container').classList.remove('hidden');
                     document.getElementById('status-text').textContent = "Processando arquivos...";
 
-                    worker.postMessage({ salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile });
+                    worker.postMessage({ salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile });
 
                     worker.onmessage = (e) => {
                         const { type, data, status, percentage, message } = e.data;
@@ -20879,5 +20924,346 @@ const supervisorGroups = new Map();
             document.getElementById('positivacao-inactive-prev-btn').disabled = page === 1;
             document.getElementById('positivacao-inactive-next-btn').disabled = page >= totalPages;
             document.getElementById('positivacao-inactive-page-info').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
+        }
+
+        // --- TITULOS VIEW LOGIC ---
+        let titulosTableState = { page: 1, limit: 50, filteredData: [] };
+        let selectedTitulosRedes = [];
+        let titulosRedeGroupFilter = '';
+        let titulosRenderId = 0;
+
+        function renderTitulosView() {
+            setupHierarchyFilters('titulos', () => handleTitulosFilterChange());
+
+            // Rede Filters
+            const redeGroupContainer = document.getElementById('titulos-rede-group-container');
+            const comRedeBtn = document.getElementById('titulos-com-rede-btn');
+            const comRedeBtnText = document.getElementById('titulos-com-rede-btn-text');
+            const redeDropdown = document.getElementById('titulos-rede-filter-dropdown');
+
+            if (redeGroupContainer && !redeGroupContainer._hasListener) {
+                redeGroupContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('button');
+                    if (!btn) return;
+                    const group = btn.dataset.group;
+                    titulosRedeGroupFilter = group;
+                    redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    if (group === 'com_rede') redeDropdown.classList.remove('hidden');
+                    else redeDropdown.classList.add('hidden');
+                    handleTitulosFilterChange();
+                });
+                redeGroupContainer._hasListener = true;
+            }
+
+            if (redeDropdown && !redeDropdown._hasListener) {
+                redeDropdown.addEventListener('change', () => handleTitulosFilterChange());
+                redeDropdown._hasListener = true;
+            }
+
+            // Client Search
+            setupClientTypeahead('titulos-codcli-filter', 'titulos-codcli-filter-suggestions', (code) => {
+                handleTitulosFilterChange();
+            });
+            const clientInput = document.getElementById('titulos-codcli-filter');
+            if (clientInput && !clientInput._hasListener) {
+                clientInput.addEventListener('input', (e) => {
+                     if (!e.target.value) handleTitulosFilterChange();
+                });
+                clientInput._hasListener = true;
+            }
+
+            // Clear Btn
+            const clearBtn = document.getElementById('clear-titulos-filters-btn');
+            if(clearBtn && !clearBtn._hasListener) {
+                clearBtn.addEventListener('click', () => {
+                     resetTitulosFilters();
+                });
+                clearBtn._hasListener = true;
+            }
+
+            // Pagination
+            const prevBtn = document.getElementById('titulos-prev-page-btn');
+            const nextBtn = document.getElementById('titulos-next-page-btn');
+            if(prevBtn && !prevBtn._hasListener) {
+                prevBtn.addEventListener('click', () => {
+                    if(titulosTableState.page > 1) {
+                        titulosTableState.page--;
+                        renderTitulosTable();
+                    }
+                });
+                prevBtn._hasListener = true;
+            }
+            if(nextBtn && !nextBtn._hasListener) {
+                nextBtn.addEventListener('click', () => {
+                    const max = Math.ceil(titulosTableState.filteredData.length / titulosTableState.limit);
+                    if(titulosTableState.page < max) {
+                        titulosTableState.page++;
+                        renderTitulosTable();
+                    }
+                });
+                nextBtn._hasListener = true;
+            }
+
+            // Initial Filter Population (Rede)
+            updateTitulosRedeFilter();
+
+            // Initial Render
+            updateTitulosView();
+        }
+
+        function updateTitulosRedeFilter() {
+            // Get available networks from clients that have titles? Or all clients?
+            // Usually from filtered base.
+            // For simplicity, we use the hierarchy filtered clients to populate red dropdown.
+            const clients = getHierarchyFilteredClients('titulos', allClientsData);
+            const dropdown = document.getElementById('titulos-rede-filter-dropdown');
+            const btnText = document.getElementById('titulos-com-rede-btn-text');
+            if(dropdown) {
+                selectedTitulosRedes = updateRedeFilter(dropdown, btnText, selectedTitulosRedes, clients);
+            }
+        }
+
+        function handleTitulosFilterChange() {
+             if(window.titulosUpdateTimeout) clearTimeout(window.titulosUpdateTimeout);
+             window.titulosUpdateTimeout = setTimeout(() => {
+                 updateTitulosView();
+             }, 10);
+        }
+
+        function resetTitulosFilters() {
+            selectedTitulosRedes = [];
+            titulosRedeGroupFilter = '';
+            document.getElementById('titulos-codcli-filter').value = '';
+
+            const groupContainer = document.getElementById('titulos-rede-group-container');
+            if(groupContainer) {
+                 groupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                 groupContainer.querySelector('button[data-group=""]').classList.add('active');
+            }
+            const dd = document.getElementById('titulos-rede-filter-dropdown');
+            if(dd) dd.classList.add('hidden');
+
+            setupHierarchyFilters('titulos'); // Reset hierarchy
+            updateTitulosRedeFilter();
+            updateTitulosView();
+        }
+
+        function updateTitulosView() {
+            titulosRenderId++;
+            const currentId = titulosRenderId;
+
+            // 1. Get Data
+            const rawTitulos = embeddedData.titulos; // Columnar
+            if (!rawTitulos || !rawTitulos.length) {
+                // Empty state
+                renderTitulosKPIs(0, 0, 0, 0);
+                titulosTableState.filteredData = [];
+                renderTitulosTable();
+                return;
+            }
+
+            // 2. Filter Clients Base (Hierarchy + Rede)
+            // Use Hierarchy Filter
+            let allowedClients = getHierarchyFilteredClients('titulos', allClientsData);
+
+            // Apply Rede Filter
+            const isComRede = titulosRedeGroupFilter === 'com_rede';
+            const isSemRede = titulosRedeGroupFilter === 'sem_rede';
+            const redeSet = (isComRede && selectedTitulosRedes.length > 0) ? new Set(selectedTitulosRedes) : null;
+            const clientSearch = document.getElementById('titulos-codcli-filter').value.toLowerCase().trim();
+
+            const allowedClientCodes = new Set();
+            for(let i=0; i<allowedClients.length; i++) {
+                const c = allowedClients[i]; // Proxy or Object
+
+                // Rede Check
+                if (isComRede) {
+                    if (!c.ramo || c.ramo === 'N/A') continue;
+                    if (redeSet && !redeSet.has(c.ramo)) continue;
+                } else if (isSemRede) {
+                    if (c.ramo && c.ramo !== 'N/A') continue;
+                }
+
+                // Search Check (Name/Code) - Optimization: Check here to reduce set size
+                if (clientSearch) {
+                    const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
+                    const name = (c.nomeCliente || '').toLowerCase();
+                    if (!code.includes(clientSearch) && !name.includes(clientSearch)) continue;
+                }
+
+                allowedClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+            }
+
+            // 3. Filter Titulos based on Allowed Client Codes
+            const filteredTitulos = [];
+            const isCol = rawTitulos instanceof ColumnarDataset;
+            const len = rawTitulos.length;
+
+            // Indices
+            // We assume column names from SQL: cod_cliente, vl_receber, etc.
+            // But 'embeddedData.titulos' comes from 'fetchAll' which uses CSV parser.
+            // The CSV parser uppercases headers. So: COD_CLIENTE, VL_RECEBER, etc.
+
+            // Let's verify column names dynamically or assume standard
+            // Standard from CSV parser: keys are UPPERCASE of DB columns.
+            // DB: cod_cliente -> CSV: COD_CLIENTE
+
+            // Optimized read
+            const getVal = (i, col) => isCol ? (rawTitulos._data[col] ? rawTitulos._data[col][i] : undefined) : rawTitulos[i][col];
+
+            let totalReceber = 0;
+            let totalVencido = 0; // > today? User said > 60 days for tag, but maybe > 0 for overdue?
+            // User requirement: "Valor a receber trás o valores que o cliente ainda nos deve".
+            // Let's sum VL_RECEBER.
+
+            let countCritical = 0;
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            // Critical Date: 60 days ago
+            const criticalDate = new Date();
+            criticalDate.setDate(today.getDate() - 60);
+
+            for (let i=0; i<len; i++) {
+                const codCli = normalizeKey(getVal(i, 'COD_CLIENTE'));
+
+                if (allowedClientCodes.has(codCli)) {
+                    // Match!
+                    const valReceber = Number(getVal(i, 'VL_RECEBER')) || 0;
+                    const valOriginal = Number(getVal(i, 'VL_TITULOS')) || 0;
+                    const dtVenc = parseDate(getVal(i, 'DT_VENCIMENTO'));
+
+                    totalReceber += valReceber;
+
+                    let isCritical = false;
+                    if (dtVenc && dtVenc < criticalDate && valReceber > 0) {
+                        isCritical = true;
+                        countCritical++; // Count of titles or clients? Requirement said "highlight CLIENT".
+                        // But table is titles. So counting titles here.
+                    }
+
+                    // Enrich Data for Table
+                    // Resolve Client Name and RCA
+                    const clientObj = clientMapForKPIs.get(codCli);
+                    let clientName = 'Desconhecido';
+                    let rcaName = 'N/A';
+                    let city = 'N/A';
+
+                    if (clientObj) {
+                         // clientObj is either Object or Index (if IndexMap)
+                         // If IndexMap, we need to fetch it.
+                         // But clientMapForKPIs logic in app.js: "clientMapForKPIs.set(..., i)" (index) OR "set(..., c)" (obj)
+                         // Check initialization: "if (allClientsData instanceof ColumnarDataset) ... set(..., i)"
+
+                         let c = clientObj;
+                         if (typeof clientObj === 'number') {
+                             c = allClientsData.get(clientObj);
+                         }
+
+                         clientName = c.nomeCliente || c.fantasia || 'N/A';
+                         city = c.cidade || 'N/A';
+                         const rcaCode = String(c.rca1 || '').trim();
+                         // Resolve RCA Name
+                         // optimizedData.rcaNameByCode might be available
+                         if (optimizedData.rcaNameByCode && optimizedData.rcaNameByCode.has(rcaCode)) {
+                             // Wait, rcaNameByCode maps CodUsur -> Name?
+                             // Check init: "rcaNameByCode.set(codUsur, rca)" where rca is name.
+                             // Wait, map definition: "rcaCodeByName.set(rca, codUsur); rcaNameByCode.set(codUsur, rca);"
+                             // Here 'rca' variable comes from 'NOME' column (Seller Name).
+                             // So yes, we want Seller Name from Code.
+                             // But 'c.rca1' is the Code (e.g. 1001).
+                             // So we need 'rcaNameByCode'.
+                             // Let's check logic:
+                             // "if (rca && codUsur) { optimizedData.rcaCodeByName.set(rca, codUsur); optimizedData.rcaNameByCode.set(codUsur, rca); }"
+                             // Yes.
+                             rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode;
+                         } else {
+                             rcaName = rcaCode;
+                         }
+                    }
+
+                    filteredTitulos.push({
+                        codCli,
+                        clientName,
+                        rcaName,
+                        city,
+                        dtVenc,
+                        valReceber,
+                        valOriginal,
+                        isCritical
+                    });
+                }
+            }
+
+            // Update State
+            titulosTableState.filteredData = filteredTitulos;
+            titulosTableState.page = 1;
+
+            // Sort by Date Ascending (Oldest first usually for debt)
+            titulosTableState.filteredData.sort((a,b) => (a.dtVenc || 0) - (b.dtVenc || 0));
+
+            // KPIs
+            const totalCount = filteredTitulos.length;
+            const uniqueClientsCritical = new Set(filteredTitulos.filter(t => t.isCritical).map(t => t.codCli)).size;
+
+            // Calculate Total Critical Debt
+            const criticalDebt = filteredTitulos.reduce((acc, t) => t.isCritical ? acc + t.valReceber : acc, 0);
+
+            renderTitulosKPIs(totalReceber, criticalDebt, uniqueClientsCritical, totalCount);
+            renderTitulosTable();
+        }
+
+        function renderTitulosKPIs(total, critical, criticalCount, count) {
+            document.getElementById('titulos-kpi-total-debt').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('titulos-kpi-critical-debt').textContent = critical.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('titulos-kpi-critical-count').textContent = `${criticalCount} Clientes Críticos`;
+            document.getElementById('titulos-kpi-count').textContent = count;
+        }
+
+        function renderTitulosTable() {
+            const tbody = document.getElementById('titulos-table-body');
+            if(!tbody) return;
+
+            const { page, limit, filteredData } = titulosTableState;
+            const total = filteredData.length;
+            const start = (page - 1) * limit;
+            const end = start + limit;
+            const subset = filteredData.slice(start, end);
+            const totalPages = Math.ceil(total / limit) || 1;
+
+            if (total === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-500">Nenhum título encontrado.</td></tr>';
+                document.getElementById('titulos-page-info-text').textContent = '0 de 0';
+                return;
+            }
+
+            tbody.innerHTML = subset.map(t => {
+                const dateStr = t.dtVenc ? t.dtVenc.toLocaleDateString('pt-BR') : '-';
+                const valOrig = t.valOriginal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const valOpen = t.valReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                const status = t.isCritical
+                    ? `<span class="px-2 py-1 bg-red-900/50 text-red-300 text-[10px] font-bold rounded-full border border-red-800">> 60 Dias</span>`
+                    : `<span class="px-2 py-1 bg-green-900/50 text-green-300 text-[10px] font-bold rounded-full border border-green-800">Em Aberto</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors">
+                        <td class="px-4 py-3 font-mono text-xs text-slate-400">${t.codCli}</td>
+                        <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px]" title="${t.clientName}">${t.clientName}</td>
+                        <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${t.rcaName}</td>
+                        <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
+                        <td class="px-4 py-3 text-xs text-white text-center font-mono">${dateStr}</td>
+                        <td class="px-4 py-3 text-xs text-slate-500 text-right hidden md:table-cell">${valOrig}</td>
+                        <td class="px-4 py-3 text-sm text-white font-bold text-right">${valOpen}</td>
+                        <td class="px-4 py-3 text-center">${status}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Pagination UI
+            document.getElementById('titulos-prev-page-btn').disabled = page === 1;
+            document.getElementById('titulos-next-page-btn').disabled = page >= totalPages;
+            document.getElementById('titulos-page-info-text').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
         }
 })();
