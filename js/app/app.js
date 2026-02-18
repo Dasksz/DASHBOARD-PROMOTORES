@@ -883,11 +883,11 @@
 
                     const codFor = String(s.CODFOR);
                     // Elma: 707, 708, 752
-                    if (codFor === '707' || codFor === '708' || codFor === '752') {
+                    if (window.isElma(codFor)) {
                         mix.elma = true;
                     }
                     // Foods: 1119
-                    else if (codFor === '1119') {
+                    else if (window.isFoods(codFor)) {
                         mix.foods = true;
                     }
                 }, () => {
@@ -1568,12 +1568,12 @@
 
                         // Virtual Categories Logic (Shared with Meta vs Realizado)
                         // 1119 Split: TODDYNHO, TODDY, QUAKER/KEROCOCO
-                        if (supplier === '1119') {
+                        if (window.isFoods(supplier)) {
                             const desc = String(getVal(i, 'DESCRICAO') || '').toUpperCase();
                             let virtualKey = null;
-                            if (desc.includes('TODDYNHO')) virtualKey = '1119_TODDYNHO';
-                            else if (desc.includes('TODDY')) virtualKey = '1119_TODDY';
-                            else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) virtualKey = '1119_QUAKER_KEROCOCO';
+                            if (desc.includes('TODDYNHO')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
+                            else if (desc.includes('TODDY')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                            else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
 
                             if (virtualKey) {
                                 if (!bySupplier.has(virtualKey)) bySupplier.set(virtualKey, new Set());
@@ -2233,14 +2233,14 @@
                             let key = null;
                             const codFor = String(historyValues['CODFOR'][idx]);
 
-                            if (codFor === '707') key = '707';
-                            else if (codFor === '708') key = '708';
-                            else if (codFor === '752') key = '752';
-                            else if (codFor === '1119') {
+                            if (codFor === window.SUPPLIER_CODES.ELMA[0]) key = window.SUPPLIER_CODES.ELMA[0];
+                            else if (codFor === window.SUPPLIER_CODES.ELMA[1]) key = window.SUPPLIER_CODES.ELMA[1];
+                            else if (codFor === window.SUPPLIER_CODES.ELMA[2]) key = window.SUPPLIER_CODES.ELMA[2];
+                            else if (window.isFoods(codFor)) {
                                 const desc = normalize(historyValues['DESCRICAO'][idx] || '');
-                                if (desc.includes('TODDYNHO')) key = '1119_TODDYNHO';
-                                else if (desc.includes('TODDY')) key = '1119_TODDY';
-                                else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = '1119_QUAKER_KEROCOCO';
+                                if (desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
+                                else if (desc.includes('TODDY')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                                else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
                             }
 
                             if (key && globalGoalsMetrics[key]) {
@@ -2293,14 +2293,14 @@
                             let key = null;
                             const codFor = String(sale.CODFOR);
 
-                            if (codFor === '707') key = '707';
-                            else if (codFor === '708') key = '708';
-                            else if (codFor === '752') key = '752';
-                            else if (codFor === '1119') {
+                            if (codFor === window.SUPPLIER_CODES.ELMA[0]) key = window.SUPPLIER_CODES.ELMA[0];
+                            else if (codFor === window.SUPPLIER_CODES.ELMA[1]) key = window.SUPPLIER_CODES.ELMA[1];
+                            else if (codFor === window.SUPPLIER_CODES.ELMA[2]) key = window.SUPPLIER_CODES.ELMA[2];
+                            else if (window.isFoods(codFor)) {
                                 const desc = normalize(sale.DESCRICAO || '');
-                                if (desc.includes('TODDYNHO')) key = '1119_TODDYNHO';
-                                else if (desc.includes('TODDY')) key = '1119_TODDY';
-                                else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = '1119_QUAKER_KEROCOCO';
+                                if (desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
+                                else if (desc.includes('TODDY')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                                else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
                             }
 
                             if (key && globalGoalsMetrics[key]) {
@@ -2360,7 +2360,7 @@
 
             // Calculate Averages and Finalize
             // First calculate basic metrics for leaf keys
-            const leafKeys = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+            const leafKeys = window.SUPPLIER_CODES.ALL_GOALS;
 
             // Helper for aggregation
             const aggregateToAll = (targetKey, sourceKeys) => {
@@ -2385,9 +2385,9 @@
                 });
             };
 
-            aggregateToAll('ELMA_ALL', ['707', '708', '752']);
-            aggregateToAll('FOODS_ALL', ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO']);
-            aggregateToAll('PEPSICO_ALL', ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO']);
+            aggregateToAll('ELMA_ALL', window.SUPPLIER_CODES.ELMA);
+            aggregateToAll('FOODS_ALL', window.SUPPLIER_CODES.VIRTUAL_LIST);
+            aggregateToAll('PEPSICO_ALL', window.SUPPLIER_CODES.ALL_GOALS);
 
             // Finalize calculations for ALL keys
             for (const key in globalGoalsMetrics) {
@@ -2595,15 +2595,6 @@
             updateMixView();
         }
 
-        function escapeHtml(text) {
-            if (text === null || text === undefined) return '';
-            return String(text)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
 
         function getSkeletonRows(cols, rows = 5) {
             let html = '';
@@ -3026,8 +3017,8 @@
 
             // Define Sub-Categories for Cascade Logic
             let targetCategories = [categoryId];
-            if (categoryId === 'tonelada_elma') targetCategories = ['707', '708', '752'];
-            else if (categoryId === 'tonelada_foods') targetCategories = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+            if (categoryId === 'tonelada_elma') targetCategories = window.SUPPLIER_CODES.ELMA;
+            else if (categoryId === 'tonelada_foods') targetCategories = window.SUPPLIER_CODES.VIRTUAL_LIST;
 
             // 1. Calculate Total History for the Seller (All sub-cats combined)
             // AND Calculate individual client-subcat history to determine specific shares.
@@ -3272,7 +3263,7 @@
 
                             // Formula for Aggregate Logic
                             if (col.id === 'total_elma' || col.id === 'total_foods') {
-                                const ids = col.id === 'total_elma' ? ['707', '708', '752'] : ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                                const ids = col.id === 'total_elma' ? window.SUPPLIER_CODES.ELMA : window.SUPPLIER_CODES.VIRTUAL_LIST;
                                 const compCols = ids.map(id => colMap[id] + 1);
                                 const compColsPos = ids.map(id => colMap[id] + 3);
                                 const formulaFat = compCols.map(c => `${getColLet(c)}${excelRow}`).join("+");
@@ -3749,8 +3740,8 @@
                     // Filter validation: Ensure they belong to current Pasta
                     let valid = false;
                     if (pasta === 'PEPSICO') valid = true;
-                    else if (pasta === 'ELMA') valid = ['707', '708', '752'].includes(sup);
-                    else if (pasta === 'FOODS') valid = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'].includes(sup) || sup === '1119';
+                    else if (pasta === 'ELMA') valid = window.SUPPLIER_CODES.ELMA.includes(sup);
+                    else if (pasta === 'FOODS') valid = window.SUPPLIER_CODES.VIRTUAL_LIST.includes(sup) || sup === '1119';
 
                     if (valid) {
                         if (sup === '1119') {
@@ -3763,11 +3754,11 @@
             } else {
                 // Default Pasta Groups
                 if (pasta === 'PEPSICO') {
-                    goalKeys = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                    goalKeys = window.SUPPLIER_CODES.ALL_GOALS;
                 } else if (pasta === 'ELMA') {
-                    goalKeys = ['707', '708', '752'];
+                    goalKeys = window.SUPPLIER_CODES.ELMA;
                 } else if (pasta === 'FOODS') {
-                    goalKeys = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                    goalKeys = window.SUPPLIER_CODES.VIRTUAL_LIST;
                 }
             }
 
@@ -3851,8 +3842,8 @@
 
                     // Improved Override Logic: Only apply aggregate pasta targets if NO specific supplier filter is active,
                     // or if all suppliers of that pasta are selected.
-                    const elmaKeys = ['707', '708', '752'];
-                    const foodsKeys = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                    const elmaKeys = window.SUPPLIER_CODES.ELMA;
+                    const foodsKeys = window.SUPPLIER_CODES.VIRTUAL_LIST;
                     const allElmaSelected = elmaKeys.every(k => goalKeys.includes(k));
                     const allFoodsSelected = foodsKeys.every(k => goalKeys.includes(k));
 
@@ -3999,7 +3990,7 @@
 
                 const codFor = String(s.CODFOR);
                 if (pasta === 'ELMA') {
-                    if (!['707', '708', '752'].includes(codFor)) continue;
+                    if (!window.SUPPLIER_CODES.ELMA.includes(codFor)) continue;
                 } else if (pasta === 'FOODS') {
                     if (codFor !== '1119') continue;
                 }
@@ -4431,9 +4422,9 @@
 
             // Determine Goal Keys based on Pasta (Copy logic)
             let goalKeys = [];
-            if (pasta === 'PEPSICO') goalKeys = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
-            else if (pasta === 'ELMA') goalKeys = ['707', '708', '752'];
-            else if (pasta === 'FOODS') goalKeys = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+            if (pasta === 'PEPSICO') goalKeys = window.SUPPLIER_CODES.ALL_GOALS;
+            else if (pasta === 'ELMA') goalKeys = window.SUPPLIER_CODES.ELMA;
+            else if (pasta === 'FOODS') goalKeys = window.SUPPLIER_CODES.VIRTUAL_LIST;
 
             // A. Populate Goals
             clients.forEach(client => {
@@ -4482,7 +4473,7 @@
                 if (rowPasta !== 'PEPSICO') continue;
 
                 const codFor = String(s.CODFOR);
-                if (pasta === 'ELMA' && !['707', '708', '752'].includes(codFor)) continue;
+                if (pasta === 'ELMA' && !window.SUPPLIER_CODES.ELMA.includes(codFor)) continue;
                 if (pasta === 'FOODS' && codFor !== '1119') continue;
 
                 // Supervisor/Seller/Supplier Filter on SALE row
@@ -4705,9 +4696,9 @@
                         const keysToProcess = [];
                         if (key && metricsMap[key]) keysToProcess.push(key);
 
-                        if (['707', '708', '752'].includes(codFor)) keysToProcess.push('ELMA_ALL');
+                        if (window.SUPPLIER_CODES.ELMA.includes(codFor)) keysToProcess.push('ELMA_ALL');
                         if (codFor === '1119') keysToProcess.push('FOODS_ALL');
-                        if (['707', '708', '752', '1119'].includes(codFor)) keysToProcess.push('PEPSICO_ALL');
+                        if (window.SUPPLIER_CODES.PEPSICO.includes(codFor)) keysToProcess.push('PEPSICO_ALL');
 
                         keysToProcess.forEach(procKey => {
                             const d = parseDate(sale.DTPED);
@@ -4819,11 +4810,11 @@
                         const desc = (sale.DESCRICAO || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 
                         if (category === 'pepsico_all') {
-                             if (['707', '708', '752'].includes(codFor) || (codFor === '1119' && (desc.includes('TODDYNHO') || desc.includes('TODDY') || desc.includes('QUAKER') || desc.includes('KEROCOCO')))) {
+                             if (window.SUPPLIER_CODES.ELMA.includes(codFor) || (codFor === '1119' && (desc.includes('TODDYNHO') || desc.includes('TODDY') || desc.includes('QUAKER') || desc.includes('KEROCOCO')))) {
                                  hasSale = true;
                              }
                         } else if (category === 'total_elma') {
-                             if (['707', '708', '752'].includes(codFor)) hasSale = true;
+                             if (window.SUPPLIER_CODES.ELMA.includes(codFor)) hasSale = true;
                         } else if (category === 'total_foods') {
                              if (codFor === '1119' && (desc.includes('TODDYNHO') || desc.includes('TODDY') || desc.includes('QUAKER') || desc.includes('KEROCOCO'))) hasSale = true;
                         } else if (category === '707' && codFor === '707') hasSale = true;
@@ -5120,7 +5111,7 @@
                     for (const id of hIds) {
                         const s = optimizedData.historyById.get(id);
                         const codFor = String(s.CODFOR);
-                         if (['707', '708', '752'].includes(codFor)) {
+                         if (window.SUPPLIER_CODES.ELMA.includes(codFor)) {
                             if (s.TIPOVENDA === '1' || s.TIPOVENDA === '9') totalFat += s.VLVENDA;
                         }
                     }
@@ -5165,9 +5156,9 @@
                 const codFor = String(sale.CODFOR);
                 if (supplier === 'PEPSICO_ALL') {
                     // Includes everything
-                    if (!['707', '708', '752', '1119'].includes(codFor)) return false;
+                    if (!window.SUPPLIER_CODES.PEPSICO.includes(codFor)) return false;
                 } else if (supplier === 'ELMA_ALL') {
-                    if (!['707', '708', '752'].includes(codFor)) return false;
+                    if (!window.SUPPLIER_CODES.ELMA.includes(codFor)) return false;
                 } else if (supplier === 'FOODS_ALL') {
                     // Include all brands of 1119 that are in sub-tabs
                     if (codFor !== '1119') return false;
@@ -5300,9 +5291,9 @@
                     if (globalClientGoals.has(codCli)) {
                         const cGoals = globalClientGoals.get(codCli);
                         let keysToSum = [];
-                        if (currentGoalsSupplier === 'ELMA_ALL') keysToSum = ['707', '708', '752'];
-                        else if (currentGoalsSupplier === 'FOODS_ALL') keysToSum = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
-                        else if (currentGoalsSupplier === 'PEPSICO_ALL') keysToSum = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                        if (currentGoalsSupplier === 'ELMA_ALL') keysToSum = window.SUPPLIER_CODES.ELMA;
+                        else if (currentGoalsSupplier === 'FOODS_ALL') keysToSum = window.SUPPLIER_CODES.VIRTUAL_LIST;
+                        else if (currentGoalsSupplier === 'PEPSICO_ALL') keysToSum = window.SUPPLIER_CODES.ALL_GOALS;
 
                         keysToSum.forEach(k => {
                             if (cGoals.has(k)) {
@@ -5379,11 +5370,11 @@
 
             let keysToProcess = [];
             if (currentGoalsSupplier === 'PEPSICO_ALL') {
-                keysToProcess = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                keysToProcess = window.SUPPLIER_CODES.ALL_GOALS;
             } else if (currentGoalsSupplier === 'ELMA_ALL') {
-                keysToProcess = ['707', '708', '752'];
+                keysToProcess = window.SUPPLIER_CODES.ELMA;
             } else if (currentGoalsSupplier === 'FOODS_ALL') {
-                keysToProcess = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                keysToProcess = window.SUPPLIER_CODES.VIRTUAL_LIST;
             } else {
                 const cacheKey = currentGoalsSupplier + (currentGoalsBrand ? `_${currentGoalsBrand}` : '');
                 keysToProcess = [cacheKey];
@@ -5537,7 +5528,7 @@
                 if (hIds) {
                     hIds.forEach(id => {
                         const s = optimizedData.historyById.get(id);
-                        if (['707', '708', '752'].includes(String(s.CODFOR))) {
+                        if (window.SUPPLIER_CODES.ELMA.includes(String(s.CODFOR))) {
                             if (s.TIPOVENDA === '1' || s.TIPOVENDA === '9') sumFat += s.VLVENDA;
                         }
                     });
@@ -5785,8 +5776,8 @@
             // Reuse logic from 'shouldIncludeSale' or similar but specific to categories
             // Mapping Category -> Condition
             const checkSale = (codFor, desc) => {
-                if (category === 'pepsico_all') return ['707', '708', '752', '1119'].includes(codFor);
-                if (category === 'total_elma') return ['707', '708', '752'].includes(codFor);
+                if (category === 'pepsico_all') return window.SUPPLIER_CODES.PEPSICO.includes(codFor);
+                if (category === 'total_elma') return window.SUPPLIER_CODES.ELMA.includes(codFor);
                 if (category === 'total_foods') return codFor === '1119';
 
                 // Specifics
@@ -5825,8 +5816,8 @@
             // Recursive Cascade
             let children = [];
             if (parentCategory === 'pepsico_all') children = ['total_elma', 'total_foods'];
-            else if (parentCategory === 'total_elma') children = ['707', '708', '752'];
-            else if (parentCategory === 'total_foods') children = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+            else if (parentCategory === 'total_elma') children = window.SUPPLIER_CODES.ELMA;
+            else if (parentCategory === 'total_foods') children = window.SUPPLIER_CODES.VIRTUAL_LIST;
 
             if (children.length === 0) return;
 
@@ -6016,8 +6007,8 @@
             // Helper for inclusion check
             const shouldIncludeSale = (sale, supplier, brand) => {
                 const codFor = String(sale.CODFOR);
-                if (supplier === 'PEPSICO_ALL') { if (!['707', '708', '752', '1119'].includes(codFor)) return false; }
-                else if (supplier === 'ELMA_ALL') { if (!['707', '708', '752'].includes(codFor)) return false; }
+                if (supplier === 'PEPSICO_ALL') { if (!window.SUPPLIER_CODES.PEPSICO.includes(codFor)) return false; }
+                else if (supplier === 'ELMA_ALL') { if (!window.SUPPLIER_CODES.ELMA.includes(codFor)) return false; }
                 else if (supplier === 'FOODS_ALL') { if (codFor !== '1119') return false; }
                 else {
                     if (codFor !== supplier) return false;
@@ -6115,9 +6106,9 @@
                     if (globalClientGoals.has(codCli)) {
                         const cGoals = globalClientGoals.get(codCli);
                         let keysToSum = [];
-                        if (currentGoalsSupplier === 'ELMA_ALL') keysToSum = ['707', '708', '752'];
-                        else if (currentGoalsSupplier === 'FOODS_ALL') keysToSum = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
-                        else if (currentGoalsSupplier === 'PEPSICO_ALL') keysToSum = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                        if (currentGoalsSupplier === 'ELMA_ALL') keysToSum = window.SUPPLIER_CODES.ELMA;
+                        else if (currentGoalsSupplier === 'FOODS_ALL') keysToSum = window.SUPPLIER_CODES.VIRTUAL_LIST;
+                        else if (currentGoalsSupplier === 'PEPSICO_ALL') keysToSum = window.SUPPLIER_CODES.ALL_GOALS;
 
                         keysToSum.forEach(k => { if (cGoals.has(k)) { const g = cGoals.get(k); metaFat += g.fat; metaVol += g.vol; } });
                     }
@@ -6275,7 +6266,7 @@
                                                 for (let id of historyIds) {
                                                     const sale = optimizedData.historyById.get(id);
                                                     if ((sale.TIPOVENDA === '1' || sale.TIPOVENDA === '9') &&
-                                                        ['707','708','752','1119'].includes(String(sale.CODFOR))) {
+                                                        window.SUPPLIER_CODES.PEPSICO.includes(String(sale.CODFOR))) {
                                                         pepsicoNaturalPos++;
                                                         break;
                                                     }
@@ -6550,8 +6541,8 @@
             updateColumnTotals(colId, field);
 
             // B. Row Aggregation Logic (Update Total Elma/Foods and Geral)
-            const elmaIds = ['707', '708', '752'];
-            const foodsIds = ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+            const elmaIds = window.SUPPLIER_CODES.ELMA;
+            const foodsIds = window.SUPPLIER_CODES.VIRTUAL_LIST;
 
             let groupTotalId = null;
             let components = [];
@@ -6630,17 +6621,17 @@
 
             // Define Column Blocks (Metrics Config)
             const svColumns = [
-                { id: 'total_elma', label: 'TOTAL ELMA', type: 'standard', isAgg: true, colorClass: 'text-teal-400', components: ['707', '708', '752'] },
+                { id: 'total_elma', label: 'TOTAL ELMA', type: 'standard', isAgg: true, colorClass: 'text-teal-400', components: window.SUPPLIER_CODES.ELMA },
                 { id: '707', label: 'EXTRUSADOS', type: 'standard', supplier: '707', brand: null, colorClass: 'text-slate-300' },
                 { id: '708', label: 'NÃO EXTRUSADOS', type: 'standard', supplier: '708', brand: null, colorClass: 'text-slate-300' },
                 { id: '752', label: 'TORCIDA', type: 'standard', supplier: '752', brand: null, colorClass: 'text-slate-300' },
-                { id: 'tonelada_elma', label: 'KG ELMA', type: 'tonnage', isAgg: true, colorClass: 'text-orange-400', components: ['707', '708', '752'] },
+                { id: 'tonelada_elma', label: 'KG ELMA', type: 'tonnage', isAgg: true, colorClass: 'text-orange-400', components: window.SUPPLIER_CODES.ELMA },
                 { id: 'mix_salty', label: 'MIX SALTY', type: 'mix', isAgg: true, colorClass: 'text-teal-400', components: [] },
-                { id: 'total_foods', label: 'TOTAL FOODS', type: 'standard', isAgg: true, colorClass: 'text-yellow-400', components: ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'] },
+                { id: 'total_foods', label: 'TOTAL FOODS', type: 'standard', isAgg: true, colorClass: 'text-yellow-400', components: window.SUPPLIER_CODES.VIRTUAL_LIST },
                 { id: '1119_TODDYNHO', label: 'TODDYNHO', type: 'standard', supplier: '1119', brand: 'TODDYNHO', colorClass: 'text-slate-300' },
                 { id: '1119_TODDY', label: 'TODDY', type: 'standard', supplier: '1119', brand: 'TODDY', colorClass: 'text-slate-300' },
                 { id: '1119_QUAKER_KEROCOCO', label: 'QUAKER / KEROCOCO', type: 'standard', supplier: '1119', brand: 'QUAKER_KEROCOCO', colorClass: 'text-slate-300' },
-                { id: 'tonelada_foods', label: 'KG FOODS', type: 'tonnage', isAgg: true, colorClass: 'text-orange-400', components: ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'] },
+                { id: 'tonelada_foods', label: 'KG FOODS', type: 'tonnage', isAgg: true, colorClass: 'text-orange-400', components: window.SUPPLIER_CODES.VIRTUAL_LIST },
                 { id: 'mix_foods', label: 'MIX FOODS', type: 'mix', isAgg: true, colorClass: 'text-yellow-400', components: [] },
                 { id: 'geral', label: 'GERAL', type: 'geral', isAgg: true, colorClass: 'text-white', components: ['total_elma', 'total_foods'] },
                 { id: 'pedev', label: 'AUDITORIA PEDEV', type: 'pedev', isAgg: true, colorClass: 'text-pink-400', components: ['total_elma'] }
@@ -6829,7 +6820,7 @@
                             for (const id of hIds) {
                                 const s = optimizedData.historyById.get(id);
                                 const codFor = String(s.CODFOR);
-                                if (['707', '708', '752', '1119'].includes(codFor)) {
+                                if (window.SUPPLIER_CODES.PEPSICO.includes(codFor)) {
                                     if (s.TIPOVENDA === '1' || s.TIPOVENDA === '9') totalFat += s.VLVENDA;
                                 }
                             }
@@ -8776,7 +8767,7 @@ const supervisorGroups = new Map();
                         if (sup === 'QUAKER' || sup === 'KEROCOCO' || sup.includes('QUAKER')) return ['1119_QUAKER_KEROCOCO'];
 
                         if (window.globalGoalsMetrics && window.globalGoalsMetrics[sup]) return [sup];
-                        if (['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'].includes(sup)) return [sup];
+                        if (window.SUPPLIER_CODES.ALL_GOALS.includes(sup)) return [sup];
                         if (sup === '1119') return ['FOODS_ALL'];
                         return [];
                     };
@@ -8867,7 +8858,7 @@ const supervisorGroups = new Map();
                     0x10b981  // Emerald
                 ];
 
-                const orderedKeys = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                const orderedKeys = window.SUPPLIER_CODES.ALL_GOALS;
                 
                 orderedKeys.forEach((key, index) => {
                     const goal = categoryGoals[key];
@@ -15051,7 +15042,7 @@ const supervisorGroups = new Map();
                             // Ambiguous: 707, 708... could be FAT or POS.
                             // If Value is small (< 200), maybe POS? If large, FAT? Dangerous.
                             // Default to FAT for 707/etc?
-                            else if (['707','708','752','1119_TODDYNHO','1119_TODDY','1119_QUAKER_KEROCOCO'].includes(catId)) {
+                            else if (window.SUPPLIER_CODES.ALL_GOALS.includes(catId)) {
                                 metricId = 'FAT'; // Default assumption for simplified input
                             }
                         }
@@ -15196,7 +15187,7 @@ const supervisorGroups = new Map();
                 };
 
                 // 1. Revenue
-                const revCats = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                const revCats = window.SUPPLIER_CODES.ALL_GOALS;
                 revCats.forEach(cat => {
                     const val = getPriorityValue(cat, 'FAT');
                     if (!isNaN(val)) updates.push({ type: 'rev', seller: sellerName, category: cat, val: val });
@@ -15482,10 +15473,10 @@ const supervisorGroups = new Map();
 
             function resolveGoalCategory(category) {
                 // Returns list of leaf categories and metric type hint if needed
-                if (category === 'tonelada_elma') return ['707', '708', '752'];
-                if (category === 'tonelada_foods') return ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
-                if (category === 'total_elma') return ['707', '708', '752'];
-                if (category === 'total_foods') return ['1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                if (category === 'tonelada_elma') return window.SUPPLIER_CODES.ELMA;
+                if (category === 'tonelada_foods') return window.SUPPLIER_CODES.VIRTUAL_LIST;
+                if (category === 'total_elma') return window.SUPPLIER_CODES.ELMA;
+                if (category === 'total_foods') return window.SUPPLIER_CODES.VIRTUAL_LIST;
                 return [category];
             }
 
@@ -18784,7 +18775,7 @@ const supervisorGroups = new Map();
                 const cod = String(client['Código'] || client['codigo_cliente']);
                 const name = client.nomeCliente || 'Desconhecido';
                 const fantasia = client.fantasia || '';
-                const firstLetter = name.charAt(0).toUpperCase();
+                const firstLetter = window.escapeHtml(name.charAt(0).toUpperCase());
                 
                 let days = '-';
                 if (client.ultimacompra) {
@@ -18817,7 +18808,7 @@ const supervisorGroups = new Map();
                         </div>
                         <div>
                             <h3 class="text-sm font-bold text-white leading-tight flex items-center gap-2">
-                                ${cod} - ${name}
+                                ${window.escapeHtml(cod)} - ${window.escapeHtml(name)}
                                 ${visitedThisMonth ? `
                                     <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Visitado este mês">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -18825,12 +18816,12 @@ const supervisorGroups = new Map();
                                     </svg>
                                 ` : ''}
                             </h3>
-                            <p class="text-xs text-slate-400 font-medium mt-0.5">Fantasia: ${fantasia}</p>
+                            <p class="text-xs text-slate-400 font-medium mt-0.5">Fantasia: ${window.escapeHtml(fantasia)}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 text-slate-500 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span class="text-xs font-bold text-slate-300">${days}</span>
+                        <span class="text-xs font-bold text-slate-300">${window.escapeHtml(days)}</span>
                     </div>
                 `;
                 item.onclick = () => openWalletClientModal(cod, client);
@@ -19206,18 +19197,18 @@ const supervisorGroups = new Map();
             else if (statusText === 'B') { statusText = 'Bloqueado'; statusColor = 'text-red-400'; }
 
             tr.innerHTML = `
-                <td data-label="Data" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 font-mono">${dateStr}</td>
+                <td data-label="Data" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 font-mono">${window.escapeHtml(dateStr)}</td>
                 <td data-label="Pedido" class="px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold">
-                    <button class="text-blue-400 hover:text-blue-300 hover:underline transition-colors order-link font-mono">${order.PEDIDO}</button>
+                    <button class="text-blue-400 hover:text-blue-300 hover:underline transition-colors order-link font-mono">${window.escapeHtml(order.PEDIDO)}</button>
                 </td>
                 <td data-label="Cliente" class="px-2 py-1.5 md:px-2 md:py-3">
-                    <div class="text-xs md:text-sm text-white max-w-[120px] md:max-w-none truncate" title="${order.CLIENTE_NOME || ''}">${order.CLIENTE_NOME || 'N/A'}</div>
-                    <div class="text-[10px] md:text-xs text-slate-500 font-mono">${order.CODCLI}</div>
+                    <div class="text-xs md:text-sm text-white max-w-[120px] md:max-w-none truncate" title="${window.escapeHtml(order.CLIENTE_NOME || '')}">${window.escapeHtml(order.CLIENTE_NOME || 'N/A')}</div>
+                    <div class="text-[10px] md:text-xs text-slate-500 font-mono">${window.escapeHtml(order.CODCLI)}</div>
                 </td>
-                <td data-label="Vendedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell truncate max-w-[100px]" title="${order.NOME || ''}">${order.NOME || '-'}</td>
-                <td data-label="Fornecedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${order.CODFOR || '-'}</td>
+                <td data-label="Vendedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell truncate max-w-[100px]" title="${window.escapeHtml(order.NOME || '')}">${window.escapeHtml(order.NOME || '-')}</td>
+                <td data-label="Fornecedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(order.CODFOR || '-')}</td>
                 <td data-label="Valor" class="px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold text-right">${valStr}</td>
-                <td data-label="Status" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-center ${statusColor}">${statusText}</td>
+                <td data-label="Status" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-center ${statusColor}">${window.escapeHtml(statusText)}</td>
             `;
 
             const btn = tr.querySelector('.order-link');
@@ -19276,14 +19267,14 @@ const supervisorGroups = new Map();
                 item.className = 'p-4 border-b border-slate-800 hover:bg-slate-800 transition-colors';
                 item.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
-                        <h3 class="text-sm font-bold text-white leading-tight flex-1">${code} - ${desc}</h3>
+                        <h3 class="text-sm font-bold text-white leading-tight flex-1">${window.escapeHtml(code)} - ${window.escapeHtml(desc)}</h3>
                     </div>
                     <div class="flex justify-between items-center text-xs text-slate-400 mb-2">
-                        <span>Emb.: ${emb}</span>
+                        <span>Emb.: ${window.escapeHtml(emb)}</span>
                         <span>Und.: UN Preço: <span class="font-bold text-green-400">${price}</span></span>
                     </div>
                     <div class="flex justify-between items-center text-xs">
-                        <span class="text-slate-500">Cód. fábrica: ${prod.cod_fabrica || code}</span>
+                        <span class="text-slate-500">Cód. fábrica: ${window.escapeHtml(prod.cod_fabrica || code)}</span>
                         <span class="font-bold text-blue-400">Est.: ${totalStock}</span>
                     </div>
                     <div class="flex gap-2 mt-3 opacity-60 hover:opacity-100 transition-opacity">
@@ -20722,17 +20713,17 @@ const supervisorGroups = new Map();
                 const bairro = data.bairro || 'N/A';
 
                 return `<tr class="hover:bg-slate-700">
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${data['Código']}">${data['Código']}</a></td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${nome}${novoLabel}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${window.escapeHtml(data['Código'])}">${window.escapeHtml(data['Código'])}</a></td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${window.escapeHtml(nome)}${novoLabel}</td>
                             <td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">
                                 <div class="tooltip">${data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     <span class="tooltip-text" style="width: max-content; transform: translateX(-50%); margin-left: 0;">${tooltipText}</span>
                                 </div>
                             </td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${bairro}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${window.escapeHtml(cidade)}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${window.escapeHtml(bairro)}</td>
                             <td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(data.ultimaCompra)}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${window.escapeHtml(rcaVal)}</td>
                         </tr>`;
             }).join('');
 
@@ -20762,12 +20753,12 @@ const supervisorGroups = new Map();
                 const ultCompra = client.ultimaCompra || client['Data da Última Compra'];
 
                 return `<tr class="hover:bg-slate-700">
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${client['Código']}">${client['Código']}</a></td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${nome}${novoLabel}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${bairro}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${window.escapeHtml(client['Código'])}">${window.escapeHtml(client['Código'])}</a></td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${window.escapeHtml(nome)}${novoLabel}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${window.escapeHtml(cidade)}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${window.escapeHtml(bairro)}</td>
                             <td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(ultCompra)}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td>
+                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${window.escapeHtml(rcaVal)}</td>
                         </tr>`;
             }).join('');
 

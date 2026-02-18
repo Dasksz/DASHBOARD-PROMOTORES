@@ -1,5 +1,26 @@
 (function() {
     // --- CONFIGURATION ---
+    window.SUPPLIER_CODES = {
+        ELMA: ['707', '708', '752'],
+        FOODS: ['1119'],
+        PEPSICO: ['707', '708', '752', '1119'],
+        EXTRUSADOS: '707',
+        VIRTUAL: {
+            TODDYNHO: '1119_TODDYNHO',
+            TODDY: '1119_TODDY',
+            QUAKER_KEROCOCO: '1119_QUAKER_KEROCOCO'
+        }
+    };
+    window.SUPPLIER_CODES.VIRTUAL_LIST = [
+        window.SUPPLIER_CODES.VIRTUAL.TODDYNHO,
+        window.SUPPLIER_CODES.VIRTUAL.TODDY,
+        window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO
+    ];
+    window.SUPPLIER_CODES.ALL_GOALS = [
+        ...window.SUPPLIER_CODES.ELMA,
+        ...window.SUPPLIER_CODES.VIRTUAL_LIST
+    ];
+
     window.SUPPLIER_CONFIG = {
         inference: {
             triggerKeywords: ['PEPSICO'],
@@ -9,6 +30,24 @@
         metaRealizado: {
             requiredPasta: 'PEPSICO'
         }
+    };
+
+    window.isElma = function(code) {
+        return window.SUPPLIER_CODES.ELMA.includes(String(code));
+    };
+
+    window.isFoods = function(code) {
+        return window.SUPPLIER_CODES.FOODS.includes(String(code));
+    };
+
+    window.escapeHtml = function(text) {
+        if (text === null || text === undefined) return '';
+        return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     };
 
     window.resolveSupplierPasta = function(rowPasta, fornecedorName) {
