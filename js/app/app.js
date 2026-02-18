@@ -1207,7 +1207,7 @@
                 html += `
                     <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer">
                         <span class="text-xs text-slate-300 truncate mr-2">${opt.label}</span>
-                        <input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-blue-600 bg-slate-700 border-slate-600 rounded focus:ring-blue-500 focus:ring-offset-slate-800">
+                        <input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
                     </label>
                 `;
             });
@@ -12230,10 +12230,10 @@ const supervisorGroups = new Map();
                 // Also update mobile active state
                 document.querySelectorAll('.mobile-nav-link').forEach(link => {
                     if (link.dataset.target === view) {
-                        link.classList.add('bg-blue-600', 'text-white');
+                        link.classList.add('bg-[#FF5E00]', 'text-white');
                         link.classList.remove('bg-slate-800', 'text-slate-300');
                     } else {
-                        link.classList.remove('bg-blue-600', 'text-white');
+                        link.classList.remove('bg-[#FF5E00]', 'text-white');
                         link.classList.add('bg-slate-800', 'text-slate-300');
                     }
                 });
@@ -12839,7 +12839,7 @@ const supervisorGroups = new Map();
                             </div>
                             <div class="text-xs text-slate-500">${city} • ${doc}</div>
                         </div>
-                         <div class="p-2 bg-slate-800 rounded-full group-hover:bg-blue-600 transition-colors text-slate-400 group-hover:text-white">
+                         <div class="p-2 bg-slate-800 rounded-full group-hover:bg-[#FF5E00] transition-colors text-slate-400 group-hover:text-white">
                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </div>
                     `;
@@ -13563,11 +13563,11 @@ const supervisorGroups = new Map();
             });
 
             const updateToggleStyles = (activeBtn, ...others) => {
-                activeBtn.classList.add('active', 'bg-blue-600', 'text-white');
+                activeBtn.classList.add('active', 'bg-[#FF5E00]', 'text-white');
                 activeBtn.classList.remove('text-slate-400');
                 others.forEach(btn => {
                     if (btn) {
-                        btn.classList.remove('active', 'bg-blue-600', 'text-white');
+                        btn.classList.remove('active', 'bg-[#FF5E00]', 'text-white');
                         btn.classList.add('text-slate-400');
                     }
                 });
@@ -15424,7 +15424,7 @@ const supervisorGroups = new Map();
                         </svg>
                         <p class="text-slate-300 font-medium mb-2">Arraste e solte o arquivo Excel aqui</p>
                         <p class="text-slate-500 text-sm mb-4">ou</p>
-                        <label for="import-goals-file" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg cursor-pointer transition-colors shadow-lg">
+                        <label for="import-goals-file" class="bg-[#FF5E00] hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg cursor-pointer transition-colors shadow-lg">
                             Selecionar Arquivo
                         </label>
                         <p class="text-xs text-slate-500 mt-4">Formatos suportados: .xlsx, .xls, .csv</p>
@@ -15963,7 +15963,7 @@ const supervisorGroups = new Map();
                     importTablePage = 1;
                     renderImportTable();
 
-                    analysisBadges.innerHTML = `<span class="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold">${updates.length} Registros Encontrados</span>`;
+                    analysisBadges.innerHTML = `<span class="bg-[#FF5E00] text-white px-3 py-1 rounded-full text-xs font-bold">${updates.length} Registros Encontrados</span>`;
                     analysisContainer.classList.remove('hidden');
 
                     // Force Scroll
@@ -16727,11 +16727,11 @@ const supervisorGroups = new Map();
     function toggleRackOption(value, element) {
         if (selectedRackOptions.has(value)) {
             selectedRackOptions.delete(value);
-            element.classList.remove('bg-blue-600');
+            element.classList.remove('bg-[#FF5E00]');
             element.querySelector('.check-icon').classList.add('hidden');
         } else {
             selectedRackOptions.add(value);
-            element.classList.add('bg-blue-600');
+            element.classList.add('bg-[#FF5E00]');
             element.querySelector('.check-icon').classList.remove('hidden');
         }
         updateRackInputState();
@@ -16777,10 +16777,10 @@ const supervisorGroups = new Map();
             Array.from(dropdown.children).forEach(div => {
                 const val = div.dataset.value;
                 if (selectedRackOptions.has(val)) {
-                    div.classList.add('bg-blue-600');
+                    div.classList.add('bg-[#FF5E00]');
                     div.querySelector('.check-icon').classList.remove('hidden');
                 } else {
-                    div.classList.remove('bg-blue-600');
+                    div.classList.remove('bg-[#FF5E00]');
                     div.querySelector('.check-icon').classList.add('hidden');
                 }
             });
@@ -17284,7 +17284,7 @@ const supervisorGroups = new Map();
                     </div>
                     <div class="text-xs text-slate-500">${c.cidade || ''} • ${c.cnpj_cpf || ''}</div>
                 </div>
-                 <div class="p-2 bg-slate-800 rounded-full group-hover:bg-blue-600 transition-colors text-slate-400 group-hover:text-white">
+                 <div class="p-2 bg-slate-800 rounded-full group-hover:bg-[#FF5E00] transition-colors text-slate-400 group-hover:text-white">
                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
             `;
@@ -17812,7 +17812,7 @@ const supervisorGroups = new Map();
                 btn.classList.remove('hidden');
                 btn.disabled = true;
                 btn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-700', 'text-slate-400');
-                btn.classList.remove('bg-blue-600', 'hover:bg-blue-500', 'text-white', 'shadow-lg'); // Remove active styles
+                btn.classList.remove('bg-[#FF5E00]', 'hover:bg-[#CC4A00]', 'text-white', 'shadow-lg'); // Remove active styles
                 btnText.textContent = 'Selecione Promotor';
                 // Remove previous click handler
                 btn.onclick = null;
@@ -17836,7 +17836,7 @@ const supervisorGroups = new Map();
             // Reset Button Styles (Enable)
             btn.disabled = false;
             btn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-700', 'text-slate-400');
-            btn.classList.add('bg-blue-600', 'hover:bg-blue-500', 'text-white', 'shadow-lg');
+            btn.classList.add('bg-[#FF5E00]', 'hover:bg-[#CC4A00]', 'text-white', 'shadow-lg');
             
              btn.classList.remove('hidden');
              statusArea.classList.remove('hidden');
@@ -17885,7 +17885,7 @@ const supervisorGroups = new Map();
                  statusMsg.textContent = 'Sem vínculo atual.';
                  
                  btnText.textContent = 'Adicionar';
-                 btn.className = 'px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm';
+                 btn.className = 'px-4 py-2 bg-[#FF5E00] hover:bg-[#CC4A00] text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm';
                  btn.onclick = () => handleWalletAction(codeKey, 'upsert');
              }
         }
@@ -18913,7 +18913,7 @@ const supervisorGroups = new Map();
 
                 const item = document.createElement('div');
                 // Dark Theme Classes with "Shiny" Hover (Left Border)
-                item.className = 'p-4 flex items-center justify-between transition-all duration-200 cursor-pointer border-b border-slate-800/50 bg-[#0f172a] hover:bg-slate-800/80 border-l-4 border-l-transparent hover:border-l-blue-500 group';
+                item.className = 'p-4 flex items-center justify-between transition-all duration-200 cursor-pointer border-b border-slate-800/50 bg-[#0f172a] hover:bg-slate-800/80 border-l-4 border-l-transparent hover:border-l-[#FF5E00] group';
                 item.innerHTML = `
                     <div class="flex items-center gap-4">
                         <div class="w-10 h-10 rounded-full ${statusColor} flex items-center justify-center text-white font-bold text-lg shadow-lg ring-2 ring-slate-800 group-hover:ring-slate-600 transition-all">
