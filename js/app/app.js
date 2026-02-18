@@ -2116,7 +2116,7 @@
 
         let currentGoalsSupplier = 'PEPSICO_ALL';
         let currentGoalsBrand = null;
-        let currentGoalsSvSupplier = '707';
+        let currentGoalsSvSupplier = window.SUPPLIER_CODES.EXTRUSADOS; // Default '707'
         let currentGoalsSvBrand = null;
         let currentGoalsSvData = [];
         let goalsTableState = {
@@ -2126,12 +2126,12 @@
             totalPages: 1
         };
         let goalsTargets = {
-            '707': { fat: 0, vol: 0 },
-            '708': { fat: 0, vol: 0 },
-            '752': { fat: 0, vol: 0 },
-            '1119_TODDYNHO': { fat: 0, vol: 0 },
-            '1119_TODDY': { fat: 0, vol: 0 },
-            '1119_QUAKER_KEROCOCO': { fat: 0, vol: 0 }
+            [window.SUPPLIER_CODES.ELMA[0]]: { fat: 0, vol: 0 },
+            [window.SUPPLIER_CODES.ELMA[1]]: { fat: 0, vol: 0 },
+            [window.SUPPLIER_CODES.ELMA[2]]: { fat: 0, vol: 0 },
+            [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]: { fat: 0, vol: 0 },
+            [window.SUPPLIER_CODES.VIRTUAL.TODDY]: { fat: 0, vol: 0 },
+            [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: { fat: 0, vol: 0 }
         };
         window.goalsTargets = goalsTargets;
 
@@ -2139,7 +2139,17 @@
         let globalGoalsTotalsCache = {};
         let globalClientGoals = new Map();
         window.globalClientGoals = globalClientGoals;
-        let goalsPosAdjustments = { 'ELMA_ALL': new Map(), 'FOODS_ALL': new Map(), 'PEPSICO_ALL': new Map(), '707': new Map(), '708': new Map(), '752': new Map(), '1119_TODDYNHO': new Map(), '1119_TODDY': new Map(), '1119_QUAKER_KEROCOCO': new Map() }; // Map<CodCli, Map<Key, {fat: 0, vol: 0}>>
+
+        let goalsPosAdjustments = {
+            'ELMA_ALL': new Map(), 'FOODS_ALL': new Map(), 'PEPSICO_ALL': new Map(),
+            [window.SUPPLIER_CODES.ELMA[0]]: new Map(),
+            [window.SUPPLIER_CODES.ELMA[1]]: new Map(),
+            [window.SUPPLIER_CODES.ELMA[2]]: new Map(),
+            [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]: new Map(),
+            [window.SUPPLIER_CODES.VIRTUAL.TODDY]: new Map(),
+            [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: new Map()
+        }; // Map<CodCli, Map<Key, {fat: 0, vol: 0}>>
+
         let goalsMixSaltyAdjustments = { 'PEPSICO_ALL': new Map(), 'ELMA_ALL': new Map(), 'FOODS_ALL': new Map() }; // Map<SellerName, adjustment>
         let goalsMixFoodsAdjustments = { 'PEPSICO_ALL': new Map(), 'ELMA_ALL': new Map(), 'FOODS_ALL': new Map() }; // Map<SellerName, adjustment>
         let quarterMonths = [];
@@ -2180,12 +2190,12 @@
             });
 
             globalGoalsMetrics = {
-                '707': createMetric(),
-                '708': createMetric(),
-                '752': createMetric(),
-                '1119_TODDYNHO': createMetric(),
-                '1119_TODDY': createMetric(),
-                '1119_QUAKER_KEROCOCO': createMetric(),
+                [window.SUPPLIER_CODES.ELMA[0]]: createMetric(),
+                [window.SUPPLIER_CODES.ELMA[1]]: createMetric(),
+                [window.SUPPLIER_CODES.ELMA[2]]: createMetric(),
+                [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]: createMetric(),
+                [window.SUPPLIER_CODES.VIRTUAL.TODDY]: createMetric(),
+                [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: createMetric(),
                 'ELMA_ALL': createMetric(),
                 'FOODS_ALL': createMetric(),
                 'PEPSICO_ALL': createMetric()
@@ -3159,15 +3169,15 @@
 
             const svColumns = [
                 { id: 'total_elma', label: 'TOTAL ELMA', type: 'standard', isAgg: true },
-                { id: '707', label: 'EXTRUSADOS', type: 'standard' },
-                { id: '708', label: 'NÃO EXTRUSADOS', type: 'standard' },
-                { id: '752', label: 'TORCIDA', type: 'standard' },
+                { id: window.SUPPLIER_CODES.ELMA[0], label: 'EXTRUSADOS', type: 'standard' },
+                { id: window.SUPPLIER_CODES.ELMA[1], label: 'NÃO EXTRUSADOS', type: 'standard' },
+                { id: window.SUPPLIER_CODES.ELMA[2], label: 'TORCIDA', type: 'standard' },
                 { id: 'tonelada_elma', label: 'KG ELMA', type: 'tonnage', isAgg: true },
                 { id: 'mix_salty', label: 'MIX SALTY', type: 'mix', isAgg: true },
                 { id: 'total_foods', label: 'TOTAL FOODS', type: 'standard', isAgg: true },
-                { id: '1119_TODDYNHO', label: 'TODDYNHO', type: 'standard' },
-                { id: '1119_TODDY', label: 'TODDY', type: 'standard' },
-                { id: '1119_QUAKER_KEROCOCO', label: 'QUAKER / KEROCOCO', type: 'standard' },
+                { id: window.SUPPLIER_CODES.VIRTUAL.TODDYNHO, label: 'TODDYNHO', type: 'standard' },
+                { id: window.SUPPLIER_CODES.VIRTUAL.TODDY, label: 'TODDY', type: 'standard' },
+                { id: window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO, label: 'QUAKER / KEROCOCO', type: 'standard' },
                 { id: 'tonelada_foods', label: 'KG FOODS', type: 'tonnage', isAgg: true },
                 { id: 'mix_foods', label: 'MIX FOODS', type: 'mix', isAgg: true },
                 { id: 'geral', label: 'GERAL', type: 'geral', isAgg: true },
@@ -4817,12 +4827,12 @@
                              if (window.SUPPLIER_CODES.ELMA.includes(codFor)) hasSale = true;
                         } else if (category === 'total_foods') {
                              if (codFor === '1119' && (desc.includes('TODDYNHO') || desc.includes('TODDY') || desc.includes('QUAKER') || desc.includes('KEROCOCO'))) hasSale = true;
-                        } else if (category === '707' && codFor === '707') hasSale = true;
-                        else if (category === '708' && codFor === '708') hasSale = true;
-                        else if (category === '752' && codFor === '752') hasSale = true;
-                        else if (category === '1119_TODDYNHO' && codFor === '1119' && desc.includes('TODDYNHO')) hasSale = true;
-                        else if (category === '1119_TODDY' && codFor === '1119' && desc.includes('TODDY') && !desc.includes('TODDYNHO')) hasSale = true;
-                        else if (category === '1119_QUAKER_KEROCOCO' && codFor === '1119' && (desc.includes('QUAKER') || desc.includes('KEROCOCO'))) hasSale = true;
+                        } else if (category === window.SUPPLIER_CODES.ELMA[0] && codFor === window.SUPPLIER_CODES.ELMA[0]) hasSale = true;
+                        else if (category === window.SUPPLIER_CODES.ELMA[1] && codFor === window.SUPPLIER_CODES.ELMA[1]) hasSale = true;
+                        else if (category === window.SUPPLIER_CODES.ELMA[2] && codFor === window.SUPPLIER_CODES.ELMA[2]) hasSale = true;
+                        else if (category === window.SUPPLIER_CODES.VIRTUAL.TODDYNHO && window.isFoods(codFor) && desc.includes('TODDYNHO')) hasSale = true;
+                        else if (category === window.SUPPLIER_CODES.VIRTUAL.TODDY && window.isFoods(codFor) && desc.includes('TODDY') && !desc.includes('TODDYNHO')) hasSale = true;
+                        else if (category === window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO && window.isFoods(codFor) && (desc.includes('QUAKER') || desc.includes('KEROCOCO'))) hasSale = true;
                     }
 
                     if (hasSale) count++;
@@ -5781,12 +5791,12 @@
                 if (category === 'total_foods') return codFor === '1119';
 
                 // Specifics
-                if (category === '707') return codFor === '707';
-                if (category === '708') return codFor === '708';
-                if (category === '752') return codFor === '752';
-                if (category === '1119_TODDYNHO') return codFor === '1119' && desc.includes('TODDYNHO');
-                if (category === '1119_TODDY') return codFor === '1119' && desc.includes('TODDY') && !desc.includes('TODDYNHO');
-                if (category === '1119_QUAKER_KEROCOCO') return codFor === '1119' && (desc.includes('QUAKER') || desc.includes('KEROCOCO'));
+                if (category === window.SUPPLIER_CODES.ELMA[0]) return codFor === window.SUPPLIER_CODES.ELMA[0];
+                if (category === window.SUPPLIER_CODES.ELMA[1]) return codFor === window.SUPPLIER_CODES.ELMA[1];
+                if (category === window.SUPPLIER_CODES.ELMA[2]) return codFor === window.SUPPLIER_CODES.ELMA[2];
+                if (category === window.SUPPLIER_CODES.VIRTUAL.TODDYNHO) return window.isFoods(codFor) && desc.includes('TODDYNHO');
+                if (category === window.SUPPLIER_CODES.VIRTUAL.TODDY) return window.isFoods(codFor) && desc.includes('TODDY') && !desc.includes('TODDYNHO');
+                if (category === window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO) return window.isFoods(codFor) && (desc.includes('QUAKER') || desc.includes('KEROCOCO'));
 
                 return false;
             };
@@ -6622,15 +6632,15 @@
             // Define Column Blocks (Metrics Config)
             const svColumns = [
                 { id: 'total_elma', label: 'TOTAL ELMA', type: 'standard', isAgg: true, colorClass: 'text-teal-400', components: window.SUPPLIER_CODES.ELMA },
-                { id: '707', label: 'EXTRUSADOS', type: 'standard', supplier: '707', brand: null, colorClass: 'text-slate-300' },
-                { id: '708', label: 'NÃO EXTRUSADOS', type: 'standard', supplier: '708', brand: null, colorClass: 'text-slate-300' },
-                { id: '752', label: 'TORCIDA', type: 'standard', supplier: '752', brand: null, colorClass: 'text-slate-300' },
+                { id: window.SUPPLIER_CODES.ELMA[0], label: 'EXTRUSADOS', type: 'standard', supplier: window.SUPPLIER_CODES.ELMA[0], brand: null, colorClass: 'text-slate-300' },
+                { id: window.SUPPLIER_CODES.ELMA[1], label: 'NÃO EXTRUSADOS', type: 'standard', supplier: window.SUPPLIER_CODES.ELMA[1], brand: null, colorClass: 'text-slate-300' },
+                { id: window.SUPPLIER_CODES.ELMA[2], label: 'TORCIDA', type: 'standard', supplier: window.SUPPLIER_CODES.ELMA[2], brand: null, colorClass: 'text-slate-300' },
                 { id: 'tonelada_elma', label: 'KG ELMA', type: 'tonnage', isAgg: true, colorClass: 'text-orange-400', components: window.SUPPLIER_CODES.ELMA },
                 { id: 'mix_salty', label: 'MIX SALTY', type: 'mix', isAgg: true, colorClass: 'text-teal-400', components: [] },
                 { id: 'total_foods', label: 'TOTAL FOODS', type: 'standard', isAgg: true, colorClass: 'text-yellow-400', components: window.SUPPLIER_CODES.VIRTUAL_LIST },
-                { id: '1119_TODDYNHO', label: 'TODDYNHO', type: 'standard', supplier: '1119', brand: 'TODDYNHO', colorClass: 'text-slate-300' },
-                { id: '1119_TODDY', label: 'TODDY', type: 'standard', supplier: '1119', brand: 'TODDY', colorClass: 'text-slate-300' },
-                { id: '1119_QUAKER_KEROCOCO', label: 'QUAKER / KEROCOCO', type: 'standard', supplier: '1119', brand: 'QUAKER_KEROCOCO', colorClass: 'text-slate-300' },
+                { id: window.SUPPLIER_CODES.VIRTUAL.TODDYNHO, label: 'TODDYNHO', type: 'standard', supplier: window.SUPPLIER_CODES.FOODS[0], brand: 'TODDYNHO', colorClass: 'text-slate-300' },
+                { id: window.SUPPLIER_CODES.VIRTUAL.TODDY, label: 'TODDY', type: 'standard', supplier: window.SUPPLIER_CODES.FOODS[0], brand: 'TODDY', colorClass: 'text-slate-300' },
+                { id: window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO, label: 'QUAKER / KEROCOCO', type: 'standard', supplier: window.SUPPLIER_CODES.FOODS[0], brand: 'QUAKER_KEROCOCO', colorClass: 'text-slate-300' },
                 { id: 'tonelada_foods', label: 'KG FOODS', type: 'tonnage', isAgg: true, colorClass: 'text-orange-400', components: window.SUPPLIER_CODES.VIRTUAL_LIST },
                 { id: 'mix_foods', label: 'MIX FOODS', type: 'mix', isAgg: true, colorClass: 'text-yellow-400', components: [] },
                 { id: 'geral', label: 'GERAL', type: 'geral', isAgg: true, colorClass: 'text-white', components: ['total_elma', 'total_foods'] },
@@ -11869,8 +11879,8 @@ const supervisorGroups = new Map();
             const itemsDoPedido = allSalesData.filter(item => item.PEDIDO == pedidoId);
             if (!orderInfo) return;
             modalPedidoId.textContent = pedidoId;
-            modalHeaderInfo.innerHTML = `<div><p class="font-bold">Cód. Cliente:</p><p>${orderInfo.CODCLI || 'N/A'}</p></div><div><p class="font-bold">Cliente:</p><p>${orderInfo.CLIENTE_NOME || 'N/A'}</p></div><div><p class="font-bold">Vendedor:</p><p>${orderInfo.NOME || 'N/A'}</p></div><div><p class="font-bold">Data Pedido:</p><p>${formatDate(orderInfo.DTPED)}</p></div><div><p class="font-bold">Data Faturamento:</p><p>${formatDate(orderInfo.DTSAIDA)}</p></div><div><p class="font-bold">Cidade:</p><p>${orderInfo.CIDADE || 'N/A'}</p></div>`;
-            modalTableBody.innerHTML = itemsDoPedido.map(item => { const unitPrice = (item.QTVENDA > 0) ? (item.VLVENDA / item.QTVENDA) : 0; return `<tr class="hover:bg-slate-700"><td class="px-4 py-2">(${item.PRODUTO}) ${item.DESCRICAO}</td><td class="px-4 py-2 text-right">${item.QTVENDA}</td><td class="px-4 py-2 text-right">${item.TOTPESOLIQ.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} Kg</td><td class="px-4 py-2 text-right"><div class="tooltip">${unitPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<span class="tooltip-text" style="width: max-content; left: auto; right: 0; transform: none; margin-left: 0;">Subtotal: ${item.VLVENDA.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div></td></tr>`; }).join('');
+            modalHeaderInfo.innerHTML = `<div><p class="font-bold">Cód. Cliente:</p><p>${window.escapeHtml(orderInfo.CODCLI || 'N/A')}</p></div><div><p class="font-bold">Cliente:</p><p>${window.escapeHtml(orderInfo.CLIENTE_NOME || 'N/A')}</p></div><div><p class="font-bold">Vendedor:</p><p>${window.escapeHtml(orderInfo.NOME || 'N/A')}</p></div><div><p class="font-bold">Data Pedido:</p><p>${formatDate(orderInfo.DTPED)}</p></div><div><p class="font-bold">Data Faturamento:</p><p>${formatDate(orderInfo.DTSAIDA)}</p></div><div><p class="font-bold">Cidade:</p><p>${window.escapeHtml(orderInfo.CIDADE || 'N/A')}</p></div>`;
+            modalTableBody.innerHTML = itemsDoPedido.map(item => { const unitPrice = (item.QTVENDA > 0) ? (item.VLVENDA / item.QTVENDA) : 0; return `<tr class="hover:bg-slate-700"><td class="px-4 py-2">(${window.escapeHtml(item.PRODUTO)}) ${window.escapeHtml(item.DESCRICAO)}</td><td class="px-4 py-2 text-right">${item.QTVENDA}</td><td class="px-4 py-2 text-right">${item.TOTPESOLIQ.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} Kg</td><td class="px-4 py-2 text-right"><div class="tooltip">${unitPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<span class="tooltip-text" style="width: max-content; left: auto; right: 0; transform: none; margin-left: 0;">Subtotal: ${item.VLVENDA.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div></td></tr>`; }).join('');
             modalFooterTotal.innerHTML = `<p class="text-lg font-bold text-teal-400">Mix de Produtos: ${itemsDoPedido.length}</p><p class="text-lg font-bold text-emerald-400">Total do Pedido: ${orderInfo.VLVENDA.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>`;
             modal.classList.remove('hidden');
         }
@@ -11903,7 +11913,7 @@ const supervisorGroups = new Map();
             const ramo = getVal(clientData, ['Descricao', 'ramo', 'DESCRICAO', 'Descricao']) || 'N/A';
             const ultimaCompra = getVal(clientData, ['Data da Última Compra', 'ultimaCompra', 'ULTIMACOMPRA']);
 
-            clientModalContent.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm"><div><p class="font-bold text-slate-400">Código:</p><p>${clientData['Código'] || 'N/A'}</p></div><div><p class="font-bold text-slate-400">CNPJ/CPF:</p><p>${cnpj}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Insc. Est. / Produtor:</p><p>${insc}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Razão Social:</p><p>${razao}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Nome Fantasia:</p><p>${fantasia}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Endereço:</p><p>${finalAddress}</p></div><div><p class="font-bold text-slate-400">Bairro:</p><p>${bairro}</p></div><div><p class="font-bold text-slate-400">Cidade:</p><p>${cidade}</p></div><div><p class="font-bold text-slate-400">CEP:</p><p>${cep}</p></div><div><p class="font-bold text-slate-400">Telefone:</p><p>${telefone}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">E-mail:</p><p>${email}</p></div><div><p class="font-bold text-slate-400">Ramo de Atividade:</p><p>${ramo}</p></div><div><p class="font-bold text-slate-400">Última Compra:</p><p>${formatDate(ultimaCompra)}</p></div></div>`;
+            clientModalContent.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm"><div><p class="font-bold text-slate-400">Código:</p><p>${window.escapeHtml(clientData['Código'] || 'N/A')}</p></div><div><p class="font-bold text-slate-400">CNPJ/CPF:</p><p>${window.escapeHtml(cnpj)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Insc. Est. / Produtor:</p><p>${window.escapeHtml(insc)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Razão Social:</p><p>${window.escapeHtml(razao)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Nome Fantasia:</p><p>${window.escapeHtml(fantasia)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Endereço:</p><p>${window.escapeHtml(finalAddress)}</p></div><div><p class="font-bold text-slate-400">Bairro:</p><p>${window.escapeHtml(bairro)}</p></div><div><p class="font-bold text-slate-400">Cidade:</p><p>${window.escapeHtml(cidade)}</p></div><div><p class="font-bold text-slate-400">CEP:</p><p>${window.escapeHtml(cep)}</p></div><div><p class="font-bold text-slate-400">Telefone:</p><p>${window.escapeHtml(telefone)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">E-mail:</p><p>${window.escapeHtml(email)}</p></div><div><p class="font-bold text-slate-400">Ramo de Atividade:</p><p>${window.escapeHtml(ramo)}</p></div><div><p class="font-bold text-slate-400">Última Compra:</p><p>${formatDate(ultimaCompra)}</p></div></div>`;
             clientModal.classList.remove('hidden');
         }
 
