@@ -2053,6 +2053,9 @@
         let comparisonChartType = 'daily';
         let comparisonMonthlyMetric = 'faturamento';
         let activeClientsForExport = [];
+        let positivacaoDataForExport = { active: [], inactive: [] };
+        let positivacaoActiveState = { page: 1, limit: 80, data: [] };
+        let positivacaoInactiveState = { page: 1, limit: 80, data: [] };
         let selectedMainCoords = [];
         let selectedMainCoCoords = [];
         let selectedMainPromotors = [];
@@ -13629,22 +13632,22 @@ const supervisorGroups = new Map();
             }
 
 
-            // FAB Setup for City View (Custom with multiple PDF options)
-            setupFab('city-fab-container', null, null); // Setup toggle only
+            // FAB Setup for Positivacao View (Custom with multiple PDF options)
+            setupFab('positivacao-fab-container', null, null); // Setup toggle only
 
-            const cityFab = document.getElementById('city-fab-container');
-            if (cityFab) {
-                const pdfActiveBtn = cityFab.querySelector('[data-action="pdf-active"]');
-                const pdfInactiveBtn = cityFab.querySelector('[data-action="pdf-inactive"]');
-                const excelBtn = cityFab.querySelector('[data-action="excel"]');
+            const positivacaoFab = document.getElementById('positivacao-fab-container');
+            if (positivacaoFab) {
+                const pdfActiveBtn = positivacaoFab.querySelector('[data-action="pdf-active"]');
+                const pdfInactiveBtn = positivacaoFab.querySelector('[data-action="pdf-inactive"]');
+                const excelBtn = positivacaoFab.querySelector('[data-action="excel"]');
 
                 if (pdfActiveBtn) {
                     const newBtn = pdfActiveBtn.cloneNode(true);
                     pdfActiveBtn.parentNode.replaceChild(newBtn, pdfActiveBtn);
                     newBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        cityFab.classList.remove('active');
-                        exportClientsPDF(activeClientsForExport, 'Relatório de Clientes Ativos no Mês', 'clientes_ativos', true);
+                        positivacaoFab.classList.remove('active');
+                        exportClientsPDF(positivacaoDataForExport.active, 'Relatório de Clientes Ativos no Mês', 'clientes_ativos', true);
                     });
                 }
 
@@ -13653,8 +13656,8 @@ const supervisorGroups = new Map();
                     pdfInactiveBtn.parentNode.replaceChild(newBtn, pdfInactiveBtn);
                     newBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        cityFab.classList.remove('active');
-                        exportClientsPDF(inactiveClientsForExport, 'Relatório de Clientes Inativos (Sem Compra)', 'clientes_inativos', false);
+                        positivacaoFab.classList.remove('active');
+                        exportClientsPDF(positivacaoDataForExport.inactive, 'Relatório de Clientes Inativos (Sem Compra)', 'clientes_inativos', false);
                     });
                 }
 
@@ -13663,11 +13666,11 @@ const supervisorGroups = new Map();
                     excelBtn.parentNode.replaceChild(newBtn, excelBtn);
                     newBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        cityFab.classList.remove('active');
+                        positivacaoFab.classList.remove('active');
                         const sheets = {};
-                        if(activeClientsForExport && activeClientsForExport.length) sheets['Ativos'] = activeClientsForExport;
-                        if(inactiveClientsForExport && inactiveClientsForExport.length) sheets['Inativos'] = inactiveClientsForExport;
-                        exportToExcel(sheets, 'Relatorio_Cidade');
+                        if(positivacaoDataForExport.active && positivacaoDataForExport.active.length) sheets['Ativos'] = positivacaoDataForExport.active;
+                        if(positivacaoDataForExport.inactive && positivacaoDataForExport.inactive.length) sheets['Inativos'] = positivacaoDataForExport.inactive;
+                        exportToExcel(sheets, 'Positivacao_Clientes');
                     });
                 }
             }
@@ -20501,6 +20504,40 @@ const supervisorGroups = new Map();
                 clearPositivacaoFiltersBtn._hasListener = true;
             }
 
+            const pActivePrev = document.getElementById('positivacao-active-prev-btn');
+            if (pActivePrev && !pActivePrev._hasListener) {
+                pActivePrev.addEventListener('click', () => {
+                    if(positivacaoActiveState.page > 1) {
+                        positivacaoActiveState.page--;
+                        renderPositivacaoActiveTable();
+                    }
+                });
+                pActivePrev._hasListener = true;
+
+                document.getElementById('positivacao-active-next-btn').addEventListener('click', () => {
+                    const max = Math.ceil(positivacaoActiveState.data.length / positivacaoActiveState.limit);
+                    if(positivacaoActiveState.page < max) {
+                        positivacaoActiveState.page++;
+                        renderPositivacaoActiveTable();
+                    }
+                });
+
+                document.getElementById('positivacao-inactive-prev-btn').addEventListener('click', () => {
+                    if(positivacaoInactiveState.page > 1) {
+                        positivacaoInactiveState.page--;
+                        renderPositivacaoInactiveTable();
+                    }
+                });
+
+                document.getElementById('positivacao-inactive-next-btn').addEventListener('click', () => {
+                    const max = Math.ceil(positivacaoInactiveState.data.length / positivacaoInactiveState.limit);
+                    if(positivacaoInactiveState.page < max) {
+                        positivacaoInactiveState.page++;
+                        renderPositivacaoInactiveTable();
+                    }
+                });
+            }
+
             // Initial Update
             updateAllPositivacaoFilters();
             updatePositivacaoView();
@@ -20651,21 +20688,47 @@ const supervisorGroups = new Map();
                 if (currentRenderId !== positivacaoRenderId) return;
 
                 activeList.sort((a, b) => b.total - a.total);
-                if (positivacaoActiveDetailTableBody) {
-                    positivacaoActiveDetailTableBody.innerHTML = activeList.slice(0, 500).map(data => {
-                        const novoLabel = data.isNew ? `<span class="ml-2 text-xs font-semibold text-purple-400 bg-purple-900/50 px-2 py-0.5 rounded-full">NOVO</span>` : '';
-                        let tooltipParts = [];
-                        if (data.pepsico > 0) tooltipParts.push(`PEPSICO: ${data.pepsico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
-                        if (data.multimarcas > 0) tooltipParts.push(`MULTIMARCAS: ${data.multimarcas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
-                        if (data.outros > 0.001) tooltipParts.push(`OUTROS: ${data.outros.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
-                        const tooltipText = tooltipParts.length > 0 ? tooltipParts.join('<br>') : 'Sem detalhamento';
+                inactiveList.sort((a, b) => (parseDate(b.ultimaCompra) || 0) - (parseDate(a.ultimaCompra) || 0));
 
-                        const rcaVal = (data.rcas && data.rcas.length > 0) ? data.rcas[0] : '-';
-                        const nome = data.fantasia || data.nomeCliente || 'N/A';
-                        const cidade = data.cidade || 'N/A';
-                        const bairro = data.bairro || 'N/A';
+                positivacaoDataForExport.active = activeList;
+                positivacaoDataForExport.inactive = inactiveList;
 
-                        return `<tr class="hover:bg-slate-700">
+                positivacaoActiveState.data = activeList;
+                positivacaoActiveState.page = 1;
+
+                positivacaoInactiveState.data = inactiveList;
+                positivacaoInactiveState.page = 1;
+
+                renderPositivacaoActiveTable();
+                renderPositivacaoInactiveTable();
+            });
+        }
+
+        function renderPositivacaoActiveTable() {
+            const tbody = document.getElementById('positivacao-active-detail-table-body');
+            if (!tbody) return;
+
+            const { page, limit, data } = positivacaoActiveState;
+            const total = data.length;
+            const start = (page - 1) * limit;
+            const end = start + limit;
+            const subset = data.slice(start, end);
+            const totalPages = Math.ceil(total / limit) || 1;
+
+            tbody.innerHTML = subset.map(data => {
+                const novoLabel = data.isNew ? `<span class="ml-2 text-xs font-semibold text-purple-400 bg-purple-900/50 px-2 py-0.5 rounded-full">NOVO</span>` : '';
+                let tooltipParts = [];
+                if (data.pepsico > 0) tooltipParts.push(`PEPSICO: ${data.pepsico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+                if (data.multimarcas > 0) tooltipParts.push(`MULTIMARCAS: ${data.multimarcas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+                if (data.outros > 0.001) tooltipParts.push(`OUTROS: ${data.outros.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+                const tooltipText = tooltipParts.length > 0 ? tooltipParts.join('<br>') : 'Sem detalhamento';
+
+                const rcaVal = (data.rcas && data.rcas.length > 0) ? data.rcas[0] : '-';
+                const nome = data.fantasia || data.nomeCliente || 'N/A';
+                const cidade = data.cidade || 'N/A';
+                const bairro = data.bairro || 'N/A';
+
+                return `<tr class="hover:bg-slate-700">
                             <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${data['Código']}">${data['Código']}</a></td>
                             <td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${nome}${novoLabel}</td>
                             <td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">
@@ -20678,20 +20741,34 @@ const supervisorGroups = new Map();
                             <td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(data.ultimaCompra)}</td>
                             <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td>
                         </tr>`;
-                    }).join('');
-                }
+            }).join('');
 
-                inactiveList.sort((a, b) => (parseDate(b.ultimaCompra) || 0) - (parseDate(a.ultimaCompra) || 0));
-                if (positivacaoInactiveDetailTableBody) {
-                    positivacaoInactiveDetailTableBody.innerHTML = inactiveList.slice(0, 500).map(client => {
-                        const novoLabel = client.isNewForInactiveLabel ? `<span class="ml-2 text-[9px] md:text-xs font-semibold text-purple-400 bg-purple-900/50 px-1 py-0.5 rounded-full">NOVO</span>` : '';
-                        const rcaVal = (client.rcas && client.rcas.length > 0) ? client.rcas[0] : '-';
-                        const nome = client.fantasia || client.nomeCliente || 'N/A';
-                        const cidade = client.cidade || 'N/A';
-                        const bairro = client.bairro || 'N/A';
-                        const ultCompra = client.ultimaCompra || client['Data da Última Compra'];
+            // Update Pagination Controls
+            document.getElementById('positivacao-active-prev-btn').disabled = page === 1;
+            document.getElementById('positivacao-active-next-btn').disabled = page >= totalPages;
+            document.getElementById('positivacao-active-page-info').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
+        }
 
-                        return `<tr class="hover:bg-slate-700">
+        function renderPositivacaoInactiveTable() {
+            const tbody = document.getElementById('positivacao-inactive-detail-table-body');
+            if (!tbody) return;
+
+            const { page, limit, data } = positivacaoInactiveState;
+            const total = data.length;
+            const start = (page - 1) * limit;
+            const end = start + limit;
+            const subset = data.slice(start, end);
+            const totalPages = Math.ceil(total / limit) || 1;
+
+            tbody.innerHTML = subset.map(client => {
+                const novoLabel = client.isNewForInactiveLabel ? `<span class="ml-2 text-[9px] md:text-xs font-semibold text-purple-400 bg-purple-900/50 px-1 py-0.5 rounded-full">NOVO</span>` : '';
+                const rcaVal = (client.rcas && client.rcas.length > 0) ? client.rcas[0] : '-';
+                const nome = client.fantasia || client.nomeCliente || 'N/A';
+                const cidade = client.cidade || 'N/A';
+                const bairro = client.bairro || 'N/A';
+                const ultCompra = client.ultimaCompra || client['Data da Última Compra'];
+
+                return `<tr class="hover:bg-slate-700">
                             <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${client['Código']}">${client['Código']}</a></td>
                             <td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${nome}${novoLabel}</td>
                             <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${cidade}</td>
@@ -20699,8 +20776,11 @@ const supervisorGroups = new Map();
                             <td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(ultCompra)}</td>
                             <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${rcaVal}</td>
                         </tr>`;
-                    }).join('');
-                }
-            });
+            }).join('');
+
+            // Update Pagination Controls
+            document.getElementById('positivacao-inactive-prev-btn').disabled = page === 1;
+            document.getElementById('positivacao-inactive-next-btn').disabled = page >= totalPages;
+            document.getElementById('positivacao-inactive-page-info').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
         }
 })();
