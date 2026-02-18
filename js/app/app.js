@@ -17088,6 +17088,7 @@ const supervisorGroups = new Map();
     function renderWalletTable() {
         const promoter = walletState.selectedPromoter;
         const tbody = document.getElementById('wallet-table-body');
+        const mobileList = document.getElementById('wallet-mobile-list');
         const empty = document.getElementById('wallet-empty-state');
         const badge = document.getElementById('wallet-count-badge');
         
@@ -17100,6 +17101,7 @@ const supervisorGroups = new Map();
         
         if (!tbody) return;
         tbody.innerHTML = '';
+        if (mobileList) mobileList.innerHTML = '';
         
         const dataset = embeddedData.clients;
         const isColumnar = dataset && dataset.values && dataset.columns;
@@ -17120,16 +17122,21 @@ const supervisorGroups = new Map();
         }
         
         let count = 0;
+        let renderedCount = 0;
         const fragment = document.createDocumentFragment();
+        const mobileFragment = document.createDocumentFragment();
+        const RENDER_LIMIT = 150;
         
         for(let i=0; i<len; i++) {
-             let rowCode, rowFantasia, rowRazao, rowCnpj;
+             let rowCode, rowFantasia, rowRazao, rowCnpj, rowUltimaCompra, rowBloqueio;
 
              if (isColumnar) {
                  rowCode = dataset.values['Código']?.[i] || dataset.values['CODIGO_CLIENTE']?.[i] || dataset.values['codigo_cliente']?.[i];
                  rowFantasia = dataset.values['Fantasia']?.[i] || dataset.values['FANTASIA']?.[i] || dataset.values['fantasia']?.[i] || dataset.values['NOMECLIENTE']?.[i] || dataset.values['nomeCliente']?.[i];
                  rowRazao = dataset.values['Razão Social']?.[i] || dataset.values['RAZAOSOCIAL']?.[i] || dataset.values['razaoSocial']?.[i];
                  rowCnpj = dataset.values['CNPJ/CPF']?.[i] || dataset.values['CNPJ']?.[i] || dataset.values['cnpj_cpf']?.[i];
+                 rowUltimaCompra = dataset.values['ultimacompra']?.[i] || dataset.values['ULTIMACOMPRA']?.[i] || dataset.values['Data da Última Compra']?.[i] || dataset.values['ultimaCompra']?.[i];
+                 rowBloqueio = dataset.values['bloqueio']?.[i] || dataset.values['BLOQUEIO']?.[i];
              } else if (Array.isArray(dataset)) {
                  const item = dataset[i];
                  if (!item) continue;
@@ -17137,6 +17144,8 @@ const supervisorGroups = new Map();
                  rowFantasia = item['Fantasia'] || item['fantasia'] || item['FANTASIA'] || item['nomeCliente'] || item['NOMECLIENTE'];
                  rowRazao = item['Razão Social'] || item['razaosocial'] || item['razaoSocial'] || item['RAZAOSOCIAL'];
                  rowCnpj = item['CNPJ/CPF'] || item['cnpj_cpf'] || item['CNPJ'];
+                 rowUltimaCompra = item['ultimacompra'] || item['ULTIMACOMPRA'] || item['Data da Última Compra'] || item['ultimaCompra'];
+                 rowBloqueio = item['bloqueio'] || item['BLOQUEIO'];
              } else {
                  continue; 
              }
@@ -17149,33 +17158,77 @@ const supervisorGroups = new Map();
              // Compare normalized values OR show all if no promoter selected
              if (!promoter || linkedPromoter === targetPromoter) {
                  count++;
-                 const tr = document.createElement('tr');
-                 tr.className = 'hover:bg-slate-800/50 transition-colors border-b border-slate-800/50 cursor-pointer';
-                 tr.setAttribute('onclick', `openWalletClientModal('${code}')`);
-                 tr.innerHTML = `
-                    <td data-label="Código" class="px-2 py-1.5 md:px-6 md:py-4 font-mono text-[10px] md:text-xs text-slate-400 w-16 md:w-32">${code}</td>
-                    <td data-label="Cliente" class="px-2 py-1.5 md:px-6 md:py-4">
-                        <div class="text-[10px] md:text-sm font-bold text-white truncate max-w-[120px] md:max-w-none">${rowFantasia || 'N/A'}</div>
-                        <div class="text-[9px] md:text-xs text-slate-500 truncate max-w-[120px] md:max-w-none">${rowRazao || ''}</div>
-                    </td>
-                    <td data-label="CNPJ" class="px-2 py-1.5 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${rowCnpj || ''}</td>
-                    <td class="px-2 py-1.5 md:px-6 md:py-4 text-center hidden md:table-cell">
-                         <button class="p-2 text-blue-400 hover:text-white hover:bg-blue-600 rounded-lg transition-all">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                         </button>
-                    </td>
-                    ${walletState.canEdit ? `
-                    <td class="px-2 py-2 md:px-6 md:py-4 text-center">
-                        <button class="text-red-500 hover:text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-colors" onclick="handleWalletAction('${code}', 'remove')">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                    </td>` : ''}
-                 `;
-                 fragment.appendChild(tr);
+
+                 // Apply Limit for DOM Rendering
+                 if (renderedCount < RENDER_LIMIT) {
+                     renderedCount++;
+
+                     // --- Logic for Mobile Card ---
+                     const isBlocked = rowBloqueio === 'S' || rowBloqueio === true || rowBloqueio === 'True' || rowBloqueio === 'B';
+                     const isPositivado = clientsWithSalesThisMonth.has(code);
+
+                     let daysSince = null;
+                     if (rowUltimaCompra) {
+                         const d = window.parseDate(rowUltimaCompra);
+                         if (d && !isNaN(d)) {
+                             const diff = Date.now() - d.getTime();
+                             daysSince = Math.floor(diff / (1000 * 60 * 60 * 24));
+                         }
+                     }
+
+                     const mobileCard = document.createElement('div');
+                     mobileCard.className = 'flex items-center gap-3 p-3 bg-[#0f172a] hover:bg-slate-800/50 transition-colors cursor-pointer border-b border-slate-800/50';
+                     mobileCard.setAttribute('onclick', `openWalletClientModal('${code}')`);
+
+                     mobileCard.innerHTML = `
+                        <!-- Info -->
+                        <div class="flex-grow min-w-0">
+                            <div class="flex items-center gap-1 text-[11px] text-slate-400 mb-0.5">
+                                <span class="font-mono text-slate-300 font-bold">${code}</span>
+                                <span>-</span>
+                                <span class="truncate">${rowCnpj || ''} ${rowRazao || rowFantasia || ''}</span>
+                            </div>
+                            <div class="text-sm font-bold text-white truncate">
+                                Fantasia: ${rowFantasia || 'N/A'}
+                            </div>
+                        </div>
+
+                        <!-- Status Icons -->
+                        <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                            ${isPositivado ? `
+                                <div class="text-green-500" title="Positivado no período">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                </div>
+                            ` : ''}
+                            ${daysSince !== null ? `
+                                <div class="flex items-center gap-1 text-red-500 text-xs font-bold" title="Dias sem venda">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                    ${daysSince}d
+                                </div>
+                            ` : ''}
+                        </div>
+                     `;
+                     mobileFragment.appendChild(mobileCard);
+
+                     // --- Desktop Row (Existing Logic) ---
+                     const tr = document.createElement('tr');
+                     tr.className = 'hover:bg-slate-800/50 transition-colors border-b border-slate-800/50 cursor-pointer';
+                     tr.setAttribute('onclick', `openWalletClientModal('${code}')`);
+                     tr.innerHTML = `
+                        <td data-label="Código" class="px-2 py-1.5 md:px-6 md:py-4 font-mono text-[10px] md:text-xs text-slate-400 w-16 md:w-32">${code}</td>
+                        <td data-label="Cliente" class="px-2 py-1.5 md:px-6 md:py-4">
+                            <div class="text-[10px] md:text-sm font-bold text-white truncate max-w-[120px] md:max-w-none">${rowFantasia || 'N/A'}</div>
+                            <div class="text-[9px] md:text-xs text-slate-500 truncate max-w-[120px] md:max-w-none">${rowRazao || ''}</div>
+                        </td>
+                        <td data-label="CNPJ" class="px-2 py-1.5 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${rowCnpj || ''}</td>
+                     `;
+                     fragment.appendChild(tr);
+                 }
              }
         }
         
         tbody.appendChild(fragment);
+        if (mobileList) mobileList.appendChild(mobileFragment);
         if (badge) badge.textContent = count;
         
         if (count === 0) empty.classList.remove('hidden');
