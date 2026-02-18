@@ -13019,12 +13019,9 @@ const supervisorGroups = new Map();
                     debouncedUpdateDashboard();
                 });
                 codcliFilter.addEventListener('input', (e) => {
-                    const val = e.target.value.trim();
-                    if (val && clientMapForKPIs.has(normalizeKey(val))) {
-                         handleClientFilterCascade(val, 'main');
+                    if (!e.target.value) {
+                         debouncedUpdateDashboard();
                     }
-
-                    debouncedUpdateDashboard();
                 });
                 // Make Lupa Icon Interactive
                 const codcliSearchIcon = document.getElementById('codcli-search-icon');
@@ -13049,13 +13046,11 @@ const supervisorGroups = new Map();
                     }
                 });
                 goalsGvCodcliFilter.addEventListener('input', (e) => {
-                    const val = e.target.value.trim();
-                    if (val && clientMapForKPIs.has(normalizeKey(val))) {
-                         handleClientFilterCascade(val, 'goals-gv');
-                    }
-                    if (typeof updateGoalsView === 'function') {
-                        goalsTableState.currentPage = 1;
-                        updateGoalsView();
+                    if (!e.target.value) {
+                        if (typeof updateGoalsView === 'function') {
+                            goalsTableState.currentPage = 1;
+                            updateGoalsView();
+                        }
                     }
                 });
                 // Make Goals Lupa Icon Interactive
@@ -20934,17 +20929,14 @@ const supervisorGroups = new Map();
             // Standard from CSV parser: keys are UPPERCASE of DB columns.
             // DB: cod_cliente -> CSV: COD_CLIENTE
 
-            // Optimized read with Dual Case Check (Lowercase and Uppercase)
-            const getVal = (i, col) => {
-                const val = isCol ? (rawTitulos._data[col] ? rawTitulos._data[col][i] : undefined) : rawTitulos[i][col];
-                if (val !== undefined) return val;
-                // Try Uppercase
-                const colUpper = col.toUpperCase();
-                return isCol ? (rawTitulos._data[colUpper] ? rawTitulos._data[colUpper][i] : undefined) : rawTitulos[i][colUpper];
-            };
+            // Optimized read
+            const getVal = (i, col) => isCol ? (rawTitulos._data[col] ? rawTitulos._data[col][i] : undefined) : rawTitulos[i][col];
 
             let totalReceber = 0;
-            
+            let totalVencido = 0; // > today? User said > 60 days for tag, but maybe > 0 for overdue?
+            // User requirement: "Valor a receber trás o valores que o cliente ainda nos deve".
+            // Let's sum VL_RECEBER.
+
             let countCritical = 0;
             const today = new Date();
             today.setHours(0,0,0,0);
@@ -20965,18 +20957,10 @@ const supervisorGroups = new Map();
                     totalReceber += valReceber;
 
                     let isCritical = false;
-                    let daysOverdue = 0;
-
-                    if (dtVenc && valReceber > 0) {
-                        if (dtVenc < criticalDate) {
-                            isCritical = true;
-                            countCritical++;
-                        }
-                        // Calculate days overdue if past due
-                        if (dtVenc < today) {
-                             const diffTime = Math.abs(today - dtVenc);
-                             daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                        }
+                    if (dtVenc && dtVenc < criticalDate && valReceber > 0) {
+                        isCritical = true;
+                        countCritical++; // Count of titles or clients? Requirement said "highlight CLIENT".
+                        // But table is titles. So counting titles here.
                     }
 
                     // Enrich Data for Table
@@ -20987,6 +20971,11 @@ const supervisorGroups = new Map();
                     let city = 'N/A';
 
                     if (clientObj) {
+                         // clientObj is either Object or Index (if IndexMap)
+                         // If IndexMap, we need to fetch it.
+                         // But clientMapForKPIs logic in app.js: "clientMapForKPIs.set(..., i)" (index) OR "set(..., c)" (obj)
+                         // Check initialization: "if (allClientsData instanceof ColumnarDataset) ... set(..., i)"
+
                          let c = clientObj;
                          if (typeof clientObj === 'number') {
                              c = allClientsData.get(clientObj);
@@ -20996,7 +20985,18 @@ const supervisorGroups = new Map();
                          city = c.cidade || 'N/A';
                          const rcaCode = String(c.rca1 || '').trim();
                          // Resolve RCA Name
+                         // optimizedData.rcaNameByCode might be available
                          if (optimizedData.rcaNameByCode && optimizedData.rcaNameByCode.has(rcaCode)) {
+                             // Wait, rcaNameByCode maps CodUsur -> Name?
+                             // Check init: "rcaNameByCode.set(codUsur, rca)" where rca is name.
+                             // Wait, map definition: "rcaCodeByName.set(rca, codUsur); rcaNameByCode.set(codUsur, rca);"
+                             // Here 'rca' variable comes from 'NOME' column (Seller Name).
+                             // So yes, we want Seller Name from Code.
+                             // But 'c.rca1' is the Code (e.g. 1001).
+                             // So we need 'rcaNameByCode'.
+                             // Let's check logic:
+                             // "if (rca && codUsur) { optimizedData.rcaCodeByName.set(rca, codUsur); optimizedData.rcaNameByCode.set(codUsur, rca); }"
+                             // Yes.
                              rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode;
                          } else {
                              rcaName = rcaCode;
@@ -21011,8 +21011,7 @@ const supervisorGroups = new Map();
                         dtVenc,
                         valReceber,
                         valOriginal,
-                        isCritical,
-                        daysOverdue
+                        isCritical
                     });
                 }
             }
@@ -21064,12 +21063,9 @@ const supervisorGroups = new Map();
                 const valOrig = t.valOriginal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const valOpen = t.valReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                let status;
-                if (t.isCritical) {
-                     status = `<span class="px-2 py-1 bg-red-900/50 text-red-300 text-[10px] font-bold rounded-full border border-red-800">${t.daysOverdue} Dias</span>`;
-                } else {
-                     status = `<span class="px-2 py-1 bg-green-900/50 text-green-300 text-[10px] font-bold rounded-full border border-green-800">Em Aberto</span>`;
-                }
+                const status = t.isCritical
+                    ? `<span class="px-2 py-1 bg-red-900/50 text-red-300 text-[10px] font-bold rounded-full border border-red-800">> 60 Dias</span>`
+                    : `<span class="px-2 py-1 bg-green-900/50 text-green-300 text-[10px] font-bold rounded-full border border-green-800">Em Aberto</span>`;
 
                 return `
                     <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors">
