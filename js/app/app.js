@@ -1785,12 +1785,9 @@
         const kpiPositivacaoPercentEl = document.getElementById('kpi-positivacao-percent');
 
 
-        const viewChartBtn = document.getElementById('viewChartBtn');
-        const viewTableBtn = document.getElementById('viewTableBtn');
         const viewComparisonBtn = document.getElementById('viewComparisonBtn');
         const viewStockBtn = document.getElementById('viewStockBtn');
         const chartView = document.getElementById('chartView');
-        const tableView = document.getElementById('tableView');
         const faturamentoBtn = document.getElementById('faturamentoBtn');
         const pesoBtn = document.getElementById('pesoBtn');
 
@@ -2052,15 +2049,10 @@
         const comparisonHolidayPickerBtn = document.getElementById('comparison-holiday-picker-btn');
         const calendarContainer = document.getElementById('calendar-container');
 
-        const tablePaginationControls = document.getElementById('table-pagination-controls');
-        const prevPageBtn = document.getElementById('prev-page-btn');
-        const nextPageBtn = document.getElementById('next-page-btn');
-        const pageInfoText = document.getElementById('page-info-text');
 
         // --- View State Management ---
         const viewState = {
             dashboard: { dirty: true, rendered: false },
-            pedidos: { dirty: true, rendered: false },
             comparativo: { dirty: true, rendered: false },
             cobertura: { dirty: true, rendered: false },
             cidades: { dirty: true, rendered: false },
@@ -2493,12 +2485,6 @@
         const coverageTipoVendaFilterText = document.getElementById('coverage-tipo-venda-filter-text');
         const coverageTipoVendaFilterDropdown = document.getElementById('coverage-tipo-venda-filter-dropdown');
 
-        let mainTableState = {
-            currentPage: 1,
-            itemsPerPage: 50,
-            filteredData: [],
-            totalPages: 1
-        };
 
         let mixTableState = {
             currentPage: 1,
@@ -4130,7 +4116,7 @@
             // Build Headers
             let headerHTML = `
                 <tr>
-                    <th rowspan="2" class="px-3 py-2 text-left bg-[#161e3d] z-50 sticky left-0 border-r border-b border-slate-700 w-32 shadow-lg">VENDEDOR</th>
+                    <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy z-50 sticky left-0 border-r border-b border-slate-700 w-32 shadow-lg">VENDEDOR</th>
                     <th colspan="2" class="px-2 py-1 text-center bg-blue-900/30 text-blue-400 border-r border-slate-700 border-b-0">GERAL</th>
             `;
 
@@ -4165,7 +4151,7 @@
                 const realTotalStr = row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
                 let cells = `
-                    <td class="px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 bg-[#1d2347] z-30 truncate" title="${row.name}">${getFirstName(row.name)}</td>
+                    <td class="px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 glass-panel-heavy z-30 truncate" title="${row.name}">${getFirstName(row.name)}</td>
                     <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs" title="Meta Contratual Mensal">${metaTotalStr}</td>
                     <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs">${realTotalStr}</td>
                 `;
@@ -4626,10 +4612,10 @@
             // 1. Build Headers (Same logic as Seller Table but with Client Info)
             let headerHTML = `
                 <tr>
-                    <th rowspan="2" class="px-2 py-2 text-center bg-[#161e3d] border-r border-b border-slate-700 w-16">CÓD</th>
-                    <th rowspan="2" class="px-3 py-2 text-left bg-[#161e3d] border-r border-b border-slate-700 min-w-[200px]">CLIENTE</th>
-                    <th rowspan="2" class="px-3 py-2 text-left bg-[#161e3d] border-r border-b border-slate-700 w-32">VENDEDOR</th>
-                    <th rowspan="2" class="px-3 py-2 text-left bg-[#161e3d] border-r border-b border-slate-700 w-32">CIDADE</th>
+                    <th rowspan="2" class="px-2 py-2 text-center glass-panel-heavy border-r border-b border-slate-700 w-16">CÓD</th>
+                    <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 min-w-[200px]">CLIENTE</th>
+                    <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 w-32">VENDEDOR</th>
+                    <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 w-32">CIDADE</th>
                     <th colspan="2" class="px-2 py-1 text-center bg-blue-900/30 text-blue-400 border-r border-slate-700 border-b-0">GERAL</th>
             `;
 
@@ -5042,7 +5028,7 @@
                 const textColor = styleClass.split(' ')[1];
 
                 return `
-                    <div class="bg-[#1e2a5a] border-l-4 ${styleClass.split(' ')[0]} rounded-r-lg p-4 shadow-md transition hover:-translate-y-1">
+                    <div class="glass-panel border-l-4 ${styleClass.split(' ')[0]} rounded-r-lg p-4 shadow-md transition hover:-translate-y-1">
                         <h3 class="font-bold text-lg text-white mb-3 border-b border-slate-700 pb-2">${item.title}</h3>
                         <div class="space-y-4">
                             <div>
@@ -7174,13 +7160,13 @@ const supervisorGroups = new Map();
                         svColumns.forEach(col => {
                             const d = seller.data[col.id] || { metaFat: 0, metaVol: 0, metaPos: 0, avgVol: 0, avgMix: 0, metaMix: 0, avgFat: 0, monthlyValues: {} };
                             if (col.type === 'standard') {
-                                const isReadOnly = col.isAgg; const inputClass = isReadOnly ? 'text-slate-400 font-bold opacity-70' : 'text-yellow-300'; const readonlyAttr = 'readonly disabled'; const cellBg = isReadOnly ? 'bg-glass' : 'bg-[#1e293b]';
+                                const isReadOnly = col.isAgg; const inputClass = isReadOnly ? 'text-slate-400 font-bold opacity-70' : 'text-yellow-300'; const readonlyAttr = 'readonly disabled'; const cellBg = isReadOnly ? 'bg-glass' : 'bg-glass';
                                 quarterMonths.forEach(m => bodyHTML += `<td class="px-1 py-1 text-right text-slate-400 border-r border-white/10/50 text-[10px] bg-blue-900/5">${(d.monthlyValues[m.key] || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`);
                                 bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 bg-blue-900/10 font-medium">${d.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right ${col.colorClass} border-r border-white/10/50 text-xs font-mono">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 ${cellBg} border-r border-white/10/50"><input type="text" value="${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none ${inputClass} text-xs font-mono" ${readonlyAttr}></td><td class="px-1 py-1 text-center text-slate-300 border-r border-white/10/50">${d.metaPos}</td><td class="px-1 py-1 ${cellBg} border-r border-white/10/50"><input type="text" value="${d.metaPos}" class="goals-sv-input bg-transparent text-center w-full outline-none ${inputClass} text-xs font-mono" ${readonlyAttr}></td>`;
                             } else if (col.type === 'tonnage') {
-                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-mono text-xs">${d.avgVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold font-mono text-xs">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 bg-[#1e293b] border-r border-white/10/50"><input type="text" value="${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled></td>`;
+                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-mono text-xs">${d.avgVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold font-mono text-xs">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 bg-glass border-r border-white/10/50"><input type="text" value="${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled></td>`;
                             } else if (col.type === 'mix') {
-                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50">${d.avgMix.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold">${d.metaMix}</td><td class="px-1 py-1 bg-[#1e293b] border-r border-white/10/50"><input type="text" value="${d.metaMix}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled></td>`;
+                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50">${d.avgMix.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold">${d.metaMix}</td><td class="px-1 py-1 bg-glass border-r border-white/10/50"><input type="text" value="${d.metaMix}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled></td>`;
                             } else if (col.type === 'geral') {
                                 bodyHTML += `<td class="px-1 py-1 text-right text-slate-400 border-r border-white/10/50 font-mono text-xs">${d.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right text-white font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="fat" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-fat">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right text-white font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="ton" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-ton">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-center text-white font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="pos" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-pos">${d.metaPos}</td>`;
                             } else if (col.type === 'pedev') {
@@ -8359,138 +8345,6 @@ const supervisorGroups = new Map();
         // Renamed/Wrapper for compatibility if needed, or update updateAllVisuals directly
         // updateProductBarChart was replaced.
 
-        function renderTable(data) {
-            const tableBody = document.getElementById('report-table-body');
-            if (!tableBody) return;
-
-            mainTableState.filteredData = data;
-            mainTableState.totalPages = Math.ceil(data.length / mainTableState.itemsPerPage);
-            if (mainTableState.currentPage > mainTableState.totalPages && mainTableState.totalPages > 0) {
-                mainTableState.currentPage = mainTableState.totalPages;
-            } else if (mainTableState.totalPages === 0) {
-                 mainTableState.currentPage = 1;
-            }
-
-            const startIndex = (mainTableState.currentPage - 1) * mainTableState.itemsPerPage;
-            const endIndex = startIndex + mainTableState.itemsPerPage;
-            const pageData = data.slice(startIndex, endIndex);
-
-            const getPosicaoBadge = (posicao) => {
-                if (!posicao) return document.createTextNode('-');
-                let classes = '';
-                switch (posicao) {
-                    case 'L': classes = 'bg-green-500/20 text-green-300'; break;
-                    case 'M': classes = 'bg-blue-500/20 text-blue-300'; break;
-                    case 'F': classes = 'bg-yellow-500/20 text-yellow-300'; break;
-                    default: classes = 'bg-slate-500/20 text-slate-300';
-                }
-
-                const span = document.createElement('span');
-                span.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${classes}`;
-                span.textContent = posicao;
-                return span;
-            };
-
-            // Otimização: Usar DocumentFragment para renderização eficiente
-            const fragment = document.createDocumentFragment();
-
-            pageData.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-700 transition-colors";
-
-                const createLink = (text, dataAttr, dataVal) => {
-                    const a = document.createElement('a');
-                    a.href = "#";
-                    a.className = "text-teal-400 hover:underline";
-                    a.dataset[dataAttr] = escapeHtml(dataVal);
-                    a.textContent = text; // textContent automatically escapes
-                    return a;
-                };
-
-                const tdPedido = document.createElement('td');
-                tdPedido.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm";
-                tdPedido.dataset.label = 'Nº Pedido';
-                tdPedido.appendChild(createLink(row.PEDIDO, 'pedidoId', row.PEDIDO));
-                tr.appendChild(tdPedido);
-
-                const tdCodCli = document.createElement('td');
-                tdCodCli.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm";
-                tdCodCli.dataset.label = 'Cliente';
-                tdCodCli.appendChild(createLink(row.CODCLI, 'codcli', row.CODCLI));
-                tr.appendChild(tdCodCli);
-
-                const tdVendedor = document.createElement('td');
-                tdVendedor.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs hidden md:table-cell";
-                tdVendedor.dataset.label = 'Vendedor';
-                tdVendedor.textContent = getFirstName(row.NOME);
-                tr.appendChild(tdVendedor);
-
-                const tdForn = document.createElement('td');
-                tdForn.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs hidden md:table-cell";
-                tdForn.dataset.label = 'Fornecedor';
-                tdForn.textContent = row.FORNECEDORES_STR || '';
-                tr.appendChild(tdForn);
-
-                const tdDtPed = document.createElement('td');
-                tdDtPed.className = "px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm text-center";
-                tdDtPed.dataset.label = 'Data Pedido';
-                tdDtPed.textContent = formatDate(row.DTPED);
-                tr.appendChild(tdDtPed);
-
-                // tdDtSaida REMOVED to align with header columns (8 headers vs 9 cells)
-                /*
-                const tdDtSaida = document.createElement('td');
-                tdDtSaida.className = "px-4 py-2 hidden";
-                tdDtSaida.dataset.label = 'Data Saída';
-                tdDtSaida.textContent = formatDate(row.DTSAIDA);
-                tr.appendChild(tdDtSaida);
-                */
-
-                const tdPeso = document.createElement('td');
-                tdPeso.className = "px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm hidden md:table-cell";
-                tdPeso.dataset.label = 'Peso';
-                tdPeso.textContent = (Number(row.TOTPESOLIQ) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' Kg';
-                tr.appendChild(tdPeso);
-
-                const tdValor = document.createElement('td');
-                tdValor.className = "px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm";
-                tdValor.dataset.label = 'Total';
-                tdValor.textContent = (Number(row.VLVENDA) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                tr.appendChild(tdValor);
-
-                const tdPosicao = document.createElement('td');
-                tdPosicao.className = "px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-xs";
-                tdPosicao.dataset.label = 'Status';
-                const badge = getPosicaoBadge(row.POSICAO);
-                if (typeof badge === 'string') tdPosicao.textContent = badge;
-                else tdPosicao.appendChild(badge);
-                tr.appendChild(tdPosicao);
-
-                fragment.appendChild(tr);
-            });
-
-            tableBody.innerHTML = '';
-            tableBody.appendChild(fragment);
-
-            if (data.length > 0) {
-                pageInfoText.textContent = `Página ${mainTableState.currentPage} de ${mainTableState.totalPages} (Total: ${data.length} pedidos)`;
-                prevPageBtn.disabled = mainTableState.currentPage === 1;
-                nextPageBtn.disabled = mainTableState.currentPage === mainTableState.totalPages;
-                tablePaginationControls.classList.remove('hidden');
-            } else {
-                pageInfoText.textContent = 'Nenhum pedido encontrado.';
-                prevPageBtn.disabled = true;
-                nextPageBtn.disabled = true;
-                tablePaginationControls.classList.add('hidden');
-            }
-        }
-
-        function isHoliday(date, holidays) {
-            if (!date || !holidays) return false;
-            const dateString = date.toISOString().split('T')[0];
-            return holidays.includes(dateString);
-        }
-
         function getWorkingDaysInMonth(year, month, holidays) {
             let count = 0;
             const date = new Date(Date.UTC(year, month, 1));
@@ -8722,9 +8576,6 @@ const supervisorGroups = new Map();
             kpiPositivacaoPercentEl.textContent = `${summary.positivacaoCount.toLocaleString('pt-BR')} PDVs`;
 
 
-            if (!tableView.classList.contains('hidden')) {
-                renderTable(filteredTableData);
-            }
 
             if (!chartView.classList.contains('hidden')) {
                 let chartData = summary.vendasPorCoord;
@@ -12195,7 +12046,6 @@ const supervisorGroups = new Map();
 
             const viewNameMap = {
                 dashboard: 'Visão Geral',
-                pedidos: 'Pedidos',
                 comparativo: 'Comparativo',
                 estoque: 'Estoque',
                 cobertura: 'Cobertura',
@@ -12286,8 +12136,6 @@ const supervisorGroups = new Map();
                         
                         if (document.getElementById('dashboard-kpi-container')) document.getElementById('dashboard-kpi-container').classList.remove('hidden');
                         if (chartView) chartView.classList.remove('hidden');
-                        if (tableView) tableView.classList.add('hidden');
-                        if (tablePaginationControls) tablePaginationControls.classList.add('hidden');
                         if (viewState.dashboard.dirty || !viewState.dashboard.rendered) {
                             // Defer execution to allow loader to render
                             setTimeout(() => {
@@ -12295,18 +12143,6 @@ const supervisorGroups = new Map();
                                 viewState.dashboard.rendered = true;
                                 viewState.dashboard.dirty = false;
                             }, 50);
-                        }
-                        break;
-                    case 'pedidos':
-                        showViewElement(mainDashboard);
-                        if (document.getElementById('dashboard-kpi-container')) document.getElementById('dashboard-kpi-container').classList.add('hidden');
-                        if (chartView) chartView.classList.add('hidden');
-                        if (tableView) tableView.classList.remove('hidden');
-                        if (tablePaginationControls) tablePaginationControls.classList.remove('hidden');
-                        if (viewState.pedidos.dirty || !viewState.pedidos.rendered) {
-                            updateAllVisuals();
-                            viewState.pedidos.rendered = true;
-                            viewState.pedidos.dirty = false;
                         }
                         break;
                     case 'comparativo':
@@ -12766,7 +12602,7 @@ const supervisorGroups = new Map();
 
         // --- Dashboard/Pedidos Filters ---
         const updateDashboard = () => {
-            markDirty('dashboard'); markDirty('pedidos');
+            markDirty('dashboard');
             updateAllVisuals();
         };
 
@@ -13115,7 +12951,7 @@ const supervisorGroups = new Map();
                 supervisorFilterDropdown.addEventListener('change', (e) => {
                     if (e.target.type === 'checkbox') {
                         const { value, checked } = e.target;
-                        mainTableState.currentPage = 1;
+
                         updateDashboard();
                     }
                 });
@@ -13136,7 +12972,7 @@ const supervisorGroups = new Map();
                             supplierDataSource = supplierDataSource.filter(s => s.OBSERVACAOFOR === currentFornecedor);
                         }
                         selectedMainSuppliers = updateSupplierFilter(fornecedorFilterDropdown, document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, supplierDataSource, 'main');
-                        mainTableState.currentPage = 1;
+
                         updateDashboard();
                     }
                 });
@@ -13147,7 +12983,7 @@ const supervisorGroups = new Map();
                 vendedorFilterDropdown.addEventListener('change', (e) => {
                     if (e.target.type === 'checkbox') {
                         const { value, checked } = e.target;
-                        mainTableState.currentPage = 1;
+
                         updateDashboard();
                     }
                 });
@@ -13161,18 +12997,18 @@ const supervisorGroups = new Map();
                         if (checked) selectedTiposVenda.push(value);
                         else selectedTiposVenda = selectedTiposVenda.filter(s => s !== value);
                         selectedTiposVenda = updateTipoVendaFilter(tipoVendaFilterDropdown, tipoVendaFilterText, selectedTiposVenda, allSalesData);
-                        mainTableState.currentPage = 1;
+
                         updateDashboard();
                     }
                 });
             }
 
-            if (posicaoFilter) posicaoFilter.addEventListener('change', () => { mainTableState.currentPage = 1; updateDashboard(); });
+            if (posicaoFilter) posicaoFilter.addEventListener('change', () => {  updateDashboard(); });
             const debouncedUpdateDashboard = debounce(updateDashboard, 400);
             if (codcliFilter) {
                 setupClientTypeahead('codcli-filter', 'codcli-filter-suggestions', (code) => {
                     handleClientFilterCascade(code, 'main');
-                    mainTableState.currentPage = 1;
+
                     debouncedUpdateDashboard();
                 });
                 codcliFilter.addEventListener('input', (e) => {
@@ -13180,7 +13016,7 @@ const supervisorGroups = new Map();
                     if (val && clientMapForKPIs.has(normalizeKey(val))) {
                          handleClientFilterCascade(val, 'main');
                     }
-                    mainTableState.currentPage = 1;
+
                     debouncedUpdateDashboard();
                 });
                 // Make Lupa Icon Interactive
@@ -13188,7 +13024,7 @@ const supervisorGroups = new Map();
                 if (codcliSearchIcon) {
                     codcliSearchIcon.addEventListener('click', () => {
                         codcliFilter.focus();
-                        mainTableState.currentPage = 1;
+
                         updateDashboard(); // Immediate update
                     });
                 }
@@ -13229,24 +13065,7 @@ const supervisorGroups = new Map();
                     });
                 }
             }
-            if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', () => { resetMainFilters(); markDirty('dashboard'); markDirty('pedidos'); });
-
-            if (prevPageBtn) {
-                prevPageBtn.addEventListener('click', () => {
-                    if (mainTableState.currentPage > 1) {
-                        mainTableState.currentPage--;
-                        renderTable(mainTableState.filteredData);
-                    }
-                });
-            }
-            if (nextPageBtn) {
-                nextPageBtn.addEventListener('click', () => {
-                    if (mainTableState.currentPage < mainTableState.totalPages) {
-                        mainTableState.currentPage++;
-                        renderTable(mainTableState.filteredData);
-                    }
-                });
-            }
+            if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', () => { resetMainFilters(); markDirty('dashboard'); });
 
             if (mainComRedeBtn) mainComRedeBtn.addEventListener('click', () => mainRedeFilterDropdown.classList.toggle('hidden'));
             if (mainRedeGroupContainer) {
@@ -13261,7 +13080,7 @@ const supervisorGroups = new Map();
                             selectedMainRedes = [];
                         }
                         updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
-                        mainTableState.currentPage = 1;
+
                         updateDashboard();
                     }
                 });
@@ -13273,7 +13092,7 @@ const supervisorGroups = new Map();
                         if (checked) selectedMainRedes.push(value);
                         else selectedMainRedes = selectedMainRedes.filter(r => r !== value);
                         selectedMainRedes = updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
-                        mainTableState.currentPage = 1;
+
                         updateDashboard();
                     }
                 });
@@ -13431,7 +13250,7 @@ const supervisorGroups = new Map();
                         supplierDataSource = supplierDataSource.filter(s => s.OBSERVACAOFOR === currentFornecedor);
                     }
                     selectedMainSuppliers = updateSupplierFilter(fornecedorFilterDropdown, document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, supplierDataSource, 'main');
-                    mainTableState.currentPage = 1;
+
 
                     updateDashboard();
                 });
@@ -14853,7 +14672,6 @@ const supervisorGroups = new Map();
         } else {
             window.location.hash = targetPage;
         }
-        renderTable(aggregatedOrders);
 
         // Helper to redistribute weekly goals
         function calculateAdjustedWeeklyGoals(totalGoal, realizedByWeek, weeks) {
@@ -18430,7 +18248,7 @@ const supervisorGroups = new Map();
         const dateDisplay = document.getElementById('roteiro-date-display');
         const countDisplay = document.getElementById('roteiro-client-count');
         const emptyState = document.getElementById('roteiro-empty-state');
-        const statsPanel = container.querySelector('.bg-slate-900'); // Stats panel at bottom of card
+        const statsPanel = document.getElementById('roteiro-stats-panel'); // Stats panel at bottom of card
         const searchInput = document.getElementById('clientes-search');
         
         // Check for Off Route (Future Date)

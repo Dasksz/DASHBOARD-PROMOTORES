@@ -387,10 +387,12 @@
         }
         tr {
             margin-bottom: 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            background-color: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem; /* rounded-xl */
+            background-color: rgba(15, 23, 42, 0.6); /* glass effect */
+            backdrop-filter: blur(8px);
             overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
         }
         td {
             display: flex;
@@ -896,7 +898,9 @@ html.light .bg-green-900\/30 {
     border-radius: 28px;
     overflow: hidden;
     box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
-    background: radial-gradient(circle at 75% 50%, #1e1b4b 0%, #020617 100%);
+    background: rgba(10, 10, 10, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     margin-bottom: 2rem; /* Replace mb-8 utility */
 }
