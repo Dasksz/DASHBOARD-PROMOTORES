@@ -48,7 +48,7 @@
             }
         }
     </script>
-    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
@@ -1121,7 +1121,7 @@
                         <!-- Ecrã Metas (Goals) -->
                         <div id="goals-view" class="hidden container mx-auto p-4 sm:p-6 lg:p-8">
                             <!-- Header with Title and Tabs -->
-                            <header class="mb-6 -mt-4 -mx-4 sm:-mt-6 sm:-mx-6 lg:-mt-8 lg:-mx-8 p-6 bg-gradient-to-r from-[#1e2a5a] to-[#0d1126] rounded-b-lg shadow-lg">
+                            <header class="mb-6 -mt-4 -mx-4 sm:-mt-6 sm:-mx-6 lg:-mt-8 lg:-mx-8 p-6 glass-panel-heavy rounded-b-lg shadow-lg">
                                 <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                                     <div class="flex items-center gap-4">
                                         <button class="sidebar-toggle text-white focus:outline-none">
@@ -1146,7 +1146,7 @@
         </svg>
         Limpar Metas
     </button>
-<div class="flex bg-[#161e3d] p-1 rounded-lg border border-slate-700" id="goals-tabs">
+<div class="flex glass-panel p-1 rounded-lg border border-slate-700" id="goals-tabs">
                                         <button data-tab="gv" class="px-6 py-2 rounded-md text-sm font-bold transition-colors bg-slate-700 text-white shadow-sm border border-teal-500 text-teal-500 active" id="btn-tab-gv">Rateio Metas</button>
                                         <button data-tab="sv" class="px-6 py-2 rounded-md text-sm font-bold text-slate-400 hover:text-white transition-colors border border-transparent" id="btn-tab-sv">Relatório</button>
                                     </div>
@@ -1218,7 +1218,7 @@
                                         </div>
 
                                         <!-- Totals Summary -->
-                                        <div class="flex flex-wrap lg:flex-nowrap gap-4 bg-[#161e3d] p-3 rounded-lg border border-slate-700/50 w-full lg:w-auto justify-end">
+                                        <div class="flex flex-wrap lg:flex-nowrap gap-4 glass-panel p-3 rounded-lg border border-slate-700/50 w-full lg:w-auto justify-end">
                                             <div class="text-right px-2">
                                                 <p class="text-[10px] uppercase text-slate-300 font-bold mb-1">Total Meta Fat.</p>
                                                 <p class="text-xl font-bold text-teal-400" id="summary-total-fat">R$ 0,00</p>
@@ -1248,7 +1248,7 @@
                                 </div>
 
                                 <!-- Meta Input Cards -->
-                                <div id="goals-input-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6 bg-[#161e3d] p-4 rounded-lg border border-slate-700/50">
+                                <div id="goals-input-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6 glass-panel p-4 rounded-lg border border-slate-700/50">
                                     <!-- Faturamento Card -->
                                     <div class="bg-[#064e3b] kpi-glow-base kpi-glow-green rounded-lg p-3 relative overflow-hidden group shadow-md">
                                         <label class="text-[10px] font-bold text-green-300 uppercase tracking-wider mb-1 block">META FATURAMENTO (R$)</label>
@@ -1376,13 +1376,13 @@
                                                     <th class="px-2 py-2 text-right w-24 bg-orange-900/20 text-orange-100 font-bold border-r border-b border-slate-700 text-[10px]">META KG</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="goals-gv-table-body" class="divide-y divide-slate-800 bg-[#151c36]">
+                                            <tbody id="goals-gv-table-body" class="divide-y divide-slate-800 bg-glass">
                                                 <!-- Rows will be populated by JS -->
                                             </tbody>
                                         </table>
                                     </div>
                                     <!-- Pagination Controls -->
-                                    <div id="goals-pagination-controls" class="hidden flex justify-between items-center p-4 bg-[#161e3d] border-t border-slate-700">
+                                    <div id="goals-pagination-controls" class="hidden flex justify-between items-center p-4 glass-panel border-t border-slate-700">
                                         <div class="flex gap-2">
                                             <button id="goals-gv-export-pdf-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center gap-2">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -1430,7 +1430,7 @@
                                     <div class="overflow-auto custom-scrollbar" style="max-height: 75vh;">
                                         <table class="min-w-full text-sm text-left text-slate-300 border-collapse" id="goals-sv-main-table">
                                             <!-- Headers populated by JS -->
-                                            <tbody id="goals-sv-table-body" class="divide-y divide-slate-800 bg-[#151c36]"></tbody>
+                                            <tbody id="goals-sv-table-body" class="divide-y divide-slate-800 bg-glass"></tbody>
                                         </table>
                                     </div>
                                 </div>
@@ -2273,7 +2273,7 @@
                 </div>
 
                 <!-- Daily Stats -->
-                <div class="p-4 glass-panel border-t border-slate-800">
+                <div id="roteiro-stats-panel" class="p-4 glass-panel border-t border-slate-800">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-sm font-bold text-white" id="roteiro-date-display">-- de --</span>
                         <span class="text-sm text-slate-400" id="roteiro-client-count">0 clientes</span>
