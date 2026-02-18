@@ -1279,3 +1279,30 @@ html.light .bg-green-900\/30 {
 .glass-panel .text-slate-500 { color: #94a3b8 !important; }
 .glass-panel .text-gray-400 { color: #cbd5e1 !important; }
 .glass-panel .text-gray-500 { color: #94a3b8 !important; }
+
+
+
+/* Update Modal Content to be Glass */
+.bg-modal-content {
+    background-color: rgba(15, 23, 42, 0.8) !important; /* Semi-transparent slate */
+    backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+
+/* --- GLASSMORPHISM TYPOGRAPHY FINAL CLEANUP --- */
+/* Ensure headings inside glass panels are bright white */
+.glass-panel h1, .glass-panel h2, .glass-panel h3, .glass-panel h4, .glass-panel h5, .glass-panel h6 {
+    color: #ffffff !important;
+}
+
+/* Ensure strong text is also white */
+.glass-panel strong, .glass-panel b {
+    color: #f8fafc !important;
+}
+
+/* Specific fix for inputs that might still be dark text on dark bg */
+.glass-panel input::placeholder {
+    color: #94a3b8 !important; /* Lighter placeholder */
+}
