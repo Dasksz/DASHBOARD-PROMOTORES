@@ -1016,8 +1016,8 @@ html.light .bg-green-900\/30 {
 /* --- Floating Action Button (FAB) Styles --- */
 .fab-container {
     position: fixed;
-    bottom: 5px;
-    right: 5px;
+    bottom: 2px;
+    right: 2px;
     z-index: 900; /* High enough but below modals */
     display: flex;
     flex-direction: column-reverse;
@@ -1118,7 +1118,7 @@ html.light .bg-green-900\/30 {
 /* Mobile adjustments */
 @media (max-width: 640px) {
     .fab-container {
-        bottom: 5px; /* Reduced margin */
-        right: 5px;
+        bottom: 2px; /* Reduced margin */
+        right: 2px;
     }
 }
