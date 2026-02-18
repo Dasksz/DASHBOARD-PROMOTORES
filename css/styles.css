@@ -1025,8 +1025,8 @@ html.light .bg-green-900\/30 {
 /* --- Floating Action Button (FAB) Styles --- */
 .fab-container {
     position: fixed;
-    bottom: 8px;
-    right: 8px;
+    bottom: 15px;
+    right: 15px;
     z-index: 900; /* High enough but below modals */
     display: flex;
     flex-direction: column;
