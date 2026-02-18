@@ -374,7 +374,6 @@
     <!-- Desktop Navigation -->
     <div id="desktop-nav-container" class="hidden lg:flex items-center gap-1 overflow-x-auto overflow-y-hidden no-scrollbar h-full max-w-4xl px-2 cursor-grab active:cursor-grabbing">
         <button data-target="dashboard" class="nav-link active-nav px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Visão Geral</button>
-        <button data-target="pedidos" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Pedidos</button>
         <button data-target="comparativo" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Comparativo</button>
         <button data-target="cobertura" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Cobertura</button>
         <button data-target="cidades" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Geo</button>
@@ -426,7 +425,6 @@
 <div id="mobile-menu" class="fixed top-16 left-0 w-full glass-panel border-b border-slate-700 z-40 hidden lg:hidden shadow-xl">
     <div class="grid grid-cols-2 gap-2 p-4">
         <button data-target="dashboard" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5">Visão Geral</button>
-        <button data-target="pedidos" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5">Pedidos</button>
         <button data-target="comparativo" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5">Comparativo</button>
         <button data-target="cobertura" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5">Cobertura</button>
         <button data-target="cidades" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5">Geo Mapa</button>
@@ -684,33 +682,6 @@
                     </div>
                 </div>
 
-                <!-- Table View (Hidden by default, triggered by Pedidos Nav) -->
-                <div id="tableView" class="hidden animate-fade-in-up">
-                    <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
-                        <div class="overflow-x-auto custom-scrollbar" style="max-height: 70vh;">
-                            <table class="min-w-full text-sm text-left text-slate-300">
-                                <thead class="text-[10px] md:text-xs text-slate-400 uppercase glass-panel sticky top-0 z-10">
-                                    <tr>
-                                        <th class="px-2 py-2 md:px-6 md:py-4 font-bold tracking-wider">Nº</th>
-                                        <th class="px-2 py-2 md:px-6 md:py-4 font-bold tracking-wider">Cliente</th>
-                                        <th class="px-2 py-2 md:px-6 md:py-4 font-bold tracking-wider hidden md:table-cell">Vendedor</th>
-                                        <th class="px-2 py-2 md:px-6 md:py-4 font-bold tracking-wider hidden md:table-cell">Fornecedor</th>
-                                        <th class="px-2 py-2 md:px-6 md:py-4 font-bold tracking-wider text-center">Data</th>
-                                        <th class="px-2 py-2 md:px-6 md:py-4 font-bold tracking-wider text-right hidden md:table-cell">Peso</th>
-                                        <th class="px-2 py-2 md:px-6 md:py-4 font-bold tracking-wider text-right">Total</th>
-                                        <th class="px-2 py-2 md:px-6 md:py-4 font-bold tracking-wider text-center">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="report-table-body" class="divide-y divide-slate-800/50"></tbody>
-                            </table>
-                        </div>
-                        <div id="table-pagination-controls" class="hidden p-4 glass-panel border-t border-slate-800 flex justify-between items-center">
-                            <button id="prev-page-btn" class="glass-panel hover:bg-white/5 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
-                            <span id="page-info-text" class="text-slate-400 text-xs font-medium"></span>
-                            <button id="next-page-btn" class="glass-panel hover:bg-white/5 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
-                        </div>
-                    </div>
-                </div>
             </main>
         </div>
     </div>
