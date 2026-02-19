@@ -12,7 +12,7 @@
             history: ['CODCLI', 'NOME', 'SUPERV', 'PEDIDO', 'CODUSUR', 'CODSUPERVISOR', 'DTPED', 'DTSAIDA', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'POSICAO', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX'],
             hierarchy: ['COD COORD.', 'COORDENADOR', 'COD CO-COORD.', 'CO-COORDENADOR', 'COD PROMOTOR', 'PROMOTOR'],
             titulos: ['CODCLI', 'VLRECEBER', 'DTVENC', 'VLTITULOS', 'QTTITRECEBER', 'QTTITULOS'],
-            nota_perfeita: ['Mês e Ano', 'Semana', 'Pesquisador', 'CNPJ', 'Canal', 'Subcanal', 'Nota Média Total', 'Auditorias Distintas', 'Auditorias Distintas Perfeitas']
+            nota_perfeita: [] // Validation handled internally with fuzzy matching
         };
 
         const columnFormats = {
@@ -660,6 +660,7 @@
         function processLojaPerfeita(filesData, clientCnpjMap) {
             const combined = filesData.flat();
             const grouped = new Map(); // Key: CodCli_Pesquisador
+            const uniqueClientsFound = new Set();
 
             // Helper to handle header variations (BOM, casing, spaces)
             const getVal = (row, keyPart) => {
@@ -682,15 +683,12 @@
 
             combined.forEach(row => {
                 // Fuzzy lookup for CNPJ column
-                const cnpjRaw = getVal(row, 'CNPJ');
+                const cnpjRaw = getVal(row, 'CNPJ') || getVal(row, 'CPF');
                 if (!cnpjRaw) return;
 
                 // Handle Scientific Notation for very long numbers (if passed as number)
                 let cnpjStr = String(cnpjRaw);
                 if (typeof cnpjRaw === 'number' && cnpjStr.includes('e')) {
-                    // Try to convert to expanded string if possible, or just rely on digit stripping if e+ is not huge
-                    // 1.23e+13 -> "123000..."
-                    // Simple hack: if it fits standard JS number precision, .toFixed(0) might work
                     try {
                        cnpjStr = cnpjRaw.toLocaleString('fullwide', { useGrouping: false });
                     } catch(e) {}
@@ -705,6 +703,8 @@
                 if (!codCli && cnpjClean.length <= 11) codCli = clientCnpjMap.get(cnpjClean.padStart(11, '0'));
 
                 if (!codCli) return; // Skip if client not found
+
+                uniqueClientsFound.add(codCli);
 
                 const pesquisador = String(getVal(row, 'Pesquisador') || '').trim().toUpperCase();
                 const key = `${codCli}_${pesquisador}`;
@@ -754,7 +754,7 @@
                  self.postMessage({ type: 'error', message: "Atenção: A planilha 'Loja Perfeita' foi processada, mas nenhum cliente foi identificado. Verifique se a coluna 'CNPJ' existe e se os CNPJs correspondem ao cadastro de clientes." });
             }
 
-            return Array.from(grouped.values());
+            return { data: Array.from(grouped.values()), uniqueCount: uniqueClientsFound.size };
         }
 
         self.onmessage = async (event) => {
@@ -1236,7 +1236,7 @@
                 }).filter(t => t.cod_cliente);
 
                 // Process Nota Perfeita
-                const finalNotaPerfeitaData = processLojaPerfeita([nota1DataRaw, nota2DataRaw], clientCnpjMap);
+                const { data: finalNotaPerfeitaData, uniqueCount: finalNotaPerfeitaCount } = processLojaPerfeita([nota1DataRaw, nota2DataRaw], clientCnpjMap);
 
                 // --- HASH COMPUTATION FOR CONDITIONAL UPLOADS ---
                 self.postMessage({ type: 'progress', status: 'Gerando assinaturas digitais...', percentage: 98 });
@@ -1265,6 +1265,7 @@
                 finalMetadata.push({ key: 'hash_hierarchy', value: hashes[8] });
                 finalMetadata.push({ key: 'hash_titulos', value: hashes[9] });
                 finalMetadata.push({ key: 'hash_nota_perfeita', value: hashes[10] });
+                finalMetadata.push({ key: 'count_nota_perfeita_clients', value: String(finalNotaPerfeitaCount) });
 
 
                 self.postMessage({ type: 'progress', status: 'Pronto!', percentage: 100 });
@@ -1282,6 +1283,7 @@
                         hierarchy: finalHierarchyData,
                         titulos: finalTitulosData,
                         nota_perfeita: finalNotaPerfeitaData,
+                        nota_perfeita_count: finalNotaPerfeitaCount, // Pass explicitly for easier access
                         product_details: finalProductDetailsData,
                         active_products: finalActiveProductsData,
                         metadata: finalMetadata,
