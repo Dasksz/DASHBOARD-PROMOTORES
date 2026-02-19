@@ -8207,12 +8207,23 @@ const supervisorGroups = new Map();
                 const tdProduct = document.createElement('td');
                 tdProduct.className = 'py-1 px-1 md:py-3 md:px-4';
                 tdProduct.setAttribute('data-label', 'Produto');
+                
+                // Custom truncation for mobile (16 chars max as requested)
+                const fullName = item.name || 'Desconhecido';
+                const truncatedName = fullName.length > 16 ? fullName.substring(0, 16) + '...' : fullName;
+
                 tdProduct.innerHTML = `
                     <div class="flex flex-col min-w-0">
-                        <span class="text-[10px] md:text-sm font-bold text-white group-hover:text-[#FF5E00] transition-colors truncate block" title="${item.name || 'Desconhecido'}">
-                            ${item.code} - ${item.name || 'Desconhecido'}
+                        <!-- Mobile View (Truncated by Logic) -->
+                        <span class="md:hidden text-[10px] font-bold text-white group-hover:text-[#FF5E00] transition-colors block leading-tight">
+                            ${item.code} - ${truncatedName}
                         </span>
-                        <span class="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-wide mt-0.5 truncate">${item.category || ''}</span>
+                        <!-- Desktop View (Truncated by CSS) -->
+                        <span class="hidden md:block text-sm font-bold text-white group-hover:text-[#FF5E00] transition-colors truncate" title="${fullName}">
+                            ${item.code} - ${fullName}
+                        </span>
+                        
+                        <span class="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-wide mt-0.5 truncate leading-none">${item.category || ''}</span>
                     </div>
                 `;
                 tr.appendChild(tdProduct);
