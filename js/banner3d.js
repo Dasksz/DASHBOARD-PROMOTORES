@@ -5,12 +5,22 @@
     let targetX = 0, targetY = 0;
     let animationId;
 
+    // Chester Variables
+    let chesterModel, chesterMixer, clock;
+    let chesterPath = null;
+    let chesterProgress = 0;
+    let chesterState = 'HIDDEN'; // HIDDEN, SWIMMING
+    let chesterSpeed = 0.002;
+    let chesterNextSpawnTime = 0;
+
     function initBanner() {
         const container = document.getElementById('banner-container');
         if (!container) return; // Guard clause
 
         let width = container.clientWidth;
         let height = container.clientHeight;
+
+        clock = new THREE.Clock(); // Initialize clock
 
         scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x020617, 0.02); 
@@ -53,6 +63,7 @@
 
         createCheetoFactory();
         createDust();
+        loadChester(); // Load Chester
 
         const updateInput = (x, y) => {
             const rect = container.getBoundingClientRect();
@@ -69,6 +80,140 @@
         
         window.addEventListener('resize', onWindowResize);
         animate();
+    }
+
+    function loadChester() {
+        // Ensure GLTFLoader is loaded
+        if (typeof THREE.GLTFLoader === 'undefined') {
+            console.warn("THREE.GLTFLoader not found. Chester will not be loaded.");
+            return;
+        }
+
+        const loader = new THREE.GLTFLoader();
+        loader.load('imagens/Swimming.glb', function (gltf) {
+            chesterModel = gltf.scene;
+
+            // Initial setup
+            chesterModel.scale.set(3.5, 3.5, 3.5); // Adjust scale to fit scene nicely
+            chesterModel.visible = false;
+
+            // Enable shadows
+            chesterModel.traverse((node) => {
+                if (node.isMesh) {
+                    node.castShadow = true;
+                    node.receiveShadow = true;
+                }
+            });
+
+            scene.add(chesterModel);
+
+            // Setup Animation
+            chesterMixer = new THREE.AnimationMixer(chesterModel);
+            if(gltf.animations.length > 0) {
+                const action = chesterMixer.clipAction(gltf.animations[0]);
+                action.play();
+            }
+
+            // Schedule first spawn
+            chesterNextSpawnTime = clock.getElapsedTime() + 0.5;
+        }, undefined, function (error) {
+            console.error('An error occurred loading Chester:', error);
+        });
+    }
+
+    function spawnChester() {
+        if (!chesterModel) return;
+
+        // Determine Direction (Left->Right or Right->Left)
+        const startLeft = Math.random() > 0.5;
+        const xStart = startLeft ? -45 : 45;
+        const xEnd = startLeft ? 45 : -45;
+
+        // Randomize Heights and Depth
+        // Z range: -10 (far) to 15 (close, in front of cheetos approx)
+        // Y range: -15 to 15
+
+        const p1 = new THREE.Vector3(xStart, (Math.random()-0.5)*20, (Math.random()-0.5)*20 - 5);
+
+        // Control points for bezier curve to make it "swim" nicely
+        const p2 = new THREE.Vector3(xStart * 0.4, (Math.random()-0.5)*25, (Math.random()-0.5)*15 + 5);
+        const p3 = new THREE.Vector3(xEnd * 0.4, (Math.random()-0.5)*25, (Math.random()-0.5)*15 + 5);
+
+        const p4 = new THREE.Vector3(xEnd, (Math.random()-0.5)*20, (Math.random()-0.5)*20 - 5);
+
+        chesterPath = new THREE.CatmullRomCurve3([p1, p2, p3, p4]);
+        chesterProgress = 0;
+        chesterState = 'SWIMMING';
+        chesterModel.visible = true;
+
+        // Speed variation: faster if further away usually, but random is good
+        // Base speed
+        const speedBase = 0.003;
+        chesterSpeed = speedBase + Math.random() * 0.003;
+    }
+
+    function updateChester(delta) {
+        if (!chesterModel || !clock) return;
+
+        // Update Animation
+        if (chesterMixer) chesterMixer.update(delta);
+
+        const time = clock.getElapsedTime();
+
+        if (chesterState === 'HIDDEN') {
+            if (time > chesterNextSpawnTime) {
+                spawnChester();
+            }
+        } else if (chesterState === 'SWIMMING') {
+            if (!chesterPath) return;
+
+            // Move along path
+            chesterProgress += chesterSpeed * (delta * 60); // frame independent-ish
+
+            if (chesterProgress >= 1.0) {
+                chesterState = 'HIDDEN';
+                chesterModel.visible = false;
+                chesterNextSpawnTime = time + 2.0 + Math.random() * 2.0; // Wait 2-4 seconds
+                return;
+            }
+
+            const point = chesterPath.getPointAt(chesterProgress);
+            const tangent = chesterPath.getTangentAt(chesterProgress);
+
+            chesterModel.position.copy(point);
+            // Make him look forward along the path
+            // We need to adjust orientation because GLB models often face +Z or +X by default
+            // Swimming animation usually assumes +Z forward. Let's lookAt target.
+            const lookTarget = point.clone().add(tangent);
+            chesterModel.lookAt(lookTarget);
+
+            // Adjust rotation if model is sideways (common in 3D assets)
+            // If he is swimming sideways, we might need: chesterModel.rotateY(Math.PI / 2);
+            // Assuming standard forward facing for now. If he swims sideways, I will adjust.
+
+            // Collision Avoidance Logic
+            // Push cheetos away if they are too close
+            const repulsionRadius = 5.0; // Size of "force field"
+            const forceStrength = 0.8;
+
+            cheetos.forEach(c => {
+                const distSq = c.position.distanceToSquared(chesterModel.position);
+                if (distSq < repulsionRadius * repulsionRadius) {
+                    const dist = Math.sqrt(distSq);
+                    // Vector from Chester to Cheeto
+                    const dir = new THREE.Vector3().subVectors(c.position, chesterModel.position).normalize();
+
+                    // Push strength inversely proportional to distance
+                    const push = (repulsionRadius - dist) * forceStrength;
+
+                    c.position.add(dir.multiplyScalar(push));
+
+                    // Also rotate cheeto a bit randomly to simulate turbulence
+                    c.rotation.x += Math.random() * 0.1;
+                    c.rotation.z += Math.random() * 0.1;
+                }
+            });
+        }
     }
 
     function onWindowResize() {
@@ -96,6 +241,8 @@
 
         animationId = requestAnimationFrame(animate);
 
+        const delta = clock ? clock.getDelta() : 0.016;
+
         targetX += (mouseX - targetX) * 0.05;
         targetY += (mouseY - targetY) * 0.05;
         
@@ -119,6 +266,9 @@
             dustParticles.rotation.y += 0.0007;
             dustParticles.rotation.x += 0.0002;
         }
+
+        // Update Chester
+        updateChester(delta);
 
         if(renderer && scene && camera) {
             renderer.render(scene, camera);
