@@ -1106,6 +1106,20 @@
         const { createClient } = supabase;
         const supabaseClient = window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // --- REMEMBER ME LOGIC (Pre-fill) ---
+        const emailInput = document.getElementById('email');
+        const rememberCheckbox = document.getElementById('remember-me');
+        if (emailInput && rememberCheckbox) {
+            const savedEmail = localStorage.getItem('prime_saved_email');
+            const savedUA = localStorage.getItem('prime_saved_ua');
+
+            // Check if saved data exists and matches current browser profile (User Agent)
+            if (savedEmail && savedUA === navigator.userAgent) {
+                emailInput.value = savedEmail;
+                rememberCheckbox.checked = true;
+            }
+        }
+
         // Gatekeeper Logic
         const loginButton = document.getElementById('login-google-btn');
         const telaLogin = document.getElementById('tela-login');
@@ -1286,6 +1300,16 @@
                 e.preventDefault();
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
+                const rememberMe = document.getElementById('remember-me');
+
+                // Handle Remember Me Storage
+                if (rememberMe && rememberMe.checked) {
+                    localStorage.setItem('prime_saved_email', email);
+                    localStorage.setItem('prime_saved_ua', navigator.userAgent);
+                } else {
+                    localStorage.removeItem('prime_saved_email');
+                    localStorage.removeItem('prime_saved_ua');
+                }
                 
                 const btn = formSignin.querySelector('button[type="submit"]');
                 const oldText = btn.textContent;
