@@ -21423,18 +21423,20 @@ const supervisorGroups = new Map();
         }
 
         tbody.innerHTML = subset.map(t => {
-            let scoreColor;
-            if (t.nota_media < 50) scoreColor = 'text-red-400';
-            else if (t.nota_media < 80) scoreColor = 'text-yellow-400';
-            else scoreColor = 'text-green-400';
+            let colorStyle;
+            // Use inline styles to guarantee visibility (Red-500, Yellow-500, Green-500)
+            // Added !important to override global table styles on mobile
+            if (t.nota_media < 50) colorStyle = 'color: #ef4444 !important;';
+            else if (t.nota_media < 80) colorStyle = 'color: #eab308 !important;';
+            else colorStyle = 'color: #22c55e !important;';
             
             return `
-                <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors">
+                <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors flex md:table-row justify-between items-center">
                     <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${t.codigo_cliente}</td>
-                    <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px]" title="${t.clientName}">${t.clientName}</td>
+                    <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] border-none" title="${t.clientName}">${t.clientName}</td>
                     <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${t.pesquisador}</td>
                     <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
-                    <td class="px-4 py-3 text-center font-bold ${scoreColor}">${t.nota_media.toFixed(1)}</td>
+                    <td class="px-4 py-3 text-center font-bold border-none" style="${colorStyle}">${t.nota_media.toFixed(1)}</td>
                 </tr>
             `;
         }).join('');
