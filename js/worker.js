@@ -66,8 +66,7 @@
                 'DTVENC': 'date'
             },
             nota_perfeita: {
-                'CNPJ': 'string', // Could be float, handled in parsing
-                'Nota Média Total': 'string' // Text format "82,6"
+                // Relaxed validation due to fuzzy matching in logic
             }
         };
 
@@ -662,53 +661,99 @@
             const combined = filesData.flat();
             const grouped = new Map(); // Key: CodCli_Pesquisador
 
+            // Helper to handle header variations (BOM, casing, spaces)
+            const getVal = (row, keyPart) => {
+                if (!row) return undefined;
+                // Direct access
+                if (row[keyPart] !== undefined) return row[keyPart];
+                // Fuzzy search
+                const keys = Object.keys(row);
+                const keyUpper = keyPart.toUpperCase();
+                // Check exact match (trimmed/upper)
+                let match = keys.find(k => k.trim().toUpperCase() === keyUpper);
+                if (match) return row[match];
+                
+                // Check partial containment (e.g. " CNPJ ", "CNPJ/CPF")
+                match = keys.find(k => k.toUpperCase().includes(keyUpper));
+                if (match) return row[match];
+                
+                return undefined;
+            };
+
             combined.forEach(row => {
-                const cnpjRaw = row['CNPJ'];
+                // Fuzzy lookup for CNPJ column
+                const cnpjRaw = getVal(row, 'CNPJ');
                 if (!cnpjRaw) return;
 
-                const cnpjClean = String(cnpjRaw).replace(/[^0-9]/g, '');
+                // Handle Scientific Notation for very long numbers (if passed as number)
+                let cnpjStr = String(cnpjRaw);
+                if (typeof cnpjRaw === 'number' && cnpjStr.includes('e')) {
+                    // Try to convert to expanded string if possible, or just rely on digit stripping if e+ is not huge
+                    // 1.23e+13 -> "123000..."
+                    // Simple hack: if it fits standard JS number precision, .toFixed(0) might work
+                    try {
+                       cnpjStr = cnpjRaw.toLocaleString('fullwide', { useGrouping: false });
+                    } catch(e) {}
+                }
 
+                const cnpjClean = cnpjStr.replace(/[^0-9]/g, '');
+                
                 // Lookup Client Code
                 let codCli = clientCnpjMap.get(cnpjClean);
-                if (!codCli) codCli = clientCnpjMap.get(cnpjClean.padStart(14, '0'));
-                if (!codCli) codCli = clientCnpjMap.get(cnpjClean.padStart(11, '0'));
+                // Also try padded versions during lookup
+                if (!codCli && cnpjClean.length <= 14) codCli = clientCnpjMap.get(cnpjClean.padStart(14, '0'));
+                if (!codCli && cnpjClean.length <= 11) codCli = clientCnpjMap.get(cnpjClean.padStart(11, '0'));
 
                 if (!codCli) return; // Skip if client not found
 
-                const pesquisador = String(row['Pesquisador'] || '').trim().toUpperCase();
+                const pesquisador = String(getVal(row, 'Pesquisador') || '').trim().toUpperCase();
                 const key = `${codCli}_${pesquisador}`;
-
-                const notaRaw = row['Nota Média Total'];
-                const nota = typeof notaRaw === 'number' ? notaRaw : parseFloat(String(notaRaw).replace(',', '.'));
-
+                
+                const notaRaw = getVal(row, 'Nota Média') || getVal(row, 'Nota Media'); // Fuzzy
+                const nota = typeof notaRaw === 'number' ? notaRaw : parseFloat(String(notaRaw || '0').replace(',', '.'));
+                
                 if (isNaN(nota)) return;
 
                 const current = grouped.get(key);
+                // Fuzzy lookups for other fields
+                const mesAno = getVal(row, 'Mês') || getVal(row, 'Mes');
+                const semana = getVal(row, 'Semana');
+                const canal = getVal(row, 'Canal');
+                const subcanal = getVal(row, 'Subcanal');
+                const audits = parseInt(getVal(row, 'Auditorias Distintas') || 0);
+                const perfectAudits = parseInt(getVal(row, 'Auditorias Distintas Perfeitas') || 0);
+
                 if (!current) {
                     grouped.set(key, {
                         codigo_cliente: codCli,
-                        mes_ano: row['Mês e Ano'],
-                        semana: row['Semana'],
+                        mes_ano: mesAno,
+                        semana: semana,
                         pesquisador: pesquisador,
                         cnpj_origem: String(cnpjRaw),
-                        canal: row['Canal'],
-                        subcanal: row['Subcanal'],
+                        canal: canal,
+                        subcanal: subcanal,
                         nota_media: nota,
-                        auditorias: parseInt(row['Auditorias Distintas'] || 0),
-                        auditorias_perfeitas: parseInt(row['Auditorias Distintas Perfeitas'] || 0)
+                        auditorias: audits,
+                        auditorias_perfeitas: perfectAudits
                     });
                 } else {
                     if (nota > current.nota_media) {
                         current.nota_media = nota;
-                        current.mes_ano = row['Mês e Ano'];
-                        current.semana = row['Semana'];
-                        current.canal = row['Canal'];
-                        current.subcanal = row['Subcanal'];
+                        current.mes_ano = mesAno;
+                        current.semana = semana;
+                        current.canal = canal;
+                        current.subcanal = subcanal;
                     }
-                    current.auditorias += parseInt(row['Auditorias Distintas'] || 0);
-                    current.auditorias_perfeitas += parseInt(row['Auditorias Distintas Perfeitas'] || 0);
+                    current.auditorias += audits;
+                    current.auditorias_perfeitas += perfectAudits;
                 }
             });
+
+            // Warn if result empty but input wasn't
+            if (combined.length > 0 && grouped.size === 0) {
+                 self.postMessage({ type: 'error', message: "Atenção: A planilha 'Loja Perfeita' foi processada, mas nenhum cliente foi identificado. Verifique se a coluna 'CNPJ' existe e se os CNPJs correspondem ao cadastro de clientes." });
+            }
+
             return Array.from(grouped.values());
         }
 
@@ -825,26 +870,26 @@
                 self.postMessage({ type: 'progress', status: 'Processando clientes...', percentage: 50 });
                 const clientMap = new Map();
                 // CNPJ Lookup Map for Nota Perfeita
-                const clientCnpjMap = new Map();
+                const clientCnpjMap = new Map(); 
 
                 // Pre-populate if referenceData (existing clients) is provided AND current clients file is missing or we want to merge?
                 // Logic: If clientsFile is provided, use it as source of truth. If not, use referenceData.
                 // The Uploader logic in app.js typically sends both if user uploads. If user only uploads 'Nota', clientsFile is null.
                 // But wait, readFile(null) returns []. So clientsDataRaw is empty array.
-
+                
                 let sourceClients = clientsDataRaw;
                 if (sourceClients.length === 0 && referenceData && referenceData.clients) {
                     // Use reference data if available and no new file
                     // But referenceData might be in different format (processed objects).
                     // We need a uniform way.
                     // Actually, for the general dashboard refresh, we need full processing.
-                    // If clients are missing, dashboard will break.
+                    // If clients are missing, dashboard will break. 
                     // BUT for "Nota Perfeita" ONLY upload, we might want to just process that and return partial result?
-                    // The Worker always returns a FULL state object (replacing embeddedData).
+                    // The Worker always returns a FULL state object (replacing embeddedData). 
                     // So we MUST have all data.
                     // Assumption: The App will pass the *existing* raw data back to worker if no file selected?
-                    // No, that's heavy.
-
+                    // No, that's heavy. 
+                    
                     // CORRECTION: The `admin-uploader` usually requires ALL core files to be present for a full refresh.
                     // If the user selects ONLY optional files, `app.js` should probably handle it differently or we are assuming a full re-upload.
                     // However, the prompt implies adding a field. Usually users upload everything together.
@@ -852,7 +897,7 @@
                     // Standard behavior of this app: Full Replacement.
                     // So if I upload Notes, I must upload Clients too?
                     // The user said: "nos faremos a logica para identificar o 'CNPJ/CPF' desse cliente...".
-
+                    
                     // Decision: I will populate `clientCnpjMap` from `clientsDataRaw`. If empty, try `referenceData`.
                     // `referenceData.cnpjMap` would be ideal.
                     if (referenceData && referenceData.cnpjMap) {
@@ -898,7 +943,7 @@
 
                     // Fallback logic for Name
                     const nomeCliente = (fantasia !== 'N/A') ? fantasia : razao;
-
+                    
                     const cnpjRaw = String(getVal(client, ['CNPJ/CPF', 'CNPJ', 'CPF', 'Cgc/Cpf']) || 'N/A');
                     const cnpjClean = cnpjRaw.replace(/[^0-9]/g, '');
                     if (cnpjClean) clientCnpjMap.set(cnpjClean, codCli);
@@ -927,6 +972,12 @@
                     };
                     if (clientRcaOverrides.has(codCli)) clientData.rcas.unshift(clientRcaOverrides.get(codCli));
                     clientMap.set(codCli, clientData);
+
+                    // ROBUST CNPJ MAPPING: Also index padded versions to handle "stripped zeros" issue in source files
+                    if (cnpjClean) {
+                        if (cnpjClean.length <= 11) clientCnpjMap.set(cnpjClean.padStart(11, '0'), codCli);
+                        if (cnpjClean.length <= 14) clientCnpjMap.set(cnpjClean.padStart(14, '0'), codCli);
+                    }
                 });
 
                 self.postMessage({ type: 'progress', status: 'Cruzando dados de vendas...', percentage: 70 });
