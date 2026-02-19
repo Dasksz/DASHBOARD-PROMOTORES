@@ -1351,3 +1351,62 @@ html.light .bg-green-900\/30 {
 .text-glass-secondary {
     color: rgba(255, 255, 255, 0.6) !important;
 }
+
+/* Specific Override for Top Products Table on Mobile */
+@media (max-width: 768px) {
+    #top-products-variation-table table tr {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        gap: 0.5rem;
+    }
+
+    #top-products-variation-table table td {
+        display: block;
+        border-bottom: none;
+        padding: 0;
+        min-height: auto;
+        text-align: left;
+    }
+
+    /* Fix: Ensure hidden columns stay hidden despite display: block override */
+    #top-products-variation-table table td.hidden {
+        display: none !important;
+    }
+
+    #top-products-variation-table table td:last-child {
+        border-bottom: none;
+    }
+
+    #top-products-variation-table table td::before {
+        content: none !important;
+        display: none;
+    }
+
+    /* Column Specifics */
+    #top-products-variation-table table td[data-label="Rank"] {
+        width: 1.5rem;
+        flex-shrink: 0;
+        text-align: center;
+        font-size: 0.75rem;
+        color: #64748b; /* slate-500 */
+        font-weight: 700;
+    }
+
+    #top-products-variation-table table td[data-label="Produto"] {
+        flex: 1;
+        width: 0; /* Enable truncation */
+        padding-right: 0.5rem;
+    }
+
+    #top-products-variation-table table td[data-label="Var."] {
+        width: auto;
+        flex-shrink: 0;
+        text-align: right;
+    }
+
+    /* Ensure flex container inside tdProduct behaves */
+    #top-products-variation-table table td[data-label="Produto"] > div {
+        align-items: flex-start;
+    }
+}
