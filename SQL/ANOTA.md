@@ -1,164 +1,73 @@
-/* IMPORTANTE: Para ativar o desfoque (Blur), adicione isso ao seu CSS:
+# Plano de Implementação: Visualização por Perfil (Supervisor/Vendedor)
 
-canvas {
+Este documento detalha o plano técnico para adaptar o dashboard para os perfis de **Supervisor de Vendas** e **Vendedor**, garantindo que a visualização de dados e filtros se ajuste automaticamente ao contexto do usuário.
 
-filter: blur(1px);
+## 1. Definição de Perfis e Escopo
 
-}
+Atualmente, o sistema foca em Admin, Coordenador, Co-Coordenador e Promotor. Novos perfis serão integrados:
 
-*/
+*   **Supervisor de Vendas:**
+    *   **Escopo:** Visualiza dados agregados de sua equipe de Vendedores (RCAs).
+    *   **Foco:** Vendas, Metas, Cobertura e Positivação por Vendedor.
+    *   **Filtros:** Deve ver filtros de "Vendedor" e "Supervisor" (se hierarquia permitir), mas **não** deve ver filtros de "Promotor" ou "Coordenador" (a menos que alinhado à estrutura de trade).
+    *   **Gráficos:** Rankings devem focar em Vendedores (RCAs).
 
+*   **Vendedor (RCA):**
+    *   **Escopo:** Apenas seus próprios dados (Clientes da sua carteira).
+    *   **Foco:** Auto-gestão, atingimento de meta pessoal, lista de clientes.
+    *   **Filtros:** Filtros de hierarquia (Supervisor, Vendedor) devem vir pré-selecionados e travados (ou ocultos).
+    *   **Gráficos:** Visualização de performance individual vs Meta.
 
+## 2. Estratégia de Implementação Técnica
 
-function createDeformedCheetoGeometry() {
+### A. Contexto de Usuário (`userHierarchyContext`)
+Aprimorar o objeto global `userHierarchyContext` (definido em `init.js`) para suportar os novos papéis.
 
-const geometry = new THREE.CylinderGeometry(0.4, 0.4, 3.6, 48, 64, true);
+*   Adicionar propriedades: `isSupervisor`, `isSeller`.
+*   Mapear o login do usuário para o código de Supervisor/Vendedor correspondente nas tabelas de dados (`data_sales`, `data_clients`).
 
-const pos = geometry.attributes.position;
+### B. Gestão de Filtros (Visibilidade Dinâmica)
 
-const vec = new THREE.Vector3();
+A lógica de filtros deve ser centralizada para "limpar" a interface baseada no papel.
 
+1.  **Identificação de Elementos:**
+    *   Padronizar IDs dos wrappers de filtros: `[view]-promotor-filter-wrapper`, `[view]-supervisor-filter-wrapper`, `[view]-vendedor-filter-wrapper`.
 
-// Parâmetros Finais
+2.  **Lógica de Ocultação (`init.js` ou `utils.js`):**
+    *   Criar função `adjustFiltersForUserRole()`:
+        *   **Se Supervisor:** Adicionar classe `.hidden` aos wrappers de *Promotor*, *Coordenador*, *Co-Coordenador*. Garantir que wrappers de *Vendedor* estejam visíveis.
+        *   **Se Vendedor:** Ocultar todos os filtros de seleção de equipe. Apenas filtros de produto/cliente permanecem.
 
-const bendIntensity = 0.3;
+### C. Adaptação dos Gráficos (Lógica "Context-Aware")
 
-const taperStart = 0.82;
+Os gráficos devem reagir à visibilidade dos filtros (como implementado na correção da página "Cobertura").
 
-const tipExponent = 0.714;
+*   **Padrão de Implementação:**
+    *   Verificar se o filtro "Pivô" (ex: Promotor) está visível.
+    *   `const showPromoterView = !document.getElementById('...-promotor-filter-wrapper').classList.contains('hidden');`
+    *   Se `showPromoterView` for `true` -> Agregar dados por `Promotor`.
+    *   Se `showPromoterView` for `false` -> Agregar dados por `Vendedor` (Comportamento padrão para Supervisores).
 
-const noiseInt = 0.12;
+### D. Ajuste de Consultas de Dados
 
-const noiseFreq = 4.1;
+*   **`getHierarchyFilteredClients`:**
+    *   Atualizar para filtrar clientes baseados no `rca1` (código do vendedor) se o usuário for Vendedor ou Supervisor.
+    *   Atualmente foca em `promotor`/`coord`. Adicionar ramo lógico para `supervisor`/`vendedor`.
 
+### E. Passos Práticos para Migração
 
-// Detalhes
+1.  **Database/Auth:** Garantir que a tabela de usuários do Supabase tenha coluna de `role` ou tabela de vínculo para identificar Supervisores/Vendedores.
+2.  **Frontend (Init):** Atualizar a lógica de `onAuthStateChange` para popular `window.userRole` corretamente com os novos papéis.
+3.  **Frontend (Views):**
+    *   Revisar cada view (`updateCoverageView`, `updateMixView`, etc.).
+    *   Aplicar a lógica de ocultação de filtros no início da renderização ou globalmente.
+    *   Ajustar labels de gráficos dinamicamente (ex: "Top 10 [Entidade]").
 
-const powderInt = 0.02;
+## 3. Exemplo Prático (View Cobertura)
 
-const holesInt = 0.015;
+A lógica já foi preparada na view de Cobertura:
+*   Se o usuário for **Supervisor**, o filtro de Promotor será oculto via CSS/JS na inicialização.
+*   O gráfico detectará a ausência do filtro e renderizará automaticamente "Ranking de Vendedores".
+*   O título do gráfico e botão de alternância se ajustarão para "Vendedores".
 
-
-const randomPhase = Math.random() * 100;
-
-
-
-for (let i = 0; i < pos.count; i++) {
-
-vec.fromBufferAttribute(pos, i);
-
-
-const halfLen = 1.8;
-
-const relativeY = vec.y / halfLen;
-
-
-
-// 1. Afinamento
-
-let radiusScale = 1.0;
-
-if (Math.abs(relativeY) > taperStart) {
-
-let distFromStart = (Math.abs(relativeY) - taperStart) / (1 - taperStart);
-
-distFromStart = Math.max(0, Math.min(1, distFromStart));
-
-
-if (distFromStart > 0.99) {
-
-radiusScale = 0;
-
-} else {
-
-const cosVal = Math.max(0, Math.cos(distFromStart * Math.PI / 2));
-
-radiusScale = Math.pow(cosVal, tipExponent);
-
-}
-
-}
-
-vec.x *= radiusScale;
-
-vec.z *= radiusScale;
-
-
-
-// 2. Curvatura
-
-const bendOffset = Math.pow(relativeY, 2) * bendIntensity;
-
-vec.x += bendOffset;
-
-
-
-let direction = new THREE.Vector3(vec.x - bendOffset, 0, vec.z);
-
-if (direction.lengthSq() > 0) direction.normalize();
-
-else direction.set(1,0,0);
-
-
-
-const noiseFactor = radiusScale > 0.1 ? 1.0 : radiusScale * 10;
-
-
-
-// 3. Texturas
-
-const noise = Math.sin(vec.x * noiseFreq + randomPhase)
-
-* Math.cos(vec.y * noiseFreq * 2 + randomPhase)
-
-* Math.sin(vec.z * noiseFreq + randomPhase);
-
-vec.addScaledVector(direction, noise * noiseInt * noiseFactor);
-
-
-
-if (powderInt > 0) {
-
-const powderFreq = 45.0;
-
-const powderNoise = Math.abs(Math.sin(vec.x * powderFreq) * Math.cos(vec.y * powderFreq) * Math.sin(vec.z * powderFreq));
-
-vec.addScaledVector(direction, powderNoise * powderInt * noiseFactor);
-
-}
-
-
-
-if (holesInt > 0) {
-
-const holeFreq = 60.0;
-
-const holeNoise = Math.abs(Math.cos(vec.x * holeFreq) * Math.sin(vec.y * holeFreq * 1.5) * Math.cos(vec.z * holeFreq));
-
-vec.addScaledVector(direction, -holeNoise * holesInt * noiseFactor);
-
-}
-
-
-
-pos.setXYZ(i, vec.x, vec.y, vec.z);
-
-}
-
-
-
-geometry.computeVertexNormals();
-
-return geometry;
-
-}
-
-
-
-// ATENÇÃO - MATERIAL:
-
-// material.roughness = 0.84;
-
-// material.clearcoat = 0.05;
-
-// material.color.set("#6f2f01");
+Esta abordagem deve ser replicada para **Mix**, **Positivação** e **Inovações**.
