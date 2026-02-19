@@ -12972,6 +12972,9 @@ const supervisorGroups = new Map();
                             document.getElementById('status-text').textContent = status;
                             document.getElementById('progress-bar').style.width = percentage + '%';
                         } else if (type === 'result') {
+                            if (data.nota_perfeita_count !== undefined && data.nota_perfeita_count > 0) {
+                                window.showToast('success', `${data.nota_perfeita_count} clientes identificados no arquivo 'Loja Perfeita'.`);
+                            }
                             enviarDadosParaSupabase(data);
                             worker.terminate();
                         } else if (type === 'error') {
