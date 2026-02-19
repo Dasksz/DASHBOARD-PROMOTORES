@@ -662,6 +662,38 @@
             const grouped = new Map(); // Key: CodCli_Pesquisador
             const uniqueClientsFound = new Set();
 
+            // Month names in Portuguese
+            const monthsPT = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+            // Helper to format date to "Month of Year"
+            const formatMonthYear = (val) => {
+                if (!val) return '';
+                let dateObj = null;
+
+                // Check if Excel Serial Date
+                if (typeof val === 'number') {
+                    // Excel dates > 1.6e12 are JS timestamps, but 'mes_ano' is unlikely to be a timestamp unless parsed as such.
+                    // Typical Excel serials are ~45000.
+                    if (val < 1000000) {
+                        dateObj = new Date(Math.round((val - 25569) * 86400 * 1000));
+                    } else {
+                        dateObj = new Date(val);
+                    }
+                } else {
+                    // Try parsing string
+                    dateObj = parseDate(val);
+                }
+
+                if (dateObj && !isNaN(dateObj.getTime())) {
+                    const m = dateObj.getUTCMonth(); // Use UTC to avoid shift
+                    const y = dateObj.getUTCFullYear();
+                    return `${monthsPT[m]} de ${y}`;
+                }
+
+                // Return original if not a valid date
+                return String(val).trim();
+            };
+
             // Helper to handle header variations (BOM, casing, spaces)
             const getVal = (row, keyPart) => {
                 if (!row) return undefined;
@@ -716,7 +748,8 @@
 
                 const current = grouped.get(key);
                 // Fuzzy lookups for other fields
-                const mesAno = getVal(row, 'Mês') || getVal(row, 'Mes');
+                const mesAnoRaw = getVal(row, 'Mês') || getVal(row, 'Mes');
+                const mesAno = formatMonthYear(mesAnoRaw);
                 const semana = getVal(row, 'Semana');
                 const canal = getVal(row, 'Canal');
                 const subcanal = getVal(row, 'Subcanal');
