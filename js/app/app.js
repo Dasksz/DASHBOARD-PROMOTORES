@@ -8193,12 +8193,13 @@ const supervisorGroups = new Map();
 
             data.forEach((item, index) => {
                 const tr = document.createElement('tr');
-                tr.className = 'border-b border-white/10/50 hover:bg-white/5/30 transition-colors group cursor-pointer';
+                tr.className = 'border-b border-white/10 hover:bg-white/5 transition-colors group cursor-pointer';
                 tr.onclick = () => openProductPerformanceModal(item);
 
                 // Rank
                 const tdRank = document.createElement('td');
-                tdRank.className = 'py-1 px-1 md:py-3 md:px-4 text-center text-slate-500 font-mono text-[10px] md:text-xs font-bold';
+                // Hide rank cell on mobile (will be inside product cell)
+                tdRank.className = 'py-1 px-1 md:py-3 md:px-4 text-center text-slate-500 font-mono text-[10px] md:text-xs font-bold hidden md:table-cell';
                 tdRank.setAttribute('data-label', 'Rank');
                 tdRank.textContent = index + 1;
                 tr.appendChild(tdRank);
@@ -8208,22 +8209,51 @@ const supervisorGroups = new Map();
                 tdProduct.className = 'py-1 px-1 md:py-3 md:px-4';
                 tdProduct.setAttribute('data-label', 'Produto');
 
-                // Custom truncation for mobile (16 chars max as requested)
+                // Custom truncation for mobile (Use CSS truncate instead of hard limit to maximize space)
                 const fullName = item.name || 'Desconhecido';
-                const truncatedName = fullName.length > 16 ? fullName.substring(0, 16) + '...' : fullName;
+
+                // Variation Badge Data
+                const badgeBg = item.variation >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20';
+                const arrow = item.variation >= 0 ? '▲' : '▼';
+                const sign = item.variation > 0 ? '+' : '';
+                const variationBadgeHtml = `
+                    <span class="inline-flex items-center justify-end px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-md text-[10px] md:text-xs font-bold border ${badgeBg} min-w-[50px] md:min-w-[80px]">
+                        ${sign}${item.variation.toFixed(1)}% ${arrow}
+                    </span>
+                `;
 
                 tdProduct.innerHTML = `
                     <div class="flex flex-col min-w-0">
-                        <!-- Mobile View (Truncated by Logic) -->
-                        <span class="md:hidden text-[10px] font-bold text-white group-hover:text-[#FF5E00] transition-colors block leading-tight">
-                            ${item.code} - ${truncatedName}
-                        </span>
-                        <!-- Desktop View (Truncated by CSS) -->
-                        <span class="hidden md:block text-sm font-bold text-white group-hover:text-[#FF5E00] transition-colors truncate" title="${fullName}">
-                            ${item.code} - ${fullName}
-                        </span>
+                        <!-- Mobile View (Compact Row: Rank - Code - Name ... Variation) -->
+                        <div class="md:hidden flex items-center justify-between w-full leading-tight">
+                            <div class="flex items-center min-w-0 flex-1 mr-2">
+                                <!-- Rank -->
+                                <span class="text-slate-500 font-mono text-[10px] font-bold mr-2 w-4 text-center flex-shrink-0">${index + 1}</span>
 
-                        <span class="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-wide mt-0.5 truncate leading-none">${item.category || ''}</span>
+                                <!-- Product Info -->
+                                <span class="text-[10px] font-bold text-white group-hover:text-[#FF5E00] transition-colors truncate block">
+                                    ${item.code} - ${fullName}
+                                </span>
+                            </div>
+
+                            <!-- Variation Badge (Right Aligned) -->
+                            <div class="flex-shrink-0">
+                                ${variationBadgeHtml}
+                            </div>
+                        </div>
+
+                        <!-- Mobile Manufacturer/Category (Secondary Line) -->
+                        <div class="md:hidden text-[9px] text-slate-500 uppercase tracking-wide ml-6 truncate leading-none mt-0.5">
+                            ${item.category || ''}
+                        </div>
+
+                        <!-- Desktop View (Original) -->
+                        <div class="hidden md:block">
+                            <span class="text-sm font-bold text-white group-hover:text-[#FF5E00] transition-colors truncate block" title="${fullName}">
+                                ${item.code} - ${fullName}
+                            </span>
+                            <span class="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5 truncate leading-none block">${item.category || ''}</span>
+                        </div>
                     </div>
                 `;
                 tr.appendChild(tdProduct);
@@ -8243,19 +8273,12 @@ const supervisorGroups = new Map();
                 `;
                 tr.appendChild(tdPerf);
 
-                // Variation Badge
+                // Variation Badge (Desktop Only)
                 const tdVar = document.createElement('td');
-                tdVar.className = 'py-1 px-1 md:py-3 md:px-4 text-right';
+                tdVar.className = 'py-1 px-1 md:py-3 md:px-4 text-right hidden md:table-cell';
                 tdVar.setAttribute('data-label', 'Var.');
-                const badgeBg = item.variation >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20';
-                const arrow = item.variation >= 0 ? '▲' : '▼';
-                const sign = item.variation > 0 ? '+' : '';
 
-                tdVar.innerHTML = `
-                    <span class="inline-flex items-center justify-end px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-md text-[10px] md:text-xs font-bold border ${badgeBg} min-w-[50px] md:min-w-[80px]">
-                        ${sign}${item.variation.toFixed(1)}% ${arrow}
-                    </span>
-                `;
+                tdVar.innerHTML = variationBadgeHtml;
                 tr.appendChild(tdVar);
 
                 container.appendChild(tr);
