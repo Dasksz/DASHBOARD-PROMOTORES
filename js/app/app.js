@@ -8208,9 +8208,11 @@ const supervisorGroups = new Map();
                 tdProduct.className = 'py-1 px-1 md:py-3 md:px-4';
                 tdProduct.setAttribute('data-label', 'Produto');
                 tdProduct.innerHTML = `
-                    <div class="flex flex-col">
-                        <span class="text-[10px] md:text-sm font-bold text-white group-hover:text-[#FF5E00] transition-colors truncate max-w-[120px] md:max-w-xs block" title="${item.name || 'Desconhecido'}">${item.name || 'Desconhecido'}</span>
-                        <span class="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">${item.category || ''}</span>
+                    <div class="flex flex-col min-w-0">
+                        <span class="text-[10px] md:text-sm font-bold text-white group-hover:text-[#FF5E00] transition-colors truncate block" title="${item.name || 'Desconhecido'}">
+                            ${item.code} - ${item.name || 'Desconhecido'}
+                        </span>
+                        <span class="text-[9px] md:text-[10px] text-slate-500 uppercase tracking-wide mt-0.5 truncate">${item.category || ''}</span>
                     </div>
                 `;
                 tr.appendChild(tdProduct);
