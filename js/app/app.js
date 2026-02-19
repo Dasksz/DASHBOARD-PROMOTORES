@@ -12528,7 +12528,20 @@ const supervisorGroups = new Map();
                 // Helper to perform conditional upload
                 const conditionalUpload = async (table, dataPart, hashKey, isCol, pk = 'id') => {
                     if (dataPart && (isCol ? dataPart.length > 0 : dataPart.length > 0)) {
-                        if (checkHash(hashKey, null)) {
+                        // Check if table is empty (Force upload if empty)
+                        let forceUpload = false;
+                        try {
+                             const { count, error } = await window.supabaseClient
+                                .from(table)
+                                .select('*', { count: 'exact', head: true });
+                             if (!error && count === 0) {
+                                 forceUpload = true;
+                                 console.log(`[Upload] Table ${table} is empty. Forcing upload.`);
+                             }
+                        } catch(e) {}
+
+                        // checkHash returns FALSE if match (skip), TRUE if mismatch (upload)
+                        if (checkHash(hashKey, null) || forceUpload) {
                             await clearTable(table, pk);
                             await uploadBatchParallel(table, dataPart, isCol);
                         } else {
