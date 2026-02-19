@@ -12907,8 +12907,8 @@ const supervisorGroups = new Map();
                     const innovationsFile = document.getElementById('innovations-file-input').files[0];
                     const hierarchyFile = document.getElementById('hierarchy-file-input').files[0];
                     const titulosFile = document.getElementById('titulos-file-input').files[0];
-                    const notaInvolves1File = document.getElementById('nota-involves-1-file-input').files[0];
-                    const notaInvolves2File = document.getElementById('nota-involves-2-file-input').files[0];
+                    const notaInvolves1File = document.getElementById('nota-involves-1-input').files[0];
+                    const notaInvolves2File = document.getElementById('nota-involves-2-input').files[0];
 
                     if (!salesFile && !historyFile && !hierarchyFile && !notaInvolves1File && !notaInvolves2File) {
                         // Titulos is optional, not required for basic operation
@@ -12943,7 +12943,7 @@ const supervisorGroups = new Map();
                     // So user MUST upload clients file for this to work perfectly.
                     // We should warn about this or just let it be.
 
-                    worker.postMessage({ salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolves1File, notaInvolves2File });
+                    worker.postMessage({ salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolvesFile1: notaInvolves1File, notaInvolvesFile2: notaInvolves2File });
 
                     worker.onmessage = (e) => {
                         const { type, data, status, percentage, message } = e.data;
