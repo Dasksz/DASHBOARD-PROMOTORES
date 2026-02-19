@@ -11,7 +11,8 @@
             products: ['Código', 'Qtde embalagem master(Compra)', 'Descrição', 'Nome do fornecedor', 'Fornecedor', 'Dt.Cadastro'],
             history: ['CODCLI', 'NOME', 'SUPERV', 'PEDIDO', 'CODUSUR', 'CODSUPERVISOR', 'DTPED', 'DTSAIDA', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'POSICAO', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX'],
             hierarchy: ['COD COORD.', 'COORDENADOR', 'COD CO-COORD.', 'CO-COORDENADOR', 'COD PROMOTOR', 'PROMOTOR'],
-            titulos: ['CODCLI', 'VLRECEBER', 'DTVENC', 'VLTITULOS', 'QTTITRECEBER', 'QTTITULOS']
+            titulos: ['CODCLI', 'VLRECEBER', 'DTVENC', 'VLTITULOS', 'QTTITRECEBER', 'QTTITULOS'],
+            nota_perfeita: ['Mês e Ano', 'Semana', 'Pesquisador', 'CNPJ', 'Canal', 'Subcanal', 'Nota Média Total', 'Auditorias Distintas', 'Auditorias Distintas Perfeitas']
         };
 
         const columnFormats = {
@@ -63,6 +64,10 @@
                 'QTTITRECEBER': 'number',
                 'QTTITULOS': 'number',
                 'DTVENC': 'date'
+            },
+            nota_perfeita: {
+                'CNPJ': 'string', // Could be float, handled in parsing
+                'Nota Média Total': 'string' // Text format "82,6"
             }
         };
 
@@ -653,19 +658,75 @@
             return hashHex;
         }
 
+        function processLojaPerfeita(filesData, clientCnpjMap) {
+            const combined = filesData.flat();
+            const grouped = new Map(); // Key: CodCli_Pesquisador
+
+            combined.forEach(row => {
+                const cnpjRaw = row['CNPJ'];
+                if (!cnpjRaw) return;
+
+                const cnpjClean = String(cnpjRaw).replace(/[^0-9]/g, '');
+
+                // Lookup Client Code
+                let codCli = clientCnpjMap.get(cnpjClean);
+                if (!codCli) codCli = clientCnpjMap.get(cnpjClean.padStart(14, '0'));
+                if (!codCli) codCli = clientCnpjMap.get(cnpjClean.padStart(11, '0'));
+
+                if (!codCli) return; // Skip if client not found
+
+                const pesquisador = String(row['Pesquisador'] || '').trim().toUpperCase();
+                const key = `${codCli}_${pesquisador}`;
+
+                const notaRaw = row['Nota Média Total'];
+                const nota = typeof notaRaw === 'number' ? notaRaw : parseFloat(String(notaRaw).replace(',', '.'));
+
+                if (isNaN(nota)) return;
+
+                const current = grouped.get(key);
+                if (!current) {
+                    grouped.set(key, {
+                        codigo_cliente: codCli,
+                        mes_ano: row['Mês e Ano'],
+                        semana: row['Semana'],
+                        pesquisador: pesquisador,
+                        cnpj_origem: String(cnpjRaw),
+                        canal: row['Canal'],
+                        subcanal: row['Subcanal'],
+                        nota_media: nota,
+                        auditorias: parseInt(row['Auditorias Distintas'] || 0),
+                        auditorias_perfeitas: parseInt(row['Auditorias Distintas Perfeitas'] || 0)
+                    });
+                } else {
+                    if (nota > current.nota_media) {
+                        current.nota_media = nota;
+                        current.mes_ano = row['Mês e Ano'];
+                        current.semana = row['Semana'];
+                        current.canal = row['Canal'];
+                        current.subcanal = row['Subcanal'];
+                    }
+                    current.auditorias += parseInt(row['Auditorias Distintas'] || 0);
+                    current.auditorias_perfeitas += parseInt(row['Auditorias Distintas Perfeitas'] || 0);
+                }
+            });
+            return Array.from(grouped.values());
+        }
+
         self.onmessage = async (event) => {
-            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile } = event.data;
+            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolvesFile1, notaInvolvesFile2, referenceData } = event.data;
 
             try {
                 self.postMessage({ type: 'progress', status: 'Lendo arquivos...', percentage: 10 });
-                const [salesDataRaw, clientsDataRaw, productsDataRaw, historyDataRaw, innovationsDataRaw, hierarchyDataRaw, titulosDataRaw] = await Promise.all([
+                const [salesDataRaw, clientsDataRaw, productsDataRaw, historyDataRaw, innovationsDataRaw, hierarchyDataRaw, titulosDataRaw, nota1DataRaw, nota2DataRaw] = await Promise.all([
                     readFile(salesFile, 'sales'),
                     readFile(clientsFile, 'clients'),
                     readFile(productsFile, 'products'),
                     readFile(historyFile, 'history'),
                     readFile(innovationsFile, 'innovations'),
                     readFile(hierarchyFile, 'hierarchy'),
-                    readFile(titulosFile, 'titulos')
+                    readFile(titulosFile, 'titulos'),
+                    readFile(notaInvolvesFile1, 'nota_perfeita').catch(() => []), // Optional
+                    readFile(notaInvolvesFile2, 'nota_perfeita').catch(() => [])  // Optional
                 ]);
 
 
@@ -763,6 +824,41 @@
 
                 self.postMessage({ type: 'progress', status: 'Processando clientes...', percentage: 50 });
                 const clientMap = new Map();
+                // CNPJ Lookup Map for Nota Perfeita
+                const clientCnpjMap = new Map();
+
+                // Pre-populate if referenceData (existing clients) is provided AND current clients file is missing or we want to merge?
+                // Logic: If clientsFile is provided, use it as source of truth. If not, use referenceData.
+                // The Uploader logic in app.js typically sends both if user uploads. If user only uploads 'Nota', clientsFile is null.
+                // But wait, readFile(null) returns []. So clientsDataRaw is empty array.
+
+                let sourceClients = clientsDataRaw;
+                if (sourceClients.length === 0 && referenceData && referenceData.clients) {
+                    // Use reference data if available and no new file
+                    // But referenceData might be in different format (processed objects).
+                    // We need a uniform way.
+                    // Actually, for the general dashboard refresh, we need full processing.
+                    // If clients are missing, dashboard will break.
+                    // BUT for "Nota Perfeita" ONLY upload, we might want to just process that and return partial result?
+                    // The Worker always returns a FULL state object (replacing embeddedData).
+                    // So we MUST have all data.
+                    // Assumption: The App will pass the *existing* raw data back to worker if no file selected?
+                    // No, that's heavy.
+
+                    // CORRECTION: The `admin-uploader` usually requires ALL core files to be present for a full refresh.
+                    // If the user selects ONLY optional files, `app.js` should probably handle it differently or we are assuming a full re-upload.
+                    // However, the prompt implies adding a field. Usually users upload everything together.
+                    // IF they upload partially, they expect a merge?
+                    // Standard behavior of this app: Full Replacement.
+                    // So if I upload Notes, I must upload Clients too?
+                    // The user said: "nos faremos a logica para identificar o 'CNPJ/CPF' desse cliente...".
+
+                    // Decision: I will populate `clientCnpjMap` from `clientsDataRaw`. If empty, try `referenceData`.
+                    // `referenceData.cnpjMap` would be ideal.
+                    if (referenceData && referenceData.cnpjMap) {
+                        Object.entries(referenceData.cnpjMap).forEach(([k,v]) => clientCnpjMap.set(k, v));
+                    }
+                }
 
                 // Helper to get value from multiple possible keys
                 const getVal = (row, keys) => {
@@ -780,7 +876,7 @@
                     return undefined;
                 };
 
-                clientsDataRaw.forEach(client => {
+                sourceClients.forEach(client => {
                     const codCliRaw = getVal(client, ['Código', 'CODIGO', 'Codigo', 'Cod. Cliente', 'CODCLI', 'CodCliente']);
                     const codCli = normalizeKey(codCliRaw);
                     if (!codCli) return;
@@ -803,6 +899,10 @@
                     // Fallback logic for Name
                     const nomeCliente = (fantasia !== 'N/A') ? fantasia : razao;
 
+                    const cnpjRaw = String(getVal(client, ['CNPJ/CPF', 'CNPJ', 'CPF', 'Cgc/Cpf']) || 'N/A');
+                    const cnpjClean = cnpjRaw.replace(/[^0-9]/g, '');
+                    if (cnpjClean) clientCnpjMap.set(cnpjClean, codCli);
+
                     const clientData = {
                         'codigo_cliente': codCli,
                         rcas: Array.from(rcas),
@@ -812,7 +912,7 @@
                         bairro: bairro,
                         razaoSocial: razao,
                         fantasia: fantasia,
-                        cnpj_cpf: String(getVal(client, ['CNPJ/CPF', 'CNPJ', 'CPF', 'Cgc/Cpf']) || 'N/A'),
+                        cnpj_cpf: cnpjRaw,
                         endereco: String(getVal(client, ['Endereço Comercial', 'Endereço', 'ENDERECO', 'Logradouro', 'Rua']) || 'N/A'),
                         numero: String(getVal(client, ['Número', 'Numero', 'NUMERO', 'No']) || 'SN'),
                         cep: String(getVal(client, ['CEP', 'Cep']) || 'N/A'),
@@ -1084,6 +1184,9 @@
                     };
                 }).filter(t => t.cod_cliente);
 
+                // Process Nota Perfeita
+                const finalNotaPerfeitaData = processLojaPerfeita([nota1DataRaw, nota2DataRaw], clientCnpjMap);
+
                 // --- HASH COMPUTATION FOR CONDITIONAL UPLOADS ---
                 self.postMessage({ type: 'progress', status: 'Gerando assinaturas digitais...', percentage: 98 });
                 const hashes = await Promise.all([
@@ -1096,7 +1199,8 @@
                     computeHash(finalProductDetailsData),
                     computeHash(finalInnovationsData),
                     computeHash(finalHierarchyData),
-                    computeHash(finalTitulosData)
+                    computeHash(finalTitulosData),
+                    computeHash(finalNotaPerfeitaData)
                 ]);
 
                 finalMetadata.push({ key: 'hash_detailed', value: hashes[0] });
@@ -1109,6 +1213,7 @@
                 finalMetadata.push({ key: 'hash_innovations', value: hashes[7] });
                 finalMetadata.push({ key: 'hash_hierarchy', value: hashes[8] });
                 finalMetadata.push({ key: 'hash_titulos', value: hashes[9] });
+                finalMetadata.push({ key: 'hash_nota_perfeita', value: hashes[10] });
 
 
                 self.postMessage({ type: 'progress', status: 'Pronto!', percentage: 100 });
@@ -1125,16 +1230,12 @@
                         innovations: finalInnovationsData,
                         hierarchy: finalHierarchyData,
                         titulos: finalTitulosData,
+                        nota_perfeita: finalNotaPerfeitaData,
                         product_details: finalProductDetailsData,
                         active_products: finalActiveProductsData,
                         metadata: finalMetadata,
 
                         // Legacy Maps for Frontend (if needed, or logic script handles it)
-                        // The logic script (report-logic-script) seems to expect stockMap05/08 in 'embeddedData'.
-                        // But wait, the uploader Worker sends data to 'enviarDadosParaSupabase', NOT to the dashboard logic directly.
-                        // The dashboard logic reads from Supabase via 'carregarDadosDoSupabase'.
-                        // So the Worker ONLY needs to satisfy the Uploader requirements.
-                        // However, keeping the Maps might be useful if we ever wanted to hydrate locally.
                         stockMap05: Object.fromEntries(stockMap05),
                         stockMap08: Object.fromEntries(stockMap08),
                         activeProductCodes: Array.from(activeProductCodesFromCadastro),

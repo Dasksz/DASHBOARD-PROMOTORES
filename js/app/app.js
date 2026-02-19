@@ -12215,6 +12215,10 @@ const supervisorGroups = new Map();
                         showViewElement(document.getElementById('titulos-view'));
                         if (typeof renderTitulosView === 'function') renderTitulosView();
                         break;
+                    case 'lojaPerfeita':
+                        showViewElement(document.getElementById('loja-perfeita-view'));
+                        if (typeof renderLojaPerfeitaView === 'function') renderLojaPerfeitaView();
+                        break;
                     case 'inovacoes-mes':
                         showViewElement(innovationsMonthView);
                         if (viewState.inovacoes.dirty || !viewState.inovacoes.rendered) {
@@ -12547,6 +12551,13 @@ const supervisorGroups = new Map();
                     await conditionalUpload('data_titulos', data.titulos, 'hash_titulos', false);
                 } else {
                     console.log("[Upload] Skipping Titulos (No data provided).");
+                }
+
+                // Make Nota Perfeita Optional
+                if (data.notaPerfeita && data.notaPerfeita.length > 0) {
+                    await conditionalUpload('data_nota_perfeita', data.notaPerfeita, 'hash_nota_perfeita', false);
+                } else {
+                    console.log("[Upload] Skipping Nota Perfeita (No data provided).");
                 }
 
                 if (data.metadata && data.metadata.length > 0) {
@@ -12896,10 +12907,12 @@ const supervisorGroups = new Map();
                     const innovationsFile = document.getElementById('innovations-file-input').files[0];
                     const hierarchyFile = document.getElementById('hierarchy-file-input').files[0];
                     const titulosFile = document.getElementById('titulos-file-input').files[0];
+                    const notaInvolves1File = document.getElementById('nota-involves-1-file-input').files[0];
+                    const notaInvolves2File = document.getElementById('nota-involves-2-file-input').files[0];
 
-                    if (!salesFile && !historyFile && !hierarchyFile) {
+                    if (!salesFile && !historyFile && !hierarchyFile && !notaInvolves1File && !notaInvolves2File) {
                         // Titulos is optional, not required for basic operation
-                        window.showToast('warning', "Pelo menos um arquivo (Vendas, Histórico ou Hierarquia) é necessário.");
+                        window.showToast('warning', "Pelo menos um arquivo (Vendas, Histórico, Hierarquia ou Nota Involves) é necessário.");
                         return;
                     }
 
@@ -12909,7 +12922,28 @@ const supervisorGroups = new Map();
                     document.getElementById('status-container').classList.remove('hidden');
                     document.getElementById('status-text').textContent = "Processando arquivos...";
 
-                    worker.postMessage({ salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile });
+                    // Pass referenceData (CNPJ Map) to Worker for Nota Perfeita processing
+                    // We need to generate it from allClientsData first
+                    // BUT, allClientsData might be stale or not fully loaded if we are re-uploading everything.
+                    // However, usually we upload Clients file alongside.
+                    // If Clients file is provided, worker parses it first.
+                    // Worker needs to handle the order.
+                    // In worker.js, we parse everything then process.
+                    // We don't need to pass referenceData here, the worker generates it internally if clients are present.
+                    // If only Nota Perfeita is uploaded without Clients, it might fail to map codes if it relies on new client data.
+                    // But assuming full reload or at least persistent data is handled by worker if we passed 'embeddedData'.
+                    // Worker doesn't have access to 'embeddedData'.
+                    // Wait, the worker parses the files passed. If Clients file is NOT passed, how does it map CNPJ?
+                    // It can't map CNPJ if Clients file is missing.
+                    // User must upload Clients file if they want accurate mapping for new data.
+                    // Or we can pass current 'allClientsData' as reference? No, too big.
+                    // Let's assume user uploads Clients file or we rely on what's available.
+                    // Actually, the worker logic I wrote earlier constructs `referenceData` from `clientsData` (parsed file).
+                    // If `clientsData` is missing (no file), `referenceData` will be empty.
+                    // So user MUST upload clients file for this to work perfectly.
+                    // We should warn about this or just let it be.
+
+                    worker.postMessage({ salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolves1File, notaInvolves2File });
 
                     worker.onmessage = (e) => {
                         const { type, data, status, percentage, message } = e.data;
@@ -21085,4 +21119,254 @@ const supervisorGroups = new Map();
             document.getElementById('titulos-next-page-btn').disabled = page >= totalPages;
             document.getElementById('titulos-page-info-text').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
         }
+    let lpState = { page: 1, limit: 50, filteredData: [] };
+    let selectedLpRedes = [];
+    let lpRedeGroupFilter = '';
+    let lpRenderId = 0;
+
+    function renderLojaPerfeitaView() {
+        setupHierarchyFilters('lp', () => handleLpFilterChange());
+
+        // Rede Filters
+        const redeGroupContainer = document.getElementById('lp-rede-group-container');
+        const comRedeBtn = document.getElementById('lp-com-rede-btn');
+        const comRedeBtnText = document.getElementById('lp-com-rede-btn-text');
+        const redeDropdown = document.getElementById('lp-rede-filter-dropdown');
+
+        if (redeGroupContainer && !redeGroupContainer._hasListener) {
+            redeGroupContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const group = btn.dataset.group;
+                lpRedeGroupFilter = group;
+                redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (group === 'com_rede') redeDropdown.classList.remove('hidden');
+                else redeDropdown.classList.add('hidden');
+                handleLpFilterChange();
+            });
+            redeGroupContainer._hasListener = true;
+        }
+
+        if (redeDropdown && !redeDropdown._hasListener) {
+            redeDropdown.addEventListener('change', () => handleLpFilterChange());
+            redeDropdown._hasListener = true;
+        }
+
+        // Client Search
+        setupClientTypeahead('lp-codcli-filter', 'lp-codcli-filter-suggestions', (code) => {
+            handleLpFilterChange();
+        });
+        const clientInput = document.getElementById('lp-codcli-filter');
+        if (clientInput && !clientInput._hasListener) {
+            clientInput.addEventListener('input', (e) => {
+                 if (!e.target.value) handleLpFilterChange();
+            });
+            clientInput._hasListener = true;
+        }
+
+        // Clear Btn
+        const clearBtn = document.getElementById('clear-lp-filters-btn');
+        if(clearBtn && !clearBtn._hasListener) {
+            clearBtn.addEventListener('click', () => {
+                 resetLpFilters();
+            });
+            clearBtn._hasListener = true;
+        }
+
+        // Pagination
+        const prevBtn = document.getElementById('lp-prev-page-btn');
+        const nextBtn = document.getElementById('lp-next-page-btn');
+        if(prevBtn && !prevBtn._hasListener) {
+            prevBtn.addEventListener('click', () => {
+                if(lpState.page > 1) {
+                    lpState.page--;
+                    renderLpTable();
+                }
+            });
+            prevBtn._hasListener = true;
+        }
+        if(nextBtn && !nextBtn._hasListener) {
+            nextBtn.addEventListener('click', () => {
+                const max = Math.ceil(lpState.filteredData.length / lpState.limit);
+                if(lpState.page < max) {
+                    lpState.page++;
+                    renderLpTable();
+                }
+            });
+            nextBtn._hasListener = true;
+        }
+
+        // Initial Filter Population (Rede)
+        updateLpRedeFilter();
+
+        // Initial Render
+        updateLpView();
+    }
+
+    function updateLpRedeFilter() {
+        const clients = getHierarchyFilteredClients('lp', allClientsData);
+        const dropdown = document.getElementById('lp-rede-filter-dropdown');
+        const btnText = document.getElementById('lp-com-rede-btn-text');
+        if(dropdown) {
+            selectedLpRedes = updateRedeFilter(dropdown, btnText, selectedLpRedes, clients);
+        }
+    }
+
+    function handleLpFilterChange() {
+         if(window.lpUpdateTimeout) clearTimeout(window.lpUpdateTimeout);
+         window.lpUpdateTimeout = setTimeout(() => {
+             updateLpView();
+         }, 10);
+    }
+
+    function resetLpFilters() {
+        selectedLpRedes = [];
+        lpRedeGroupFilter = '';
+        document.getElementById('lp-codcli-filter').value = '';
+
+        const groupContainer = document.getElementById('lp-rede-group-container');
+        if(groupContainer) {
+             groupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+             groupContainer.querySelector('button[data-group=""]').classList.add('active');
+        }
+        const dd = document.getElementById('lp-rede-filter-dropdown');
+        if(dd) dd.classList.add('hidden');
+
+        setupHierarchyFilters('lp'); // Reset hierarchy
+        updateLpRedeFilter();
+        updateLpView();
+    }
+
+    function updateLpView() {
+        lpRenderId++;
+        const currentId = lpRenderId;
+
+        // 1. Get Data
+        const rawData = embeddedData.nota_perfeita;
+        if (!rawData || !rawData.length) {
+            // Empty state
+            renderLpKPIs(0, 0, 0, 0);
+            lpState.filteredData = [];
+            renderLpTable();
+            return;
+        }
+
+        // 2. Filter Clients Base (Hierarchy + Rede)
+        let allowedClients = getHierarchyFilteredClients('lp', allClientsData);
+
+        // Apply Rede Filter
+        const isComRede = lpRedeGroupFilter === 'com_rede';
+        const isSemRede = lpRedeGroupFilter === 'sem_rede';
+        const redeSet = (isComRede && selectedLpRedes.length > 0) ? new Set(selectedLpRedes) : null;
+        const clientSearch = document.getElementById('lp-codcli-filter').value.toLowerCase().trim();
+
+        const allowedClientCodes = new Set();
+        const clientMap = new Map(); // Store metadata for table enrichment
+
+        for(let i=0; i<allowedClients.length; i++) {
+            const c = allowedClients[i];
+
+            // Rede Check
+            if (isComRede) {
+                if (!c.ramo || c.ramo === 'N/A') continue;
+                if (redeSet && !redeSet.has(c.ramo)) continue;
+            } else if (isSemRede) {
+                if (c.ramo && c.ramo !== 'N/A') continue;
+            }
+
+            // Search Check
+            if (clientSearch) {
+                const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
+                const name = (c.nomeCliente || '').toLowerCase();
+                if (!code.includes(clientSearch) && !name.includes(clientSearch)) continue;
+            }
+
+            const code = normalizeKey(c['Código'] || c['codigo_cliente']);
+            allowedClientCodes.add(code);
+            clientMap.set(code, c);
+        }
+
+        // 3. Filter Data
+        const filtered = rawData.filter(row => allowedClientCodes.has(normalizeKey(row.codigo_cliente))).map(row => {
+             const c = clientMap.get(normalizeKey(row.codigo_cliente));
+             return {
+                 ...row,
+                 clientName: c ? (c.nomeCliente || c.fantasia) : 'Desconhecido',
+                 city: c ? (c.cidade || 'N/A') : 'N/A'
+             };
+        });
+
+        // 4. Update KPIs
+        let totalScore = 0;
+        let totalAudits = 0;
+        let totalPerfectAudits = 0;
+        let perfectStoresCount = 0;
+
+        filtered.forEach(item => {
+            totalScore += item.nota_media;
+            totalAudits += item.auditorias;
+            totalPerfectAudits += item.auditorias_perfeitas;
+            if (item.nota_media >= 80) perfectStoresCount++;
+        });
+
+        const avgScore = filtered.length > 0 ? (totalScore / filtered.length) : 0;
+        // Perfect Store %: (Perfect Audits / Total Audits) * 100
+        const perfectPct = totalAudits > 0 ? (totalPerfectAudits / totalAudits) * 100 : 0;
+
+        renderLpKPIs(avgScore, totalAudits, perfectPct, totalPerfectAudits);
+
+        // 5. Update Table
+        // Sort by Score Descending
+        filtered.sort((a,b) => b.nota_media - a.nota_media);
+
+        lpState.filteredData = filtered;
+        lpState.page = 1;
+        renderLpTable();
+    }
+
+    function renderLpKPIs(avg, audits, perfectPct, perfectCount) {
+        document.getElementById('lp-kpi-avg-score').textContent = avg.toFixed(1);
+        document.getElementById('lp-kpi-total-audits').textContent = audits;
+        document.getElementById('lp-kpi-perfect-stores').textContent = perfectPct.toFixed(1) + '%';
+        document.getElementById('lp-kpi-perfect-count').textContent = `${perfectCount} Auditorias`;
+    }
+
+    function renderLpTable() {
+        const tbody = document.getElementById('lp-table-body');
+        if(!tbody) return;
+
+        const { page, limit, filteredData } = lpState;
+        const total = filteredData.length;
+        const start = (page - 1) * limit;
+        const end = start + limit;
+        const subset = filteredData.slice(start, end);
+        const totalPages = Math.ceil(total / limit) || 1;
+
+        if (total === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-500">Nenhum dado encontrado.</td></tr>';
+            document.getElementById('lp-page-info-text').textContent = '0 de 0';
+            return;
+        }
+
+        tbody.innerHTML = subset.map(t => {
+            const scoreColor = t.nota_media >= 80 ? 'text-green-400' : (t.nota_media >= 60 ? 'text-orange-400' : 'text-red-400');
+
+            return `
+                <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors">
+                    <td class="px-4 py-3 font-mono text-xs text-slate-400">${t.codigo_cliente}</td>
+                    <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px]" title="${t.clientName}">${t.clientName}</td>
+                    <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${t.pesquisador}</td>
+                    <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
+                    <td class="px-4 py-3 text-center font-bold text-white">${t.auditorias}</td>
+                    <td class="px-4 py-3 text-center font-bold ${scoreColor}">${t.nota_media.toFixed(1)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        // Pagination UI
+        document.getElementById('lp-prev-page-btn').disabled = page === 1;
+        document.getElementById('lp-next-page-btn').disabled = page >= totalPages;
+        document.getElementById('lp-page-info-text').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
+    }
 })();

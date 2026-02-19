@@ -322,6 +322,7 @@
                 checkTable('data_hierarchy', 'hash_hierarchy', 'hierarchy');
                 checkTable('data_client_promoters', 'hash_client_promoters', 'clientPromoters');
                 checkTable('data_titulos', 'hash_titulos', 'titulos');
+                checkTable('data_nota_perfeita', 'hash_nota_perfeita', 'nota_perfeita');
 
                 // If nothing to fetch, use cache completely
                 if (tablesToFetch.size === 0) {
@@ -335,7 +336,7 @@
             } else if (!cachedData) {
                 // Full Fetch required
                 console.log("Cache vazio. Baixando tudo...");
-                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos'].forEach(t => tablesToFetch.add(t));
+                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos', 'data_nota_perfeita'].forEach(t => tablesToFetch.add(t));
             }
 
             if (useCache) {
@@ -670,7 +671,7 @@
                 });
             };
 
-            let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientPromoters, titulos;
+            let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientPromoters, titulos, nota_perfeita;
             let clientCoordinates;
 
             const colsDetailed = 'id,pedido,codcli,nome,superv,codsupervisor,produto,descricao,fornecedor,observacaofor,codfor,codusur,qtvenda,vlvenda,vlbonific,totpesoliq,dtped,dtsaida,posicao,estoqueunit,tipovenda,filial,qtvenda_embalagem_master';
@@ -693,6 +694,7 @@
                 clientPromoters = cachedData.clientPromoters || [];
                 clientCoordinates = cachedData.clientCoordinates || [];
                 titulos = cachedData.titulos;
+                nota_perfeita = cachedData.nota_perfeita;
 
                 // Background updates for coordinates/promoters can happen here if needed,
                 // but usually conditional logic handles it if metadata hashes change.
@@ -750,7 +752,7 @@
                     }
                 };
 
-                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, titulosFetched] = await Promise.all([
+                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, titulosFetched, notaPerfeitaFetched] = await Promise.all([
                     getOrFetch('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter, 'detailed'),
                     getOrFetch('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter, 'history'),
                     getOrFetch('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter, 'clients'),
@@ -769,7 +771,8 @@
                     fetchAll('data_client_coordinates', null, null, 'object', 'client_code'),
                     getOrFetch('data_hierarchy', null, null, 'object', 'id', null, 'hierarchy'),
                     getOrFetch('data_client_promoters', null, null, 'object', 'client_code', null, 'clientPromoters'),
-                    getOrFetch('data_titulos', null, null, 'object', 'id', null, 'titulos')
+                    getOrFetch('data_titulos', null, null, 'object', 'id', null, 'titulos'),
+                    getOrFetch('data_nota_perfeita', null, null, 'object', 'id', null, 'nota_perfeita')
                 ]);
 
                 detailed = detailedUpper;
@@ -785,11 +788,12 @@
                 hierarchy = hierarchyFetched;
                 clientPromoters = clientPromotersFetched;
                 titulos = titulosFetched;
+                nota_perfeita = notaPerfeitaFetched;
 
                 // Update Cache with Merged Data
                 if (!isPromoter) {
                     const dataToCache = {
-                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos
+                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita
                     };
                     saveToCache('dashboardData', dataToCache).then(() => console.log('Dados atualizados salvos no cache.'));
                 }
@@ -1054,6 +1058,7 @@
                 clientPromoters: clientPromoters,
                 clientCoordinates: clientCoordinates,
                 titulos: titulos,
+                nota_perfeita: nota_perfeita,
                 passedWorkingDaysCurrentMonth: 1,
                 isColumnar: true
             };
