@@ -2863,6 +2863,7 @@
                     return `
                     <tr class="hover:bg-slate-700/50 border-b border-slate-800 last:border-0 h-8">
                         <td class="px-0.5 py-1 text-center font-mono text-slate-300 text-[9px] border-r border-slate-800">${escapeHtml(row.codcli)}</td>
+                        <td class="px-0.5 py-1 text-left font-medium text-slate-300 text-[9px] border-r border-slate-800 w-[60px] max-w-[60px] truncate md:w-32 md:max-w-none pl-2" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</td>
                         ${saltyCols}
                         ${foodsCols}
                     </tr>
@@ -2872,6 +2873,7 @@
                 tableHTML += `
                     <tr class="glass-panel-heavy font-bold border-t border-slate-500 text-[9px] sticky bottom-0 z-20 h-8">
                         <td class="px-0.5 py-1 text-center text-white border-r border-slate-800">TOT</td>
+                        <td class="px-0.5 py-1 text-center text-white border-r border-slate-800 w-[60px] max-w-[60px] md:w-32 md:max-w-none"></td>
                         <td colspan="${MIX_SALTY_CATEGORIES.length}" class="px-0.5 py-1 text-center text-teal-400 border-r border-slate-800">${positivadosSalty}</td>
                         <td colspan="${MIX_FOODS_CATEGORIES.length}" class="px-0.5 py-1 text-center text-yellow-400">${positivadosFoods}</td>
                     </tr>
