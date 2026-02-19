@@ -211,6 +211,25 @@ create table if not exists public.data_titulos (
   updated_at timestamp with time zone default now()
 );
 
+-- 1.16 Tabela Nota Perfeita (Loja Perfeita)
+create table if not exists public.data_nota_perfeita (
+  id uuid default uuid_generate_v4 () primary key,
+  codigo_cliente text,
+  mes_ano text,
+  semana text,
+  pesquisador text,
+  cnpj_origem text,
+  canal text,
+  subcanal text,
+  nota_media numeric,
+  auditorias integer,
+  auditorias_perfeitas integer,
+  updated_at timestamp with time zone default now()
+);
+
+-- Index for fast client lookup in Loja Perfeita
+create index if not exists idx_nota_perfeita_codcli on public.data_nota_perfeita (codigo_cliente);
+
 -- Ensure columns exist (Idempotency for older schemas)
 do $$
 BEGIN
@@ -284,7 +303,7 @@ BEGIN
   IF table_name NOT IN (
     'data_detailed', 'data_history', 'data_clients', 'data_orders', 
     'data_product_details', 'data_active_products', 'data_stock', 
-    'data_innovations', 'data_metadata', 'goals_distribution', 'data_hierarchy', 'data_titulos'
+    'data_innovations', 'data_metadata', 'goals_distribution', 'data_hierarchy', 'data_titulos', 'data_nota_perfeita'
   ) THEN
     RAISE EXCEPTION 'Invalid table name.';
   END IF;
@@ -449,7 +468,8 @@ BEGIN
             'data_stock',
             'data_hierarchy',
             'data_client_promoters',
-            'data_titulos'
+            'data_titulos',
+            'data_nota_perfeita'
         )
     LOOP
         -- Cleanup
