@@ -92,11 +92,11 @@
         const loader = new THREE.GLTFLoader();
         loader.load('imagens/Swimming.glb', function (gltf) {
             chesterModel = gltf.scene;
-
+            
             // Initial setup
-            chesterModel.scale.set(3.5, 3.5, 3.5); // Adjust scale to fit scene nicely
+            chesterModel.scale.set(17.5, 17.5, 17.5); // Adjust scale to fit scene nicely
             chesterModel.visible = false;
-
+            
             // Enable shadows
             chesterModel.traverse((node) => {
                 if (node.isMesh) {
@@ -106,7 +106,7 @@
             });
 
             scene.add(chesterModel);
-
+            
             // Setup Animation
             chesterMixer = new THREE.AnimationMixer(chesterModel);
             if(gltf.animations.length > 0) {
@@ -115,7 +115,7 @@
             }
 
             // Schedule first spawn
-            chesterNextSpawnTime = clock.getElapsedTime() + 0.5;
+            chesterNextSpawnTime = clock.getElapsedTime() + 0.5; 
         }, undefined, function (error) {
             console.error('An error occurred loading Chester:', error);
         });
@@ -128,33 +128,33 @@
         const startLeft = Math.random() > 0.5;
         const xStart = startLeft ? -45 : 45;
         const xEnd = startLeft ? 45 : -45;
-
+        
         // Randomize Heights and Depth
         // Z range: -10 (far) to 15 (close, in front of cheetos approx)
         // Y range: -15 to 15
-
+        
         const p1 = new THREE.Vector3(xStart, (Math.random()-0.5)*20, (Math.random()-0.5)*20 - 5);
-
+        
         // Control points for bezier curve to make it "swim" nicely
         const p2 = new THREE.Vector3(xStart * 0.4, (Math.random()-0.5)*25, (Math.random()-0.5)*15 + 5);
         const p3 = new THREE.Vector3(xEnd * 0.4, (Math.random()-0.5)*25, (Math.random()-0.5)*15 + 5);
-
+        
         const p4 = new THREE.Vector3(xEnd, (Math.random()-0.5)*20, (Math.random()-0.5)*20 - 5);
 
         chesterPath = new THREE.CatmullRomCurve3([p1, p2, p3, p4]);
         chesterProgress = 0;
         chesterState = 'SWIMMING';
         chesterModel.visible = true;
-
+        
         // Speed variation: faster if further away usually, but random is good
         // Base speed
-        const speedBase = 0.003;
-        chesterSpeed = speedBase + Math.random() * 0.003;
+        const speedBase = 0.0005;
+        chesterSpeed = speedBase + Math.random() * 0.0005;
     }
 
     function updateChester(delta) {
         if (!chesterModel || !clock) return;
-
+        
         // Update Animation
         if (chesterMixer) chesterMixer.update(delta);
 
@@ -169,7 +169,7 @@
 
             // Move along path
             chesterProgress += chesterSpeed * (delta * 60); // frame independent-ish
-
+            
             if (chesterProgress >= 1.0) {
                 chesterState = 'HIDDEN';
                 chesterModel.visible = false;
@@ -179,21 +179,21 @@
 
             const point = chesterPath.getPointAt(chesterProgress);
             const tangent = chesterPath.getTangentAt(chesterProgress);
-
+            
             chesterModel.position.copy(point);
             // Make him look forward along the path
             // We need to adjust orientation because GLB models often face +Z or +X by default
             // Swimming animation usually assumes +Z forward. Let's lookAt target.
             const lookTarget = point.clone().add(tangent);
             chesterModel.lookAt(lookTarget);
-
+            
             // Adjust rotation if model is sideways (common in 3D assets)
             // If he is swimming sideways, we might need: chesterModel.rotateY(Math.PI / 2);
             // Assuming standard forward facing for now. If he swims sideways, I will adjust.
 
             // Collision Avoidance Logic
             // Push cheetos away if they are too close
-            const repulsionRadius = 5.0; // Size of "force field"
+            const repulsionRadius = 25.0; // Size of "force field"
             const forceStrength = 0.8;
 
             cheetos.forEach(c => {
@@ -202,12 +202,12 @@
                     const dist = Math.sqrt(distSq);
                     // Vector from Chester to Cheeto
                     const dir = new THREE.Vector3().subVectors(c.position, chesterModel.position).normalize();
-
+                    
                     // Push strength inversely proportional to distance
                     const push = (repulsionRadius - dist) * forceStrength;
-
+                    
                     c.position.add(dir.multiplyScalar(push));
-
+                    
                     // Also rotate cheeto a bit randomly to simulate turbulence
                     c.rotation.x += Math.random() * 0.1;
                     c.rotation.z += Math.random() * 0.1;
