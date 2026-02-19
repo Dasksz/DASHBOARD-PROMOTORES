@@ -12922,28 +12922,49 @@ const supervisorGroups = new Map();
                     document.getElementById('status-container').classList.remove('hidden');
                     document.getElementById('status-text').textContent = "Processando arquivos...";
 
-                    // Pass referenceData (CNPJ Map) to Worker for Nota Perfeita processing
-                    // We need to generate it from allClientsData first
-                    // BUT, allClientsData might be stale or not fully loaded if we are re-uploading everything.
-                    // However, usually we upload Clients file alongside.
-                    // If Clients file is provided, worker parses it first.
-                    // Worker needs to handle the order.
-                    // In worker.js, we parse everything then process.
-                    // We don't need to pass referenceData here, the worker generates it internally if clients are present.
-                    // If only Nota Perfeita is uploaded without Clients, it might fail to map codes if it relies on new client data.
-                    // But assuming full reload or at least persistent data is handled by worker if we passed 'embeddedData'.
-                    // Worker doesn't have access to 'embeddedData'.
-                    // Wait, the worker parses the files passed. If Clients file is NOT passed, how does it map CNPJ?
-                    // It can't map CNPJ if Clients file is missing.
-                    // User must upload Clients file if they want accurate mapping for new data.
-                    // Or we can pass current 'allClientsData' as reference? No, too big.
-                    // Let's assume user uploads Clients file or we rely on what's available.
-                    // Actually, the worker logic I wrote earlier constructs `referenceData` from `clientsData` (parsed file).
-                    // If `clientsData` is missing (no file), `referenceData` will be empty.
-                    // So user MUST upload clients file for this to work perfectly.
-                    // We should warn about this or just let it be.
+                    // Construct Reference Data (CNPJ Map) from current memory
+                    // This allows optional file upload (e.g. just Nota Perfeita) without re-uploading Clients file
+                    const referenceData = { cnpjMap: {} };
+                    if (allClientsData) {
+                        try {
+                            if (allClientsData instanceof ColumnarDataset) {
+                                const data = allClientsData._data;
+                                const len = allClientsData.length;
+                                // Try possible keys
+                                const codes = data['Código'] || data['codigo_cliente'] || data['CODCLI'];
+                                const cnpjs = data['CNPJ/CPF'] || data['cnpj_cpf'] || data['CNPJ'];
 
-                    worker.postMessage({ salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolvesFile1: notaInvolves1File, notaInvolvesFile2: notaInvolves2File });
+                                if (codes && cnpjs) {
+                                    for(let i=0; i<len; i++) {
+                                        const cnpj = String(cnpjs[i] || '').replace(/\D/g, '');
+                                        const code = String(codes[i] || '').trim();
+                                        if (cnpj && code) referenceData.cnpjMap[cnpj] = code;
+                                    }
+                                }
+                            } else if (Array.isArray(allClientsData)) {
+                                allClientsData.forEach(c => {
+                                    const cnpj = String(c['CNPJ/CPF'] || c.cnpj_cpf || c.CNPJ || '').replace(/\D/g, '');
+                                    const code = String(c['Código'] || c['codigo_cliente'] || c['CODCLI'] || '').trim();
+                                    if (cnpj && code) referenceData.cnpjMap[cnpj] = code;
+                                });
+                            }
+                        } catch (e) {
+                            console.warn("Error building reference CNPJ map:", e);
+                        }
+                    }
+
+                    worker.postMessage({
+                        salesFile,
+                        clientsFile,
+                        productsFile,
+                        historyFile,
+                        innovationsFile,
+                        hierarchyFile,
+                        titulosFile,
+                        notaInvolvesFile1: notaInvolves1File,
+                        notaInvolvesFile2: notaInvolves2File,
+                        referenceData: referenceData // Pass the map
+                    });
 
                     worker.onmessage = (e) => {
                         const { type, data, status, percentage, message } = e.data;
