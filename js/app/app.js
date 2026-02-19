@@ -1610,7 +1610,7 @@
 
                     if (codUsur && supervisor) { if (!supervisorToRcaMap.has(supervisor)) supervisorToRcaMap.set(supervisor, new Set()); supervisorToRcaMap.get(supervisor).add(codUsur); }
                     if (supplier && product) { if (!optimizedData.productsBySupplier.has(supplier)) optimizedData.productsBySupplier.set(supplier, new Set()); optimizedData.productsBySupplier.get(supplier).add(product); }
-                    if (rca && codUsur) { optimizedData.rcaCodeByName.set(rca, codUsur); optimizedData.rcaNameByCode.set(codUsur, rca); }
+                    if (rca && codUsur && rca !== 'INATIVOS') { optimizedData.rcaCodeByName.set(rca, codUsur); optimizedData.rcaNameByCode.set(codUsur, rca); }
                     if (supervisor && codSupervisor) { optimizedData.supervisorCodeByName.set(supervisor, codSupervisor); }
                     if (client && filial) { clientLastBranch.set(client, filial); }
                     if (product && pasta && !optimizedData.productPastaMap.has(product)) { optimizedData.productPastaMap.set(product, pasta); }
