@@ -7654,14 +7654,26 @@ const supervisorGroups = new Map();
                 // Render Top 10 Cities Chart
                 const salesByCity = {};
                 const salesBySeller = {};
+                const salesByPromotor = {};
+
+                // Determine context: Should we show Promoters or Sellers?
+                const promotorWrapper = document.getElementById('coverage-promotor-filter-wrapper');
+                const isPromotorFilterVisible = promotorWrapper && !promotorWrapper.classList.contains('hidden');
 
                 sales.forEach(s => {
                     const client = clientMapForKPIs.get(String(s.CODCLI));
                     const city = client ? (client.cidade || client['Nome da Cidade'] || 'N/A') : 'N/A';
                     salesByCity[city] = (salesByCity[city] || 0) + s.QTVENDA_EMBALAGEM_MASTER;
 
-                    const seller = s.NOME || 'N/A';
-                    salesBySeller[seller] = (salesBySeller[seller] || 0) + s.QTVENDA_EMBALAGEM_MASTER;
+                    if (isPromotorFilterVisible) {
+                        const clientCode = String(s.CODCLI);
+                        const hierarchy = optimizedData.clientHierarchyMap.get(clientCode);
+                        const promotorName = (hierarchy && hierarchy.promotor) ? hierarchy.promotor.name : 'N/A';
+                        salesByPromotor[promotorName] = (salesByPromotor[promotorName] || 0) + s.QTVENDA_EMBALAGEM_MASTER;
+                    } else {
+                        const seller = s.NOME || 'N/A';
+                        salesBySeller[seller] = (salesBySeller[seller] || 0) + s.QTVENDA_EMBALAGEM_MASTER;
+                    }
                 });
 
                 // 1. Chart Data for Cities
@@ -7669,8 +7681,9 @@ const supervisorGroups = new Map();
                     .sort(([,a], [,b]) => b - a)
                     .slice(0, 10);
 
-                // 2. Chart Data for Sellers
-                const sortedSellers = Object.entries(salesBySeller)
+                // 2. Chart Data for Sellers OR Promoters
+                const sourceMap = isPromotorFilterVisible ? salesByPromotor : salesBySeller;
+                const sortedRanking = Object.entries(sourceMap)
                     .sort(([,a], [,b]) => b - a)
                     .slice(0, 10);
 
@@ -7707,8 +7720,8 @@ const supervisorGroups = new Map();
                     showNoDataMessage('coverageCityChart', 'Sem dados para exibir.');
                 }
 
-                if (sortedSellers.length > 0) {
-                    createChart('coverageSellerChart', 'bar', sortedSellers.map(([seller]) => getFirstName(seller)), sortedSellers.map(([, qty]) => qty), commonChartOptions);
+                if (sortedRanking.length > 0) {
+                    createChart('coverageSellerChart', 'bar', sortedRanking.map(([name]) => getFirstName(name)), sortedRanking.map(([, qty]) => qty), commonChartOptions);
                 } else {
                     showNoDataMessage('coverageSellerChart', 'Sem dados para exibir.');
                 }
@@ -7719,16 +7732,18 @@ const supervisorGroups = new Map();
                 const toggleBtn = document.getElementById('coverage-chart-toggle-btn');
                 const chartTitle = document.getElementById('coverage-chart-title');
 
+                const targetLabel = isPromotorFilterVisible ? 'Promotores' : 'Vendedores';
+
                 if (currentCoverageChartMode === 'city') {
                     if (cityContainer) cityContainer.classList.remove('hidden');
                     if (sellerContainer) sellerContainer.classList.add('hidden');
-                    if (toggleBtn) toggleBtn.textContent = 'Ver Vendedores';
+                    if (toggleBtn) toggleBtn.textContent = `Ver ${targetLabel}`;
                     if (chartTitle) chartTitle.textContent = 'Top 10 Cidades (Quantidade de Caixas)';
                 } else {
                     if (cityContainer) cityContainer.classList.add('hidden');
                     if (sellerContainer) sellerContainer.classList.remove('hidden');
                     if (toggleBtn) toggleBtn.textContent = 'Ver Cidades';
-                    if (chartTitle) chartTitle.textContent = 'Top 10 Vendedores (Quantidade de Caixas)';
+                    if (chartTitle) chartTitle.textContent = `Ranking de ${targetLabel} (Quantidade de Caixas)`;
                 }
             }, () => currentRenderId !== coverageRenderId);
         }
