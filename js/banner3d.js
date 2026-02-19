@@ -133,41 +133,51 @@
         const rand = Math.random();
         let spawnMode = 'EDGE_TO_EDGE';
 
-        if (rand < 0.4) {
-            spawnMode = 'CLOSE_UP'; // 40% Chance - Very Close & Prominent
-        } else if (rand < 0.8) {
-            spawnMode = 'EDGE_TO_EDGE'; // 40% Chance - Standard Flyby
+        if (rand < 0.6) {
+            spawnMode = 'CLOSE_UP'; // 60% Chance - Very Close & Prominent (Increased visibility)
+        } else if (rand < 0.9) {
+            spawnMode = 'EDGE_TO_EDGE'; // 30% Chance - Standard Flyby
         } else {
-            spawnMode = 'DEEP_SPAWN'; // 20% Chance - Background
+            spawnMode = 'DEEP_SPAWN'; // 10% Chance - Background (Reduced to prevent "invisible" confusion)
         }
+
+        // --- Common Math for Off-screen Calculation ---
+        // The camera looks at (8, 0, 0), so the view is centered roughly at x=8.
+        const viewCenterX = 8;
 
         // --- MODE C: CLOSE UP (Fly near camera) ---
         if (spawnMode === 'CLOSE_UP') {
             // Z Range near camera (Camera is at Z=25)
-            // We want him between Z=15 and Z=22 so he looks huge
             const zClose = 18 + (Math.random() - 0.5) * 4;
 
-            // Calculate visible bounds at this depth to start off-screen
+            // Calculate visible bounds at this depth
             const dist = camera.position.z - zClose;
             const vFOV = THREE.MathUtils.degToRad(camera.fov);
             const visibleHeight = 2 * Math.tan(vFOV / 2) * dist;
             const visibleWidth = visibleHeight * aspect;
 
             const startLeft = Math.random() > 0.5;
-            const offset = 8; // Buffer
-            const xStart = startLeft ? -(visibleWidth/2 + offset) : (visibleWidth/2 + offset);
-            const xEnd = startLeft ? (visibleWidth/2 + offset) : -(visibleWidth/2 + offset);
+            // HUGE offset to ensure no pop-in, accounting for camera pan/rotation
+            const offset = 35;
+
+            const xLeft = viewCenterX - (visibleWidth / 2) - offset;
+            const xRight = viewCenterX + (visibleWidth / 2) + offset;
+
+            const xStart = startLeft ? xLeft : xRight;
+            const xEnd = startLeft ? xRight : xLeft;
 
             // Curve points
             const p1 = new THREE.Vector3(xStart, (Math.random()-0.5) * 5, zClose);
-            const p2 = new THREE.Vector3(xStart * 0.4, (Math.random()-0.5) * 8, zClose + 2); // Slight bulge towards camera
-            const p3 = new THREE.Vector3(xEnd * 0.4, (Math.random()-0.5) * 8, zClose + 2);
+            // Bulge towards camera for "in your face" effect
+            const p2 = new THREE.Vector3(startLeft ? viewCenterX - 5 : viewCenterX + 5, (Math.random()-0.5) * 8, zClose + 2);
+            const p3 = new THREE.Vector3(startLeft ? viewCenterX + 5 : viewCenterX - 5, (Math.random()-0.5) * 8, zClose + 2);
             const p4 = new THREE.Vector3(xEnd, (Math.random()-0.5) * 5, zClose);
 
             chesterPath = new THREE.CatmullRomCurve3([p1, p2, p3, p4]);
 
             // High chance to look at camera ("Belly Swim")
-            chesterOrientationMode = Math.random() > 0.3 ? 'CAMERA' : 'PATH';
+            // chesterOrientationMode = Math.random() > 0.3 ? 'CAMERA' : 'PATH';
+            chesterOrientationMode = 'PATH'; // Always align with swim path
         }
         // --- MODE A: EDGE TO EDGE (Mid Range) ---
         else if (spawnMode === 'EDGE_TO_EDGE') {
@@ -178,32 +188,38 @@
             const visibleHeight = 2 * Math.tan(vFOV / 2) * dist;
             const visibleWidth = visibleHeight * aspect;
 
-            // Start strictly outside visible area
             const startLeft = Math.random() > 0.5;
-            const offset = 15; // Extra buffer to ensure fully off-screen
-            const xStart = startLeft ? -(visibleWidth / 2 + offset) : (visibleWidth / 2 + offset);
-            const xEnd = startLeft ? (visibleWidth / 2 + offset) : -(visibleWidth / 2 + offset);
+            const offset = 60; // Extremely large buffer to ensure smooth entry/exit
+
+            const xLeft = viewCenterX - (visibleWidth / 2) - offset;
+            const xRight = viewCenterX + (visibleWidth / 2) + offset;
+
+            const xStart = startLeft ? xLeft : xRight;
+            const xEnd = startLeft ? xRight : xLeft;
 
             const p1 = new THREE.Vector3(xStart, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth);
-            const p2 = new THREE.Vector3(xStart * 0.3, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth + (Math.random() - 0.5) * 5);
-            const p3 = new THREE.Vector3(xEnd * 0.3, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth + (Math.random() - 0.5) * 5);
+            const p2 = new THREE.Vector3(viewCenterX - 10, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth + (Math.random() - 0.5) * 5);
+            const p3 = new THREE.Vector3(viewCenterX + 10, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth + (Math.random() - 0.5) * 5);
             const p4 = new THREE.Vector3(xEnd, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth);
 
             chesterPath = new THREE.CatmullRomCurve3([p1, p2, p3, p4]);
 
             // Occasionally look at camera
-            chesterOrientationMode = Math.random() > 0.8 ? 'CAMERA' : 'PATH';
+            // chesterOrientationMode = Math.random() > 0.8 ? 'CAMERA' : 'PATH';
+            chesterOrientationMode = 'PATH'; // Always align with swim path
 
         }
         // --- MODE B: DEEP SPAWN (Background) ---
         else {
             // Start far back, come towards camera/side
-            const startX = (Math.random() - 0.5) * 30;
-            const endX = (Math.random() - 0.5) * 60;
+            // Centered around ViewCenter
+            const startX = viewCenterX + (Math.random() - 0.5) * 30;
+            const endX = viewCenterX + (Math.random() - 0.5) * 60;
 
-            const p1 = new THREE.Vector3(startX, (Math.random() - 0.5) * 10, -60); // Deep background
-            const p2 = new THREE.Vector3(startX * 0.6, (Math.random() - 0.5) * 15, -30);
-            const p3 = new THREE.Vector3(endX * 0.4, (Math.random() - 0.5) * 20, -10);
+            // Brought closer (-60 to -40) so he's more visible
+            const p1 = new THREE.Vector3(startX, (Math.random() - 0.5) * 10, -50);
+            const p2 = new THREE.Vector3(startX * 0.6 + viewCenterX, (Math.random() - 0.5) * 15, -30);
+            const p3 = new THREE.Vector3(endX * 0.4 + viewCenterX, (Math.random() - 0.5) * 20, -10);
             const p4 = new THREE.Vector3(endX, (Math.random() - 0.5) * 25, 20); // Past camera
 
             chesterPath = new THREE.CatmullRomCurve3([p1, p2, p3, p4]);
@@ -231,23 +247,27 @@
     function updateOrientation(point, tangent) {
         if (!chesterModel) return;
 
-        if (chesterOrientationMode === 'CAMERA') {
-            // Look at camera
-            // We want the "belly" to face camera.
-            // Standard lookAt makes -Z (or +Z depending on model) face the target.
-            // If swimming animation is prone, we might need adjustments.
-            // Assuming standard orientation:
-            chesterModel.lookAt(camera.position);
+        // Force tangent-based orientation for natural swimming
+        // We always want him to "swim forward" along the path.
+        // If chesterOrientationMode was 'CAMERA', we would use lookAt(camera.position)
+        // But the user reported "facing front" while moving sideways is weird.
+        // So we default to PATH alignment for most cases.
 
-            // If he is upside down or weird, we rotate around Z/X here.
-            // But usually LookAt is sufficient for "facing".
-            // To make him "swim" towards camera but body aligned?
-            // Simple lookAt is best for "Chester looking at you".
-        } else {
-            // Look along path
-            const lookTarget = point.clone().add(tangent);
-            chesterModel.lookAt(lookTarget);
-        }
+        // Ensure tangent is normalized
+        const t = tangent.clone().normalize();
+
+        // Calculate look target ahead on the path
+        const lookTarget = point.clone().add(t);
+
+        chesterModel.lookAt(lookTarget);
+
+        // Potential Correction:
+        // GLTF models often have +Z as forward.
+        // If Chester is swimming sideways but facing the wrong way (e.g. backwards),
+        // we might need to rotate the mesh container 180 deg around Y.
+        // However, standard mixamo/blender exports usually align +Z Forward.
+        // If he looks "sideways" while swimming forward, we need to rotate mesh.
+        // Without seeing it live, I assume standard lookAt works if the model is rigged correctly.
     }
 
     function updateChester(delta) {
@@ -282,12 +302,29 @@
             chesterModel.position.copy(point);
             updateOrientation(point, tangent);
 
+            // Smooth Entry/Exit Scale Logic
+            // Ensures he never "pops" in/out even if the path boundaries are slightly off.
+            // Scale goes 0 -> 1 over first 10% of path, and 1 -> 0 over last 10%.
+            let scaleFactor = 1.0;
+            if (chesterProgress < 0.1) {
+                scaleFactor = chesterProgress / 0.1;
+            } else if (chesterProgress > 0.9) {
+                scaleFactor = (1.0 - chesterProgress) / 0.1;
+            }
+            // Base scale is 17.5
+            const currentScale = 17.5 * scaleFactor;
+            chesterModel.scale.set(currentScale, currentScale, currentScale);
+
             // Collision Avoidance Logic (Repel Cheetos)
-            // Increase radius for Close-Up to clear path
-            const repulsionRadius = 25.0;
-            const forceStrength = 0.8;
+            // Reduced radius to prevent "ghost" interactions when off-screen
+            // Only repel if Z-depth is similar to avoid background Chester pushing foreground Cheetos
+            const repulsionRadius = 8.0;
+            const forceStrength = 0.5;
 
             cheetos.forEach(c => {
+                // Quick Z check first to avoid distant interactions (Ghosting fix)
+                if (Math.abs(c.position.z - chesterModel.position.z) > 15) return;
+
                 const distSq = c.position.distanceToSquared(chesterModel.position);
                 if (distSq < repulsionRadius * repulsionRadius) {
                     const dist = Math.sqrt(distSq);
