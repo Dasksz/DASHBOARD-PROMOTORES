@@ -83,7 +83,7 @@
         animate();
     }
 
-    function loadChester() {
+    function loadChester(retryCount = 0) {
         // Ensure GLTFLoader is loaded
         if (typeof THREE.GLTFLoader === 'undefined') {
             console.warn("THREE.GLTFLoader not found. Chester will not be loaded.");
@@ -91,7 +91,15 @@
         }
 
         const loader = new THREE.GLTFLoader();
-        loader.load('imagens/Swimming.glb', function (gltf) {
+        // Enable cross-origin loading if needed and robust path handling
+        if (loader.setCrossOrigin) {
+            loader.setCrossOrigin('anonymous');
+        }
+
+        // Use ./ to ensure relative path to current document context
+        const modelPath = './imagens/Swimming.glb';
+
+        loader.load(modelPath, function (gltf) {
             chesterModel = gltf.scene;
             
             // Initial setup
@@ -118,7 +126,18 @@
             // Schedule first spawn
             chesterNextSpawnTime = clock.getElapsedTime() + 0.5; 
         }, undefined, function (error) {
-            console.error('An error occurred loading Chester:', error);
+            console.error(`An error occurred loading Chester (Attempt ${retryCount + 1}):`, error);
+
+            // Retry logic for 503 or network errors
+            if (retryCount < 3) {
+                const delay = 1000 * (retryCount + 1); // Exponential backoff: 1s, 2s, 3s
+                console.log(`Retrying model load in ${delay}ms...`);
+                setTimeout(() => {
+                    loadChester(retryCount + 1);
+                }, delay);
+            } else {
+                console.error("Failed to load Chester model after multiple attempts.");
+            }
         });
     }
 
