@@ -12907,8 +12907,8 @@ const supervisorGroups = new Map();
                     const innovationsFile = document.getElementById('innovations-file-input').files[0];
                     const hierarchyFile = document.getElementById('hierarchy-file-input').files[0];
                     const titulosFile = document.getElementById('titulos-file-input').files[0];
-                    const notaInvolves1File = document.getElementById('nota-involves-1-file-input').files[0];
-                    const notaInvolves2File = document.getElementById('nota-involves-2-file-input').files[0];
+                    const notaInvolves1File = document.getElementById('nota-involves-1-input').files[0];
+                    const notaInvolves2File = document.getElementById('nota-involves-2-input').files[0];
 
                     if (!salesFile && !historyFile && !hierarchyFile && !notaInvolves1File && !notaInvolves2File) {
                         // Titulos is optional, not required for basic operation
@@ -12942,8 +12942,8 @@ const supervisorGroups = new Map();
                     // If `clientsData` is missing (no file), `referenceData` will be empty.
                     // So user MUST upload clients file for this to work perfectly.
                     // We should warn about this or just let it be.
-
-                    worker.postMessage({ salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolves1File, notaInvolves2File });
+                    
+                    worker.postMessage({ salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolvesFile1: notaInvolves1File, notaInvolvesFile2: notaInvolves2File });
 
                     worker.onmessage = (e) => {
                         const { type, data, status, percentage, message } = e.data;
@@ -21304,7 +21304,7 @@ const supervisorGroups = new Map();
         let perfectStoresCount = 0;
 
         filtered.forEach(item => {
-            totalScore += item.nota_media;
+            totalScore += item.nota_media; 
             totalAudits += item.auditorias;
             totalPerfectAudits += item.auditorias_perfeitas;
             if (item.nota_media >= 80) perfectStoresCount++;
@@ -21351,7 +21351,7 @@ const supervisorGroups = new Map();
 
         tbody.innerHTML = subset.map(t => {
             const scoreColor = t.nota_media >= 80 ? 'text-green-400' : (t.nota_media >= 60 ? 'text-orange-400' : 'text-red-400');
-
+            
             return `
                 <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors">
                     <td class="px-4 py-3 font-mono text-xs text-slate-400">${t.codigo_cliente}</td>
