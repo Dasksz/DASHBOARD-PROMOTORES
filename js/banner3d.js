@@ -94,7 +94,7 @@
             chesterModel = gltf.scene;
 
             // Initial setup
-            chesterModel.scale.set(3.5, 3.5, 3.5); // Adjust scale to fit scene nicely
+            chesterModel.scale.set(17.5, 17.5, 17.5); // Adjust scale to fit scene nicely
             chesterModel.visible = false;
 
             // Enable shadows
@@ -148,8 +148,8 @@
 
         // Speed variation: faster if further away usually, but random is good
         // Base speed
-        const speedBase = 0.003;
-        chesterSpeed = speedBase + Math.random() * 0.003;
+        const speedBase = 0.0005;
+        chesterSpeed = speedBase + Math.random() * 0.0005;
     }
 
     function updateChester(delta) {
@@ -193,7 +193,7 @@
 
             // Collision Avoidance Logic
             // Push cheetos away if they are too close
-            const repulsionRadius = 5.0; // Size of "force field"
+            const repulsionRadius = 25.0; // Size of "force field"
             const forceStrength = 0.8;
 
             cheetos.forEach(c => {
