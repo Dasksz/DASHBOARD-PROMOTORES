@@ -177,7 +177,7 @@
 
             const startLeft = Math.random() > 0.5;
             // HUGE offset to ensure no pop-in, accounting for camera pan/rotation
-            const offset = 35; 
+            const offset = 55;
             
             const xLeft = viewCenterX - (visibleWidth / 2) - offset;
             const xRight = viewCenterX + (visibleWidth / 2) + offset;
@@ -208,7 +208,7 @@
             const visibleWidth = visibleHeight * aspect;
 
             const startLeft = Math.random() > 0.5;
-            const offset = 60; // Extremely large buffer to ensure smooth entry/exit
+            const offset = 95; // Extremely large buffer to ensure smooth entry/exit
             
             const xLeft = viewCenterX - (visibleWidth / 2) - offset;
             const xRight = viewCenterX + (visibleWidth / 2) + offset;
@@ -258,9 +258,9 @@
         chesterModel.visible = true;
         
         // Speed variation: Slower if close-up to appreciate details
-        let speedBase = 0.0003;
-        if (spawnMode === 'CLOSE_UP') speedBase = 0.00015; // Slower flyby
-        chesterSpeed = speedBase + Math.random() * 0.0004;
+        let speedBase = 0.005;
+        if (spawnMode === 'CLOSE_UP') speedBase = 0.003; // Slower flyby
+        chesterSpeed = speedBase + Math.random() * 0.0005;
     }
 
     function updateOrientation(point, tangent) {
@@ -310,8 +310,8 @@
             if (chesterProgress >= 1.0) {
                 chesterState = 'HIDDEN';
                 chesterModel.visible = false;
-                // Faster respawn! 1-4 seconds
-                chesterNextSpawnTime = time + 1.0 + Math.random() * 3.0; 
+                // Faster respawn! 1 second
+                chesterNextSpawnTime = time + 1.0;
                 return;
             }
 
