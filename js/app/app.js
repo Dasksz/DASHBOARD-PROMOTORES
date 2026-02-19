@@ -10245,7 +10245,7 @@ const supervisorGroups = new Map();
             const { currentSales, historySales, perdasSales, perdasHistory } = getComparisonFilteredData();
 
             // Show Loading State on Charts (only if no chart exists)
-            const chartContainers = ['weeklyComparisonChart', 'monthlyComparisonChart', 'dailyWeeklyComparisonChart'];
+            const chartContainers = ['weeklyComparisonChart', 'monthlyComparisonChart'];
             chartContainers.forEach(id => {
                 if (!charts[id]) {
                     const el = document.getElementById(id + 'Container');
@@ -10836,44 +10836,6 @@ const supervisorGroups = new Map();
                     }
                     // --- FIM DA MODIFICAÇÃO ---
 
-                    const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-                    const professionalPalette = ['#a855f7', '#6366f1', '#ec4899', '#f97316', '#8b5cf6', '#06b6d4', '#f59e0b'];
-                    const dailyBreakdownDatasets = dayNames.map((dayName, dayIndex) => ({ label: dayName, data: currentMonthWeeks.map((week, weekIndex) => salesByWeekAndDay[weekIndex + 1][dayIndex]), backgroundColor: professionalPalette[dayIndex % professionalPalette.length] }));
-                    const weekLabelsForDailyChart = currentMonthWeeks.map((week, index) => { const startDateStr = week.start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' }); const endDateStr = week.end.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' }); return `S${index + 1} (${startDateStr} à ${endDateStr})`; });
-
-                    if (dailyBreakdownDatasets.some(ds => ds.data.some(d => d > 0))) {
-                        createChart('dailyWeeklyComparisonChart', 'bar', weekLabelsForDailyChart, dailyBreakdownDatasets, {
-                            plugins: {
-                                legend: { display: true, position: 'top' },
-                                tooltip: {
-                                    mode: 'point',
-                                    intersect: true,
-                                    callbacks: {
-                                        label: function(context) {
-                                            let label = context.dataset.label || '';
-                                            if (label) label += ': ';
-                                            if (context.parsed.y !== null) {
-                                                label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
-                                            }
-                                            return label;
-                                        },
-                                        afterBody: function(context) {
-                                            // Calculate Week Total
-                                            const weekIndex = context[0].dataIndex; // All items in tooltip share same index (if grouped) or point
-                                            // Ensure we are accessing the modified salesByWeekAndDay
-                                            const weekData = salesByWeekAndDay[weekIndex + 1];
-                                            const total = weekData.reduce((a, b) => a + b, 0);
-                                            return '\nSemana: ' + new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total);
-                                        }
-                                    }
-                                },
-                                datalabels: { display: false }
-                            },
-                            scales: { x: { stacked: false }, y: { stacked: false, ticks: { callback: (v) => (v / 1000).toFixed(0) + 'k' } } }
-                        });
-                    } else {
-                        showNoDataMessage('dailyWeeklyComparisonChart', 'Sem dados para exibir.');
-                    }
 
                     // Weekly Summary Table (Optimized)
                     const weeklySummaryTableBody = document.getElementById('weeklySummaryTableBody');
