@@ -153,11 +153,11 @@
         let spawnMode = 'EDGE_TO_EDGE';
 
         if (rand < 0.6) {
-            spawnMode = 'CLOSE_UP'; // 60% Chance - Very Close & Prominent (Increased visibility)
+            spawnMode = 'CLOSE_UP'; // 60% Chance - Very Close & Prominent
         } else if (rand < 0.9) {
             spawnMode = 'EDGE_TO_EDGE'; // 30% Chance - Standard Flyby
         } else {
-            spawnMode = 'DEEP_SPAWN'; // 10% Chance - Background (Reduced to prevent "invisible" confusion)
+            spawnMode = 'DEEP_SPAWN'; // 10% Chance - Background
         }
 
         // --- Common Math for Off-screen Calculation ---
@@ -166,8 +166,9 @@
         
         // --- MODE C: CLOSE UP (Fly near camera) ---
         if (spawnMode === 'CLOSE_UP') {
-            // Z Range near camera (Camera is at Z=25)
-            const zClose = 18 + (Math.random() - 0.5) * 4; 
+            // Z Range near camera (Camera is at Z=25).
+            // Reduced max Z to ~16 to prevent "giant" appearance (was up to 22).
+            const zClose = 12 + (Math.random() - 0.5) * 4; // Range: 10 to 14
             
             // Calculate visible bounds at this depth
             const dist = camera.position.z - zClose;
@@ -176,8 +177,8 @@
             const visibleWidth = visibleHeight * aspect;
 
             const startLeft = Math.random() > 0.5;
-            // HUGE offset to ensure no pop-in, accounting for camera pan/rotation
-            const offset = 55;
+            // Increased offset to ensure no pop-in
+            const offset = 75;
             
             const xLeft = viewCenterX - (visibleWidth / 2) - offset;
             const xRight = viewCenterX + (visibleWidth / 2) + offset;
@@ -185,22 +186,24 @@
             const xStart = startLeft ? xLeft : xRight;
             const xEnd = startLeft ? xRight : xLeft;
 
-            // Curve points
-            const p1 = new THREE.Vector3(xStart, (Math.random()-0.5) * 5, zClose);
-            // Bulge towards camera for "in your face" effect
-            const p2 = new THREE.Vector3(startLeft ? viewCenterX - 5 : viewCenterX + 5, (Math.random()-0.5) * 8, zClose + 2); 
-            const p3 = new THREE.Vector3(startLeft ? viewCenterX + 5 : viewCenterX - 5, (Math.random()-0.5) * 8, zClose + 2);
-            const p4 = new THREE.Vector3(xEnd, (Math.random()-0.5) * 5, zClose);
+            // Curve points - Emerge from slightly deeper background
+            const p1 = new THREE.Vector3(xStart, (Math.random()-0.5) * 5, zClose - 8);
+
+            // Mid points: Ensure monotonic X (no zigzag) and center crossing
+            // If starting Left (Rightwards), p2 < p3.
+            const midX1 = startLeft ? viewCenterX - 8 : viewCenterX + 8;
+            const midX2 = startLeft ? viewCenterX + 8 : viewCenterX - 8;
+
+            const p2 = new THREE.Vector3(midX1, (Math.random()-0.5) * 6, zClose);
+            const p3 = new THREE.Vector3(midX2, (Math.random()-0.5) * 6, zClose);
+            
+            const p4 = new THREE.Vector3(xEnd, (Math.random()-0.5) * 5, zClose - 8);
 
             chesterPath = new THREE.CatmullRomCurve3([p1, p2, p3, p4]);
-            
-            // High chance to look at camera ("Belly Swim")
-            // chesterOrientationMode = Math.random() > 0.3 ? 'CAMERA' : 'PATH'; 
-            chesterOrientationMode = 'PATH'; // Always align with swim path
+            chesterOrientationMode = 'PATH';
         } 
         // --- MODE A: EDGE TO EDGE (Mid Range) ---
         else if (spawnMode === 'EDGE_TO_EDGE') {
-            // Calculate frustum width at a random depth
             const zDepth = (Math.random() - 0.5) * 10; // Z range: -5 to 5
             const dist = camera.position.z - zDepth;
             const vFOV = THREE.MathUtils.degToRad(camera.fov);
@@ -208,7 +211,7 @@
             const visibleWidth = visibleHeight * aspect;
 
             const startLeft = Math.random() > 0.5;
-            const offset = 95; // Extremely large buffer to ensure smooth entry/exit
+            const offset = 100; // Large buffer
             
             const xLeft = viewCenterX - (visibleWidth / 2) - offset;
             const xRight = viewCenterX + (visibleWidth / 2) + offset;
@@ -216,30 +219,41 @@
             const xStart = startLeft ? xLeft : xRight;
             const xEnd = startLeft ? xRight : xLeft;
 
-            const p1 = new THREE.Vector3(xStart, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth);
-            const p2 = new THREE.Vector3(viewCenterX - 10, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth + (Math.random() - 0.5) * 5);
-            const p3 = new THREE.Vector3(viewCenterX + 10, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth + (Math.random() - 0.5) * 5);
-            const p4 = new THREE.Vector3(xEnd, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth);
+            // Start/End slightly deeper to "emerge"
+            const p1 = new THREE.Vector3(xStart, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth - 5);
+
+            // Fix Zigzag: Set mid points based on direction
+            const midX1 = startLeft ? viewCenterX - 10 : viewCenterX + 10;
+            const midX2 = startLeft ? viewCenterX + 10 : viewCenterX - 10;
+
+            const p2 = new THREE.Vector3(midX1, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth);
+            const p3 = new THREE.Vector3(midX2, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth);
+            
+            const p4 = new THREE.Vector3(xEnd, (Math.random() - 0.5) * visibleHeight * 0.6, zDepth - 5);
 
             chesterPath = new THREE.CatmullRomCurve3([p1, p2, p3, p4]);
-            
-            // Occasionally look at camera
-            // chesterOrientationMode = Math.random() > 0.8 ? 'CAMERA' : 'PATH'; 
-            chesterOrientationMode = 'PATH'; // Always align with swim path
+            chesterOrientationMode = 'PATH';
 
         } 
         // --- MODE B: DEEP SPAWN (Background) ---
         else {
             // Start far back, come towards camera/side
-            // Centered around ViewCenter
-            const startX = viewCenterX + (Math.random() - 0.5) * 30;
-            const endX = viewCenterX + (Math.random() - 0.5) * 60;
+            const startLeft = Math.random() > 0.5;
+
+            // Force start/end logic to be consistent with direction
+            const startX = viewCenterX + (startLeft ? -45 : 45); // Start far left or right
+            const endX = viewCenterX + (startLeft ? 45 : -45);   // End opposite side
             
-            // Brought closer (-60 to -40) so he's more visible
             const p1 = new THREE.Vector3(startX, (Math.random() - 0.5) * 10, -50); 
-            const p2 = new THREE.Vector3(startX * 0.6 + viewCenterX, (Math.random() - 0.5) * 15, -30);
-            const p3 = new THREE.Vector3(endX * 0.4 + viewCenterX, (Math.random() - 0.5) * 20, -10);
-            const p4 = new THREE.Vector3(endX, (Math.random() - 0.5) * 25, 20); // Past camera
+
+            // Mid points following the path
+            const midX1 = viewCenterX + (startLeft ? -10 : 10);
+            const midX2 = viewCenterX + (startLeft ? 10 : -10);
+
+            const p2 = new THREE.Vector3(midX1, (Math.random() - 0.5) * 15, -30);
+            const p3 = new THREE.Vector3(midX2, (Math.random() - 0.5) * 20, -15);
+
+            const p4 = new THREE.Vector3(endX, (Math.random() - 0.5) * 25, 10); // End somewhat near
 
             chesterPath = new THREE.CatmullRomCurve3([p1, p2, p3, p4]);
             chesterOrientationMode = 'PATH';
