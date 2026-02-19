@@ -12554,8 +12554,8 @@ const supervisorGroups = new Map();
                 }
 
                 // Make Nota Perfeita Optional
-                if (data.notaPerfeita && data.notaPerfeita.length > 0) {
-                    await conditionalUpload('data_nota_perfeita', data.notaPerfeita, 'hash_nota_perfeita', false);
+                if (data.nota_perfeita && data.nota_perfeita.length > 0) {
+                    await conditionalUpload('data_nota_perfeita', data.nota_perfeita, 'hash_nota_perfeita', false);
                 } else {
                     console.log("[Upload] Skipping Nota Perfeita (No data provided).");
                 }
