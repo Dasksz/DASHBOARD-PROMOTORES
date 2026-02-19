@@ -662,6 +662,38 @@
             const grouped = new Map(); // Key: CodCli_Pesquisador
             const uniqueClientsFound = new Set();
 
+            // Month names in Portuguese
+            const monthsPT = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+            // Helper to format date to "Month of Year"
+            const formatMonthYear = (val) => {
+                if (!val) return '';
+                let dateObj = null;
+
+                // Check if Excel Serial Date
+                if (typeof val === 'number') {
+                    // Excel dates > 1.6e12 are JS timestamps, but 'mes_ano' is unlikely to be a timestamp unless parsed as such.
+                    // Typical Excel serials are ~45000.
+                    if (val < 1000000) {
+                        dateObj = new Date(Math.round((val - 25569) * 86400 * 1000));
+                    } else {
+                        dateObj = new Date(val);
+                    }
+                } else {
+                    // Try parsing string
+                    dateObj = parseDate(val);
+                }
+
+                if (dateObj && !isNaN(dateObj.getTime())) {
+                    const m = dateObj.getUTCMonth(); // Use UTC to avoid shift
+                    const y = dateObj.getUTCFullYear();
+                    return `${monthsPT[m]} de ${y}`;
+                }
+                
+                // Return original if not a valid date
+                return String(val).trim();
+            };
+
             // Helper to handle header variations (BOM, casing, spaces)
             const getVal = (row, keyPart) => {
                 if (!row) return undefined;
@@ -696,14 +728,30 @@
 
                 const cnpjClean = cnpjStr.replace(/[^0-9]/g, '');
                 
-                // Lookup Client Code
+                // Lookup Client Code & Determine Final CNPJ (with padding if needed)
                 let codCli = clientCnpjMap.get(cnpjClean);
-                // Also try padded versions during lookup
-                if (!codCli && cnpjClean.length <= 14) codCli = clientCnpjMap.get(cnpjClean.padStart(14, '0'));
-                if (!codCli && cnpjClean.length <= 11) codCli = clientCnpjMap.get(cnpjClean.padStart(11, '0'));
+                let finalCnpj = cnpjClean; // Default to cleaned raw
+
+                if (!codCli && cnpjClean.length <= 14) {
+                    const padded14 = cnpjClean.padStart(14, '0');
+                    const match14 = clientCnpjMap.get(padded14);
+                    if (match14) {
+                        codCli = match14;
+                        finalCnpj = padded14;
+                    }
+                }
+                
+                if (!codCli && cnpjClean.length <= 11) {
+                    const padded11 = cnpjClean.padStart(11, '0');
+                    const match11 = clientCnpjMap.get(padded11);
+                    if (match11) {
+                        codCli = match11;
+                        finalCnpj = padded11;
+                    }
+                }
 
                 if (!codCli) return; // Skip if client not found
-
+                
                 uniqueClientsFound.add(codCli);
 
                 const pesquisador = String(getVal(row, 'Pesquisador') || '').trim().toUpperCase();
@@ -716,7 +764,8 @@
 
                 const current = grouped.get(key);
                 // Fuzzy lookups for other fields
-                const mesAno = getVal(row, 'Mês') || getVal(row, 'Mes');
+                const mesAnoRaw = getVal(row, 'Mês') || getVal(row, 'Mes');
+                const mesAno = formatMonthYear(mesAnoRaw);
                 const semana = getVal(row, 'Semana');
                 const canal = getVal(row, 'Canal');
                 const subcanal = getVal(row, 'Subcanal');
@@ -729,7 +778,7 @@
                         mes_ano: mesAno,
                         semana: semana,
                         pesquisador: pesquisador,
-                        cnpj_origem: String(cnpjRaw),
+                        cnpj_origem: finalCnpj,
                         canal: canal,
                         subcanal: subcanal,
                         nota_media: nota,
