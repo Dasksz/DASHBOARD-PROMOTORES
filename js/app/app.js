@@ -21417,21 +21417,23 @@ const supervisorGroups = new Map();
         const totalPages = Math.ceil(total / limit) || 1;
 
         if (total === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-500">Nenhum dado encontrado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500">Nenhum dado encontrado.</td></tr>';
             document.getElementById('lp-page-info-text').textContent = '0 de 0';
             return;
         }
 
         tbody.innerHTML = subset.map(t => {
-            const scoreColor = t.nota_media >= 80 ? 'text-green-400' : (t.nota_media >= 60 ? 'text-orange-400' : 'text-red-400');
+            let scoreColor;
+            if (t.nota_media < 50) scoreColor = 'text-red-400';
+            else if (t.nota_media < 80) scoreColor = 'text-yellow-400';
+            else scoreColor = 'text-green-400';
             
             return `
                 <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors">
-                    <td class="px-4 py-3 font-mono text-xs text-slate-400">${t.codigo_cliente}</td>
+                    <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${t.codigo_cliente}</td>
                     <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px]" title="${t.clientName}">${t.clientName}</td>
                     <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${t.pesquisador}</td>
                     <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
-                    <td class="px-4 py-3 text-center font-bold text-white">${t.auditorias}</td>
                     <td class="px-4 py-3 text-center font-bold ${scoreColor}">${t.nota_media.toFixed(1)}</td>
                 </tr>
             `;
