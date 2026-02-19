@@ -728,11 +728,27 @@
 
                 const cnpjClean = cnpjStr.replace(/[^0-9]/g, '');
                 
-                // Lookup Client Code
+                // Lookup Client Code & Determine Final CNPJ (with padding if needed)
                 let codCli = clientCnpjMap.get(cnpjClean);
-                // Also try padded versions during lookup
-                if (!codCli && cnpjClean.length <= 14) codCli = clientCnpjMap.get(cnpjClean.padStart(14, '0'));
-                if (!codCli && cnpjClean.length <= 11) codCli = clientCnpjMap.get(cnpjClean.padStart(11, '0'));
+                let finalCnpj = cnpjClean; // Default to cleaned raw
+
+                if (!codCli && cnpjClean.length <= 14) {
+                    const padded14 = cnpjClean.padStart(14, '0');
+                    const match14 = clientCnpjMap.get(padded14);
+                    if (match14) {
+                        codCli = match14;
+                        finalCnpj = padded14;
+                    }
+                }
+
+                if (!codCli && cnpjClean.length <= 11) {
+                    const padded11 = cnpjClean.padStart(11, '0');
+                    const match11 = clientCnpjMap.get(padded11);
+                    if (match11) {
+                        codCli = match11;
+                        finalCnpj = padded11;
+                    }
+                }
 
                 if (!codCli) return; // Skip if client not found
 
@@ -762,7 +778,7 @@
                         mes_ano: mesAno,
                         semana: semana,
                         pesquisador: pesquisador,
-                        cnpj_origem: String(cnpjRaw),
+                        cnpj_origem: finalCnpj,
                         canal: canal,
                         subcanal: subcanal,
                         nota_media: nota,
