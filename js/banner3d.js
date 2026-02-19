@@ -125,93 +125,97 @@
         }
     }
 
-    function generateNoiseTexture() {
-        const size = 256;
-        const canvas = document.createElement('canvas');
-        canvas.width = size; canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        
-        ctx.fillStyle = '#ff6600'; 
-        ctx.fillRect(0,0,size,size);
-        
-        const imageData = ctx.getImageData(0,0,size,size);
-        const data = imageData.data;
-        
-        for (let i = 0; i < data.length; i += 4) {
-            const grain = (Math.random() - 0.4) * 240; 
-            data[i] = Math.max(0, Math.min(255, data[i] + grain));
-            data[i+1] = Math.max(0, Math.min(255, data[i+1] + grain * 0.6));
-            data[i+2] = Math.max(0, Math.min(255, data[i+2] + grain * 0.05));
-        }
-        
-        ctx.putImageData(imageData, 0, 0);
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(2.5, 2.5);
-        return texture;
-    }
-
-    function smoothDeform(geometry, seed, yOffset = 0) {
+    function createDeformedCheetoGeometry() {
+        const geometry = new THREE.CylinderGeometry(0.4, 0.4, 3.6, 48, 64, true);
         const pos = geometry.attributes.position;
         const vec = new THREE.Vector3();
+
+        // Parâmetros Finais
+        const bendIntensity = 0.3;
+        const taperStart = 0.82;
+        const tipExponent = 0.714;
+        const noiseInt = 0.12;
+        const noiseFreq = 4.1;
+
+        // Detalhes
+        const powderInt = 0.02;
+        const holesInt = 0.015;
+
+        const randomPhase = Math.random() * 100;
+
         for (let i = 0; i < pos.count; i++) {
             vec.fromBufferAttribute(pos, i);
-            const absoluteY = vec.y + yOffset;
-            
-            const noise = (
-                Math.sin(absoluteY * 3.5 + seed) * Math.cos(vec.x * 2.5 + seed) +
-                Math.sin(vec.z * 4.0 + seed) * 0.5
-            ) * 0.12;
-            
-            const dir = vec.clone().normalize();
-            pos.setXYZ(i, vec.x + dir.x * noise, vec.y + dir.y * noise, vec.z + dir.z * noise);
+
+            const halfLen = 1.8;
+            const relativeY = vec.y / halfLen;
+
+            // 1. Afinamento
+            let radiusScale = 1.0;
+            if (Math.abs(relativeY) > taperStart) {
+                let distFromStart = (Math.abs(relativeY) - taperStart) / (1 - taperStart);
+                distFromStart = Math.max(0, Math.min(1, distFromStart));
+
+                if (distFromStart > 0.99) {
+                    radiusScale = 0;
+                } else {
+                    const cosVal = Math.max(0, Math.cos(distFromStart * Math.PI / 2));
+                    radiusScale = Math.pow(cosVal, tipExponent);
+                }
+            }
+            vec.x *= radiusScale;
+            vec.z *= radiusScale;
+
+            // 2. Curvatura
+            const bendOffset = Math.pow(relativeY, 2) * bendIntensity;
+            vec.x += bendOffset;
+
+            let direction = new THREE.Vector3(vec.x - bendOffset, 0, vec.z);
+            if (direction.lengthSq() > 0) direction.normalize();
+            else direction.set(1,0,0);
+
+            const noiseFactor = radiusScale > 0.1 ? 1.0 : radiusScale * 10;
+
+            // 3. Texturas
+            const noise = Math.sin(vec.x * noiseFreq + randomPhase)
+                * Math.cos(vec.y * noiseFreq * 2 + randomPhase)
+                * Math.sin(vec.z * noiseFreq + randomPhase);
+            vec.addScaledVector(direction, noise * noiseInt * noiseFactor);
+
+            if (powderInt > 0) {
+                const powderFreq = 45.0;
+                const powderNoise = Math.abs(Math.sin(vec.x * powderFreq) * Math.cos(vec.y * powderFreq) * Math.sin(vec.z * powderFreq));
+                vec.addScaledVector(direction, powderNoise * powderInt * noiseFactor);
+            }
+
+            if (holesInt > 0) {
+                const holeFreq = 60.0;
+                const holeNoise = Math.abs(Math.cos(vec.x * holeFreq) * Math.sin(vec.y * holeFreq * 1.5) * Math.cos(vec.z * holeFreq));
+                vec.addScaledVector(direction, -holeNoise * holesInt * noiseFactor);
+            }
+
+            pos.setXYZ(i, vec.x, vec.y, vec.z);
         }
+
         geometry.computeVertexNormals();
+        return geometry;
     }
 
     function createCheetoFactory() {
-        const noiseTexture = generateNoiseTexture();
-        
         const material = new THREE.MeshPhysicalMaterial({ 
-            color: 0xff7700,
-            map: noiseTexture,
-            bumpMap: noiseTexture,
-            bumpScale: 0.135, 
-            roughness: 0.98, 
-            roughnessMap: noiseTexture,
-            metalness: 0.0,
-            clearcoat: 0.0,
-            emissive: 0xff3300,
-            emissiveIntensity: 0.034
+            color: "#6f2f01",
+            roughness: 0.84,
+            clearcoat: 0.05
         });
 
         for (let i = 0; i < 35; i++) {
-            const group = new THREE.Group();
-            const radius = 0.35 + Math.random() * 0.15;
-            const len = 1.6 + Math.random() * 0.8;
-            const seed = Math.random() * 100;
-
-            const bodyGeo = new THREE.CylinderGeometry(radius, radius, len, 16, 8, true);
-            smoothDeform(bodyGeo, seed, 0);
-
-            const capGeo = new THREE.SphereGeometry(radius, 16, 16);
+            const geometry = createDeformedCheetoGeometry();
+            const mesh = new THREE.Mesh(geometry, material);
             
-            const cap1 = new THREE.Mesh(capGeo.clone(), material);
-            const cap2 = new THREE.Mesh(capGeo.clone(), material);
-            const body = new THREE.Mesh(bodyGeo, material);
-
-            cap1.position.y = len/2;
-            cap2.position.y = -len/2;
+            mesh.castShadow = true;
             
-            smoothDeform(cap1.geometry, seed, len/2);
-            smoothDeform(cap2.geometry, seed, -len/2);
-
-            cap1.castShadow = cap2.castShadow = body.castShadow = true;
-            group.add(body, cap1, cap2);
-            
-            resetCheeto(group, true);
-            cheetos.push(group);
-            scene.add(group);
+            resetCheeto(mesh, true);
+            cheetos.push(mesh);
+            scene.add(mesh);
         }
     }
 
