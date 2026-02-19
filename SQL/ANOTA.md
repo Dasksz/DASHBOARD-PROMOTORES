@@ -7,13 +7,13 @@ Este documento detalha o plano técnico para adaptar o dashboard para os perfis 
 Atualmente, o sistema foca em Admin, Coordenador, Co-Coordenador e Promotor. Novos perfis serão integrados:
 
 *   **Supervisor de Vendas:**
-    *   **Escopo:** Visualiza dados agregados de sua equipe de Vendedores (RCAs).
+    *   **Escopo:** Visualiza dados agregados de sua equipe de Vendedores (RCAs). ( o supervisor de determiando RCA será reconhecido por uma logica de reatrribuição, que vai reconhecer nas planilhas de vendas por qual supervisor esse "RCA" vendeu.. O codigo do supervisor vira na planilha de vendas carregadas no uploader na coluna "CODSUPERVISOR". ( para qualquer duviida nessa logicas de reatribuição, opde consultar o projeto "https://github.com/Dasksz/PRIME".
     *   **Foco:** Vendas, Metas, Cobertura e Positivação por Vendedor.
     *   **Filtros:** Deve ver filtros de "Vendedor" e "Supervisor" (se hierarquia permitir), mas **não** deve ver filtros de "Promotor" ou "Coordenador" (a menos que alinhado à estrutura de trade).
     *   **Gráficos:** Rankings devem focar em Vendedores (RCAs).
 
 *   **Vendedor (RCA):**
-    *   **Escopo:** Apenas seus próprios dados (Clientes da sua carteira).
+    *   **Escopo:** Apenas seus próprios dados (Clientes da sua carteira). ( reconhecido pela planilha 'cadstro de cliente", pois para os vendedores, a base está casdtrada diretanente nssa planilha, na coluna "rca1".
     *   **Foco:** Auto-gestão, atingimento de meta pessoal, lista de clientes.
     *   **Filtros:** Filtros de hierarquia (Supervisor, Vendedor) devem vir pré-selecionados e travados (ou ocultos).
     *   **Gráficos:** Visualização de performance individual vs Meta.
@@ -24,7 +24,7 @@ Atualmente, o sistema foca em Admin, Coordenador, Co-Coordenador e Promotor. Nov
 Aprimorar o objeto global `userHierarchyContext` (definido em `init.js`) para suportar os novos papéis.
 
 *   Adicionar propriedades: `isSupervisor`, `isSeller`.
-*   Mapear o login do usuário para o código de Supervisor/Vendedor correspondente nas tabelas de dados (`data_sales`, `data_clients`).
+*   Mapear o login do usuário para o código de Supervisor/Vendedor correspondente nas tabelas de dados (`data_sales`, `data_clients`). ( o codigo que eu vou informar na tabela "profiles" na coluna "role" será o mesmo codigos das planilhas... Ex.: Se o vendedoor pela planilha de casdtrado de cliente tem o codigo "247", na coluna "role" e vou informar o codigo "247" para sabermos que o login é desse vendedor, que vai ter acesso só aos dados desse codigo de RCA,
 
 ### B. Gestão de Filtros (Visibilidade Dinâmica)
 
@@ -71,3 +71,6 @@ A lógica já foi preparada na view de Cobertura:
 *   O título do gráfico e botão de alternância se ajustarão para "Vendedores".
 
 Esta abordagem deve ser replicada para **Mix**, **Positivação** e **Inovações**.
+
+## 4. Para a página de Gestão de carteira para os Vendedores.
+*  Como a base já vai vir pr-definida pela planilha de casdatro de clientes... Não teremos opção de adicionar ou excluir clientes, muito menos cadastrar roreirização, pois essa parte de roteirização será apenas para os Promotorrs, consequentemente Os Supervisroes e Venderoes não verão essa pagna "roteiro".
