@@ -3347,6 +3347,24 @@
             </div>
         </div>
     </div>
+
+    <!-- Mobile Mix Details Modal -->
+    <div id="mix-mobile-modal" class="modal-overlay hidden z-[3000]">
+        <div class="bg-modal-content w-full max-w-sm m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 glass-panel max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button id="mix-mobile-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-white leading-tight" id="mix-mobile-modal-title">Cliente</h3>
+                <p class="text-sm text-slate-400 font-mono mt-1" id="mix-mobile-modal-subtitle">Cód: 0000</p>
+            </div>
+
+            <div id="mix-mobile-modal-content" class="space-y-4">
+                <!-- Content injected by JS -->
+            </div>
+        </div>
+    </div>
+
 <!-- Toast Notification Container -->
 <div id="toast-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 w-80 sm:w-96 pointer-events-none"></div>
 
