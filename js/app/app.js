@@ -21547,6 +21547,11 @@ const supervisorGroups = new Map();
                 const valOrig = t.valOriginal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const valOpen = t.valReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+                let mobileClientName = t.clientName;
+                if (mobileClientName.length > 24) {
+                    mobileClientName = mobileClientName.substring(0, 24) + '...';
+                }
+
                 let statusDesktop;
                 let statusMobile;
 
@@ -21574,15 +21579,15 @@ const supervisorGroups = new Map();
                         <td class="md:hidden p-4 w-full" colspan="8">
                             <div class="flex flex-col gap-2">
                                 <div class="flex justify-between items-center">
-                                    <span class="text-xs font-bold text-white leading-tight truncate mr-2">
-                                        ${t.codCli} - ${t.clientName}
+                                    <span class="text-xs font-bold text-white leading-tight truncate mr-2 text-left">
+                                        ${t.codCli} - ${mobileClientName}
                                     </span>
                                     <div class="shrink-0">
                                         ${statusMobile}
                                     </div>
                                 </div>
                                 <div class="flex justify-between items-center">
-                                    <span class="text-sm font-bold text-white">
+                                    <span class="text-sm font-bold text-white text-left">
                                         ${valOpen}
                                     </span>
                                     <span class="text-sm text-slate-400 font-mono">
