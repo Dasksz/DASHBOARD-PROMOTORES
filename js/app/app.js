@@ -11399,6 +11399,9 @@ const supervisorGroups = new Map();
 
             const sortedCategories = Object.values(groupedTableData).sort((a, b) => b.metrics.coverageCurrent - a.metrics.coverageCurrent);
 
+            // Initialize Modal Data Map
+            window.innovationsDataMap = new Map();
+
             // Render Table with Expandable Rows
             innovationsMonthTableBody.innerHTML = sortedCategories.map((catGroup, index) => {
                 const catId = `cat-group-${index}`;
@@ -11425,10 +11428,10 @@ const supervisorGroups = new Map();
                         </td>
                         <td class="px-2 py-3 text-xs text-slate-400 text-left italic hidden md:table-cell">${catGroup.items.length} Produtos</td>
                         <td class="px-2 py-3 text-sm text-center font-mono font-bold text-blue-400 hidden md:table-cell">${catGroup.stock.toLocaleString('pt-BR')}</td>
-                        <td class="px-2 py-3 text-xs text-center">
+                        <td class="px-2 py-3 text-xs text-center hidden md:table-cell">
                             <div class="tooltip">${catGroup.metrics.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.clientsPreviousCount} PDVs</span></div>
                         </td>
-                        <td class="px-2 py-3 text-xs text-center">
+                        <td class="px-2 py-3 text-xs text-center hidden md:table-cell">
                             <div class="tooltip font-bold text-white">${catGroup.metrics.coverageCurrent.toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.clientsCount} PDVs</span></div>
                         </td>
                         <td class="px-2 py-3 text-xs text-center font-bold">${variationContent}</td>
@@ -11436,14 +11439,24 @@ const supervisorGroups = new Map();
                 `;
 
                 const productRows = catGroup.items.map((item, pIdx) => {
+                    // Populate Map
+                    window.innovationsDataMap.set(String(item.productCode), item);
+
                     let prodVarContent;
+                    let mobileVarText;
+                    let colorClass = 'text-slate-400';
+
                     if (isFinite(item.variation)) {
-                        const colorClass = item.variation >= 0 ? 'text-green-400' : 'text-red-400';
+                        colorClass = item.variation >= 0 ? 'text-green-400' : 'text-red-400';
                         prodVarContent = `<span class="${colorClass}">${item.variation.toFixed(1)}%</span>`;
+                        mobileVarText = `${item.variation.toFixed(1)}%`;
                     } else if (item.coverageCurrent > 0) {
+                        colorClass = 'text-purple-300';
                         prodVarContent = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/30 text-purple-300">Novo</span>`;
+                        mobileVarText = 'Novo';
                     } else {
                         prodVarContent = `<span>-</span>`;
+                        mobileVarText = '-';
                     }
 
                     const isLast = pIdx === catGroup.items.length - 1;
@@ -11451,21 +11464,32 @@ const supervisorGroups = new Map();
                     
                     return `
                     <tr class="hidden bg-slate-900/50 hover:bg-glass ${borderClass} border-l border-r border-slate-700" data-parent="${catId}">
-                        <td class="hidden md:table-cell"></td> <!-- Spacer for indentation on desktop -->
-                        <td class="px-2 py-2 text-[10px] md:text-xs flex items-center">
-                             <div class="w-1.5 h-1.5 rounded-full bg-slate-600 mr-2 md:hidden"></div> <!-- Mobile bullet -->
+                        <!-- Mobile View Cell (Clickable) -->
+                        <td class="md:hidden p-2 cursor-pointer hover:bg-white/5" colspan="6" onclick="openInnovationsProductModal('${item.productCode}')">
+                            <div class="flex items-center text-xs whitespace-nowrap overflow-hidden w-full">
+                                <span class="font-mono text-slate-500 mr-1.5 flex-shrink-0">${item.productCode}</span>
+                                <span class="text-slate-300 mr-1">-</span>
+                                <span class="text-slate-300 truncate mr-2 flex-shrink min-w-0 max-w-[150px] sm:max-w-[200px]" title="${item.productName}">${item.productName}</span>
+                                <span class="text-slate-500 mr-1 flex-shrink-0">Var.:</span>
+                                <span class="font-bold ${colorClass} flex-shrink-0">${mobileVarText}</span>
+                            </div>
+                        </td>
+
+                        <!-- Desktop View Cells -->
+                        <td class="hidden md:table-cell"></td> <!-- Spacer -->
+                        <td class="hidden md:table-cell px-2 py-2 text-[10px] md:text-xs">
                              <div class="truncate max-w-[200px] md:max-w-none text-slate-300" title="${item.productName}">
                                 <span class="font-mono text-slate-500 mr-1 text-[9px] md:text-[10px]">${item.productCode}</span> ${item.productName}
                              </div>
                         </td>
-                        <td class="px-2 py-2 text-xs md:text-sm text-center font-mono text-slate-400 hidden md:table-cell">${item.stock.toLocaleString('pt-BR')}</td>
-                        <td class="px-2 py-2 text-[10px] md:text-xs text-center text-slate-500">
+                        <td class="hidden md:table-cell px-2 py-2 text-xs md:text-sm text-center font-mono text-slate-400">${item.stock.toLocaleString('pt-BR')}</td>
+                        <td class="hidden md:table-cell px-2 py-2 text-[10px] md:text-xs text-center text-slate-500">
                             <div class="tooltip">${item.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${item.clientsPreviousCount} PDVs</span></div>
                         </td>
-                        <td class="px-2 py-2 text-[10px] md:text-xs text-center text-slate-300">
+                        <td class="hidden md:table-cell px-2 py-2 text-[10px] md:text-xs text-center text-slate-300">
                             <div class="tooltip">${item.coverageCurrent.toFixed(2)}%<span class="tooltip-text">${item.clientsCurrentCount} PDVs</span></div>
                         </td>
-                        <td class="px-2 py-2 text-[10px] md:text-xs text-center">${prodVarContent}</td>
+                        <td class="hidden md:table-cell px-2 py-2 text-[10px] md:text-xs text-center">${prodVarContent}</td>
                     </tr>
                     `;
                 }).join('');
@@ -21704,3 +21728,73 @@ const supervisorGroups = new Map();
         document.getElementById('lp-page-info-text').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
     }
 })();
+    window.openInnovationsProductModal = function(productCode) {
+        if (!window.innovationsDataMap || !window.innovationsDataMap.has(String(productCode))) return;
+        const item = window.innovationsDataMap.get(String(productCode));
+
+        const modal = document.getElementById('product-performance-modal');
+        document.getElementById('product-performance-title').textContent = item.productName || 'Produto';
+        document.getElementById('product-performance-code').textContent = `Cód: ${item.productCode}`;
+
+        // Stock
+        const stockEl = document.getElementById('product-performance-stock');
+        if (stockEl) stockEl.textContent = (item.stock || 0).toLocaleString('pt-BR');
+
+        // Since this modal is shared with Coverage view which has "Sales", we might need to handle those fields.
+        // In Innovations context, we don't usually have "Sales Value" readily available in the item object
+        // (unless we enriched it from somewhere else). The current item structure in `updateInnovationsMonthView`
+        // focuses on Clients Count (Positivação).
+
+        // Hide/Reset Sales Section if not applicable or set to '-'
+        const salesPrevEl = document.getElementById('product-performance-prev');
+        const salesCurrEl = document.getElementById('product-performance-curr');
+        const salesVarEl = document.getElementById('product-performance-var');
+
+        if (salesPrevEl) salesPrevEl.textContent = '--';
+        if (salesCurrEl) salesCurrEl.textContent = '--';
+        if (salesVarEl) {
+            salesVarEl.textContent = '--';
+            salesVarEl.className = 'px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 text-slate-300';
+        }
+
+        // Update Label to reflect we might not be showing Sales Value
+        const metricLabel = document.getElementById('product-performance-metric-label');
+        if (metricLabel) metricLabel.textContent = 'Positivação'; // Or keep 'Valor' but data is missing
+
+        // PDV (Positivação) - This is the main data for Innovations
+        const pdvPrevEl = document.getElementById('product-performance-pdv-prev');
+        const pdvCurrEl = document.getElementById('product-performance-pdv-curr');
+        const pdvVarEl = document.getElementById('product-performance-pdv-var');
+
+        if (pdvPrevEl) pdvPrevEl.textContent = (item.clientsPreviousCount || 0).toLocaleString('pt-BR');
+        if (pdvCurrEl) pdvCurrEl.textContent = (item.clientsCurrentCount || 0).toLocaleString('pt-BR');
+
+        if (pdvVarEl) {
+            if (isFinite(item.variation)) {
+                pdvVarEl.textContent = `${item.variation.toFixed(1)}%`;
+                pdvVarEl.className = `px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 ${item.variation >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            } else if (item.clientsCurrentCount > 0) {
+                pdvVarEl.textContent = 'Novo';
+                pdvVarEl.className = 'px-3 py-1 rounded-lg text-sm font-bold bg-purple-500/30 text-purple-300';
+            } else {
+                pdvVarEl.textContent = '-';
+                pdvVarEl.className = 'px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 text-slate-300';
+            }
+        }
+
+        // Close Handlers
+        const closeBtn = document.getElementById('product-performance-modal-close-btn');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                modal.classList.add('hidden');
+            };
+        }
+
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        };
+
+        modal.classList.remove('hidden');
+    };
