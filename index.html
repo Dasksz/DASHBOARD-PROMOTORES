@@ -2202,7 +2202,7 @@
             </div>
             <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
                 <table class="min-w-full text-sm text-left text-slate-300">
-                    <thead class="text-[10px] md:text-xs text-slate-400 uppercase glass-panel sticky top-0 z-10">
+                    <thead class="text-[10px] md:text-xs text-slate-400 uppercase glass-panel sticky top-0 z-10 hidden md:table-header-group">
                         <tr>
                             <th class="px-4 py-3 font-bold tracking-wider">Cód.</th>
                             <th class="px-4 py-3 font-bold tracking-wider">Cliente</th>
@@ -3384,6 +3384,50 @@
             
             <div id="mix-mobile-modal-content" class="space-y-4">
                 <!-- Content injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Titulos Details Modal -->
+    <div id="titulos-mobile-modal" class="modal-overlay hidden z-[3000]">
+        <div class="bg-modal-content w-full max-w-sm m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 glass-panel max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button id="titulos-mobile-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-white leading-tight" id="titulos-mobile-modal-title">Cliente</h3>
+                <p class="text-sm text-slate-400 font-mono mt-1" id="titulos-mobile-modal-subtitle">Cód: 0000</p>
+            </div>
+
+            <div id="titulos-mobile-modal-content" class="space-y-4">
+                <div class="p-3 glass-panel rounded-lg border border-slate-700/50">
+                    <p class="text-xs text-slate-500 uppercase font-bold mb-1">Vendedor</p>
+                    <p class="text-white text-sm" id="titulos-modal-seller">--</p>
+                </div>
+                <div class="p-3 glass-panel rounded-lg border border-slate-700/50">
+                    <p class="text-xs text-slate-500 uppercase font-bold mb-1">Cidade</p>
+                    <p class="text-white text-sm" id="titulos-modal-city">--</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3 glass-panel rounded-lg border border-slate-700/50">
+                        <p class="text-xs text-slate-500 uppercase font-bold mb-1">Valor Original</p>
+                        <p class="text-slate-300 text-sm" id="titulos-modal-val-orig">--</p>
+                    </div>
+                    <div class="p-3 glass-panel rounded-lg border border-slate-700/50">
+                        <p class="text-xs text-slate-500 uppercase font-bold mb-1">Valor Aberto</p>
+                        <p class="text-white font-bold text-sm" id="titulos-modal-val-open">--</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3 glass-panel rounded-lg border border-slate-700/50">
+                        <p class="text-xs text-slate-500 uppercase font-bold mb-1">Vencimento</p>
+                        <p class="text-white text-sm" id="titulos-modal-date">--</p>
+                    </div>
+                    <div class="p-3 glass-panel rounded-lg border border-slate-700/50 flex flex-col justify-center items-center">
+                        <p class="text-xs text-slate-500 uppercase font-bold mb-1">Status</p>
+                        <div id="titulos-modal-status"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

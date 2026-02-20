@@ -21418,28 +21418,52 @@ const supervisorGroups = new Map();
                 return;
             }
 
-            tbody.innerHTML = subset.map(t => {
+            tbody.innerHTML = subset.map((t, localIndex) => {
+                const globalIndex = start + localIndex;
                 const dateStr = t.dtVenc ? t.dtVenc.toLocaleDateString('pt-BR') : '-';
                 const valOrig = t.valOriginal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const valOpen = t.valReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                let status;
+                let statusDesktop;
+                let statusMobile;
+
                 if (t.isCritical) {
-                     status = `<span class="px-2 py-1 bg-red-900/50 text-red-300 text-[10px] font-bold rounded-full border border-red-800">${t.daysOverdue} Dias</span>`;
+                     statusDesktop = `<span class="px-2 py-1 bg-red-900/50 text-red-300 text-[10px] font-bold rounded-full border border-red-800">${t.daysOverdue} Dias</span>`;
+                     statusMobile = `<span class="px-2 py-0.5 bg-red-900/50 text-red-300 text-[10px] font-bold rounded-full border border-red-800">${t.daysOverdue} Dias</span>`;
                 } else {
-                     status = `<span class="px-2 py-1 bg-green-900/50 text-green-300 text-[10px] font-bold rounded-full border border-green-800">Em Aberto</span>`;
+                     statusDesktop = `<span class="px-2 py-1 bg-green-900/50 text-green-300 text-[10px] font-bold rounded-full border border-green-800">Em Aberto</span>`;
+                     statusMobile = `<span class="px-2 py-0.5 bg-green-900/50 text-green-300 text-[10px] font-bold rounded-full border border-green-800">Em Aberto</span>`;
                 }
 
                 return `
-                    <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors">
-                        <td class="px-4 py-3 font-mono text-xs text-slate-400">${t.codCli}</td>
-                        <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px]" title="${t.clientName}">${t.clientName}</td>
+                    <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors cursor-pointer md:cursor-default" onclick="if(window.innerWidth < 768) openTitulosMobileModal(${globalIndex})">
+                        <!-- Desktop Columns (Hidden on Mobile) -->
+                        <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${t.codCli}</td>
+                        <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] hidden md:table-cell" title="${t.clientName}">${t.clientName}</td>
                         <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${t.rcaName}</td>
                         <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
-                        <td class="px-4 py-3 text-xs text-white text-center font-mono">${dateStr}</td>
+                        <td class="px-4 py-3 text-xs text-white text-center font-mono hidden md:table-cell">${dateStr}</td>
                         <td class="px-4 py-3 text-xs text-slate-500 text-right hidden md:table-cell">${valOrig}</td>
-                        <td class="px-4 py-3 text-sm text-white font-bold text-right">${valOpen}</td>
-                        <td class="px-4 py-3 text-center">${status}</td>
+                        <td class="px-4 py-3 text-sm text-white font-bold text-right hidden md:table-cell">${valOpen}</td>
+                        <td class="px-4 py-3 text-center hidden md:table-cell">${statusDesktop}</td>
+
+                        <!-- Mobile Layout (Single Cell) -->
+                        <td class="md:hidden p-4 w-full" colspan="8">
+                            <div class="flex justify-between items-start">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-xs font-bold text-white leading-tight">
+                                        ${t.codCli} - ${t.clientName}
+                                    </span>
+                                    <span class="text-lg font-bold text-white mt-1">
+                                        ${valOpen}
+                                    </span>
+                                </div>
+                                <div class="flex flex-col items-end gap-2">
+                                    ${statusMobile}
+                                    <span class="text-xs text-slate-400 font-mono mt-1">${dateStr}</span>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -21449,6 +21473,41 @@ const supervisorGroups = new Map();
             document.getElementById('titulos-next-page-btn').disabled = page >= totalPages;
             document.getElementById('titulos-page-info-text').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
         }
+
+    window.openTitulosMobileModal = function(index) {
+        if (!titulosTableState.filteredData || !titulosTableState.filteredData[index]) return;
+        const t = titulosTableState.filteredData[index];
+
+        const modal = document.getElementById('titulos-mobile-modal');
+        document.getElementById('titulos-mobile-modal-title').textContent = t.clientName;
+        document.getElementById('titulos-mobile-modal-subtitle').textContent = `Cód: ${t.codCli}`;
+
+        document.getElementById('titulos-modal-seller').textContent = t.rcaName || 'N/A';
+        document.getElementById('titulos-modal-city').textContent = t.city || 'N/A';
+        document.getElementById('titulos-modal-val-orig').textContent = t.valOriginal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        document.getElementById('titulos-modal-val-open').textContent = t.valReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        document.getElementById('titulos-modal-date').textContent = t.dtVenc ? t.dtVenc.toLocaleDateString('pt-BR') : '-';
+
+        const statusContainer = document.getElementById('titulos-modal-status');
+        if (t.isCritical) {
+             statusContainer.innerHTML = `<span class="px-3 py-1 bg-red-900/50 text-red-300 text-xs font-bold rounded-full border border-red-800">${t.daysOverdue} Dias em Atraso</span>`;
+        } else {
+             statusContainer.innerHTML = `<span class="px-3 py-1 bg-green-900/50 text-green-300 text-xs font-bold rounded-full border border-green-800">Em Aberto</span>`;
+        }
+
+        const closeBtn = document.getElementById('titulos-mobile-modal-close-btn');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                modal.classList.add('hidden');
+            };
+        }
+
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        };
+
+        modal.classList.remove('hidden');
+    };
     let lpState = { page: 1, limit: 50, filteredData: [] };
     let selectedLpRedes = [];
     let lpRedeGroupFilter = '';
