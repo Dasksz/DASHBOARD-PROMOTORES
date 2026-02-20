@@ -2749,19 +2749,36 @@
 
                 const rowData = {
                     codcli: codcli,
-                    name: client.fantasia || client.razaoSocial,
+                    razao: client.razaoSocial || client.nomeCliente || '',
+                    fantasia: client.fantasia || '',
+                    name: client.fantasia || client.razaoSocial, // Keep for sorting/compatibility
                     city: client.cidade || client.CIDADE || client['Nome da Cidade'] || 'N/A',
                     vendedor: vendorName,
                     hasSalty: hasSalty,
                     hasFoods: hasFoods,
                     brands: positivatedCats,
                     missingText: missingText,
-                    score: missing.length
+                    score: missing.length,
+                    positivatedCount: positivatedCats.size
                 };
                 tableData.push(rowData);
             }, () => {
                 // --- ON COMPLETE (Render) ---
                 if (currentRenderId !== mixRenderId) return;
+
+                // Render Mobile Legend
+                const legendContainer = document.getElementById('mix-mobile-legend');
+                if (legendContainer) {
+                    const allCategories = [...MIX_SALTY_CATEGORIES, ...MIX_FOODS_CATEGORIES];
+                    legendContainer.innerHTML = `
+                        <div class="md:hidden mb-4 p-2 glass-panel rounded border border-slate-700">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Categorias Monitoradas:</p>
+                            <div class="flex flex-wrap gap-1">
+                                ${allCategories.map(c => `<span class="px-1.5 py-0.5 bg-slate-700 text-slate-300 text-[9px] rounded">${c}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
 
                 let baseClientCount;
                 const kpiTitleEl = document.getElementById('mix-kpi-title');
@@ -2849,33 +2866,71 @@
                 const endIndex = startIndex + mixTableState.itemsPerPage;
                 const pageData = tableData.slice(startIndex, endIndex);
 
-                const checkIcon = `<svg class="w-3 h-3 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                const checkIcon = `<svg class="w-4 h-4 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
                 const dashIcon = `<span class="text-slate-600 text-xs">-</span>`;
 
                 const xIcon = `<svg class="w-3 h-3 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
 
-                const cellClass = "px-0.5 py-1 text-center border-r border-slate-800";
-
                 let tableHTML = pageData.map(row => {
-                    let saltyCols = MIX_SALTY_CATEGORIES.map(b => `<td class="${cellClass}">${row.brands.has(b) ? checkIcon : xIcon}</td>`).join('');
-                    let foodsCols = MIX_FOODS_CATEGORIES.map(b => `<td class="${cellClass}">${row.brands.has(b) ? checkIcon : xIcon}</td>`).join('');
+                    let saltyCols = MIX_SALTY_CATEGORIES.map(b => `<td data-label="${b}" class="px-1 py-2 text-center border-l border-slate-500 hidden md:table-cell">${row.brands.has(b) ? checkIcon : xIcon}</td>`).join('');
+                    let foodsCols = MIX_FOODS_CATEGORIES.map(b => `<td data-label="${b}" class="px-1 py-2 text-center border-l border-slate-500 hidden md:table-cell">${row.brands.has(b) ? checkIcon : xIcon}</td>`).join('');
+
+                    // Truncate logic for Razao Social (First line)
+                    // "Code - Razao" -> Limit Razao to 22 chars
+                    const razao = row.razao || row.name; // Fallback
+                    const truncatedRazao = razao.length > 22 ? razao.substring(0, 22) + '...' : razao;
+
+                    const mobileLine1 = `${row.codcli} - ${truncatedRazao}`;
+                    const desktopLine1 = row.name;
+                    const line2 = row.fantasia || '';
 
                     return `
-                    <tr class="hover:bg-slate-700/50 border-b border-slate-800 last:border-0 h-8">
-                        <td class="px-0.5 py-1 text-center font-mono text-slate-300 text-[9px] border-r border-slate-800">${escapeHtml(row.codcli)}</td>
-                        <td class="px-0.5 py-1 text-left font-medium text-slate-300 text-[9px] border-r border-slate-800 w-[60px] max-w-[60px] truncate md:w-32 md:max-w-none pl-2" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</td>
+                    <tr class="hover:bg-slate-700/50 border-b border-slate-500 last:border-0">
+                        <td data-label="Cód" class="px-2 py-2 md:px-4 md:py-2 font-medium text-slate-300 text-[10px] md:text-xs hidden md:table-cell">${escapeHtml(row.codcli)}</td>
+
+                        <td data-label="Cliente" class="px-2 py-2 md:px-4 md:py-2 text-left">
+                            <!-- Mobile -->
+                            <div class="md:hidden text-[10px] font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]" title="${escapeHtml(razao)}">
+                                ${escapeHtml(mobileLine1)}
+                            </div>
+                            <!-- Desktop -->
+                            <div class="hidden md:block text-xs font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none" title="${escapeHtml(razao)}">
+                                ${escapeHtml(desktopLine1)}
+                            </div>
+
+                            ${line2 ? `<div class="text-[9px] md:text-[10px] text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none" title="${escapeHtml(line2)}">${escapeHtml(line2)}</div>` : ''}
+                        </td>
+
+                        <td data-label="Cidade" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs text-slate-300 truncate max-w-[80px] hidden md:table-cell">${escapeHtml(row.city)}</td>
+                        <td data-label="Vendedor" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs text-slate-400 truncate max-w-[80px] hidden md:table-cell">${escapeHtml(getFirstName(row.vendedor))}</td>
+
                         ${saltyCols}
                         ${foodsCols}
+
+                        <!-- Mobile Counter Column -->
+                        <td data-label="Categorias" class="px-2 py-2 text-center text-white font-bold text-sm md:hidden border-l border-slate-500">
+                            ${row.positivatedCount}
+                        </td>
                     </tr>
                 `}).join('');
 
                 // Append Footer with Totals
                 tableHTML += `
-                    <tr class="glass-panel-heavy font-bold border-t border-slate-500 text-[9px] sticky bottom-0 z-20 h-8">
-                        <td class="px-0.5 py-1 text-center text-white border-r border-slate-800">TOT</td>
-                        <td class="px-0.5 py-1 text-center text-white border-r border-slate-800 w-[60px] max-w-[60px] md:w-32 md:max-w-none"></td>
-                        <td colspan="${MIX_SALTY_CATEGORIES.length}" class="px-0.5 py-1 text-center text-teal-400 border-r border-slate-800">${positivadosSalty}</td>
-                        <td colspan="${MIX_FOODS_CATEGORIES.length}" class="px-0.5 py-1 text-center text-yellow-400">${positivadosFoods}</td>
+                    <tr class="glass-panel-heavy font-bold border-t-2 border-slate-500 text-xs sticky bottom-0 z-20">
+                        <!-- Desktop Label -->
+                        <td colspan="4" class="px-2 py-3 text-right text-white hidden md:table-cell">TOTAL POSITIVADOS:</td>
+
+                        <!-- Mobile Label -->
+                        <td class="px-2 py-3 text-right text-white md:hidden">TOTAL:</td>
+
+                        <!-- Desktop Salty/Foods Counts -->
+                        <td colspan="${MIX_SALTY_CATEGORIES.length}" class="px-2 py-3 text-center text-teal-400 text-sm border-l border-slate-500 hidden md:table-cell">${positivadosSalty}</td>
+                        <td colspan="${MIX_FOODS_CATEGORIES.length}" class="px-2 py-3 text-center text-yellow-400 text-sm border-l border-slate-500 hidden md:table-cell">${positivadosFoods}</td>
+
+                        <!-- Mobile Categorias Footer -->
+                        <td class="px-2 py-3 text-center text-white text-sm border-l border-slate-500 md:hidden">
+                            <span class="text-teal-400">${positivadosSalty}</span> / <span class="text-yellow-400">${positivadosFoods}</span>
+                        </td>
                     </tr>
                 `;
 
