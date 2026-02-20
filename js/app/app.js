@@ -7756,7 +7756,7 @@ const supervisorGroups = new Map();
                                     <!-- Metrics Row -->
                                     <div class="flex justify-between items-center text-xs">
                                         <div class="font-bold text-slate-400 uppercase tracking-wider">
-                                            ESTOQUE ( CX ): <span class="text-white text-sm ml-1">${item.stockQty.toLocaleString('pt-BR')}</span>
+                                            Estoque ( CX ): <span class="text-white text-sm ml-1">${item.stockQty.toLocaleString('pt-BR')}</span>
                                         </div>
                                         <div class="font-bold text-slate-400">
                                             Variação PDV: <span class="${pdvVarColorClass} text-sm ml-1">${pdvVarText}</span>
