@@ -17478,6 +17478,29 @@ const supervisorGroups = new Map();
         
         const modal = document.getElementById('wallet-client-modal');
         const codeKey = String(client['Código'] || client['codigo_cliente']);
+
+        // Check for Devolução (Negative Balance in Current Month)
+        let isNegativeBalance = false;
+        if (optimizedData && optimizedData.indices && optimizedData.indices.current && optimizedData.indices.current.byClient) {
+            const clientIndices = optimizedData.indices.current.byClient.get(normalizeKey(codeKey));
+            if (clientIndices && clientIndices.size > 0) {
+                let salesSum = 0;
+                clientIndices.forEach(idx => {
+                    const sale = allSalesData instanceof ColumnarDataset ? allSalesData.get(idx) : allSalesData[idx];
+                    salesSum += (Number(sale.VLVENDA) || 0);
+                });
+                // If total sum is <= 0 and we have transactions, consider it a return scenario
+                if (salesSum <= 0) {
+                    isNegativeBalance = true;
+                }
+            }
+        }
+
+        const titleEl = document.getElementById('wallet-modal-title');
+        titleEl.innerHTML = 'Detalhes do Cliente';
+        if (isNegativeBalance) {
+            titleEl.innerHTML += ` <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 shadow-sm shadow-red-900/20">Devolução</span>`;
+        }
         
         // 1. Populate Basic Info
         document.getElementById('wallet-modal-code').textContent = codeKey;
@@ -21095,22 +21118,38 @@ const supervisorGroups = new Map();
                 const tooltipText = tooltipParts.length > 0 ? tooltipParts.join('<br>') : 'Sem detalhamento';
 
                 const rcaVal = (data.rcas && data.rcas.length > 0) ? data.rcas[0] : '-';
-                const nome = data.fantasia || data.nomeCliente || 'N/A';
+                const razaoSocial = data.nomeCliente || 'N/A';
+                const fantasia = data.fantasia || '';
                 const cidade = data.cidade || 'N/A';
                 const bairro = data.bairro || 'N/A';
+                const totalFormatted = data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
                 return `<tr class="hover:bg-slate-700">
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${window.escapeHtml(data['Código'])}">${window.escapeHtml(data['Código'])}</a></td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${window.escapeHtml(nome)}${novoLabel}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">
-                                <div class="tooltip">${data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            <!-- Desktop Columns -->
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${window.escapeHtml(data['Código'])}">${window.escapeHtml(data['Código'])}</a></td>
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs" title="${window.escapeHtml(razaoSocial)}">${window.escapeHtml(razaoSocial)}${novoLabel}</td>
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">
+                                <div class="tooltip">${totalFormatted}
                                     <span class="tooltip-text" style="width: max-content; transform: translateX(-50%); margin-left: 0;">${tooltipText}</span>
                                 </div>
                             </td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${window.escapeHtml(cidade)}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${window.escapeHtml(bairro)}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(data.ultimaCompra)}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${window.escapeHtml(rcaVal)}</td>
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">${window.escapeHtml(cidade)}</td>
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">${window.escapeHtml(bairro)}</td>
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm">${formatDate(data.ultimaCompra)}</td>
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">${window.escapeHtml(rcaVal)}</td>
+
+                            <!-- Mobile Card Layout -->
+                            <td class="md:hidden w-full p-3 border-b border-white/5 block">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div class="flex items-center gap-2 overflow-hidden">
+                                        <a href="#" class="text-cyan-400 font-mono font-bold text-sm hover:underline shrink-0" data-codcli="${window.escapeHtml(data['Código'])}">${window.escapeHtml(data['Código'])}</a>
+                                        <span class="text-slate-300 text-xs font-medium truncate">${window.escapeHtml(razaoSocial)}</span>
+                                        ${novoLabel}
+                                    </div>
+                                    <span class="text-green-400 font-bold text-sm shrink-0 ml-2">${totalFormatted}</span>
+                                </div>
+                                <div class="text-xs text-slate-500 font-medium truncate uppercase">${window.escapeHtml(fantasia)}</div>
+                            </td>
                         </tr>`;
             }).join('');
 
@@ -21134,18 +21173,34 @@ const supervisorGroups = new Map();
             tbody.innerHTML = subset.map(client => {
                 const novoLabel = client.isNewForInactiveLabel ? `<span class="ml-2 text-[9px] md:text-xs font-semibold text-purple-400 bg-purple-900/50 px-1 py-0.5 rounded-full">NOVO</span>` : '';
                 const rcaVal = (client.rcas && client.rcas.length > 0) ? client.rcas[0] : '-';
-                const nome = client.fantasia || client.nomeCliente || 'N/A';
+                const razaoSocial = client.nomeCliente || 'N/A';
+                const fantasia = client.fantasia || '';
                 const cidade = client.cidade || 'N/A';
                 const bairro = client.bairro || 'N/A';
                 const ultCompra = client.ultimaCompra || client['Data da Última Compra'];
+                const formattedDate = formatDate(ultCompra);
 
                 return `<tr class="hover:bg-slate-700">
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${window.escapeHtml(client['Código'])}">${window.escapeHtml(client['Código'])}</a></td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs">${window.escapeHtml(nome)}${novoLabel}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${window.escapeHtml(cidade)}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${window.escapeHtml(bairro)}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm hidden md:table-cell">${formatDate(ultCompra)}</td>
-                            <td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm hidden md:table-cell">${window.escapeHtml(rcaVal)}</td>
+                            <!-- Desktop Columns -->
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${window.escapeHtml(client['Código'])}">${window.escapeHtml(client['Código'])}</a></td>
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 flex items-center text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs" title="${window.escapeHtml(razaoSocial)}">${window.escapeHtml(razaoSocial)}${novoLabel}</td>
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">${window.escapeHtml(cidade)}</td>
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">${window.escapeHtml(bairro)}</td>
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm">${formattedDate}</td>
+                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">${window.escapeHtml(rcaVal)}</td>
+
+                            <!-- Mobile Card Layout -->
+                            <td class="md:hidden w-full p-3 border-b border-white/5 block">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div class="flex items-center gap-2 overflow-hidden">
+                                        <a href="#" class="text-cyan-400 font-mono font-bold text-sm hover:underline shrink-0" data-codcli="${window.escapeHtml(client['Código'])}">${window.escapeHtml(client['Código'])}</a>
+                                        <span class="text-slate-300 text-xs font-medium truncate">${window.escapeHtml(razaoSocial)}</span>
+                                        ${novoLabel}
+                                    </div>
+                                    <span class="text-slate-400 font-bold text-xs shrink-0 ml-2">${formattedDate}</span>
+                                </div>
+                                <div class="text-xs text-slate-500 font-medium truncate uppercase">${window.escapeHtml(fantasia)}</div>
+                            </td>
                         </tr>`;
             }).join('');
 
