@@ -2856,23 +2856,39 @@
 
                 // Dynamic Title Update
                 const chartTitleEl = document.getElementById('mix-seller-chart-title');
-                if (chartTitleEl) {
-                    // Logic to determine label based on filter context
-                    // Currently defaulting to 'Promotor' as requested, but prepared for 'Vendedor'
-                    let entityType = 'Promotor';
-                    // Future: if (filterState.type === 'seller') entityType = 'Vendedor';
+                const chartContainer = document.getElementById('mixSellerChartContainer');
+                const chartCard = chartContainer ? chartContainer.closest('.glass-panel') : null;
 
-                    chartTitleEl.textContent = `Performance por ${entityType}`;
+                const userRole = (window.userRole || '').trim().toLowerCase();
+                const shouldHideCharts = ['promotor', 'vendedor'].includes(userRole);
+
+                if (shouldHideCharts) {
+                    if (chartCard) chartCard.classList.add('hidden');
+                    if (chartTitleEl) chartTitleEl.classList.add('hidden');
+                    if (chartContainer) chartContainer.classList.add('hidden');
+                } else {
+                    if (chartCard) chartCard.classList.remove('hidden');
+                    if (chartContainer) chartContainer.classList.remove('hidden');
+
+                    if (chartTitleEl) {
+                        chartTitleEl.classList.remove('hidden');
+                        // Logic to determine label based on filter context
+                        // Currently defaulting to 'Promotor' as requested, but prepared for 'Vendedor'
+                        let entityType = 'Promotor';
+                        // Future: if (filterState.type === 'seller') entityType = 'Vendedor';
+
+                        chartTitleEl.textContent = `Performance por ${entityType}`;
+                    }
+
+                    createChart('mixSellerChart', 'bar', sortedSellers.map(([name]) => getFirstName(name)),
+                        [
+                            { label: 'Mix Ideal', data: sortedSellers.map(([,s]) => s.both), backgroundColor: '#a855f7' },
+                            { label: 'Salty Total', data: sortedSellers.map(([,s]) => s.salty), backgroundColor: '#14b8a6', hidden: true },
+                            { label: 'Foods Total', data: sortedSellers.map(([,s]) => s.foods), backgroundColor: '#f59e0b', hidden: true }
+                        ],
+                        { scales: { x: { stacked: false }, y: { stacked: false } } }
+                    );
                 }
-
-                createChart('mixSellerChart', 'bar', sortedSellers.map(([name]) => getFirstName(name)),
-                    [
-                        { label: 'Mix Ideal', data: sortedSellers.map(([,s]) => s.both), backgroundColor: '#a855f7' },
-                        { label: 'Salty Total', data: sortedSellers.map(([,s]) => s.salty), backgroundColor: '#14b8a6', hidden: true },
-                        { label: 'Foods Total', data: sortedSellers.map(([,s]) => s.foods), backgroundColor: '#f59e0b', hidden: true }
-                    ],
-                    { scales: { x: { stacked: false }, y: { stacked: false } } }
-                );
 
                 // Render Table with Detailed Columns
                 tableData.sort((a, b) => {
@@ -7804,15 +7820,18 @@ const supervisorGroups = new Map();
                 });
 
                 // 1. Chart Data for Cities
+                const isMobile = window.innerWidth < 768;
+                const chartLimit = isMobile ? 5 : 10;
+
                 const sortedCities = Object.entries(salesByCity)
                     .sort(([,a], [,b]) => b - a)
-                    .slice(0, 10);
+                    .slice(0, chartLimit);
 
                 // 2. Chart Data for Sellers OR Promoters
                 const sourceMap = isPromotorFilterVisible ? salesByPromotor : salesBySeller;
                 const sortedRanking = Object.entries(sourceMap)
                     .sort(([,a], [,b]) => b - a)
-                    .slice(0, 10);
+                    .slice(0, chartLimit);
 
                 const commonChartOptions = {
                     indexAxis: 'x',
@@ -7858,19 +7877,37 @@ const supervisorGroups = new Map();
                 const sellerContainer = document.getElementById('coverageSellerChartContainer');
                 const toggleBtn = document.getElementById('coverage-chart-toggle-btn');
                 const chartTitle = document.getElementById('coverage-chart-title');
+                // Parent container for cleaner hiding (optional, but robust)
+                const chartWrapper = cityContainer ? cityContainer.closest('.glass-panel') : null;
 
                 const targetLabel = isPromotorFilterVisible ? 'Promotores' : 'Vendedores';
 
-                if (currentCoverageChartMode === 'city') {
-                    if (cityContainer) cityContainer.classList.remove('hidden');
-                    if (sellerContainer) sellerContainer.classList.add('hidden');
-                    if (toggleBtn) toggleBtn.textContent = `Ver ${targetLabel}`;
-                    if (chartTitle) chartTitle.textContent = 'Top 10 Cidades (Quantidade de Caixas)';
-                } else {
+                // Role Check
+                const userRole = (window.userRole || '').trim().toLowerCase();
+                const shouldHideCharts = ['promotor', 'vendedor'].includes(userRole);
+
+                if (shouldHideCharts) {
                     if (cityContainer) cityContainer.classList.add('hidden');
-                    if (sellerContainer) sellerContainer.classList.remove('hidden');
-                    if (toggleBtn) toggleBtn.textContent = 'Ver Cidades';
-                    if (chartTitle) chartTitle.textContent = `Ranking de ${targetLabel} (Quantidade de Caixas)`;
+                    if (sellerContainer) sellerContainer.classList.add('hidden');
+                    if (toggleBtn) toggleBtn.classList.add('hidden');
+                    if (chartTitle) chartTitle.classList.add('hidden');
+                    if (chartWrapper) chartWrapper.classList.add('hidden');
+                } else {
+                    if (toggleBtn) toggleBtn.classList.remove('hidden');
+                    if (chartTitle) chartTitle.classList.remove('hidden');
+                    if (chartWrapper) chartWrapper.classList.remove('hidden');
+
+                    if (currentCoverageChartMode === 'city') {
+                        if (cityContainer) cityContainer.classList.remove('hidden');
+                        if (sellerContainer) sellerContainer.classList.add('hidden');
+                        if (toggleBtn) toggleBtn.textContent = `Ver ${targetLabel}`;
+                        if (chartTitle) chartTitle.textContent = `Top ${chartLimit} Cidades (Quantidade de Caixas)`;
+                    } else {
+                        if (cityContainer) cityContainer.classList.add('hidden');
+                        if (sellerContainer) sellerContainer.classList.remove('hidden');
+                        if (toggleBtn) toggleBtn.textContent = 'Ver Cidades';
+                        if (chartTitle) chartTitle.textContent = `Ranking de ${targetLabel} (Quantidade de Caixas)`;
+                    }
                 }
             }, () => currentRenderId !== coverageRenderId);
         }
