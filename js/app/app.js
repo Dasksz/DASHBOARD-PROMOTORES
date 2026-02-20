@@ -12009,7 +12009,75 @@ const supervisorGroups = new Map();
             if (!orderInfo) return;
             modalPedidoId.textContent = pedidoId;
             modalHeaderInfo.innerHTML = `<div><p class="font-bold">Cód. Cliente:</p><p>${window.escapeHtml(orderInfo.CODCLI || 'N/A')}</p></div><div><p class="font-bold">Cliente:</p><p>${window.escapeHtml(orderInfo.CLIENTE_NOME || 'N/A')}</p></div><div><p class="font-bold">Vendedor:</p><p>${window.escapeHtml(orderInfo.NOME || 'N/A')}</p></div><div><p class="font-bold">Data Pedido:</p><p>${formatDate(orderInfo.DTPED)}</p></div><div><p class="font-bold">Data Faturamento:</p><p>${formatDate(orderInfo.DTSAIDA)}</p></div><div><p class="font-bold">Cidade:</p><p>${window.escapeHtml(orderInfo.CIDADE || 'N/A')}</p></div>`;
-            modalTableBody.innerHTML = itemsDoPedido.map(item => { const unitPrice = (item.QTVENDA > 0) ? (item.VLVENDA / item.QTVENDA) : 0; return `<tr class="hover:bg-slate-700"><td class="px-4 py-2">(${window.escapeHtml(item.PRODUTO)}) ${window.escapeHtml(item.DESCRICAO)}</td><td class="px-4 py-2 text-right">${item.QTVENDA}</td><td class="px-4 py-2 text-right">${item.TOTPESOLIQ.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} Kg</td><td class="px-4 py-2 text-right"><div class="tooltip">${unitPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}<span class="tooltip-text" style="width: max-content; left: auto; right: 0; transform: none; margin-left: 0;">Subtotal: ${item.VLVENDA.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div></td></tr>`; }).join('');
+
+            modalTableBody.innerHTML = itemsDoPedido.map(item => {
+                const unitPrice = (item.QTVENDA > 0) ? (item.VLVENDA / item.QTVENDA) : 0;
+                const subTotal = Number(item.VLVENDA) || 0;
+                const weight = Number(item.TOTPESOLIQ) || 0;
+
+                const unitPriceStr = unitPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const subTotalStr = subTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const weightStr = weight.toLocaleString('pt-BR', { minimumFractionDigits: 3 }) + ' Kg';
+                const qtyStr = item.QTVENDA;
+
+                const fullProductName = item.DESCRICAO || '';
+                const parts = fullProductName.split('-');
+                // If hyphen exists, take part after first hyphen, otherwise whole string.
+                // Then truncate to fit nicely on mobile line (~27 chars).
+                let nameForMobile = fullProductName;
+                if (parts.length > 1) {
+                    // Re-join from index 1 in case multiple hyphens, or just take index 1?
+                    // User said "começaremos a contar depois do '-'".
+                    // Usually format is "CODE - NAME", so parts[1] is name.
+                    // But sometimes "CODE-NAME". Let's assume standard split.
+                    nameForMobile = parts.slice(1).join('-').trim();
+                }
+
+                const MAX_MOBILE_CHARS = 27;
+                let displayMobileName = nameForMobile;
+                if (displayMobileName.length > MAX_MOBILE_CHARS) {
+                    displayMobileName = displayMobileName.substring(0, MAX_MOBILE_CHARS) + '...';
+                }
+
+                return `
+                <tr class="hover:bg-slate-700">
+                    <!-- Desktop Layout (Hidden on Mobile) -->
+                    <td class="hidden md:table-cell px-4 py-2">(${window.escapeHtml(item.PRODUTO)}) ${window.escapeHtml(item.DESCRICAO)}</td>
+                    <td class="hidden md:table-cell px-4 py-2 text-right">${qtyStr}</td>
+                    <td class="hidden md:table-cell px-4 py-2 text-right">${unitPriceStr}</td>
+                    <td class="hidden md:table-cell px-4 py-2 text-right">${weightStr}</td>
+                    <td class="hidden md:table-cell px-4 py-2 text-right font-bold text-green-400">${subTotalStr}</td>
+
+                    <!-- Mobile Layout (Visible only on Mobile) -->
+                    <td class="md:hidden p-3 border-b border-white/5" colspan="5">
+                        <div class="flex flex-col gap-1">
+                            <!-- Line 1: Code - Truncated Name with Tooltip -->
+                            <div class="flex items-center text-sm font-bold text-white relative group" onclick="void(0)"> <!-- void(0) for iOS hover fix -->
+                                <span class="text-blue-400 mr-2">${window.escapeHtml(item.PRODUTO)}</span>
+                                <span class="text-slate-200 truncate cursor-pointer dashed-underline" title="${window.escapeHtml(fullProductName)}">
+                                    - ${window.escapeHtml(displayMobileName)}
+                                </span>
+                                <!-- Custom CSS Tooltip for better mobile control -->
+                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-max max-w-[250px] bg-slate-800 text-white text-xs rounded-lg px-2 py-1 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl border border-slate-600">
+                                    ${window.escapeHtml(fullProductName)}
+                                </div>
+                            </div>
+
+                            <!-- Line 2: Details Compact -->
+                            <div class="flex items-center text-xs text-slate-400 gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
+                                <span>${qtyStr} un</span>
+                                <span class="text-slate-600">•</span>
+                                <span>${weightStr}</span>
+                                <span class="text-slate-600">•</span>
+                                <span>${unitPriceStr}</span>
+                                <span class="text-slate-600">•</span>
+                                <span class="font-bold text-green-400">Total: ${subTotalStr}</span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+
             modalFooterTotal.innerHTML = `<p class="text-lg font-bold text-teal-400">Mix de Produtos: ${itemsDoPedido.length}</p><p class="text-lg font-bold text-emerald-400">Total do Pedido: ${orderInfo.VLVENDA.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>`;
             modal.classList.remove('hidden');
         }
