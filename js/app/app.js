@@ -21547,7 +21547,8 @@ const supervisorGroups = new Map();
                 const valOrig = t.valOriginal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const valOpen = t.valReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                let mobileClientName = t.clientName;
+                // Truncate client name to 24 characters max (excluding code)
+                let mobileClientName = (t.clientName || '').trim();
                 if (mobileClientName.length > 24) {
                     mobileClientName = mobileClientName.substring(0, 24) + '...';
                 }
@@ -21576,9 +21577,9 @@ const supervisorGroups = new Map();
                         <td class="px-4 py-3 text-center hidden md:table-cell">${statusDesktop}</td>
 
                         <!-- Mobile Layout (Single Cell) -->
-                        <td class="md:hidden mobile-card-header w-full" colspan="8">
-                            <div class="flex flex-col gap-2">
-                                <div class="flex justify-between items-center">
+                        <td class="md:hidden mobile-card-header w-full text-left" colspan="8">
+                            <div class="flex flex-col gap-2 text-left">
+                                <div class="flex justify-between items-center text-left">
                                     <span class="text-xs font-bold text-white leading-tight truncate mr-2 text-left">
                                         ${t.codCli} - ${mobileClientName}
                                     </span>
@@ -21586,7 +21587,7 @@ const supervisorGroups = new Map();
                                         ${statusMobile}
                                     </div>
                                 </div>
-                                <div class="flex justify-between items-center">
+                                <div class="flex justify-between items-center text-left">
                                     <span class="text-sm font-bold text-white text-left">
                                         ${valOpen}
                                     </span>
