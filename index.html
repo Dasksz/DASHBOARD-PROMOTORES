@@ -1949,7 +1949,7 @@
         <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
             <div class="overflow-x-auto custom-scrollbar max-h-96">
                 <table class="min-w-full text-sm text-left text-slate-300">
-                    <thead class="text-[10px] md:text-xs text-slate-400 uppercase glass-panel sticky top-0">
+                    <thead class="text-[10px] md:text-xs text-slate-400 uppercase glass-panel sticky top-0 hidden md:table-header-group">
                         <tr>
                             <th class="px-2 py-2 md:px-4 md:py-3 text-left">Produto</th>
                             <th class="px-2 py-2 md:px-4 md:py-3 text-right hidden md:table-cell">Estoque</th>
@@ -3343,6 +3343,29 @@
                 <div class="p-4 bg-glass rounded-xl border border-slate-700/50 flex justify-between items-center">
                     <span class="text-sm font-bold text-slate-400">Variação</span>
                     <span id="product-performance-var" class="px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 text-slate-300">--</span>
+                </div>
+
+                <!-- PDV Comparison -->
+                <div class="p-4 glass-panel rounded-xl border border-slate-700">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Positivação (PDV)</p>
+
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-slate-300">Mês Anterior</span>
+                            <span id="product-performance-pdv-prev" class="text-sm font-bold text-white">--</span>
+                        </div>
+                        <div class="w-full h-px bg-slate-700/50"></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-slate-300">Mês Atual</span>
+                            <span id="product-performance-pdv-curr" class="text-sm font-bold text-white">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Variation PDV -->
+                <div class="p-4 bg-glass rounded-xl border border-slate-700/50 flex justify-between items-center">
+                    <span class="text-sm font-bold text-slate-400">Variação PDV</span>
+                    <span id="product-performance-pdv-var" class="px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 text-slate-300">--</span>
                 </div>
             </div>
         </div>

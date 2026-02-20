@@ -7690,7 +7690,7 @@ const supervisorGroups = new Map();
 
                 coverageTableDataForExport = filteredTableData;
 
-                coverageTableBody.innerHTML = filteredTableData.slice(0, 500).map(item => {
+                coverageTableBody.innerHTML = filteredTableData.slice(0, 500).map((item, index) => {
                     let boxesVariationContent;
                     if (isFinite(item.boxesVariation)) {
                         const colorClass = item.boxesVariation >= 0 ? 'text-green-400' : 'text-red-400';
@@ -7702,25 +7702,60 @@ const supervisorGroups = new Map();
                     }
 
                     let pdvVariationContent;
+                    let pdvVarRaw = item.pdvVariation;
+                    let pdvVarColorClass = 'text-slate-300';
+                    let pdvVarText = '-';
+
                     if (isFinite(item.pdvVariation)) {
-                        const colorClass = item.pdvVariation >= 0 ? 'text-green-400' : 'text-red-400';
-                        pdvVariationContent = `<span class="${colorClass}">${item.pdvVariation.toFixed(1)}%</span>`;
+                        pdvVarColorClass = item.pdvVariation >= 0 ? 'text-green-400' : 'text-red-400';
+                        pdvVarText = `${item.pdvVariation.toFixed(1)}%`;
+                        pdvVariationContent = `<span class="${pdvVarColorClass}">${pdvVarText}</span>`;
                     } else if (item.pdvVariation === Infinity) {
+                        pdvVarColorClass = 'text-purple-300';
+                        pdvVarText = 'Novo';
                         pdvVariationContent = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/30 text-purple-300">Novo</span>`;
                     } else {
                         pdvVariationContent = `<span>-</span>`;
                     }
 
+                    // Split Descricao for Mobile (Code - Name)
+                    // Format: "(CODE) Name" -> "CODE - Name" (Truncated)
+                    let mobileTitle = item.descricao;
+                    const codeMatch = item.descricao.match(/^\((.*?)\)\s*(.*)/);
+                    if (codeMatch) {
+                        mobileTitle = `<span class="text-slate-400">${codeMatch[1]}</span> - ${codeMatch[2]}`;
+                    }
+
                     return `
                         <tr class="hover:bg-slate-700/50">
-                            <td data-label="Produto" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[120px] md:max-w-xs" title="${item.descricao}">${item.descricao}</td>
+                            <!-- Mobile Card Layout (Colspan all) -->
+                            <td class="md:hidden block p-3 border-b border-slate-800 cursor-pointer hover:bg-white/5 active:bg-white/10 transition-colors" colspan="8" onclick="openCoverageProductModal(${index})">
+                                <div class="flex flex-col gap-2">
+                                    <!-- Title Row -->
+                                    <div class="font-bold text-slate-200 text-sm truncate">
+                                        ${mobileTitle}
+                                    </div>
+                                    <!-- Metrics Row -->
+                                    <div class="flex justify-between items-center text-xs">
+                                        <div class="font-bold text-slate-400 uppercase tracking-wider">
+                                            ESTOQUE ( CX ): <span class="text-white text-sm ml-1">${item.stockQty.toLocaleString('pt-BR')}</span>
+                                        </div>
+                                        <div class="font-bold text-slate-400">
+                                            Variação PDV: <span class="${pdvVarColorClass} text-sm ml-1">${pdvVarText}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Desktop Layout (Hidden on Mobile) -->
+                            <td data-label="Produto" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[120px] md:max-w-xs hidden md:table-cell" title="${item.descricao}">${item.descricao}</td>
                             <td data-label="Estoque" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.stockQty.toLocaleString('pt-BR')}</td>
                             <td data-label="Vol Ant (Cx)" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.boxesSoldPreviousMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
-                            <td data-label="Vol Atual (Cx)" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">${item.boxesSoldCurrentMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
-                            <td data-label="Var Vol" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">${boxesVariationContent}</td>
+                            <td data-label="Vol Atual (Cx)" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.boxesSoldCurrentMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
+                            <td data-label="Var Vol" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${boxesVariationContent}</td>
                             <td data-label="PDV Ant" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.clientsPreviousCount.toLocaleString('pt-BR')}</td>
                             <td data-label="PDV Atual" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.clientsCurrentCount.toLocaleString('pt-BR')}</td>
-                            <td data-label="Var PDV" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">${pdvVariationContent}</td>
+                            <td data-label="Var PDV" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${pdvVariationContent}</td>
                         </tr>
                     `;
                 }).join('');
@@ -19855,6 +19890,46 @@ const supervisorGroups = new Map();
     }
 
     // --- Navigation Helpers ---
+    window.openCoverageProductModal = function(index) {
+        if (!coverageTableDataForExport || !coverageTableDataForExport[index]) return;
+        const item = coverageTableDataForExport[index];
+
+        const modal = document.getElementById('product-performance-modal');
+        document.getElementById('product-performance-title').textContent = item.descricao.split(') ')[1] || item.descricao;
+        document.getElementById('product-performance-code').textContent = item.descricao.split(') ')[0] + ')';
+
+        document.getElementById('product-performance-stock').textContent = item.stockQty.toLocaleString('pt-BR');
+
+        document.getElementById('product-performance-prev').textContent = item.boxesSoldPreviousMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2});
+        document.getElementById('product-performance-curr').textContent = item.boxesSoldCurrentMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2});
+
+        const varVol = item.boxesVariation;
+        const varVolEl = document.getElementById('product-performance-var');
+        if (isFinite(varVol)) {
+            varVolEl.textContent = `${varVol.toFixed(1)}%`;
+            varVolEl.className = `px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 ${varVol >= 0 ? 'text-green-400' : 'text-red-400'}`;
+        } else {
+            varVolEl.textContent = 'Novo';
+            varVolEl.className = 'px-3 py-1 rounded-lg text-sm font-bold bg-purple-500/30 text-purple-300';
+        }
+
+        // PDV
+        document.getElementById('product-performance-pdv-prev').textContent = item.clientsPreviousCount.toLocaleString('pt-BR');
+        document.getElementById('product-performance-pdv-curr').textContent = item.clientsCurrentCount.toLocaleString('pt-BR');
+
+        const varPdv = item.pdvVariation;
+        const varPdvEl = document.getElementById('product-performance-pdv-var');
+        if (isFinite(varPdv)) {
+            varPdvEl.textContent = `${varPdv.toFixed(1)}%`;
+            varPdvEl.className = `px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 ${varPdv >= 0 ? 'text-green-400' : 'text-red-400'}`;
+        } else {
+            varPdvEl.textContent = 'Novo';
+            varPdvEl.className = 'px-3 py-1 rounded-lg text-sm font-bold bg-purple-500/30 text-purple-300';
+        }
+
+        modal.classList.remove('hidden');
+    };
+
     window.closeResearchModal = function() {
         document.getElementById('modal-relatorio').classList.add('hidden');
     }
