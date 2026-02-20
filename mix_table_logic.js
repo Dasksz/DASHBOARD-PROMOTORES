@@ -1,0 +1,351 @@
+                    // Empty data-label for skeleton to prevent "null" text on mobile, just shows bar
+                    html += `<td class="p-4" data-label=""><div class="skeleton h-4 w-full"></div></td>`;
+                }
+                html += `</tr>`;
+            }
+            return html;
+        }
+
+        function updateMixView() {
+            mixRenderId++;
+            const currentRenderId = mixRenderId;
+
+            const { clients, sales } = getMixFilteredData();
+            // const activeClientCodes = new Set(clients.map(c => c['Código'])); // Not used if iterating clients array
+
+            // Show Loading
+            document.getElementById('mix-table-body').innerHTML = getSkeletonRows(13, 10);
+
+            // 1. Agregar Valor Líquido por Produto por Cliente (Sync - O(Sales))
+            const clientProductNetValues = new Map(); // Map<CODCLI, Map<PRODUTO, NetValue>>
+            const clientProductOrders = new Map(); // Map<CODCLI, Map<PRODUTO, Set<PEDIDO>>>
+            const clientProductDesc = new Map(); // Map<PRODUTO, Descricao> (Cache)
+
+            sales.forEach(s => {
+                if (!s.CODCLI || !s.PRODUTO) return;
+                if (!isAlternativeMode(selectedMixTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+
+                if (!clientProductNetValues.has(s.CODCLI)) {
+                    clientProductNetValues.set(s.CODCLI, new Map());
+                    clientProductOrders.set(s.CODCLI, new Map());
+                }
+                const clientMap = clientProductNetValues.get(s.CODCLI);
+                const currentVal = clientMap.get(s.PRODUTO) || 0;
+                const val = getValueForSale(s, selectedMixTiposVenda);
+                clientMap.set(s.PRODUTO, currentVal + val);
+
+                // Capture Order IDs
+                const clientOrders = clientProductOrders.get(s.CODCLI);
+                if (!clientOrders.has(s.PRODUTO)) clientOrders.set(s.PRODUTO, new Set());
+                if (s.PEDIDO) clientOrders.get(s.PRODUTO).add(s.PEDIDO);
+
+                if (!clientProductDesc.has(s.PRODUTO)) {
+                    clientProductDesc.set(s.PRODUTO, s.DESCRICAO);
+                }
+            });
+
+            // 2. Determinar Categorias Positivadas por Cliente
+            // Uma categoria é positivada se o cliente comprou Pelo MENOS UM produto dela com valor líquido > 1
+            const clientPositivatedCategories = new Map(); // Map<CODCLI, Set<CategoryName>>
+            const clientCategoryOrders = new Map(); // Map<CODCLI, Map<CategoryName, Set<PEDIDO>>>
+
+            // Sync Loop for Map aggregation is fast enough
+            clientProductNetValues.forEach((productsMap, codCli) => {
+                const positivatedCats = new Set();
+                const categoryOrders = new Map();
+
+                productsMap.forEach((netValue, prodCode) => {
+                    if (netValue >= 1) {
+                        const desc = normalize(clientProductDesc.get(prodCode) || '');
+                        const orders = clientProductOrders.get(codCli)?.get(prodCode) || new Set();
+
+                        const checkAndAdd = (cat) => {
+                            if (desc.includes(cat)) {
+                                positivatedCats.add(cat);
+                                if (!categoryOrders.has(cat)) categoryOrders.set(cat, new Set());
+                                orders.forEach(o => categoryOrders.get(cat).add(o));
+                            }
+                        };
+
+                        // Checar Salty
+                        MIX_SALTY_CATEGORIES.forEach(checkAndAdd);
+                        // Checar Foods
+                        MIX_FOODS_CATEGORIES.forEach(checkAndAdd);
+                    }
+                });
+                clientPositivatedCategories.set(codCli, positivatedCats);
+                clientCategoryOrders.set(codCli, categoryOrders);
+            });
+
+            let positivadosSalty = 0;
+            let positivadosFoods = 0;
+            let positivadosBoth = 0;
+
+            const tableData = [];
+
+            // ASYNC CHUNKED PROCESSING for Clients
+            runAsyncChunked(clients, (client) => {
+                const codcli = client['Código'];
+                const positivatedCats = clientPositivatedCategories.get(codcli) || new Set();
+                const categoryOrdersMap = clientCategoryOrders.get(codcli) || new Map();
+
+                // Determine Status based on "Buying ALL" (Strict Positive)
+                const hasSalty = MIX_SALTY_CATEGORIES.every(b => positivatedCats.has(b));
+                const hasFoods = MIX_FOODS_CATEGORIES.every(b => positivatedCats.has(b));
+
+                if (hasSalty) positivadosSalty++;
+                if (hasFoods) positivadosFoods++;
+                if (hasSalty && hasFoods) positivadosBoth++;
+
+                const missing = [];
+                // Detailed missing analysis for Salty
+                MIX_SALTY_CATEGORIES.forEach(b => { if(!positivatedCats.has(b)) missing.push(b); });
+                // Detailed missing analysis for Foods
+                MIX_FOODS_CATEGORIES.forEach(b => { if(!positivatedCats.has(b)) missing.push(b); });
+
+                const missingText = missing.length > 0 ? missing.join(', ') : '';
+
+                // Resolve Vendor Name
+                const rcaCode = (client.rcas && client.rcas.length > 0) ? client.rcas[0] : null;
+                let vendorName = 'N/A';
+                if (rcaCode) {
+                    vendorName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode;
+                } else {
+                    vendorName = 'INATIVOS';
+                }
+
+                const rowData = {
+                    codcli: codcli,
+                    razao: client.razaoSocial || client.nomeCliente || '',
+                    fantasia: client.fantasia || '',
+                    name: client.fantasia || client.razaoSocial, // Keep for sorting/compatibility
+                    city: client.cidade || client.CIDADE || client['Nome da Cidade'] || 'N/A',
+                    vendedor: vendorName,
+                    hasSalty: hasSalty,
+                    hasFoods: hasFoods,
+                    brands: positivatedCats,
+                    categoryOrders: categoryOrdersMap, // Attach orders map
+                    missingText: missingText,
+                    score: missing.length,
+                    positivatedCount: positivatedCats.size
+                };
+                tableData.push(rowData);
+            }, () => {
+                // --- ON COMPLETE (Render) ---
+                if (currentRenderId !== mixRenderId) return;
+
+                // Render Mobile Legend
+                const legendContainer = document.getElementById('mix-mobile-legend');
+                if (legendContainer) {
+                    const allCategories = [...MIX_SALTY_CATEGORIES, ...MIX_FOODS_CATEGORIES];
+                    legendContainer.innerHTML = `
+                        <div class="md:hidden mb-4 p-2 glass-panel rounded border border-slate-700">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Categorias Monitoradas:</p>
+                            <div class="flex flex-wrap gap-1">
+                                ${allCategories.map(c => `<span class="px-1.5 py-0.5 bg-slate-700 text-slate-300 text-[9px] rounded">${c}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                let baseClientCount;
+                const kpiTitleEl = document.getElementById('mix-kpi-title');
+
+                if (mixKpiMode === 'atendidos') {
+                    baseClientCount = getPositiveClientsWithNewLogic(sales);
+                    if (kpiTitleEl) kpiTitleEl.textContent = 'POSIIVADOS';
+                } else {
+                    baseClientCount = clients.length;
+                    if (kpiTitleEl) kpiTitleEl.textContent = 'BASE';
+                }
+
+                const saltyPct = baseClientCount > 0 ? (positivadosSalty / baseClientCount) * 100 : 0;
+                const foodsPct = baseClientCount > 0 ? (positivadosFoods / baseClientCount) * 100 : 0;
+                const bothPct = baseClientCount > 0 ? (positivadosBoth / baseClientCount) * 100 : 0;
+
+                // Update KPIs
+                document.getElementById('mix-total-clients-kpi').textContent = baseClientCount.toLocaleString('pt-BR');
+                document.getElementById('mix-salty-kpi').textContent = `${saltyPct.toFixed(1)}%`;
+                document.getElementById('mix-salty-count-kpi').textContent = `${positivadosSalty} clientes`;
+                document.getElementById('mix-foods-kpi').textContent = `${foodsPct.toFixed(1)}%`;
+                document.getElementById('mix-foods-count-kpi').textContent = `${positivadosFoods} clientes`;
+                document.getElementById('mix-both-kpi').textContent = `${bothPct.toFixed(1)}%`;
+                document.getElementById('mix-both-count-kpi').textContent = `${positivadosBoth} clientes`;
+
+                // Charts
+                const distributionData = [
+                    positivadosBoth,
+                    positivadosSalty - positivadosBoth,
+                    positivadosFoods - positivadosBoth,
+                    baseClientCount - (positivadosSalty + positivadosFoods - positivadosBoth)
+                ];
+
+                createChart('mixDistributionChart', 'doughnut', ['Mix Ideal (Ambos)', 'Só Salty', 'Só Foods', 'Nenhum'], distributionData, {
+                    maintainAspectRatio: false, // Fix layout issue
+                    backgroundColor: ['#a855f7', '#14b8a6', '#f59e0b', '#475569'],
+                    plugins: { legend: { position: 'right' } }
+                });
+
+                // Seller Efficiency Chart
+                const sellerStats = {};
+                tableData.forEach(row => {
+                    const seller = row.vendedor;
+                    if (!sellerStats[seller]) sellerStats[seller] = { total: 0, both: 0, salty: 0, foods: 0 };
+                    sellerStats[seller].total++;
+                    if (row.hasSalty && row.hasFoods) sellerStats[seller].both++;
+                    if (row.hasSalty) sellerStats[seller].salty++;
+                    if (row.hasFoods) sellerStats[seller].foods++;
+                });
+
+                const sortedSellers = Object.entries(sellerStats)
+                    .sort(([,a], [,b]) => b.both - a.both)
+                    .slice(0, 10);
+
+                createChart('mixSellerChart', 'bar', sortedSellers.map(([name]) => getFirstName(name)),
+                    [
+                        { label: 'Mix Ideal', data: sortedSellers.map(([,s]) => s.both), backgroundColor: '#a855f7' },
+                        { label: 'Salty Total', data: sortedSellers.map(([,s]) => s.salty), backgroundColor: '#14b8a6', hidden: true },
+                        { label: 'Foods Total', data: sortedSellers.map(([,s]) => s.foods), backgroundColor: '#f59e0b', hidden: true }
+                    ],
+                    { scales: { x: { stacked: false }, y: { stacked: false } } }
+                );
+
+                // Render Table with Detailed Columns
+                tableData.sort((a, b) => {
+                    // Sort by City (Alphabetical), then by Client Name
+                    const cityA = (a.city || '').toLowerCase();
+                    const cityB = (b.city || '').toLowerCase();
+                    if (cityA < cityB) return -1;
+                    if (cityA > cityB) return 1;
+                    return (a.name || '').localeCompare(b.name || '');
+                });
+
+                mixTableDataForExport = tableData;
+
+                mixTableState.filteredData = tableData;
+                mixTableState.totalPages = Math.ceil(tableData.length / mixTableState.itemsPerPage);
+                if (mixTableState.currentPage > mixTableState.totalPages && mixTableState.totalPages > 0) {
+                    mixTableState.currentPage = mixTableState.totalPages;
+                } else if (mixTableState.totalPages === 0) {
+                     mixTableState.currentPage = 1;
+                }
+
+                const startIndex = (mixTableState.currentPage - 1) * mixTableState.itemsPerPage;
+                const endIndex = startIndex + mixTableState.itemsPerPage;
+                const pageData = tableData.slice(startIndex, endIndex);
+
+                const checkIcon = `<svg class="w-4 h-4 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                const dashIcon = `<span class="text-slate-600 text-xs">-</span>`;
+
+                const xIcon = `<svg class="w-3 h-3 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+
+                let tableHTML = pageData.map(row => {
+                    let saltyCols = MIX_SALTY_CATEGORIES.map(b => `<td data-label="${b}" class="px-1 py-2 text-center border-l border-slate-500 hidden md:table-cell">${row.brands.has(b) ? checkIcon : xIcon}</td>`).join('');
+                    let foodsCols = MIX_FOODS_CATEGORIES.map(b => `<td data-label="${b}" class="px-1 py-2 text-center border-l border-slate-500 hidden md:table-cell">${row.brands.has(b) ? checkIcon : xIcon}</td>`).join('');
+
+                    // Truncate logic for Razao Social (First line)
+                    // "Code - Razao" -> Limit Razao to 22 chars
+                    const razao = row.razao || row.name; // Fallback
+                    const truncatedRazao = razao.length > 22 ? razao.substring(0, 22) + '...' : razao;
+
+                    const mobileLine1 = `${row.codcli} - ${truncatedRazao}`;
+                    const desktopLine1 = row.name;
+                    const line2 = row.fantasia || '';
+
+                    return `
+                    <tr class="hover:bg-slate-700/50 border-b border-slate-500 last:border-0 cursor-pointer md:cursor-default" onclick="if(window.innerWidth < 768) openMixMobileModal('${row.codcli}')">
+                        <td data-label="Cód" class="px-2 py-2 md:px-4 md:py-2 font-medium text-slate-300 text-[10px] md:text-xs hidden md:table-cell">${escapeHtml(row.codcli)}</td>
+
+                        <td data-label="Cliente" class="px-2 py-2 md:px-4 md:py-2 text-left">
+                            <!-- Mobile -->
+                            <div class="md:hidden text-[10px] font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]" title="${escapeHtml(razao)}">
+                                ${escapeHtml(mobileLine1)}
+                            </div>
+                            <!-- Desktop -->
+                            <div class="hidden md:block text-xs font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none" title="${escapeHtml(razao)}">
+                                ${escapeHtml(desktopLine1)}
+                            </div>
+
+                            ${line2 ? `<div class="text-[9px] md:text-[10px] text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none" title="${escapeHtml(line2)}">${escapeHtml(line2)}</div>` : ''}
+                        </td>
+
+                        <td data-label="Cidade" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs text-slate-300 truncate max-w-[80px] hidden md:table-cell">${escapeHtml(row.city)}</td>
+                        <td data-label="Vendedor" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs text-slate-400 truncate max-w-[80px] hidden md:table-cell">${escapeHtml(getFirstName(row.vendedor))}</td>
+
+                        ${saltyCols}
+                        ${foodsCols}
+
+                        <!-- Mobile Counter Column -->
+                        <td data-label="Categorias" class="px-2 py-2 text-center text-white font-bold text-sm md:hidden border-l border-slate-500">
+                            ${row.positivatedCount}
+                        </td>
+                    </tr>
+                `}).join('');
+
+                // Append Footer with Totals
+                tableHTML += `
+                    <tr class="glass-panel-heavy font-bold border-t-2 border-slate-500 text-xs sticky bottom-0 z-20">
+                        <!-- Desktop Label -->
+                        <td colspan="4" class="px-2 py-3 text-right text-white hidden md:table-cell">TOTAL POSITIVADOS:</td>
+
+                        <!-- Mobile Label -->
+                        <td class="px-2 py-3 text-right text-white md:hidden">TOTAL:</td>
+
+                        <!-- Desktop Salty/Foods Counts -->
+                        <td colspan="${MIX_SALTY_CATEGORIES.length}" class="px-2 py-3 text-center text-teal-400 text-sm border-l border-slate-500 hidden md:table-cell">${positivadosSalty}</td>
+                        <td colspan="${MIX_FOODS_CATEGORIES.length}" class="px-2 py-3 text-center text-yellow-400 text-sm border-l border-slate-500 hidden md:table-cell">${positivadosFoods}</td>
+
+                        <!-- Mobile Categorias Footer -->
+                        <td class="px-2 py-3 text-center text-white text-sm border-l border-slate-500 md:hidden">
+                            <span class="text-teal-400">${positivadosSalty}</span> / <span class="text-yellow-400">${positivadosFoods}</span>
+                        </td>
+                    </tr>
+                `;
+
+                document.getElementById('mix-table-body').innerHTML = tableHTML;
+
+                const controls = document.getElementById('mix-pagination-controls');
+                const infoText = document.getElementById('mix-page-info-text');
+                const prevBtn = document.getElementById('mix-prev-page-btn');
+                const nextBtn = document.getElementById('mix-next-page-btn');
+
+                if (tableData.length > 0 && mixTableState.totalPages > 1) {
+                    infoText.textContent = `Página ${mixTableState.currentPage} de ${mixTableState.totalPages} (Total: ${tableData.length} clientes)`;
+                    prevBtn.disabled = mixTableState.currentPage === 1;
+                    nextBtn.disabled = mixTableState.currentPage === mixTableState.totalPages;
+                    controls.classList.remove('hidden');
+                } else {
+                    controls.classList.add('hidden');
+                }
+            }, () => currentRenderId !== mixRenderId);
+        }
+
+        async function exportMixPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape');
+
+            const coord = document.getElementById('mix-coord-filter-text')?.textContent || 'Todos';
+            const cocoord = document.getElementById('mix-cocoord-filter-text')?.textContent || 'Todos';
+            const promotor = document.getElementById('mix-promotor-filter-text')?.textContent || 'Todos';
+            const city = document.getElementById('mix-city-filter').value.trim();
+            const generationDate = new Date().toLocaleString('pt-BR');
+
+            doc.setFontSize(18);
+            doc.text('Relatório de Detalhado - Mix Salty & Foods', 14, 22);
+            doc.setFontSize(10);
+            doc.setTextColor(10);
+            doc.text(`Data de Emissão: ${generationDate}`, 14, 30);
+            doc.text(`Filtros: Coordenador: ${coord} | Co-Coordenador: ${cocoord} | Promotor: ${promotor} | Cidade: ${city || 'Todas'}`, 14, 36);
+
+            // Determine dynamic columns
+            const saltyCols = MIX_SALTY_CATEGORIES.map(c => c.substring(0, 8)); // Truncate headers
+            const foodsCols = MIX_FOODS_CATEGORIES.map(c => c.substring(0, 8));
+
+            const head = [['Cód', 'Cliente', 'Cidade', 'Vendedor', ...saltyCols, ...foodsCols]];
+
+            const body = mixTableDataForExport.map(row => {
+                const saltyCells = MIX_SALTY_CATEGORIES.map(b => row.brands.has(b) ? 'OK' : 'X');
+                const foodsCells = MIX_FOODS_CATEGORIES.map(b => row.brands.has(b) ? 'OK' : 'X');
+                return [
+                    row.codcli,
+                    row.name,

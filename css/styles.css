@@ -403,6 +403,15 @@
             text-align: right;
             min-height: 3rem; /* Ensure height for empty cells */
         }
+        /* Mobile Card Header Logic (Left Aligned Block) */
+        td.mobile-card-header {
+            display: block !important;
+            text-align: left !important;
+            padding: 0.75rem 1rem !important;
+        }
+        td.mobile-card-header::before {
+            display: none !important;
+        }
         td:last-child {
             border-bottom: none;
         }
