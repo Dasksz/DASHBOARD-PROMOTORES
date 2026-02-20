@@ -7738,7 +7738,7 @@ const supervisorGroups = new Map();
                     let mobileTitle = item.descricao;
                     const codeMatch = item.descricao.match(/^\((.*?)\)\s*(.*)/);
                     if (codeMatch) {
-                        mobileTitle = `<span class="text-slate-400">${codeMatch[1]}</span> - ${codeMatch[2]}`;
+                        mobileTitle = `<span class="text-slate-200">${codeMatch[1]}</span> - ${codeMatch[2]}`;
                     }
 
                     return `
@@ -7755,7 +7755,7 @@ const supervisorGroups = new Map();
                                     </div>
                                     <!-- Metrics Row -->
                                     <div class="flex justify-between items-center text-xs">
-                                        <div class="font-bold text-slate-400 uppercase tracking-wider">
+                                        <div class="font-bold text-slate-400 tracking-wider">
                                             Estoque ( CX ): <span class="text-white text-sm ml-1">${item.stockQty.toLocaleString('pt-BR')}</span>
                                         </div>
                                         <div class="font-bold text-slate-400">
@@ -19944,6 +19944,19 @@ const supervisorGroups = new Map();
             varPdvEl.textContent = 'Novo';
             varPdvEl.className = 'px-3 py-1 rounded-lg text-sm font-bold bg-purple-500/30 text-purple-300';
         }
+
+        const closeBtn = document.getElementById('product-performance-modal-close-btn');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                modal.classList.add('hidden');
+            };
+        }
+
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        };
 
         modal.classList.remove('hidden');
     };
