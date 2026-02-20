@@ -13,6 +13,7 @@
     let chesterSpeed = 0.002;
     let chesterNextSpawnTime = 0;
     let chesterOrientationMode = 'PATH'; // 'PATH', 'CAMERA'
+    let isBellySwim = false;
 
     function initBanner() {
         const container = document.getElementById('banner-container');
@@ -173,7 +174,7 @@
             const visibleWidth = visibleHeight * aspect;
 
             const startLeft = Math.random() > 0.5;
-            const offset = 85; // Increased buffer
+            const offset = 25; // Decreased buffer for faster entry
             
             const xLeft = viewCenterX - (visibleWidth / 2) - offset;
             const xRight = viewCenterX + (visibleWidth / 2) + offset;
@@ -203,7 +204,7 @@
             const visibleHeight = 2 * Math.tan(vFOV / 2) * dist;
             const visibleWidth = visibleHeight * aspect;
 
-            const offset = 120;
+            const offset = 35; // Decreased buffer for faster entry
             const yOffset = visibleHeight / 2 + 40; // Vertical buffer
 
             // Sub-mode Randomization: 
@@ -264,7 +265,7 @@
             const startY = (Math.random() - 0.5) * 40;
             const endY = (Math.random() - 0.5) * 40;
 
-            const p1 = new THREE.Vector3(startX, startY, -60); 
+            const p1 = new THREE.Vector3(startX, startY, -45);
             
             const midX1 = viewCenterX + (startLeft ? -15 : 15);
             const midX2 = viewCenterX + (startLeft ? 15 : -15);
@@ -290,10 +291,13 @@
         
         chesterModel.visible = true;
         
-        // ZERO GRAVITY SPEED: Much slower
-        let speedBase = 0.0012; // Was 0.005 (reduced by ~75%)
-        if (spawnMode === 'CLOSE_UP') speedBase = 0.0008; // Was 0.003
-        chesterSpeed = speedBase + Math.random() * 0.0003;
+        // Randomize Belly Swim (30% Chance)
+        isBellySwim = Math.random() < 0.3;
+
+        // ZERO GRAVITY SPEED: Much slower (Portal effect needs instant continuity but slow motion)
+        let speedBase = 0.0004;
+        if (spawnMode === 'CLOSE_UP') speedBase = 0.0002;
+        chesterSpeed = speedBase + Math.random() * 0.0001;
     }
 
     function updateOrientation(point, tangent) {
@@ -312,6 +316,11 @@
         const lookTarget = point.clone().add(t);
         
         chesterModel.lookAt(lookTarget);
+
+        // Apply Belly Swim Rotation (Roll) if active
+        if (isBellySwim) {
+            chesterModel.rotateZ(1.2);
+        }
         
         // Potential Correction:
         // GLTF models often have +Z as forward. 
@@ -341,10 +350,7 @@
             chesterProgress += chesterSpeed * (delta * 60); // frame independent-ish
             
             if (chesterProgress >= 1.0) {
-                chesterState = 'HIDDEN';
-                chesterModel.visible = false;
-                // Faster respawn! 1 second
-                chesterNextSpawnTime = time + 1.0;
+                spawnChester(); // Instant respawn (Portal effect)
                 return;
             }
 
