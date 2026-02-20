@@ -2667,6 +2667,7 @@
 
             // 1. Agregar Valor Líquido por Produto por Cliente (Sync - O(Sales))
             const clientProductNetValues = new Map(); // Map<CODCLI, Map<PRODUTO, NetValue>>
+            const clientProductOrders = new Map(); // Map<CODCLI, Map<PRODUTO, Set<PEDIDO>>>
             const clientProductDesc = new Map(); // Map<PRODUTO, Descricao> (Cache)
 
             sales.forEach(s => {
@@ -2675,11 +2676,17 @@
 
                 if (!clientProductNetValues.has(s.CODCLI)) {
                     clientProductNetValues.set(s.CODCLI, new Map());
+                    clientProductOrders.set(s.CODCLI, new Map());
                 }
                 const clientMap = clientProductNetValues.get(s.CODCLI);
                 const currentVal = clientMap.get(s.PRODUTO) || 0;
                 const val = getValueForSale(s, selectedMixTiposVenda);
                 clientMap.set(s.PRODUTO, currentVal + val);
+
+                // Capture Order IDs
+                const clientOrders = clientProductOrders.get(s.CODCLI);
+                if (!clientOrders.has(s.PRODUTO)) clientOrders.set(s.PRODUTO, new Set());
+                if (s.PEDIDO) clientOrders.get(s.PRODUTO).add(s.PEDIDO);
 
                 if (!clientProductDesc.has(s.PRODUTO)) {
                     clientProductDesc.set(s.PRODUTO, s.DESCRICAO);
@@ -2689,26 +2696,34 @@
             // 2. Determinar Categorias Positivadas por Cliente
             // Uma categoria é positivada se o cliente comprou Pelo MENOS UM produto dela com valor líquido > 1
             const clientPositivatedCategories = new Map(); // Map<CODCLI, Set<CategoryName>>
+            const clientCategoryOrders = new Map(); // Map<CODCLI, Map<CategoryName, Set<PEDIDO>>>
 
             // Sync Loop for Map aggregation is fast enough
             clientProductNetValues.forEach((productsMap, codCli) => {
                 const positivatedCats = new Set();
+                const categoryOrders = new Map();
 
                 productsMap.forEach((netValue, prodCode) => {
                     if (netValue >= 1) {
                         const desc = normalize(clientProductDesc.get(prodCode) || '');
+                        const orders = clientProductOrders.get(codCli)?.get(prodCode) || new Set();
+
+                        const checkAndAdd = (cat) => {
+                            if (desc.includes(cat)) {
+                                positivatedCats.add(cat);
+                                if (!categoryOrders.has(cat)) categoryOrders.set(cat, new Set());
+                                orders.forEach(o => categoryOrders.get(cat).add(o));
+                            }
+                        };
 
                         // Checar Salty
-                        MIX_SALTY_CATEGORIES.forEach(cat => {
-                            if (desc.includes(cat)) positivatedCats.add(cat);
-                        });
+                        MIX_SALTY_CATEGORIES.forEach(checkAndAdd);
                         // Checar Foods
-                        MIX_FOODS_CATEGORIES.forEach(cat => {
-                            if (desc.includes(cat)) positivatedCats.add(cat);
-                        });
+                        MIX_FOODS_CATEGORIES.forEach(checkAndAdd);
                     }
                 });
                 clientPositivatedCategories.set(codCli, positivatedCats);
+                clientCategoryOrders.set(codCli, categoryOrders);
             });
 
             let positivadosSalty = 0;
@@ -2721,6 +2736,7 @@
             runAsyncChunked(clients, (client) => {
                 const codcli = client['Código'];
                 const positivatedCats = clientPositivatedCategories.get(codcli) || new Set();
+                const categoryOrdersMap = clientCategoryOrders.get(codcli) || new Map();
 
                 // Determine Status based on "Buying ALL" (Strict Positive)
                 const hasSalty = MIX_SALTY_CATEGORIES.every(b => positivatedCats.has(b));
@@ -2757,6 +2773,7 @@
                     hasSalty: hasSalty,
                     hasFoods: hasFoods,
                     brands: positivatedCats,
+                    categoryOrders: categoryOrdersMap, // Attach orders map
                     missingText: missingText,
                     score: missing.length,
                     positivatedCount: positivatedCats.size
@@ -2879,15 +2896,15 @@
                     // "Code - Razao" -> Limit Razao to 22 chars
                     const razao = row.razao || row.name; // Fallback
                     const truncatedRazao = razao.length > 22 ? razao.substring(0, 22) + '...' : razao;
-
+                    
                     const mobileLine1 = `${row.codcli} - ${truncatedRazao}`;
-                    const desktopLine1 = row.name;
+                    const desktopLine1 = row.name; 
                     const line2 = row.fantasia || '';
 
                     return `
-                    <tr class="hover:bg-slate-700/50 border-b border-slate-500 last:border-0">
+                    <tr class="hover:bg-slate-700/50 border-b border-slate-500 last:border-0 cursor-pointer md:cursor-default" onclick="if(window.innerWidth < 768) openMixMobileModal('${row.codcli}')">
                         <td data-label="Cód" class="px-2 py-2 md:px-4 md:py-2 font-medium text-slate-300 text-[10px] md:text-xs hidden md:table-cell">${escapeHtml(row.codcli)}</td>
-
+                        
                         <td data-label="Cliente" class="px-2 py-2 md:px-4 md:py-2 text-left">
                             <!-- Mobile -->
                             <div class="md:hidden text-[10px] font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]" title="${escapeHtml(razao)}">
@@ -2903,7 +2920,7 @@
 
                         <td data-label="Cidade" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs text-slate-300 truncate max-w-[80px] hidden md:table-cell">${escapeHtml(row.city)}</td>
                         <td data-label="Vendedor" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs text-slate-400 truncate max-w-[80px] hidden md:table-cell">${escapeHtml(getFirstName(row.vendedor))}</td>
-
+                        
                         ${saltyCols}
                         ${foodsCols}
 
@@ -2919,14 +2936,14 @@
                     <tr class="glass-panel-heavy font-bold border-t-2 border-slate-500 text-xs sticky bottom-0 z-20">
                         <!-- Desktop Label -->
                         <td colspan="4" class="px-2 py-3 text-right text-white hidden md:table-cell">TOTAL POSITIVADOS:</td>
-
+                        
                         <!-- Mobile Label -->
                         <td class="px-2 py-3 text-right text-white md:hidden">TOTAL:</td>
 
                         <!-- Desktop Salty/Foods Counts -->
                         <td colspan="${MIX_SALTY_CATEGORIES.length}" class="px-2 py-3 text-center text-teal-400 text-sm border-l border-slate-500 hidden md:table-cell">${positivadosSalty}</td>
                         <td colspan="${MIX_FOODS_CATEGORIES.length}" class="px-2 py-3 text-center text-yellow-400 text-sm border-l border-slate-500 hidden md:table-cell">${positivadosFoods}</td>
-
+                        
                         <!-- Mobile Categorias Footer -->
                         <td class="px-2 py-3 text-center text-white text-sm border-l border-slate-500 md:hidden">
                             <span class="text-teal-400">${positivadosSalty}</span> / <span class="text-yellow-400">${positivadosFoods}</span>
@@ -19845,6 +19862,70 @@ const supervisorGroups = new Map();
     window.closeGeoModal = function() {
         document.getElementById('modal-geo-update').classList.add('hidden');
     }
+
+    window.openMixMobileModal = function(codCli) {
+        // Find client data
+        const clientData = mixTableState.filteredData.find(c => c.codcli === String(codCli));
+        if (!clientData) return;
+
+        const modal = document.getElementById('mix-mobile-modal');
+        const content = document.getElementById('mix-mobile-modal-content');
+        const closeBtn = document.getElementById('mix-mobile-modal-close-btn');
+
+        document.getElementById('mix-mobile-modal-title').textContent = clientData.name || clientData.razao;
+        document.getElementById('mix-mobile-modal-subtitle').textContent = `Cód: ${clientData.codcli} • ${clientData.city}`;
+
+        content.innerHTML = '';
+
+        if (clientData.positivatedCount === 0) {
+            content.innerHTML = '<div class="text-center text-slate-500 py-4">Nenhuma categoria positivada.</div>';
+        } else {
+            // Build list
+            // clientData.categoryOrders is Map<Category, Set<OrderId>>
+            const ordersMap = clientData.categoryOrders;
+            const categories = [];
+            
+            if (ordersMap) {
+                ordersMap.forEach((orders, cat) => {
+                    categories.push({ name: cat, orders: Array.from(orders) });
+                });
+            }
+            
+            // Sort alphabetical
+            categories.sort((a,b) => a.name.localeCompare(b.name));
+
+            categories.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'glass-panel p-3 rounded-lg border border-slate-700/50';
+                
+                // Truncate list of orders if too long
+                const orderList = c.orders.join(', ');
+                
+                item.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-sm font-bold text-white">${c.name}</span>
+                        <span class="text-xs font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded-full">${c.orders.length} Pedido(s)</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 break-words">
+                        PED: ${orderList}
+                    </div>
+                `;
+                content.appendChild(item);
+            });
+        }
+
+        modal.classList.remove('hidden');
+
+        // Simple Close Binding
+        closeBtn.onclick = () => {
+            modal.classList.add('hidden');
+        };
+        
+        // Close on outside click (Generic Modal Handler usually handles this, but ensuring specific behavior)
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        };
+    };
 
     // Bind Form Submit
     const formVisita = document.getElementById('form-visita');
