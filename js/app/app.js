@@ -7747,8 +7747,11 @@ const supervisorGroups = new Map();
                             <td class="md:hidden block p-3 border-b border-slate-800 cursor-pointer hover:bg-white/5 active:bg-white/10 transition-colors" colspan="8" onclick="openCoverageProductModal(${index})">
                                 <div class="flex flex-col gap-2">
                                     <!-- Title Row -->
-                                    <div class="font-bold text-slate-200 text-sm truncate">
-                                        ${mobileTitle}
+                                    <div class="flex items-center text-left">
+                                        <span class="font-bold text-slate-400 uppercase tracking-wider text-xs mr-1 whitespace-nowrap">Produto:</span>
+                                        <div class="font-bold text-slate-200 text-sm truncate min-w-0">
+                                            ${mobileTitle}
+                                        </div>
                                     </div>
                                     <!-- Metrics Row -->
                                     <div class="flex justify-between items-center text-xs">
