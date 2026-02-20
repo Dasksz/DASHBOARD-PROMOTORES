@@ -2922,15 +2922,22 @@
                         
                         <td data-label="Cliente" class="px-2 py-2 md:px-4 md:py-2 text-left">
                             <!-- Mobile -->
-                            <div class="md:hidden text-xs font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-full" title="${escapeHtml(razao)}">
-                                ${escapeHtml(mobileLine1)}
+                            <div class="md:hidden">
+                                <div class="flex justify-between items-center w-full">
+                                    <div class="text-xs font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis" style="max-width: 80%;" title="${escapeHtml(razao)}">
+                                        ${escapeHtml(mobileLine1)}
+                                    </div>
+                                    <div class="text-white font-bold text-lg leading-none">${row.positivatedCount}</div>
+                                </div>
+                                ${line2 ? `<div class="text-[10px] text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis max-w-full mt-1" title="${escapeHtml(line2)}">${escapeHtml(line2)}</div>` : ''}
                             </div>
                             <!-- Desktop -->
-                            <div class="hidden md:block text-xs font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none" title="${escapeHtml(razao)}">
-                                ${escapeHtml(desktopLine1)}
+                            <div class="hidden md:block">
+                                <div class="text-xs font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none" title="${escapeHtml(razao)}">
+                                    ${escapeHtml(desktopLine1)}
+                                </div>
+                                ${line2 ? `<div class="text-[10px] text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis max-w-full md:max-w-none mt-1" title="${escapeHtml(line2)}">${escapeHtml(line2)}</div>` : ''}
                             </div>
-
-                            ${line2 ? `<div class="text-[10px] text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis max-w-full md:max-w-none mt-1" title="${escapeHtml(line2)}">${escapeHtml(line2)}</div>` : ''}
                         </td>
 
                         <td data-label="Cidade" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs text-slate-300 truncate max-w-[80px] hidden md:table-cell">${escapeHtml(row.city)}</td>
@@ -2938,11 +2945,6 @@
                         
                         ${saltyCols}
                         ${foodsCols}
-
-                        <!-- Mobile Counter Column -->
-                        <td data-label="Categorias" class="px-2 py-2 text-center text-white font-bold text-lg md:text-sm md:hidden border-l border-slate-500">
-                            ${row.positivatedCount}
-                        </td>
                     </tr>
                 `}).join('');
 
@@ -2952,17 +2954,19 @@
                         <!-- Desktop Label -->
                         <td colspan="4" class="px-2 py-3 text-right text-white hidden md:table-cell">TOTAL POSITIVADOS:</td>
                         
-                        <!-- Mobile Label -->
-                        <td class="px-2 py-3 text-right text-white md:hidden">TOTAL:</td>
+                        <!-- Mobile Footer (Single Cell for Layout) -->
+                        <td class="px-2 py-3 text-right text-white md:hidden">
+                            <div class="flex justify-between items-center">
+                                <span>TOTAL:</span>
+                                <div>
+                                    <span class="text-teal-400">${positivadosSalty}</span> <span class="text-slate-500">/</span> <span class="text-yellow-400">${positivadosFoods}</span>
+                                </div>
+                            </div>
+                        </td>
 
                         <!-- Desktop Salty/Foods Counts -->
                         <td colspan="${MIX_SALTY_CATEGORIES.length}" class="px-2 py-3 text-center text-teal-400 text-sm border-l border-slate-500 hidden md:table-cell">${positivadosSalty}</td>
                         <td colspan="${MIX_FOODS_CATEGORIES.length}" class="px-2 py-3 text-center text-yellow-400 text-sm border-l border-slate-500 hidden md:table-cell">${positivadosFoods}</td>
-                        
-                        <!-- Mobile Categorias Footer -->
-                        <td class="px-2 py-3 text-center text-white text-sm border-l border-slate-500 md:hidden">
-                            <span class="text-teal-400">${positivadosSalty}</span> / <span class="text-yellow-400">${positivadosFoods}</span>
-                        </td>
                     </tr>
                 `;
 

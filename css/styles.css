@@ -1462,12 +1462,6 @@ html.light .bg-green-900\/30 {
         min-height: auto !important;
     }
 
-    #mix-view td[data-label="Categorias"] {
-        text-align: center !important;
-        width: 3rem; /* Fixed width for counter column */
-        vertical-align: middle;
-    }
-
     /* Hide hidden columns strictly */
     #mix-view .hidden {
         display: none !important;
