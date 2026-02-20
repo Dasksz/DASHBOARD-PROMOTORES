@@ -151,7 +151,7 @@
         
         // Random Selection of Modes
         const rand = Math.random();
-        let spawnMode = 'EDGE_TO_EDGE';
+        let spawnMode;
 
         if (rand < 0.6) {
             spawnMode = 'CLOSE_UP'; // 60% Chance - Very Close & Prominent
@@ -173,8 +173,20 @@
             const visibleHeight = 2 * Math.tan(vFOV / 2) * dist;
             const visibleWidth = visibleHeight * aspect;
 
-            const startLeft = Math.random() > 0.5;
-            const offset = 25; // Decreased buffer for faster entry
+            // Decision: Standard Close-Up vs Special "Face Camera"
+            // Special Mode: Right to Left, facing camera
+            const isSpecialFaceCam = Math.random() < 0.35;
+
+            let startLeft;
+            if (isSpecialFaceCam) {
+                startLeft = false; // Must start Right to move Left
+                chesterOrientationMode = 'CAMERA';
+            } else {
+                startLeft = Math.random() > 0.5;
+                chesterOrientationMode = 'PATH';
+            }
+
+            const offset = 10;
             
             const xLeft = viewCenterX - (visibleWidth / 2) - offset;
             const xRight = viewCenterX + (visibleWidth / 2) + offset;
@@ -194,7 +206,6 @@
             const p4 = new THREE.Vector3(xEnd, (Math.random()-0.5) * 5, zClose - 8);
 
             chesterPath = new THREE.CatmullRomCurve3([p1, p2, p3, p4]);
-            chesterOrientationMode = 'PATH'; 
         } 
         // --- MODE A: EDGE TO EDGE (Now supports Diagonal/Vertical) ---
         else if (spawnMode === 'EDGE_TO_EDGE') {
@@ -292,10 +303,15 @@
         chesterModel.visible = true;
         
         // Randomize Belly Swim (30% Chance)
-        isBellySwim = Math.random() < 0.3;
+        // Disable for CAMERA mode to avoid weird rotations
+        if (chesterOrientationMode === 'CAMERA') {
+            isBellySwim = false;
+        } else {
+            isBellySwim = Math.random() < 0.3;
+        }
 
         // ZERO GRAVITY SPEED: Much slower (Portal effect needs instant continuity but slow motion)
-        let speedBase = 0.0004;
+        let speedBase = 0.0003;
         if (spawnMode === 'CLOSE_UP') speedBase = 0.0002;
         chesterSpeed = speedBase + Math.random() * 0.0001;
     }
@@ -303,23 +319,25 @@
     function updateOrientation(point, tangent) {
         if (!chesterModel) return;
 
-        // Force tangent-based orientation for natural swimming
-        // We always want him to "swim forward" along the path.
-        // If chesterOrientationMode was 'CAMERA', we would use lookAt(camera.position)
-        // But the user reported "facing front" while moving sideways is weird.
-        // So we default to PATH alignment for most cases.
-        
-        // Ensure tangent is normalized
-        const t = tangent.clone().normalize();
-        
-        // Calculate look target ahead on the path
-        const lookTarget = point.clone().add(t);
-        
-        chesterModel.lookAt(lookTarget);
+        if (chesterOrientationMode === 'CAMERA') {
+            // Force face camera
+            if (camera) {
+                chesterModel.lookAt(camera.position);
+            }
+        } else {
+            // Force tangent-based orientation for natural swimming
+            // Ensure tangent is normalized
+            const t = tangent.clone().normalize();
 
-        // Apply Belly Swim Rotation (Roll) if active
-        if (isBellySwim) {
-            chesterModel.rotateZ(1.2);
+            // Calculate look target ahead on the path
+            const lookTarget = point.clone().add(t);
+
+            chesterModel.lookAt(lookTarget);
+
+            // Apply Belly Swim Rotation (Roll) if active
+            if (isBellySwim) {
+                chesterModel.rotateZ(1.2);
+            }
         }
         
         // Potential Correction:
