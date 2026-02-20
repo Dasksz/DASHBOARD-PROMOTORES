@@ -2846,9 +2846,24 @@
                     if (row.hasFoods) sellerStats[seller].foods++;
                 });
 
+                // Responsive Limit (Top 5 Mobile, Top 10 Desktop)
+                const isMobile = window.innerWidth < 768;
+                const limit = isMobile ? 5 : 10;
+
                 const sortedSellers = Object.entries(sellerStats)
                     .sort(([,a], [,b]) => b.both - a.both)
-                    .slice(0, 10);
+                    .slice(0, limit);
+
+                // Dynamic Title Update
+                const chartTitleEl = document.getElementById('mix-seller-chart-title');
+                if (chartTitleEl) {
+                    // Logic to determine label based on filter context
+                    // Currently defaulting to 'Promotor' as requested, but prepared for 'Vendedor'
+                    let entityType = 'Promotor';
+                    // Future: if (filterState.type === 'seller') entityType = 'Vendedor';
+
+                    chartTitleEl.textContent = `Performance por ${entityType}`;
+                }
 
                 createChart('mixSellerChart', 'bar', sortedSellers.map(([name]) => getFirstName(name)),
                     [
