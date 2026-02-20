@@ -913,7 +913,6 @@ html.light .bg-green-900\/30 {
     top: 0;
     left: 0;
     z-index: 1;
-    filter: blur(1px);
 }
 
 .content-overlay {
