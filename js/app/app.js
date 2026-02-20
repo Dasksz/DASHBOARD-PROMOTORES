@@ -19390,6 +19390,7 @@ const supervisorGroups = new Map();
                         // Resolve Name once
                          const cObj = clientMapForKPIs.get(codCli);
                          const cName = cObj ? (cObj.nomeCliente || cObj.fantasia) : 'N/A';
+                         const cFantasia = cObj ? (cObj.fantasia || cObj.nomeCliente || 'N/A') : 'N/A';
 
                         ordersMap.set(key, {
                             PEDIDO: key,
@@ -19399,7 +19400,8 @@ const supervisorGroups = new Map();
                             CODFOR: s.CODFOR,
                             VLVENDA: 0,
                             POSICAO: s.POSICAO,
-                            CLIENTE_NOME: cName
+                            CLIENTE_NOME: cName,
+                            CLIENTE_FANTASIA: cFantasia
                         });
                     }
                     const o = ordersMap.get(key);
@@ -19490,27 +19492,48 @@ const supervisorGroups = new Map();
             else if (statusText === 'B') { statusText = 'Bloqueado'; statusColor = 'text-red-400'; }
 
             tr.innerHTML = `
-                <td data-label="Data" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 font-mono">${window.escapeHtml(dateStr)}</td>
-                <td data-label="Pedido" class="px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold">
+                <!-- Desktop Columns (Hidden on Mobile) -->
+                <td data-label="Data" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 font-mono">${window.escapeHtml(dateStr)}</td>
+                <td data-label="Pedido" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold">
                     <button class="text-[#FF5E00] hover:text-[#CC4A00] hover:underline transition-colors order-link font-mono">${window.escapeHtml(order.PEDIDO)}</button>
                 </td>
-                <td data-label="Cliente" class="px-2 py-1.5 md:px-2 md:py-3">
+                <td data-label="Cliente" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3">
                     <div class="text-xs md:text-sm text-white max-w-[120px] md:max-w-none truncate" title="${window.escapeHtml(order.CLIENTE_NOME || '')}">${window.escapeHtml(order.CLIENTE_NOME || 'N/A')}</div>
                     <div class="text-[10px] md:text-xs text-slate-500 font-mono">${window.escapeHtml(order.CODCLI)}</div>
                 </td>
                 <td data-label="Vendedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell truncate max-w-[100px]" title="${window.escapeHtml(order.NOME || '')}">${window.escapeHtml(order.NOME || '-')}</td>
                 <td data-label="Fornecedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(order.CODFOR || '-')}</td>
-                <td data-label="Valor" class="px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold text-right">${valStr}</td>
-                <td data-label="Status" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-center ${statusColor}">${window.escapeHtml(statusText)}</td>
+                <td data-label="Valor" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold text-right">${valStr}</td>
+                <td data-label="Status" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-center ${statusColor}">${window.escapeHtml(statusText)}</td>
+
+                <!-- Mobile Layout (Custom Row) -->
+                <td class="md:hidden p-3 w-full border-b border-white/5 block" colspan="7">
+                    <div class="flex flex-col gap-2">
+                        <!-- Line 1: Order | Code - Fantasy -->
+                        <div class="flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                            <button class="text-[#FF5E00] font-bold font-mono hover:underline order-link shrink-0 text-sm">${window.escapeHtml(order.PEDIDO)}</button>
+                            <span class="text-slate-500 text-sm">|</span>
+                            <span class="text-white font-bold truncate text-sm">
+                                ${window.escapeHtml(order.CODCLI)} - ${window.escapeHtml(order.CLIENTE_FANTASIA || order.CLIENTE_NOME || 'N/A')}
+                            </span>
+                        </div>
+
+                        <!-- Line 2: Date ... Status -->
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400 text-sm font-mono">${window.escapeHtml(dateStr)}</span>
+                            <span class="text-sm font-bold uppercase ${statusColor}">${window.escapeHtml(statusText)}</span>
+                        </div>
+                    </div>
+                </td>
             `;
 
-            const btn = tr.querySelector('.order-link');
-            if (btn) {
+            const btns = tr.querySelectorAll('.order-link');
+            btns.forEach(btn => {
                 btn.onclick = (e) => {
                     e.stopPropagation();
                     openModal(order.PEDIDO);
                 };
-            }
+            });
             
             tbody.appendChild(tr);
         });
