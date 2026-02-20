@@ -1419,3 +1419,62 @@ html.light .bg-green-900\/30 {
         align-items: flex-start;
     }
 }
+
+/* Specific Override for Mix Table on Mobile to restore Columnar Layout */
+@media (max-width: 768px) {
+    #mix-view table,
+    #mix-view thead,
+    #mix-view tbody,
+    #mix-view th,
+    #mix-view td,
+    #mix-view tr {
+        display: revert;
+    }
+
+    /* Fallback for browsers not supporting revert or if base is block */
+    #mix-view table { display: table !important; width: 100%; border-collapse: collapse; }
+    #mix-view thead { display: table-header-group !important; }
+    #mix-view tbody { display: table-row-group !important; }
+    #mix-view tr { display: table-row !important; }
+    #mix-view th, #mix-view td { display: table-cell !important; }
+
+    /* Reset card styles applied by global mobile table rules */
+    #mix-view tr {
+        margin-bottom: 0 !important;
+        border-radius: 0 !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+
+    /* Remove pseudo labels */
+    #mix-view td::before {
+        content: none !important;
+        display: none !important;
+    }
+
+    /* Adjust padding and alignment */
+    #mix-view td {
+        text-align: left;
+        padding: 0.75rem 0.5rem !important; /* Compact padding */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        min-height: auto !important;
+    }
+
+    #mix-view td[data-label="Categorias"] {
+        text-align: center !important;
+        width: 3rem; /* Fixed width for counter column */
+        vertical-align: middle;
+    }
+
+    /* Hide hidden columns strictly */
+    #mix-view .hidden {
+        display: none !important;
+    }
+
+    /* Ensure Header Visibility */
+    #mix-view thead tr {
+        background-color: rgba(30, 41, 59, 0.8) !important;
+    }
+}

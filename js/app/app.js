@@ -2920,9 +2920,9 @@
                     <tr class="hover:bg-slate-700/50 border-b border-slate-500 last:border-0 cursor-pointer md:cursor-default" onclick="if(window.innerWidth < 768) openMixMobileModal('${row.codcli}')">
                         <td data-label="Cód" class="px-2 py-2 md:px-4 md:py-2 font-medium text-slate-300 text-[10px] md:text-xs hidden md:table-cell">${escapeHtml(row.codcli)}</td>
                         
-                        <td data-label="Cliente" class="px-2 py-2 md:px-4 md:py-2 text-left mobile-card-header">
+                        <td data-label="Cliente" class="px-2 py-2 md:px-4 md:py-2 text-left">
                             <!-- Mobile -->
-                            <div class="md:hidden text-[10px] font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-full" title="${escapeHtml(razao)}">
+                            <div class="md:hidden text-xs font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-full" title="${escapeHtml(razao)}">
                                 ${escapeHtml(mobileLine1)}
                             </div>
                             <!-- Desktop -->
@@ -2930,7 +2930,7 @@
                                 ${escapeHtml(desktopLine1)}
                             </div>
 
-                            ${line2 ? `<div class="text-[9px] md:text-[10px] text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis max-w-full md:max-w-none mt-1" title="${escapeHtml(line2)}">${escapeHtml(line2)}</div>` : ''}
+                            ${line2 ? `<div class="text-[10px] text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis max-w-full md:max-w-none mt-1" title="${escapeHtml(line2)}">${escapeHtml(line2)}</div>` : ''}
                         </td>
 
                         <td data-label="Cidade" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs text-slate-300 truncate max-w-[80px] hidden md:table-cell">${escapeHtml(row.city)}</td>
@@ -2940,7 +2940,7 @@
                         ${foodsCols}
 
                         <!-- Mobile Counter Column -->
-                        <td data-label="Categorias" class="px-2 py-2 text-center text-white font-bold text-sm md:hidden border-l border-slate-500">
+                        <td data-label="Categorias" class="px-2 py-2 text-center text-white font-bold text-lg md:text-sm md:hidden border-l border-slate-500">
                             ${row.positivatedCount}
                         </td>
                     </tr>
