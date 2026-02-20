@@ -21549,18 +21549,22 @@ const supervisorGroups = new Map();
 
                         <!-- Mobile Layout (Single Cell) -->
                         <td class="md:hidden p-4 w-full" colspan="8">
-                            <div class="flex justify-between items-start">
-                                <div class="flex flex-col gap-1">
-                                    <span class="text-xs font-bold text-white leading-tight">
+                            <div class="flex flex-col gap-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold text-white leading-tight truncate mr-2">
                                         ${t.codCli} - ${t.clientName}
                                     </span>
-                                    <span class="text-lg font-bold text-white mt-1">
+                                    <div class="shrink-0">
+                                        ${statusMobile}
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-bold text-white">
                                         ${valOpen}
                                     </span>
-                                </div>
-                                <div class="flex flex-col items-end gap-2">
-                                    ${statusMobile}
-                                    <span class="text-xs text-slate-400 font-mono mt-1">${dateStr}</span>
+                                    <span class="text-sm text-slate-400 font-mono">
+                                        ${dateStr}
+                                    </span>
                                 </div>
                             </div>
                         </td>
