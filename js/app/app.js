@@ -11416,15 +11416,36 @@ const supervisorGroups = new Map();
                     variationContent = `<span>-</span>`;
                 }
 
-                // Spacer Row (between categories)
-                const spacerRow = index > 0 ? `<tr class="h-2 bg-transparent border-none pointer-events-none"><td colspan="6"></td></tr>` : '';
+                // Spacer Row (between categories) - Hidden on Mobile to create list effect
+                const spacerRow = index > 0 ? `<tr class="hidden md:table-row h-2 bg-transparent border-none pointer-events-none"><td colspan="6"></td></tr>` : '';
 
+                // Refined styling: Border bottom for mobile (list view), Rounded/Border for Desktop (card view via md: classes if desired, or simplified globally)
+                // User requested "not cards", so we flatten it.
+                // Mobile: border-b border-slate-700 (separator). Desktop: can keep card or flatten too. 
+                // Let's flatten globally for consistency if "not cards" applies to the view concept, or at least ensure Mobile is flat.
+                // Using 'md:rounded-lg' to keep desktop card-like if preferred, but user said "categories must be listed in rows". 
+                // I will remove rounded-lg globally to be safe and use border-b.
+                
                 const catRow = `
                     ${spacerRow}
-                    <tr class="glass-panel-heavy hover:bg-slate-700 cursor-pointer transition-colors border border-slate-700 rounded-lg group" data-toggle="${catId}">
-                        <td class="px-3 py-3 text-xs font-bold text-white flex items-center gap-2">
-                            <svg class="w-4 h-4 transform transition-transform text-slate-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                            <span class="uppercase tracking-wide">${catGroup.name}</span>
+                    <tr class="glass-panel-heavy hover:bg-slate-700 cursor-pointer transition-colors border-b border-slate-700 group" data-toggle="${catId}">
+                        <!-- Mobile View (Colspan 6) -->
+                        <td class="md:hidden px-3 py-3" colspan="6">
+                            <div class="flex justify-between items-center w-full">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 transform transition-transform text-slate-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    <span class="text-xs font-bold text-white uppercase tracking-wide">${catGroup.name}</span>
+                                </div>
+                                <div class="text-xs font-bold">${variationContent}</div>
+                            </div>
+                        </td>
+
+                        <!-- Desktop View Cells -->
+                        <td class="hidden md:table-cell px-3 py-3 text-xs font-bold text-white">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 transform transition-transform text-slate-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                <span class="uppercase tracking-wide">${catGroup.name}</span>
+                            </div>
                         </td>
                         <td class="px-2 py-3 text-xs text-slate-400 text-left italic hidden md:table-cell">${catGroup.items.length} Produtos</td>
                         <td class="px-2 py-3 text-sm text-center font-mono font-bold text-blue-400 hidden md:table-cell">${catGroup.stock.toLocaleString('pt-BR')}</td>
@@ -11434,7 +11455,7 @@ const supervisorGroups = new Map();
                         <td class="px-2 py-3 text-xs text-center hidden md:table-cell">
                             <div class="tooltip font-bold text-white">${catGroup.metrics.coverageCurrent.toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.clientsCount} PDVs</span></div>
                         </td>
-                        <td class="px-2 py-3 text-xs text-center font-bold">${variationContent}</td>
+                        <td class="px-2 py-3 text-xs text-center font-bold hidden md:table-cell">${variationContent}</td>
                     </tr>
                 `;
 
@@ -11503,10 +11524,10 @@ const supervisorGroups = new Map();
                     const toggleRow = e.target.closest('tr[data-toggle]');
                     if (toggleRow) {
                         const catId = toggleRow.getAttribute('data-toggle');
-                        const icon = toggleRow.querySelector('svg');
+                        const icons = toggleRow.querySelectorAll('svg');
                         const children = innovationsMonthTableBody.querySelectorAll(`tr[data-parent="${catId}"]`);
                         
-                        if (icon) icon.classList.toggle('rotate-90');
+                        icons.forEach(icon => icon.classList.toggle('rotate-90'));
                         children.forEach(row => row.classList.toggle('hidden'));
                     }
                 });
@@ -21741,22 +21762,22 @@ const supervisorGroups = new Map();
         if (stockEl) stockEl.textContent = (item.stock || 0).toLocaleString('pt-BR');
 
         // Since this modal is shared with Coverage view which has "Sales", we might need to handle those fields.
-        // In Innovations context, we don't usually have "Sales Value" readily available in the item object
+        // In Innovations context, we don't usually have "Sales Value" readily available in the item object 
         // (unless we enriched it from somewhere else). The current item structure in `updateInnovationsMonthView`
         // focuses on Clients Count (Positivação).
-
+        
         // Hide/Reset Sales Section if not applicable or set to '-'
         const salesPrevEl = document.getElementById('product-performance-prev');
         const salesCurrEl = document.getElementById('product-performance-curr');
         const salesVarEl = document.getElementById('product-performance-var');
-
+        
         if (salesPrevEl) salesPrevEl.textContent = '--';
         if (salesCurrEl) salesCurrEl.textContent = '--';
         if (salesVarEl) {
             salesVarEl.textContent = '--';
             salesVarEl.className = 'px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 text-slate-300';
         }
-
+        
         // Update Label to reflect we might not be showing Sales Value
         const metricLabel = document.getElementById('product-performance-metric-label');
         if (metricLabel) metricLabel.textContent = 'Positivação'; // Or keep 'Valor' but data is missing
