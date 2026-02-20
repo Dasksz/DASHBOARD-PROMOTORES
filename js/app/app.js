@@ -21576,7 +21576,7 @@ const supervisorGroups = new Map();
                         <td class="px-4 py-3 text-center hidden md:table-cell">${statusDesktop}</td>
 
                         <!-- Mobile Layout (Single Cell) -->
-                        <td class="md:hidden p-4 w-full" colspan="8">
+                        <td class="md:hidden mobile-card-header w-full" colspan="8">
                             <div class="flex flex-col gap-2">
                                 <div class="flex justify-between items-center">
                                     <span class="text-xs font-bold text-white leading-tight truncate mr-2 text-left">
