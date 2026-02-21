@@ -4527,22 +4527,16 @@
 
                 // Mobile Content (Compact List - v2)
                 const mobileContent = `
-                    <div class="md:hidden w-full py-1" onclick="openMetaRealizadoDetailsModal(${index}, 'seller')">
-                        <div class="font-bold text-slate-200 text-sm truncate mb-1">${row.codusur || ''} - ${row.name}</div>
+                    <div class="md:hidden w-full py-3 border-b border-slate-800" onclick="openMetaRealizadoDetailsModal(${index}, 'seller')">
+                        <div class="font-bold text-sm text-slate-200 mb-1 truncate">${row.codusur || ''} - ${row.name}</div>
                         <div class="flex justify-between items-center text-xs">
-                            <div class="flex items-center gap-1">
-                                <span class="text-slate-500 font-semibold uppercase text-[10px]">Meta:</span>
-                                <span class="text-slate-300">${metaTotalStr}</span>
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <span class="text-slate-500 font-semibold uppercase text-[10px]">Realizado:</span>
-                                <span class="${colorClass}">${realTotalStr}</span>
-                            </div>
+                            <div class="text-slate-400">Meta: <span class="text-slate-200 font-medium">${metaTotalStr}</span></div>
+                            <div class="text-slate-400">Real: <span class="${colorClass} font-bold">${realTotalStr}</span></div>
                         </div>
                     </div>
                 `;
 
-                return `<tr class="hover:bg-slate-700/30 transition-colors group border-b border-slate-700/50">${mobileContent}${desktopCells}</tr>`;
+                return `<tr class="hover:bg-slate-700/30 transition-colors group">${mobileContent}${desktopCells}</tr>`;
             }).join('');
 
             tableBody.innerHTML = rowsHTML;
@@ -4608,10 +4602,10 @@
             else if (percent < 100) badgeBg = 'bg-green-900/50';
             else badgeBg = 'bg-yellow-500/20 shadow-[0_0_10px_rgba(253,224,71,0.3)]'; // Gold badge style
 
-            realVal.className = `text-lg sm:text-2xl truncate w-full relative z-10 ${colorClass}`;
+            realVal.className = `text-lg sm:text-2xl font-bold truncate w-full relative z-10 ${colorClass}`;
             percentBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded-full text-white mt-1 relative z-10 ${badgeBg}`;
 
-            // Weeks Table
+            // Weeks List (Compact)
             weeksBody.innerHTML = item.weekData.map((w, i) => {
                  const wPercent = w.meta > 0 ? (w.real / w.meta) * 100 : 0;
                  let wColor = 'text-green-400';
@@ -4619,12 +4613,16 @@
                  else if (wPercent < 100) wColor = 'text-slate-400';
 
                  return `
-                    <tr class="hover:bg-slate-700/30">
-                        <td class="px-4 py-3 text-center text-slate-300 font-mono">S${i + 1}</td>
-                        <td class="px-4 py-3 text-right text-slate-400">${w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                        <td class="px-4 py-3 text-right font-bold ${wColor}">${w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                        <td class="px-4 py-3 text-center text-xs text-slate-500">${wPercent.toFixed(0)}%</td>
-                    </tr>
+                    <div class="flex items-center justify-between py-3 px-4 hover:bg-white/5 transition-colors border-b border-slate-800 last:border-0">
+                        <span class="text-slate-500 font-mono text-xs font-bold w-8">S${i + 1}</span>
+                        <div class="flex items-center gap-3 text-xs">
+                             <div class="hidden sm:block text-slate-500">Meta: <span class="text-slate-400">${w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+                             <div class="sm:hidden text-slate-500"><span class="text-slate-400">${w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+
+                             <div class="text-slate-500">Real: <span class="${wColor} font-bold">${w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+                             <span class="${wColor} font-bold min-w-[35px] text-right bg-slate-800/50 px-1.5 py-0.5 rounded">${wPercent.toFixed(0)}%</span>
+                        </div>
+                    </div>
                  `;
             }).join('');
 
@@ -5146,22 +5144,16 @@
 
                     // Mobile Content (Compact List - v2)
                     const mobileContent = `
-                        <div class="md:hidden w-full py-1" onclick="openMetaRealizadoDetailsModal(${index}, 'client')">
-                            <div class="font-bold text-slate-200 text-sm truncate mb-1 w-full">${row.codcli} - ${escapeHtml(row.razaoSocial)}</div>
+                        <div class="md:hidden w-full py-3 border-b border-slate-800" onclick="openMetaRealizadoDetailsModal(${index}, 'client')">
+                            <div class="font-bold text-sm text-slate-200 mb-1 truncate">${row.codcli} - ${escapeHtml(row.razaoSocial)}</div>
                             <div class="flex justify-between items-center text-xs">
-                                <div class="flex items-center gap-1">
-                                    <span class="text-slate-500 font-semibold uppercase text-[10px]">Meta:</span>
-                                    <span class="text-slate-300">${metaTotalStr}</span>
-                                </div>
-                                <div class="flex items-center gap-1">
-                                    <span class="text-slate-500 font-semibold uppercase text-[10px]">Realizado:</span>
-                                    <span class="${colorClass}">${realTotalStr}</span>
-                                </div>
+                                <div class="text-slate-400">Meta: <span class="text-slate-200 font-medium">${metaTotalStr}</span></div>
+                                <div class="text-slate-400">Real: <span class="${colorClass} font-bold">${realTotalStr}</span></div>
                             </div>
                         </div>
                     `;
 
-                    return `<tr class="hover:bg-slate-700/30 transition-colors border-b border-slate-700/50">${mobileContent}${desktopCells}</tr>`;
+                    return `<tr class="hover:bg-slate-700/30 transition-colors">${mobileContent}${desktopCells}</tr>`;
                 }).join('');
                 tableBody.innerHTML = rowsHTML;
             }
