@@ -15285,106 +15285,112 @@ const supervisorGroups = new Map();
                 return rawName;
             };
 
-            // 2. Identify Header Rows
-            // We look for 3 consecutive rows that might be the header structure
-            let startRow = 0;
+            // 2. Identify Header Rows and Construct ColMap
+            const colMap = {};
+            let dataStartRow = 0;
+
             if (rows.length >= 3) {
                 // Standard logic: Rows 0, 1, 2
-                startRow = 0;
+                const startRow = 0;
+
+                const header0 = rows[startRow].map(h => h ? h.trim().toUpperCase() : '');
+                const header1 = rows[startRow + 1].map(h => h ? h.trim().toUpperCase() : '');
+                const header2 = rows[startRow + 2].map(h => h ? h.trim().toUpperCase() : '');
+
+                console.log("[Parser] Header 0:", header0.join('|'));
+                console.log("[Parser] Header 1:", header1.join('|'));
+                console.log("[Parser] Header 2:", header2.join('|'));
+
+                let currentCategory = null;
+                let currentMetric = null;
+
+                // Map Headers
+                for (let i = 0; i < header0.length; i++) {
+                    if (header0[i]) currentCategory = header0[i];
+                    if (header1[i]) currentMetric = header1[i];
+                    let subMetric = header2[i]; // Meta, Ajuste, etc.
+
+                    if (currentCategory && subMetric) {
+                        if (subMetric === 'AJ.' || subMetric === 'AJ') subMetric = 'AJUSTE';
+
+                        let catKey = currentCategory;
+                        // Normalize Category Names to IDs (Fuzzy Matching)
+                        if (catKey.includes('NÃO EXTRUSADOS') || catKey.includes('NAO EXTRUSADOS')) catKey = '708';
+                        else if (catKey.includes('EXTRUSADOS')) catKey = '707';
+                        else if (catKey.includes('TORCIDA')) catKey = '752';
+                        else if (catKey.includes('TODDYNHO')) catKey = '1119_TODDYNHO';
+                        else if (catKey.includes('TODDY')) catKey = '1119_TODDY';
+                        else if (catKey.includes('QUAKER') || catKey.includes('KEROCOCO')) catKey = '1119_QUAKER_KEROCOCO';
+                        else if (catKey === 'KG ELMA') catKey = 'tonelada_elma';
+                        else if (catKey === 'KG FOODS') catKey = 'tonelada_foods';
+                        else if (catKey === 'TOTAL ELMA') catKey = 'total_elma';
+                        else if (catKey === 'TOTAL FOODS') catKey = 'total_foods';
+                        else if (catKey === 'MIX SALTY') catKey = 'mix_salty';
+                        else if (catKey === 'MIX FOODS') catKey = 'mix_foods';
+                        else if (catKey === 'PEPSICO_ALL_POS' || catKey === 'PEPSICO_ALL' || catKey === 'GERAL') catKey = 'pepsico_all';
+
+                        let metricKey = 'OTHER';
+                        if (currentMetric === 'FATURAMENTO' || currentMetric === 'MÉDIA TRIM.') metricKey = 'FAT';
+                        else if (currentMetric === 'POSITIVAÇÃO' || currentMetric === 'POSITIVACAO' || currentMetric.includes('POSITIVA')) metricKey = 'POS';
+                        else if (currentMetric === 'TONELADA' || currentMetric === 'META KG') metricKey = 'VOL';
+                        else if (currentMetric === 'META MIX' || currentMetric === 'MIX' || currentMetric === 'QTD') metricKey = 'MIX';
+
+                        const key = `${catKey}_${metricKey}_${subMetric}`;
+                        colMap[key] = i;
+                    }
+                }
+
+                dataStartRow = startRow + 3;
             } else {
                 console.warn("[Parser] Menos de 3 linhas. Tentando modo simplificado...");
-                const simplifiedUpdates = [];
+                // Simplified Mode: Hardcoded Column Map based on Standard Export
+                // Columns structure matches exportGoalsSvXLSX
 
-                rows.forEach((row, rowIndex) => {
-                    const cols = row.map(c => c ? c.trim() : '').filter(c => c !== '');
-                    if (cols.length < 3) {
-                         console.warn(`[Parser-Simples] Linha ${rowIndex+1} ignorada: Menos de 3 colunas válidas.`);
-                         return;
-                    }
+                let colIdx = 2; // Start after Vendedor (Index 2)
+                const addKeys = (cat, keys) => {
+                    keys.forEach((k, i) => {
+                        if (k) colMap[`${cat}_${k}`] = colIdx + i;
+                    });
+                    colIdx += keys.length;
+                };
 
-                    const sellerName = resolveSeller(cols[0]);
-                    if (!sellerName) return;
+                // 1. TOTAL ELMA (Standard Agg)
+                addKeys('total_elma', ['FAT_META', 'FAT_AJUSTE', 'POS_META', 'POS_AJUSTE']);
+                // 2. EXTRUSADOS (707)
+                addKeys('707', ['FAT_META', 'FAT_AJUSTE', 'POS_META', 'POS_AJUSTE']);
+                // 3. NÃO EXTRUSADOS (708)
+                addKeys('708', ['FAT_META', 'FAT_AJUSTE', 'POS_META', 'POS_AJUSTE']);
+                // 4. TORCIDA (752)
+                addKeys('752', ['FAT_META', 'FAT_AJUSTE', 'POS_META', 'POS_AJUSTE']);
+                // 5. KG ELMA (tonnage)
+                addKeys('tonelada_elma', [null, 'VOL_VOLUME', 'VOL_AJUSTE']);
+                // 6. MIX SALTY (mix)
+                addKeys('mix_salty', [null, 'MIX_META', 'MIX_AJUSTE']);
 
-                    let catId = null;
-                    let metricId = null;
-                    let value = NaN;
+                // 7. TOTAL FOODS (Standard Agg)
+                addKeys('total_foods', ['FAT_META', 'FAT_AJUSTE', 'POS_META', 'POS_AJUSTE']);
+                // 8. TODDYNHO (1119_TODDYNHO)
+                addKeys('1119_TODDYNHO', ['FAT_META', 'FAT_AJUSTE', 'POS_META', 'POS_AJUSTE']);
+                // 9. TODDY (1119_TODDY)
+                addKeys('1119_TODDY', ['FAT_META', 'FAT_AJUSTE', 'POS_META', 'POS_AJUSTE']);
+                // 10. QUAKER/KEROCOCO
+                addKeys('1119_QUAKER_KEROCOCO', ['FAT_META', 'FAT_AJUSTE', 'POS_META', 'POS_AJUSTE']);
+                // 11. KG FOODS (tonnage)
+                addKeys('tonelada_foods', [null, 'VOL_VOLUME', 'VOL_AJUSTE']);
+                // 12. MIX FOODS (mix)
+                addKeys('mix_foods', [null, 'MIX_META', 'MIX_AJUSTE']);
 
-                    // Try 4 Columns: Seller | Category | Metric | Value
-                    if (cols.length >= 4) {
-                        catId = normalizeGoalCategory(cols[1]);
-                        metricId = normalizeGoalMetric(cols[2]);
-                        value = parseImportValue(cols[3]);
-                    }
-                    // Try 3 Columns: Seller | Category | Value (Infer Metric)
-                    else if (cols.length === 3) {
-                        catId = normalizeGoalCategory(cols[1]);
-                        value = parseImportValue(cols[2]);
+                // 13. GERAL (pepsico_all)
+                addKeys('pepsico_all', [null, 'FAT_META', 'VOL_META', 'POS_META']);
 
-                        if (catId) {
-                            if (catId.startsWith('mix_')) metricId = 'MIX';
-                            else if (catId.startsWith('tonelada_')) metricId = 'VOL';
-                            else if (catId.startsWith('total_') || catId === 'pepsico_all') metricId = 'POS';
-                            // Ambiguous: 707, 708... could be FAT or POS.
-                            // If Value is small (< 200), maybe POS? If large, FAT? Dangerous.
-                            // Default to FAT for 707/etc?
-                            else if (window.SUPPLIER_CODES.ALL_GOALS.includes(catId)) {
-                                metricId = 'FAT'; // Default assumption for simplified input
-                            }
-                        }
-                    }
+                // 14. PEDEV
+                colIdx += 1;
 
-                    if (sellerName && catId && metricId && !isNaN(value)) {
-                        let type = 'rev';
-                        if (metricId === 'VOL') type = 'vol';
-                        if (metricId === 'POS') type = 'pos';
-                        if (metricId === 'MIX') type = 'mix';
-
-                        simplifiedUpdates.push({ type, seller: sellerName, category: catId, val: value });
-                    }
-                });
-
-                return simplifiedUpdates.length > 0 ? simplifiedUpdates : null;
-            }
-
-            const header0 = rows[startRow].map(h => h ? h.trim().toUpperCase() : '');
-            const header1 = rows[startRow + 1].map(h => h ? h.trim().toUpperCase() : '');
-            const header2 = rows[startRow + 2].map(h => h ? h.trim().toUpperCase() : '');
-
-            console.log("[Parser] Header 0:", header0.join('|'));
-            console.log("[Parser] Header 1:", header1.join('|'));
-            console.log("[Parser] Header 2:", header2.join('|'));
-
-            const colMap = {};
-            let currentCategory = null;
-            let currentMetric = null;
-
-            // Map Headers
-            for (let i = 0; i < header0.length; i++) {
-                if (header0[i]) currentCategory = header0[i];
-                if (header1[i]) currentMetric = header1[i];
-                let subMetric = header2[i]; // Meta, Ajuste, etc.
-
-                if (currentCategory && subMetric) {
-                    if (subMetric === 'AJ.' || subMetric === 'AJ') subMetric = 'AJUSTE';
-
-                    let catKey = currentCategory;
-                    // Normalize Category Names to IDs (Reuse helper if possible or keep logic)
-                    const normalizedCat = normalizeGoalCategory(catKey);
-                    if (normalizedCat) catKey = normalizedCat;
-
-                    let metricKey = 'OTHER';
-                    const normalizedMetric = normalizeGoalMetric(currentMetric);
-                    if (normalizedMetric) metricKey = normalizedMetric;
-
-                    const key = `${catKey}_${metricKey}_${subMetric}`;
-                    colMap[key] = i;
-                }
+                dataStartRow = 0; // Parse all rows
             }
 
             const updates = [];
             const processedSellers = new Set();
-
-            const dataStartRow = startRow + 3;
             // Identify Vendor Column Index (Name)
             // Usually Index 1 (Code, Name, ...)
             // We scan first few rows to find valid seller names
@@ -15412,8 +15418,14 @@ const supervisorGroups = new Map();
                 if (!sellerName) continue;
 
                 // --- ENHANCED FILTER: Ignore Supervisors, Aggregates, and BALCAO ---
-                if (isGarbageSeller(sellerName)) continue;
                 const upperName = sellerName.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+
+                // 1. Explicit Blocklist
+                if (upperName === 'BALCAO' || upperName === 'BALCÃO' ||
+                    upperName.includes('TOTAL') || upperName.includes('SUPERVISOR') || upperName.includes('GERAL') ||
+                    upperName === 'VENDEDOR' || upperName === 'NOME' || upperName === 'CODIGO' || upperName === 'CÓDIGO') {
+                    continue;
+                }
 
                 // --- RESOLUTION LOGIC: Normalize Seller Name to System Canonical Name ---
                 let canonicalName = null;
@@ -15472,7 +15484,7 @@ const supervisorGroups = new Map();
                 };
 
                 // 1. Revenue
-                const revCats = window.SUPPLIER_CODES.ALL_GOALS;
+                const revCats = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
                 revCats.forEach(cat => {
                     const val = getPriorityValue(cat, 'FAT');
                     if (!isNaN(val)) updates.push({ type: 'rev', seller: sellerName, category: cat, val: val });
@@ -15487,7 +15499,7 @@ const supervisorGroups = new Map();
                 });
 
                 // 3. Positivation
-                const posCats = ['pepsico_all', 'total_elma', 'total_foods', window.SUPPLIER_CODES.ELMA[0], window.SUPPLIER_CODES.ELMA[1], window.SUPPLIER_CODES.ELMA[2], window.SUPPLIER_CODES.VIRTUAL.TODDYNHO, window.SUPPLIER_CODES.VIRTUAL.TODDY, window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO];
+                const posCats = ['pepsico_all', 'total_elma', 'total_foods', '707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
                 posCats.forEach(cat => {
                     const val = getPriorityValue(cat, 'POS');
                     if (!isNaN(val)) updates.push({ type: 'pos', seller: sellerName, category: cat, val: Math.round(val) });
@@ -16249,11 +16261,37 @@ const supervisorGroups = new Map();
                     // 2. Backfill Defaults for ALL Active Sellers
                     // Iterate all active sellers to ensure their calculated "Suggestions" are saved if not manually set.
                     // We get active sellers from optimizedData.rcasBySupervisor
-                    // 2. Backfill Defaults for ALL Active Sellers
-                    // Iterate all active sellers to ensure their calculated "Suggestions" are saved if not manually set.
-                    // 2. Backfill Defaults Removed
-                    // We rely on getSellerCurrentGoal dynamic calculation for unconfigured sellers.
-                    // This avoids materializing defaults into overrides, which would prevent strict mode behavior (returning 0 for missing manual targets).
+                    const activeSellerNames = new Set();
+                    const forbiddenBackfill = ['INATIVOS', 'N/A', 'BALCAO', 'BALCÃO', 'TOTAL', 'GERAL'];
+                    const supervisorNames = new Set(optimizedData.rcasBySupervisor.keys());
+
+                    optimizedData.rcasBySupervisor.forEach(rcas => {
+                        rcas.forEach(code => {
+                            const name = optimizedData.rcaNameByCode.get(code);
+                            if (name) {
+                                const upper = name.toUpperCase();
+                                // Ensure we exclude supervisors themselves from being treated as sellers
+                                // and exclude forbidden keywords
+                                if (!forbiddenBackfill.some(f => upper.includes(f)) && !supervisorNames.has(name)) {
+                                    activeSellerNames.add(name);
+                                }
+                            }
+                        });
+                    });
+
+                    activeSellerNames.forEach(sellerName => {
+                        if (!goalsSellerTargets.has(sellerName)) goalsSellerTargets.set(sellerName, {});
+                        const targets = goalsSellerTargets.get(sellerName);
+
+                        // Calculate Defaults
+                        const defaults = calculateSellerDefaults(sellerName);
+
+                        // Backfill if missing
+                        if (targets['total_elma'] === undefined) targets['total_elma'] = defaults.elmaPos;
+                        if (targets['total_foods'] === undefined) targets['total_foods'] = defaults.foodsPos;
+                        if (targets['mix_salty'] === undefined) targets['mix_salty'] = defaults.mixSalty;
+                        if (targets['mix_foods'] === undefined) targets['mix_foods'] = defaults.mixFoods;
+                    });
 
                     // Save to Supabase (SKIPPED - Load to Memory Only)
                     // const success = await saveGoalsToSupabase();
