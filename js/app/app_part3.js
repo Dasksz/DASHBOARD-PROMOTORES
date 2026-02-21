@@ -4428,8 +4428,8 @@
         const chart = root.container.children.push(am5radar.RadarChart.new(root, {
             panX: false,
             panY: false,
-            wheelX: "panX",
-            wheelY: "zoomX",
+            wheelX: "none",
+            wheelY: "none",
             innerRadius: am5.percent(20),
             startAngle: -90,
             endAngle: 180
@@ -4437,7 +4437,7 @@
 
         // Cursor
         const cursor = chart.set("cursor", am5radar.RadarCursor.new(root, {
-            behavior: "zoomX"
+            behavior: "none"
         }));
         cursor.lineY.set("visible", false);
 
