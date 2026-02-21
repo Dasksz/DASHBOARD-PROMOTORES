@@ -801,7 +801,17 @@
 
         async function geocodeAddressNominatim(address) {
             if (!address) return null;
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
+
+            let emailParam = '';
+            // Tenta obter o e-mail de identificação dos metadados
+            if (embeddedData && embeddedData.metadata && Array.isArray(embeddedData.metadata)) {
+                const emailMeta = embeddedData.metadata.find(m => m.key === 'BREVO_SENDER_EMAIL');
+                if (emailMeta && emailMeta.value) {
+                    emailParam = `&email=${encodeURIComponent(emailMeta.value)}`;
+                }
+            }
+
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1${emailParam}`;
 
             try {
                 const response = await fetch(url, {
