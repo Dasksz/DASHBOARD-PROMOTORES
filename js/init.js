@@ -948,10 +948,52 @@
 
                      filteredOrders = [];
                 } else {
-                    // Resolve allowed promoters
+                    // Resolve allowed promoters (Trade Hierarchy)
                     const allowedPromoters = new Set();
                     const normalizedRole = role.trim().toLowerCase();
 
+                    // Check if Role matches any Supervisor Code in Sales Data
+                    let isSupervisor = false;
+                    const supervisedSellers = new Set();
+
+                    if (detailed.values && detailed.values['CODSUPERVISOR']) {
+                        const supCol = detailed.values['CODSUPERVISOR'];
+                        const sellerCol = detailed.values['CODUSUR'];
+
+                        // Check if ANY row has this supervisor code (case insensitive)
+                        for(let i=0; i<detailed.length; i++) {
+                            const rowSup = String(supCol[i] || '').trim().toLowerCase();
+                            if (rowSup === normalizedRole) {
+                                isSupervisor = true;
+                                if (sellerCol[i]) supervisedSellers.add(String(sellerCol[i]).trim());
+                            }
+                        }
+                    }
+
+                    // Check if Role matches any Seller Code (RCA) in Sales Data or Clients
+                    let isSeller = false;
+                    if (!isSupervisor) { // Optimization: Can't be both effectively in this logic context usually
+                        if (detailed.values && detailed.values['CODUSUR']) {
+                            const sellerCol = detailed.values['CODUSUR'];
+                            for(let i=0; i<detailed.length; i++) {
+                                if (String(sellerCol[i] || '').trim().toLowerCase() === normalizedRole) {
+                                    isSeller = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!isSeller && clients.values && (clients.values['RCA 1'] || clients.values['RCA1'])) {
+                             const rcaCol = clients.values['RCA 1'] || clients.values['RCA1'];
+                             for(let i=0; i<clients.length; i++) {
+                                 if (String(rcaCol[i] || '').trim().toLowerCase() === normalizedRole) {
+                                     isSeller = true;
+                                     break;
+                                 }
+                             }
+                        }
+                    }
+
+                    // Hierarchy Logic (Trade)
                     hierarchy.forEach(h => {
                         const coord = (h.cod_coord || '').trim().toLowerCase();
                         const cocoord = (h.cod_cocoord || '').trim().toLowerCase();
@@ -965,18 +1007,17 @@
                         else if (promotor === normalizedRole) allowedPromoters.add(promotor);
                     });
 
+                    // APPLY FILTERS
+
                     if (allowedPromoters.size > 0) {
-                        console.log(`[Access Control] Filtering for role '${role}'. Allowed Promoters: ${allowedPromoters.size}`);
-                        console.log(`[Access Control] Allowed Promoters Sample:`, Array.from(allowedPromoters).slice(0, 5));
+                        // --- PROMOTER / COORDINATOR LOGIC (EXISTING) ---
+                        console.log(`[Access Control] Filtering for Trade Role '${role}'. Allowed Promoters: ${allowedPromoters.size}`);
 
                         // 1. Filter Clients (Columnar)
                         const promotorCol = clients.values['PROMOTOR'] || [];
-                        console.log(`[Access Control] Clients Promotor Col Sample (First 5):`, promotorCol.slice(0, 5));
-                        
                         const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
                         const allowedClientCodes = new Set();
 
-                        // Rebuild Clients Columnar
                         const newClientsValues = {};
                         clients.columns.forEach(c => newClientsValues[c] = []);
                         let newClientsLen = 0;
@@ -989,12 +1030,9 @@
                                 newClientsLen++;
                             }
                         }
-                        console.log(`[Access Control] Client Filter Results: ${newClientsLen} matches out of ${clients.length} clients.`);
-                        console.log(`[Access Control] Allowed Client IDs (Sample):`, Array.from(allowedClientCodes).slice(0, 5));
                         filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
 
                         // 2. Filter Detailed (Columnar)
-                        // Check CODCLI against allowedClientCodes
                         const detCodCliCol = detailed.values['CODCLI'] || [];
                         const newDetailedValues = {};
                         detailed.columns.forEach(c => newDetailedValues[c] = []);
@@ -1006,7 +1044,6 @@
                                 newDetailedLen++;
                             }
                         }
-                        console.log(`[Access Control] Detailed Sales Filter Results: ${newDetailedLen} matches out of ${detailed.length} rows.`);
                         filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
 
                         // 3. Filter History (Columnar)
@@ -1021,14 +1058,150 @@
                                 newHistoryLen++;
                             }
                         }
-                        console.log(`[Access Control] History Sales Filter Results: ${newHistoryLen} matches out of ${history.length} rows.`);
                         filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
 
-                        // 4. Filter Orders (Array of Objects)
+                        // 4. Filter Orders
                         filteredOrders = orders.filter(o => allowedClientCodes.has(normalizeKey(o.codcli)));
+
+                    } else if (isSupervisor) {
+                        // --- SUPERVISOR LOGIC ---
+                        console.log(`[Access Control] Filtering for Supervisor Role '${role}'. Subordinate Sellers: ${supervisedSellers.size}`);
+                        window.userIsSupervisor = true;
+                        window.userSupervisorCode = normalizedRole;
+
+                        // 1. Filter Detailed (Sales) - By Supervisor Code directly
+                        const supCol = detailed.values['CODSUPERVISOR'] || [];
+                        const newDetailedValues = {};
+                        detailed.columns.forEach(c => newDetailedValues[c] = []);
+                        let newDetailedLen = 0;
+
+                        for(let i=0; i<detailed.length; i++) {
+                            if (String(supCol[i] || '').trim().toLowerCase() === normalizedRole) {
+                                detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c][i]));
+                                newDetailedLen++;
+                            }
+                        }
+                        filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
+
+                        // 2. Filter Clients - By RCA1 matching subordinate sellers
+                        // Note: supervisedSellers is populated from Sales Data. It might be incomplete if a seller has no sales.
+                        // However, we can filter Clients where RCA1 is in supervisedSellers OR we assume we can't see clients without sales link?
+                        // Better: We should also check client table to find any RCA that might be linked if we had a Seller->Supervisor map.
+                        // But without a separate hierarchy table for Sales, we rely on Sales Data or Client Data if available.
+                        // Since client data usually doesn't have 'Supervisor' column, we rely on 'RCA 1' matching 'CODUSUR' from sales we just filtered.
+
+                        const rcaCol = clients.values['RCA 1'] || clients.values['RCA1'] || [];
+                        const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
+                        const allowedClientCodes = new Set();
+
+                        const newClientsValues = {};
+                        clients.columns.forEach(c => newClientsValues[c] = []);
+                        let newClientsLen = 0;
+
+                        for(let i=0; i<clients.length; i++) {
+                            const rca = String(rcaCol[i] || '').trim();
+                            // Loose check: rca in supervisedSellers set (which contains exact codes found in sales)
+                            if (supervisedSellers.has(rca)) {
+                                allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
+                                clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
+                                newClientsLen++;
+                            }
+                        }
+                        filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
+
+                        // 3. Filter History - By Supervisor Code (if available) OR Client ID
+                        const histSupCol = history.values['CODSUPERVISOR'] || [];
+                        const histCodCliCol = history.values['CODCLI'] || [];
+                        const newHistoryValues = {};
+                        history.columns.forEach(c => newHistoryValues[c] = []);
+                        let newHistoryLen = 0;
+
+                        for(let i=0; i<history.length; i++) {
+                            // Check Supervisor column first if exists
+                            if (histSupCol.length > 0) {
+                                if (String(histSupCol[i] || '').trim().toLowerCase() === normalizedRole) {
+                                    history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
+                                    newHistoryLen++;
+                                    continue;
+                                }
+                            }
+                            // Fallback to Client ID
+                            if (allowedClientCodes.has(normalizeKey(histCodCliCol[i]))) {
+                                history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
+                                newHistoryLen++;
+                            }
+                        }
+                        filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
+
+                        // 4. Filter Orders
+                        filteredOrders = orders.filter(o => allowedClientCodes.has(normalizeKey(o.codcli)));
+
+                    } else if (isSeller) {
+                        // --- SELLER (RCA) LOGIC ---
+                        console.log(`[Access Control] Filtering for Seller Role '${role}'`);
+                        window.userIsSeller = true;
+                        window.userSellerCode = normalizedRole;
+
+                        // 1. Filter Detailed (Sales) - By CODUSUR
+                        const sellerCol = detailed.values['CODUSUR'] || [];
+                        const newDetailedValues = {};
+                        detailed.columns.forEach(c => newDetailedValues[c] = []);
+                        let newDetailedLen = 0;
+
+                        for(let i=0; i<detailed.length; i++) {
+                            if (String(sellerCol[i] || '').trim().toLowerCase() === normalizedRole) {
+                                detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c][i]));
+                                newDetailedLen++;
+                            }
+                        }
+                        filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
+
+                        // 2. Filter Clients - By RCA 1
+                        const rcaCol = clients.values['RCA 1'] || clients.values['RCA1'] || [];
+                        const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
+                        const allowedClientCodes = new Set();
+
+                        const newClientsValues = {};
+                        clients.columns.forEach(c => newClientsValues[c] = []);
+                        let newClientsLen = 0;
+
+                        for(let i=0; i<clients.length; i++) {
+                            if (String(rcaCol[i] || '').trim().toLowerCase() === normalizedRole) {
+                                allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
+                                clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
+                                newClientsLen++;
+                            }
+                        }
+                        filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
+
+                        // 3. Filter History - By CODUSUR OR Client ID
+                        const histSellerCol = history.values['CODUSUR'] || [];
+                        const histCodCliCol = history.values['CODCLI'] || [];
+                        const newHistoryValues = {};
+                        history.columns.forEach(c => newHistoryValues[c] = []);
+                        let newHistoryLen = 0;
+
+                        for(let i=0; i<history.length; i++) {
+                            if (histSellerCol.length > 0) {
+                                if (String(histSellerCol[i] || '').trim().toLowerCase() === normalizedRole) {
+                                    history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
+                                    newHistoryLen++;
+                                    continue;
+                                }
+                            }
+                            if (allowedClientCodes.has(normalizeKey(histCodCliCol[i]))) {
+                                history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
+                                newHistoryLen++;
+                            }
+                        }
+                        filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
+
+                        // 4. Filter Orders
+                        filteredOrders = orders.filter(o => allowedClientCodes.has(normalizeKey(o.codcli)));
+
                     } else {
-                        console.warn(`[Access Control] Role '${role}' not found in hierarchy or has no promoters. Showing empty view.`);
-                        // Return empty data if role not found in hierarchy but isn't admin
+                        console.warn(`[Access Control] Role '${role}' not found in hierarchy, supervisor list, or seller list. Showing empty view.`);
+                        // Return empty data if role not found anywhere
                         filteredClients = { columns: clients.columns, values: {}, length: 0 };
                         clients.columns.forEach(c => filteredClients.values[c] = []);
 
