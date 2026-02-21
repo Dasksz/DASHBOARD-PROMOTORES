@@ -1541,3 +1541,12 @@ html.light .bg-green-900\/30 {
     /* But if we stick to the plan of "Compact List", the JS will render a SINGLE cell or simpler structure. */
     /* Let's assume the JS will render 2 lines within a single TD or minimal structure. */
 }
+
+/* --- CUSTOM GOLD TEXT --- */
+.text-shiny-gold {
+    color: #facc15; /* Fallback */
+    background: linear-gradient(180deg, #fef08a 0%, #eab308 50%, #ca8a04 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 5px rgba(234, 179, 8, 0.5));
+}
