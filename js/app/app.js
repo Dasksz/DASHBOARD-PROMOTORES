@@ -17388,7 +17388,7 @@ const supervisorGroups = new Map();
 
                      // Mobile Layout (Single Cell)
                      const mobileCell = `
-                        <td class="md:hidden p-4 border-b border-white/10" colspan="3">
+                        <td class="md:hidden mobile-card-header p-4 border-b border-white/10" colspan="3">
                             <div class="flex flex-col text-left items-start">
                                 <div class="text-sm font-bold text-white mb-1 text-left">
                                     ${code} - ${rowFantasia || 'N/A'}
