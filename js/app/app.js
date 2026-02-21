@@ -19661,7 +19661,7 @@ const supervisorGroups = new Map();
                         <span class="text-slate-500">Cód. fábrica: ${window.escapeHtml(prod.cod_fabrica || code)}</span>
                         <span class="font-bold text-[#FF5E00]">Est.: ${totalStock}</span>
                     </div>
-                    <div class="flex gap-2 mt-3 opacity-60 hover:opacity-100 transition-opacity">
+                    <div class="flex gap-2 mt-3">
                         <button class="p-1.5 bg-slate-700 text-lime-400 rounded hover:bg-slate-600 border border-slate-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg></button>
                         <button class="p-1.5 bg-slate-700 text-red-400 rounded hover:bg-slate-600 border border-slate-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
                         <button class="p-1.5 bg-slate-700 text-blue-400 rounded hover:bg-slate-600 border border-slate-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg></button>
@@ -20929,12 +20929,59 @@ const supervisorGroups = new Map();
         chart.appear(1000, 100);
     }
 
+    function initProductLegends() {
+        const optionsBtn = document.getElementById('produtos-options-btn');
+        const dropdown = document.getElementById('produtos-options-dropdown');
+        const legendsBtn = document.getElementById('produtos-legends-btn');
+        const modal = document.getElementById('produtos-legends-modal');
+        const closeBtn = document.getElementById('produtos-legends-close-btn');
+
+        if (optionsBtn && dropdown) {
+            // Use clone to prevent duplicate listeners if re-initialized
+            const newOptionsBtn = optionsBtn.cloneNode(true);
+            optionsBtn.parentNode.replaceChild(newOptionsBtn, optionsBtn);
+
+            newOptionsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (dropdown && !dropdown.classList.contains('hidden')) {
+                    if (!newOptionsBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        if (legendsBtn && modal) {
+            legendsBtn.addEventListener('click', () => {
+                if (dropdown) dropdown.classList.add('hidden');
+                modal.classList.remove('hidden');
+            });
+        }
+
+        if (closeBtn && modal) {
+            closeBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        }
+    }
+
     // Auto-init User Menu on load if ready (for Navbar)
     if (document.readyState === "complete" || document.readyState === "interactive") {
         initWalletView();
         initRackMultiSelect();
         initCustomFileInput();
         verificarEstadoVisita();
+        initProductLegends();
 
         // Enforce Menu Permissions
         if (window.userRole !== 'adm') {
