@@ -2008,20 +2008,14 @@
         const goalsGvTableBody = document.getElementById('goals-gv-table-body');
         const goalsGvTotalValueEl = document.getElementById('goals-gv-total-value');
 
-        const goalsGvSupervisorFilterBtn = document.getElementById('goals-gv-supervisor-filter-btn');
         const goalsGvSupervisorFilterText = document.getElementById('goals-gv-supervisor-filter-text');
-        const goalsGvSupervisorFilterDropdown = document.getElementById('goals-gv-supervisor-filter-dropdown');
 
-        const goalsGvSellerFilterBtn = document.getElementById('goals-gv-seller-filter-btn');
         const goalsGvSellerFilterText = document.getElementById('goals-gv-seller-filter-text');
-        const goalsGvSellerFilterDropdown = document.getElementById('goals-gv-seller-filter-dropdown');
 
         const goalsGvCodcliFilter = document.getElementById('goals-gv-codcli-filter');
         const clearGoalsGvFiltersBtn = document.getElementById('clear-goals-gv-filters-btn');
 
-        const goalsSvSupervisorFilterBtn = document.getElementById('goals-sv-supervisor-filter-btn');
         const goalsSvSupervisorFilterText = document.getElementById('goals-sv-supervisor-filter-text');
-        const goalsSvSupervisorFilterDropdown = document.getElementById('goals-sv-supervisor-filter-dropdown');
 
         // --- FAB Management ---
         const viewFabMap = {
@@ -14400,12 +14394,6 @@ const supervisorGroups = new Map();
             clearGoalsGvFiltersBtn.addEventListener('click', () => { resetGoalsGvFilters(); markDirty('goals'); });
 
             // SV Filters
-            if (goalsSvSupervisorFilterBtn) {
-                goalsSvSupervisorFilterBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    goalsSvSupervisorFilterDropdown.classList.toggle('hidden');
-                });
-            }
 
             document.getElementById('goals-prev-page-btn').addEventListener('click', () => {
                 if (goalsTableState.currentPage > 1) {
@@ -14889,14 +14877,6 @@ const supervisorGroups = new Map();
         let userHierarchyContext = { role: 'adm', coord: null, cocoord: null, promotor: null, supervisor: null, seller: null };
 
         // Check explicit flags set by init.js detection
-        if (window.userIsSupervisor) {
-            userHierarchyContext.role = 'supervisor';
-            userHierarchyContext.supervisor = window.userSupervisorCode;
-        } else if (window.userIsSeller) {
-            userHierarchyContext.role = 'seller';
-            userHierarchyContext.seller = window.userSellerCode;
-        }
-
         function applyHierarchyVisibilityRules() {
             const role = (userHierarchyContext.role || '').toLowerCase();
             // Views to apply logic to (excluding 'goals' and 'wallet' as requested)
@@ -14942,6 +14922,18 @@ const supervisorGroups = new Map();
         }
 
         function resolveUserContext() {
+            // PRIORITY 1: Explicit Data-Driven Roles (Supervisor/Seller)
+            if (window.userIsSupervisor) {
+                userHierarchyContext.role = 'supervisor';
+                userHierarchyContext.supervisor = window.userSupervisorCode;
+                return;
+            }
+            if (window.userIsSeller) {
+                userHierarchyContext.role = 'seller';
+                userHierarchyContext.seller = window.userSellerCode;
+                return;
+            }
+
             const role = (window.userRole || '').trim().toUpperCase();
 
             if (role === 'ADM' || role === 'ADMIN') {
@@ -15426,7 +15418,7 @@ const supervisorGroups = new Map();
             // Identify Vendor Column Index (Name)
             // Usually Index 1 (Code, Name, ...)
             // We scan first few rows to find valid seller names
-            let nameColIndex = 1; 
+            let nameColIndex = 1;
             // Basic Heuristic: If col 0 looks like a name and col 1 is number, maybe it's col 0.
             // But standard template is [Code, Name, ...]. We stick to 1 for now or 0 if 1 is empty.
 
@@ -15447,13 +15439,13 @@ const supervisorGroups = new Map();
                      }
                 }
 
-                if (!sellerName) continue; 
-                
+                if (!sellerName) continue;
+
                 // --- ENHANCED FILTER: Ignore Supervisors, Aggregates, and BALCAO ---
                 const upperName = sellerName.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
-                
+
                 // 1. Explicit Blocklist
-                if (upperName === 'BALCAO' || upperName === 'BALCÃO' || 
+                if (upperName === 'BALCAO' || upperName === 'BALCÃO' ||
                     upperName.includes('TOTAL') || upperName.includes('SUPERVISOR') || upperName.includes('GERAL') ||
                     upperName === 'VENDEDOR' || upperName === 'NOME' || upperName === 'CODIGO' || upperName === 'CÓDIGO') {
                     continue;
@@ -16296,7 +16288,7 @@ const supervisorGroups = new Map();
                     const activeSellerNames = new Set();
                     const forbiddenBackfill = ['INATIVOS', 'N/A', 'BALCAO', 'BALCÃO', 'TOTAL', 'GERAL'];
                     const supervisorNames = new Set(optimizedData.rcasBySupervisor.keys());
-                    
+
                     optimizedData.rcasBySupervisor.forEach(rcas => {
                         rcas.forEach(code => {
                             const name = optimizedData.rcaNameByCode.get(code);
@@ -16314,7 +16306,7 @@ const supervisorGroups = new Map();
                     activeSellerNames.forEach(sellerName => {
                         if (!goalsSellerTargets.has(sellerName)) goalsSellerTargets.set(sellerName, {});
                         const targets = goalsSellerTargets.get(sellerName);
-                        
+
                         // Calculate Defaults
                         const defaults = calculateSellerDefaults(sellerName);
 
@@ -16325,24 +16317,15 @@ const supervisorGroups = new Map();
                         if (targets['mix_foods'] === undefined) targets['mix_foods'] = defaults.mixFoods;
                     });
 
+                    // Save to Supabase (SKIPPED - Load to Memory Only)
+                    // const success = await saveGoalsToSupabase();
+
                     window.showToast('success', `Importação realizada! As metas foram carregadas para a aba "Rateio Metas". Verifique e salve manualmente.`);
                     closeModal();
 
                     // Switch to "Rateio Metas" tab to verify
                     const btnGv = document.querySelector('button[data-tab="gv"]');
-                    const goalsViewEl = document.getElementById('goals-view');
-                    const goalsGvContentEl = document.getElementById('goals-gv-content');
-                    
-                    // Force visibility
-                    if (goalsViewEl) goalsViewEl.classList.remove('hidden');
-                    
-                    if (btnGv) {
-                        btnGv.click();
-                    } else {
-                        // Fallback logic if button fails
-                        if (goalsGvContentEl) goalsGvContentEl.classList.remove('hidden');
-                        if (typeof updateGoals === 'function') updateGoals();
-                    }
+                    if (btnGv) btnGv.click();
                 } catch (e) {
                     console.error("Erro no processo de confirmação:", e);
                     window.showToast('error', "Erro ao processar/salvar: " + e.message);
@@ -17389,7 +17372,7 @@ const supervisorGroups = new Map();
         renderWalletTable();
     }
     
-    function renderWalletTable() {
+    window.renderWalletTable = function() {
         const promoter = walletState.selectedPromoter;
         const tbody = document.getElementById('wallet-table-body');
         const mobileList = document.getElementById('wallet-mobile-list');
@@ -17467,12 +17450,12 @@ const supervisorGroups = new Map();
 
                      // Mobile Layout (Single Cell)
                      const mobileCell = `
-                        <td class="md:hidden p-4 border-b border-white/10" colspan="3">
-                            <div class="flex flex-col text-left">
-                                <div class="text-sm font-bold text-white mb-1">
+                        <td class="md:hidden mobile-card-header p-4 border-b border-white/10" colspan="3">
+                            <div class="flex flex-col text-left items-start">
+                                <div class="text-sm font-bold text-white mb-1 text-left">
                                     ${code} - ${rowFantasia || 'N/A'}
                                 </div>
-                                <div class="text-xs text-slate-500 font-medium uppercase">
+                                <div class="text-xs text-slate-500 font-medium uppercase text-left">
                                     ${rowCnpj || ''} ${rowRazao || ''}
                                 </div>
                             </div>
@@ -18115,7 +18098,12 @@ const supervisorGroups = new Map();
                 statusArea.className = 'mt-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30';
                 statusTitle.textContent = 'Cadastrado';
                 statusTitle.className = 'text-sm font-bold text-orange-400 mb-1';
-                statusMsg.textContent = `Pertence a: ${currentOwner}`;
+                let ownerName = '';
+                if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) {
+                    const name = optimizedData.promotorMap.get(String(currentOwner).trim().toUpperCase());
+                    if (name) ownerName = ` - ${name}`;
+                }
+                statusMsg.textContent = `Pertence a: ${currentOwner}${ownerName}`;
             } else {
                 statusArea.className = 'mt-4 p-4 rounded-lg bg-slate-700/50 border border-slate-600/50';
                 statusTitle.textContent = 'Não Cadastrado';
@@ -18145,7 +18133,12 @@ const supervisorGroups = new Map();
                  statusArea.className = 'mt-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30';
                  statusTitle.textContent = 'Conflito';
                  statusTitle.className = 'text-sm font-bold text-orange-400 mb-1';
-                 statusMsg.textContent = `Pertence a: ${currentOwner}. Transferir?`;
+                 let ownerName = '';
+                 if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) {
+                     const name = optimizedData.promotorMap.get(String(currentOwner).trim().toUpperCase());
+                     if (name) ownerName = ` - ${name}`;
+                 }
+                 statusMsg.textContent = `Pertence a: ${currentOwner}${ownerName}. Transferir?`;
                  
                  btnText.textContent = 'Transferir';
                  btn.className = 'px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm';
