@@ -20967,7 +20967,19 @@ const supervisorGroups = new Map();
             // Show Modal
             modal.classList.remove('hidden');
 
-            // Close logic is already handled by modal init or onclicks
+            // Close Handlers
+            const closeBtn = document.getElementById('product-performance-modal-close-btn');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    modal.classList.add('hidden');
+                };
+            }
+
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            };
         }
     };
 
