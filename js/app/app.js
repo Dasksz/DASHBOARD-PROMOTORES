@@ -4545,94 +4545,119 @@
         }
 
         window.openMetaRealizadoDetailsModal = function(index, type) {
-            let item;
-            if (type === 'seller') {
-                item = window.currentMetaRealizadoData ? window.currentMetaRealizadoData[index] : null;
-            } else {
-                 item = metaRealizadoClientsTableState.filteredData ? metaRealizadoClientsTableState.filteredData[index] : null;
+            console.log("Opening MetaRealizado Modal:", index, type);
+            try {
+                let item;
+                if (type === 'seller') {
+                    item = window.currentMetaRealizadoData ? window.currentMetaRealizadoData[index] : null;
+                } else {
+                    // Safety check for state
+                    if (!metaRealizadoClientsTableState || !metaRealizadoClientsTableState.filteredData) {
+                        console.error("MetaRealizado State invalid");
+                        return;
+                    }
+                     // For clients, index passed is index in 'pageData' array (relative)
+                     const startIndex = (metaRealizadoClientsTableState.currentPage - 1) * metaRealizadoClientsTableState.itemsPerPage;
+                     const endIndex = startIndex + metaRealizadoClientsTableState.itemsPerPage;
+                     const pageData = metaRealizadoClientsTableState.filteredData.slice(startIndex, endIndex);
+                     item = pageData[index];
+                }
+
+                if (!item) {
+                    console.error("MetaRealizado Item not found for index:", index, type);
+                    return;
+                }
+
+                const modal = document.getElementById('meta-realizado-details-modal');
+                if (!modal) {
+                    console.error("MetaRealizado Modal element not found!");
+                    return;
+                }
+
+                const title = document.getElementById('meta-realizado-modal-title');
+                const subtitle = document.getElementById('meta-realizado-modal-subtitle');
+                const metaVal = document.getElementById('meta-realizado-modal-meta-val');
+                const realVal = document.getElementById('meta-realizado-modal-real-val');
+                const percentBadge = document.getElementById('meta-realizado-modal-percent');
+                const weeksBody = document.getElementById('meta-realizado-modal-weeks-body');
+
+                // Populate Content
+                if (title) title.textContent = `${item.codcli || item.codusur || ''} - ${item.razaoSocial || item.name || 'Nome Indisponível'}`;
+
+                let subText = '';
+                if (type === 'client') {
+                    subText = `${item.cidade || 'N/A'} • ${item.vendedor ? getFirstName(item.vendedor) : 'N/A'}`;
+                } else {
+                    subText = 'Vendedor';
+                }
+                if (subtitle) subtitle.textContent = subText;
+
+                // Big Numbers
+                const metaTotal = item.metaTotal || 0;
+                const realTotal = item.realTotal || 0;
+                const percent = metaTotal > 0 ? (realTotal / metaTotal) * 100 : 0;
+
+                if (metaVal) metaVal.textContent = metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                if (realVal) realVal.textContent = realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                if (percentBadge) percentBadge.textContent = `${percent.toFixed(1)}%`;
+
+                // Color Logic (Same as List)
+                let colorClass = getAchievementColorClass(percent);
+                let badgeBg = 'bg-green-900/50';
+
+                // Badge BG Logic mapping
+                if (percent <= 30) badgeBg = 'bg-red-900/50';
+                else if (percent <= 50) badgeBg = 'bg-yellow-900/50';
+                else if (percent <= 80) badgeBg = 'bg-blue-900/50';
+                else if (percent < 100) badgeBg = 'bg-green-900/50';
+                else badgeBg = 'bg-yellow-500/20 shadow-[0_0_10px_rgba(253,224,71,0.3)]'; // Gold badge style
+
+                if (realVal) realVal.className = `text-lg sm:text-2xl font-bold truncate w-full relative z-10 ${colorClass}`;
+                if (percentBadge) percentBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded-full text-white mt-1 relative z-10 ${badgeBg}`;
+
+                // Weeks List (Compact)
+                if (weeksBody) {
+                    weeksBody.innerHTML = (item.weekData || []).map((w, i) => {
+                         const wPercent = w.meta > 0 ? (w.real / w.meta) * 100 : 0;
+                         let wColor = 'text-green-400';
+                         if (wPercent < 100 && w.isPast) wColor = 'text-red-400';
+                         else if (wPercent < 100) wColor = 'text-slate-400';
+
+                         return `
+                            <div class="flex items-center justify-between py-3 px-4 hover:bg-white/5 transition-colors border-b border-slate-800 last:border-0">
+                                <span class="text-slate-500 font-mono text-xs font-bold w-8">S${i + 1}</span>
+                                <div class="flex items-center gap-3 text-xs">
+                                     <div class="hidden sm:block text-slate-500">Meta: <span class="text-slate-400">${w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+                                     <div class="sm:hidden text-slate-500"><span class="text-slate-400">${w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+
+                                     <div class="text-slate-500">Real: <span class="${wColor} font-bold">${w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+                                     <span class="${wColor} font-bold min-w-[35px] text-right bg-slate-800/50 px-1.5 py-0.5 rounded">${wPercent.toFixed(0)}%</span>
+                                </div>
+                            </div>
+                         `;
+                    }).join('');
+                }
+
+                modal.classList.remove('hidden');
+
+                const closeBtn = document.getElementById('meta-realizado-modal-close-btn');
+                if (closeBtn) {
+                    closeBtn.onclick = () => {
+                        modal.classList.add('hidden');
+                    };
+                }
+
+                // Add Overlay Click Close
+                modal.onclick = (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                };
+
+            } catch (e) {
+                console.error("Error opening MetaRealizado modal:", e);
+                // alert("Erro ao abrir detalhes: " + e.message); // Silent fail preferred in production UI, rely on console
             }
-
-            // Re-lookup correctly based on context (Seller vs Client)
-            if (type === 'client') {
-                 // For clients, index passed is index in 'pageData' array
-                 const startIndex = (metaRealizadoClientsTableState.currentPage - 1) * metaRealizadoClientsTableState.itemsPerPage;
-                 const endIndex = startIndex + metaRealizadoClientsTableState.itemsPerPage;
-                 const pageData = metaRealizadoClientsTableState.filteredData.slice(startIndex, endIndex);
-                 item = pageData[index];
-            }
-
-            if (!item) return;
-
-            const modal = document.getElementById('meta-realizado-details-modal');
-            const title = document.getElementById('meta-realizado-modal-title');
-            const subtitle = document.getElementById('meta-realizado-modal-subtitle');
-            const metaVal = document.getElementById('meta-realizado-modal-meta-val');
-            const realVal = document.getElementById('meta-realizado-modal-real-val');
-            const percentBadge = document.getElementById('meta-realizado-modal-percent');
-            const weeksBody = document.getElementById('meta-realizado-modal-weeks-body');
-
-            // Populate Content
-            title.textContent = `${item.codcli || item.codusur || ''} - ${item.razaoSocial || item.name || 'Nome Indisponível'}`;
-
-            let subText = '';
-            if (type === 'client') {
-                subText = `${item.cidade || 'N/A'} • ${item.vendedor ? getFirstName(item.vendedor) : 'N/A'}`;
-            } else {
-                subText = 'Vendedor'; // Or hierarchy info if available
-            }
-            subtitle.textContent = subText;
-
-            // Big Numbers
-            const metaTotal = item.metaTotal || 0;
-            const realTotal = item.realTotal || 0;
-            const percent = metaTotal > 0 ? (realTotal / metaTotal) * 100 : 0;
-
-            metaVal.textContent = metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            realVal.textContent = realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            percentBadge.textContent = `${percent.toFixed(1)}%`;
-
-            // Color Logic (Same as List)
-            let colorClass = getAchievementColorClass(percent);
-            let badgeBg = 'bg-green-900/50';
-            
-            // Badge BG Logic mapping
-            if (percent <= 30) badgeBg = 'bg-red-900/50';
-            else if (percent <= 50) badgeBg = 'bg-yellow-900/50';
-            else if (percent <= 80) badgeBg = 'bg-blue-900/50';
-            else if (percent < 100) badgeBg = 'bg-green-900/50';
-            else badgeBg = 'bg-yellow-500/20 shadow-[0_0_10px_rgba(253,224,71,0.3)]'; // Gold badge style
-
-            realVal.className = `text-lg sm:text-2xl font-bold truncate w-full relative z-10 ${colorClass}`;
-            percentBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded-full text-white mt-1 relative z-10 ${badgeBg}`;
-
-            // Weeks List (Compact)
-            weeksBody.innerHTML = item.weekData.map((w, i) => {
-                 const wPercent = w.meta > 0 ? (w.real / w.meta) * 100 : 0;
-                 let wColor = 'text-green-400';
-                 if (wPercent < 100 && w.isPast) wColor = 'text-red-400';
-                 else if (wPercent < 100) wColor = 'text-slate-400';
-
-                 return `
-                    <div class="flex items-center justify-between py-3 px-4 hover:bg-white/5 transition-colors border-b border-slate-800 last:border-0">
-                        <span class="text-slate-500 font-mono text-xs font-bold w-8">S${i + 1}</span>
-                        <div class="flex items-center gap-3 text-xs">
-                             <div class="hidden sm:block text-slate-500">Meta: <span class="text-slate-400">${w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
-                             <div class="sm:hidden text-slate-500"><span class="text-slate-400">${w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
-                             
-                             <div class="text-slate-500">Real: <span class="${wColor} font-bold">${w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
-                             <span class="${wColor} font-bold min-w-[35px] text-right bg-slate-800/50 px-1.5 py-0.5 rounded">${wPercent.toFixed(0)}%</span>
-                        </div>
-                    </div>
-                 `;
-            }).join('');
-
-            modal.classList.remove('hidden');
-
-            // Close Handler
-            const closeBtn = document.getElementById('meta-realizado-modal-close-btn');
-            closeBtn.onclick = () => {
-                modal.classList.add('hidden');
-            };
         };
 
         function renderMetaRealizadoChart(data) {
