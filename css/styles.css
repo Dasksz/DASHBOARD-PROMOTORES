@@ -1535,6 +1535,12 @@ html.light .bg-green-900\/30 {
         display: none !important;
     }
 
+    /* Fix: Ensure hidden columns stay hidden on mobile */
+    #metaRealizadoTableContainer td.hidden,
+    #metaRealizadoClientsTableContainer td.hidden {
+        display: none !important;
+    }
+
     /* Target specific cells for layout */
     /* Assume JS will output specific classes or we use nth-child carefully */
     /* Since we are rewriting the JS render function, we can simplify CSS by relying on classes there. */
