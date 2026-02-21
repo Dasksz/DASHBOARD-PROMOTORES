@@ -4179,15 +4179,15 @@
                     `;
                 });
 
-                // Mobile Content (Compact List)
+                // Mobile Content (Compact List) - WRAPPED IN TD
                 const mobileContent = `
-                    <div class="md:hidden w-full py-3 border-b border-slate-800" onclick="openMetaRealizadoDetailsModal(${index}, 'seller')">
+                    <td class="md:hidden w-full py-3 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${index}, 'seller')">
                         <div class="font-bold text-sm text-slate-200 mb-1 truncate">${row.codusur || ''} - ${row.name}</div>
                         <div class="flex justify-between items-center text-xs">
                             <div class="text-slate-400">Meta: <span class="text-slate-200 font-medium">${metaTotalStr}</span></div>
                             <div class="text-slate-400">Real: <span class="${colorClass} font-bold">${realTotalStr}</span></div>
                         </div>
-                    </div>
+                    </td>
                 `;
 
                 return `<tr class="hover:bg-slate-700/30 transition-colors group">${mobileContent}${desktopCells}</tr>`;
@@ -4286,7 +4286,7 @@
                         <div class="flex items-center gap-3 text-xs">
                              <div class="hidden sm:block text-slate-500">Meta: <span class="text-slate-400">${w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
                              <div class="sm:hidden text-slate-500"><span class="text-slate-400">${w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
-
+                             
                              <div class="text-slate-500">Real: <span class="${wColor} font-bold">${w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
                              <span class="${wColor} font-bold min-w-[35px] text-right bg-slate-800/50 px-1.5 py-0.5 rounded">${wPercent.toFixed(0)}%</span>
                         </div>
@@ -4808,15 +4808,15 @@
                         `;
                     });
 
-                    // Mobile Content (Compact List)
+                    // Mobile Content (Compact List) - WRAPPED IN TD
                     const mobileContent = `
-                        <div class="md:hidden w-full py-3 border-b border-slate-800" onclick="openMetaRealizadoDetailsModal(${i}, 'client')">
+                        <td class="md:hidden w-full py-3 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${i}, 'client')">
                             <div class="font-bold text-sm text-slate-200 mb-1 truncate">${row.codcli || ''} - ${escapeHtml(row.razaoSocial || '')}</div>
                             <div class="flex justify-between items-center text-xs">
                                 <div class="text-slate-400">Meta: <span class="text-slate-200 font-medium">${metaTotalStr}</span></div>
                                 <div class="text-slate-400">Real: <span class="${colorClass} font-bold">${realTotalStr}</span></div>
                             </div>
-                        </div>
+                        </td>
                     `;
 
                     return `<tr class="hover:bg-slate-700/30 transition-colors">${mobileContent}${desktopCells}</tr>`;
