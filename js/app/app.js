@@ -14877,14 +14877,6 @@ const supervisorGroups = new Map();
         let userHierarchyContext = { role: 'adm', coord: null, cocoord: null, promotor: null, supervisor: null, seller: null };
 
         // Check explicit flags set by init.js detection
-        if (window.userIsSupervisor) {
-            userHierarchyContext.role = 'supervisor';
-            userHierarchyContext.supervisor = window.userSupervisorCode;
-        } else if (window.userIsSeller) {
-            userHierarchyContext.role = 'seller';
-            userHierarchyContext.seller = window.userSellerCode;
-        }
-
         function applyHierarchyVisibilityRules() {
             const role = (userHierarchyContext.role || '').toLowerCase();
             // Views to apply logic to (excluding 'goals' and 'wallet' as requested)
@@ -14930,6 +14922,18 @@ const supervisorGroups = new Map();
         }
 
         function resolveUserContext() {
+            // PRIORITY 1: Explicit Data-Driven Roles (Supervisor/Seller)
+            if (window.userIsSupervisor) {
+                userHierarchyContext.role = 'supervisor';
+                userHierarchyContext.supervisor = window.userSupervisorCode;
+                return;
+            }
+            if (window.userIsSeller) {
+                userHierarchyContext.role = 'seller';
+                userHierarchyContext.seller = window.userSellerCode;
+                return;
+            }
+
             const role = (window.userRole || '').trim().toUpperCase();
 
             if (role === 'ADM' || role === 'ADMIN') {
