@@ -12714,10 +12714,17 @@ const supervisorGroups = new Map();
         async function renderView(view, options = {}) {
             updateFabVisibility(view);
 
-            if (view === 'goals' && window.userRole !== 'adm') {
-                window.showToast('warning', 'Acesso restrito a administradores.');
-                renderView('dashboard');
-                return;
+            if (view === 'goals') {
+                if (window.userRole !== 'adm') {
+                    window.showToast('warning', 'Acesso restrito a administradores.');
+                    renderView('dashboard');
+                    return;
+                }
+                if (window.innerWidth < 1024) {
+                    window.showToast('warning', 'A página de Metas só está disponível no desktop.');
+                    renderView('dashboard');
+                    return;
+                }
             }
 
             // Push to history if not navigating back
