@@ -17310,7 +17310,7 @@ const supervisorGroups = new Map();
         renderWalletTable();
     }
     
-    function renderWalletTable() {
+    window.renderWalletTable = function() {
         const promoter = walletState.selectedPromoter;
         const tbody = document.getElementById('wallet-table-body');
         const mobileList = document.getElementById('wallet-mobile-list');
@@ -17389,19 +17389,14 @@ const supervisorGroups = new Map();
                      // Mobile Layout (Single Cell)
                      const mobileCell = `
                         <td class="md:hidden p-4 border-b border-white/10" colspan="3">
-                             <div class="flex flex-col gap-3">
-                               <div class="flex items-center gap-4">
-                                   <span class="text-[10px] font-bold text-slate-500 uppercase w-14">Código</span>
-                                   <span class="text-sm font-bold text-slate-200 font-mono">${code}</span>
-                               </div>
-                               <div class="flex items-start gap-4">
-                                   <span class="text-[10px] font-bold text-slate-500 uppercase w-14 mt-0.5">Cliente</span>
-                                   <div class="flex flex-col">
-                                       <span class="text-sm font-black text-white uppercase tracking-tight">${rowFantasia || 'N/A'}</span>
-                                       <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">${rowRazao || ''}</span>
-                                   </div>
-                               </div>
-                           </div>
+                            <div class="flex flex-col text-left items-start">
+                                <div class="text-sm font-bold text-white mb-1 text-left">
+                                    ${code} - ${rowFantasia || 'N/A'}
+                                </div>
+                                <div class="text-xs text-slate-500 font-medium uppercase text-left">
+                                    ${rowCnpj || ''} ${rowRazao || ''}
+                                </div>
+                            </div>
                         </td>
                      `;
 
