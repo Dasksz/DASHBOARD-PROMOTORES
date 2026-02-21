@@ -1766,7 +1766,12 @@
                 statusArea.className = 'mt-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30';
                 statusTitle.textContent = 'Cadastrado';
                 statusTitle.className = 'text-sm font-bold text-orange-400 mb-1';
-                statusMsg.textContent = `Pertence a: ${currentOwner}`;
+                let ownerName = '';
+                if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) {
+                    const name = optimizedData.promotorMap.get(String(currentOwner).trim().toUpperCase());
+                    if (name) ownerName = ` - ${name}`;
+                }
+                statusMsg.textContent = `Pertence a: ${currentOwner}${ownerName}`;
             } else {
                 statusArea.className = 'mt-4 p-4 rounded-lg bg-slate-700/50 border border-slate-600/50';
                 statusTitle.textContent = 'Não Cadastrado';
@@ -1796,7 +1801,12 @@
                  statusArea.className = 'mt-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30';
                  statusTitle.textContent = 'Conflito';
                  statusTitle.className = 'text-sm font-bold text-orange-400 mb-1';
-                 statusMsg.textContent = `Pertence a: ${currentOwner}. Transferir?`;
+                 let ownerName = '';
+                 if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) {
+                     const name = optimizedData.promotorMap.get(String(currentOwner).trim().toUpperCase());
+                     if (name) ownerName = ` - ${name}`;
+                 }
+                 statusMsg.textContent = `Pertence a: ${currentOwner}${ownerName}. Transferir?`;
 
                  btnText.textContent = 'Transferir';
                  btn.className = 'px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm';
