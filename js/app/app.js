@@ -14886,12 +14886,27 @@ const supervisorGroups = new Map();
         initializeOptimizedDataStructures();
 
         // --- USER CONTEXT RESOLUTION ---
-        let userHierarchyContext = { role: 'adm', coord: null, cocoord: null, promotor: null };
+        let userHierarchyContext = { role: 'adm', coord: null, cocoord: null, promotor: null, supervisor: null, seller: null };
+
+        // Check explicit flags set by init.js detection
+        if (window.userIsSupervisor) {
+            userHierarchyContext.role = 'supervisor';
+            userHierarchyContext.supervisor = window.userSupervisorCode;
+        } else if (window.userIsSeller) {
+            userHierarchyContext.role = 'seller';
+            userHierarchyContext.seller = window.userSellerCode;
+        }
 
         function applyHierarchyVisibilityRules() {
             const role = (userHierarchyContext.role || '').toLowerCase();
             // Views to apply logic to (excluding 'goals' and 'wallet' as requested)
-            const views = ['main', 'city', 'comparison', 'innovations-month', 'mix', 'coverage'];
+            const views = ['main', 'city', 'comparison', 'innovations-month', 'mix', 'coverage', 'titulos', 'lp', 'positivacao', 'history'];
+
+            // Hide Roteiro for Trade-only roles (Supervisor/Seller)
+            if (role === 'supervisor' || role === 'seller') {
+                const navRoteiro = document.querySelector('button[onclick="renderView(\'roteiro\')"]');
+                if (navRoteiro) navRoteiro.parentElement.classList.add('hidden');
+            }
 
             views.forEach(prefix => {
                 const coordWrapper = document.getElementById(`${prefix}-coord-filter-wrapper`);
@@ -14905,6 +14920,11 @@ const supervisorGroups = new Map();
 
                 if (role === 'adm') {
                     // Show all
+                } else if (role === 'supervisor' || role === 'seller') {
+                    // Hide Trade Hierarchy Filters Completely
+                    if (coordWrapper) coordWrapper.classList.add('hidden');
+                    if (cocoordWrapper) cocoordWrapper.classList.add('hidden');
+                    if (promotorWrapper) promotorWrapper.classList.add('hidden');
                 } else if (role === 'coord') {
                     // Hide Coord filter
                     if (coordWrapper) coordWrapper.classList.add('hidden');
