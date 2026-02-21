@@ -409,6 +409,11 @@
 
     <!-- Right Controls -->
     <div class="flex items-center gap-3">
+        <!-- Admin View Toggle (Admin Only) -->
+        <button id="admin-view-toggle-btn" class="hidden p-2 text-slate-400 hover:text-[#FF5E00] transition-colors rounded-full hover:bg-white/5" title="Alternar Visão (Promotor/Vendedor)">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+        </button>
+
         <!-- User Profile Dropdown -->
         <div class="relative">
             <button id="user-menu-btn" class="flex items-center gap-2 p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/5 transition-all outline-none">
@@ -562,6 +567,16 @@
                         <div id="main-rede-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                     </div>
 
+                    <!-- Supervisor Filter (Hidden by default, shown in Seller Mode) -->
+                    <div id="main-supervisor-filter-wrapper" class="relative flex-1 min-w-[200px] hidden">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
+                        <button id="main-supervisor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
+                            <span id="main-supervisor-filter-text">Todos</span>
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="main-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
+                    </div>
+
                     <div id="main-coord-filter-wrapper" class="relative flex-1 min-w-[200px]">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
                         <button id="main-coord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
@@ -611,6 +626,14 @@
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
                         <div id="fornecedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
+                    </div>
+                    <div id="vendedor-filter-wrapper" class="relative flex-1 min-w-[200px]">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
+                        <button id="vendedor-filter-btn" class="w-full bg-slate-800 text-left text-xs text-white p-3 rounded-xl border border-slate-700 hover:border-[#FF5E00] focus:outline-none focus:border-[#FF5E00] transition-colors flex justify-between items-center">
+                            <span id="vendedor-filter-text">Todos</span>
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="vendedor-filter-dropdown" class="hidden absolute top-full left-0 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto p-2 space-y-1"></div>
                     </div>
                     <div class="flex-1 min-w-[200px] relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
