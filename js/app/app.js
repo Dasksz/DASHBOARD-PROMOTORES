@@ -19159,7 +19159,7 @@ const supervisorGroups = new Map();
                 item.className = 'p-4 flex items-center justify-between transition-all duration-200 cursor-pointer border-b border-white/10/50 glass-panel hover:bg-white/5/80 border-l-4 border-l-transparent hover:border-l-[#FF5E00] group';
                 item.innerHTML = `
                     <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-full ${statusColor} flex items-center justify-center text-white font-bold text-lg shadow-lg ring-2 ring-slate-800 group-hover:ring-slate-600 transition-all">
+                        <div class="w-10 h-10 shrink-0 rounded-full ${statusColor} flex items-center justify-center text-white font-bold text-lg shadow-lg ring-2 ring-slate-800 group-hover:ring-slate-600 transition-all">
                             ${firstLetter}
                         </div>
                         <div>
