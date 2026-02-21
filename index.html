@@ -1787,32 +1787,39 @@
 
         <div class="grid grid-cols-1 gap-8">
             <!-- Summary Table -->
-            <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden flex flex-col h-[600px]">
-                <div class="p-4 glass-panel border-b border-slate-800"><h3 class="font-bold text-white">Resumo por Vendedor</h3></div>
-                <div class="overflow-auto custom-scrollbar flex-1">
-                    <table id="metaRealizadoTableContainer" class="min-w-full text-sm text-left text-slate-300">
-                        <thead id="meta-realizado-table-head" class="text-xs text-slate-400 uppercase glass-panel sticky top-0"></thead>
-                        <tbody id="meta-realizado-table-body" class="divide-y divide-slate-800"></tbody>
-                    </table>
+            <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden flex flex-col transition-all duration-300">
+                <button onclick="toggleMetaSection('meta-resumo-vendedor-content', 'meta-resumo-vendedor-chevron')" class="w-full p-4 glass-panel border-b border-slate-800 flex justify-between items-center hover:bg-white/5 transition-colors group">
+                    <h3 class="font-bold text-white">Resumo por Vendedor</h3>
+                    <svg id="meta-resumo-vendedor-chevron" class="w-6 h-6 text-white transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="meta-resumo-vendedor-content" class="hidden flex flex-col h-[600px] transition-all duration-300">
+                    <div class="overflow-auto custom-scrollbar flex-1">
+                        <table id="metaRealizadoTableContainer" class="min-w-full text-sm text-left text-slate-300">
+                            <thead id="meta-realizado-table-head" class="text-xs text-slate-400 uppercase glass-panel sticky top-0"></thead>
+                            <tbody id="meta-realizado-table-body" class="divide-y divide-slate-800"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
             <!-- Detail Table -->
-            <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden flex flex-col h-[600px]">
-                <div class="p-4 glass-panel border-b border-slate-800 flex justify-between items-center">
+            <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden flex flex-col transition-all duration-300">
+                <button onclick="toggleMetaSection('meta-detalhamento-cliente-content', 'meta-detalhamento-cliente-chevron')" class="w-full p-4 glass-panel border-b border-slate-800 flex justify-between items-center hover:bg-white/5 transition-colors group">
                     <h3 class="font-bold text-white">Detalhamento por Cliente</h3>
-
-                </div>
-                <div class="overflow-auto custom-scrollbar flex-1">
-                    <table id="metaRealizadoClientsTableContainer" class="min-w-full text-sm text-left text-slate-300">
-                        <thead id="meta-realizado-clients-table-head" class="text-xs text-slate-400 uppercase glass-panel sticky top-0"></thead>
-                        <tbody id="meta-realizado-clients-table-body" class="divide-y divide-slate-800"></tbody>
-                    </table>
-                </div>
-                <div id="meta-realizado-clients-pagination-controls" class="p-3 glass-panel border-t border-slate-800 flex justify-between items-center text-xs">
-                    <button id="meta-realizado-clients-prev-page-btn" class="glass-panel text-white px-3 py-1 rounded disabled:opacity-50">Ant</button>
-                    <span id="meta-realizado-clients-page-info-text" class="text-slate-400"></span>
-                    <button id="meta-realizado-clients-next-page-btn" class="glass-panel text-white px-3 py-1 rounded disabled:opacity-50">Prox</button>
+                    <svg id="meta-detalhamento-cliente-chevron" class="w-6 h-6 text-white transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="meta-detalhamento-cliente-content" class="hidden flex flex-col h-[600px] transition-all duration-300">
+                    <div class="overflow-auto custom-scrollbar flex-1">
+                        <table id="metaRealizadoClientsTableContainer" class="min-w-full text-sm text-left text-slate-300">
+                            <thead id="meta-realizado-clients-table-head" class="text-xs text-slate-400 uppercase glass-panel sticky top-0"></thead>
+                            <tbody id="meta-realizado-clients-table-body" class="divide-y divide-slate-800"></tbody>
+                        </table>
+                    </div>
+                    <div id="meta-realizado-clients-pagination-controls" class="p-3 glass-panel border-t border-slate-800 flex justify-between items-center text-xs">
+                        <button id="meta-realizado-clients-prev-page-btn" class="glass-panel text-white px-3 py-1 rounded disabled:opacity-50">Ant</button>
+                        <span id="meta-realizado-clients-page-info-text" class="text-slate-400"></span>
+                        <button id="meta-realizado-clients-next-page-btn" class="glass-panel text-white px-3 py-1 rounded disabled:opacity-50">Prox</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3439,6 +3446,28 @@
 <script src="js/banner3d.js" defer></script>
 <script src="js/app/utils.js" defer></script>
 <script src="js/init.js?v=6.0.0" defer></script>
+<script>
+    function toggleMetaSection(contentId, chevronId) {
+        const content = document.getElementById(contentId);
+        const chevron = document.getElementById(chevronId);
+
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            // Allow reflow for transition
+            setTimeout(() => {
+                // Ensure opacity or height transition if needed, but 'hidden' toggle is abrupt unless we manage height
+                // The class 'transition-all' needs property changes.
+                // For simplicity with 'hidden', we just toggle.
+                // To animate height, we'd need max-height logic, but user just asked for "pushing" content.
+                // Standard toggle is fine.
+                chevron.classList.add('rotate-180');
+            }, 10);
+        } else {
+            content.classList.add('hidden');
+            chevron.classList.remove('rotate-180');
+        }
+    }
+</script>
 
 <div class="fab-container hidden" id="positivacao-fab-container">
     <div class="fab-menu">
