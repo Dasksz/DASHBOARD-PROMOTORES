@@ -2008,14 +2008,20 @@
         const goalsGvTableBody = document.getElementById('goals-gv-table-body');
         const goalsGvTotalValueEl = document.getElementById('goals-gv-total-value');
 
+        const goalsGvSupervisorFilterBtn = document.getElementById('goals-gv-supervisor-filter-btn');
         const goalsGvSupervisorFilterText = document.getElementById('goals-gv-supervisor-filter-text');
+        const goalsGvSupervisorFilterDropdown = document.getElementById('goals-gv-supervisor-filter-dropdown');
 
+        const goalsGvSellerFilterBtn = document.getElementById('goals-gv-seller-filter-btn');
         const goalsGvSellerFilterText = document.getElementById('goals-gv-seller-filter-text');
+        const goalsGvSellerFilterDropdown = document.getElementById('goals-gv-seller-filter-dropdown');
 
         const goalsGvCodcliFilter = document.getElementById('goals-gv-codcli-filter');
         const clearGoalsGvFiltersBtn = document.getElementById('clear-goals-gv-filters-btn');
 
+        const goalsSvSupervisorFilterBtn = document.getElementById('goals-sv-supervisor-filter-btn');
         const goalsSvSupervisorFilterText = document.getElementById('goals-sv-supervisor-filter-text');
+        const goalsSvSupervisorFilterDropdown = document.getElementById('goals-sv-supervisor-filter-dropdown');
 
         // --- FAB Management ---
         const viewFabMap = {
@@ -14394,6 +14400,12 @@ const supervisorGroups = new Map();
             clearGoalsGvFiltersBtn.addEventListener('click', () => { resetGoalsGvFilters(); markDirty('goals'); });
 
             // SV Filters
+            if (goalsSvSupervisorFilterBtn) {
+                goalsSvSupervisorFilterBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    goalsSvSupervisorFilterDropdown.classList.toggle('hidden');
+                });
+            }
 
             document.getElementById('goals-prev-page-btn').addEventListener('click', () => {
                 if (goalsTableState.currentPage > 1) {
@@ -16293,15 +16305,24 @@ const supervisorGroups = new Map();
                         if (targets['mix_foods'] === undefined) targets['mix_foods'] = defaults.mixFoods;
                     });
 
-                    // Save to Supabase (SKIPPED - Load to Memory Only)
-                    // const success = await saveGoalsToSupabase();
-
                     window.showToast('success', `Importação realizada! As metas foram carregadas para a aba "Rateio Metas". Verifique e salve manualmente.`);
                     closeModal();
 
                     // Switch to "Rateio Metas" tab to verify
                     const btnGv = document.querySelector('button[data-tab="gv"]');
-                    if (btnGv) btnGv.click();
+                    const goalsViewEl = document.getElementById('goals-view');
+                    const goalsGvContentEl = document.getElementById('goals-gv-content');
+
+                    // Force visibility
+                    if (goalsViewEl) goalsViewEl.classList.remove('hidden');
+
+                    if (btnGv) {
+                        btnGv.click();
+                    } else {
+                        // Fallback logic if button fails
+                        if (goalsGvContentEl) goalsGvContentEl.classList.remove('hidden');
+                        if (typeof updateGoals === 'function') updateGoals();
+                    }
                 } catch (e) {
                     console.error("Erro no processo de confirmação:", e);
                     window.showToast('error', "Erro ao processar/salvar: " + e.message);
