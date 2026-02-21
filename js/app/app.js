@@ -5144,7 +5144,7 @@
 
                     // Mobile Content (Compact List) - WRAPPED IN TD
                     const mobileContent = `
-                        <td class="md:hidden w-full py-3 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${i}, 'client')">
+                        <td class="md:hidden w-full py-3 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${index}, 'client')">
                             <div class="font-bold text-sm text-slate-200 mb-1 truncate">${row.codcli} - ${escapeHtml(row.razaoSocial)}</div>
                             <div class="flex justify-between items-center text-xs">
                                 <div class="text-slate-400">Meta: <span class="text-slate-200 font-medium">${metaTotalStr}</span></div>
