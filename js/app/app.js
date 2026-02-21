@@ -4230,28 +4230,28 @@
             // Build Headers
             let headerHTML = `
                 <tr>
-                    <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy z-50 sticky left-0 border-r border-b border-slate-700 w-32 shadow-lg">VENDEDOR</th>
-                    <th colspan="2" class="px-2 py-1 text-center bg-blue-900/30 text-blue-400 border-r border-slate-700 border-b-0">GERAL</th>
+                    <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy z-50 sticky left-0 border-r border-b border-slate-700 w-32 shadow-lg hidden md:table-cell">VENDEDOR</th>
+                    <th colspan="2" class="px-2 py-1 text-center bg-blue-900/30 text-blue-400 border-r border-slate-700 border-b-0 hidden md:table-cell">GERAL</th>
             `;
 
             // Week Headers (Top Row)
             weeks.forEach((week, i) => {
-                headerHTML += `<th colspan="2" class="px-2 py-1 text-center border-r border-slate-700 border-b-0 text-slate-300">SEMANA ${i + 1} (${week.workingDays}d)</th>`;
+                headerHTML += `<th colspan="2" class="px-2 py-1 text-center border-r border-slate-700 border-b-0 text-slate-300 hidden md:table-cell">SEMANA ${i + 1} (${week.workingDays}d)</th>`;
             });
             headerHTML += `</tr><tr>`;
 
             // Sub-headers Row
             // Geral Sub-headers
             headerHTML += `
-                <th class="px-2 py-2 text-right bg-blue-900/20 text-blue-300 border-r border-b border-slate-700/50 text-[10px]">META</th>
-                <th class="px-2 py-2 text-right bg-blue-900/20 text-blue-100 font-bold border-r border-b border-slate-700 text-[10px]">REALIZADO</th>
+                <th class="px-2 py-2 text-right bg-blue-900/20 text-blue-300 border-r border-b border-slate-700/50 text-[10px] hidden md:table-cell">META</th>
+                <th class="px-2 py-2 text-right bg-blue-900/20 text-blue-100 font-bold border-r border-b border-slate-700 text-[10px] hidden md:table-cell">REALIZADO</th>
             `;
 
             // Week Sub-headers
             weeks.forEach(() => {
                 headerHTML += `
-                    <th class="px-2 py-2 text-right border-r border-b border-slate-700/50 text-slate-400 text-[10px]">META</th>
-                    <th class="px-2 py-2 text-right border-r border-b border-slate-700 text-white font-bold text-[10px]">REAL.</th>
+                    <th class="px-2 py-2 text-right border-r border-b border-slate-700/50 text-slate-400 text-[10px] hidden md:table-cell">META</th>
+                    <th class="px-2 py-2 text-right border-r border-b border-slate-700 text-white font-bold text-[10px] hidden md:table-cell">REAL.</th>
                 `;
             });
             headerHTML += `</tr>`;
@@ -4260,36 +4260,153 @@
 
             // Build Body
             // data is Array of { name, metaTotal, realTotal, weeks: [{meta, real}] }
-            const rowsHTML = data.map(row => {
+            const rowsHTML = data.map((row, index) => {
                 const metaTotalStr = row.metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const realTotalStr = row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                let cells = `
-                    <td class="px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 glass-panel-heavy z-30 truncate" title="${row.name}">${getFirstName(row.name)}</td>
-                    <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs" title="Meta Contratual Mensal">${metaTotalStr}</td>
-                    <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs">${realTotalStr}</td>
+                // Achievement Color Logic
+                const percent = row.metaTotal > 0 ? (row.realTotal / row.metaTotal) * 100 : 0;
+                let colorClass = 'text-green-500';
+                if (percent <= 30) colorClass = 'text-red-500';
+                else if (percent <= 50) colorClass = 'text-yellow-300';
+                else if (percent <= 80) colorClass = 'text-blue-400';
+                else if (percent < 100) colorClass = 'text-green-500';
+                else colorClass = 'text-yellow-400 font-bold text-glow'; // Gold
+
+                // Desktop Cells
+                let desktopCells = `
+                    <td class="px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 glass-panel-heavy z-30 truncate hidden md:table-cell" title="${row.name}">${getFirstName(row.name)}</td>
+                    <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs hidden md:table-cell" title="Meta Contratual Mensal">${metaTotalStr}</td>
+                    <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs hidden md:table-cell">${realTotalStr}</td>
                 `;
 
                 row.weekData.forEach(w => {
                     const wMetaStr = w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     const wRealStr = w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                    // Simple logic: Green if Real >= Meta, Red if Real < Meta (only if week has passed? Or always?)
-                    // Let's keep it neutral for now or simple colors.
                     const realClass = w.real >= w.meta ? 'text-green-400' : 'text-slate-300';
                     const metaClass = w.isPast ? 'text-red-500' : 'text-slate-400';
 
-                    cells += `
-                        <td class="px-2 py-3 text-right ${metaClass} text-xs border-r border-b border-slate-700">${wMetaStr}</td>
-                        <td class="px-2 py-3 text-right ${realClass} text-xs font-medium border-r border-b border-slate-700">${wRealStr}</td>
+                    desktopCells += `
+                        <td class="px-2 py-3 text-right ${metaClass} text-xs border-r border-b border-slate-700 hidden md:table-cell">${wMetaStr}</td>
+                        <td class="px-2 py-3 text-right ${realClass} text-xs font-medium border-r border-b border-slate-700 hidden md:table-cell">${wRealStr}</td>
                     `;
                 });
 
-                return `<tr class="hover:bg-slate-700/30 transition-colors">${cells}</tr>`;
+                // Mobile Content (Compact List)
+                const mobileContent = `
+                    <div class="md:hidden w-full" onclick="openMetaRealizadoDetailsModal(${index}, 'seller')">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-slate-200 text-sm truncate pr-2">${row.codusur || ''} - ${row.name}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <div class="flex flex-col">
+                                <span class="text-slate-500 uppercase text-[10px]">Meta</span>
+                                <span class="text-slate-300">${metaTotalStr}</span>
+                            </div>
+                             <div class="flex flex-col items-end">
+                                <span class="text-slate-500 uppercase text-[10px]">Realizado</span>
+                                <span class="${colorClass}">${realTotalStr}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                return `<tr class="hover:bg-slate-700/30 transition-colors group">${mobileContent}${desktopCells}</tr>`;
             }).join('');
 
             tableBody.innerHTML = rowsHTML;
+            // Store data for modal access
+            window.currentMetaRealizadoData = data;
         }
+
+        window.openMetaRealizadoDetailsModal = function(index, type) {
+            let item;
+            if (type === 'seller') {
+                item = window.currentMetaRealizadoData ? window.currentMetaRealizadoData[index] : null;
+            } else {
+                 item = metaRealizadoClientsTableState.filteredData ? metaRealizadoClientsTableState.filteredData[index] : null;
+            }
+
+            // Re-lookup correctly based on context (Seller vs Client)
+            if (type === 'client') {
+                 // For clients, index passed is index in 'pageData' array
+                 const startIndex = (metaRealizadoClientsTableState.currentPage - 1) * metaRealizadoClientsTableState.itemsPerPage;
+                 const endIndex = startIndex + metaRealizadoClientsTableState.itemsPerPage;
+                 const pageData = metaRealizadoClientsTableState.filteredData.slice(startIndex, endIndex);
+                 item = pageData[index];
+            }
+
+            if (!item) return;
+
+            const modal = document.getElementById('meta-realizado-details-modal');
+            const title = document.getElementById('meta-realizado-modal-title');
+            const subtitle = document.getElementById('meta-realizado-modal-subtitle');
+            const metaVal = document.getElementById('meta-realizado-modal-meta-val');
+            const realVal = document.getElementById('meta-realizado-modal-real-val');
+            const percentBadge = document.getElementById('meta-realizado-modal-percent');
+            const weeksBody = document.getElementById('meta-realizado-modal-weeks-body');
+
+            // Populate Content
+            title.textContent = `${item.codcli || item.codusur || ''} - ${item.razaoSocial || item.name || 'Nome Indisponível'}`;
+
+            let subText = '';
+            if (type === 'client') {
+                subText = `${item.cidade || 'N/A'} • ${item.vendedor ? getFirstName(item.vendedor) : 'N/A'}`;
+            } else {
+                subText = 'Vendedor'; // Or hierarchy info if available
+            }
+            subtitle.textContent = subText;
+
+            // Big Numbers
+            const metaTotal = item.metaTotal || 0;
+            const realTotal = item.realTotal || 0;
+            const percent = metaTotal > 0 ? (realTotal / metaTotal) * 100 : 0;
+
+            metaVal.textContent = metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            realVal.textContent = realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            percentBadge.textContent = `${percent.toFixed(1)}%`;
+
+            // Color Logic (Same as List)
+            let colorClass = 'text-green-500';
+            let badgeBg = 'bg-green-900/50';
+            if (percent <= 30) { colorClass = 'text-red-500'; badgeBg = 'bg-red-900/50'; }
+            else if (percent <= 50) { colorClass = 'text-yellow-300'; badgeBg = 'bg-yellow-900/50'; }
+            else if (percent <= 80) { colorClass = 'text-blue-400'; badgeBg = 'bg-blue-900/50'; }
+            else if (percent < 100) { colorClass = 'text-green-500'; badgeBg = 'bg-green-900/50'; }
+            else { colorClass = 'text-yellow-400'; badgeBg = 'bg-yellow-900/50'; } // Gold
+
+            realVal.className = `text-lg sm:text-2xl font-bold truncate w-full relative z-10 ${colorClass}`;
+            percentBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded-full text-white mt-1 relative z-10 ${badgeBg}`;
+
+            // Weeks Table
+            weeksBody.innerHTML = item.weekData.map((w, i) => {
+                 const wPercent = w.meta > 0 ? (w.real / w.meta) * 100 : 0;
+                 let wColor = 'text-green-400';
+                 if (wPercent < 100 && w.isPast) wColor = 'text-red-400';
+                 else if (wPercent < 100) wColor = 'text-slate-400';
+
+                 return `
+                    <tr class="hover:bg-slate-700/30">
+                        <td class="px-4 py-3 text-center text-slate-300 font-mono">S${i + 1}</td>
+                        <td class="px-4 py-3 text-right text-slate-400">${w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td class="px-4 py-3 text-right font-bold ${wColor}">${w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td class="px-4 py-3 text-center text-xs text-slate-500">${wPercent.toFixed(0)}%</td>
+                    </tr>
+                 `;
+            }).join('');
+
+            modal.classList.remove('hidden');
+
+            // Close Handler
+            const closeBtn = document.getElementById('meta-realizado-modal-close-btn');
+            closeBtn.onclick = () => {
+                modal.classList.add('hidden');
+            };
+        };
 
         function renderMetaRealizadoChart(data) {
             const ctx = document.getElementById('metaRealizadoChartContainer');
