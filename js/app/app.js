@@ -12033,12 +12033,6 @@ const supervisorGroups = new Map();
                     nameForMobile = parts.slice(1).join('-').trim();
                 }
 
-                const MAX_MOBILE_CHARS = 27;
-                let displayMobileName = nameForMobile;
-                if (displayMobileName.length > MAX_MOBILE_CHARS) {
-                    displayMobileName = displayMobileName.substring(0, MAX_MOBILE_CHARS) + '...';
-                }
-
                 return `
                 <tr class="hover:bg-slate-700">
                     <!-- Desktop Layout (Hidden on Mobile) -->
@@ -12049,18 +12043,14 @@ const supervisorGroups = new Map();
                     <td class="hidden md:table-cell px-4 py-2 text-right font-bold text-green-400">${subTotalStr}</td>
 
                     <!-- Mobile Layout (Visible only on Mobile) -->
-                    <td class="md:hidden p-3 border-b border-white/5" colspan="5">
+                    <td class="md:hidden px-2 py-2 text-left border-b border-white/5" colspan="5">
                         <div class="flex flex-col gap-1">
-                            <!-- Line 1: Code - Truncated Name with Tooltip -->
-                            <div class="flex items-center text-sm font-bold text-white relative group" onclick="void(0)"> <!-- void(0) for iOS hover fix -->
-                                <span class="text-blue-400 mr-2">${window.escapeHtml(item.PRODUTO)}</span>
-                                <span class="text-slate-200 truncate cursor-pointer dashed-underline" title="${window.escapeHtml(fullProductName)}">
-                                    - ${window.escapeHtml(displayMobileName)}
+                            <!-- Line 1: Code - Truncated Name (Click to Expand) -->
+                            <div class="flex items-center text-sm font-bold text-white relative group cursor-pointer" onclick="this.querySelector('.product-name').classList.toggle('truncate'); this.querySelector('.product-name').classList.toggle('whitespace-normal');">
+                                <span class="text-blue-400 mr-2 whitespace-nowrap">${window.escapeHtml(item.PRODUTO)}</span>
+                                <span class="product-name text-slate-200 truncate dashed-underline min-w-0 flex-1 block" title="Clique para ver o nome completo">
+                                    - ${window.escapeHtml(nameForMobile)}
                                 </span>
-                                <!-- Custom CSS Tooltip for better mobile control -->
-                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-max max-w-[250px] bg-slate-800 text-white text-xs rounded-lg px-2 py-1 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl border border-slate-600">
-                                    ${window.escapeHtml(fullProductName)}
-                                </div>
                             </div>
 
                             <!-- Line 2: Details Compact -->
