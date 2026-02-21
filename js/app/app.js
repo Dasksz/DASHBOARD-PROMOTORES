@@ -1099,6 +1099,133 @@
             }
         }
 
+        function updateVendedorFilterDropdown() {
+            const dropdown = document.getElementById('vendedor-filter-dropdown');
+            const text = document.getElementById('vendedor-filter-text');
+            if (!dropdown) return;
+
+            // Get clients base: 
+            // In Promoter Mode: filtered by Hierarchy
+            // In Seller Mode: filtered by Supervisor (if selected) or All
+            let clients;
+            
+            if (adminViewMode === 'promoter') {
+                clients = getHierarchyFilteredClients('main', allClientsData);
+            } else {
+                // Seller Mode: Start with all active clients
+                // If Supervisor selected, filter down.
+                if (selectedSupervisors.size > 0) {
+                    clients = [];
+                    const len = allClientsData.length;
+                    for (let i = 0; i < len; i++) {
+                        const c = allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i];
+                        const rca1 = String(c.rca1 || '');
+                        const details = sellerDetailsMap.get(rca1);
+                        // Case insensitive supervisor check? Usually uppercase.
+                        if (details && details.supervisor && selectedSupervisors.has(details.supervisor)) {
+                            clients.push(c);
+                        }
+                    }
+                } else {
+                    clients = allClientsData;
+                }
+            }
+
+            const validRcas = new Set();
+            const len = clients.length;
+            for (let i = 0; i < len; i++) {
+                const c = clients instanceof ColumnarDataset ? clients.get(i) : clients[i];
+                const rca1 = String(c.rca1 || '').trim();
+                // Exclude invalid/system RCAs if necessary
+                if (rca1 && rca1 !== '53' && rca1 !== '0' && rca1 !== 'N/A') {
+                    validRcas.add(rca1);
+                }
+            }
+
+            // Map to objects {code, name}
+            let options = [];
+            validRcas.forEach(rca => {
+                const details = sellerDetailsMap.get(rca);
+                const name = details ? (details.name || rca) : rca;
+                options.push({ value: rca, label: name });
+            });
+
+            // Sort
+            options.sort((a, b) => a.label.localeCompare(b.label));
+
+            // Render
+            let html = `
+                <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-700/50 mb-1">
+                    <span class="text-xs text-orange-400 font-bold uppercase tracking-wider">Selecionar Todos</span>
+                    <input type="checkbox" value="ALL" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                </label>
+            `;
+            
+            options.forEach(opt => {
+                const checked = selectedVendedores.has(opt.value) ? 'checked' : '';
+                html += `
+                    <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                        <span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(opt.label)}</span>
+                        <input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                    </label>
+                `;
+            });
+            dropdown.innerHTML = html;
+
+            // Update Text
+            if (selectedVendedores.size === 0) {
+                if (text) text.textContent = 'Todos';
+            } else if (selectedVendedores.size === 1) {
+                const val = selectedVendedores.values().next().value;
+                const details = sellerDetailsMap.get(val);
+                if (text) text.textContent = details ? (getFirstName(details.name) || val) : val;
+            } else {
+                if (text) text.textContent = `${selectedVendedores.size} Selecionados`;
+            }
+        }
+
+        function updateSupervisorFilterDropdown() {
+            const dropdown = document.getElementById('main-supervisor-filter-dropdown');
+            const text = document.getElementById('main-supervisor-filter-text');
+            if (!dropdown) return;
+
+            // Get all supervisors from data (available in sellerDetailsMap)
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => {
+                if (d.supervisor && d.supervisor !== '0' && d.supervisor !== 'N/A') {
+                    supervisors.add(d.supervisor);
+                }
+            });
+
+            const options = Array.from(supervisors).sort();
+
+            let html = `
+                <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-700/50 mb-1">
+                    <span class="text-xs text-orange-400 font-bold uppercase tracking-wider">Selecionar Todos</span>
+                    <input type="checkbox" value="ALL" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                </label>
+            `;
+
+            options.forEach(sup => {
+                const checked = selectedSupervisors.has(sup) ? 'checked' : '';
+                html += `
+                    <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                        <span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(sup)}</span>
+                        <input type="checkbox" value="${window.escapeHtml(sup)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                    </label>
+                `;
+            });
+            dropdown.innerHTML = html;
+
+            if (selectedSupervisors.size === 0) {
+                if (text) text.textContent = 'Todos';
+            } else if (selectedSupervisors.size === 1) {
+                if (text) text.textContent = selectedSupervisors.values().next().value;
+            } else {
+                if (text) text.textContent = `${selectedSupervisors.size} Selecionados`;
+            }
+        }
+
         function updateHierarchyDropdown(viewPrefix, level) {
             const state = hierarchyState[viewPrefix];
             const els = {
@@ -2149,6 +2276,9 @@
         let selectedHolidays = [];
 
         let selectedMainRedes = [];
+        let selectedVendedores = new Set();
+        let selectedSupervisors = new Set();
+        let adminViewMode = 'promoter'; // 'promoter' or 'seller'
         let selectedCityRedes = [];
         let selectedPositivacaoRedes = [];
         let selectedComparisonRedes = [];
@@ -8687,8 +8817,14 @@ const supervisorGroups = new Map();
                     }
                 }
 
-                // Hierarchy Filter
-                const hierarchyClients = getHierarchyFilteredClients('main');
+                // Hierarchy Filter & Vendedor Filter
+                let hierarchyClients = getHierarchyFilteredClients('main');
+                
+                // Apply Seller Filter if active
+                if (selectedVendedores.size > 0) {
+                    hierarchyClients = hierarchyClients.filter(c => selectedVendedores.has(String(c.rca1 || '').trim()));
+                }
+
                 if (hierarchyClients.length < allClientsData.length) {
                     hasFilter = true;
                     const hierarchyIds = new Set();
@@ -9098,6 +9234,9 @@ const supervisorGroups = new Map();
             selectedMainSuppliers = updateSupplierFilter(document.getElementById('fornecedor-filter-dropdown'), document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, [...allSalesData, ...allHistoryData], 'main');
             updateTipoVendaFilter(tipoVendaFilterDropdown, tipoVendaFilterText, selectedTiposVenda, allSalesData);
             updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
+
+            selectedVendedores.clear();
+            updateVendedorFilterDropdown();
 
             if (mainRedeGroupContainer) {
                 mainRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -13350,6 +13489,41 @@ const supervisorGroups = new Map();
                 vendedorFilterDropdown.addEventListener('change', (e) => {
                     if (e.target.type === 'checkbox') {
                         const { value, checked } = e.target;
+                        
+                        if (value === 'ALL') {
+                            const inputs = vendedorFilterDropdown.querySelectorAll('input[type="checkbox"]');
+                            if (checked) {
+                                inputs.forEach(input => {
+                                    if (input.value !== 'ALL') {
+                                        input.checked = true;
+                                        selectedVendedores.add(input.value);
+                                    }
+                                });
+                            } else {
+                                inputs.forEach(input => input.checked = false);
+                                selectedVendedores.clear();
+                            }
+                        } else {
+                            if (checked) selectedVendedores.add(value);
+                            else {
+                                selectedVendedores.delete(value);
+                                const allBtn = vendedorFilterDropdown.querySelector('input[value="ALL"]');
+                                if (allBtn) allBtn.checked = false;
+                            }
+                        }
+
+                        // Update Text
+                        const text = document.getElementById('vendedor-filter-text');
+                        if (text) {
+                            if (selectedVendedores.size === 0) text.textContent = 'Todos';
+                            else if (selectedVendedores.size === 1) {
+                                const val = selectedVendedores.values().next().value;
+                                const details = sellerDetailsMap.get(val);
+                                text.textContent = details ? (getFirstName(details.name) || val) : val;
+                            } else {
+                                text.textContent = `${selectedVendedores.size} Selecionados`;
+                            }
+                        }
 
                         updateDashboard();
                     }
@@ -14978,7 +15152,10 @@ const supervisorGroups = new Map();
 
         calculateHistoricalBests(); // <-- MOVIDA PARA CIMA
         // Initialize Hierarchy Filters
-        setupHierarchyFilters('main', updateDashboard);
+        setupHierarchyFilters('main', () => {
+            updateVendedorFilterDropdown();
+            updateDashboard();
+        });
         setupHierarchyFilters('city', updateCityView);
         setupHierarchyFilters('comparison', updateComparisonView);
         setupHierarchyFilters('innovations-month', updateInnovationsMonthView);
