@@ -17344,7 +17344,6 @@ const supervisorGroups = new Map();
         let count = 0;
         let renderedCount = 0;
         const fragment = document.createDocumentFragment();
-        const mobileFragment = document.createDocumentFragment();
         const RENDER_LIMIT = 150;
         
         for(let i=0; i<len; i++) {
@@ -17383,72 +17382,46 @@ const supervisorGroups = new Map();
                  if (renderedCount < RENDER_LIMIT) {
                      renderedCount++;
 
-                     // --- Logic for Mobile Card ---
-                     const isBlocked = rowBloqueio === 'S' || rowBloqueio === true || rowBloqueio === 'True' || rowBloqueio === 'B';
-                     const isPositivado = clientsWithSalesThisMonth.has(code);
-
-                     let daysSince = null;
-                     if (rowUltimaCompra) {
-                         const d = window.parseDate(rowUltimaCompra);
-                         if (d && !isNaN(d)) {
-                             const diff = Date.now() - d.getTime();
-                             daysSince = Math.floor(diff / (1000 * 60 * 60 * 24));
-                         }
-                     }
-
-                     const mobileCard = document.createElement('div');
-                     mobileCard.className = 'flex items-center gap-3 p-3 glass-panel hover:bg-glass transition-colors cursor-pointer border-b border-white/10/50';
-                     mobileCard.setAttribute('onclick', `openWalletClientModal('${code}')`);
-
-                     mobileCard.innerHTML = `
-                        <!-- Info -->
-                        <div class="flex-grow min-w-0">
-                            <div class="flex items-center gap-1 text-[11px] text-slate-400 mb-0.5">
-                                <span class="font-mono text-slate-300 font-bold">${code}</span>
-                                <span>-</span>
-                                <span class="truncate">${rowCnpj || ''} ${rowRazao || rowFantasia || ''}</span>
-                            </div>
-                            <div class="text-sm font-bold text-white truncate">
-                                Fantasia: ${rowFantasia || 'N/A'}
-                            </div>
-                        </div>
-
-                        <!-- Status Icons -->
-                        <div class="flex flex-col items-end gap-1 flex-shrink-0">
-                            ${isPositivado ? `
-                                <div class="text-green-500" title="Positivado no período">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                </div>
-                            ` : ''}
-                            ${daysSince !== null ? `
-                                <div class="flex items-center gap-1 text-red-500 text-xs font-bold" title="Dias sem venda">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                                    ${daysSince}d
-                                </div>
-                            ` : ''}
-                        </div>
-                     `;
-                     mobileFragment.appendChild(mobileCard);
-
-                     // --- Desktop Row (Existing Logic) ---
                      const tr = document.createElement('tr');
                      tr.className = 'hover:bg-glass transition-colors border-b border-white/10/50 cursor-pointer';
                      tr.setAttribute('onclick', `openWalletClientModal('${code}')`);
-                     tr.innerHTML = `
-                        <td data-label="Código" class="px-2 py-1.5 md:px-6 md:py-4 font-mono text-[10px] md:text-xs text-slate-400 w-16 md:w-32">${code}</td>
-                        <td data-label="Cliente" class="px-2 py-1.5 md:px-6 md:py-4">
-                            <div class="text-[10px] md:text-sm font-bold text-white truncate max-w-[120px] md:max-w-none">${rowFantasia || 'N/A'}</div>
-                            <div class="text-[9px] md:text-xs text-slate-500 truncate max-w-[120px] md:max-w-none">${rowRazao || ''}</div>
+
+                     // Mobile Layout (Single Cell)
+                     const mobileCell = `
+                        <td class="md:hidden p-4 border-b border-white/10" colspan="3">
+                             <div class="flex flex-col gap-3">
+                               <div class="flex items-center gap-4">
+                                   <span class="text-[10px] font-bold text-slate-500 uppercase w-14">Código</span>
+                                   <span class="text-sm font-bold text-slate-200 font-mono">${code}</span>
+                               </div>
+                               <div class="flex items-start gap-4">
+                                   <span class="text-[10px] font-bold text-slate-500 uppercase w-14 mt-0.5">Cliente</span>
+                                   <div class="flex flex-col">
+                                       <span class="text-sm font-black text-white uppercase tracking-tight">${rowFantasia || 'N/A'}</span>
+                                       <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">${rowRazao || ''}</span>
+                                   </div>
+                               </div>
+                           </div>
                         </td>
-                        <td data-label="CNPJ" class="px-2 py-1.5 md:px-6 md:py-4 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${rowCnpj || ''}</td>
                      `;
+
+                     // Desktop Layout (Columns)
+                     const desktopCells = `
+                        <td data-label="Código" class="hidden md:table-cell px-6 py-4 font-mono text-xs text-slate-400 w-32 border-b border-white/10">${code}</td>
+                        <td data-label="Cliente" class="hidden md:table-cell px-6 py-4 border-b border-white/10">
+                            <div class="text-sm font-bold text-white truncate">${rowFantasia || 'N/A'}</div>
+                            <div class="text-xs text-slate-500 truncate">${rowRazao || ''}</div>
+                        </td>
+                        <td data-label="CNPJ" class="hidden md:table-cell px-6 py-4 text-xs text-slate-400 border-b border-white/10">${rowCnpj || ''}</td>
+                     `;
+
+                     tr.innerHTML = mobileCell + desktopCells;
                      fragment.appendChild(tr);
                  }
              }
         }
         
         tbody.appendChild(fragment);
-        if (mobileList) mobileList.appendChild(mobileFragment);
         if (badge) badge.textContent = count;
         
         if (count === 0) empty.classList.remove('hidden');
