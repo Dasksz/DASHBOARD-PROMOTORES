@@ -4525,29 +4525,24 @@
                     `;
                 });
 
-                // Mobile Content (Compact List)
+                // Mobile Content (Compact List - v2)
                 const mobileContent = `
-                    <div class="md:hidden w-full" onclick="openMetaRealizadoDetailsModal(${index}, 'seller')">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="font-bold text-slate-200 text-sm truncate pr-2">${row.codusur || ''} - ${row.name}</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </div>
+                    <div class="md:hidden w-full py-1" onclick="openMetaRealizadoDetailsModal(${index}, 'seller')">
+                        <div class="font-bold text-slate-200 text-sm truncate mb-1">${row.codusur || ''} - ${row.name}</div>
                         <div class="flex justify-between items-center text-xs">
-                            <div class="flex flex-col">
-                                <span class="text-slate-500 uppercase text-[10px]">Meta</span>
+                            <div class="flex items-center gap-1">
+                                <span class="text-slate-500 font-semibold uppercase text-[10px]">Meta:</span>
                                 <span class="text-slate-300">${metaTotalStr}</span>
                             </div>
-                             <div class="flex flex-col items-end">
-                                <span class="text-slate-500 uppercase text-[10px]">Realizado</span>
+                            <div class="flex items-center gap-1">
+                                <span class="text-slate-500 font-semibold uppercase text-[10px]">Realizado:</span>
                                 <span class="${colorClass}">${realTotalStr}</span>
                             </div>
                         </div>
                     </div>
                 `;
 
-                return `<tr class="hover:bg-slate-700/30 transition-colors group">${mobileContent}${desktopCells}</tr>`;
+                return `<tr class="hover:bg-slate-700/30 transition-colors group border-b border-slate-700/50">${mobileContent}${desktopCells}</tr>`;
             }).join('');
 
             tableBody.innerHTML = rowsHTML;
@@ -5149,31 +5144,24 @@
                         `;
                     });
 
-                    // Mobile Content (Compact List)
-                    // Line 1: Code - Name (Truncated)
-                    // Line 2: Meta Total (Left) | Realizado Total (Right)
+                    // Mobile Content (Compact List - v2)
                     const mobileContent = `
-                        <div class="md:hidden w-full" onclick="openMetaRealizadoDetailsModal(${index}, 'client')">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="font-bold text-slate-200 text-sm truncate pr-2 w-full">${row.codcli} - ${escapeHtml(row.razaoSocial)}</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </div>
+                        <div class="md:hidden w-full py-1" onclick="openMetaRealizadoDetailsModal(${index}, 'client')">
+                            <div class="font-bold text-slate-200 text-sm truncate mb-1 w-full">${row.codcli} - ${escapeHtml(row.razaoSocial)}</div>
                             <div class="flex justify-between items-center text-xs">
-                                <div class="flex flex-col">
-                                    <span class="text-slate-500 uppercase text-[10px]">Meta</span>
+                                <div class="flex items-center gap-1">
+                                    <span class="text-slate-500 font-semibold uppercase text-[10px]">Meta:</span>
                                     <span class="text-slate-300">${metaTotalStr}</span>
                                 </div>
-                                <div class="flex flex-col items-end">
-                                    <span class="text-slate-500 uppercase text-[10px]">Realizado</span>
+                                <div class="flex items-center gap-1">
+                                    <span class="text-slate-500 font-semibold uppercase text-[10px]">Realizado:</span>
                                     <span class="${colorClass}">${realTotalStr}</span>
                                 </div>
                             </div>
                         </div>
                     `;
 
-                    return `<tr class="hover:bg-slate-700/30 transition-colors">${mobileContent}${desktopCells}</tr>`;
+                    return `<tr class="hover:bg-slate-700/30 transition-colors border-b border-slate-700/50">${mobileContent}${desktopCells}</tr>`;
                 }).join('');
                 tableBody.innerHTML = rowsHTML;
             }
