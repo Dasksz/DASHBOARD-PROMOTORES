@@ -1840,7 +1840,7 @@
                     </div>
 
                         <!-- Modal Detalhes Meta Realizado (Genérico) -->
-                        <div id="meta-realizado-details-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                        <div id="meta-realizado-details-modal" class="modal-overlay hidden fixed inset-0 z-[4000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
                             <div class="bg-modal-content w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                                 <!-- Header -->
                                 <div class="px-6 py-4 border-b border-slate-700/50 flex justify-between items-start bg-slate-900/50">
@@ -1862,6 +1862,7 @@
                                         <div class="glass-panel p-4 rounded-xl flex flex-col justify-center items-center text-center">
                                             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Meta Total</span>
                                             <span id="meta-realizado-modal-meta-val" class="text-lg sm:text-2xl font-bold text-blue-400 truncate w-full">R$ 0,00</span>
+                                            <span class="text-[10px] font-bold px-2 py-0.5 mt-1 opacity-0 select-none">-</span>
                                         </div>
                                         <div class="glass-panel p-4 rounded-xl flex flex-col justify-center items-center text-center relative overflow-hidden">
                                             <div id="meta-realizado-modal-status-bg" class="absolute inset-0 opacity-10 bg-slate-500"></div>
@@ -1871,21 +1872,9 @@
                                         </div>
                                     </div>
 
-                                    <!-- Weekly Breakdown Table -->
-                                    <div class="overflow-x-auto rounded-lg border border-slate-700/50">
-                                        <table class="w-full text-sm text-left">
-                                            <thead class="text-xs text-slate-400 uppercase bg-slate-800/50">
-                                                <tr>
-                                                    <th class="px-4 py-3 font-medium text-center">Semana</th>
-                                                    <th class="px-4 py-3 font-medium text-right">Meta</th>
-                                                    <th class="px-4 py-3 font-medium text-right">Realizado</th>
-                                                    <th class="px-4 py-3 font-medium text-center">%</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="meta-realizado-modal-weeks-body" class="divide-y divide-slate-700/30">
-                                                <!-- Rows injected via JS -->
-                                            </tbody>
-                                        </table>
+                                    <!-- Weekly Breakdown (Compact List) -->
+                                    <div id="meta-realizado-modal-weeks-body" class="flex flex-col space-y-0 divide-y divide-slate-800 border-t border-slate-800">
+                                        <!-- Rows injected via JS -->
                                     </div>
                                 </div>
                             </div>
