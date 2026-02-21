@@ -2658,6 +2658,18 @@
         }
 
         function resolveUserContext() {
+            // PRIORITY 1: Explicit Data-Driven Roles (Supervisor/Seller)
+            if (window.userIsSupervisor) {
+                userHierarchyContext.role = 'supervisor';
+                userHierarchyContext.supervisor = window.userSupervisorCode;
+                return;
+            }
+            if (window.userIsSeller) {
+                userHierarchyContext.role = 'seller';
+                userHierarchyContext.seller = window.userSellerCode;
+                return;
+            }
+
             const role = (window.userRole || '').trim().toUpperCase();
 
             if (role === 'ADM' || role === 'ADMIN') {
