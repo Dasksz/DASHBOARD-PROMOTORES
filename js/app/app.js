@@ -1359,6 +1359,100 @@
             updateFilterButtonText(target.text, selectedSet, label);
         }
 
+        function applyHierarchyVisibilityRules() {
+            if (adminViewMode === 'promoter') {
+                if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.remove('hidden');
+                if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.remove('hidden');
+                if (mainPromotorFilterWrapper) mainPromotorFilterWrapper.classList.remove('hidden');
+                if (mainSupervisorFilterWrapper) mainSupervisorFilterWrapper.classList.add('hidden');
+                if (vendedorFilterWrapper) vendedorFilterWrapper.classList.add('hidden');
+            } else {
+                if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.add('hidden');
+                if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.add('hidden');
+                if (mainPromotorFilterWrapper) mainPromotorFilterWrapper.classList.add('hidden');
+                if (mainSupervisorFilterWrapper) mainSupervisorFilterWrapper.classList.remove('hidden');
+                if (vendedorFilterWrapper) vendedorFilterWrapper.classList.remove('hidden');
+            }
+        }
+
+        function toggleAdminViewMode() {
+            const btn = document.getElementById('admin-view-toggle-btn');
+            if (adminViewMode === 'promoter') {
+                adminViewMode = 'seller';
+                if (btn) {
+                    btn.classList.add('text-[#FF5E00]', 'bg-white/10');
+                }
+            } else {
+                adminViewMode = 'promoter';
+                if (btn) {
+                    btn.classList.remove('text-[#FF5E00]', 'bg-white/10');
+                }
+            }
+            
+            applyHierarchyVisibilityRules();
+            updateSupervisorFilterDropdown(); 
+            updateVendedorFilterDropdown();
+            updateDashboard();
+        }
+
+        function setupSupervisorFilterHandlers() {
+            if (mainSupervisorFilterBtn && mainSupervisorFilterDropdown) {
+                // Toggle Dropdown
+                mainSupervisorFilterBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    mainSupervisorFilterDropdown.classList.toggle('hidden');
+                });
+
+                // Close on Outside Click
+                document.addEventListener('click', (e) => {
+                    if (!mainSupervisorFilterBtn.contains(e.target) && !mainSupervisorFilterDropdown.contains(e.target)) {
+                        mainSupervisorFilterDropdown.classList.add('hidden');
+                    }
+                });
+
+                // Handle Selection
+                mainSupervisorFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        const isChecked = e.target.checked;
+
+                        if (val === 'ALL') {
+                            const checkboxes = mainSupervisorFilterDropdown.querySelectorAll('input[type="checkbox"]');
+                            checkboxes.forEach(cb => {
+                                if (cb.value !== 'ALL') {
+                                    cb.checked = isChecked;
+                                    if (isChecked) selectedSupervisors.add(cb.value);
+                                    else selectedSupervisors.delete(cb.value);
+                                }
+                            });
+                            if (!isChecked) selectedSupervisors.clear();
+                        } else {
+                            if (isChecked) {
+                                selectedSupervisors.add(val);
+                            } else {
+                                selectedSupervisors.delete(val);
+                                // Uncheck 'All' if present
+                                const allChk = mainSupervisorFilterDropdown.querySelector('input[value="ALL"]');
+                                if (allChk) allChk.checked = false;
+                            }
+                        }
+
+                        // Update Button Text
+                        const text = document.getElementById('main-supervisor-filter-text');
+                        if (text) {
+                            if (selectedSupervisors.size === 0) text.textContent = 'Todos';
+                            else if (selectedSupervisors.size === 1) text.textContent = selectedSupervisors.values().next().value;
+                            else text.textContent = `${selectedSupervisors.size} Selecionados`;
+                        }
+
+                        // Update Dependent Filters and Dashboard
+                        updateVendedorFilterDropdown();
+                        updateDashboard();
+                    }
+                });
+            }
+        }
+
         function setupHierarchyFilters(viewPrefix, onUpdate) {
             // Init State
             if (!hierarchyState[viewPrefix]) {
@@ -1933,6 +2027,14 @@
         const vendedorFilterBtn = document.getElementById('vendedor-filter-btn');
         const vendedorFilterText = document.getElementById('vendedor-filter-text');
         const vendedorFilterDropdown = document.getElementById('vendedor-filter-dropdown');
+
+        const mainSupervisorFilterBtn = document.getElementById('main-supervisor-filter-btn');
+        const mainSupervisorFilterDropdown = document.getElementById('main-supervisor-filter-dropdown');
+        const mainCoordFilterWrapper = document.getElementById('main-coord-filter-wrapper');
+        const mainCocoordFilterWrapper = document.getElementById('main-cocoord-filter-wrapper');
+        const mainPromotorFilterWrapper = document.getElementById('main-promotor-filter-wrapper');
+        const mainSupervisorFilterWrapper = document.getElementById('main-supervisor-filter-wrapper');
+        const vendedorFilterWrapper = document.getElementById('vendedor-filter-wrapper');
 
         const tipoVendaFilterBtn = document.getElementById('tipo-venda-filter-btn');
         const tipoVendaFilterText = document.getElementById('tipo-venda-filter-text');
@@ -21374,6 +21476,19 @@ const supervisorGroups = new Map();
         // Enforce Menu Permissions
         if (window.userRole !== 'adm') {
             document.querySelectorAll('[data-target="goals"]').forEach(el => el.classList.add('hidden'));
+        } else {
+            // Admin View Logic
+            const adminViewToggleBtn = document.getElementById('admin-view-toggle-btn');
+            if (adminViewToggleBtn) {
+                adminViewToggleBtn.classList.remove('hidden');
+                adminViewToggleBtn.addEventListener('click', toggleAdminViewMode);
+            }
+            
+            setupSupervisorFilterHandlers();
+            // Populate initially
+            updateSupervisorFilterDropdown();
+            // Apply initial visibility
+            applyHierarchyVisibilityRules();
         }
     }
 
