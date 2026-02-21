@@ -21493,6 +21493,14 @@ const supervisorGroups = new Map();
         // Enforce Menu Permissions
         if (window.userRole !== 'adm') {
             document.querySelectorAll('[data-target="goals"]').forEach(el => el.classList.add('hidden'));
+
+            if (window.userIsSupervisor || window.userIsSeller) {
+                adminViewMode = 'seller';
+                applyHierarchyVisibilityRules();
+                setupSupervisorFilterHandlers();
+                updateSupervisorFilterDropdown();
+                updateVendedorFilterDropdown();
+            }
         } else {
             // Admin View Logic
             const adminViewToggleBtn = document.getElementById('admin-view-toggle-btn');
