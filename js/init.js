@@ -1048,6 +1048,7 @@
                 history: filteredHistory,
                 clients: filteredClients,
                 byOrder: filteredOrders,
+                products: products,
                 stockMap05: stockMap05,
                 stockMap08: stockMap08,
                 innovationsMonth: innovations,
