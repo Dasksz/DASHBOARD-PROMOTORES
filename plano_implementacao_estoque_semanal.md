@@ -27,12 +27,12 @@ Novas visualizações serão adicionadas ao dashboard, com regras de acesso espe
 
 ---
 
-## 2. Página "Estoque"
+## 2. Página "Estoque" ( deve ser inserido no botão "Notificações de Estoque"
 
 **Objetivo:** Permitir que o usuário identifique produtos com estoque parado, produtos novos com saída e, principalmente, **Produtos Perdidos** (Com estoque na filial, mas sem venda na carteira do usuário no mês atual).
 
 ### A. Estrutura HTML (`index.html`)
-Adicionar `#stock-view` dentro de `#content-wrapper`. Estrutura baseada no projeto PRIME:
+Adicionar `#stock-view` dentro de `#content-wrapper`. Estrutura baseada no projeto PRIME: ( https://github.com/Dasksz/PRIME ).
 
 1.  **Filtros (Context-Aware):**
     *   Reutilizar a estrutura de filtros existente (`.glass-filter-box`).
