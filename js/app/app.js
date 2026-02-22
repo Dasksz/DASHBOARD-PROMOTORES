@@ -1137,7 +1137,7 @@
                 const c = clients instanceof ColumnarDataset ? clients.get(i) : clients[i];
                 const rca1 = String(c.rca1 || '').trim();
                 // Exclude invalid/system RCAs if necessary
-                if (rca1 && rca1 !== '53' && rca1 !== '0' && rca1 !== 'N/A') {
+                if (rca1 && rca1 !== '0' && rca1 !== 'N/A') {
                     validRcas.add(rca1);
                 }
             }
