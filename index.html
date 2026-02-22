@@ -405,6 +405,7 @@
         <button data-target="mix" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Mix</button>
         <button data-target="inovacoes-mes" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Inovações</button>
         <button data-target="goals" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Metas</button>
+        <button data-target="weekly" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap hidden">Semanal</button>
     </div>
 
     <!-- Right Controls -->
@@ -461,6 +462,7 @@
         <button data-target="mix" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5">Mix</button>
         <button data-target="inovacoes-mes" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5">Inovações</button>
         <button data-target="goals" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5 hidden">Metas</button>
+        <button data-target="weekly" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5 hidden">Semanal</button>
     </div>
 </div>
 
@@ -2075,6 +2077,173 @@
         </div>
     </div>
     
+    <!-- STOCK VIEW -->
+    <div id="stock-view" class="hidden container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl animate-fade-in-up">
+        <header class="mb-8 border-b border-slate-800 pb-4">
+            <h1 class="text-3xl font-bold text-white">Estoque</h1>
+            <p class="text-slate-400">Análise de disponibilidade e ruptura</p>
+        </header>
+
+        <div class="filter-wrapper-sentinel">
+            <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                    <div id="stock-rede-filter-wrapper" class="relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
+                        <button id="stock-rede-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="stock-rede-filter-text">Todas</span></button>
+                        <div id="stock-rede-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
+                    </div>
+                    <div id="stock-filial-filter-wrapper" class="relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Filial</label>
+                        <select id="stock-filial-filter" class="glass-input border border-slate-700 text-white text-sm rounded-lg block w-full p-2.5">
+                            <option value="all">Todas (05 + 08)</option>
+                            <option value="05">Filial 05</option>
+                            <option value="08">Filial 08</option>
+                        </select>
+                    </div>
+                     <div id="stock-supervisor-filter-wrapper" class="relative hidden">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
+                        <button id="stock-supervisor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="stock-supervisor-filter-text">Todos</span></button>
+                        <div id="stock-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
+                    </div>
+                     <div id="stock-vendedor-filter-wrapper" class="relative hidden">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
+                        <button id="stock-vendedor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="stock-vendedor-filter-text">Todos</span></button>
+                        <div id="stock-vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
+                    </div>
+                </div>
+                 <div class="mt-4 flex justify-end">
+                    <button id="clear-stock-filters-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg">Limpar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="glass-panel p-4 rounded-xl border border-slate-800/50 shadow-md">
+                <h3 class="text-green-400 font-bold mb-2">Crescimento</h3>
+                <div class="overflow-y-auto max-h-60 custom-scrollbar">
+                    <table class="w-full text-xs text-left text-slate-300" id="stock-growth-table">
+                        <thead class="text-slate-500 uppercase"><tr><th>Produto</th><th class="text-right">Venda</th><th class="text-right">Média</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="glass-panel p-4 rounded-xl border border-slate-800/50 shadow-md">
+                <h3 class="text-red-400 font-bold mb-2">Queda</h3>
+                <div class="overflow-y-auto max-h-60 custom-scrollbar">
+                    <table class="w-full text-xs text-left text-slate-300" id="stock-drop-table">
+                        <thead class="text-slate-500 uppercase"><tr><th>Produto</th><th class="text-right">Venda</th><th class="text-right">Média</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="glass-panel p-4 rounded-xl border border-slate-800/50 shadow-md">
+                <h3 class="text-blue-400 font-bold mb-2">Novos com Venda</h3>
+                <div class="overflow-y-auto max-h-60 custom-scrollbar">
+                    <table class="w-full text-xs text-left text-slate-300" id="stock-new-table">
+                        <thead class="text-slate-500 uppercase"><tr><th>Produto</th><th class="text-right">Venda</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="glass-panel p-4 rounded-xl border border-slate-800/50 shadow-md border-l-4 border-l-orange-500">
+                <h3 class="text-orange-400 font-bold mb-2 flex justify-between">Perdidos (Oportunidade) <span id="stock-lost-count" class="text-white text-xs bg-slate-700 px-2 rounded">0</span></h3>
+                <p class="text-[10px] text-slate-400 mb-2">Com estoque na filial, sem venda na carteira.</p>
+                <div class="overflow-y-auto max-h-60 custom-scrollbar">
+                    <table class="w-full text-xs text-left text-slate-300" id="stock-lost-table">
+                        <thead class="text-slate-500 uppercase"><tr><th>Produto</th><th class="text-right">Estoque</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl border border-slate-800/50 shadow-lg overflow-hidden">
+            <div class="p-4 glass-panel border-b border-slate-800 flex justify-between items-center">
+                <h3 class="font-bold text-white">Análise Detalhada</h3>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
+                <table class="min-w-full text-sm text-left text-slate-300">
+                    <thead class="text-xs text-slate-400 uppercase glass-panel sticky top-0 z-10">
+                        <tr>
+                            <th class="px-4 py-3">Produto</th>
+                            <th class="px-4 py-3 hidden md:table-cell">Fornecedor</th>
+                            <th class="px-4 py-3 text-right">Estoque (CX)</th>
+                            <th class="px-4 py-3 text-right">Venda Mês</th>
+                            <th class="px-4 py-3 text-right hidden md:table-cell">Média Trim.</th>
+                            <th class="px-4 py-3 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-main-table-body" class="divide-y divide-slate-800/50"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- WEEKLY VIEW -->
+    <div id="weekly-view" class="hidden container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl animate-fade-in-up">
+        <header class="mb-8 border-b border-slate-800 pb-4">
+            <h1 class="text-3xl font-bold text-white">Análise Semanal</h1>
+            <p class="text-slate-400">Acompanhamento tático de vendas</p>
+        </header>
+
+        <div class="filter-wrapper-sentinel">
+            <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                     <div id="weekly-supervisor-filter-wrapper" class="relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
+                        <button id="weekly-supervisor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-supervisor-filter-text">Todos</span></button>
+                        <div id="weekly-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
+                    </div>
+                     <div id="weekly-vendedor-filter-wrapper" class="relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
+                        <button id="weekly-vendedor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-vendedor-filter-text">Todos</span></button>
+                        <div id="weekly-vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
+                    </div>
+                    <div id="weekly-fornecedor-filter-wrapper" class="relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Fornecedor</label>
+                        <button id="weekly-fornecedor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-fornecedor-filter-text">Todos</span></button>
+                        <div id="weekly-fornecedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button id="clear-weekly-filters-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg">Limpar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">Vendas por Dia da Semana</h2>
+            <div class="relative h-96 w-full">
+                <canvas id="weeklySalesChart"></canvas>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="glass-panel p-4 rounded-2xl border border-slate-800/50 shadow-lg lg:col-span-2">
+                <h3 class="font-bold text-white mb-4">Resumo por Semana</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-300" id="weekly-summary-table">
+                        <thead class="text-xs text-slate-500 uppercase"><tr><th>Semana</th><th class="text-right">Total</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="glass-panel p-4 rounded-2xl border border-slate-800/50 shadow-lg">
+                <h3 class="font-bold text-white mb-4">Rankings</h3>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Top Vendedores (Fat)</h4>
+                        <ul id="weekly-ranking-fat" class="text-sm space-y-1"></ul>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Top Positivação</h4>
+                        <ul id="weekly-ranking-pos" class="text-sm space-y-1"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- CONSULTAS VIEW -->
     <div id="consultas-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
         <header class="mb-8 border-b border-slate-800 pb-4">
@@ -2117,13 +2286,13 @@
                     <p class="text-sm text-slate-400 mt-1">Consulta movimentação de conta corrente do RCA</p>
                 </div>
             </button>
-            <button class="glass-panel hover:bg-white/5 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer" title="Em breve">
+            <button onclick="renderView('estoque')" class="glass-panel hover:bg-white/5 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer">
                 <div class="p-3 bg-orange-500/20 rounded-full text-orange-400">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                 </div>
                 <div>
                     <h3 class="text-lg font-bold text-white">Notificações de Estoque</h3>
-                    <p class="text-sm text-slate-400 mt-1">Consulta de estoque de produtos</p>
+                    <p class="text-sm text-slate-400 mt-1">Consulta de estoque e produtos perdidos</p>
                 </div>
             </button>
             <button onclick="renderView('history')" class="glass-panel hover:bg-white/5 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4">

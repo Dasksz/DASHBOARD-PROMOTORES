@@ -2308,7 +2308,7 @@
             consultas: { dirty: true, rendered: false },
             history: { dirty: true, rendered: false },
             wallet: { dirty: true, rendered: false },
-            positivacao: { dirty: true, rendered: false }
+            positivacao: { dirty: true, rendered: false }, estoque: { dirty: true, rendered: false }
         };
 
         // Render IDs for Race Condition Guard
@@ -12744,6 +12744,15 @@ const supervisorGroups = new Map();
                 }
             }
 
+            if (view === 'weekly') {
+                const role = (window.userRole || '').toLowerCase();
+                if (role === 'promotor' || role === 'vendedor' || window.userIsSeller) {
+                     window.showToast('warning', 'Acesso restrito a gestores.');
+                     renderView('dashboard');
+                     return;
+                }
+            }
+
             // Push to history if not navigating back
             if (!options.skipHistory && currentActiveView && currentActiveView !== view) {
                 viewHistory.push(currentActiveView);
@@ -12840,6 +12849,10 @@ const supervisorGroups = new Map();
                             viewState.consultas.rendered = true;
                             viewState.consultas.dirty = false;
                         }
+                        break;
+                    case 'weekly':
+                        showViewElement(document.getElementById('weekly-view'));
+                        if (typeof updateWeeklyView === 'function') updateWeeklyView();
                         break;
                     case 'wallet':
                         showViewElement(document.getElementById('wallet-view'));
@@ -15347,6 +15360,14 @@ const supervisorGroups = new Map();
                 if (navRoteiro) navRoteiro.parentElement.classList.add('hidden');
             }
 
+            // Show Weekly for Management Roles (Adm, Coord, CoCoord, Supervisor)
+            const weeklyBtns = document.querySelectorAll('[data-target="weekly"]');
+            if (role === 'adm' || role === 'coord' || role === 'cocoord' || role === 'supervisor') {
+                weeklyBtns.forEach(btn => btn.classList.remove('hidden'));
+            } else {
+                weeklyBtns.forEach(btn => btn.classList.add('hidden'));
+            }
+
             views.forEach(prefix => {
                 const coordWrapper = document.getElementById(`${prefix}-coord-filter-wrapper`);
                 const cocoordWrapper = document.getElementById(`${prefix}-cocoord-filter-wrapper`);
@@ -15450,6 +15471,8 @@ const supervisorGroups = new Map();
         setupHierarchyFilters('goals-gv', updateGoalsView);
         setupHierarchyFilters('goals-summary', updateGoalsSummaryView);
         setupHierarchyFilters('goals-sv', updateGoalsSvView);
+        setupHierarchyFilters('estoque', updateStockView);
+        setupHierarchyFilters('weekly', updateWeeklyView);
 
         // Initialize Other Filters
         selectedMainSuppliers = updateSupplierFilter(document.getElementById('fornecedor-filter-dropdown'), document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, [...allSalesData, ...allHistoryData], 'main');
@@ -20698,6 +20721,332 @@ const supervisorGroups = new Map();
 
         modal.classList.remove('hidden');
     };
+
+    // --- STOCK VIEW LOGIC ---
+    let stockTableState = {
+        main: { page: 1, limit: 100, data: [] }
+    };
+
+    let selectedStockRedes = [];
+    let stockRedeGroupFilter = '';
+
+    function handleStockFilterChange(options = {}) {
+        if (window.stockUpdateTimeout) clearTimeout(window.stockUpdateTimeout);
+        window.stockUpdateTimeout = setTimeout(() => {
+            updateAllStockFilters(options);
+            updateStockView();
+        }, 10);
+    }
+
+    function updateAllStockFilters(options = {}) {
+        // Placeholder
+    }
+
+    function getStockFilteredData() {
+        // 1. Get Base Clients (Hierarchy)
+        const activeClients = getHierarchyFilteredClients('estoque', allClientsData);
+
+        // 2. Filter Clients by UI Filters
+        const isComRede = stockRedeGroupFilter === 'com_rede';
+        const isSemRede = stockRedeGroupFilter === 'sem_rede';
+        const redeSet = (isComRede && selectedStockRedes.length > 0) ? new Set(selectedStockRedes) : null;
+
+        const activeClientCodes = new Set();
+        for(const c of activeClients) {
+             if (isComRede) {
+                 if (!c.ramo || c.ramo === 'N/A') continue;
+                 if (redeSet && !redeSet.has(c.ramo)) continue;
+             } else if (isSemRede) {
+                 if (c.ramo && c.ramo !== 'N/A') continue;
+             }
+             activeClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+        }
+
+        // 3. Aggregate Sales (Current)
+        const salesMap = new Map();
+        const salesFilters = { clientCodes: activeClientCodes };
+        const salesList = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, salesFilters);
+
+        salesList.forEach(s => {
+            const pCode = s.PRODUTO;
+            if (!salesMap.has(pCode)) salesMap.set(pCode, { qty: 0, val: 0 });
+            const entry = salesMap.get(pCode);
+            entry.qty += (Number(s.QTVENDA) || 0);
+            entry.val += (Number(s.VLVENDA) || 0);
+        });
+
+        // 4. Aggregate History (for Avg)
+        const historyMap = new Map();
+        const historyList = getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, salesFilters);
+        historyList.forEach(h => {
+             const pCode = h.PRODUTO;
+             if (!historyMap.has(pCode)) historyMap.set(pCode, 0);
+             historyMap.set(pCode, historyMap.get(pCode) + (Number(h.QTVENDA) || 0));
+        });
+
+        // Normalize History to Monthly Average (assuming 3 months history loaded)
+        for(const [k, v] of historyMap) {
+            historyMap.set(k, v / 3);
+        }
+
+        // 5. Iterate Products
+        const products = embeddedData.products;
+        const result = [];
+        const filialFilter = document.getElementById('stock-filial-filter').value;
+
+        products.forEach(p => {
+            const code = p.code;
+
+            let stockQty = 0;
+            const s05 = embeddedData.stockMap05[code] || 0;
+            const s08 = embeddedData.stockMap08[code] || 0;
+
+            if (filialFilter === 'all') stockQty = s05 + s08;
+            else if (filialFilter === '05') stockQty = s05;
+            else if (filialFilter === '08') stockQty = s08;
+
+            const currentSales = salesMap.get(code) || { qty: 0, val: 0 };
+            const avgHistory = historyMap.get(code) || 0;
+
+            let status = 'neutral';
+            if (stockQty > 0 && currentSales.qty === 0) status = 'lost';
+            else if (currentSales.qty > 0 && avgHistory === 0) status = 'new';
+            else if (currentSales.qty > avgHistory * 1.1) status = 'growth';
+            else if (currentSales.qty < avgHistory * 0.9 && currentSales.qty > 0) status = 'drop';
+
+            if (status !== 'neutral' || stockQty > 0 || currentSales.qty > 0) {
+                result.push({
+                    code,
+                    name: p.descricao,
+                    supplier: p.fornecedor,
+                    stock: stockQty,
+                    sales: currentSales.qty,
+                    val: currentSales.val,
+                    avg: avgHistory,
+                    status
+                });
+            }
+        });
+
+        return result;
+    }
+
+    function updateStockView() {
+        const data = getStockFilteredData();
+        stockTableState.filteredData = data;
+
+        // Populate Grid Tables
+        const growth = data.filter(d => d.status === 'growth').sort((a,b) => b.sales - a.sales).slice(0, 50);
+        const drop = data.filter(d => d.status === 'drop').sort((a,b) => b.avg - a.avg).slice(0, 50);
+        const newData = data.filter(d => d.status === 'new').sort((a,b) => b.sales - a.sales).slice(0, 50);
+        const lost = data.filter(d => d.status === 'lost').sort((a,b) => b.stock - a.stock).slice(0, 50);
+
+        renderMiniStockTable('stock-growth-table', growth, 'growth');
+        renderMiniStockTable('stock-drop-table', drop, 'drop');
+        renderMiniStockTable('stock-new-table', newData, 'new');
+        renderMiniStockTable('stock-lost-table', lost, 'lost');
+
+        document.getElementById('stock-lost-count').textContent = lost.length;
+        renderStockMainTable(data);
+    }
+
+    function renderMiniStockTable(tableId, data, type) {
+        const table = document.getElementById(tableId);
+        if(!table) return;
+        const tbody = table.querySelector('tbody');
+        tbody.innerHTML = '';
+
+        data.forEach(d => {
+            const tr = document.createElement('tr');
+            tr.className = "border-b border-slate-700/50 hover:bg-white/5";
+            let cols = `
+                <td class="py-1 truncate max-w-[120px]" title="${d.name}">${d.code} - ${d.name}</td>
+                <td class="py-1 text-right font-mono">${d.sales.toFixed(0)}</td>
+            `;
+            if (type === 'lost') {
+                cols = `
+                    <td class="py-1 truncate max-w-[120px]" title="${d.name}">${d.code} - ${d.name}</td>
+                    <td class="py-1 text-right font-bold text-orange-400 font-mono">${d.stock}</td>
+                `;
+            } else if (type !== 'new') {
+                 cols += `<td class="py-1 text-right text-slate-500 font-mono">${d.avg.toFixed(0)}</td>`;
+            }
+            tr.innerHTML = cols;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderStockMainTable(data) {
+        const tbody = document.getElementById('stock-main-table-body');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+
+        data.sort((a,b) => b.val - a.val); // Default by value
+        const subset = data.slice(0, 200);
+
+        subset.forEach(d => {
+             const tr = document.createElement('tr');
+             tr.className = "border-b border-slate-700 hover:bg-slate-700/50";
+
+             let statusBadge = '';
+             if (d.status === 'growth') statusBadge = '<span class="text-xs font-bold text-green-400">Cresc.</span>';
+             else if (d.status === 'drop') statusBadge = '<span class="text-xs font-bold text-red-400">Queda</span>';
+             else if (d.status === 'new') statusBadge = '<span class="text-xs font-bold text-blue-400">Novo</span>';
+             else if (d.status === 'lost') statusBadge = '<span class="text-xs font-bold text-orange-400">Perdido</span>';
+             else statusBadge = '<span class="text-xs text-slate-500">-</span>';
+
+             tr.innerHTML = `
+                <td class="px-4 py-2 text-xs text-white truncate max-w-[200px]" title="${d.name}">${d.code} - ${d.name}</td>
+                <td class="px-4 py-2 text-xs text-slate-400 hidden md:table-cell">${d.supplier}</td>
+                <td class="px-4 py-2 text-xs text-right font-mono text-blue-300 font-bold">${d.stock}</td>
+                <td class="px-4 py-2 text-xs text-right font-mono text-white">${d.sales.toFixed(0)}</td>
+                <td class="px-4 py-2 text-xs text-right font-mono text-slate-500 hidden md:table-cell">${d.avg.toFixed(0)}</td>
+                <td class="px-4 py-2 text-center">${statusBadge}</td>
+             `;
+             tbody.appendChild(tr);
+        });
+    }
+
+    const stockFilialSelect = document.getElementById('stock-filial-filter');
+    if(stockFilialSelect) stockFilialSelect.addEventListener('change', () => updateStockView());
+
+    function getWorkingMonthWeeks(year, month) {
+        const weeks = [];
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        let weekIndex = 1;
+        let currentWeekData = { id: weekIndex, start: null, end: null, workingDays: 0 };
+
+        for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+            const dayOfWeek = d.getDay();
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+            if (!currentWeekData.start) currentWeekData.start = new Date(d);
+            currentWeekData.end = new Date(d);
+            if (!isWeekend) currentWeekData.workingDays++;
+
+            if (dayOfWeek === 0 || d.getTime() === lastDay.getTime()) {
+                weeks.push({...currentWeekData});
+                weekIndex++;
+                currentWeekData = { id: weekIndex, start: null, end: null, workingDays: 0 };
+            }
+        }
+        return weeks;
+    }
+
+    function getBestDayPerWeekday(monthData) {
+        const salesByDate = new Map();
+        monthData.forEach(s => {
+             const d = new Date(s.DTPED);
+             const dateKey = d.toDateString();
+             salesByDate.set(dateKey, (salesByDate.get(dateKey) || 0) + (Number(s.VLVENDA) || 0));
+        });
+        const bestByWeekday = new Array(7).fill(0);
+        for (const [dateKey, val] of salesByDate) {
+            const d = new Date(dateKey);
+            const wd = d.getDay();
+            if (val > bestByWeekday[wd]) bestByWeekday[wd] = val;
+        }
+        return bestByWeekday;
+    }
+
+    function updateWeeklyView() {
+        if (window.userRole === 'promotor' || window.userRole === 'vendedor') return;
+
+        const allSales = [...allSalesData];
+        // TODO: Apply filters
+
+        const now = lastSaleDate ? new Date(lastSaleDate) : new Date();
+        const weeks = getWorkingMonthWeeks(now.getFullYear(), now.getMonth());
+
+        const weeklyData = weeks.map(w => ({ ...w, total: 0, days: new Array(7).fill(0) }));
+
+        allSales.forEach(s => {
+            const d = new Date(s.DTPED);
+            const wIndex = weeks.findIndex(w => d >= w.start && d <= w.end);
+            if (wIndex !== -1) {
+                const val = Number(s.VLVENDA) || 0;
+                weeklyData[wIndex].total += val;
+                weeklyData[wIndex].days[d.getDay()] += val;
+            }
+        });
+
+        const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const prevMonthSales = [];
+        const isCol = allHistoryData instanceof ColumnarDataset;
+        const len = allHistoryData.length;
+
+        for(let i=0; i<len; i++) {
+             const s = isCol ? allHistoryData.get(i) : allHistoryData[i];
+             const d = new Date(s.DTPED);
+             if (d.getMonth() === prevMonth.getMonth() && d.getFullYear() === prevMonth.getFullYear()) {
+                 prevMonthSales.push(s);
+             }
+        }
+
+        const bestDays = getBestDayPerWeekday(prevMonthSales);
+        renderWeeklyChart(weeklyData, bestDays);
+
+        const summaryTbody = document.getElementById('weekly-summary-table').querySelector('tbody');
+        if(summaryTbody) {
+            summaryTbody.innerHTML = weeklyData.map(w => `
+                <tr class="border-b border-slate-700/50">
+                    <td class="px-4 py-2 text-slate-300">Semana ${w.id}</td>
+                    <td class="px-4 py-2 text-right font-bold text-white">${w.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    let weeklyChartInstance = null;
+    function renderWeeklyChart(weeklyData, bestDays) {
+        const ctx = document.getElementById('weeklySalesChart');
+        if (!ctx) return;
+
+        if (weeklyChartInstance) weeklyChartInstance.destroy();
+
+        const labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
+        const dayIndices = [1, 2, 3, 4, 5];
+
+        const datasets = weeklyData.map((w, i) => ({
+            label: `Semana ${w.id}`,
+            data: dayIndices.map(d => w.days[d]),
+            backgroundColor: getWeekColor(i),
+            stack: 'Stack 0'
+        }));
+
+        datasets.push({
+            type: 'line',
+            label: 'Melhor Dia (Mês Ant.)',
+            data: dayIndices.map(d => bestDays[d]),
+            borderColor: '#fbbf24',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            tension: 0.3,
+            pointRadius: 0
+        });
+
+        weeklyChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } },
+                    y: { stacked: true, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } }
+                },
+                plugins: {
+                    legend: { labels: { color: '#cbd5e1' } },
+                    tooltip: { mode: 'index', intersect: false }
+                }
+            }
+        });
+    }
+
+    function getWeekColor(index) {
+        const colors = ['#3b82f6', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'];
+        return colors[index % colors.length];
+    }
 
     window.closeResearchModal = function() {
         document.getElementById('modal-relatorio').classList.add('hidden');
