@@ -1031,7 +1031,7 @@
                 <!-- City -->
                 <div class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
-                    <input id="comparison-city-filter" class="w-full glass-input border border-slate-700 p-2.5 rounded-lg text-white text-sm focus:ring-2 focus:ring-[#FF5E00]" placeholder="Buscar...">
+                    <input id="comparison-city-filter" name="comp_city_q" autocomplete="off" class="w-full glass-input border border-slate-700 p-2.5 rounded-lg text-white text-sm focus:ring-2 focus:ring-[#FF5E00]" placeholder="Buscar...">
                     <div id="comparison-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                 </div>
             </div>
@@ -1076,7 +1076,7 @@
                         <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div id="comparison-product-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2 max-h-60 overflow-y-auto custom-scrollbar">
-                        <input type="text" id="comparison-product-search-input" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2 mb-2" placeholder="Buscar produto...">
+                        <input type="text" id="comparison-product-search-input" name="comp_prod_q" autocomplete="off" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2 mb-2" placeholder="Buscar produto...">
                         <div id="comparison-product-list" class="space-y-1"></div>
                     </div>
                 </div>
@@ -1482,7 +1482,7 @@
                 <!-- Cidade -->
                 <div class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
-                    <input id="innovations-month-city-filter" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Buscar...">
+                    <input id="innovations-month-city-filter" name="innov_city_q" autocomplete="off" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Buscar...">
                     <div id="innovations-month-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                 </div>
                  <!-- Tipo Venda -->
@@ -1879,7 +1879,7 @@
                 </div>
                 <div class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
-                    <input id="coverage-city-filter" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Buscar...">
+                    <input id="coverage-city-filter" name="coverage_city_q" autocomplete="off" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Buscar...">
                     <div id="coverage-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                 </div>
             </div>
@@ -2182,7 +2182,7 @@
                     <!-- Client Search -->
                     <div class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
-                        <input id="titulos-codcli-filter" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Código, Nome...">
+                        <input id="titulos-codcli-filter" name="titulos_client_q" autocomplete="off" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Código, Nome...">
                         <div id="titulos-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                     </div>
                 </div>
@@ -2302,7 +2302,7 @@
                     <!-- Client Search -->
                     <div class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
-                        <input id="lp-codcli-filter" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Código, Nome...">
+                        <input id="lp-codcli-filter" name="lp_client_q" autocomplete="off" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Código, Nome...">
                         <div id="lp-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                     </div>
                 </div>
@@ -2435,7 +2435,7 @@
                     </div>
                     <div class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
-                        <input id="history-codcli-filter" placeholder="Buscar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg block w-full p-2.5">
+                        <input id="history-codcli-filter" name="hist_client_q" autocomplete="off" placeholder="Buscar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg block w-full p-2.5">
                     </div>
                 </div>
             </div>
@@ -2496,7 +2496,7 @@
                 </button>
             </div>
             <div class="relative w-full sm:w-auto">
-                <input type="text" id="clientes-search" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full sm:w-64 pl-3 p-2.5">
+                <input type="text" id="clientes-search" name="clients_search_q" autocomplete="off" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full sm:w-64 pl-3 p-2.5">
                 <div id="clientes-search-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
             </div>
         </header>
@@ -2577,7 +2577,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <div class="relative">
-                    <input type="text" id="produtos-search" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-40 sm:w-64 pl-3 p-2.5">
+                    <input type="text" id="produtos-search" name="products_search_q" autocomplete="off" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-40 sm:w-64 pl-3 p-2.5">
                 </div>
                 <div class="relative">
                     <button id="produtos-options-btn" class="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-700 transition-colors">
