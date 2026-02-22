@@ -2308,7 +2308,9 @@
             consultas: { dirty: true, rendered: false },
             history: { dirty: true, rendered: false },
             wallet: { dirty: true, rendered: false },
-            positivacao: { dirty: true, rendered: false }, estoque: { dirty: true, rendered: false }
+            positivacao: { dirty: true, rendered: false }, 
+            estoque: { dirty: true, rendered: false },
+            weekly: { dirty: true, rendered: false }
         };
 
         // Render IDs for Race Condition Guard
@@ -2371,6 +2373,9 @@
         let selectedMainSuppliers = [];
         let selectedTiposVenda = [];
         var selectedCitySuppliers = [];
+        let selectedWeeklySupervisors = new Set();
+        let selectedWeeklyVendedores = new Set();
+        let selectedWeeklySuppliers = new Set();
         let selectedPositivacaoSuppliers = [];
         let selectedComparisonSuppliers = [];
         let selectedComparisonProducts = [];
@@ -12971,6 +12976,15 @@ const supervisorGroups = new Map();
                             viewState.goals.dirty = false;
                         }
                         break;
+                    case 'weekly':
+                        showViewElement(document.getElementById('weekly-view'));
+                        if (viewState.weekly.dirty || !viewState.weekly.rendered) {
+                            renderWeeklyView(); // Initialize filters if needed
+                            updateWeeklyView();
+                            viewState.weekly.rendered = true;
+                            viewState.weekly.dirty = false;
+                        }
+                        break;
                     case 'meta-realizado':
                         showViewElement(document.getElementById('meta-realizado-view'));
                         if (viewState.metaRealizado.dirty || !viewState.metaRealizado.rendered) {
@@ -20726,10 +20740,12 @@ const supervisorGroups = new Map();
     let stockTableState = {
         main: { page: 1, limit: 100, data: [] }
     };
-
-    let selectedStockRedes = [];
-    let stockRedeGroupFilter = '';
-
+    
+    // Removed selectedStockRedes and related logic
+    let selectedStockSuppliers = [];
+    let selectedStockPastas = [];
+    let selectedStockProducts = [];
+    
     function handleStockFilterChange(options = {}) {
         if (window.stockUpdateTimeout) clearTimeout(window.stockUpdateTimeout);
         window.stockUpdateTimeout = setTimeout(() => {
@@ -20737,83 +20753,257 @@ const supervisorGroups = new Map();
             updateStockView();
         }, 10);
     }
-
+    
     function updateAllStockFilters(options = {}) {
-        // Placeholder
-    }
+        const { skipFilter = null } = options;
 
-    function getStockFilteredData() {
-        // 1. Get Base Clients (Hierarchy)
-        const activeClients = getHierarchyFilteredClients('estoque', allClientsData);
+        const products = embeddedData.products || [];
 
-        // 2. Filter Clients by UI Filters
-        const isComRede = stockRedeGroupFilter === 'com_rede';
-        const isSemRede = stockRedeGroupFilter === 'sem_rede';
-        const redeSet = (isComRede && selectedStockRedes.length > 0) ? new Set(selectedStockRedes) : null;
-
-        const activeClientCodes = new Set();
-        for(const c of activeClients) {
-             if (isComRede) {
-                 if (!c.ramo || c.ramo === 'N/A') continue;
-                 if (redeSet && !redeSet.has(c.ramo)) continue;
-             } else if (isSemRede) {
-                 if (c.ramo && c.ramo !== 'N/A') continue;
-             }
-             activeClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+        // 1. Update Supplier Filter
+        if (skipFilter !== 'supplier') {
+            const suppliers = new Set();
+            products.forEach(p => { if(p.fornecedor) suppliers.add(p.fornecedor); });
+            
+            // Mock object structure for updateSupplierFilter (OBSERVACAOFOR/FORNECEDOR keys)
+            const supplierObjs = Array.from(suppliers).map(s => ({ OBSERVACAOFOR: s, FORNECEDOR: s }));
+            
+            const dropdown = document.getElementById('stock-supplier-filter-dropdown');
+            const text = document.getElementById('stock-supplier-filter-text');
+            if(dropdown) selectedStockSuppliers = updateSupplierFilter(dropdown, text, selectedStockSuppliers, supplierObjs, 'stock');
         }
 
+        // 2. Update Pasta Filter
+        if (skipFilter !== 'pasta') {
+            // Get unique Pastas from products (via optimizedData.productPastaMap)
+            const pastas = new Set();
+            // Filter products first by selected Supplier if any
+            const supplierSet = selectedStockSuppliers.length > 0 ? new Set(selectedStockSuppliers) : null;
+
+            products.forEach(p => {
+                if (supplierSet && !supplierSet.has(p.fornecedor)) return;
+                const pasta = optimizedData.productPastaMap.get(p.code);
+                if (pasta && pasta !== '0' && pasta !== 'N/A') pastas.add(pasta);
+            });
+
+            // Re-use logic similar to Supplier but for Pasta (custom simple renderer)
+            const dropdown = document.getElementById('stock-pasta-filter-dropdown');
+            const text = document.getElementById('stock-pasta-filter-text');
+            if (dropdown) {
+                let html = `
+                    <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-700/50 mb-1">
+                        <span class="text-xs text-orange-400 font-bold uppercase tracking-wider">Selecionar Todos</span>
+                        <input type="checkbox" value="ALL" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                    </label>
+                `;
+                const sortedPastas = Array.from(pastas).sort();
+                sortedPastas.forEach(p => {
+                    const checked = selectedStockPastas.includes(p) ? 'checked' : '';
+                    html += `
+                        <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(p)}</span>
+                            <input type="checkbox" value="${window.escapeHtml(p)}" ${checked} data-filter-type="stock-pasta" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                        </label>
+                    `;
+                });
+                dropdown.innerHTML = html;
+
+                // Update Text
+                if (selectedStockPastas.length === 0) text.textContent = 'Todas';
+                else if (selectedStockPastas.length === 1) text.textContent = selectedStockPastas[0];
+                else text.textContent = `${selectedStockPastas.length} Selecionadas`;
+            }
+        }
+
+        // 3. Update Product Filter
+        if (skipFilter !== 'product') {
+            const dropdown = document.getElementById('stock-product-filter-dropdown');
+            const text = document.getElementById('stock-product-filter-text');
+            if(dropdown) {
+                // Determine available products based on Supplier & Pasta selection
+                const supplierSet = selectedStockSuppliers.length > 0 ? new Set(selectedStockSuppliers) : null;
+                const pastaSet = selectedStockPastas.length > 0 ? new Set(selectedStockPastas) : null;
+
+                const filteredProducts = products.filter(p => {
+                    if (supplierSet && !supplierSet.has(p.fornecedor)) return false;
+                    const pasta = optimizedData.productPastaMap.get(p.code);
+                    if (pastaSet && (!pasta || !pastaSet.has(pasta))) return false;
+                    return true;
+                }).map(p => ({
+                    code: p.code,
+                    descricao: p.descricao
+                }));
+
+                selectedStockProducts = updateStockProductFilter(dropdown, text, selectedStockProducts, filteredProducts);
+            }
+        }
+    }
+
+    function updateStockProductFilter(dropdown, textElement, selectedSet, products) {
+        const listContainer = document.getElementById('stock-product-list');
+        const searchInput = document.getElementById('stock-product-search-input');
+        
+        if (!listContainer) return selectedSet;
+
+        // Ensure search listener is attached once
+        if (searchInput && !searchInput._hasListener) {
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const labels = listContainer.querySelectorAll('label');
+                labels.forEach(label => {
+                    const txt = label.textContent.toLowerCase();
+                    if (txt.includes(term)) label.classList.remove('hidden');
+                    else label.classList.add('hidden');
+                });
+            });
+            searchInput._hasListener = true;
+        }
+
+        // Render List
+        let html = '';
+        // Sort
+        products.sort((a,b) => a.descricao.localeCompare(b.descricao));
+        
+        // Limit rendering for performance if too many
+        const renderList = products.slice(0, 500); 
+
+        renderList.forEach(p => {
+            const checked = selectedSet.includes(p.code) ? 'checked' : '';
+            html += `
+                <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                    <span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(p.code)} - ${window.escapeHtml(p.descricao)}</span>
+                    <input type="checkbox" value="${window.escapeHtml(p.code)}" ${checked} data-filter-type="stock-product" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                </label>
+            `;
+        });
+        
+        listContainer.innerHTML = html;
+
+        // Bind Change Events
+        listContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const val = e.target.value;
+                if (e.target.checked) selectedSet.push(val);
+                else {
+                    const idx = selectedSet.indexOf(val);
+                    if (idx > -1) selectedSet.splice(idx, 1);
+                }
+                updateAllStockFilters({ skipFilter: 'product' });
+                updateStockView();
+            });
+        });
+
+        // Update Text
+        if (selectedSet.length === 0) textElement.textContent = 'Todos';
+        else if (selectedSet.length === 1) textElement.textContent = '1 Produto';
+        else textElement.textContent = `${selectedSet.length} Produtos`;
+
+        return selectedSet;
+    }
+    
+    function getStockFilteredData(options = {}) {
+        const { excludeFilter = null, returnClientsOnly = false } = options;
+
+        // 1. Get Base Clients (Hierarchy)
+        const activeClients = getHierarchyFilteredClients('estoque', allClientsData);
+        
+        const activeClientCodes = new Set();
+        const filteredClients = [];
+
+        // No 'Rede' filter anymore
+        for(const c of activeClients) {
+             activeClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+             filteredClients.push(c);
+        }
+        
+        if (returnClientsOnly) return { clients: filteredClients };
+        
         // 3. Aggregate Sales (Current)
-        const salesMap = new Map();
+        const filialFilterElement = document.getElementById('stock-filial-filter');
+        const filialFilter = filialFilterElement ? filialFilterElement.value : 'all';
+
+        const salesMap = new Map(); 
         const salesFilters = { clientCodes: activeClientCodes };
         const salesList = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, salesFilters);
-
+        
         salesList.forEach(s => {
+            if (filialFilter !== 'all') {
+                const sFilial = String(s.FILIAL || '').padStart(2, '0');
+                const fFilter = filialFilter.padStart(2, '0');
+                if (sFilial !== fFilter) return;
+            }
+
             const pCode = s.PRODUTO;
             if (!salesMap.has(pCode)) salesMap.set(pCode, { qty: 0, val: 0 });
             const entry = salesMap.get(pCode);
             entry.qty += (Number(s.QTVENDA) || 0);
             entry.val += (Number(s.VLVENDA) || 0);
         });
-
+        
         // 4. Aggregate History (for Avg)
         const historyMap = new Map();
         const historyList = getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, salesFilters);
         historyList.forEach(h => {
+             if (filialFilter !== 'all') {
+                const hFilial = String(h.FILIAL || '').padStart(2, '0');
+                const fFilter = filialFilter.padStart(2, '0');
+                if (hFilial !== fFilter) return;
+             }
+
              const pCode = h.PRODUTO;
              if (!historyMap.has(pCode)) historyMap.set(pCode, 0);
              historyMap.set(pCode, historyMap.get(pCode) + (Number(h.QTVENDA) || 0));
         });
-
+        
         // Normalize History to Monthly Average (assuming 3 months history loaded)
         for(const [k, v] of historyMap) {
             historyMap.set(k, v / 3);
         }
-
+        
         // 5. Iterate Products
         const products = embeddedData.products;
         const result = [];
-        const filialFilter = document.getElementById('stock-filial-filter').value;
+        // filialFilterElement already defined above
+        
+        const supplierSet = selectedStockSuppliers.length > 0 ? new Set(selectedStockSuppliers) : null;
+        const pastaSet = selectedStockPastas.length > 0 ? new Set(selectedStockPastas) : null;
+        const productSet = selectedStockProducts.length > 0 ? new Set(selectedStockProducts) : null;
 
         products.forEach(p => {
             const code = p.code;
 
+            // Supplier Filter
+            if (excludeFilter !== 'supplier' && supplierSet) {
+                if (!supplierSet.has(p.fornecedor)) return;
+            }
+
+            // Pasta Filter
+            if (excludeFilter !== 'pasta' && pastaSet) {
+                const pasta = optimizedData.productPastaMap.get(code);
+                if (!pasta || !pastaSet.has(pasta)) return;
+            }
+
+            // Product Filter
+            if (excludeFilter !== 'product' && productSet) {
+                if (!productSet.has(code)) return;
+            }
+            
             let stockQty = 0;
             const s05 = embeddedData.stockMap05[code] || 0;
             const s08 = embeddedData.stockMap08[code] || 0;
-
+            
             if (filialFilter === 'all') stockQty = s05 + s08;
             else if (filialFilter === '05') stockQty = s05;
             else if (filialFilter === '08') stockQty = s08;
-
+            
             const currentSales = salesMap.get(code) || { qty: 0, val: 0 };
             const avgHistory = historyMap.get(code) || 0;
-
+            
             let status = 'neutral';
             if (stockQty > 0 && currentSales.qty === 0) status = 'lost';
             else if (currentSales.qty > 0 && avgHistory === 0) status = 'new';
-            else if (currentSales.qty > avgHistory * 1.1) status = 'growth';
-            else if (currentSales.qty < avgHistory * 0.9 && currentSales.qty > 0) status = 'drop';
-
+            else if (currentSales.qty > avgHistory * 1.1) status = 'growth'; 
+            else if (currentSales.qty < avgHistory * 0.9 && currentSales.qty > 0) status = 'drop'; 
+            
             if (status !== 'neutral' || stockQty > 0 || currentSales.qty > 0) {
                 result.push({
                     code,
@@ -20827,35 +21017,35 @@ const supervisorGroups = new Map();
                 });
             }
         });
-
+        
         return result;
     }
-
+    
     function updateStockView() {
         const data = getStockFilteredData();
         stockTableState.filteredData = data;
-
+        
         // Populate Grid Tables
         const growth = data.filter(d => d.status === 'growth').sort((a,b) => b.sales - a.sales).slice(0, 50);
         const drop = data.filter(d => d.status === 'drop').sort((a,b) => b.avg - a.avg).slice(0, 50);
         const newData = data.filter(d => d.status === 'new').sort((a,b) => b.sales - a.sales).slice(0, 50);
         const lost = data.filter(d => d.status === 'lost').sort((a,b) => b.stock - a.stock).slice(0, 50);
-
+        
         renderMiniStockTable('stock-growth-table', growth, 'growth');
         renderMiniStockTable('stock-drop-table', drop, 'drop');
         renderMiniStockTable('stock-new-table', newData, 'new');
         renderMiniStockTable('stock-lost-table', lost, 'lost');
-
+        
         document.getElementById('stock-lost-count').textContent = lost.length;
         renderStockMainTable(data);
     }
-
+    
     function renderMiniStockTable(tableId, data, type) {
         const table = document.getElementById(tableId);
         if(!table) return;
         const tbody = table.querySelector('tbody');
         tbody.innerHTML = '';
-
+        
         data.forEach(d => {
             const tr = document.createElement('tr');
             tr.className = "border-b border-slate-700/50 hover:bg-white/5";
@@ -20875,26 +21065,26 @@ const supervisorGroups = new Map();
             tbody.appendChild(tr);
         });
     }
-
+    
     function renderStockMainTable(data) {
         const tbody = document.getElementById('stock-main-table-body');
         if(!tbody) return;
         tbody.innerHTML = '';
-
+        
         data.sort((a,b) => b.val - a.val); // Default by value
-        const subset = data.slice(0, 200);
-
+        const subset = data.slice(0, 200); 
+        
         subset.forEach(d => {
              const tr = document.createElement('tr');
              tr.className = "border-b border-slate-700 hover:bg-slate-700/50";
-
+             
              let statusBadge = '';
              if (d.status === 'growth') statusBadge = '<span class="text-xs font-bold text-green-400">Cresc.</span>';
              else if (d.status === 'drop') statusBadge = '<span class="text-xs font-bold text-red-400">Queda</span>';
              else if (d.status === 'new') statusBadge = '<span class="text-xs font-bold text-blue-400">Novo</span>';
              else if (d.status === 'lost') statusBadge = '<span class="text-xs font-bold text-orange-400">Perdido</span>';
              else statusBadge = '<span class="text-xs text-slate-500">-</span>';
-
+             
              tr.innerHTML = `
                 <td class="px-4 py-2 text-xs text-white truncate max-w-[200px]" title="${d.name}">${d.code} - ${d.name}</td>
                 <td class="px-4 py-2 text-xs text-slate-400 hidden md:table-cell">${d.supplier}</td>
@@ -20906,24 +21096,54 @@ const supervisorGroups = new Map();
              tbody.appendChild(tr);
         });
     }
-
+    
     const stockFilialSelect = document.getElementById('stock-filial-filter');
     if(stockFilialSelect) stockFilialSelect.addEventListener('change', () => updateStockView());
 
+    const clearStockFiltersBtn = document.getElementById('clear-stock-filters-btn');
+    if (clearStockFiltersBtn) {
+        clearStockFiltersBtn.addEventListener('click', () => {
+            // Reset Arrays
+            selectedStockSuppliers = [];
+            selectedStockPastas = [];
+            selectedStockProducts = [];
+            
+            // Reset UI
+            if (stockFilialSelect) stockFilialSelect.value = 'all';
+            
+            // Re-render filters (Text and Checkboxes)
+            const supplierDropdown = document.getElementById('stock-supplier-filter-dropdown');
+            if (supplierDropdown) supplierDropdown.querySelectorAll('input').forEach(cb => cb.checked = false);
+            document.getElementById('stock-supplier-filter-text').textContent = 'Todos';
+
+            const pastaDropdown = document.getElementById('stock-pasta-filter-dropdown');
+            if (pastaDropdown) pastaDropdown.querySelectorAll('input').forEach(cb => cb.checked = false);
+            document.getElementById('stock-pasta-filter-text').textContent = 'Todas';
+
+            const productDropdown = document.getElementById('stock-product-filter-dropdown');
+            // Product list is dynamically rendered, just reset text
+            document.getElementById('stock-product-filter-text').textContent = 'Todos';
+            
+            // Update Data
+            updateAllStockFilters();
+            updateStockView();
+        });
+    }
+    
     function getWorkingMonthWeeks(year, month) {
         const weeks = [];
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         let weekIndex = 1;
         let currentWeekData = { id: weekIndex, start: null, end: null, workingDays: 0 };
-
+        
         for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
-            const dayOfWeek = d.getDay();
+            const dayOfWeek = d.getDay(); 
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
             if (!currentWeekData.start) currentWeekData.start = new Date(d);
             currentWeekData.end = new Date(d);
             if (!isWeekend) currentWeekData.workingDays++;
-
+            
             if (dayOfWeek === 0 || d.getTime() === lastDay.getTime()) {
                 weeks.push({...currentWeekData});
                 weekIndex++;
@@ -20932,7 +21152,7 @@ const supervisorGroups = new Map();
         }
         return weeks;
     }
-
+    
     function getBestDayPerWeekday(monthData) {
         const salesByDate = new Map();
         monthData.forEach(s => {
@@ -20949,18 +21169,274 @@ const supervisorGroups = new Map();
         return bestByWeekday;
     }
 
+    function renderWeeklyView() {
+        // Init Filters logic (Lazy)
+        const supervisorBtn = document.getElementById('weekly-supervisor-filter-btn');
+        if (supervisorBtn && !supervisorBtn._hasListener) {
+            supervisorBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('weekly-supervisor-filter-dropdown').classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e) => {
+                const dd = document.getElementById('weekly-supervisor-filter-dropdown');
+                if (dd && !dd.classList.contains('hidden') && !supervisorBtn.contains(e.target) && !dd.contains(e.target)) {
+                    dd.classList.add('hidden');
+                }
+            });
+            supervisorBtn._hasListener = true;
+        }
+
+        const supervisorDropdown = document.getElementById('weekly-supervisor-filter-dropdown');
+        if (supervisorDropdown && !supervisorDropdown._hasListener) {
+            supervisorDropdown.addEventListener('change', (e) => {
+                if (e.target.type === 'checkbox') {
+                    const val = e.target.value;
+                    const checked = e.target.checked;
+                    if (checked) selectedWeeklySupervisors.add(val);
+                    else selectedWeeklySupervisors.delete(val);
+                    
+                    updateWeeklyFilterText('weekly-supervisor-filter-text', selectedWeeklySupervisors, 'Todos');
+                    // Reset Dependent
+                    selectedWeeklyVendedores.clear();
+                    updateWeeklyVendedorFilter();
+                    updateWeeklyView();
+                }
+            });
+            supervisorDropdown._hasListener = true;
+        }
+
+        const vendedorBtn = document.getElementById('weekly-vendedor-filter-btn');
+        if (vendedorBtn && !vendedorBtn._hasListener) {
+            vendedorBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('weekly-vendedor-filter-dropdown').classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e) => {
+                const dd = document.getElementById('weekly-vendedor-filter-dropdown');
+                if (dd && !dd.classList.contains('hidden') && !vendedorBtn.contains(e.target) && !dd.contains(e.target)) {
+                    dd.classList.add('hidden');
+                }
+            });
+            vendedorBtn._hasListener = true;
+        }
+
+        const vendedorDropdown = document.getElementById('weekly-vendedor-filter-dropdown');
+        if (vendedorDropdown && !vendedorDropdown._hasListener) {
+            vendedorDropdown.addEventListener('change', (e) => {
+                if (e.target.type === 'checkbox') {
+                    const val = e.target.value;
+                    const checked = e.target.checked;
+                    if (checked) selectedWeeklyVendedores.add(val);
+                    else selectedWeeklyVendedores.delete(val);
+                    
+                    updateWeeklyFilterText('weekly-vendedor-filter-text', selectedWeeklyVendedores, 'Todos');
+                    updateWeeklyView();
+                }
+            });
+            vendedorDropdown._hasListener = true;
+        }
+
+        const fornecedorBtn = document.getElementById('weekly-fornecedor-filter-btn');
+        if (fornecedorBtn && !fornecedorBtn._hasListener) {
+            fornecedorBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('weekly-fornecedor-filter-dropdown').classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e) => {
+                const dd = document.getElementById('weekly-fornecedor-filter-dropdown');
+                if (dd && !dd.classList.contains('hidden') && !fornecedorBtn.contains(e.target) && !dd.contains(e.target)) {
+                    dd.classList.add('hidden');
+                }
+            });
+            fornecedorBtn._hasListener = true;
+        }
+
+        const fornecedorDropdown = document.getElementById('weekly-fornecedor-filter-dropdown');
+        if (fornecedorDropdown && !fornecedorDropdown._hasListener) {
+            fornecedorDropdown.addEventListener('change', (e) => {
+                if (e.target.type === 'checkbox') {
+                    const val = e.target.value;
+                    const checked = e.target.checked;
+                    if (checked) selectedWeeklySuppliers.add(val);
+                    else selectedWeeklySuppliers.delete(val);
+                    
+                    updateWeeklyFilterText('weekly-fornecedor-filter-text', selectedWeeklySuppliers, 'Todos');
+                    updateWeeklyView();
+                }
+            });
+            fornecedorDropdown._hasListener = true;
+        }
+
+        const clearBtn = document.getElementById('clear-weekly-filters-btn');
+        if (clearBtn && !clearBtn._hasListener) {
+            clearBtn.addEventListener('click', () => {
+                selectedWeeklySupervisors.clear();
+                selectedWeeklyVendedores.clear();
+                selectedWeeklySuppliers.clear();
+                updateWeeklySupervisorFilter();
+                updateWeeklyVendedorFilter();
+                updateWeeklySupplierFilter();
+                updateWeeklyView();
+            });
+            clearBtn._hasListener = true;
+        }
+
+        // Populate Filters
+        updateWeeklySupervisorFilter();
+        updateWeeklyVendedorFilter();
+        updateWeeklySupplierFilter();
+    }
+
+    function updateWeeklyFilterText(elementId, set, defaultText) {
+        const el = document.getElementById(elementId);
+        if(!el) return;
+        if (set.size === 0) el.textContent = defaultText;
+        else if (set.size === 1) el.textContent = set.values().next().value;
+        else el.textContent = `${set.size} selecionados`;
+    }
+
+    function updateWeeklySupervisorFilter() {
+        const dd = document.getElementById('weekly-supervisor-filter-dropdown');
+        if(!dd) return;
+        // Collect Supervisors from allSalesData (current)
+        const supervisors = new Set();
+        sellerDetailsMap.forEach(d => {
+            if (d.supervisor) supervisors.add(d.supervisor);
+        });
+        
+        let html = '';
+        const sorted = Array.from(supervisors).sort();
+        sorted.forEach(s => {
+            const checked = selectedWeeklySupervisors.has(s) ? 'checked' : '';
+            html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
+                        <input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600">
+                        <span class="ml-2 text-sm text-slate-300">${s}</span>
+                     </label>`;
+        });
+        dd.innerHTML = html;
+        updateWeeklyFilterText('weekly-supervisor-filter-text', selectedWeeklySupervisors, 'Todos');
+    }
+
+    function updateWeeklyVendedorFilter() {
+        const dd = document.getElementById('weekly-vendedor-filter-dropdown');
+        if(!dd) return;
+        
+        const validRcas = new Set();
+        // If supervisors selected, filter sellers
+        if (selectedWeeklySupervisors.size > 0) {
+            sellerDetailsMap.forEach((d, code) => {
+                if (selectedWeeklySupervisors.has(d.supervisor)) validRcas.add(code);
+            });
+        } else {
+            sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+        }
+
+        let options = [];
+        validRcas.forEach(rca => {
+            const details = sellerDetailsMap.get(rca);
+            const name = details ? (details.name || rca) : rca;
+            options.push({ value: rca, label: name });
+        });
+        options.sort((a,b) => a.label.localeCompare(b.label));
+
+        let html = '';
+        options.forEach(opt => {
+            const checked = selectedWeeklyVendedores.has(opt.value) ? 'checked' : '';
+            html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
+                        <input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600">
+                        <span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span>
+                     </label>`;
+        });
+        dd.innerHTML = html;
+        updateWeeklyFilterText('weekly-vendedor-filter-text', selectedWeeklyVendedores, 'Todos');
+    }
+
+    function updateWeeklySupplierFilter() {
+        const dd = document.getElementById('weekly-fornecedor-filter-dropdown');
+        if(!dd) return;
+        const suppliers = new Set();
+        // From Sales Indices
+        optimizedData.indices.current.bySupplier.forEach((_, s) => suppliers.add(s));
+        
+        const sorted = Array.from(suppliers).sort();
+        let html = '';
+        sorted.forEach(s => {
+            const checked = selectedWeeklySuppliers.has(s) ? 'checked' : '';
+            html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
+                        <input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600">
+                        <span class="ml-2 text-sm text-slate-300">${s}</span>
+                     </label>`;
+        });
+        dd.innerHTML = html;
+        updateWeeklyFilterText('weekly-fornecedor-filter-text', selectedWeeklySuppliers, 'Todos');
+    }
+
+    function getWeeklyFilteredData() {
+        const salesIndices = new Set();
+        // Start with all indices
+        const total = allSalesData.length;
+        
+        const hasSup = selectedWeeklySupervisors.size > 0;
+        const hasVend = selectedWeeklyVendedores.size > 0;
+        const hasSupp = selectedWeeklySuppliers.size > 0;
+
+        if (!hasSup && !hasVend && !hasSupp) {
+            return allSalesData; // Return all if no filter
+        }
+
+        const result = [];
+        
+        // Optimize: Iterate all and check filters
+        // Using optimizedData accessors for speed
+        const isCol = allSalesData instanceof ColumnarDataset;
+        const colValues = isCol ? allSalesData._data : null;
+        
+        for(let i=0; i<total; i++) {
+            // Check filters
+            let keep = true;
+            
+            // Supervisor
+            if (hasSup) {
+                const sup = isCol ? colValues['SUPERV'][i] : allSalesData[i].SUPERV;
+                if (!selectedWeeklySupervisors.has(sup)) keep = false;
+            }
+            
+            // Vendedor (RCA Code is safer, but filter stores Code)
+            if (keep && hasVend) {
+                // Determine RCA Code from CODUSUR
+                const codUsur = isCol ? colValues['CODUSUR'][i] : allSalesData[i].CODUSUR;
+                // vendedor filter stores rca (which is usually name or code?)
+                // updateVendedorFilterDropdown stores 'rca' which is key in sellerDetailsMap.
+                // sellerDetailsMap is keyed by CODUSUR usually?
+                // Wait, sellerDetailsMap keys are codUsur.
+                // updateWeeklyVendedorFilter iterates sellerDetailsMap keys (code).
+                if (!selectedWeeklyVendedores.has(codUsur)) keep = false;
+            }
+
+            // Supplier
+            if (keep && hasSupp) {
+                const supp = isCol ? colValues['CODFOR'][i] : allSalesData[i].CODFOR;
+                if (!selectedWeeklySuppliers.has(supp)) keep = false;
+            }
+
+            if (keep) {
+                result.push(isCol ? allSalesData.get(i) : allSalesData[i]);
+            }
+        }
+        return result;
+    }
+    
     function updateWeeklyView() {
-        if (window.userRole === 'promotor' || window.userRole === 'vendedor') return;
-
-        const allSales = [...allSalesData];
-        // TODO: Apply filters
-
+        if (window.userRole === 'promotor') return; // Not for promotors?
+        
+        const filteredSales = getWeeklyFilteredData();
+        
         const now = lastSaleDate ? new Date(lastSaleDate) : new Date();
         const weeks = getWorkingMonthWeeks(now.getFullYear(), now.getMonth());
-
+        
         const weeklyData = weeks.map(w => ({ ...w, total: 0, days: new Array(7).fill(0) }));
-
-        allSales.forEach(s => {
+        
+        filteredSales.forEach(s => {
             const d = new Date(s.DTPED);
             const wIndex = weeks.findIndex(w => d >= w.start && d <= w.end);
             if (wIndex !== -1) {
@@ -20969,23 +21445,55 @@ const supervisorGroups = new Map();
                 weeklyData[wIndex].days[d.getDay()] += val;
             }
         });
-
+        
+        // History Logic (Using filters on History too?)
+        // Ideally yes, but history filtering is expensive if we iterate all history.
+        // For 'Best Day', maybe we can just use the global best day or try to filter history?
+        // Let's filter history with same logic for consistency.
+        
         const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const prevMonthSales = [];
-        const isCol = allHistoryData instanceof ColumnarDataset;
-        const len = allHistoryData.length;
+        
+        // Filter History
+        const isColHistory = allHistoryData instanceof ColumnarDataset;
+        const colHist = isColHistory ? allHistoryData._data : null;
+        const histLen = allHistoryData.length;
+        
+        const hasSup = selectedWeeklySupervisors.size > 0;
+        const hasVend = selectedWeeklyVendedores.size > 0;
+        const hasSupp = selectedWeeklySuppliers.size > 0;
 
-        for(let i=0; i<len; i++) {
-             const s = isCol ? allHistoryData.get(i) : allHistoryData[i];
-             const d = new Date(s.DTPED);
-             if (d.getMonth() === prevMonth.getMonth() && d.getFullYear() === prevMonth.getFullYear()) {
-                 prevMonthSales.push(s);
+        for(let i=0; i<histLen; i++) {
+             const dtPed = isColHistory ? colHist['DTPED'][i] : allHistoryData[i].DTPED;
+             // Check Date First
+             // dtPed is timestamp or string?
+             let d = (typeof dtPed === 'number') ? new Date(dtPed) : parseDate(dtPed);
+             
+             if (d && d.getMonth() === prevMonth.getMonth() && d.getFullYear() === prevMonth.getFullYear()) {
+                 // Check filters
+                 let keep = true;
+                 if (hasSup) {
+                     const sup = isColHistory ? colHist['SUPERV'][i] : allHistoryData[i].SUPERV;
+                     if (!selectedWeeklySupervisors.has(sup)) keep = false;
+                 }
+                 if (keep && hasVend) {
+                     const codUsur = isColHistory ? colHist['CODUSUR'][i] : allHistoryData[i].CODUSUR;
+                     if (!selectedWeeklyVendedores.has(codUsur)) keep = false;
+                 }
+                 if (keep && hasSupp) {
+                     const supp = isColHistory ? colHist['CODFOR'][i] : allHistoryData[i].CODFOR;
+                     if (!selectedWeeklySuppliers.has(supp)) keep = false;
+                 }
+
+                 if (keep) {
+                     prevMonthSales.push(isColHistory ? allHistoryData.get(i) : allHistoryData[i]);
+                 }
              }
         }
-
+        
         const bestDays = getBestDayPerWeekday(prevMonthSales);
         renderWeeklyChart(weeklyData, bestDays);
-
+        
         const summaryTbody = document.getElementById('weekly-summary-table').querySelector('tbody');
         if(summaryTbody) {
             summaryTbody.innerHTML = weeklyData.map(w => `
@@ -20995,25 +21503,86 @@ const supervisorGroups = new Map();
                 </tr>
             `).join('');
         }
-    }
 
+        // Generate Rankings
+        const sellerStats = new Map(); // Code -> { val: 0, clients: Set() }
+        
+        filteredSales.forEach(s => {
+            const codUsur = s.CODUSUR;
+            const val = Number(s.VLVENDA) || 0;
+            const client = s.CODCLI;
+            
+            if (!sellerStats.has(codUsur)) sellerStats.set(codUsur, { val: 0, clients: new Set() });
+            const entry = sellerStats.get(codUsur);
+            entry.val += val;
+            entry.clients.add(client);
+        });
+        
+        const rankingData = [];
+        sellerStats.forEach((stats, code) => {
+            const details = sellerDetailsMap.get(code);
+            const name = details ? (details.name || code) : code;
+            // Simple first name extraction if getFirstName is not available
+            const formatName = (n) => n.split(' ')[0] + (n.split(' ').length > 1 ? ' ' + n.split(' ')[1].charAt(0) + '.' : '');
+            
+            rankingData.push({ 
+                code, 
+                name: typeof getFirstName === 'function' ? getFirstName(name) : formatName(name), 
+                val: stats.val, 
+                pos: stats.clients.size 
+            });
+        });
+        
+        // Render Fat Ranking
+        rankingData.sort((a,b) => b.val - a.val);
+        const topFat = rankingData.slice(0, 10);
+        const fatList = document.getElementById('weekly-ranking-fat');
+        if (fatList) {
+            fatList.innerHTML = topFat.map((r, i) => `
+                <li class="flex justify-between items-center text-xs p-2 hover:bg-white/5 rounded">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-500 w-4">${i+1}</span>
+                        <span class="text-slate-300 truncate max-w-[120px]" title="${r.name}">${r.name}</span>
+                    </div>
+                    <span class="font-bold text-green-400">${r.val.toLocaleString('pt-BR', { notation: 'compact', style: 'currency', currency: 'BRL' })}</span>
+                </li>
+            `).join('');
+        }
+        
+        // Render Pos Ranking
+        rankingData.sort((a,b) => b.pos - a.pos);
+        const topPos = rankingData.slice(0, 10);
+        const posList = document.getElementById('weekly-ranking-pos');
+        if (posList) {
+            posList.innerHTML = topPos.map((r, i) => `
+                <li class="flex justify-between items-center text-xs p-2 hover:bg-white/5 rounded">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-500 w-4">${i+1}</span>
+                        <span class="text-slate-300 truncate max-w-[120px]" title="${r.name}">${r.name}</span>
+                    </div>
+                    <span class="font-bold text-purple-400">${r.pos}</span>
+                </li>
+            `).join('');
+        }
+    }
+    
     let weeklyChartInstance = null;
     function renderWeeklyChart(weeklyData, bestDays) {
         const ctx = document.getElementById('weeklySalesChart');
         if (!ctx) return;
-
+        
         if (weeklyChartInstance) weeklyChartInstance.destroy();
-
+        
         const labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
         const dayIndices = [1, 2, 3, 4, 5];
-
+        
         const datasets = weeklyData.map((w, i) => ({
             label: `Semana ${w.id}`,
             data: dayIndices.map(d => w.days[d]),
             backgroundColor: getWeekColor(i),
-            stack: 'Stack 0'
+            // Removed stack: 'Stack 0' to allow grouped bars side-by-side
         }));
-
+        
         datasets.push({
             type: 'line',
             label: 'Melhor Dia (Mês Ant.)',
@@ -21024,7 +21593,7 @@ const supervisorGroups = new Map();
             tension: 0.3,
             pointRadius: 0
         });
-
+        
         weeklyChartInstance = new Chart(ctx, {
             type: 'bar',
             data: { labels, datasets },
@@ -21032,8 +21601,8 @@ const supervisorGroups = new Map();
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { stacked: true, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } },
-                    y: { stacked: true, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } }
+                    x: { stacked: false, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } },
+                    y: { stacked: false, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } }
                 },
                 plugins: {
                     legend: { labels: { color: '#cbd5e1' } },
@@ -21042,7 +21611,7 @@ const supervisorGroups = new Map();
             }
         });
     }
-
+    
     function getWeekColor(index) {
         const colors = ['#3b82f6', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'];
         return colors[index % colors.length];
