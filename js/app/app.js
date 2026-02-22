@@ -20421,6 +20421,7 @@ const supervisorGroups = new Map();
     // --- GEO UPDATE LOGIC ---
     let geoUpdateMap = null;
     let geoUpdateMarker = null;
+    let geoUpdateFixedMarker = null;
     let currentGeoLat = null;
     let currentGeoLng = null;
 
@@ -20452,12 +20453,40 @@ const supervisorGroups = new Map();
                 }).addTo(geoUpdateMap);
             } else {
                 geoUpdateMap.invalidateSize(); // Fix render issues in modal
-                geoUpdateMap.setView([latitude, longitude], 16);
             }
 
             if (geoUpdateMarker) geoUpdateMap.removeLayer(geoUpdateMarker);
+            if (geoUpdateFixedMarker) geoUpdateMap.removeLayer(geoUpdateFixedMarker);
 
+            // Draggable Marker (Current Location)
             geoUpdateMarker = L.marker([latitude, longitude], { draggable: true }).addTo(geoUpdateMap);
+            geoUpdateMarker.bindPopup("Localização Atual (Arraste para ajustar)");
+
+            // Fixed Marker (Existing Location)
+            let existingCoord = null;
+            if (currentActionClientCode) {
+                const existingKey = window.normalizeKey(currentActionClientCode);
+                existingCoord = clientCoordinatesMap.get(existingKey);
+            }
+
+            if (existingCoord) {
+                geoUpdateFixedMarker = L.marker([existingCoord.lat, existingCoord.lng], {
+                    draggable: false,
+                    title: "Localização Cadastrada"
+                }).addTo(geoUpdateMap);
+
+                geoUpdateFixedMarker.bindPopup("Localização Cadastrada");
+
+                // Fit Bounds to include both
+                const bounds = L.latLngBounds([
+                    [latitude, longitude],
+                    [existingCoord.lat, existingCoord.lng]
+                ]);
+                geoUpdateMap.fitBounds(bounds, { padding: [50, 50] });
+            } else {
+                // Default View
+                geoUpdateMap.setView([latitude, longitude], 16);
+            }
 
             // Allow manual refinement
             geoUpdateMarker.on('dragend', function(e) {
