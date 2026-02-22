@@ -1842,7 +1842,9 @@
                         }
 
                         // Use the exact same logic as original
-                        const keep = (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(codcli));
+                        // EXCEPTION: Allow RCA 53 if explicitly selected in filter
+                        const allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
+                        const keep = (isAmericanas || rca1 !== '53' || allowRca53 || clientsWithSalesThisMonth.has(codcli));
 
                         if (keep) {
                             results.push(allClientsData.get(i));
@@ -1855,7 +1857,9 @@
                     const codcli = String(c['Código'] || c['codigo_cliente']);
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                    const keep = (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(codcli));
+                    // EXCEPTION: Allow RCA 53 if explicitly selected in filter
+                    const allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
+                    const keep = (isAmericanas || rca1 !== '53' || allowRca53 || clientsWithSalesThisMonth.has(codcli));
                     return keep;
                 });
                 return res;
@@ -8597,7 +8601,9 @@ const supervisorGroups = new Map();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
 
                 // Regra de inclusão (Americanas ou RCA 1 diferente de 53)
-                return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(c['Código']));
+                // EXCEPTION: Allow RCA 53 if explicitly selected in filter
+                const allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
+                return (isAmericanas || rca1 !== '53' || allowRca53 || clientsWithSalesThisMonth.has(c['Código']));
             });
 
             if (mainRedeGroupFilter === 'com_rede') {
