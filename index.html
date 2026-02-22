@@ -2086,12 +2086,40 @@
 
         <div class="filter-wrapper-sentinel">
             <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                    <div id="stock-rede-filter-wrapper" class="relative">
-                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
-                        <button id="stock-rede-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="stock-rede-filter-text">Todas</span></button>
-                        <div id="stock-rede-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    <!-- Fornecedor -->
+                    <div id="stock-supplier-filter-wrapper" class="relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Fornecedor</label>
+                        <button id="stock-supplier-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
+                            <span id="stock-supplier-filter-text">Todos</span>
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="stock-supplier-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                     </div>
+
+                    <!-- Pasta -->
+                    <div id="stock-pasta-filter-wrapper" class="relative">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Pasta</label>
+                        <button id="stock-pasta-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
+                            <span id="stock-pasta-filter-text">Todas</span>
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="stock-pasta-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
+                    </div>
+
+                    <!-- Produto -->
+                    <div id="stock-product-filter-wrapper" class="relative lg:col-span-2">
+                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Produto</label>
+                        <button id="stock-product-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
+                            <span id="stock-product-filter-text">Todos</span>
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div id="stock-product-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2 max-h-60 overflow-y-auto custom-scrollbar">
+                            <input type="text" id="stock-product-search-input" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2 mb-2" placeholder="Buscar produto...">
+                            <div id="stock-product-list" class="space-y-1"></div>
+                        </div>
+                    </div>
+
                     <div id="stock-filial-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Filial</label>
                         <select id="stock-filial-filter" class="glass-input border border-slate-700 text-white text-sm rounded-lg block w-full p-2.5">
