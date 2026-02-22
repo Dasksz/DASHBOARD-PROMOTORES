@@ -27,7 +27,7 @@ Novas visualizações serão adicionadas ao dashboard, com regras de acesso espe
 
 ---
 
-## 2. Página "Estoque" ( deve ser inserido no botão "Notificações de Estoque"
+## 2. Página "Estoque" ( deve ser inserido no botão "Notificações de Estoque").
 
 **Objetivo:** Permitir que o usuário identifique produtos com estoque parado, produtos novos com saída e, principalmente, **Produtos Perdidos** (Com estoque na filial, mas sem venda na carteira do usuário no mês atual).
 
