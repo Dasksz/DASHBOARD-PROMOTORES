@@ -9081,6 +9081,15 @@ const supervisorGroups = new Map();
                 // Hierarchy Filter & Vendedor Filter
                 let hierarchyClients = getHierarchyFilteredClients('main');
                 
+                // Apply Supervisor Filter if active (Only in Seller Mode)
+                if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller' && selectedSupervisors.size > 0) {
+                    hierarchyClients = hierarchyClients.filter(c => {
+                        const rca = String(c.rca1 || '').trim();
+                        const details = sellerDetailsMap.get(rca);
+                        return details && selectedSupervisors.has(details.supervisor);
+                    });
+                }
+
                 // Apply Seller Filter if active
                 if (selectedVendedores.size > 0) {
                     hierarchyClients = hierarchyClients.filter(c => selectedVendedores.has(String(c.rca1 || '').trim()));
