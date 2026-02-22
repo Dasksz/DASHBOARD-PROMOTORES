@@ -1359,7 +1359,7 @@
             updateFilterButtonText(target.text, selectedSet, label);
         }
 
-        function applyHierarchyVisibilityRules() {
+        function applyAdminViewVisibilityRules() {
             if (adminViewMode === 'promoter') {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.remove('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.remove('hidden');
@@ -1389,7 +1389,7 @@
                 }
             }
             
-            applyHierarchyVisibilityRules();
+            applyAdminViewVisibilityRules();
             updateSupervisorFilterDropdown(); 
             updateVendedorFilterDropdown();
             updateDashboard();
@@ -21555,6 +21555,7 @@ const supervisorGroups = new Map();
             updateSupervisorFilterDropdown();
             // Apply initial visibility
             applyHierarchyVisibilityRules();
+            applyAdminViewVisibilityRules();
         }
     }
 
