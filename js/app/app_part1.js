@@ -8251,13 +8251,16 @@ const supervisorGroups = new Map();
                         currentQty: 0,
                         prevVal: 0,
                         prevWeight: 0,
-                        prevQty: 0
+                        prevQty: 0,
+                        currentClients: new Set(),
+                        prevClients: new Set()
                     });
                 }
                 const entry = currentMap.get(code);
                 entry.currentVal += val;
                 entry.currentWeight += weight;
                 entry.currentQty += qty;
+                if (item.CODCLI) entry.currentClients.add(item.CODCLI);
             });
 
             // Aggregate History Data (Filtered to Previous Month AND Cutoff Day)
@@ -8287,13 +8290,16 @@ const supervisorGroups = new Map();
                             currentQty: 0,
                             prevVal: 0,
                             prevWeight: 0,
-                            prevQty: 0
+                        prevQty: 0,
+                        currentClients: new Set(),
+                        prevClients: new Set()
                         });
                     }
                     const entry = currentMap.get(code);
                     entry.prevVal += val;
                     entry.prevWeight += weight;
                     entry.prevQty += qty;
+                if (item.CODCLI) entry.prevClients.add(item.CODCLI);
                 }
             });
 
@@ -8320,11 +8326,24 @@ const supervisorGroups = new Map();
 
                 if (curr === 0 && prev === 0) return;
 
+                // PDV Calculation
+                const currentPdv = item.currentClients.size;
+                const prevPdv = item.prevClients.size;
+                let pdvVariation = 0;
+                if (prevPdv > 0) {
+                    pdvVariation = ((currentPdv - prevPdv) / prevPdv) * 100;
+                } else if (currentPdv > 0) {
+                    pdvVariation = 100;
+                }
+
                 results.push({
                     ...item,
                     variation: variation,
                     absVariation: Math.abs(variation),
-                    metricValue: curr
+                    metricValue: curr,
+                    currentPdv,
+                    prevPdv,
+                    pdvVariation
                 });
             });
 
@@ -8511,6 +8530,30 @@ const supervisorGroups = new Map();
             if (varEl) {
                 varEl.textContent = `${sign}${variation.toFixed(1)}% ${arrow}`;
                 varEl.className = `px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 ${colorClass}`;
+            }
+
+            // PDV Metrics
+            const pdvPrevEl = document.getElementById('product-performance-pdv-prev');
+            const pdvCurrEl = document.getElementById('product-performance-pdv-curr');
+            const pdvVarEl = document.getElementById('product-performance-pdv-var');
+
+            if (pdvPrevEl) pdvPrevEl.textContent = (item.prevPdv || 0).toLocaleString('pt-BR');
+            if (pdvCurrEl) pdvCurrEl.textContent = (item.currentPdv || 0).toLocaleString('pt-BR');
+
+            if (pdvVarEl) {
+                const pdvVar = item.pdvVariation;
+                // Reuse style logic
+                const pdvSign = pdvVar > 0 ? '+' : '';
+                const pdvArrow = pdvVar >= 0 ? '▲' : '▼';
+                const pdvColor = pdvVar >= 0 ? 'text-emerald-400' : 'text-red-400';
+
+                if (isFinite(pdvVar)) {
+                    pdvVarEl.textContent = `${pdvSign}${pdvVar.toFixed(1)}% ${pdvArrow}`;
+                    pdvVarEl.className = `px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 ${pdvColor}`;
+                } else {
+                    pdvVarEl.textContent = 'Novo';
+                    pdvVarEl.className = 'px-3 py-1 rounded-lg text-sm font-bold bg-purple-500/30 text-purple-300';
+                }
             }
 
             // Show

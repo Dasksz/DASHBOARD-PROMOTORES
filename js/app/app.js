@@ -8684,13 +8684,16 @@ const supervisorGroups = new Map();
                         currentQty: 0,
                         prevVal: 0,
                         prevWeight: 0,
-                        prevQty: 0
+                        prevQty: 0,
+                        currentClients: new Set(),
+                        prevClients: new Set()
                     });
                 }
                 const entry = currentMap.get(code);
                 entry.currentVal += val;
                 entry.currentWeight += weight;
                 entry.currentQty += qty;
+                if (item.CODCLI) entry.currentClients.add(item.CODCLI);
             });
 
             // Aggregate History Data (Filtered to Previous Month AND Cutoff Day)
@@ -8720,13 +8723,16 @@ const supervisorGroups = new Map();
                             currentQty: 0,
                             prevVal: 0,
                             prevWeight: 0,
-                            prevQty: 0
+                        prevQty: 0,
+                        currentClients: new Set(),
+                        prevClients: new Set()
                         });
                     }
                     const entry = currentMap.get(code);
                     entry.prevVal += val;
                     entry.prevWeight += weight;
                     entry.prevQty += qty;
+                if (item.CODCLI) entry.prevClients.add(item.CODCLI);
                 }
             });
 
@@ -8753,11 +8759,24 @@ const supervisorGroups = new Map();
 
                 if (curr === 0 && prev === 0) return;
 
+                // PDV Calculation
+                const currentPdv = item.currentClients.size;
+                const prevPdv = item.prevClients.size;
+                let pdvVariation = 0;
+                if (prevPdv > 0) {
+                    pdvVariation = ((currentPdv - prevPdv) / prevPdv) * 100;
+                } else if (currentPdv > 0) {
+                    pdvVariation = 100;
+                }
+
                 results.push({
                     ...item,
                     variation: variation,
                     absVariation: Math.abs(variation),
-                    metricValue: curr
+                    metricValue: curr,
+                    currentPdv,
+                    prevPdv,
+                    pdvVariation
                 });
             });
 
@@ -8944,6 +8963,30 @@ const supervisorGroups = new Map();
             if (varEl) {
                 varEl.textContent = `${sign}${variation.toFixed(1)}% ${arrow}`;
                 varEl.className = `px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 ${colorClass}`;
+            }
+
+            // PDV Metrics
+            const pdvPrevEl = document.getElementById('product-performance-pdv-prev');
+            const pdvCurrEl = document.getElementById('product-performance-pdv-curr');
+            const pdvVarEl = document.getElementById('product-performance-pdv-var');
+
+            if (pdvPrevEl) pdvPrevEl.textContent = (item.prevPdv || 0).toLocaleString('pt-BR');
+            if (pdvCurrEl) pdvCurrEl.textContent = (item.currentPdv || 0).toLocaleString('pt-BR');
+
+            if (pdvVarEl) {
+                const pdvVar = item.pdvVariation;
+                // Reuse style logic
+                const pdvSign = pdvVar > 0 ? '+' : '';
+                const pdvArrow = pdvVar >= 0 ? '▲' : '▼';
+                const pdvColor = pdvVar >= 0 ? 'text-emerald-400' : 'text-red-400';
+
+                if (isFinite(pdvVar)) {
+                    pdvVarEl.textContent = `${pdvSign}${pdvVar.toFixed(1)}% ${pdvArrow}`;
+                    pdvVarEl.className = `px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 ${pdvColor}`;
+                } else {
+                    pdvVarEl.textContent = 'Novo';
+                    pdvVarEl.className = 'px-3 py-1 rounded-lg text-sm font-bold bg-purple-500/30 text-purple-300';
+                }
             }
 
             // Show
@@ -21483,45 +21526,95 @@ const supervisorGroups = new Map();
             const s08 = (stockData08 && stockData08.get(code)) || 0;
             window.showToast('info', `Filial 05: ${s05} cx | Filial 08: ${s08} cx`, `Estoque: ${code}`);
         } else if (action === 'expand') {
-            // Populate Modal with basic info as fallback
-            const item = productDetailsMap.get(code) || { descricao: 'Produto não encontrado', code: code };
-            
-            const modal = document.getElementById('product-performance-modal');
-            document.getElementById('product-performance-title').textContent = item.descricao;
-            document.getElementById('product-performance-code').textContent = `Cód: ${item.code || code}`;
+            const codeString = String(code);
+            const currentItems = optimizedData.salesByProduct.current.get(codeString) || [];
+            const historyItems = optimizedData.salesByProduct.history.get(codeString) || [];
 
-            // Stock
-            const s05 = (stockData05 && stockData05.get(code)) || 0;
-            const s08 = (stockData08 && stockData08.get(code)) || 0;
-            document.getElementById('product-performance-stock').textContent = (s05 + s08).toLocaleString('pt-BR');
+            let currentVal = 0;
+            let currentQty = 0;
+            const currentClients = new Set();
 
-            // Reset other metrics if not available
-            document.getElementById('product-performance-prev').textContent = '--';
-            document.getElementById('product-performance-curr').textContent = '--';
-            const varEl = document.getElementById('product-performance-var');
-            if(varEl) { varEl.textContent = '--'; varEl.className = 'px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 text-slate-300'; }
-            
-            document.getElementById('product-performance-pdv-prev').textContent = '--';
-            document.getElementById('product-performance-pdv-curr').textContent = '--';
-            const pdvVarEl = document.getElementById('product-performance-pdv-var');
-            if(pdvVarEl) { pdvVarEl.textContent = '--'; pdvVarEl.className = 'px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 text-slate-300'; }
+            currentItems.forEach(s => {
+                if (!isAlternativeMode(selectedTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                currentVal += getValueForSale(s, selectedTiposVenda);
+                currentQty += Number(s.QTVENDA) || 0;
+                if (s.CODCLI) currentClients.add(s.CODCLI);
+            });
 
-            // Show Modal
-            modal.classList.remove('hidden');
-            
-            // Close Handlers
-            const closeBtn = document.getElementById('product-performance-modal-close-btn');
-            if (closeBtn) {
-                closeBtn.onclick = () => {
-                    modal.classList.add('hidden');
-                };
-            }
+            // Previous Month Logic (T-1 with Cutoff)
+            const prevMonthDate = new Date(Date.UTC(lastSaleDate.getUTCFullYear(), lastSaleDate.getUTCMonth() - 1, 1));
+            const prevMonthIndex = prevMonthDate.getUTCMonth();
+            const prevMonthYear = prevMonthDate.getUTCFullYear();
 
-            modal.onclick = (e) => {
-                if (e.target === modal) {
-                    modal.classList.add('hidden');
+            // Calculate Cutoff Ratio
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+            const totalWDCurrent = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+            const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, now);
+            const ratio = totalWDCurrent > 0 ? (passedWDCurrent / totalWDCurrent) : 1;
+            const totalWDPrev = getWorkingDaysInMonth(prevMonthYear, prevMonthIndex, selectedHolidays);
+            const targetWDPrev = Math.round(totalWDPrev * ratio);
+
+            const getDayForWorkingDays = (year, month, targetCount, holidays) => {
+                let count = 0;
+                const date = new Date(Date.UTC(year, month, 1));
+                while (date.getUTCMonth() === month) {
+                    const dayOfWeek = date.getUTCDay();
+                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays)) {
+                        count++;
+                    }
+                    if (count >= targetCount) return date.getUTCDate();
+                    date.setUTCDate(date.getUTCDate() + 1);
                 }
+                return date.getUTCDate();
             };
+            const cutoffDayPrev = getDayForWorkingDays(prevMonthYear, prevMonthIndex, targetWDPrev, selectedHolidays);
+
+            let prevVal = 0;
+            let prevQty = 0;
+            const prevClients = new Set();
+
+            historyItems.forEach(s => {
+                if (!isAlternativeMode(selectedTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                const d = parseDate(s.DTPED);
+                if (d && d.getUTCMonth() === prevMonthIndex && d.getUTCFullYear() === prevMonthYear) {
+                    if (d.getUTCDate() > cutoffDayPrev) return;
+                    prevVal += getValueForSale(s, selectedTiposVenda);
+                    prevQty += Number(s.QTVENDA) || 0;
+                    if (s.CODCLI) prevClients.add(s.CODCLI);
+                }
+            });
+
+            // Variation
+            const metricCurr = (currentProductMetric === 'faturamento') ? currentVal : currentQty;
+            const metricPrev = (currentProductMetric === 'faturamento') ? prevVal : prevQty;
+            let variation = 0;
+            if (metricPrev > 0) variation = ((metricCurr - metricPrev) / metricPrev) * 100;
+            else if (metricCurr > 0) variation = 100;
+
+            // PDV
+            const currentPdv = currentClients.size;
+            const prevPdv = prevClients.size;
+            let pdvVariation = 0;
+            if (prevPdv > 0) pdvVariation = ((currentPdv - prevPdv) / prevPdv) * 100;
+            else if (currentPdv > 0) pdvVariation = 100;
+
+            const itemDetails = productDetailsMap.get(codeString) || {};
+            const name = itemDetails.descricao || 'Produto';
+
+            openProductPerformanceModal({
+                code: codeString,
+                name: name,
+                currentVal,
+                prevVal,
+                currentQty,
+                prevQty,
+                variation,
+                currentPdv,
+                prevPdv,
+                pdvVariation
+            });
         }
     };
 
