@@ -9506,6 +9506,8 @@ const supervisorGroups = new Map();
             updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
 
             selectedVendedores.clear();
+            selectedSupervisors.clear();
+            updateSupervisorFilterDropdown();
             updateVendedorFilterDropdown();
 
             if (mainRedeGroupContainer) {
