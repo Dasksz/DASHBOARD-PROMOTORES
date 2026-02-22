@@ -1839,46 +1839,6 @@
                         </table>
                     </div>
 
-                        <!-- Modal Detalhes Meta Realizado (Genérico) -->
-                        <div id="meta-realizado-details-modal" class="modal-overlay hidden fixed inset-0 z-[4000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                            <div class="bg-modal-content w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                                <!-- Header -->
-                                <div class="px-6 py-4 border-b border-slate-700/50 flex justify-between items-start bg-slate-900/50">
-                                    <div class="flex-1 pr-4">
-                                        <h3 id="meta-realizado-modal-title" class="text-xl font-bold text-white leading-tight">Nome do Cliente</h3>
-                                        <p id="meta-realizado-modal-subtitle" class="text-sm text-slate-400 mt-1">Detalhes Adicionais</p>
-                                    </div>
-                                    <button id="meta-realizado-modal-close-btn" class="text-slate-400 hover:text-white transition-colors p-1 rounded-full hover:bg-slate-800">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                <!-- Body -->
-                                <div class="p-6 overflow-y-auto custom-scrollbar">
-                                    <!-- Big Numbers Summary -->
-                                    <div class="grid grid-cols-2 gap-4 mb-6">
-                                        <div class="glass-panel p-4 rounded-xl flex flex-col justify-center items-center text-center">
-                                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Meta Total</span>
-                                            <span id="meta-realizado-modal-meta-val" class="text-lg sm:text-2xl font-bold text-blue-400 truncate w-full">R$ 0,00</span>
-                                            <span class="text-[10px] font-bold px-2 py-0.5 mt-1 opacity-0 select-none">-</span>
-                                        </div>
-                                        <div class="glass-panel p-4 rounded-xl flex flex-col justify-center items-center text-center relative overflow-hidden">
-                                            <div id="meta-realizado-modal-status-bg" class="absolute inset-0 opacity-10 bg-slate-500"></div>
-                                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Realizado</span>
-                                            <span id="meta-realizado-modal-real-val" class="text-lg sm:text-2xl font-bold text-white truncate w-full relative z-10">R$ 0,00</span>
-                                            <span id="meta-realizado-modal-percent" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-white mt-1 relative z-10">0%</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Weekly Breakdown (Compact List) -->
-                                    <div id="meta-realizado-modal-weeks-body" class="flex flex-col space-y-0 divide-y divide-slate-800 border-t border-slate-800">
-                                        <!-- Rows injected via JS -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     <div id="meta-realizado-clients-pagination-controls" class="p-3 glass-panel border-t border-slate-800 flex justify-between items-center text-xs">
                         <button id="meta-realizado-clients-prev-page-btn" class="glass-panel text-white px-3 py-1 rounded disabled:opacity-50">Ant</button>
                         <span id="meta-realizado-clients-page-info-text" class="text-slate-400"></span>
@@ -3559,6 +3519,47 @@
                         <p class="text-white font-bold text-sm">Expandir</p>
                         <p class="text-xs text-slate-400">Mais informações</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalhes Meta Realizado (Genérico) -->
+    <div id="meta-realizado-details-modal" class="modal-overlay hidden fixed inset-0 z-[4000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="bg-modal-content w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-slate-700/50 flex justify-between items-start bg-slate-900/50">
+                <div class="flex-1 pr-4">
+                    <h3 id="meta-realizado-modal-title" class="text-xl font-bold text-white leading-tight">Nome do Cliente</h3>
+                    <p id="meta-realizado-modal-subtitle" class="text-sm text-slate-400 mt-1">Detalhes Adicionais</p>
+                </div>
+                <button id="meta-realizado-modal-close-btn" class="text-slate-400 hover:text-white transition-colors p-1 rounded-full hover:bg-slate-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6 overflow-y-auto custom-scrollbar">
+                <!-- Big Numbers Summary -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="glass-panel p-4 rounded-xl flex flex-col justify-center items-center text-center">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Meta Total</span>
+                        <span id="meta-realizado-modal-meta-val" class="text-lg sm:text-2xl font-bold text-blue-400 truncate w-full">R$ 0,00</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 mt-1 opacity-0 select-none">-</span>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl flex flex-col justify-center items-center text-center relative overflow-hidden">
+                        <div id="meta-realizado-modal-status-bg" class="absolute inset-0 opacity-10 bg-slate-500"></div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Realizado</span>
+                        <span id="meta-realizado-modal-real-val" class="text-lg sm:text-2xl font-bold text-white truncate w-full relative z-10">R$ 0,00</span>
+                        <span id="meta-realizado-modal-percent" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-white mt-1 relative z-10">0%</span>
+                    </div>
+                </div>
+
+                <!-- Weekly Breakdown (Compact List) -->
+                <div id="meta-realizado-modal-weeks-body" class="flex flex-col space-y-0 divide-y divide-slate-800 border-t border-slate-800">
+                    <!-- Rows injected via JS -->
                 </div>
             </div>
         </div>
