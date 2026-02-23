@@ -20640,6 +20640,37 @@ const supervisorGroups = new Map();
 
             const filterBtn = document.getElementById('history-filter-btn');
             if(filterBtn) filterBtn.addEventListener('click', filterHistoryView);
+
+            const clearBtn = document.getElementById('clear-history-filters-btn');
+            if(clearBtn) {
+                clearBtn.addEventListener('click', () => {
+                    selectedHistorySupervisors.clear();
+                    selectedHistoryVendedores.clear();
+
+                    if (hierarchyState['history']) {
+                        hierarchyState['history'].coords.clear();
+                        hierarchyState['history'].cocoords.clear();
+                        hierarchyState['history'].promotors.clear();
+                    }
+
+                    document.getElementById('history-posicao-filter').value = '';
+                    document.getElementById('history-codcli-filter').value = '';
+
+                    const now = new Date();
+                    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                    const startEl = document.getElementById('history-date-start');
+                    const endEl = document.getElementById('history-date-end');
+                    if (startEl) startEl.valueAsDate = firstDay;
+                    if (endEl) endEl.valueAsDate = lastDay;
+
+                    setupHierarchyFilters('history');
+                    updateHistorySupervisorFilter();
+                    updateHistoryVendedorFilter();
+
+                    filterHistoryView();
+                });
+            }
             
             // Pagination listeners
             document.getElementById('history-prev-page-btn').addEventListener('click', () => {
@@ -24192,7 +24223,8 @@ const supervisorGroups = new Map();
                         updateFilterButtonText(document.getElementById('history-supervisor-filter-text'), selectedHistorySupervisors, 'Todos');
                         selectedHistoryVendedores.clear();
                         updateHistoryVendedorFilter();
-                        if(typeof renderHistoryView === 'function') renderHistoryView();
+                        if(historyTableState.hasSearched) filterHistoryView();
+                        else if(typeof renderHistoryView === 'function') renderHistoryView();
                     }
                 };
             }
@@ -24212,7 +24244,8 @@ const supervisorGroups = new Map();
                         if(e.target.checked) selectedHistoryVendedores.add(val);
                         else selectedHistoryVendedores.delete(val);
                         updateFilterButtonText(document.getElementById('history-vendedor-filter-text'), selectedHistoryVendedores, 'Todos');
-                        if(typeof renderHistoryView === 'function') renderHistoryView();
+                        if(historyTableState.hasSearched) filterHistoryView();
+                        else if(typeof renderHistoryView === 'function') renderHistoryView();
                     }
                 };
             }
