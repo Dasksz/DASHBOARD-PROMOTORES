@@ -1374,6 +1374,20 @@
             const comparisonSupervisor = document.getElementById('comparison-supervisor-filter-wrapper');
             const comparisonVendedor = document.getElementById('comparison-vendedor-filter-wrapper');
 
+            // Positivacao (Coverage) View Elements
+            const positivacaoCoord = document.getElementById('positivacao-coord-filter-wrapper');
+            const positivacaoCocoord = document.getElementById('positivacao-cocoord-filter-wrapper');
+            const positivacaoPromotor = document.getElementById('positivacao-promotor-filter-wrapper');
+            const positivacaoSupervisor = document.getElementById('positivacao-supervisor-filter-wrapper');
+            const positivacaoVendedor = document.getElementById('positivacao-vendedor-filter-wrapper');
+
+            // City (GEO) View Elements
+            const cityCoord = document.getElementById('city-coord-filter-wrapper');
+            const cityCocoord = document.getElementById('city-cocoord-filter-wrapper');
+            const cityPromotor = document.getElementById('city-promotor-filter-wrapper');
+            const citySupervisor = document.getElementById('city-supervisor-filter-wrapper');
+            const cityVendedor = document.getElementById('city-vendedor-filter-wrapper');
+
             if (adminViewMode === 'promoter') {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.remove('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.remove('hidden');
@@ -1394,6 +1408,21 @@
                 if (comparisonPromotor) comparisonPromotor.classList.remove('hidden');
                 if (comparisonSupervisor) comparisonSupervisor.classList.add('hidden');
                 if (comparisonVendedor) comparisonVendedor.classList.add('hidden');
+
+                // Positivacao
+                if (positivacaoCoord) positivacaoCoord.classList.remove('hidden');
+                if (positivacaoCocoord) positivacaoCocoord.classList.remove('hidden');
+                if (positivacaoPromotor) positivacaoPromotor.classList.remove('hidden');
+                if (positivacaoSupervisor) positivacaoSupervisor.classList.add('hidden');
+                if (positivacaoVendedor) positivacaoVendedor.classList.add('hidden');
+
+                // City
+                if (cityCoord) cityCoord.classList.remove('hidden');
+                if (cityCocoord) cityCocoord.classList.remove('hidden');
+                if (cityPromotor) cityPromotor.classList.remove('hidden');
+                if (citySupervisor) citySupervisor.classList.add('hidden');
+                if (cityVendedor) cityVendedor.classList.add('hidden');
+
             } else {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.add('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.add('hidden');
@@ -1414,6 +1443,20 @@
                 if (comparisonPromotor) comparisonPromotor.classList.add('hidden');
                 if (comparisonSupervisor) comparisonSupervisor.classList.remove('hidden');
                 if (comparisonVendedor) comparisonVendedor.classList.remove('hidden');
+
+                // Positivacao
+                if (positivacaoCoord) positivacaoCoord.classList.add('hidden');
+                if (positivacaoCocoord) positivacaoCocoord.classList.add('hidden');
+                if (positivacaoPromotor) positivacaoPromotor.classList.add('hidden');
+                if (positivacaoSupervisor) positivacaoSupervisor.classList.remove('hidden');
+                if (positivacaoVendedor) positivacaoVendedor.classList.remove('hidden');
+
+                // City
+                if (cityCoord) cityCoord.classList.add('hidden');
+                if (cityCocoord) cityCocoord.classList.add('hidden');
+                if (cityPromotor) cityPromotor.classList.add('hidden');
+                if (citySupervisor) citySupervisor.classList.remove('hidden');
+                if (cityVendedor) cityVendedor.classList.remove('hidden');
             }
         }
 
@@ -1435,6 +1478,16 @@
             updateSupervisorFilterDropdown(); 
             updateVendedorFilterDropdown();
             updateDashboard();
+
+            if (currentActiveView === 'positivacao' && typeof updatePositivacaoView === 'function') {
+                if (typeof updatePositivacaoSupervisorFilter === 'function') updatePositivacaoSupervisorFilter();
+                if (typeof updatePositivacaoVendedorFilter === 'function') updatePositivacaoVendedorFilter();
+                updatePositivacaoView();
+            } else if (currentActiveView === 'cidades' && typeof updateCityMap === 'function') {
+                if (typeof updateCitySupervisorFilter === 'function') updateCitySupervisorFilter();
+                if (typeof updateCityVendedorFilter === 'function') updateCityVendedorFilter();
+                updateCityMap();
+            }
         }
 
         function setupSupervisorFilterHandlers() {
@@ -2418,6 +2471,10 @@
         let selectedWeeklySupervisors = new Set();
         let selectedWeeklyVendedores = new Set();
         let selectedWeeklySuppliers = new Set();
+        let selectedPositivacaoSupervisors = new Set();
+        let selectedPositivacaoVendedores = new Set();
+        let selectedCitySupervisors = new Set();
+        let selectedCityVendedores = new Set();
         let selectedPositivacaoSuppliers = [];
         let selectedComparisonSuppliers = [];
         let selectedComparisonProducts = [];
@@ -9645,8 +9702,37 @@ const supervisorGroups = new Map();
             const clientFilter = cityCodCliFilter.value.trim().toLowerCase();
             const tiposVendaSet = new Set(selectedCityTiposVenda);
 
-            // New Hierarchy Logic
-            let clients = getHierarchyFilteredClients('city', allClientsData);
+            // New Hierarchy Logic (with Seller Support)
+            let clients;
+            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+                clients = [];
+                const hasSup = selectedCitySupervisors.size > 0;
+                const hasVend = selectedCityVendedores.size > 0;
+
+                const source = allClientsData;
+                const len = source.length;
+
+                for(let i=0; i<len; i++) {
+                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
+                    const rca1 = String(c.rca1 || '').trim();
+                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                    if (!isAmericanas && rca1 === '') continue;
+
+                    let keep = true;
+                    if (hasSup || hasVend) {
+                        const details = sellerDetailsMap.get(rca1);
+                        if (hasSup) {
+                            if (!details || !selectedCitySupervisors.has(details.supervisor)) keep = false;
+                        }
+                        if (keep && hasVend) {
+                            if (!selectedCityVendedores.has(rca1)) keep = false;
+                        }
+                    }
+                    if (keep) clients.push(c);
+                }
+            } else {
+                clients = getHierarchyFilteredClients('city', allClientsData);
+            }
 
             if (excludeFilter !== 'rede') {
                  if (cityRedeGroupFilter === 'com_rede') {
@@ -9691,6 +9777,119 @@ const supervisorGroups = new Map();
             const sales = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters, excludeFilter);
 
             return { clients, sales };
+        }
+
+        function setupCitySupervisorFilterHandlers() {
+            // Supervisor
+            const supBtn = document.getElementById('city-supervisor-filter-btn');
+            const supDropdown = document.getElementById('city-supervisor-filter-dropdown');
+            if(supBtn && supDropdown) {
+                const newBtn = supBtn.cloneNode(true);
+                supBtn.parentNode.replaceChild(newBtn, supBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    supDropdown.classList.toggle('hidden');
+                    document.getElementById('city-vendedor-filter-dropdown')?.classList.add('hidden');
+                };
+                supDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedCitySupervisors.add(val);
+                        else selectedCitySupervisors.delete(val);
+
+                        updateFilterButtonText(document.getElementById('city-supervisor-filter-text'), selectedCitySupervisors, 'Todos');
+                        selectedCityVendedores.clear();
+                        updateCityVendedorFilter();
+                        handleCityFilterChange({ excludeFilter: 'supervisor' });
+                    }
+                };
+            }
+
+            // Seller
+            const vendBtn = document.getElementById('city-vendedor-filter-btn');
+            const vendDropdown = document.getElementById('city-vendedor-filter-dropdown');
+            if(vendBtn && vendDropdown) {
+                const newBtn = vendBtn.cloneNode(true);
+                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    vendDropdown.classList.toggle('hidden');
+                    document.getElementById('city-supervisor-filter-dropdown')?.classList.add('hidden');
+                };
+                vendDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedCityVendedores.add(val);
+                        else selectedCityVendedores.delete(val);
+
+                        updateFilterButtonText(document.getElementById('city-vendedor-filter-text'), selectedCityVendedores, 'Todos');
+                        handleCityFilterChange({ excludeFilter: 'seller' });
+                    }
+                };
+            }
+
+            // Global close logic
+            if (!document._cityFilterListener) {
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('#city-supervisor-filter-wrapper')) {
+                        document.getElementById('city-supervisor-filter-dropdown')?.classList.add('hidden');
+                    }
+                    if (!e.target.closest('#city-vendedor-filter-wrapper')) {
+                        document.getElementById('city-vendedor-filter-dropdown')?.classList.add('hidden');
+                    }
+                });
+                document._cityFilterListener = true;
+            }
+
+            updateCitySupervisorFilter();
+            updateCityVendedorFilter();
+        }
+
+        function updateCitySupervisorFilter() {
+            const dropdown = document.getElementById('city-supervisor-filter-dropdown');
+            if(!dropdown) return;
+
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
+
+            let html = '';
+            Array.from(supervisors).sort().forEach(s => {
+                const checked = selectedCitySupervisors.has(s) ? 'checked' : '';
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+            });
+            dropdown.innerHTML = html;
+            updateFilterButtonText(document.getElementById('city-supervisor-filter-text'), selectedCitySupervisors, 'Todos');
+        }
+
+        function updateCityVendedorFilter() {
+            const dropdown = document.getElementById('city-vendedor-filter-dropdown');
+            if(!dropdown) return;
+
+            const validRcas = new Set();
+            if (selectedCitySupervisors.size > 0) {
+                sellerDetailsMap.forEach((d, code) => {
+                    if (selectedCitySupervisors.has(d.supervisor)) validRcas.add(code);
+                });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+
+            let options = [];
+            validRcas.forEach(rca => {
+                const details = sellerDetailsMap.get(rca);
+                options.push({ value: rca, label: details ? (details.name || rca) : rca });
+            });
+            options.sort((a,b) => a.label.localeCompare(b.label));
+
+            let html = '';
+            options.forEach(opt => {
+                const checked = selectedCityVendedores.has(opt.value) ? 'checked' : '';
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+            });
+            dropdown.innerHTML = html;
+            updateFilterButtonText(document.getElementById('city-vendedor-filter-text'), selectedCityVendedores, 'Todos');
         }
 
         function updateAllCityFilters(options = {}) {
@@ -13028,6 +13227,9 @@ const supervisorGroups = new Map();
                         // Always trigger background sync if admin
                         syncGlobalCoordinates();
                         if (viewState.cidades.dirty || !viewState.cidades.rendered) {
+                            setupHierarchyFilters('city', () => handleCityFilterChange({ excludeFilter: 'hierarchy' }));
+                            setupCitySupervisorFilterHandlers();
+
                             // Setup Typeahead
                             if (cityCodCliFilter && !cityCodCliFilter._hasTypeahead) {
                                 setupClientTypeahead('city-codcli-filter', 'city-codcli-filter-suggestions', () => {
@@ -22786,8 +22988,124 @@ const supervisorGroups = new Map();
         }
     }
 
+        function setupPositivacaoSupervisorFilterHandlers() {
+            // Supervisor
+            const supBtn = document.getElementById('positivacao-supervisor-filter-btn');
+            const supDropdown = document.getElementById('positivacao-supervisor-filter-dropdown');
+            if(supBtn && supDropdown) {
+                // Remove old listeners by cloning
+                const newBtn = supBtn.cloneNode(true);
+                supBtn.parentNode.replaceChild(newBtn, supBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    supDropdown.classList.toggle('hidden');
+                    document.getElementById('positivacao-vendedor-filter-dropdown')?.classList.add('hidden');
+                };
+                supDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedPositivacaoSupervisors.add(val);
+                        else selectedPositivacaoSupervisors.delete(val);
+
+                        updateFilterButtonText(document.getElementById('positivacao-supervisor-filter-text'), selectedPositivacaoSupervisors, 'Todos');
+                        selectedPositivacaoVendedores.clear();
+                        updatePositivacaoVendedorFilter();
+                        handlePositivacaoFilterChange({ excludeFilter: 'supervisor' });
+                    }
+                };
+            }
+
+            // Seller
+            const vendBtn = document.getElementById('positivacao-vendedor-filter-btn');
+            const vendDropdown = document.getElementById('positivacao-vendedor-filter-dropdown');
+            if(vendBtn && vendDropdown) {
+                // Remove old listeners by cloning
+                const newBtn = vendBtn.cloneNode(true);
+                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    vendDropdown.classList.toggle('hidden');
+                    document.getElementById('positivacao-supervisor-filter-dropdown')?.classList.add('hidden');
+                };
+                vendDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedPositivacaoVendedores.add(val);
+                        else selectedPositivacaoVendedores.delete(val);
+
+                        updateFilterButtonText(document.getElementById('positivacao-vendedor-filter-text'), selectedPositivacaoVendedores, 'Todos');
+                        handlePositivacaoFilterChange({ excludeFilter: 'seller' });
+                    }
+                };
+            }
+
+            // Global close logic
+            if (!document._positivacaoFilterListener) {
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('#positivacao-supervisor-filter-wrapper')) {
+                        document.getElementById('positivacao-supervisor-filter-dropdown')?.classList.add('hidden');
+                    }
+                    if (!e.target.closest('#positivacao-vendedor-filter-wrapper')) {
+                        document.getElementById('positivacao-vendedor-filter-dropdown')?.classList.add('hidden');
+                    }
+                });
+                document._positivacaoFilterListener = true;
+            }
+
+            updatePositivacaoSupervisorFilter();
+            updatePositivacaoVendedorFilter();
+        }
+
+        function updatePositivacaoSupervisorFilter() {
+            const dropdown = document.getElementById('positivacao-supervisor-filter-dropdown');
+            if(!dropdown) return;
+
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
+
+            let html = '';
+            Array.from(supervisors).sort().forEach(s => {
+                const checked = selectedPositivacaoSupervisors.has(s) ? 'checked' : '';
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+            });
+            dropdown.innerHTML = html;
+            updateFilterButtonText(document.getElementById('positivacao-supervisor-filter-text'), selectedPositivacaoSupervisors, 'Todos');
+        }
+
+        function updatePositivacaoVendedorFilter() {
+            const dropdown = document.getElementById('positivacao-vendedor-filter-dropdown');
+            if(!dropdown) return;
+
+            const validRcas = new Set();
+            if (selectedPositivacaoSupervisors.size > 0) {
+                sellerDetailsMap.forEach((d, code) => {
+                    if (selectedPositivacaoSupervisors.has(d.supervisor)) validRcas.add(code);
+                });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+
+            let options = [];
+            validRcas.forEach(rca => {
+                const details = sellerDetailsMap.get(rca);
+                options.push({ value: rca, label: details ? (details.name || rca) : rca });
+            });
+            options.sort((a,b) => a.label.localeCompare(b.label));
+
+            let html = '';
+            options.forEach(opt => {
+                const checked = selectedPositivacaoVendedores.has(opt.value) ? 'checked' : '';
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+            });
+            dropdown.innerHTML = html;
+            updateFilterButtonText(document.getElementById('positivacao-vendedor-filter-text'), selectedPositivacaoVendedores, 'Todos');
+        }
+
         function renderPositivacaoView() {
             setupHierarchyFilters('positivacao', () => handlePositivacaoFilterChange({ excludeFilter: 'hierarchy' }));
+            setupPositivacaoSupervisorFilterHandlers();
 
             // Setup other filters listeners
             if (positivacaoComRedeBtn && !positivacaoComRedeBtn._hasListener) {
@@ -22875,8 +23193,40 @@ const supervisorGroups = new Map();
         function getPositivacaoFilteredData(options = {}) {
             const { excludeFilter = null } = options;
 
-            // 1. Hierarchy Filter (Base)
-            let clients = getHierarchyFilteredClients('positivacao', allClientsData);
+            // 1. Base Clients (Hierarchy vs Seller)
+            let clients;
+            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+                clients = [];
+                const hasSup = selectedPositivacaoSupervisors.size > 0;
+                const hasVend = selectedPositivacaoVendedores.size > 0;
+
+                const source = allClientsData;
+                const len = source.length;
+
+                for(let i=0; i<len; i++) {
+                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
+                    // Basic active check (similar to getActiveClientsData but simpler)
+                    const rca1 = String(c.rca1 || '').trim();
+                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                    // Exclude Inactive unless selected
+                    if (!isAmericanas && rca1 === '') continue; // Skip strictly inactive
+
+                    let keep = true;
+                    if (hasSup || hasVend) {
+                        const details = sellerDetailsMap.get(rca1);
+                        if (hasSup) {
+                            if (!details || !selectedPositivacaoSupervisors.has(details.supervisor)) keep = false;
+                        }
+                        if (keep && hasVend) {
+                            if (!selectedPositivacaoVendedores.has(rca1)) keep = false;
+                        }
+                    }
+
+                    if (keep) clients.push(c);
+                }
+            } else {
+                clients = getHierarchyFilteredClients('positivacao', allClientsData);
+            }
 
             // 2. Filter by Rede, Client, etc.
             const isComRede = positivacaoRedeGroupFilter === 'com_rede';
