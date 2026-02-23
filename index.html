@@ -3620,6 +3620,27 @@
 
     <!-- Extra Views -->
 
+    <!-- Image View Modal -->
+    <div id="image-modal" class="modal-overlay hidden z-[3500] fixed inset-0 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+        <div class="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center justify-center">
+            <button id="image-modal-close-btn" class="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors p-2 bg-black/50 rounded-full">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
+            <div class="relative w-full h-full flex items-center justify-center">
+                <img id="image-modal-img" src="" alt="Imagem do Produto" class="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl transition-opacity duration-300">
+
+                <!-- No Image Message Overlay -->
+                <div id="image-modal-error-msg" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-lg">
+                    <svg class="w-24 h-24 text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <p class="text-xl font-bold text-slate-300">Produto sem imagem cadastrada</p>
+                </div>
+            </div>
+
+            <p id="image-modal-caption" class="text-white mt-4 text-center text-lg font-medium"></p>
+        </div>
+    </div>
+
     <!-- Product Performance Modal -->
     <div id="product-performance-modal" class="modal-overlay hidden z-[3200]">
         <div class="bg-modal-content w-full max-w-md m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 glass-panel">
