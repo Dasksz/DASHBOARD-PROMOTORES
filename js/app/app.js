@@ -13367,7 +13367,7 @@ const supervisorGroups = new Map();
                 }
             }
 
-            if (view === 'weekly') {
+            if (view === 'weekly' || view === 'estoque') {
                 const role = (window.userRole || '').toLowerCase();
                 if (role === 'promotor' || role === 'vendedor' || window.userIsSeller) {
                      window.showToast('warning', 'Acesso restrito a gestores.');
@@ -13468,6 +13468,23 @@ const supervisorGroups = new Map();
                         break;
                     case 'consultas':
                         showViewElement(document.getElementById('consultas-view'));
+
+                        // Access Control for Consultas Buttons
+                        const role = (window.userRole || '').toLowerCase();
+                        const isRestricted = role === 'promotor' || role === 'vendedor' || window.userIsSeller;
+
+                        const btnSemanal = document.getElementById('btn-consultas-semanal');
+                        const btnEstoque = document.getElementById('btn-consultas-estoque');
+
+                        if (btnSemanal) {
+                            if (isRestricted) btnSemanal.classList.add('hidden');
+                            else btnSemanal.classList.remove('hidden');
+                        }
+                        if (btnEstoque) {
+                            if (isRestricted) btnEstoque.classList.add('hidden');
+                            else btnEstoque.classList.remove('hidden');
+                        }
+
                         if (viewState.consultas.dirty || !viewState.consultas.rendered) {
                             viewState.consultas.rendered = true;
                             viewState.consultas.dirty = false;
@@ -21823,12 +21840,28 @@ const supervisorGroups = new Map();
              else statusBadge = '<span class="text-xs text-slate-500">-</span>';
              
              tr.innerHTML = `
-                <td class="px-4 py-2 text-xs text-white truncate max-w-[200px]" title="${d.name}">${d.code} - ${d.name}</td>
+                <!-- Desktop View -->
+                <td class="px-4 py-2 text-xs text-white truncate max-w-[200px] hidden md:table-cell" title="${d.name}">${d.code} - ${d.name}</td>
                 <td class="px-4 py-2 text-xs text-slate-400 hidden md:table-cell">${d.supplier}</td>
-                <td class="px-4 py-2 text-xs text-right font-mono text-blue-300 font-bold">${d.stock}</td>
-                <td class="px-4 py-2 text-xs text-right font-mono text-white">${d.sales.toFixed(0)}</td>
+                <td class="px-4 py-2 text-xs text-right font-mono text-blue-300 font-bold hidden md:table-cell">${d.stock}</td>
+                <td class="px-4 py-2 text-xs text-right font-mono text-white hidden md:table-cell">${d.sales.toFixed(0)}</td>
                 <td class="px-4 py-2 text-xs text-right font-mono text-slate-500 hidden md:table-cell">${d.avg.toFixed(0)}</td>
-                <td class="px-4 py-2 text-center">${statusBadge}</td>
+                <td class="px-4 py-2 text-center hidden md:table-cell">${statusBadge}</td>
+
+                <!-- Mobile View (Compact & Left Aligned) -->
+                <td class="md:hidden w-full p-2 block">
+                    <div class="flex flex-col gap-1">
+                        <div class="text-xs font-bold text-white truncate w-full text-left">${d.code} - ${d.name}</div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400 text-left">Estoque: <span class="text-blue-300 font-mono">${d.stock}</span></span>
+                            <span class="text-slate-400">Venda: <span class="text-white font-mono">${d.sales.toFixed(0)}</span></span>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px]">
+                            <span class="text-slate-500 text-left">${d.supplier}</span>
+                            <div>${statusBadge}</div>
+                        </div>
+                    </div>
+                </td>
              `;
              tbody.appendChild(tr);
         });
