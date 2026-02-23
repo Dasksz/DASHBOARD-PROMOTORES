@@ -20814,7 +20814,19 @@ const supervisorGroups = new Map();
 
                     if (ts < startTs || ts > endTs) continue;
 
-                    // 2. Client Check
+                    // 2. Seller/Supervisor Filter Check (Order Level)
+                    if (selectedHistorySupervisors.size > 0) {
+                        const sup = String(s.SUPERV || '').trim();
+                        // Check exact match (or mapped if necessary, but standard is exact name)
+                        if (!selectedHistorySupervisors.has(sup)) continue;
+                    }
+
+                    if (selectedHistoryVendedores.size > 0) {
+                        const rca = String(s.CODUSUR || '').trim();
+                        if (!selectedHistoryVendedores.has(rca)) continue;
+                    }
+
+                    // 3. Client Check
                     const codCli = normalizeKey(s.CODCLI);
 
                     if (enforceHierarchy) {
