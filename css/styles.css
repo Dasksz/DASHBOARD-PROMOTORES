@@ -1624,3 +1624,65 @@ html.light .bg-green-900\/30 {
         text-align: right !important;
     }
 }
+
+/* --- WEEKLY SUMMARY TABLE COMPACT VIEW (MOBILE) --- */
+@media (max-width: 768px) {
+    #weekly-summary-table,
+    #weekly-summary-table thead,
+    #weekly-summary-table tbody,
+    #weekly-summary-table th,
+    #weekly-summary-table td,
+    #weekly-summary-table tr {
+        display: revert;
+    }
+
+    /* Fallback/Force Override */
+    #weekly-summary-table { display: table !important; width: 100%; border-collapse: collapse; }
+    #weekly-summary-table thead { display: table-header-group !important; }
+    #weekly-summary-table tbody { display: table-row-group !important; }
+
+    #weekly-summary-table tr {
+        display: table-row !important;
+        margin-bottom: 0 !important;
+        border-radius: 0 !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+
+    #weekly-summary-table th,
+    #weekly-summary-table td {
+        display: table-cell !important;
+    }
+
+    /* Remove pseudo labels */
+    #weekly-summary-table td::before {
+        content: none !important;
+        display: none !important;
+    }
+
+    /* Styling Adjustments for Compact Lines */
+    #weekly-summary-table th {
+        padding: 0.5rem;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #94a3b8;
+        background-color: rgba(30, 41, 59, 0.5); /* Header bg */
+        text-align: left !important;
+    }
+
+    /* Ensure Header Total is Right Aligned if desired, but user asked for Left?
+       Let's keep headers standard (Semana Left, Total Right usually).
+       But user said "dados alinhados a esquerda".
+       I will set TH align to match TD align.
+    */
+
+    #weekly-summary-table td {
+        padding: 0.5rem !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        min-height: auto !important;
+        font-size: 0.75rem; /* Text xs equivalent */
+        text-align: left !important; /* Force Left Alignment as requested */
+    }
+}
