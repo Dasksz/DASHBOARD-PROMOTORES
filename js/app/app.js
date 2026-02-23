@@ -18874,7 +18874,7 @@ const supervisorGroups = new Map();
                     p.val += (it.bon || it.val);
                 });
                 
-                let detailsHtml = '<table class="w-full text-left text-slate-400 compact-mobile-table"><thead><tr class="text-[10px] uppercase border-b border-slate-700/50"><th class="py-1">Prod</th><th class="py-1 text-right">Qtd</th><th class="py-1 text-right">Valor</th></tr></thead><tbody>';
+                let detailsHtml = '<table class="w-full text-left text-slate-400"><thead><tr class="text-[10px] uppercase border-b border-slate-700/50"><th class="py-1">Prod</th><th class="py-1 text-right">Qtd</th><th class="py-1 text-right">Valor</th></tr></thead><tbody>';
                 prodMap.forEach((v, k) => {
                     detailsHtml += `
                         <tr class="border-b border-white/10/50 last:border-0">
