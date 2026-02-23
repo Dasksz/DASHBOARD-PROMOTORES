@@ -98,7 +98,9 @@
         input:-webkit-autofill:focus,
         input:-webkit-autofill:active {
             -webkit-text-fill-color: white !important;
+            -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
             transition: background-color 9999s ease-in-out 0s;
+            caret-color: white;
         }
 
         .logo-glow {
@@ -2774,7 +2776,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <div class="relative">
-                    <input type="text" id="produtos-search" name="products_search_q" autocomplete="off" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-40 sm:w-64 pl-3 p-2.5">
+                    <input type="search" id="produtos-search" name="product_filter_query" autocomplete="new-password" spellcheck="false" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-40 sm:w-64 pl-3 p-2.5">
                 </div>
                 <div class="relative">
                     <button id="produtos-options-btn" class="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-700 transition-colors">
