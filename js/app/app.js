@@ -4,6 +4,7 @@
         // --- CONFIGURATION MOVED TO utils.js ---
         // SUPPLIER_CONFIG, resolveSupplierPasta, GARBAGE_SELLER_KEYWORDS, isGarbageSeller available globally
 
+        let debouncedUpdateMetaRealizado;
         let metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [] };
         let lastSaleDate = null;
 
@@ -15720,7 +15721,7 @@ const supervisorGroups = new Map();
                 updateMetaRealizadoView();
             };
 
-            const debouncedUpdateMetaRealizado = debounce(updateMetaRealizado, 400);
+            debouncedUpdateMetaRealizado = debounce(updateMetaRealizado, 400);
 
             // Supervisor Filter
 
