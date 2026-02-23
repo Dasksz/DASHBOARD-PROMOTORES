@@ -1388,6 +1388,13 @@
             const citySupervisor = document.getElementById('city-supervisor-filter-wrapper');
             const cityVendedor = document.getElementById('city-vendedor-filter-wrapper');
 
+            // Coverage View Elements
+            const coverageCoord = document.getElementById('coverage-coord-filter-wrapper');
+            const coverageCocoord = document.getElementById('coverage-cocoord-filter-wrapper');
+            const coveragePromotor = document.getElementById('coverage-promotor-filter-wrapper');
+            const coverageSupervisor = document.getElementById('coverage-supervisor-filter-wrapper');
+            const coverageVendedor = document.getElementById('coverage-vendedor-filter-wrapper');
+
             if (adminViewMode === 'promoter') {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.remove('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.remove('hidden');
@@ -1423,6 +1430,13 @@
                 if (citySupervisor) citySupervisor.classList.add('hidden');
                 if (cityVendedor) cityVendedor.classList.add('hidden');
 
+                // Coverage
+                if (coverageCoord) coverageCoord.classList.remove('hidden');
+                if (coverageCocoord) coverageCocoord.classList.remove('hidden');
+                if (coveragePromotor) coveragePromotor.classList.remove('hidden');
+                if (coverageSupervisor) coverageSupervisor.classList.add('hidden');
+                if (coverageVendedor) coverageVendedor.classList.add('hidden');
+
             } else {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.add('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.add('hidden');
@@ -1457,6 +1471,13 @@
                 if (cityPromotor) cityPromotor.classList.add('hidden');
                 if (citySupervisor) citySupervisor.classList.remove('hidden');
                 if (cityVendedor) cityVendedor.classList.remove('hidden');
+
+                // Coverage
+                if (coverageCoord) coverageCoord.classList.add('hidden');
+                if (coverageCocoord) coverageCocoord.classList.add('hidden');
+                if (coveragePromotor) coveragePromotor.classList.add('hidden');
+                if (coverageSupervisor) coverageSupervisor.classList.remove('hidden');
+                if (coverageVendedor) coverageVendedor.classList.remove('hidden');
             }
         }
 
@@ -1487,6 +1508,10 @@
                 if (typeof updateCitySupervisorFilter === 'function') updateCitySupervisorFilter();
                 if (typeof updateCityVendedorFilter === 'function') updateCityVendedorFilter();
                 updateCityMap();
+            } else if (currentActiveView === 'cobertura' && typeof updateCoverageView === 'function') {
+                if (typeof updateCoverageSupervisorFilter === 'function') updateCoverageSupervisorFilter();
+                if (typeof updateCoverageVendedorFilter === 'function') updateCoverageVendedorFilter();
+                updateCoverageView();
             }
         }
 
@@ -2473,6 +2498,8 @@
         let selectedWeeklySuppliers = new Set();
         let selectedPositivacaoSupervisors = new Set();
         let selectedPositivacaoVendedores = new Set();
+        let selectedCoverageSupervisors = new Set();
+        let selectedCoverageVendedores = new Set();
         let selectedCitySupervisors = new Set();
         let selectedCityVendedores = new Set();
         let selectedPositivacaoSuppliers = [];
@@ -7880,7 +7907,33 @@ const supervisorGroups = new Map();
             const tiposVendaSet = new Set(selectedCoverageTiposVenda);
 
             // New Hierarchy Logic applied to Active Clients
-            let clients = getHierarchyFilteredClients('coverage', getActiveClientsData());
+            let clients;
+            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+                clients = [];
+                const hasSup = selectedCoverageSupervisors.size > 0;
+                const hasVend = selectedCoverageVendedores.size > 0;
+
+                const source = getActiveClientsData(); // Apply Active filtering first
+                const len = source.length;
+
+                for(let i=0; i<len; i++) {
+                    const c = source[i];
+                    const rca1 = String(c.rca1 || '').trim();
+                    let keep = true;
+                    if (hasSup || hasVend) {
+                        const details = sellerDetailsMap.get(rca1);
+                        if (hasSup) {
+                            if (!details || !selectedCoverageSupervisors.has(details.supervisor)) keep = false;
+                        }
+                        if (keep && hasVend) {
+                            if (!selectedCoverageVendedores.has(rca1)) keep = false;
+                        }
+                    }
+                    if (keep) clients.push(c);
+                }
+            } else {
+                clients = getHierarchyFilteredClients('coverage', getActiveClientsData());
+            }
 
             if (filial !== 'ambas' || city) {
                 clients = clients.filter(c => {
@@ -15797,6 +15850,7 @@ const supervisorGroups = new Map();
         setupHierarchyFilters('mix', updateMixView);
         setupHierarchyFilters('meta-realizado', updateMetaRealizadoView);
         setupHierarchyFilters('coverage', updateCoverageView);
+        setupCoverageSupervisorFilterHandlers(); // Initialize Coverage Supervisor Filters
         setupHierarchyFilters('goals-gv', updateGoalsView);
         setupHierarchyFilters('goals-summary', updateGoalsSummaryView);
         setupHierarchyFilters('goals-sv', updateGoalsSvView);
@@ -23101,6 +23155,119 @@ const supervisorGroups = new Map();
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('positivacao-vendedor-filter-text'), selectedPositivacaoVendedores, 'Todos');
+        }
+
+        function setupCoverageSupervisorFilterHandlers() {
+            // Supervisor
+            const supBtn = document.getElementById('coverage-supervisor-filter-btn');
+            const supDropdown = document.getElementById('coverage-supervisor-filter-dropdown');
+            if(supBtn && supDropdown) {
+                const newBtn = supBtn.cloneNode(true);
+                supBtn.parentNode.replaceChild(newBtn, supBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    supDropdown.classList.toggle('hidden');
+                    document.getElementById('coverage-vendedor-filter-dropdown')?.classList.add('hidden');
+                };
+                supDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedCoverageSupervisors.add(val);
+                        else selectedCoverageSupervisors.delete(val);
+
+                        updateFilterButtonText(document.getElementById('coverage-supervisor-filter-text'), selectedCoverageSupervisors, 'Todos');
+                        selectedCoverageVendedores.clear();
+                        updateCoverageVendedorFilter();
+                        handleCoverageFilterChange({ excludeFilter: 'supervisor' });
+                    }
+                };
+            }
+
+            // Seller
+            const vendBtn = document.getElementById('coverage-vendedor-filter-btn');
+            const vendDropdown = document.getElementById('coverage-vendedor-filter-dropdown');
+            if(vendBtn && vendDropdown) {
+                const newBtn = vendBtn.cloneNode(true);
+                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    vendDropdown.classList.toggle('hidden');
+                    document.getElementById('coverage-supervisor-filter-dropdown')?.classList.add('hidden');
+                };
+                vendDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedCoverageVendedores.add(val);
+                        else selectedCoverageVendedores.delete(val);
+
+                        updateFilterButtonText(document.getElementById('coverage-vendedor-filter-text'), selectedCoverageVendedores, 'Todos');
+                        handleCoverageFilterChange({ excludeFilter: 'seller' });
+                    }
+                };
+            }
+
+            // Global close logic
+            if (!document._coverageFilterListener) {
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('#coverage-supervisor-filter-wrapper')) {
+                        document.getElementById('coverage-supervisor-filter-dropdown')?.classList.add('hidden');
+                    }
+                    if (!e.target.closest('#coverage-vendedor-filter-wrapper')) {
+                        document.getElementById('coverage-vendedor-filter-dropdown')?.classList.add('hidden');
+                    }
+                });
+                document._coverageFilterListener = true;
+            }
+
+            updateCoverageSupervisorFilter();
+            updateCoverageVendedorFilter();
+        }
+
+        function updateCoverageSupervisorFilter() {
+            const dropdown = document.getElementById('coverage-supervisor-filter-dropdown');
+            if(!dropdown) return;
+
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
+
+            let html = '';
+            Array.from(supervisors).sort().forEach(s => {
+                const checked = selectedCoverageSupervisors.has(s) ? 'checked' : '';
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+            });
+            dropdown.innerHTML = html;
+            updateFilterButtonText(document.getElementById('coverage-supervisor-filter-text'), selectedCoverageSupervisors, 'Todos');
+        }
+
+        function updateCoverageVendedorFilter() {
+            const dropdown = document.getElementById('coverage-vendedor-filter-dropdown');
+            if(!dropdown) return;
+
+            const validRcas = new Set();
+            if (selectedCoverageSupervisors.size > 0) {
+                sellerDetailsMap.forEach((d, code) => {
+                    if (selectedCoverageSupervisors.has(d.supervisor)) validRcas.add(code);
+                });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+
+            let options = [];
+            validRcas.forEach(rca => {
+                const details = sellerDetailsMap.get(rca);
+                options.push({ value: rca, label: details ? (details.name || rca) : rca });
+            });
+            options.sort((a,b) => a.label.localeCompare(b.label));
+
+            let html = '';
+            options.forEach(opt => {
+                const checked = selectedCoverageVendedores.has(opt.value) ? 'checked' : '';
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+            });
+            dropdown.innerHTML = html;
+            updateFilterButtonText(document.getElementById('coverage-vendedor-filter-text'), selectedCoverageVendedores, 'Todos');
         }
 
         function renderPositivacaoView() {
