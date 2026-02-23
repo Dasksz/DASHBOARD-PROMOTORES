@@ -10651,7 +10651,7 @@ const supervisorGroups = new Map();
             });
 
             // Special Handling for Meta Realizado: Inject Virtual Categories
-            if (filterType === 'metaRealizado' || filterType === 'main') {
+            if (filterType === 'metaRealizado' || filterType === 'main' || filterType === 'comparison') {
                 if (suppliers.has(window.SUPPLIER_CODES.ELMA[0])) suppliers.set(window.SUPPLIER_CODES.ELMA[0], 'EXTRUSADOS');
                 if (suppliers.has(window.SUPPLIER_CODES.ELMA[1])) suppliers.set(window.SUPPLIER_CODES.ELMA[1], 'NÃO EXTRUSADOS');
                 if (suppliers.has(window.SUPPLIER_CODES.ELMA[2])) suppliers.set(window.SUPPLIER_CODES.ELMA[2], 'TORCIDA');
@@ -10677,7 +10677,7 @@ const supervisorGroups = new Map();
                     let displayName = name;
                     // For all pages except 'Meta Vs. Realizado', prefix Code to Name
                     // Request: Main (Visão Geral) should match Meta vs Realizado nomenclature (No Prefix, Split 1119)
-                    if (filterType !== 'metaRealizado' && filterType !== 'main') {
+                    if (filterType !== 'metaRealizado' && filterType !== 'main' && filterType !== 'comparison') {
                         // Ensure we don't double prefix if name already starts with code (rare but possible in data)
                         if (!name.startsWith(cod)) {
                             displayName = `${cod} ${name}`;
