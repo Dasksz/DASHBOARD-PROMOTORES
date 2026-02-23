@@ -22334,22 +22334,14 @@ const supervisorGroups = new Map();
 
     function updateWeeklySupplierFilter() {
         const dd = document.getElementById('weekly-fornecedor-filter-dropdown');
-        if(!dd) return;
-        const suppliers = new Set();
-        // From Sales Indices
-        optimizedData.indices.current.bySupplier.forEach((_, s) => suppliers.add(s));
+        const txt = document.getElementById('weekly-fornecedor-filter-text');
+        if (!dd) return;
+
+        const dataSource = [...allSalesData, ...allHistoryData];
+        const validCodes = updateSupplierFilter(dd, txt, Array.from(selectedWeeklySuppliers), dataSource, 'main');
         
-        const sorted = Array.from(suppliers).sort();
-        let html = '';
-        sorted.forEach(s => {
-            const checked = selectedWeeklySuppliers.has(s) ? 'checked' : '';
-            html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
-                        <input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600">
-                        <span class="ml-2 text-sm text-slate-300">${s}</span>
-                     </label>`;
-        });
-        dd.innerHTML = html;
-        updateWeeklyFilterText('weekly-fornecedor-filter-text', selectedWeeklySuppliers, 'Todos');
+        selectedWeeklySuppliers.clear();
+        validCodes.forEach(code => selectedWeeklySuppliers.add(code));
     }
 
     function getWeeklyFilteredData() {
@@ -22584,7 +22576,8 @@ const supervisorGroups = new Map();
         const ctx = document.getElementById('weeklySalesChart');
         if (!ctx) return;
         
-        if (weeklyChartInstance) weeklyChartInstance.destroy();
+        const existingChart = Chart.getChart(ctx);
+        if (existingChart) existingChart.destroy();
         
         const labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
         const dayIndices = [1, 2, 3, 4, 5];
