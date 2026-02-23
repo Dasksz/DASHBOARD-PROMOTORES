@@ -404,10 +404,7 @@
         <button data-target="comparativo" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Comparativo</button>
         <button data-target="cobertura" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Cobertura</button>
         <button data-target="cidades" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Geo</button>
-        <button data-target="mix" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Mix</button>
-        <button data-target="inovacoes-mes" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Inovações</button>
         <button data-target="goals" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap">Metas</button>
-        <button data-target="weekly" class="nav-link px-3 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-md transition-colors whitespace-nowrap hidden">Semanal</button>
     </div>
 
     <!-- Right Controls -->
@@ -461,10 +458,7 @@
         <button data-target="comparativo" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5">Comparativo</button>
         <button data-target="cobertura" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5">Cobertura</button>
         <button data-target="cidades" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5">Geo Mapa</button>
-        <button data-target="mix" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5">Mix</button>
-        <button data-target="inovacoes-mes" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5">Inovações</button>
         <button data-target="goals" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5 hidden">Metas</button>
-        <button data-target="weekly" class="mobile-nav-link p-3 rounded-lg glass-panel text-slate-300 text-sm font-medium text-center hover:bg-white/5 hidden">Semanal</button>
     </div>
 </div>
 
@@ -2454,13 +2448,40 @@
                     <p class="text-sm text-slate-400 mt-1">Consulta movimentação de conta corrente do RCA</p>
                 </div>
             </button>
-            <button onclick="renderView('estoque')" class="glass-panel hover:bg-white/5 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer">
+            <button id="btn-consultas-estoque" onclick="renderView('estoque')" class="glass-panel hover:bg-white/5 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer">
                 <div class="p-3 bg-orange-500/20 rounded-full text-orange-400">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                 </div>
                 <div>
                     <h3 class="text-lg font-bold text-white">Notificações de Estoque</h3>
                     <p class="text-sm text-slate-400 mt-1">Consulta de estoque e produtos perdidos</p>
+                </div>
+            </button>
+            <button id="btn-consultas-mix" onclick="renderView('mix')" class="glass-panel hover:bg-white/5 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer">
+                <div class="p-3 bg-cyan-500/20 rounded-full text-cyan-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">Mix</h3>
+                    <p class="text-sm text-slate-400 mt-1">Análise de positivação do mix</p>
+                </div>
+            </button>
+            <button id="btn-consultas-inovacoes" onclick="renderView('inovacoes-mes')" class="glass-panel hover:bg-white/5 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer">
+                <div class="p-3 bg-pink-500/20 rounded-full text-pink-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white group-hover:text-pink-300 transition-colors">Inovações</h3>
+                    <p class="text-sm text-slate-400 mt-1">Acompanhamento de lançamentos</p>
+                </div>
+            </button>
+            <button id="btn-consultas-semanal" onclick="renderView('weekly')" class="glass-panel hover:bg-white/5 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4 cursor-pointer hidden">
+                <div class="p-3 bg-indigo-500/20 rounded-full text-indigo-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors">Semanal</h3>
+                    <p class="text-sm text-slate-400 mt-1">Análise de vendas semanal</p>
                 </div>
             </button>
             <button onclick="renderView('history')" class="glass-panel hover:bg-white/5 p-6 rounded-xl border border-slate-700 shadow-md text-left group transition-all flex items-start gap-4">
