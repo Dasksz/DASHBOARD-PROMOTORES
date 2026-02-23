@@ -20562,26 +20562,18 @@ const supervisorGroups = new Map();
                 // Dark Theme Styling
                 item.className = 'p-4 border-b border-white/10 hover:bg-white/5 transition-colors flex gap-4';
                 item.innerHTML = `
-                    <div class="flex flex-col gap-2 shrink-0 w-16">
-                        <div class="w-16 h-16 bg-white/5 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center">
-                            <img
-                                src="${imageUrl}"
-                                alt="${window.escapeHtml(desc)}"
-                                class="w-full h-full object-contain"
-                                loading="lazy"
-                                onerror="this.onerror=null; this.src='imagens/logo.png'; this.classList.add('opacity-30', 'p-2');"
-                            />
-                        </div>
-                        <div class="flex flex-wrap gap-1 justify-center">
-                            <button class="w-[30px] h-[30px] p-0 flex items-center justify-center bg-slate-700 text-lime-400 rounded hover:bg-slate-600 border border-slate-600" title="Detalhes Comerciais"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg></button>
-                            <button class="w-[30px] h-[30px] p-0 flex items-center justify-center bg-slate-700 text-red-400 rounded hover:bg-slate-600 border border-slate-600" title="Visualizar Imagem" onclick="window.openImageModal('${imageUrl}', '${window.escapeHtml(desc)} - ${code}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
-                            <button class="w-[30px] h-[30px] p-0 flex items-center justify-center bg-slate-700 text-blue-400 rounded hover:bg-slate-600 border border-slate-600" title="Estoque" onclick="window.handleProductAction('stock', '${code}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg></button>
-                        </div>
+                    <div class="shrink-0 w-16 h-16 bg-white/5 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center">
+                        <img
+                            src="${imageUrl}"
+                            alt="${window.escapeHtml(desc)}"
+                            class="w-full h-full object-contain"
+                            loading="lazy"
+                            onerror="this.onerror=null; this.src='imagens/logo.png'; this.classList.add('opacity-30', 'p-2');"
+                        />
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex justify-between items-start mb-2">
-                            <h3 class="text-sm font-bold text-white leading-tight flex-1 pr-2">${window.escapeHtml(code)} - ${window.escapeHtml(desc)}</h3>
-                            <button class="p-1.5 bg-slate-700 text-purple-400 rounded hover:bg-slate-600 border border-slate-600 shrink-0" title="Expandir" onclick="window.handleProductAction('expand', '${code}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg></button>
+                            <h3 class="text-sm font-bold text-white leading-tight flex-1">${window.escapeHtml(code)} - ${window.escapeHtml(desc)}</h3>
                         </div>
                         <div class="flex justify-between items-center text-xs text-slate-400 mb-2">
                             <span>Emb.: ${window.escapeHtml(emb)}</span>
