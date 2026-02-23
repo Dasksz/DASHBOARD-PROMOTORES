@@ -20269,7 +20269,7 @@ const supervisorGroups = new Map();
                     </div>
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-slate-500">Cód. fábrica: ${window.escapeHtml(prod.cod_fabrica || code)}</span>
-                        <span class="font-bold text-[#FF5E00]">Est.: ${totalStock}</span>
+                        <span class="font-bold text-[#FF5E00]">Est.Cx: ${totalStock}</span>
                     </div>
                     <div class="flex gap-2 mt-3">
                         <button onclick="window.handleProductAction('promo', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-lime-400 rounded hover:bg-slate-600 border border-slate-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg></button>
