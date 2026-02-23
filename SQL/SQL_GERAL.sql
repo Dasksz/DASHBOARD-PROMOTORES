@@ -758,6 +758,23 @@ CREATE POLICY "Users can delete own images"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (bucket_id = 'visitas-images' AND auth.uid() = owner);
+
+-- ==============================================================================
+-- STORAGE SETUP (Product Images)
+-- ==============================================================================
+
+-- 1. Create 'produtos' bucket if it doesn't exist
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('produtos', 'produtos', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 2. Security (RLS) for Storage Objects
+
+-- Allow public viewing (since bucket is public)
+DROP POLICY IF EXISTS "Acesso público para ver imagens de produtos" ON storage.objects;
+CREATE POLICY "Acesso público para ver imagens de produtos"
+ON storage.objects FOR SELECT
+USING ( bucket_id = 'produtos' );
 -- ==============================================================================
 -- MANUAL WEBHOOK SETUP USING PG_NET
 --
