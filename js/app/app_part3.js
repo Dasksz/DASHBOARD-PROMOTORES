@@ -4503,6 +4503,12 @@
         if (window.userRole !== 'adm') {
             document.querySelectorAll('[data-target="goals"]').forEach(el => el.classList.add('hidden'));
         }
+
+        // Enforce Weekly View Permissions (Block for Promoters/Sellers)
+        const role = (window.userRole || '').toLowerCase();
+        if (role === 'promotor' || role === 'vendedor') {
+            document.querySelectorAll('[data-target="weekly"]').forEach(el => el.classList.add('hidden'));
+        }
     }
 
         function renderPositivacaoView() {
