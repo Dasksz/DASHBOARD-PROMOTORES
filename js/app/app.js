@@ -12800,7 +12800,7 @@ const supervisorGroups = new Map();
 
             // This function now runs after the loader is visible
             const updateContent = () => {
-                [mainDashboard, cityView, positivacaoView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view'), document.getElementById('clientes-view'), document.getElementById('produtos-view'), document.getElementById('consultas-view'), document.getElementById('history-view'), document.getElementById('titulos-view'), document.getElementById('loja-perfeita-view')].forEach(el => {
+                [mainDashboard, cityView, positivacaoView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view'), document.getElementById('clientes-view'), document.getElementById('produtos-view'), document.getElementById('consultas-view'), document.getElementById('history-view'), document.getElementById('titulos-view'), document.getElementById('loja-perfeita-view'), document.getElementById('weekly-view')].forEach(el => {
                     if(el) el.classList.add('hidden');
                 });
 
@@ -22522,6 +22522,12 @@ const supervisorGroups = new Map();
             // Apply initial visibility
             applyHierarchyVisibilityRules();
             applyAdminViewVisibilityRules();
+        }
+
+        // Enforce Weekly View Permissions (Block for Promoters/Sellers)
+        const role = (window.userRole || '').toLowerCase();
+        if (role === 'promotor' || role === 'vendedor') {
+            document.querySelectorAll('[data-target="weekly"]').forEach(el => el.classList.add('hidden'));
         }
     }
 
