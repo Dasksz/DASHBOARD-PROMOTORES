@@ -15819,11 +15819,25 @@ const supervisorGroups = new Map();
                 selectedMetaRealizadoSuppliers = [];
                 currentMetaRealizadoPasta = 'PEPSICO'; // Reset to default
 
-                // Reset UI
+                // Reset Hierarchy Filters
+                if (hierarchyState['meta-realizado']) {
+                    hierarchyState['meta-realizado'].coords.clear();
+                    hierarchyState['meta-realizado'].cocoords.clear();
+                    hierarchyState['meta-realizado'].promotors.clear();
+                }
 
-                // Reset Supplier UI
-                document.getElementById('meta-realizado-supplier-filter-text').textContent = 'Todos';
-                metaRealizadoSupplierFilterDropdown.querySelectorAll('input').forEach(cb => cb.checked = false);
+                // Reset Supervisor/Seller Filters
+                selectedMetaRealizadoSupervisors.clear();
+                selectedMetaRealizadoVendedores.clear();
+
+                // Reset UI Text and Checkboxes
+                ['coord', 'cocoord', 'promotor', 'supervisor', 'vendedor', 'supplier'].forEach(filter => {
+                    const textEl = document.getElementById(`meta-realizado-${filter}-filter-text`);
+                    if (textEl) textEl.textContent = 'Todos';
+
+                    const ddEl = document.getElementById(`meta-realizado-${filter}-filter-dropdown`);
+                    if (ddEl) ddEl.querySelectorAll('input').forEach(cb => cb.checked = false);
+                });
 
                 // Reset Pasta UI (Deactivate all, since PEPSICO button is gone)
                 metaRealizadoPastaContainer.querySelectorAll('.pasta-btn').forEach(b => {
