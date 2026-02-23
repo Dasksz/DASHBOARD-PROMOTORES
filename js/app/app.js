@@ -1654,6 +1654,10 @@
                 if (typeof updateMetaRealizadoSupervisorFilter === 'function') updateMetaRealizadoSupervisorFilter();
                 if (typeof updateMetaRealizadoVendedorFilter === 'function') updateMetaRealizadoVendedorFilter();
                 updateMetaRealizadoView();
+            } else if (currentActiveView === 'mix' && typeof updateMixView === 'function') {
+                if (typeof updateMixSupervisorFilter === 'function') updateMixSupervisorFilter();
+                if (typeof updateMixVendedorFilter === 'function') updateMixVendedorFilter();
+                updateMixView();
             }
         }
 
@@ -3465,7 +3469,9 @@
                         // Logic to determine label based on filter context
                         // Currently defaulting to 'Promotor' as requested, but prepared for 'Vendedor'
                         let entityType = 'Promotor';
-                        // Future: if (filterState.type === 'seller') entityType = 'Vendedor';
+                        if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+                            entityType = 'Vendedor';
+                        }
 
                         chartTitleEl.textContent = `Performance por ${entityType}`;
                     }
