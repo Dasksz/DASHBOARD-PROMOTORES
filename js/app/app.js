@@ -1409,6 +1409,31 @@
             const innovSupervisor = document.getElementById('innovations-month-supervisor-filter-wrapper');
             const innovVendedor = document.getElementById('innovations-month-vendedor-filter-wrapper');
 
+            // Titulos View Elements
+            const titulosCoord = document.getElementById('titulos-coord-filter-wrapper');
+            const titulosCocoord = document.getElementById('titulos-cocoord-filter-wrapper');
+            const titulosPromotor = document.getElementById('titulos-promotor-filter-wrapper');
+            const titulosSupervisor = document.getElementById('titulos-supervisor-filter-wrapper');
+            const titulosVendedor = document.getElementById('titulos-vendedor-filter-wrapper');
+
+            // LP View Elements
+            const lpCoord = document.getElementById('lp-coord-filter-wrapper');
+            const lpCocoord = document.getElementById('lp-cocoord-filter-wrapper');
+            const lpPromotor = document.getElementById('lp-promotor-filter-wrapper');
+            const lpSupervisor = document.getElementById('lp-supervisor-filter-wrapper');
+            const lpVendedor = document.getElementById('lp-vendedor-filter-wrapper');
+
+            // History View Elements
+            const historyCoord = document.getElementById('history-coord-filter-wrapper');
+            const historyCocoord = document.getElementById('history-cocoord-filter-wrapper');
+            const historyPromotor = document.getElementById('history-promotor-filter-wrapper');
+            const historySupervisor = document.getElementById('history-supervisor-filter-wrapper');
+            const historyVendedor = document.getElementById('history-vendedor-filter-wrapper');
+
+            // Stock View Elements
+            const stockSupervisor = document.getElementById('stock-supervisor-filter-wrapper');
+            const stockVendedor = document.getElementById('stock-vendedor-filter-wrapper');
+
             if (adminViewMode === 'promoter') {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.remove('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.remove('hidden');
@@ -1465,6 +1490,31 @@
                 if (innovSupervisor) innovSupervisor.classList.add('hidden');
                 if (innovVendedor) innovVendedor.classList.add('hidden');
 
+                // Titulos
+                if (titulosCoord) titulosCoord.classList.remove('hidden');
+                if (titulosCocoord) titulosCocoord.classList.remove('hidden');
+                if (titulosPromotor) titulosPromotor.classList.remove('hidden');
+                if (titulosSupervisor) titulosSupervisor.classList.add('hidden');
+                if (titulosVendedor) titulosVendedor.classList.add('hidden');
+
+                // LP
+                if (lpCoord) lpCoord.classList.remove('hidden');
+                if (lpCocoord) lpCocoord.classList.remove('hidden');
+                if (lpPromotor) lpPromotor.classList.remove('hidden');
+                if (lpSupervisor) lpSupervisor.classList.add('hidden');
+                if (lpVendedor) lpVendedor.classList.add('hidden');
+
+                // History
+                if (historyCoord) historyCoord.classList.remove('hidden');
+                if (historyCocoord) historyCocoord.classList.remove('hidden');
+                if (historyPromotor) historyPromotor.classList.remove('hidden');
+                if (historySupervisor) historySupervisor.classList.add('hidden');
+                if (historyVendedor) historyVendedor.classList.add('hidden');
+
+                // Stock
+                if (stockSupervisor) stockSupervisor.classList.add('hidden');
+                if (stockVendedor) stockVendedor.classList.add('hidden');
+
             } else {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.add('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.add('hidden');
@@ -1520,6 +1570,31 @@
                 if (innovPromotor) innovPromotor.classList.add('hidden');
                 if (innovSupervisor) innovSupervisor.classList.remove('hidden');
                 if (innovVendedor) innovVendedor.classList.remove('hidden');
+
+                // Titulos
+                if (titulosCoord) titulosCoord.classList.add('hidden');
+                if (titulosCocoord) titulosCocoord.classList.add('hidden');
+                if (titulosPromotor) titulosPromotor.classList.add('hidden');
+                if (titulosSupervisor) titulosSupervisor.classList.remove('hidden');
+                if (titulosVendedor) titulosVendedor.classList.remove('hidden');
+
+                // LP
+                if (lpCoord) lpCoord.classList.add('hidden');
+                if (lpCocoord) lpCocoord.classList.add('hidden');
+                if (lpPromotor) lpPromotor.classList.add('hidden');
+                if (lpSupervisor) lpSupervisor.classList.remove('hidden');
+                if (lpVendedor) lpVendedor.classList.remove('hidden');
+
+                // History
+                if (historyCoord) historyCoord.classList.add('hidden');
+                if (historyCocoord) historyCocoord.classList.add('hidden');
+                if (historyPromotor) historyPromotor.classList.add('hidden');
+                if (historySupervisor) historySupervisor.classList.remove('hidden');
+                if (historyVendedor) historyVendedor.classList.remove('hidden');
+
+                // Stock
+                if (stockSupervisor) stockSupervisor.classList.remove('hidden');
+                if (stockVendedor) stockVendedor.classList.remove('hidden');
             }
         }
 
@@ -2553,6 +2628,14 @@
         let selectedMixVendedores = new Set();
         let selectedInnovationsMonthSupervisors = new Set();
         let selectedInnovationsMonthVendedores = new Set();
+        let selectedTitulosSupervisors = new Set();
+        let selectedTitulosVendedores = new Set();
+        let selectedLpSupervisors = new Set();
+        let selectedLpVendedores = new Set();
+        let selectedHistorySupervisors = new Set();
+        let selectedHistoryVendedores = new Set();
+        let selectedStockSupervisors = new Set();
+        let selectedStockVendedores = new Set();
         let selectedPositivacaoSuppliers = [];
         let selectedComparisonSuppliers = [];
         let selectedComparisonProducts = [];
@@ -13425,6 +13508,7 @@ const supervisorGroups = new Map();
                         break;
                     case 'estoque':
                         if (stockView) showViewElement(stockView);
+                        setupStockSupervisorFilterHandlers();
                         // Ensure viewState.estoque exists before accessing
                         if (viewState.estoque && (viewState.estoque.dirty || !viewState.estoque.rendered)) {
                             handleStockFilterChange();
@@ -20358,6 +20442,7 @@ const supervisorGroups = new Map();
     window.renderHistoryView = function() {
         if (!isHistoryViewInitialized) {
             setupHierarchyFilters('history', null); // Reuse hierarchy logic
+            setupHistorySupervisorFilterHandlers();
             
             // Set default dates (Current Month)
             const now = new Date();
@@ -20432,7 +20517,34 @@ const supervisorGroups = new Map();
         if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-slate-400">Filtrando dados... <span class="animate-spin inline-block ml-2">⏳</span></td></tr>';
 
         // 1. Get Base Data (Hierarchy)
-        const clients = getHierarchyFilteredClients('history', allClientsData);
+        let clients;
+        if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+            clients = [];
+            const hasSup = selectedHistorySupervisors.size > 0;
+            const hasVend = selectedHistoryVendedores.size > 0;
+            const source = allClientsData;
+            const len = source.length;
+            for(let i=0; i<len; i++) {
+                const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
+                const rca1 = String(c.rca1 || '').trim();
+                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                if (!isAmericanas && rca1 === '') continue;
+                let keep = true;
+                if (hasSup || hasVend) {
+                    const details = sellerDetailsMap.get(rca1);
+                    if (hasSup) {
+                        if (!details || !selectedHistorySupervisors.has(details.supervisor)) keep = false;
+                    }
+                    if (keep && hasVend) {
+                        if (!selectedHistoryVendedores.has(rca1)) keep = false;
+                    }
+                }
+                if (keep) clients.push(c);
+            }
+        } else {
+            clients = getHierarchyFilteredClients('history', allClientsData);
+        }
+
         // Optimize: Use Set of Strings
         const validClientCodes = new Set();
         const clientsLen = clients.length;
@@ -21503,7 +21615,33 @@ const supervisorGroups = new Map();
         const { excludeFilter = null, returnClientsOnly = false } = options;
 
         // 1. Get Base Clients (Hierarchy)
-        const activeClients = getHierarchyFilteredClients('estoque', allClientsData);
+        let activeClients;
+        if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+            activeClients = [];
+            const hasSup = selectedStockSupervisors.size > 0;
+            const hasVend = selectedStockVendedores.size > 0;
+            const source = allClientsData;
+            const len = source.length;
+            for(let i=0; i<len; i++) {
+                const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
+                const rca1 = String(c.rca1 || '').trim();
+                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                if (!isAmericanas && rca1 === '') continue;
+                let keep = true;
+                if (hasSup || hasVend) {
+                    const details = sellerDetailsMap.get(rca1);
+                    if (hasSup) {
+                        if (!details || !selectedStockSupervisors.has(details.supervisor)) keep = false;
+                    }
+                    if (keep && hasVend) {
+                        if (!selectedStockVendedores.has(rca1)) keep = false;
+                    }
+                }
+                if (keep) activeClients.push(c);
+            }
+        } else {
+            activeClients = getHierarchyFilteredClients('estoque', allClientsData);
+        }
         
         const activeClientCodes = new Set();
         const filteredClients = [];
@@ -23680,6 +23818,326 @@ const supervisorGroups = new Map();
             updateFilterButtonText(document.getElementById('innovations-month-vendedor-filter-text'), selectedInnovationsMonthVendedores, 'Todos');
         }
 
+        function setupTitulosSupervisorFilterHandlers() {
+            const supBtn = document.getElementById('titulos-supervisor-filter-btn');
+            const supDropdown = document.getElementById('titulos-supervisor-filter-dropdown');
+            if(supBtn && supDropdown) {
+                const newBtn = supBtn.cloneNode(true);
+                supBtn.parentNode.replaceChild(newBtn, supBtn);
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    supDropdown.classList.toggle('hidden');
+                    document.getElementById('titulos-vendedor-filter-dropdown')?.classList.add('hidden');
+                };
+                supDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedTitulosSupervisors.add(val);
+                        else selectedTitulosSupervisors.delete(val);
+                        updateFilterButtonText(document.getElementById('titulos-supervisor-filter-text'), selectedTitulosSupervisors, 'Todos');
+                        selectedTitulosVendedores.clear();
+                        updateTitulosVendedorFilter();
+                        handleTitulosFilterChange();
+                    }
+                };
+            }
+            const vendBtn = document.getElementById('titulos-vendedor-filter-btn');
+            const vendDropdown = document.getElementById('titulos-vendedor-filter-dropdown');
+            if(vendBtn && vendDropdown) {
+                const newBtn = vendBtn.cloneNode(true);
+                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    vendDropdown.classList.toggle('hidden');
+                    document.getElementById('titulos-supervisor-filter-dropdown')?.classList.add('hidden');
+                };
+                vendDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedTitulosVendedores.add(val);
+                        else selectedTitulosVendedores.delete(val);
+                        updateFilterButtonText(document.getElementById('titulos-vendedor-filter-text'), selectedTitulosVendedores, 'Todos');
+                        handleTitulosFilterChange();
+                    }
+                };
+            }
+            if (!document._titulosFilterListener) {
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('#titulos-supervisor-filter-wrapper')) {
+                        document.getElementById('titulos-supervisor-filter-dropdown')?.classList.add('hidden');
+                    }
+                    if (!e.target.closest('#titulos-vendedor-filter-wrapper')) {
+                        document.getElementById('titulos-vendedor-filter-dropdown')?.classList.add('hidden');
+                    }
+                });
+                document._titulosFilterListener = true;
+            }
+            updateTitulosSupervisorFilter();
+            updateTitulosVendedorFilter();
+        }
+
+        function updateTitulosSupervisorFilter() {
+            const dropdown = document.getElementById('titulos-supervisor-filter-dropdown');
+            if(!dropdown) return;
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
+            renderCheckboxDropdown(dropdown, supervisors, selectedTitulosSupervisors);
+            updateFilterButtonText(document.getElementById('titulos-supervisor-filter-text'), selectedTitulosSupervisors, 'Todos');
+        }
+
+        function updateTitulosVendedorFilter() {
+            const dropdown = document.getElementById('titulos-vendedor-filter-dropdown');
+            if(!dropdown) return;
+            const validRcas = new Set();
+            if (selectedTitulosSupervisors.size > 0) {
+                sellerDetailsMap.forEach((d, code) => { if (selectedTitulosSupervisors.has(d.supervisor)) validRcas.add(code); });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+            renderRcaCheckboxDropdown(dropdown, validRcas, selectedTitulosVendedores);
+            updateFilterButtonText(document.getElementById('titulos-vendedor-filter-text'), selectedTitulosVendedores, 'Todos');
+        }
+
+        function setupLpSupervisorFilterHandlers() {
+            const supBtn = document.getElementById('lp-supervisor-filter-btn');
+            const supDropdown = document.getElementById('lp-supervisor-filter-dropdown');
+            if(supBtn && supDropdown) {
+                const newBtn = supBtn.cloneNode(true);
+                supBtn.parentNode.replaceChild(newBtn, supBtn);
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    supDropdown.classList.toggle('hidden');
+                    document.getElementById('lp-vendedor-filter-dropdown')?.classList.add('hidden');
+                };
+                supDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedLpSupervisors.add(val);
+                        else selectedLpSupervisors.delete(val);
+                        updateFilterButtonText(document.getElementById('lp-supervisor-filter-text'), selectedLpSupervisors, 'Todos');
+                        selectedLpVendedores.clear();
+                        updateLpVendedorFilter();
+                        handleLpFilterChange();
+                    }
+                };
+            }
+            const vendBtn = document.getElementById('lp-vendedor-filter-btn');
+            const vendDropdown = document.getElementById('lp-vendedor-filter-dropdown');
+            if(vendBtn && vendDropdown) {
+                const newBtn = vendBtn.cloneNode(true);
+                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    vendDropdown.classList.toggle('hidden');
+                    document.getElementById('lp-supervisor-filter-dropdown')?.classList.add('hidden');
+                };
+                vendDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedLpVendedores.add(val);
+                        else selectedLpVendedores.delete(val);
+                        updateFilterButtonText(document.getElementById('lp-vendedor-filter-text'), selectedLpVendedores, 'Todos');
+                        handleLpFilterChange();
+                    }
+                };
+            }
+            if (!document._lpFilterListener) {
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('#lp-supervisor-filter-wrapper')) {
+                        document.getElementById('lp-supervisor-filter-dropdown')?.classList.add('hidden');
+                    }
+                    if (!e.target.closest('#lp-vendedor-filter-wrapper')) {
+                        document.getElementById('lp-vendedor-filter-dropdown')?.classList.add('hidden');
+                    }
+                });
+                document._lpFilterListener = true;
+            }
+            updateLpSupervisorFilter();
+            updateLpVendedorFilter();
+        }
+
+        function updateLpSupervisorFilter() {
+            const dropdown = document.getElementById('lp-supervisor-filter-dropdown');
+            if(!dropdown) return;
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
+            renderCheckboxDropdown(dropdown, supervisors, selectedLpSupervisors);
+            updateFilterButtonText(document.getElementById('lp-supervisor-filter-text'), selectedLpSupervisors, 'Todos');
+        }
+
+        function updateLpVendedorFilter() {
+            const dropdown = document.getElementById('lp-vendedor-filter-dropdown');
+            if(!dropdown) return;
+            const validRcas = new Set();
+            if (selectedLpSupervisors.size > 0) {
+                sellerDetailsMap.forEach((d, code) => { if (selectedLpSupervisors.has(d.supervisor)) validRcas.add(code); });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+            renderRcaCheckboxDropdown(dropdown, validRcas, selectedLpVendedores);
+            updateFilterButtonText(document.getElementById('lp-vendedor-filter-text'), selectedLpVendedores, 'Todos');
+        }
+
+        function setupHistorySupervisorFilterHandlers() {
+            const supBtn = document.getElementById('history-supervisor-filter-btn');
+            const supDropdown = document.getElementById('history-supervisor-filter-dropdown');
+            if(supBtn && supDropdown) {
+                const newBtn = supBtn.cloneNode(true);
+                supBtn.parentNode.replaceChild(newBtn, supBtn);
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    supDropdown.classList.toggle('hidden');
+                    document.getElementById('history-vendedor-filter-dropdown')?.classList.add('hidden');
+                };
+                supDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedHistorySupervisors.add(val);
+                        else selectedHistorySupervisors.delete(val);
+                        updateFilterButtonText(document.getElementById('history-supervisor-filter-text'), selectedHistorySupervisors, 'Todos');
+                        selectedHistoryVendedores.clear();
+                        updateHistoryVendedorFilter();
+                        if(typeof renderHistoryView === 'function') renderHistoryView();
+                    }
+                };
+            }
+            const vendBtn = document.getElementById('history-vendedor-filter-btn');
+            const vendDropdown = document.getElementById('history-vendedor-filter-dropdown');
+            if(vendBtn && vendDropdown) {
+                const newBtn = vendBtn.cloneNode(true);
+                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    vendDropdown.classList.toggle('hidden');
+                    document.getElementById('history-supervisor-filter-dropdown')?.classList.add('hidden');
+                };
+                vendDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedHistoryVendedores.add(val);
+                        else selectedHistoryVendedores.delete(val);
+                        updateFilterButtonText(document.getElementById('history-vendedor-filter-text'), selectedHistoryVendedores, 'Todos');
+                        if(typeof renderHistoryView === 'function') renderHistoryView();
+                    }
+                };
+            }
+            if (!document._historyFilterListener) {
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('#history-supervisor-filter-wrapper')) {
+                        document.getElementById('history-supervisor-filter-dropdown')?.classList.add('hidden');
+                    }
+                    if (!e.target.closest('#history-vendedor-filter-wrapper')) {
+                        document.getElementById('history-vendedor-filter-dropdown')?.classList.add('hidden');
+                    }
+                });
+                document._historyFilterListener = true;
+            }
+            updateHistorySupervisorFilter();
+            updateHistoryVendedorFilter();
+        }
+
+        function updateHistorySupervisorFilter() {
+            const dropdown = document.getElementById('history-supervisor-filter-dropdown');
+            if(!dropdown) return;
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
+            renderCheckboxDropdown(dropdown, supervisors, selectedHistorySupervisors);
+            updateFilterButtonText(document.getElementById('history-supervisor-filter-text'), selectedHistorySupervisors, 'Todos');
+        }
+
+        function updateHistoryVendedorFilter() {
+            const dropdown = document.getElementById('history-vendedor-filter-dropdown');
+            if(!dropdown) return;
+            const validRcas = new Set();
+            if (selectedHistorySupervisors.size > 0) {
+                sellerDetailsMap.forEach((d, code) => { if (selectedHistorySupervisors.has(d.supervisor)) validRcas.add(code); });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+            renderRcaCheckboxDropdown(dropdown, validRcas, selectedHistoryVendedores);
+            updateFilterButtonText(document.getElementById('history-vendedor-filter-text'), selectedHistoryVendedores, 'Todos');
+        }
+
+        function setupStockSupervisorFilterHandlers() {
+            const supBtn = document.getElementById('stock-supervisor-filter-btn');
+            const supDropdown = document.getElementById('stock-supervisor-filter-dropdown');
+            if(supBtn && supDropdown) {
+                const newBtn = supBtn.cloneNode(true);
+                supBtn.parentNode.replaceChild(newBtn, supBtn);
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    supDropdown.classList.toggle('hidden');
+                    document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
+                };
+                supDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedStockSupervisors.add(val);
+                        else selectedStockSupervisors.delete(val);
+                        updateFilterButtonText(document.getElementById('stock-supervisor-filter-text'), selectedStockSupervisors, 'Todos');
+                        selectedStockVendedores.clear();
+                        updateStockVendedorFilter();
+                        handleStockFilterChange();
+                    }
+                };
+            }
+            const vendBtn = document.getElementById('stock-vendedor-filter-btn');
+            const vendDropdown = document.getElementById('stock-vendedor-filter-dropdown');
+            if(vendBtn && vendDropdown) {
+                const newBtn = vendBtn.cloneNode(true);
+                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    vendDropdown.classList.toggle('hidden');
+                    document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
+                };
+                vendDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedStockVendedores.add(val);
+                        else selectedStockVendedores.delete(val);
+                        updateFilterButtonText(document.getElementById('stock-vendedor-filter-text'), selectedStockVendedores, 'Todos');
+                        handleStockFilterChange();
+                    }
+                };
+            }
+            if (!document._stockFilterListener) {
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('#stock-supervisor-filter-wrapper')) {
+                        document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
+                    }
+                    if (!e.target.closest('#stock-vendedor-filter-wrapper')) {
+                        document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
+                    }
+                });
+                document._stockFilterListener = true;
+            }
+            updateStockSupervisorFilter();
+            updateStockVendedorFilter();
+        }
+
+        function updateStockSupervisorFilter() {
+            const dropdown = document.getElementById('stock-supervisor-filter-dropdown');
+            if(!dropdown) return;
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
+            renderCheckboxDropdown(dropdown, supervisors, selectedStockSupervisors);
+            updateFilterButtonText(document.getElementById('stock-supervisor-filter-text'), selectedStockSupervisors, 'Todos');
+        }
+
+        function updateStockVendedorFilter() {
+            const dropdown = document.getElementById('stock-vendedor-filter-dropdown');
+            if(!dropdown) return;
+            const validRcas = new Set();
+            if (selectedStockSupervisors.size > 0) {
+                sellerDetailsMap.forEach((d, code) => { if (selectedStockSupervisors.has(d.supervisor)) validRcas.add(code); });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+            renderRcaCheckboxDropdown(dropdown, validRcas, selectedStockVendedores);
+            updateFilterButtonText(document.getElementById('stock-vendedor-filter-text'), selectedStockVendedores, 'Todos');
+        }
+
         function renderPositivacaoView() {
             setupHierarchyFilters('positivacao', () => handlePositivacaoFilterChange({ excludeFilter: 'hierarchy' }));
             setupPositivacaoSupervisorFilterHandlers();
@@ -24080,6 +24538,7 @@ const supervisorGroups = new Map();
 
         function renderTitulosView() {
             setupHierarchyFilters('titulos', () => handleTitulosFilterChange());
+            setupTitulosSupervisorFilterHandlers();
 
             // Rede Filters
             const redeGroupContainer = document.getElementById('titulos-rede-group-container');
@@ -24211,7 +24670,33 @@ const supervisorGroups = new Map();
 
             // 2. Filter Clients Base (Hierarchy + Rede)
             // Use Hierarchy Filter
-            let allowedClients = getHierarchyFilteredClients('titulos', allClientsData);
+            let allowedClients;
+            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+                allowedClients = [];
+                const hasSup = selectedTitulosSupervisors.size > 0;
+                const hasVend = selectedTitulosVendedores.size > 0;
+                const source = allClientsData;
+                const len = source.length;
+                for(let i=0; i<len; i++) {
+                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
+                    const rca1 = String(c.rca1 || '').trim();
+                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                    if (!isAmericanas && rca1 === '') continue;
+                    let keep = true;
+                    if (hasSup || hasVend) {
+                        const details = sellerDetailsMap.get(rca1);
+                        if (hasSup) {
+                            if (!details || !selectedTitulosSupervisors.has(details.supervisor)) keep = false;
+                        }
+                        if (keep && hasVend) {
+                            if (!selectedTitulosVendedores.has(rca1)) keep = false;
+                        }
+                    }
+                    if (keep) allowedClients.push(c);
+                }
+            } else {
+                allowedClients = getHierarchyFilteredClients('titulos', allClientsData);
+            }
 
             // Apply Rede Filter
             const isComRede = titulosRedeGroupFilter === 'com_rede';
@@ -24487,6 +24972,7 @@ const supervisorGroups = new Map();
 
     function renderLojaPerfeitaView() {
         setupHierarchyFilters('lp', () => handleLpFilterChange());
+            setupLpSupervisorFilterHandlers();
 
         // Rede Filters
         const redeGroupContainer = document.getElementById('lp-rede-group-container');
@@ -24614,7 +25100,33 @@ const supervisorGroups = new Map();
         }
 
         // 2. Filter Clients Base (Hierarchy + Rede)
-        let allowedClients = getHierarchyFilteredClients('lp', allClientsData);
+        let allowedClients;
+        if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+            allowedClients = [];
+            const hasSup = selectedLpSupervisors.size > 0;
+            const hasVend = selectedLpVendedores.size > 0;
+            const source = allClientsData;
+            const len = source.length;
+            for(let i=0; i<len; i++) {
+                const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
+                const rca1 = String(c.rca1 || '').trim();
+                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                if (!isAmericanas && rca1 === '') continue;
+                let keep = true;
+                if (hasSup || hasVend) {
+                    const details = sellerDetailsMap.get(rca1);
+                    if (hasSup) {
+                        if (!details || !selectedLpSupervisors.has(details.supervisor)) keep = false;
+                    }
+                    if (keep && hasVend) {
+                        if (!selectedLpVendedores.has(rca1)) keep = false;
+                    }
+                }
+                if (keep) allowedClients.push(c);
+            }
+        } else {
+            allowedClients = getHierarchyFilteredClients('lp', allClientsData);
+        }
 
         // Apply Rede Filter
         const isComRede = lpRedeGroupFilter === 'com_rede';
