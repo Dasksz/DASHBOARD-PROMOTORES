@@ -4,6 +4,29 @@
         // --- CONFIGURATION MOVED TO utils.js ---
         // SUPPLIER_CONFIG, resolveSupplierPasta, GARBAGE_SELLER_KEYWORDS, isGarbageSeller available globally
 
+        // --- GLOBAL STATE ---
+        let selectedCoverageTiposVenda = [];
+        let selectedComparisonTiposVenda = [];
+        let selectedCityTiposVenda = [];
+        let selectedPositivacaoTiposVenda = [];
+        let historicalBests = {};
+        let selectedHolidays = [];
+
+        let selectedMainRedes = [];
+        let selectedVendedores = new Set();
+        let selectedSupervisors = new Set();
+        let selectedComparisonSupervisors = new Set();
+        let selectedComparisonVendedores = new Set();
+        let adminViewMode = 'promoter'; // 'promoter' or 'seller'
+        let selectedCityRedes = [];
+        let selectedPositivacaoRedes = [];
+        let selectedComparisonRedes = [];
+
+        let mainRedeGroupFilter = '';
+        let cityRedeGroupFilter = '';
+        let positivacaoRedeGroupFilter = '';
+        let comparisonRedeGroupFilter = '';
+
         let metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [] };
         let lastSaleDate = null;
 
@@ -1654,8 +1677,14 @@
                 if (typeof updateMetaRealizadoSupervisorFilter === 'function') updateMetaRealizadoSupervisorFilter();
                 if (typeof updateMetaRealizadoVendedorFilter === 'function') updateMetaRealizadoVendedorFilter();
                 updateMetaRealizadoView();
+            } else if (currentActiveView === 'comparativo' && typeof updateComparisonView === 'function') {
+                if (typeof updateComparisonSupervisorFilterDropdown === 'function') updateComparisonSupervisorFilterDropdown();
+                if (typeof updateComparisonVendedorFilterDropdown === 'function') updateComparisonVendedorFilterDropdown();
+                updateComparisonView();
             }
         }
+
+        window.toggleAdminViewMode = toggleAdminViewMode;
 
         function setupSupervisorFilterHandlers() {
             if (mainSupervisorFilterBtn && mainSupervisorFilterDropdown) {
@@ -2414,8 +2443,13 @@
         const positivacaoCodCliFilterSuggestions = document.getElementById('positivacao-codcli-filter-suggestions');
         const clearPositivacaoFiltersBtn = document.getElementById('clear-positivacao-filters-btn');
 
-        const comparisonSupervisorFilter = document.getElementById('comparison-supervisor-filter');
+        const comparisonSupervisorFilterBtn = document.getElementById('comparison-supervisor-filter-btn');
+        const comparisonSupervisorFilterText = document.getElementById('comparison-supervisor-filter-text');
+        const comparisonSupervisorFilterDropdown = document.getElementById('comparison-supervisor-filter-dropdown');
+        const comparisonVendedorFilterBtn = document.getElementById('comparison-vendedor-filter-btn');
         const comparisonVendedorFilterText = document.getElementById('comparison-vendedor-filter-text');
+        const comparisonVendedorFilterDropdown = document.getElementById('comparison-vendedor-filter-dropdown');
+
         const comparisonFornecedorToggleContainer = document.getElementById('comparison-fornecedor-toggle-container');
         const comparisonFilialFilter = document.getElementById('comparison-filial-filter');
 
@@ -2676,25 +2710,6 @@
         let selectedPositivacaoSuppliers = [];
         let selectedComparisonSuppliers = [];
         let selectedComparisonProducts = [];
-        let selectedCoverageTiposVenda = [];
-        let selectedComparisonTiposVenda = [];
-        let selectedCityTiposVenda = [];
-        let selectedPositivacaoTiposVenda = [];
-        let historicalBests = {};
-        let selectedHolidays = [];
-
-        let selectedMainRedes = [];
-        let selectedVendedores = new Set();
-        let selectedSupervisors = new Set();
-        let adminViewMode = 'promoter'; // 'promoter' or 'seller'
-        let selectedCityRedes = [];
-        let selectedPositivacaoRedes = [];
-        let selectedComparisonRedes = [];
-
-        let mainRedeGroupFilter = '';
-        let cityRedeGroupFilter = '';
-        let positivacaoRedeGroupFilter = '';
-        let comparisonRedeGroupFilter = '';
 
         let selectedInnovationsMonthTiposVenda = [];
 
@@ -11427,6 +11442,23 @@ const supervisorGroups = new Map();
 
             let clients = getHierarchyFilteredClients('comparison', allClientsData);
 
+            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+                 if (selectedComparisonSupervisors.size > 0 || selectedComparisonVendedores.size > 0) {
+                     clients = clients.filter(c => {
+                         const rca = String(c['RCA 1'] || c['rca1'] || c['RCA1'] || '').trim();
+                         const details = sellerDetailsMap.get(rca);
+
+                         if (selectedComparisonSupervisors.size > 0) {
+                             if (!details || !details.supervisor || !selectedComparisonSupervisors.has(details.supervisor)) return false;
+                         }
+                         if (selectedComparisonVendedores.size > 0) {
+                             if (!selectedComparisonVendedores.has(rca)) return false;
+                         }
+                         return true;
+                     });
+                 }
+            }
+
             if (comparisonRedeGroupFilter) {
                 if (comparisonRedeGroupFilter === 'com_rede') {
                     clients = clients.filter(c => c.ramo && c.ramo !== 'N/A');
@@ -11461,7 +11493,61 @@ const supervisorGroups = new Map();
         }
 
 
+        function updateComparisonSupervisorFilterDropdown() {
+            if (!comparisonSupervisorFilterDropdown) return;
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => {
+                if (d.supervisor && d.supervisor !== '0' && d.supervisor !== 'N/A') {
+                    supervisors.add(d.supervisor);
+                }
+            });
+            const options = Array.from(supervisors).sort();
+            let html = `<label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-700/50 mb-1"><span class="text-xs text-orange-400 font-bold uppercase tracking-wider">Selecionar Todos</span><input type="checkbox" value="ALL" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800"></label>`;
+            options.forEach(sup => {
+                const checked = selectedComparisonSupervisors.has(sup) ? 'checked' : '';
+                html += `<label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group"><span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(sup)}</span><input type="checkbox" value="${window.escapeHtml(sup)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800"></label>`;
+            });
+            comparisonSupervisorFilterDropdown.innerHTML = html;
+
+            if (comparisonSupervisorFilterText) {
+                 if (selectedComparisonSupervisors.size === 0) comparisonSupervisorFilterText.textContent = 'Todos';
+                 else if (selectedComparisonSupervisors.size === 1) comparisonSupervisorFilterText.textContent = selectedComparisonSupervisors.values().next().value;
+                 else comparisonSupervisorFilterText.textContent = `${selectedComparisonSupervisors.size} Selecionados`;
+            }
+        }
+
+        function updateComparisonVendedorFilterDropdown() {
+            if (!comparisonVendedorFilterDropdown) return;
+            const sellers = [];
+            sellerDetailsMap.forEach((details, rca) => {
+                 if (details.supervisor === '0' || details.supervisor === 'N/A') return;
+                 if (selectedComparisonSupervisors.size > 0 && !selectedComparisonSupervisors.has(details.supervisor)) return;
+                 sellers.push({ rca: rca, name: details.name || rca });
+            });
+            sellers.sort((a, b) => a.name.localeCompare(b.name));
+
+            let html = `<label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-700/50 mb-1"><span class="text-xs text-orange-400 font-bold uppercase tracking-wider">Selecionar Todos</span><input type="checkbox" value="ALL" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800"></label>`;
+
+            sellers.forEach(s => {
+                const checked = selectedComparisonVendedores.has(s.rca) ? 'checked' : '';
+                 html += `<label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group"><span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(s.name)}</span><input type="checkbox" value="${window.escapeHtml(s.rca)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800"></label>`;
+            });
+            comparisonVendedorFilterDropdown.innerHTML = html;
+
+             if (comparisonVendedorFilterText) {
+                 if (selectedComparisonVendedores.size === 0) comparisonVendedorFilterText.textContent = 'Todos';
+                 else if (selectedComparisonVendedores.size === 1) {
+                     const rca = selectedComparisonVendedores.values().next().value;
+                     const d = sellerDetailsMap.get(rca);
+                     comparisonVendedorFilterText.textContent = d ? (getFirstName(d.name) || rca) : rca;
+                 }
+                 else comparisonVendedorFilterText.textContent = `${selectedComparisonVendedores.size} Selecionados`;
+            }
+        }
+
         function updateAllComparisonFilters() {
+            updateComparisonSupervisorFilterDropdown();
+            updateComparisonVendedorFilterDropdown();
             const { currentSales: supplierCurrent, historySales: supplierHistory } = getComparisonFilteredData({ excludeFilter: 'supplier' });
             const supplierOptionsData = [...supplierCurrent, ...supplierHistory];
             selectedComparisonSuppliers = updateSupplierFilter(comparisonSupplierFilterDropdown, comparisonSupplierFilterText, selectedComparisonSuppliers, supplierOptionsData, 'comparison');
@@ -14989,6 +15075,8 @@ const supervisorGroups = new Map();
             });
 
             const resetComparisonFilters = () => {
+                selectedComparisonSupervisors.clear();
+                selectedComparisonVendedores.clear();
                 selectedComparisonTiposVenda = [];
                 currentComparisonFornecedor = 'PEPSICO';
                 selectedComparisonSuppliers = [];
@@ -14996,6 +15084,15 @@ const supervisorGroups = new Map();
                 selectedComparisonRedes = [];
 
                 if (comparisonCityFilter) comparisonCityFilter.value = '';
+
+                if (comparisonSupervisorFilterDropdown) {
+                    comparisonSupervisorFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    updateComparisonSupervisorFilterDropdown();
+                }
+                if (comparisonVendedorFilterDropdown) {
+                    comparisonVendedorFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    updateComparisonVendedorFilterDropdown();
+                }
 
                 if (comparisonTipoVendaFilterDropdown) {
                     comparisonTipoVendaFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
@@ -15026,6 +15123,103 @@ const supervisorGroups = new Map();
 
                 handleComparisonFilterChange();
             };
+
+            // Comparison Supervisor Filter
+            if (comparisonSupervisorFilterBtn && comparisonSupervisorFilterDropdown) {
+                comparisonSupervisorFilterBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    comparisonSupervisorFilterDropdown.classList.toggle('hidden');
+                    // Close others
+                    if (comparisonVendedorFilterDropdown) comparisonVendedorFilterDropdown.classList.add('hidden');
+                });
+                comparisonSupervisorFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type !== 'checkbox') return;
+                    const value = e.target.value;
+                    const checked = e.target.checked;
+
+                    if (value === 'ALL') {
+                        const checkboxes = comparisonSupervisorFilterDropdown.querySelectorAll('input[type="checkbox"]');
+                        if (checked) {
+                            checkboxes.forEach(cb => {
+                                if (cb.value !== 'ALL') {
+                                    cb.checked = true;
+                                    selectedComparisonSupervisors.add(cb.value);
+                                }
+                            });
+                        } else {
+                            checkboxes.forEach(cb => {
+                                cb.checked = false;
+                            });
+                            selectedComparisonSupervisors.clear();
+                        }
+                    } else {
+                        if (checked) {
+                            selectedComparisonSupervisors.add(value);
+                        } else {
+                            selectedComparisonSupervisors.delete(value);
+                            const allChk = comparisonSupervisorFilterDropdown.querySelector('input[value="ALL"]');
+                            if (allChk) allChk.checked = false;
+                        }
+                    }
+                    updateComparisonSupervisorFilterDropdown();
+                    updateComparisonVendedorFilterDropdown(); // Refresh sellers
+                    updateAllComparisonFilters();
+                    updateComparisonView();
+                });
+            }
+
+            // Comparison Vendedor Filter
+            if (comparisonVendedorFilterBtn && comparisonVendedorFilterDropdown) {
+                comparisonVendedorFilterBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    comparisonVendedorFilterDropdown.classList.toggle('hidden');
+                    // Close others
+                    if (comparisonSupervisorFilterDropdown) comparisonSupervisorFilterDropdown.classList.add('hidden');
+                });
+                comparisonVendedorFilterDropdown.addEventListener('change', (e) => {
+                     if (e.target.type !== 'checkbox') return;
+                    const value = e.target.value;
+                    const checked = e.target.checked;
+
+                    if (value === 'ALL') {
+                        const checkboxes = comparisonVendedorFilterDropdown.querySelectorAll('input[type="checkbox"]');
+                        if (checked) {
+                            checkboxes.forEach(cb => {
+                                if (cb.value !== 'ALL') {
+                                    cb.checked = true;
+                                    selectedComparisonVendedores.add(cb.value);
+                                }
+                            });
+                        } else {
+                            checkboxes.forEach(cb => {
+                                cb.checked = false;
+                            });
+                            selectedComparisonVendedores.clear();
+                        }
+                    } else {
+                        if (checked) {
+                            selectedComparisonVendedores.add(value);
+                        } else {
+                            selectedComparisonVendedores.delete(value);
+                            const allChk = comparisonVendedorFilterDropdown.querySelector('input[value="ALL"]');
+                            if (allChk) allChk.checked = false;
+                        }
+                    }
+                    updateComparisonVendedorFilterDropdown();
+                    updateAllComparisonFilters();
+                    updateComparisonView();
+                });
+            }
+
+            // Close dropdowns on click outside
+            document.addEventListener('click', (e) => {
+                if (comparisonSupervisorFilterDropdown && comparisonSupervisorFilterBtn && !comparisonSupervisorFilterBtn.contains(e.target) && !comparisonSupervisorFilterDropdown.contains(e.target)) {
+                    comparisonSupervisorFilterDropdown.classList.add('hidden');
+                }
+                if (comparisonVendedorFilterDropdown && comparisonVendedorFilterBtn && !comparisonVendedorFilterBtn.contains(e.target) && !comparisonVendedorFilterDropdown.contains(e.target)) {
+                    comparisonVendedorFilterDropdown.classList.add('hidden');
+                }
+            });
 
             clearComparisonFiltersBtn.addEventListener('click', resetComparisonFilters);
 
