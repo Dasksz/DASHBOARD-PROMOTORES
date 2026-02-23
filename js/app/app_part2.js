@@ -1041,6 +1041,20 @@
                             if (data.nota_perfeita_count !== undefined && data.nota_perfeita_count > 0) {
                                 window.showToast('success', `${data.nota_perfeita_count} clientes identificados no arquivo 'Loja Perfeita'.`);
                             }
+
+                            // --- NOTIFICACAO DE PRODUTOS REATIVADOS ---
+                            if (data.reativatedProducts && data.reativatedProducts.length > 0) {
+                                const uniqueCodes = [...new Set(data.reativatedProducts)];
+                                let msg = "Produtos inseridos não cadastrados na planilha de cadastro de produtos:\n\n";
+                                uniqueCodes.forEach(code => msg += `${code}\n`);
+
+                                // Show Persistent Toast (Warning with long duration or until close)
+                                // Standard toast logic might auto-close. We use a custom alert or modification.
+                                // For now, using 'warning' toast which user can close.
+                                window.showToast('warning', msg, "Aviso de Reativação");
+                            }
+                            // ------------------------------------------
+
                             enviarDadosParaSupabase(data);
                             worker.terminate();
                         } else if (type === 'error') {

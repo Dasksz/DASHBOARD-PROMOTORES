@@ -1046,7 +1046,8 @@
                     const code = item.PRODUTO;
 
                     // CRITICAL: Ensure these products are considered "Active" so they appear in lists
-                    activeProductCodesFromCadastro.add(code);
+                    // --- MODIFICAÇÃO: Não reativar automaticamente produtos sem venda (apenas estoque) ---
+                    // activeProductCodesFromCadastro.add(code);
 
                     // Note: productMasterMap stores qtdeMaster. We probably don't have that in stock lines,
                     // but we have Description/Supplier which goes into productDetailsMap (used for display).
@@ -1061,6 +1062,29 @@
                             dtCadastro: item.DTPED, // Use the fixed date (Max Date)
                             pasta: item.PASTA || item.OBSERVACAOFOR || null // Ensure Pasta is available
                         });
+                    }
+                });
+
+                // --- NOVA LOGICA: Reativação Condicional por Venda ---
+                const reativatedProducts = [];
+                processedSalesData.forEach(sale => {
+                    const code = sale.PRODUTO;
+                    // Se o produto NÃO está ativo pelo cadastro mas tem venda > 1
+                    if (!activeProductCodesFromCadastro.has(code) && (sale.VLVENDA > 1 || sale.VLBONIFIC > 1)) {
+                        activeProductCodesFromCadastro.add(code);
+                        reativatedProducts.push(code);
+
+                        // Garante que existe no mapa de detalhes para exibição
+                        if (!productDetailsMap.has(code)) {
+                            productDetailsMap.set(code, {
+                                code: code,
+                                descricao: sale.DESCRICAO || `Produto ${code}`,
+                                fornecedor: sale.FORNECEDOR || 'N/A',
+                                codfor: sale.CODFOR || 'N/A',
+                                dtCadastro: sale.DTPED,
+                                pasta: sale.OBSERVACAOFOR || null
+                            });
+                        }
                     }
                 });
 
@@ -1344,7 +1368,8 @@
                         productDetails: Object.fromEntries(productDetailsMap),
                         passedWorkingDaysCurrentMonth: passedWorkingDaysCurrentMonth,
                         lastSaleDate: String(maxTs),
-                        isColumnar: true
+                        isColumnar: true,
+                        reativatedProducts: reativatedProducts
                     }
                 });
 
