@@ -20797,7 +20797,52 @@ const supervisorGroups = new Map();
         }, 10);
     }
     
+    let _stockListenersInitialized = false;
+
     function updateAllStockFilters(options = {}) {
+        if (!_stockListenersInitialized) {
+            const supplierBtn = document.getElementById('stock-supplier-filter-btn');
+            const supplierDd = document.getElementById('stock-supplier-filter-dropdown');
+            if (supplierBtn && supplierDd) {
+                supplierBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    supplierDd.classList.toggle('hidden');
+                });
+            }
+
+            const pastaBtn = document.getElementById('stock-pasta-filter-btn');
+            const pastaDd = document.getElementById('stock-pasta-filter-dropdown');
+            if (pastaBtn && pastaDd) {
+                pastaBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    pastaDd.classList.toggle('hidden');
+                });
+            }
+
+            const productBtn = document.getElementById('stock-product-filter-btn');
+            const productDd = document.getElementById('stock-product-filter-dropdown');
+            if (productBtn && productDd) {
+                productBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    productDd.classList.toggle('hidden');
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                if (supplierBtn && !supplierBtn.contains(e.target) && supplierDd && !supplierDd.contains(e.target)) {
+                    supplierDd.classList.add('hidden');
+                }
+                if (pastaBtn && !pastaBtn.contains(e.target) && pastaDd && !pastaDd.contains(e.target)) {
+                    pastaDd.classList.add('hidden');
+                }
+                if (productBtn && !productBtn.contains(e.target) && productDd && !productDd.contains(e.target)) {
+                    productDd.classList.add('hidden');
+                }
+            });
+
+            _stockListenersInitialized = true;
+        }
+
         const { skipFilter = null } = options;
 
         const products = embeddedData.products || [];
@@ -20824,8 +20869,9 @@ const supervisorGroups = new Map();
 
             products.forEach(p => {
                 if (supplierSet && !supplierSet.has(p.fornecedor)) return;
-                const pasta = optimizedData.productPastaMap.get(p.code);
-                if (pasta && pasta !== '0' && pasta !== 'N/A') pastas.add(pasta);
+                // Simplified Logic: PEPSICO vs MULTIMARCAS
+                const pasta = (window.SUPPLIER_CODES.PEPSICO.includes(String(p.fornecedor))) ? 'PEPSICO' : 'MULTIMARCAS';
+                if (pasta) pastas.add(pasta);
             });
 
             // Re-use logic similar to Supplier but for Pasta (custom simple renderer)
@@ -20868,7 +20914,7 @@ const supervisorGroups = new Map();
 
                 const filteredProducts = products.filter(p => {
                     if (supplierSet && !supplierSet.has(p.fornecedor)) return false;
-                    const pasta = optimizedData.productPastaMap.get(p.code);
+                    const pasta = (window.SUPPLIER_CODES.PEPSICO.includes(String(p.fornecedor))) ? 'PEPSICO' : 'MULTIMARCAS';
                     if (pastaSet && (!pasta || !pastaSet.has(pasta))) return false;
                     return true;
                 }).map(p => ({
@@ -21021,7 +21067,7 @@ const supervisorGroups = new Map();
 
             // Pasta Filter
             if (excludeFilter !== 'pasta' && pastaSet) {
-                const pasta = optimizedData.productPastaMap.get(code);
+                const pasta = (window.SUPPLIER_CODES.PEPSICO.includes(String(p.fornecedor))) ? 'PEPSICO' : 'MULTIMARCAS';
                 if (!pasta || !pastaSet.has(pasta)) return;
             }
 
