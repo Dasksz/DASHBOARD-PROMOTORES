@@ -645,7 +645,7 @@
                             <div id="codcli-search-icon" class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
                                 <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                             </div>
-                            <input type="text" id="codcli-filter" placeholder="Código, Nome, CNPJ..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full pl-10 p-2.5 transition-all" autocomplete="off">
+                            <input type="search" id="codcli-filter" name="client_filter_query" placeholder="Código, Nome, CNPJ..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full pl-10 p-2.5 transition-all" autocomplete="off">
                             <div id="codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
                         </div>
                     </div>
@@ -2815,7 +2815,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <div class="relative">
-                    <input type="search" id="produtos-search" name="product_filter_query" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly');" spellcheck="false" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-40 sm:w-64 pl-3 p-2.5">
+                    <input type="search" id="produtos-search" name="product_filter_query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly');" spellcheck="false" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-40 sm:w-64 pl-3 p-2.5">
                 </div>
                 <div class="relative">
                     <button id="produtos-options-btn" class="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-700 transition-colors">
