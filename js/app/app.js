@@ -1395,6 +1395,20 @@
             const coverageSupervisor = document.getElementById('coverage-supervisor-filter-wrapper');
             const coverageVendedor = document.getElementById('coverage-vendedor-filter-wrapper');
 
+            // Mix View Elements
+            const mixCoord = document.getElementById('mix-coord-filter-wrapper');
+            const mixCocoord = document.getElementById('mix-cocoord-filter-wrapper');
+            const mixPromotor = document.getElementById('mix-promotor-filter-wrapper');
+            const mixSupervisor = document.getElementById('mix-supervisor-filter-wrapper');
+            const mixVendedor = document.getElementById('mix-vendedor-filter-wrapper');
+
+            // Innovations View Elements
+            const innovationsCoord = document.getElementById('innovations-month-coord-filter-wrapper');
+            const innovationsCocoord = document.getElementById('innovations-month-cocoord-filter-wrapper');
+            const innovationsPromotor = document.getElementById('innovations-month-promotor-filter-wrapper');
+            const innovationsSupervisor = document.getElementById('innovations-month-supervisor-filter-wrapper');
+            const innovationsVendedor = document.getElementById('innovations-month-vendedor-filter-wrapper');
+
             if (adminViewMode === 'promoter') {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.remove('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.remove('hidden');
@@ -1437,6 +1451,20 @@
                 if (coverageSupervisor) coverageSupervisor.classList.add('hidden');
                 if (coverageVendedor) coverageVendedor.classList.add('hidden');
 
+                // Mix
+                if (mixCoord) mixCoord.classList.remove('hidden');
+                if (mixCocoord) mixCocoord.classList.remove('hidden');
+                if (mixPromotor) mixPromotor.classList.remove('hidden');
+                if (mixSupervisor) mixSupervisor.classList.add('hidden');
+                if (mixVendedor) mixVendedor.classList.add('hidden');
+
+                // Innovations
+                if (innovationsCoord) innovationsCoord.classList.remove('hidden');
+                if (innovationsCocoord) innovationsCocoord.classList.remove('hidden');
+                if (innovationsPromotor) innovationsPromotor.classList.remove('hidden');
+                if (innovationsSupervisor) innovationsSupervisor.classList.add('hidden');
+                if (innovationsVendedor) innovationsVendedor.classList.add('hidden');
+
             } else {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.add('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.add('hidden');
@@ -1478,6 +1506,20 @@
                 if (coveragePromotor) coveragePromotor.classList.add('hidden');
                 if (coverageSupervisor) coverageSupervisor.classList.remove('hidden');
                 if (coverageVendedor) coverageVendedor.classList.remove('hidden');
+
+                // Mix
+                if (mixCoord) mixCoord.classList.add('hidden');
+                if (mixCocoord) mixCocoord.classList.add('hidden');
+                if (mixPromotor) mixPromotor.classList.add('hidden');
+                if (mixSupervisor) mixSupervisor.classList.remove('hidden');
+                if (mixVendedor) mixVendedor.classList.remove('hidden');
+
+                // Innovations
+                if (innovationsCoord) innovationsCoord.classList.add('hidden');
+                if (innovationsCocoord) innovationsCocoord.classList.add('hidden');
+                if (innovationsPromotor) innovationsPromotor.classList.add('hidden');
+                if (innovationsSupervisor) innovationsSupervisor.classList.remove('hidden');
+                if (innovationsVendedor) innovationsVendedor.classList.remove('hidden');
             }
         }
 
@@ -1512,6 +1554,14 @@
                 if (typeof updateCoverageSupervisorFilter === 'function') updateCoverageSupervisorFilter();
                 if (typeof updateCoverageVendedorFilter === 'function') updateCoverageVendedorFilter();
                 updateCoverageView();
+            } else if (currentActiveView === 'mix' && typeof updateMixView === 'function') {
+                if (typeof updateMixSupervisorFilter === 'function') updateMixSupervisorFilter();
+                if (typeof updateMixVendedorFilter === 'function') updateMixVendedorFilter();
+                updateMixView();
+            } else if (currentActiveView === 'inovacoes-mes' && typeof updateInnovationsMonthView === 'function') {
+                if (typeof updateInnovationsMonthSupervisorFilter === 'function') updateInnovationsMonthSupervisorFilter();
+                if (typeof updateInnovationsMonthVendedorFilter === 'function') updateInnovationsMonthVendedorFilter();
+                updateInnovationsMonthView();
             }
         }
 
@@ -2502,6 +2552,10 @@
         let selectedCoverageVendedores = new Set();
         let selectedCitySupervisors = new Set();
         let selectedCityVendedores = new Set();
+        let selectedMixSupervisors = new Set();
+        let selectedMixVendedores = new Set();
+        let selectedInnovationsMonthSupervisors = new Set();
+        let selectedInnovationsMonthVendedores = new Set();
         let selectedPositivacaoSuppliers = [];
         let selectedComparisonSuppliers = [];
         let selectedComparisonProducts = [];
@@ -2919,7 +2973,39 @@
             const filial = document.getElementById('mix-filial-filter').value;
 
             // New Hierarchy Logic
-            let clients = getHierarchyFilteredClients('mix', allClientsData);
+            let clients;
+            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+                clients = [];
+                const hasSup = selectedMixSupervisors.size > 0;
+                const hasVend = selectedMixVendedores.size > 0;
+
+                const source = allClientsData;
+                const len = source.length;
+
+                for(let i=0; i<len; i++) {
+                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
+                    const rca1 = String(c.rca1 || '').trim();
+                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+
+                    // Basic active check (skip strictly inactive)
+                    if (!isAmericanas && rca1 === '') continue;
+
+                    let keep = true;
+                    if (hasSup || hasVend) {
+                        const details = sellerDetailsMap.get(rca1);
+                        if (hasSup) {
+                            if (!details || !selectedMixSupervisors.has(details.supervisor)) keep = false;
+                        }
+                        if (keep && hasVend) {
+                            if (!selectedMixVendedores.has(rca1)) keep = false;
+                        }
+                    }
+
+                    if (keep) clients.push(c);
+                }
+            } else {
+                clients = getHierarchyFilteredClients('mix', allClientsData);
+            }
 
             // OPTIMIZATION: Combine filters into a single pass
             const checkRede = excludeFilter !== 'rede';
@@ -2981,7 +3067,8 @@
         }
 
         function updateAllMixFilters(options = {}) {
-            const { skipFilter = null } = options;
+            let { skipFilter = null, excludeFilter = null } = options;
+            if (!skipFilter && excludeFilter) skipFilter = excludeFilter;
 
             // Supervisor/Seller filters managed by setupHierarchyFilters
 
@@ -11846,7 +11933,38 @@ const supervisorGroups = new Map();
             const city = innovationsMonthCityFilter.value.trim().toLowerCase();
             const filial = innovationsMonthFilialFilter.value;
 
-            let clients = getHierarchyFilteredClients('innovations-month', allClientsData);
+            let clients;
+            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+                clients = [];
+                const hasSup = selectedInnovationsMonthSupervisors.size > 0;
+                const hasVend = selectedInnovationsMonthVendedores.size > 0;
+
+                const source = allClientsData;
+                const len = source.length;
+
+                for(let i=0; i<len; i++) {
+                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
+                    const rca1 = String(c.rca1 || '').trim();
+                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+
+                    if (!isAmericanas && rca1 === '') continue;
+
+                    let keep = true;
+                    if (hasSup || hasVend) {
+                        const details = sellerDetailsMap.get(rca1);
+                        if (hasSup) {
+                            if (!details || !selectedInnovationsMonthSupervisors.has(details.supervisor)) keep = false;
+                        }
+                        if (keep && hasVend) {
+                            if (!selectedInnovationsMonthVendedores.has(rca1)) keep = false;
+                        }
+                    }
+
+                    if (keep) clients.push(c);
+                }
+            } else {
+                clients = getHierarchyFilteredClients('innovations-month', allClientsData);
+            }
 
             if (filial !== 'ambas') {
                 clients = clients.filter(c => clientLastBranch.get(c['Código']) === filial);
@@ -15847,7 +15965,9 @@ const supervisorGroups = new Map();
         setupHierarchyFilters('city', updateCityView);
         setupHierarchyFilters('comparison', updateComparisonView);
         setupHierarchyFilters('innovations-month', updateInnovationsMonthView);
-        setupHierarchyFilters('mix', updateMixView);
+        setupInnovationsMonthSupervisorFilterHandlers();
+        setupHierarchyFilters('mix', () => handleMixFilterChange({ excludeFilter: 'hierarchy' }));
+        setupMixSupervisorFilterHandlers();
         setupHierarchyFilters('meta-realizado', updateMetaRealizadoView);
         setupHierarchyFilters('coverage', updateCoverageView);
         setupCoverageSupervisorFilterHandlers(); // Initialize Coverage Supervisor Filters
@@ -23178,6 +23298,206 @@ const supervisorGroups = new Map();
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('positivacao-vendedor-filter-text'), selectedPositivacaoVendedores, 'Todos');
+        }
+
+        function setupMixSupervisorFilterHandlers() {
+            // Supervisor
+            const supBtn = document.getElementById('mix-supervisor-filter-btn');
+            const supDropdown = document.getElementById('mix-supervisor-filter-dropdown');
+            if(supBtn && supDropdown) {
+                const newBtn = supBtn.cloneNode(true);
+                supBtn.parentNode.replaceChild(newBtn, supBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    supDropdown.classList.toggle('hidden');
+                    document.getElementById('mix-vendedor-filter-dropdown')?.classList.add('hidden');
+                };
+                supDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedMixSupervisors.add(val);
+                        else selectedMixSupervisors.delete(val);
+
+                        updateFilterButtonText(document.getElementById('mix-supervisor-filter-text'), selectedMixSupervisors, 'Todos');
+                        selectedMixVendedores.clear();
+                        updateMixVendedorFilter();
+                        if(typeof handleMixFilterChange === 'function') handleMixFilterChange({ excludeFilter: 'supervisor' });
+                    }
+                };
+            }
+
+            // Seller
+            const vendBtn = document.getElementById('mix-vendedor-filter-btn');
+            const vendDropdown = document.getElementById('mix-vendedor-filter-dropdown');
+            if(vendBtn && vendDropdown) {
+                const newBtn = vendBtn.cloneNode(true);
+                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    vendDropdown.classList.toggle('hidden');
+                    document.getElementById('mix-supervisor-filter-dropdown')?.classList.add('hidden');
+                };
+                vendDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedMixVendedores.add(val);
+                        else selectedMixVendedores.delete(val);
+
+                        updateFilterButtonText(document.getElementById('mix-vendedor-filter-text'), selectedMixVendedores, 'Todos');
+                        if(typeof handleMixFilterChange === 'function') handleMixFilterChange({ excludeFilter: 'seller' });
+                    }
+                };
+            }
+
+            updateMixSupervisorFilter();
+            updateMixVendedorFilter();
+        }
+
+        function updateMixSupervisorFilter() {
+            const dropdown = document.getElementById('mix-supervisor-filter-dropdown');
+            if(!dropdown) return;
+
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
+
+            let html = '';
+            Array.from(supervisors).sort().forEach(s => {
+                const checked = selectedMixSupervisors.has(s) ? 'checked' : '';
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+            });
+            dropdown.innerHTML = html;
+            updateFilterButtonText(document.getElementById('mix-supervisor-filter-text'), selectedMixSupervisors, 'Todos');
+        }
+
+        function updateMixVendedorFilter() {
+            const dropdown = document.getElementById('mix-vendedor-filter-dropdown');
+            if(!dropdown) return;
+
+            const validRcas = new Set();
+            if (selectedMixSupervisors.size > 0) {
+                sellerDetailsMap.forEach((d, code) => {
+                    if (selectedMixSupervisors.has(d.supervisor)) validRcas.add(code);
+                });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+
+            let options = [];
+            validRcas.forEach(rca => {
+                const details = sellerDetailsMap.get(rca);
+                options.push({ value: rca, label: details ? (details.name || rca) : rca });
+            });
+            options.sort((a,b) => a.label.localeCompare(b.label));
+
+            let html = '';
+            options.forEach(opt => {
+                const checked = selectedMixVendedores.has(opt.value) ? 'checked' : '';
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+            });
+            dropdown.innerHTML = html;
+            updateFilterButtonText(document.getElementById('mix-vendedor-filter-text'), selectedMixVendedores, 'Todos');
+        }
+
+        function setupInnovationsMonthSupervisorFilterHandlers() {
+            // Supervisor
+            const supBtn = document.getElementById('innovations-month-supervisor-filter-btn');
+            const supDropdown = document.getElementById('innovations-month-supervisor-filter-dropdown');
+            if(supBtn && supDropdown) {
+                const newBtn = supBtn.cloneNode(true);
+                supBtn.parentNode.replaceChild(newBtn, supBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    supDropdown.classList.toggle('hidden');
+                    document.getElementById('innovations-month-vendedor-filter-dropdown')?.classList.add('hidden');
+                };
+                supDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedInnovationsMonthSupervisors.add(val);
+                        else selectedInnovationsMonthSupervisors.delete(val);
+
+                        updateFilterButtonText(document.getElementById('innovations-month-supervisor-filter-text'), selectedInnovationsMonthSupervisors, 'Todos');
+                        selectedInnovationsMonthVendedores.clear();
+                        updateInnovationsMonthVendedorFilter();
+                        updateInnovationsMonthView();
+                    }
+                };
+            }
+
+            // Seller
+            const vendBtn = document.getElementById('innovations-month-vendedor-filter-btn');
+            const vendDropdown = document.getElementById('innovations-month-vendedor-filter-dropdown');
+            if(vendBtn && vendDropdown) {
+                const newBtn = vendBtn.cloneNode(true);
+                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    vendDropdown.classList.toggle('hidden');
+                    document.getElementById('innovations-month-supervisor-filter-dropdown')?.classList.add('hidden');
+                };
+                vendDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedInnovationsMonthVendedores.add(val);
+                        else selectedInnovationsMonthVendedores.delete(val);
+
+                        updateFilterButtonText(document.getElementById('innovations-month-vendedor-filter-text'), selectedInnovationsMonthVendedores, 'Todos');
+                        updateInnovationsMonthView();
+                    }
+                };
+            }
+
+            updateInnovationsMonthSupervisorFilter();
+            updateInnovationsMonthVendedorFilter();
+        }
+
+        function updateInnovationsMonthSupervisorFilter() {
+            const dropdown = document.getElementById('innovations-month-supervisor-filter-dropdown');
+            if(!dropdown) return;
+
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
+
+            let html = '';
+            Array.from(supervisors).sort().forEach(s => {
+                const checked = selectedInnovationsMonthSupervisors.has(s) ? 'checked' : '';
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+            });
+            dropdown.innerHTML = html;
+            updateFilterButtonText(document.getElementById('innovations-month-supervisor-filter-text'), selectedInnovationsMonthSupervisors, 'Todos');
+        }
+
+        function updateInnovationsMonthVendedorFilter() {
+            const dropdown = document.getElementById('innovations-month-vendedor-filter-dropdown');
+            if(!dropdown) return;
+
+            const validRcas = new Set();
+            if (selectedInnovationsMonthSupervisors.size > 0) {
+                sellerDetailsMap.forEach((d, code) => {
+                    if (selectedInnovationsMonthSupervisors.has(d.supervisor)) validRcas.add(code);
+                });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+
+            let options = [];
+            validRcas.forEach(rca => {
+                const details = sellerDetailsMap.get(rca);
+                options.push({ value: rca, label: details ? (details.name || rca) : rca });
+            });
+            options.sort((a,b) => a.label.localeCompare(b.label));
+
+            let html = '';
+            options.forEach(opt => {
+                const checked = selectedInnovationsMonthVendedores.has(opt.value) ? 'checked' : '';
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+            });
+            dropdown.innerHTML = html;
+            updateFilterButtonText(document.getElementById('innovations-month-vendedor-filter-text'), selectedInnovationsMonthVendedores, 'Todos');
         }
 
         function setupCoverageSupervisorFilterHandlers() {
