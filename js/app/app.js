@@ -2502,6 +2502,11 @@
         let selectedCoverageVendedores = new Set();
         let selectedCitySupervisors = new Set();
         let selectedCityVendedores = new Set();
+        let selectedGoalsGvSupervisors = new Set();
+        let selectedGoalsGvVendedores = new Set();
+        let selectedGoalsSummarySupervisors = new Set();
+        let selectedGoalsSummaryVendedores = new Set();
+        let selectedGoalsSvSupervisors = new Set();
         let selectedPositivacaoSuppliers = [];
         let selectedComparisonSuppliers = [];
         let selectedComparisonProducts = [];
@@ -4072,6 +4077,23 @@
             // Apply Hierarchy Filter + "Active" Filter logic
             let clients = getHierarchyFilteredClients('goals-gv', allClientsData).filter(c => isActiveClient(c));
 
+            // Filter by Supervisor (goals-gv)
+            if (selectedGoalsGvSupervisors.size > 0) {
+                clients = clients.filter(c => {
+                    const rca1 = String(c.rca1 || '').trim();
+                    const details = sellerDetailsMap.get(rca1);
+                    return details && details.supervisor && selectedGoalsGvSupervisors.has(details.supervisor);
+                });
+            }
+
+            // Filter by Seller (goals-gv)
+            if (selectedGoalsGvVendedores.size > 0) {
+                clients = clients.filter(c => {
+                    const rca1 = String(c.rca1 || '').trim();
+                    return selectedGoalsGvVendedores.has(rca1);
+                });
+            }
+
             // Filter by Client Code
             if (codCli) {
                 clients = clients.filter(c => String(c['Código']) === codCli);
@@ -4300,6 +4322,23 @@
                 if (rca1 === '') return false;
                 return true;
             });
+
+            // Filter by Supervisor (goals-summary)
+            if (selectedGoalsSummarySupervisors.size > 0) {
+                filteredSummaryClients = filteredSummaryClients.filter(c => {
+                    const rca1 = String(c.rca1 || '').trim();
+                    const details = sellerDetailsMap.get(rca1);
+                    return details && details.supervisor && selectedGoalsSummarySupervisors.has(details.supervisor);
+                });
+            }
+
+            // Filter by Seller (goals-summary)
+            if (selectedGoalsSummaryVendedores.size > 0) {
+                filteredSummaryClients = filteredSummaryClients.filter(c => {
+                    const rca1 = String(c.rca1 || '').trim();
+                    return selectedGoalsSummaryVendedores.has(rca1);
+                });
+            }
 
             // Implement Supplier Filter Logic (Virtual IDs for Foods) - Step 7
             // Goals are derived from `globalClientGoals` and manual overrides.
@@ -15854,6 +15893,7 @@ const supervisorGroups = new Map();
         setupHierarchyFilters('goals-gv', updateGoalsView);
         setupHierarchyFilters('goals-summary', updateGoalsSummaryView);
         setupHierarchyFilters('goals-sv', updateGoalsSvView);
+        setupGoalsSupervisorFilterHandlers(); // Initialize Goals Supervisor Filters
         setupHierarchyFilters('estoque', updateStockView);
         setupHierarchyFilters('weekly', updateWeeklyView);
 
@@ -24339,6 +24379,249 @@ const supervisorGroups = new Map();
         document.getElementById('lp-next-page-btn').disabled = page >= totalPages;
         document.getElementById('lp-page-info-text').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
     }
+
+        function setupGoalsSupervisorFilterHandlers() {
+            // --- GV Tab ---
+            // Supervisor
+            const gvSupBtn = document.getElementById('goals-gv-supervisor-filter-btn');
+            const gvSupDropdown = document.getElementById('goals-gv-supervisor-filter-dropdown');
+            if(gvSupBtn && gvSupDropdown) {
+                const newBtn = gvSupBtn.cloneNode(true);
+                gvSupBtn.parentNode.replaceChild(newBtn, gvSupBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    gvSupDropdown.classList.toggle('hidden');
+                    document.getElementById('goals-gv-seller-filter-dropdown')?.classList.add('hidden');
+                };
+                gvSupDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedGoalsGvSupervisors.add(val);
+                        else selectedGoalsGvSupervisors.delete(val);
+
+                        updateFilterButtonText(document.getElementById('goals-gv-supervisor-filter-text'), selectedGoalsGvSupervisors, 'Todos');
+                        selectedGoalsGvVendedores.clear();
+                        updateGoalsGvVendedorFilter();
+                        updateGoalsView();
+                    }
+                };
+            }
+
+            // Seller
+            const gvVendBtn = document.getElementById('goals-gv-seller-filter-btn');
+            const gvVendDropdown = document.getElementById('goals-gv-seller-filter-dropdown');
+            if(gvVendBtn && gvVendDropdown) {
+                const newBtn = gvVendBtn.cloneNode(true);
+                gvVendBtn.parentNode.replaceChild(newBtn, gvVendBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    gvVendDropdown.classList.toggle('hidden');
+                    document.getElementById('goals-gv-supervisor-filter-dropdown')?.classList.add('hidden');
+                };
+                gvVendDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedGoalsGvVendedores.add(val);
+                        else selectedGoalsGvVendedores.delete(val);
+
+                        updateFilterButtonText(document.getElementById('goals-gv-seller-filter-text'), selectedGoalsGvVendedores, 'Todos');
+                        updateGoalsView();
+                    }
+                };
+            }
+
+            // --- Summary Tab ---
+            // Supervisor
+            const sumSupBtn = document.getElementById('goals-summary-supervisor-filter-btn');
+            const sumSupDropdown = document.getElementById('goals-summary-supervisor-filter-dropdown');
+            if(sumSupBtn && sumSupDropdown) {
+                const newBtn = sumSupBtn.cloneNode(true);
+                sumSupBtn.parentNode.replaceChild(newBtn, sumSupBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    sumSupDropdown.classList.toggle('hidden');
+                    document.getElementById('goals-summary-seller-filter-dropdown')?.classList.add('hidden');
+                };
+                sumSupDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedGoalsSummarySupervisors.add(val);
+                        else selectedGoalsSummarySupervisors.delete(val);
+
+                        updateFilterButtonText(document.getElementById('goals-summary-supervisor-filter-text'), selectedGoalsSummarySupervisors, 'Todos');
+                        selectedGoalsSummaryVendedores.clear();
+                        updateGoalsSummaryVendedorFilter();
+                        updateGoalsSummaryView();
+                    }
+                };
+            }
+
+            // Seller
+            const sumVendBtn = document.getElementById('goals-summary-seller-filter-btn');
+            const sumVendDropdown = document.getElementById('goals-summary-seller-filter-dropdown');
+            if(sumVendBtn && sumVendDropdown) {
+                const newBtn = sumVendBtn.cloneNode(true);
+                sumVendBtn.parentNode.replaceChild(newBtn, sumVendBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    sumVendDropdown.classList.toggle('hidden');
+                    document.getElementById('goals-summary-supervisor-filter-dropdown')?.classList.add('hidden');
+                };
+                sumVendDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedGoalsSummaryVendedores.add(val);
+                        else selectedGoalsSummaryVendedores.delete(val);
+
+                        updateFilterButtonText(document.getElementById('goals-summary-seller-filter-text'), selectedGoalsSummaryVendedores, 'Todos');
+                        updateGoalsSummaryView();
+                    }
+                };
+            }
+
+            // --- SV Tab ---
+            // Supervisor
+            const svSupBtn = document.getElementById('goals-sv-supervisor-filter-btn');
+            const svSupDropdown = document.getElementById('goals-sv-supervisor-filter-dropdown');
+            if(svSupBtn && svSupDropdown) {
+                const newBtn = svSupBtn.cloneNode(true);
+                svSupBtn.parentNode.replaceChild(newBtn, svSupBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    svSupDropdown.classList.toggle('hidden');
+                };
+                svSupDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedGoalsSvSupervisors.add(val);
+                        else selectedGoalsSvSupervisors.delete(val);
+
+                        updateFilterButtonText(document.getElementById('goals-sv-supervisor-filter-text'), selectedGoalsSvSupervisors, 'Todos');
+                        if (typeof updateGoalsSvView === 'function') updateGoalsSvView();
+                    }
+                };
+            }
+
+            // Global Close Listener for Goals
+            if (!document._goalsFilterListener) {
+                document.addEventListener('click', (e) => {
+                    // GV
+                    if (!e.target.closest('#goals-gv-supervisor-filter-wrapper')) {
+                        document.getElementById('goals-gv-supervisor-filter-dropdown')?.classList.add('hidden');
+                    }
+                    if (!e.target.closest('#goals-gv-seller-filter-wrapper')) {
+                        document.getElementById('goals-gv-seller-filter-dropdown')?.classList.add('hidden');
+                    }
+                    // Summary
+                    if (!e.target.closest('#goals-summary-supervisor-filter-wrapper')) {
+                        document.getElementById('goals-summary-supervisor-filter-dropdown')?.classList.add('hidden');
+                    }
+                    if (!e.target.closest('#goals-summary-seller-filter-wrapper')) {
+                        document.getElementById('goals-summary-seller-filter-dropdown')?.classList.add('hidden');
+                    }
+                    // SV
+                    const svSupBtn = document.getElementById('goals-sv-supervisor-filter-btn');
+                    const svSupDropdown = document.getElementById('goals-sv-supervisor-filter-dropdown');
+                    if (svSupBtn && svSupDropdown) {
+                        if (!svSupBtn.contains(e.target) && !svSupDropdown.contains(e.target)) {
+                            svSupDropdown.classList.add('hidden');
+                        }
+                    }
+                });
+                document._goalsFilterListener = true;
+            }
+
+            // Initial Populate
+            updateGoalsGvSupervisorFilter();
+            updateGoalsGvVendedorFilter();
+            updateGoalsSummarySupervisorFilter();
+            updateGoalsSummaryVendedorFilter();
+            updateGoalsSvSupervisorFilter();
+        }
+
+        function updateGoalsGvSupervisorFilter() {
+            const dropdown = document.getElementById('goals-gv-supervisor-filter-dropdown');
+            if(!dropdown) return;
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor && d.supervisor !== '0') supervisors.add(d.supervisor); });
+            renderCheckboxDropdown(dropdown, supervisors, selectedGoalsGvSupervisors);
+            updateFilterButtonText(document.getElementById('goals-gv-supervisor-filter-text'), selectedGoalsGvSupervisors, 'Todos');
+        }
+
+        function updateGoalsGvVendedorFilter() {
+            const dropdown = document.getElementById('goals-gv-seller-filter-dropdown');
+            if(!dropdown) return;
+            const validRcas = new Set();
+            if (selectedGoalsGvSupervisors.size > 0) {
+                sellerDetailsMap.forEach((d, code) => { if (selectedGoalsGvSupervisors.has(d.supervisor)) validRcas.add(code); });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+            renderRcaCheckboxDropdown(dropdown, validRcas, selectedGoalsGvVendedores);
+            updateFilterButtonText(document.getElementById('goals-gv-seller-filter-text'), selectedGoalsGvVendedores, 'Todos');
+        }
+
+        function updateGoalsSummarySupervisorFilter() {
+            const dropdown = document.getElementById('goals-summary-supervisor-filter-dropdown');
+            if(!dropdown) return;
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor && d.supervisor !== '0') supervisors.add(d.supervisor); });
+            renderCheckboxDropdown(dropdown, supervisors, selectedGoalsSummarySupervisors);
+            updateFilterButtonText(document.getElementById('goals-summary-supervisor-filter-text'), selectedGoalsSummarySupervisors, 'Todos');
+        }
+
+        function updateGoalsSummaryVendedorFilter() {
+            const dropdown = document.getElementById('goals-summary-seller-filter-dropdown');
+            if(!dropdown) return;
+            const validRcas = new Set();
+            if (selectedGoalsSummarySupervisors.size > 0) {
+                sellerDetailsMap.forEach((d, code) => { if (selectedGoalsSummarySupervisors.has(d.supervisor)) validRcas.add(code); });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+            renderRcaCheckboxDropdown(dropdown, validRcas, selectedGoalsSummaryVendedores);
+            updateFilterButtonText(document.getElementById('goals-summary-seller-filter-text'), selectedGoalsSummaryVendedores, 'Todos');
+        }
+
+        function updateGoalsSvSupervisorFilter() {
+            const dropdown = document.getElementById('goals-sv-supervisor-filter-dropdown');
+            if(!dropdown) return;
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor && d.supervisor !== '0') supervisors.add(d.supervisor); });
+            renderCheckboxDropdown(dropdown, supervisors, selectedGoalsSvSupervisors);
+            updateFilterButtonText(document.getElementById('goals-sv-supervisor-filter-text'), selectedGoalsSvSupervisors, 'Todos');
+        }
+
+        // Helper for rendering checkboxes (DRY)
+        function renderCheckboxDropdown(dropdown, valuesSet, selectedSet) {
+            let html = '';
+            Array.from(valuesSet).sort().forEach(s => {
+                const checked = selectedSet.has(s) ? 'checked' : '';
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+            });
+            dropdown.innerHTML = html;
+        }
+
+        function renderRcaCheckboxDropdown(dropdown, rcaSet, selectedSet) {
+            let options = [];
+            rcaSet.forEach(rca => {
+                const details = sellerDetailsMap.get(rca);
+                options.push({ value: rca, label: details ? (details.name || rca) : rca });
+            });
+            options.sort((a,b) => a.label.localeCompare(b.label));
+
+            let html = '';
+            options.forEach(opt => {
+                const checked = selectedSet.has(opt.value) ? 'checked' : '';
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+            });
+            dropdown.innerHTML = html;
+        }
 
     window.openImageModal = function(imageUrl, title) {
         const modal = document.getElementById('image-modal');
