@@ -1360,18 +1360,60 @@
         }
 
         function applyAdminViewVisibilityRules() {
+            // Weekly View Elements
+            const weeklyCoord = document.getElementById('weekly-coord-filter-wrapper');
+            const weeklyCocoord = document.getElementById('weekly-cocoord-filter-wrapper');
+            const weeklyPromotor = document.getElementById('weekly-promotor-filter-wrapper');
+            const weeklySupervisor = document.getElementById('weekly-supervisor-filter-wrapper');
+            const weeklyVendedor = document.getElementById('weekly-vendedor-filter-wrapper');
+
+            // Comparison View Elements
+            const comparisonCoord = document.getElementById('comparison-coord-filter-wrapper');
+            const comparisonCocoord = document.getElementById('comparison-cocoord-filter-wrapper');
+            const comparisonPromotor = document.getElementById('comparison-promotor-filter-wrapper');
+            const comparisonSupervisor = document.getElementById('comparison-supervisor-filter-wrapper');
+            const comparisonVendedor = document.getElementById('comparison-vendedor-filter-wrapper');
+
             if (adminViewMode === 'promoter') {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.remove('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.remove('hidden');
                 if (mainPromotorFilterWrapper) mainPromotorFilterWrapper.classList.remove('hidden');
                 if (mainSupervisorFilterWrapper) mainSupervisorFilterWrapper.classList.add('hidden');
                 if (vendedorFilterWrapper) vendedorFilterWrapper.classList.add('hidden');
+
+                // Weekly
+                if (weeklyCoord) weeklyCoord.classList.remove('hidden');
+                if (weeklyCocoord) weeklyCocoord.classList.remove('hidden');
+                if (weeklyPromotor) weeklyPromotor.classList.remove('hidden');
+                if (weeklySupervisor) weeklySupervisor.classList.add('hidden');
+                if (weeklyVendedor) weeklyVendedor.classList.add('hidden');
+
+                // Comparison
+                if (comparisonCoord) comparisonCoord.classList.remove('hidden');
+                if (comparisonCocoord) comparisonCocoord.classList.remove('hidden');
+                if (comparisonPromotor) comparisonPromotor.classList.remove('hidden');
+                if (comparisonSupervisor) comparisonSupervisor.classList.add('hidden');
+                if (comparisonVendedor) comparisonVendedor.classList.add('hidden');
             } else {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.add('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.add('hidden');
                 if (mainPromotorFilterWrapper) mainPromotorFilterWrapper.classList.add('hidden');
                 if (mainSupervisorFilterWrapper) mainSupervisorFilterWrapper.classList.remove('hidden');
                 if (vendedorFilterWrapper) vendedorFilterWrapper.classList.remove('hidden');
+
+                // Weekly
+                if (weeklyCoord) weeklyCoord.classList.add('hidden');
+                if (weeklyCocoord) weeklyCocoord.classList.add('hidden');
+                if (weeklyPromotor) weeklyPromotor.classList.add('hidden');
+                if (weeklySupervisor) weeklySupervisor.classList.remove('hidden');
+                if (weeklyVendedor) weeklyVendedor.classList.remove('hidden');
+
+                // Comparison
+                if (comparisonCoord) comparisonCoord.classList.add('hidden');
+                if (comparisonCocoord) comparisonCocoord.classList.add('hidden');
+                if (comparisonPromotor) comparisonPromotor.classList.add('hidden');
+                if (comparisonSupervisor) comparisonSupervisor.classList.remove('hidden');
+                if (comparisonVendedor) comparisonVendedor.classList.remove('hidden');
             }
         }
 
