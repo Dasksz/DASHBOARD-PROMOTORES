@@ -10499,9 +10499,25 @@ const supervisorGroups = new Map();
                     if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: s.DESCRICAO, codfor: String(s.CODFOR) });
                     cMap.get(s.PRODUTO).val += val;
                 }
-                if (s.SUPERV) {
-                    if (!metrics.charts.supervisorData[s.SUPERV]) metrics.charts.supervisorData[s.SUPERV] = { current: 0, history: 0 };
-                    metrics.charts.supervisorData[s.SUPERV].current += val;
+                // Dynamic Grouping Key
+                let groupKey = s.SUPERV;
+                if (typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter') {
+                    const node = optimizedData.clientHierarchyMap.get(normalizeKey(s.CODCLI));
+                    if (node) {
+                        const hState = hierarchyState['comparison'];
+                        if (hState && hState.coords && hState.coords.size > 0) {
+                            groupKey = node.promotor.name || node.promotor.code;
+                        } else {
+                            groupKey = node.coord.name || node.coord.code;
+                        }
+                    } else {
+                        groupKey = 'Sem Hierarquia';
+                    }
+                }
+
+                if (groupKey) {
+                    if (!metrics.charts.supervisorData[groupKey]) metrics.charts.supervisorData[groupKey] = { current: 0, history: 0 };
+                    metrics.charts.supervisorData[groupKey].current += val;
                 }
                 const d = parseDate(s.DTPED);
                 if (d) {
@@ -10563,9 +10579,25 @@ const supervisorGroups = new Map();
                         cMap.get(s.PRODUTO).val += val;
                     }
 
-                    if (s.SUPERV) {
-                        if (!metrics.charts.supervisorData[s.SUPERV]) metrics.charts.supervisorData[s.SUPERV] = { current: 0, history: 0 };
-                        metrics.charts.supervisorData[s.SUPERV].history += val;
+                    // Dynamic Grouping Key History
+                    let hGroupKey = s.SUPERV;
+                    if (typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter') {
+                        const node = optimizedData.clientHierarchyMap.get(normalizeKey(s.CODCLI));
+                        if (node) {
+                            const hState = hierarchyState['comparison'];
+                            if (hState && hState.coords && hState.coords.size > 0) {
+                                hGroupKey = node.promotor.name || node.promotor.code;
+                            } else {
+                                hGroupKey = node.coord.name || node.coord.code;
+                            }
+                        } else {
+                            hGroupKey = 'Sem Hierarquia';
+                        }
+                    }
+
+                    if (hGroupKey) {
+                        if (!metrics.charts.supervisorData[hGroupKey]) metrics.charts.supervisorData[hGroupKey] = { current: 0, history: 0 };
+                        metrics.charts.supervisorData[hGroupKey].history += val;
                     }
 
                     // Accumulate Day Totals for Day Weight Calculation
