@@ -1,0 +1,14 @@
+127.0.0.1 - - [23/Feb/2026 12:05:44] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:05:44] "GET /css/styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:05:44] "GET /imagens/logo.svg HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:05:45] "GET /js/init.js?v=6.0.0 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:05:45] "GET /js/banner3d.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:05:45] "GET /js/app/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:05:48] "GET /imagens/Swimming.glb HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:06:58] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:06:58] "GET /css/styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:06:58] "GET /imagens/logo.svg HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:06:58] "GET /js/init.js?v=6.0.0 HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:06:58] "GET /js/banner3d.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:06:58] "GET /js/app/utils.js HTTP/1.1" 200 -
+127.0.0.1 - - [23/Feb/2026 12:07:00] "GET /imagens/Swimming.glb HTTP/1.1" 200 -
