@@ -645,7 +645,7 @@
                             <div id="codcli-search-icon" class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
                                 <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                             </div>
-                            <input type="search" id="codcli-filter" name="client_filter_query" placeholder="Código, Nome, CNPJ..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full pl-10 p-2.5 transition-all" autocomplete="off">
+                            <input type="search" id="codcli-filter" name="client_filter_query" placeholder="Código, Nome, CNPJ..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full pl-10 p-2.5 transition-all" autocomplete="new-password">
                             <div id="codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
                         </div>
                     </div>
@@ -804,7 +804,7 @@
                                 <div id="positivacao-codcli-search-icon" class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
                                     <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                 </div>
-                                <input type="text" id="positivacao-codcli-filter" placeholder="Código, Nome, CNPJ..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full pl-10 p-2.5 transition-all" autocomplete="off">
+                                <input type="search" id="positivacao-codcli-filter" placeholder="Código, Nome, CNPJ..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full pl-10 p-2.5 transition-all" autocomplete="new-password">
                                 <div id="positivacao-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
                             </div>
                         </div>
@@ -929,7 +929,7 @@
                                 <div id="city-codcli-search-icon" class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
                                     <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                 </div>
-                                <input type="text" id="city-codcli-filter" placeholder="Código, Nome, CNPJ..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full pl-10 p-2.5 transition-all" autocomplete="off">
+                                <input type="search" id="city-codcli-filter" placeholder="Código, Nome, CNPJ..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full pl-10 p-2.5 transition-all" autocomplete="new-password">
                                 <div id="city-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
                             </div>
                         </div>
@@ -1055,7 +1055,7 @@
                 <!-- City -->
                 <div class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
-                    <input id="comparison-city-filter" name="comp_city_q" autocomplete="off" class="w-full glass-input border border-slate-700 p-2.5 rounded-lg text-white text-sm focus:ring-2 focus:ring-[#FF5E00]" placeholder="Buscar...">
+                    <input type="search" id="comparison-city-filter" name="comp_city_q" autocomplete="new-password" class="w-full glass-input border border-slate-700 p-2.5 rounded-lg text-white text-sm focus:ring-2 focus:ring-[#FF5E00]" placeholder="Buscar...">
                     <div id="comparison-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                 </div>
             </div>
@@ -1100,7 +1100,7 @@
                         <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div id="comparison-product-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2 max-h-60 overflow-y-auto custom-scrollbar">
-                        <input type="text" id="comparison-product-search-input" name="comp_prod_q" autocomplete="off" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2 mb-2" placeholder="Buscar produto...">
+                        <input type="search" id="comparison-product-search-input" name="comp_prod_q" autocomplete="new-password" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2 mb-2" placeholder="Buscar produto...">
                         <div id="comparison-product-list" class="space-y-1"></div>
                     </div>
                 </div>
@@ -1384,7 +1384,7 @@
                                         </div>
                                         <div id="goals-gv-codcli-filter-wrapper">
                                             <label for="goals-gv-codcli-filter" class="block mb-2 text-sm font-medium text-slate-400">Cód. Cliente</label>
-                                            <input type="text" id="goals-gv-codcli-filter" name="goals_search_q" readonly onfocus="this.removeAttribute('readonly');" placeholder="Digite o código..." class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 block w-full p-2.5" autocomplete="off">
+                                            <input type="search" id="goals-gv-codcli-filter" name="goals_search_q" readonly onfocus="this.removeAttribute('readonly');" placeholder="Digite o código..." class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 block w-full p-2.5" autocomplete="new-password">
                                         </div>
                                         <button id="clear-goals-gv-filters-btn" class="w-full bg-slate-600 hover:bg-slate-500 text-white font-bold py-2.5 px-4 rounded-lg">Limpar Filtros</button>
                                     </div>
@@ -1506,7 +1506,7 @@
                 <!-- Cidade -->
                 <div class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
-                    <input id="innovations-month-city-filter" name="innov_city_q" autocomplete="off" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Buscar...">
+                    <input type="search" id="innovations-month-city-filter" name="innov_city_q" autocomplete="new-password" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Buscar...">
                     <div id="innovations-month-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                 </div>
                  <!-- Tipo Venda -->
@@ -1654,7 +1654,7 @@
             <div class="flex flex-wrap gap-4 items-end mt-4">
                 <div class="relative flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
-                    <input id="mix-city-filter" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Buscar...">
+                    <input type="search" id="mix-city-filter" autocomplete="new-password" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Buscar...">
                     <div id="mix-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <div class="flex-1 min-w-[150px]">
@@ -1903,7 +1903,7 @@
                 </div>
                 <div class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
-                    <input id="coverage-city-filter" name="coverage_city_q" autocomplete="off" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Buscar...">
+                    <input type="search" id="coverage-city-filter" name="coverage_city_q" autocomplete="new-password" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Buscar...">
                     <div id="coverage-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                 </div>
             </div>
@@ -1912,7 +1912,7 @@
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Produto</label>
                     <button id="coverage-product-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-product-filter-text">Todos</span></button>
                     <div id="coverage-product-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2 max-h-60 overflow-y-auto custom-scrollbar">
-                        <input id="coverage-product-search-input" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2 mb-2" placeholder="Buscar...">
+                        <input type="search" id="coverage-product-search-input" autocomplete="new-password" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2 mb-2" placeholder="Buscar...">
                         <div id="coverage-product-list" class="space-y-1"></div>
                     </div>
                 </div>
@@ -2056,7 +2056,7 @@
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         </div>
-                        <input type="text" id="wallet-client-search" class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full pl-10 p-3 placeholder-slate-500 transition-all" placeholder="Pesquise por Código, CNPJ, CPF ou Razão Social..." autocomplete="off">
+                        <input type="search" id="wallet-client-search" class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full pl-10 p-3 placeholder-slate-500 transition-all" placeholder="Pesquise por Código, CNPJ, CPF ou Razão Social..." autocomplete="new-password">
                     </div>
                      <!-- Search Suggestions Dropdown -->
                     <div id="wallet-search-suggestions" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl max-h-80 overflow-y-auto custom-scrollbar p-0 overflow-hidden">
@@ -2137,7 +2137,7 @@
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
                         <div id="stock-product-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2 max-h-60 overflow-y-auto custom-scrollbar">
-                            <input type="text" id="stock-product-search-input" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2 mb-2" placeholder="Buscar produto...">
+                            <input type="search" id="stock-product-search-input" autocomplete="new-password" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2 mb-2" placeholder="Buscar produto...">
                             <div id="stock-product-list" class="space-y-1"></div>
                         </div>
                     </div>
@@ -2420,7 +2420,7 @@
                     <!-- Client Search -->
                     <div class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
-                        <input id="titulos-codcli-filter" name="titulos_client_q" autocomplete="off" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Código, Nome...">
+                        <input type="search" id="titulos-codcli-filter" name="titulos_client_q" autocomplete="new-password" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Código, Nome...">
                         <div id="titulos-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                     </div>
                 </div>
@@ -2540,7 +2540,7 @@
                     <!-- Client Search -->
                     <div class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
-                        <input id="lp-codcli-filter" name="lp_client_q" autocomplete="off" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Código, Nome...">
+                        <input type="search" id="lp-codcli-filter" name="lp_client_q" autocomplete="new-password" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" placeholder="Código, Nome...">
                         <div id="lp-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                     </div>
                 </div>
@@ -2673,7 +2673,7 @@
                     </div>
                     <div class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
-                        <input id="history-codcli-filter" name="hist_client_q" autocomplete="off" placeholder="Buscar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg block w-full p-2.5">
+                        <input type="search" id="history-codcli-filter" name="hist_client_q" autocomplete="new-password" placeholder="Buscar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg block w-full p-2.5">
                     </div>
                 </div>
             </div>
@@ -2734,7 +2734,7 @@
                 </button>
             </div>
             <div class="relative w-full sm:w-auto">
-                <input type="text" id="clientes-search" name="clients_search_q" autocomplete="off" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full sm:w-64 pl-3 p-2.5">
+                <input type="search" id="clientes-search" name="clients_search_q" autocomplete="new-password" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full sm:w-64 pl-3 p-2.5">
                 <div id="clientes-search-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
             </div>
         </header>
@@ -2815,7 +2815,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <div class="relative">
-                    <input type="search" id="produtos-search" name="product_filter_query" autocomplete="off" readonly onfocus="this.removeAttribute('readonly');" spellcheck="false" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-40 sm:w-64 pl-3 p-2.5">
+                    <input type="search" id="produtos-search" name="product_filter_query" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly');" spellcheck="false" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-40 sm:w-64 pl-3 p-2.5">
                 </div>
                 <div class="relative">
                     <button id="produtos-options-btn" class="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-700 transition-colors">
