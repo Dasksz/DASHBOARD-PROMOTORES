@@ -22055,7 +22055,12 @@ const supervisorGroups = new Map();
         
         subset.forEach(d => {
              const tr = document.createElement('tr');
-             tr.className = "border-b border-slate-700 hover:bg-slate-700/50";
+             tr.className = "border-b border-slate-700 hover:bg-slate-700/50 transition-colors cursor-pointer md:cursor-auto";
+
+             // Mobile interaction: Open modal
+             tr.onclick = () => {
+                 if(window.innerWidth < 768) window.handleProductAction('expand', d.code);
+             };
              
              let statusBadge = '';
              if (d.status === 'growth') statusBadge = '<span class="text-xs font-bold text-green-400">Cresc.</span>';
@@ -22065,28 +22070,28 @@ const supervisorGroups = new Map();
              else statusBadge = '<span class="text-xs text-slate-500">-</span>';
              
              tr.innerHTML = `
-                <!-- Desktop View -->
-                <td class="px-4 py-2 text-xs text-white truncate max-w-[200px] hidden md:table-cell" title="${d.name}">${d.code} - ${d.name}</td>
-                <td class="px-4 py-2 text-xs text-slate-400 hidden md:table-cell">${d.supplier}</td>
-                <td class="px-4 py-2 text-xs text-right font-mono text-blue-300 font-bold hidden md:table-cell">${d.stock}</td>
-                <td class="px-4 py-2 text-xs text-right font-mono text-white hidden md:table-cell">${d.sales.toFixed(0)}</td>
-                <td class="px-4 py-2 text-xs text-right font-mono text-slate-500 hidden md:table-cell">${d.avg.toFixed(0)}</td>
-                <td class="px-4 py-2 text-center hidden md:table-cell">${statusBadge}</td>
-
-                <!-- Mobile View (Compact & Left Aligned) -->
-                <td class="md:hidden w-full p-2 block">
-                    <div class="flex flex-col gap-1">
-                        <div class="text-xs font-bold text-white truncate w-full text-left">${d.code} - ${d.name}</div>
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="text-slate-400 text-left">Estoque: <span class="text-blue-300 font-mono">${d.stock}</span></span>
-                            <span class="text-slate-400">Venda: <span class="text-white font-mono">${d.sales.toFixed(0)}</span></span>
-                        </div>
-                        <div class="flex justify-between items-center text-[10px]">
-                            <span class="text-slate-500 text-left">${d.supplier}</span>
-                            <div>${statusBadge}</div>
-                        </div>
+                <!-- Product: Visible Mobile (Truncated) -->
+                <td class="px-2 py-2 text-[10px] md:text-xs text-white max-w-[120px] md:max-w-[200px]" title="${d.name}">
+                    <div class="flex items-center gap-1">
+                        <span class="font-mono text-slate-400 text-[9px] md:text-[10px] leading-tight shrink-0">${d.code}</span>
+                        <span class="truncate leading-tight min-w-0">${d.name}</span>
                     </div>
                 </td>
+
+                <!-- Supplier: Hidden Mobile -->
+                <td class="px-4 py-2 text-xs text-slate-400 hidden md:table-cell">${d.supplier}</td>
+
+                <!-- Stock: Visible Mobile (Left Aligned on Mobile) -->
+                <td class="px-2 py-2 text-[10px] md:text-xs text-left md:text-right font-mono text-blue-300 font-bold">${d.stock}</td>
+
+                <!-- Sales: Visible Mobile (Left Aligned on Mobile) -->
+                <td class="px-2 py-2 text-[10px] md:text-xs text-left md:text-right font-mono text-white">${d.sales.toFixed(0)}</td>
+
+                <!-- Avg: Hidden Mobile -->
+                <td class="px-4 py-2 text-xs text-right font-mono text-slate-500 hidden md:table-cell">${d.avg.toFixed(0)}</td>
+
+                <!-- Status: Visible Mobile (Left Aligned on Mobile) -->
+                <td class="px-2 py-2 text-[10px] md:text-xs text-left md:text-center">${statusBadge}</td>
              `;
              tbody.appendChild(tr);
         });
