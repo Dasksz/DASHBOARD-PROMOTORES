@@ -1556,3 +1556,71 @@ html.light .bg-green-900\/30 {
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 0 5px rgba(234, 179, 8, 0.5));
 }
+
+/* --- COMPACT MOBILE TABLE (DRILL DOWN) --- */
+@media (max-width: 768px) {
+    table.compact-mobile-table,
+    table.compact-mobile-table thead,
+    table.compact-mobile-table tbody,
+    table.compact-mobile-table th,
+    table.compact-mobile-table td,
+    table.compact-mobile-table tr {
+        display: revert;
+    }
+
+    /* Fallback/Force Override */
+    table.compact-mobile-table { display: table !important; width: 100%; border-collapse: collapse; }
+    table.compact-mobile-table thead { display: table-header-group !important; }
+    table.compact-mobile-table tbody { display: table-row-group !important; }
+
+    table.compact-mobile-table tr {
+        display: table-row !important;
+        margin-bottom: 0 !important;
+        border-radius: 0 !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+
+    table.compact-mobile-table th,
+    table.compact-mobile-table td {
+        display: table-cell !important;
+    }
+
+    /* Remove pseudo labels */
+    table.compact-mobile-table td::before {
+        content: none !important;
+        display: none !important;
+    }
+
+    /* Styling Adjustments */
+    table.compact-mobile-table th {
+        padding: 0.5rem;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #94a3b8;
+        background-color: rgba(30, 41, 59, 0.5); /* Header bg */
+    }
+
+    table.compact-mobile-table td {
+        padding: 0.5rem !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        min-height: auto !important;
+        font-size: 0.75rem; /* Text xs equivalent */
+    }
+
+    /* Product Name Column */
+    table.compact-mobile-table td:first-child {
+        text-align: left !important;
+        max-width: 120px; /* Force truncation on very small screens if needed */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Ensure right alignment for numbers */
+    table.compact-mobile-table td:not(:first-child) {
+        text-align: right !important;
+    }
+}
