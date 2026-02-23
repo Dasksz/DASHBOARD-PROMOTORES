@@ -8258,10 +8258,42 @@ const supervisorGroups = new Map();
                 updateHierarchyDropdown('goals-gv', 'promotor');
             }
 
+            // Fix: Reset Supervisor/Seller Filters too
+            selectedGoalsGvSupervisors.clear();
+            selectedGoalsGvVendedores.clear();
+            if(typeof updateGoalsGvSupervisorFilter === 'function') updateGoalsGvSupervisorFilter();
+            if(typeof updateGoalsGvVendedorFilter === 'function') updateGoalsGvVendedorFilter();
+
             const codcli = document.getElementById('goals-gv-codcli-filter');
             if(codcli) codcli.value = '';
 
             updateGoalsView();
+        }
+
+        function resetGoalsSummaryFilters() {
+             if (hierarchyState['goals-summary']) {
+                hierarchyState['goals-summary'].coords.clear();
+                hierarchyState['goals-summary'].cocoords.clear();
+                hierarchyState['goals-summary'].promotors.clear();
+
+                if (userHierarchyContext.role !== 'adm') {
+                    if (userHierarchyContext.coord) hierarchyState['goals-summary'].coords.add(userHierarchyContext.coord);
+                    if (userHierarchyContext.cocoord) hierarchyState['goals-summary'].cocoords.add(userHierarchyContext.cocoord);
+                    if (userHierarchyContext.promotor) hierarchyState['goals-summary'].promotors.add(userHierarchyContext.promotor);
+                }
+
+                updateHierarchyDropdown('goals-summary', 'coord');
+                updateHierarchyDropdown('goals-summary', 'cocoord');
+                updateHierarchyDropdown('goals-summary', 'promotor');
+            }
+
+            selectedGoalsSummarySupervisors.clear();
+            selectedGoalsSummaryVendedores.clear();
+
+            if(typeof updateGoalsSummarySupervisorFilter === 'function') updateGoalsSummarySupervisorFilter();
+            if(typeof updateGoalsSummaryVendedorFilter === 'function') updateGoalsSummaryVendedorFilter();
+
+            updateGoalsSummaryView();
         }
 
         // <!-- INÍCIO DO CÓDIGO RESTAURADO -->
@@ -10346,6 +10378,53 @@ const supervisorGroups = new Map();
                 updateAllCityFilters(options);
                 updateCityView();
             }, 10);
+        }
+
+        function resetCityFilters() {
+            if (hierarchyState['city']) {
+                hierarchyState['city'].coords.clear();
+                hierarchyState['city'].cocoords.clear();
+                hierarchyState['city'].promotors.clear();
+
+                if (userHierarchyContext.role !== 'adm') {
+                    if (userHierarchyContext.coord) hierarchyState['city'].coords.add(userHierarchyContext.coord);
+                    if (userHierarchyContext.cocoord) hierarchyState['city'].cocoords.add(userHierarchyContext.cocoord);
+                    if (userHierarchyContext.promotor) hierarchyState['city'].promotors.add(userHierarchyContext.promotor);
+                }
+            }
+
+            selectedCitySupervisors.clear();
+            selectedCityVendedores.clear();
+            selectedCityTiposVenda = [];
+            selectedCitySuppliers = [];
+            selectedCityRedes = [];
+            cityRedeGroupFilter = '';
+
+            if (cityCodCliFilter) cityCodCliFilter.value = '';
+
+            if (cityRedeGroupContainer) {
+                cityRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                const defaultBtn = cityRedeGroupContainer.querySelector('button[data-group=""]');
+                if (defaultBtn) defaultBtn.classList.add('active');
+            }
+            if (cityRedeFilterDropdown) cityRedeFilterDropdown.classList.add('hidden');
+
+            if (cityTipoVendaFilterDropdown) {
+                cityTipoVendaFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            }
+
+            const supDD = document.getElementById('city-supplier-filter-dropdown');
+            if (supDD) {
+                supDD.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            }
+
+            setupHierarchyFilters('city');
+
+            if (typeof updateCitySupervisorFilter === 'function') updateCitySupervisorFilter();
+            if (typeof updateCityVendedorFilter === 'function') updateCityVendedorFilter();
+
+            updateAllCityFilters();
+            updateCityView();
         }
 
         function updateCitySuggestions(filterInput, suggestionsContainer, dataSource) {
@@ -15613,6 +15692,7 @@ const supervisorGroups = new Map();
 
             // GV Filters
             const clearGoalsSummaryFiltersBtn = document.getElementById('clear-goals-summary-filters-btn');
+            if (clearGoalsSummaryFiltersBtn) clearGoalsSummaryFiltersBtn.addEventListener('click', () => { resetGoalsSummaryFilters(); markDirty('goals'); });
 
             const btnDistributeFat = document.getElementById('btn-distribute-fat');
             if (btnDistributeFat) {
