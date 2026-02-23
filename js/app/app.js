@@ -10957,9 +10957,25 @@ const supervisorGroups = new Map();
                     if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: s.DESCRICAO, codfor: String(s.CODFOR) });
                     cMap.get(s.PRODUTO).val += val;
                 }
-                if (s.SUPERV) {
-                    if (!metrics.charts.supervisorData[s.SUPERV]) metrics.charts.supervisorData[s.SUPERV] = { current: 0, history: 0 };
-                    metrics.charts.supervisorData[s.SUPERV].current += val;
+                // Dynamic Grouping Key
+                let groupKey = s.SUPERV;
+                if (typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter') {
+                    const node = optimizedData.clientHierarchyMap.get(normalizeKey(s.CODCLI));
+                    if (node) {
+                        const hState = hierarchyState['comparison'];
+                        if (hState && hState.coords && hState.coords.size > 0) {
+                            groupKey = node.promotor.name || node.promotor.code;
+                        } else {
+                            groupKey = node.coord.name || node.coord.code;
+                        }
+                    } else {
+                        groupKey = 'Sem Hierarquia';
+                    }
+                }
+
+                if (groupKey) {
+                    if (!metrics.charts.supervisorData[groupKey]) metrics.charts.supervisorData[groupKey] = { current: 0, history: 0 };
+                    metrics.charts.supervisorData[groupKey].current += val;
                 }
                 const d = parseDate(s.DTPED);
                 if (d) {
@@ -11021,9 +11037,25 @@ const supervisorGroups = new Map();
                         cMap.get(s.PRODUTO).val += val;
                     }
 
-                    if (s.SUPERV) {
-                        if (!metrics.charts.supervisorData[s.SUPERV]) metrics.charts.supervisorData[s.SUPERV] = { current: 0, history: 0 };
-                        metrics.charts.supervisorData[s.SUPERV].history += val;
+                    // Dynamic Grouping Key History
+                    let hGroupKey = s.SUPERV;
+                    if (typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter') {
+                        const node = optimizedData.clientHierarchyMap.get(normalizeKey(s.CODCLI));
+                        if (node) {
+                            const hState = hierarchyState['comparison'];
+                            if (hState && hState.coords && hState.coords.size > 0) {
+                                hGroupKey = node.promotor.name || node.promotor.code;
+                            } else {
+                                hGroupKey = node.coord.name || node.coord.code;
+                            }
+                        } else {
+                            hGroupKey = 'Sem Hierarquia';
+                        }
+                    }
+
+                    if (hGroupKey) {
+                        if (!metrics.charts.supervisorData[hGroupKey]) metrics.charts.supervisorData[hGroupKey] = { current: 0, history: 0 };
+                        metrics.charts.supervisorData[hGroupKey].history += val;
                     }
 
                     // Accumulate Day Totals for Day Weight Calculation
@@ -21415,48 +21447,47 @@ const supervisorGroups = new Map();
     }
 
     function getWeeklyFilteredData() {
-        const salesIndices = new Set();
-        // Start with all indices
-        const total = allSalesData.length;
-        
+        const isPromoterMode = typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter';
+        const isCol = allSalesData instanceof ColumnarDataset;
+        const result = [];
+
+        if (isPromoterMode) {
+            const filteredClients = getHierarchyFilteredClients('weekly', allClientsData);
+            const clientCodes = new Set(filteredClients.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
+
+            const hasSupp = selectedWeeklySuppliers.size > 0;
+
+            for(let i=0; i<allSalesData.length; i++) {
+                const s = isCol ? allSalesData.get(i) : allSalesData[i];
+                if (!clientCodes.has(normalizeKey(s.CODCLI))) continue;
+                if (hasSupp && !selectedWeeklySuppliers.has(String(s.CODFOR))) continue;
+                result.push(s);
+            }
+            return result;
+        }
+
+        // Seller Mode
         const hasSup = selectedWeeklySupervisors.size > 0;
         const hasVend = selectedWeeklyVendedores.size > 0;
         const hasSupp = selectedWeeklySuppliers.size > 0;
 
         if (!hasSup && !hasVend && !hasSupp) {
-            return allSalesData; // Return all if no filter
+            return allSalesData;
         }
-
-        const result = [];
         
-        // Optimize: Iterate all and check filters
-        // Using optimizedData accessors for speed
-        const isCol = allSalesData instanceof ColumnarDataset;
         const colValues = isCol ? allSalesData._data : null;
+        const total = allSalesData.length;
         
         for(let i=0; i<total; i++) {
-            // Check filters
             let keep = true;
-            
-            // Supervisor
             if (hasSup) {
                 const sup = isCol ? colValues['SUPERV'][i] : allSalesData[i].SUPERV;
                 if (!selectedWeeklySupervisors.has(sup)) keep = false;
             }
-            
-            // Vendedor (RCA Code is safer, but filter stores Code)
             if (keep && hasVend) {
-                // Determine RCA Code from CODUSUR
                 const codUsur = isCol ? colValues['CODUSUR'][i] : allSalesData[i].CODUSUR;
-                // vendedor filter stores rca (which is usually name or code?)
-                // updateVendedorFilterDropdown stores 'rca' which is key in sellerDetailsMap.
-                // sellerDetailsMap is keyed by CODUSUR usually?
-                // Wait, sellerDetailsMap keys are codUsur.
-                // updateWeeklyVendedorFilter iterates sellerDetailsMap keys (code).
                 if (!selectedWeeklyVendedores.has(codUsur)) keep = false;
             }
-
-            // Supplier
             if (keep && hasSupp) {
                 const supp = isCol ? colValues['CODFOR'][i] : allSalesData[i].CODFOR;
                 if (!selectedWeeklySuppliers.has(supp)) keep = false;
@@ -21470,9 +21501,10 @@ const supervisorGroups = new Map();
     }
     
     function updateWeeklyView() {
-        if (window.userRole === 'promotor') return; // Not for promotors?
+        if (window.userRole === 'promotor') return;
         
         const filteredSales = getWeeklyFilteredData();
+        const isPromoterMode = typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter';
         
         const now = lastSaleDate ? new Date(lastSaleDate) : new Date();
         const weeks = getWorkingMonthWeeks(now.getFullYear(), now.getMonth());
@@ -21489,43 +21521,55 @@ const supervisorGroups = new Map();
             }
         });
         
-        // History Logic (Using filters on History too?)
-        // Ideally yes, but history filtering is expensive if we iterate all history.
-        // For 'Best Day', maybe we can just use the global best day or try to filter history?
-        // Let's filter history with same logic for consistency.
-        
+        // History Logic
         const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const prevMonthSales = [];
         
-        // Filter History
         const isColHistory = allHistoryData instanceof ColumnarDataset;
         const colHist = isColHistory ? allHistoryData._data : null;
         const histLen = allHistoryData.length;
         
+        // Logic for History Filtering
+        let historyClientCodes = null;
+        if (isPromoterMode) {
+             const filteredClients = getHierarchyFilteredClients('weekly', allClientsData);
+             historyClientCodes = new Set(filteredClients.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
+        }
+
         const hasSup = selectedWeeklySupervisors.size > 0;
         const hasVend = selectedWeeklyVendedores.size > 0;
         const hasSupp = selectedWeeklySuppliers.size > 0;
 
         for(let i=0; i<histLen; i++) {
              const dtPed = isColHistory ? colHist['DTPED'][i] : allHistoryData[i].DTPED;
-             // Check Date First
-             // dtPed is timestamp or string?
              let d = (typeof dtPed === 'number') ? new Date(dtPed) : parseDate(dtPed);
              
              if (d && d.getMonth() === prevMonth.getMonth() && d.getFullYear() === prevMonth.getFullYear()) {
-                 // Check filters
                  let keep = true;
-                 if (hasSup) {
-                     const sup = isColHistory ? colHist['SUPERV'][i] : allHistoryData[i].SUPERV;
-                     if (!selectedWeeklySupervisors.has(sup)) keep = false;
-                 }
-                 if (keep && hasVend) {
-                     const codUsur = isColHistory ? colHist['CODUSUR'][i] : allHistoryData[i].CODUSUR;
-                     if (!selectedWeeklyVendedores.has(codUsur)) keep = false;
-                 }
-                 if (keep && hasSupp) {
-                     const supp = isColHistory ? colHist['CODFOR'][i] : allHistoryData[i].CODFOR;
-                     if (!selectedWeeklySuppliers.has(supp)) keep = false;
+
+                 if (isPromoterMode) {
+                     // Check Client Code
+                     const clientCode = isColHistory ? colHist['CODCLI'][i] : allHistoryData[i].CODCLI;
+                     if (!historyClientCodes.has(normalizeKey(clientCode))) keep = false;
+                     // Check Supplier
+                     if (keep && hasSupp) {
+                         const supp = isColHistory ? colHist['CODFOR'][i] : allHistoryData[i].CODFOR;
+                         if (!selectedWeeklySuppliers.has(String(supp))) keep = false;
+                     }
+                 } else {
+                     // Seller Mode
+                     if (hasSup) {
+                         const sup = isColHistory ? colHist['SUPERV'][i] : allHistoryData[i].SUPERV;
+                         if (!selectedWeeklySupervisors.has(sup)) keep = false;
+                     }
+                     if (keep && hasVend) {
+                         const codUsur = isColHistory ? colHist['CODUSUR'][i] : allHistoryData[i].CODUSUR;
+                         if (!selectedWeeklyVendedores.has(codUsur)) keep = false;
+                     }
+                     if (keep && hasSupp) {
+                         const supp = isColHistory ? colHist['CODFOR'][i] : allHistoryData[i].CODFOR;
+                         if (!selectedWeeklySuppliers.has(supp)) keep = false;
+                     }
                  }
 
                  if (keep) {
@@ -21548,24 +21592,38 @@ const supervisorGroups = new Map();
         }
 
         // Generate Rankings
-        const sellerStats = new Map(); // Code -> { val: 0, clients: Set() }
+        const sellerStats = new Map();
         
         filteredSales.forEach(s => {
-            const codUsur = s.CODUSUR;
+            let groupingCode = s.CODUSUR;
+            let groupingName = null;
+
+            if (isPromoterMode) {
+                 const node = optimizedData.clientHierarchyMap.get(normalizeKey(s.CODCLI));
+                 if (node) {
+                     groupingCode = node.promotor.code;
+                     groupingName = node.promotor.name;
+                 } else {
+                     groupingCode = 'Sem Promotor';
+                 }
+            }
+
             const val = Number(s.VLVENDA) || 0;
             const client = s.CODCLI;
             
-            if (!sellerStats.has(codUsur)) sellerStats.set(codUsur, { val: 0, clients: new Set() });
-            const entry = sellerStats.get(codUsur);
+            if (!sellerStats.has(groupingCode)) sellerStats.set(groupingCode, { val: 0, clients: new Set(), name: groupingName });
+            const entry = sellerStats.get(groupingCode);
             entry.val += val;
             entry.clients.add(client);
         });
         
         const rankingData = [];
         sellerStats.forEach((stats, code) => {
-            const details = sellerDetailsMap.get(code);
-            const name = details ? (details.name || code) : code;
-            // Simple first name extraction if getFirstName is not available
+            let name = stats.name;
+            if (!name) {
+                const details = sellerDetailsMap.get(code);
+                name = details ? (details.name || code) : code;
+            }
             const formatName = (n) => n.split(' ')[0] + (n.split(' ').length > 1 ? ' ' + n.split(' ')[1].charAt(0) + '.' : '');
             
             rankingData.push({ 
@@ -21575,6 +21633,12 @@ const supervisorGroups = new Map();
                 pos: stats.clients.size 
             });
         });
+
+        // Update Titles
+        const fatTitle = document.getElementById('weekly-ranking-fat-title');
+        const posTitle = document.getElementById('weekly-ranking-pos-title');
+        if (fatTitle) fatTitle.textContent = isPromoterMode ? 'Top Promotores (Fat)' : 'Top Vendedores (Fat)';
+        if (posTitle) posTitle.textContent = isPromoterMode ? 'Top Positivação (Promotor)' : 'Top Positivação (Vendedor)';
         
         // Render Fat Ranking
         rankingData.sort((a,b) => b.val - a.val);
