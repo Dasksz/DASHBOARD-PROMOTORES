@@ -2318,8 +2318,14 @@
                         }
 
                         // Use the exact same logic as original
-                        // EXCEPTION: Allow RCA 53 if explicitly selected in filter
-                        const allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
+                        // EXCEPTION: Allow RCA 53 if explicitly selected in filter OR implied by Supervisor
+                        let allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
+                        if (!allowRca53 && typeof selectedSupervisors !== 'undefined' && selectedSupervisors.size > 0 && typeof sellerDetailsMap !== 'undefined') {
+                             const d53 = sellerDetailsMap.get('53');
+                             if (d53 && selectedSupervisors.has(d53.supervisor)) {
+                                 allowRca53 = true;
+                             }
+                        }
                         const keep = (isAmericanas || rca1 !== '53' || allowRca53 || clientsWithSalesThisMonth.has(codcli));
 
                         if (keep) {
@@ -2333,8 +2339,14 @@
                     const codcli = String(c['Código'] || c['codigo_cliente']);
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                    // EXCEPTION: Allow RCA 53 if explicitly selected in filter
-                    const allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
+                    // EXCEPTION: Allow RCA 53 if explicitly selected in filter OR implied by Supervisor
+                    let allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
+                    if (!allowRca53 && typeof selectedSupervisors !== 'undefined' && selectedSupervisors.size > 0 && typeof sellerDetailsMap !== 'undefined') {
+                         const d53 = sellerDetailsMap.get('53');
+                         if (d53 && selectedSupervisors.has(d53.supervisor)) {
+                             allowRca53 = true;
+                         }
+                    }
                     const keep = (isAmericanas || rca1 !== '53' || allowRca53 || clientsWithSalesThisMonth.has(codcli));
                     return keep;
                 });
@@ -9442,8 +9454,14 @@ const supervisorGroups = new Map();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
 
                 // Regra de inclusão (Americanas ou RCA 1 diferente de 53)
-                // EXCEPTION: Allow RCA 53 if explicitly selected in filter
-                const allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
+                // EXCEPTION: Allow RCA 53 if explicitly selected in filter OR implied by Supervisor
+                let allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
+                if (!allowRca53 && typeof selectedSupervisors !== 'undefined' && selectedSupervisors.size > 0 && typeof sellerDetailsMap !== 'undefined') {
+                     const d53 = sellerDetailsMap.get('53');
+                     if (d53 && selectedSupervisors.has(d53.supervisor)) {
+                         allowRca53 = true;
+                     }
+                }
                 return (isAmericanas || rca1 !== '53' || allowRca53 || clientsWithSalesThisMonth.has(c['Código']));
             });
 
