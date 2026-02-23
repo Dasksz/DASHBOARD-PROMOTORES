@@ -1434,6 +1434,13 @@
             const stockSupervisor = document.getElementById('stock-supervisor-filter-wrapper');
             const stockVendedor = document.getElementById('stock-vendedor-filter-wrapper');
 
+            // Meta Realizado View Elements
+            const metaRealizadoCoord = document.getElementById('meta-realizado-coord-filter-wrapper');
+            const metaRealizadoCocoord = document.getElementById('meta-realizado-cocoord-filter-wrapper');
+            const metaRealizadoPromotor = document.getElementById('meta-realizado-promotor-filter-wrapper');
+            const metaRealizadoSupervisor = document.getElementById('meta-realizado-supervisor-filter-wrapper');
+            const metaRealizadoVendedor = document.getElementById('meta-realizado-vendedor-filter-wrapper');
+
             if (adminViewMode === 'promoter') {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.remove('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.remove('hidden');
@@ -1515,6 +1522,13 @@
                 if (stockSupervisor) stockSupervisor.classList.add('hidden');
                 if (stockVendedor) stockVendedor.classList.add('hidden');
 
+                // Meta Realizado
+                if (metaRealizadoCoord) metaRealizadoCoord.classList.remove('hidden');
+                if (metaRealizadoCocoord) metaRealizadoCocoord.classList.remove('hidden');
+                if (metaRealizadoPromotor) metaRealizadoPromotor.classList.remove('hidden');
+                if (metaRealizadoSupervisor) metaRealizadoSupervisor.classList.add('hidden');
+                if (metaRealizadoVendedor) metaRealizadoVendedor.classList.add('hidden');
+
             } else {
                 if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.add('hidden');
                 if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.add('hidden');
@@ -1595,6 +1609,13 @@
                 // Stock
                 if (stockSupervisor) stockSupervisor.classList.remove('hidden');
                 if (stockVendedor) stockVendedor.classList.remove('hidden');
+
+                // Meta Realizado
+                if (metaRealizadoCoord) metaRealizadoCoord.classList.add('hidden');
+                if (metaRealizadoCocoord) metaRealizadoCocoord.classList.add('hidden');
+                if (metaRealizadoPromotor) metaRealizadoPromotor.classList.add('hidden');
+                if (metaRealizadoSupervisor) metaRealizadoSupervisor.classList.remove('hidden');
+                if (metaRealizadoVendedor) metaRealizadoVendedor.classList.remove('hidden');
             }
         }
 
@@ -1629,6 +1650,10 @@
                 if (typeof updateCoverageSupervisorFilter === 'function') updateCoverageSupervisorFilter();
                 if (typeof updateCoverageVendedorFilter === 'function') updateCoverageVendedorFilter();
                 updateCoverageView();
+            } else if (currentActiveView === 'meta-realizado' && typeof updateMetaRealizadoView === 'function') {
+                if (typeof updateMetaRealizadoSupervisorFilter === 'function') updateMetaRealizadoSupervisorFilter();
+                if (typeof updateMetaRealizadoVendedorFilter === 'function') updateMetaRealizadoVendedorFilter();
+                updateMetaRealizadoView();
             }
         }
 
@@ -2969,6 +2994,8 @@
         }
 
         let selectedMetaRealizadoSuppliers = [];
+        let selectedMetaRealizadoSupervisors = new Set();
+        let selectedMetaRealizadoVendedores = new Set();
         let currentMetaRealizadoPasta = 'PEPSICO'; // Default
         let currentMetaRealizadoMetric = 'valor'; // 'valor' or 'peso'
 
@@ -4408,43 +4435,63 @@
             const supervisorsSet = new Set();
             const sellersSet = new Set();
 
-            const hState = hierarchyState['meta-realizado'];
-            if (hState) {
-                const validCodes = new Set();
-
-                // 1. Promotors (Leaf)
-                if (hState.promotors.size > 0) {
-                    hState.promotors.forEach(p => validCodes.add(p));
-                }
-                // 2. CoCoords
-                else if (hState.cocoords.size > 0) {
-                     hState.cocoords.forEach(cc => {
-                         const children = optimizedData.promotorsByCocoord.get(cc);
-                         if (children) children.forEach(p => validCodes.add(p));
-                     });
-                }
-                // 3. Coords
-                else if (hState.coords.size > 0) {
-                    hState.coords.forEach(c => {
-                         const cocoords = optimizedData.cocoordsByCoord.get(c);
-                         if (cocoords) {
-                             cocoords.forEach(cc => {
-                                 const children = optimizedData.promotorsByCocoord.get(cc);
-                                 if (children) children.forEach(p => validCodes.add(p));
-                             });
-                         }
+            if (adminViewMode === 'seller') {
+                if (selectedMetaRealizadoVendedores.size > 0) {
+                    selectedMetaRealizadoVendedores.forEach(v => {
+                        const details = sellerDetailsMap.get(v);
+                        if (details) sellersSet.add(details.name);
+                        else sellersSet.add(v);
+                    });
+                } else if (selectedMetaRealizadoSupervisors.size > 0) {
+                    selectedMetaRealizadoSupervisors.forEach(sup => {
+                        const rcas = optimizedData.rcasBySupervisor.get(sup);
+                        if (rcas) {
+                            rcas.forEach(rca => {
+                                const details = sellerDetailsMap.get(rca);
+                                if (details) sellersSet.add(details.name);
+                            });
+                        }
                     });
                 }
+            } else {
+                const hState = hierarchyState['meta-realizado'];
+                if (hState) {
+                    const validCodes = new Set();
 
-                // Map Codes to Names
-                if (validCodes.size > 0) {
-                    validCodes.forEach(code => {
-                        const name = optimizedData.promotorMap.get(code);
-                        if (name) sellersSet.add(name);
-                         // Also try mapping via rcaNameByCode if the code is RCA code (fallback)
-                        const rcaName = optimizedData.rcaNameByCode.get(code);
-                        if (rcaName) sellersSet.add(rcaName);
-                    });
+                    // 1. Promotors (Leaf)
+                    if (hState.promotors.size > 0) {
+                        hState.promotors.forEach(p => validCodes.add(p));
+                    }
+                    // 2. CoCoords
+                    else if (hState.cocoords.size > 0) {
+                         hState.cocoords.forEach(cc => {
+                             const children = optimizedData.promotorsByCocoord.get(cc);
+                             if (children) children.forEach(p => validCodes.add(p));
+                         });
+                    }
+                    // 3. Coords
+                    else if (hState.coords.size > 0) {
+                        hState.coords.forEach(c => {
+                             const cocoords = optimizedData.cocoordsByCoord.get(c);
+                             if (cocoords) {
+                                 cocoords.forEach(cc => {
+                                     const children = optimizedData.promotorsByCocoord.get(cc);
+                                     if (children) children.forEach(p => validCodes.add(p));
+                                 });
+                             }
+                        });
+                    }
+
+                    // Map Codes to Names
+                    if (validCodes.size > 0) {
+                        validCodes.forEach(code => {
+                            const name = optimizedData.promotorMap.get(code);
+                            if (name) sellersSet.add(name);
+                             // Also try mapping via rcaNameByCode if the code is RCA code (fallback)
+                            const rcaName = optimizedData.rcaNameByCode.get(code);
+                            if (rcaName) sellersSet.add(rcaName);
+                        });
+                    }
                 }
             }
 
@@ -5127,6 +5174,102 @@
             filteredData: [],
             totalPages: 1
         };
+
+        function setupMetaRealizadoSupervisorFilterHandlers() {
+            // Supervisor
+            const supBtn = document.getElementById('meta-realizado-supervisor-filter-btn');
+            const supDropdown = document.getElementById('meta-realizado-supervisor-filter-dropdown');
+            if(supBtn && supDropdown) {
+                const newBtn = supBtn.cloneNode(true);
+                supBtn.parentNode.replaceChild(newBtn, supBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    supDropdown.classList.toggle('hidden');
+                    document.getElementById('meta-realizado-vendedor-filter-dropdown')?.classList.add('hidden');
+                };
+                supDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedMetaRealizadoSupervisors.add(val);
+                        else selectedMetaRealizadoSupervisors.delete(val);
+
+                        updateFilterButtonText(document.getElementById('meta-realizado-supervisor-filter-text'), selectedMetaRealizadoSupervisors, 'Todos');
+                        selectedMetaRealizadoVendedores.clear();
+                        updateMetaRealizadoVendedorFilter();
+                        debouncedUpdateMetaRealizado();
+                    }
+                };
+            }
+
+            // Seller
+            const vendBtn = document.getElementById('meta-realizado-vendedor-filter-btn');
+            const vendDropdown = document.getElementById('meta-realizado-vendedor-filter-dropdown');
+            if(vendBtn && vendDropdown) {
+                const newBtn = vendBtn.cloneNode(true);
+                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
+
+                newBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    vendDropdown.classList.toggle('hidden');
+                    document.getElementById('meta-realizado-supervisor-filter-dropdown')?.classList.add('hidden');
+                };
+                vendDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if(e.target.checked) selectedMetaRealizadoVendedores.add(val);
+                        else selectedMetaRealizadoVendedores.delete(val);
+
+                        updateFilterButtonText(document.getElementById('meta-realizado-vendedor-filter-text'), selectedMetaRealizadoVendedores, 'Todos');
+                        debouncedUpdateMetaRealizado();
+                    }
+                };
+            }
+
+            // Global close logic
+            if (!document._metaRealizadoFilterListener) {
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('#meta-realizado-supervisor-filter-wrapper')) {
+                        document.getElementById('meta-realizado-supervisor-filter-dropdown')?.classList.add('hidden');
+                    }
+                    if (!e.target.closest('#meta-realizado-vendedor-filter-wrapper')) {
+                        document.getElementById('meta-realizado-vendedor-filter-dropdown')?.classList.add('hidden');
+                    }
+                });
+                document._metaRealizadoFilterListener = true;
+            }
+
+            updateMetaRealizadoSupervisorFilter();
+            updateMetaRealizadoVendedorFilter();
+        }
+
+        function updateMetaRealizadoSupervisorFilter() {
+            const dropdown = document.getElementById('meta-realizado-supervisor-filter-dropdown');
+            if(!dropdown) return;
+
+            const supervisors = new Set();
+            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
+
+            renderCheckboxDropdown(dropdown, supervisors, selectedMetaRealizadoSupervisors);
+            updateFilterButtonText(document.getElementById('meta-realizado-supervisor-filter-text'), selectedMetaRealizadoSupervisors, 'Todos');
+        }
+
+        function updateMetaRealizadoVendedorFilter() {
+            const dropdown = document.getElementById('meta-realizado-vendedor-filter-dropdown');
+            if(!dropdown) return;
+
+            const validRcas = new Set();
+            if (selectedMetaRealizadoSupervisors.size > 0) {
+                sellerDetailsMap.forEach((d, code) => {
+                    if (selectedMetaRealizadoSupervisors.has(d.supervisor)) validRcas.add(code);
+                });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+
+            renderRcaCheckboxDropdown(dropdown, validRcas, selectedMetaRealizadoVendedores);
+            updateFilterButtonText(document.getElementById('meta-realizado-vendedor-filter-text'), selectedMetaRealizadoVendedores, 'Todos');
+        }
 
         function updateMetaRealizadoView() {
             // 1. Get Data
@@ -16109,6 +16252,7 @@ const supervisorGroups = new Map();
         setupGoalsSupervisorFilterHandlers(); // Initialize Goals Supervisor Filters
         setupHierarchyFilters('estoque', updateStockView);
         setupHierarchyFilters('weekly', updateWeeklyView);
+        setupMetaRealizadoSupervisorFilterHandlers();
 
         // Initialize Other Filters
         selectedMainSuppliers = updateSupplierFilter(document.getElementById('fornecedor-filter-dropdown'), document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, [...allSalesData, ...allHistoryData], 'main');
