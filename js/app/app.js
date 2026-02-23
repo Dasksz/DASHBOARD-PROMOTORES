@@ -12898,10 +12898,6 @@ const supervisorGroups = new Map();
                             viewState.consultas.dirty = false;
                         }
                         break;
-                    case 'weekly':
-                        showViewElement(document.getElementById('weekly-view'));
-                        if (typeof updateWeeklyView === 'function') updateWeeklyView();
-                        break;
                     case 'wallet':
                         showViewElement(document.getElementById('wallet-view'));
                         if (viewState.wallet.dirty || !viewState.wallet.rendered) {
@@ -21213,26 +21209,21 @@ const supervisorGroups = new Map();
     }
 
     function renderWeeklyView() {
-        // Init Filters logic (Lazy)
+        // Init Filters logic (Simplificado e Robusto)
         const supervisorBtn = document.getElementById('weekly-supervisor-filter-btn');
-        if (supervisorBtn && !supervisorBtn._hasListener) {
-            supervisorBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.getElementById('weekly-supervisor-filter-dropdown').classList.toggle('hidden');
-            });
-            document.addEventListener('click', (e) => {
-                const dd = document.getElementById('weekly-supervisor-filter-dropdown');
-                if (dd && !dd.classList.contains('hidden') && !supervisorBtn.contains(e.target) && !dd.contains(e.target)) {
-                    dd.classList.add('hidden');
-                }
-            });
-            supervisorBtn._hasListener = true;
-        }
-
         const supervisorDropdown = document.getElementById('weekly-supervisor-filter-dropdown');
-        if (supervisorDropdown && !supervisorDropdown._hasListener) {
-            supervisorDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
+
+        if (supervisorBtn && supervisorDropdown) {
+            supervisorBtn.onclick = (e) => {
+                e.stopPropagation();
+                supervisorDropdown.classList.toggle('hidden');
+                // Fechar outros
+                document.getElementById('weekly-vendedor-filter-dropdown')?.classList.add('hidden');
+                document.getElementById('weekly-fornecedor-filter-dropdown')?.classList.add('hidden');
+            };
+
+            supervisorDropdown.onchange = (e) => {
+                 if (e.target.type === 'checkbox') {
                     const val = e.target.value;
                     const checked = e.target.checked;
                     if (checked) selectedWeeklySupervisors.add(val);
@@ -21244,29 +21235,23 @@ const supervisorGroups = new Map();
                     updateWeeklyVendedorFilter();
                     updateWeeklyView();
                 }
-            });
-            supervisorDropdown._hasListener = true;
+            }
         }
 
         const vendedorBtn = document.getElementById('weekly-vendedor-filter-btn');
-        if (vendedorBtn && !vendedorBtn._hasListener) {
-            vendedorBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.getElementById('weekly-vendedor-filter-dropdown').classList.toggle('hidden');
-            });
-            document.addEventListener('click', (e) => {
-                const dd = document.getElementById('weekly-vendedor-filter-dropdown');
-                if (dd && !dd.classList.contains('hidden') && !vendedorBtn.contains(e.target) && !dd.contains(e.target)) {
-                    dd.classList.add('hidden');
-                }
-            });
-            vendedorBtn._hasListener = true;
-        }
-
         const vendedorDropdown = document.getElementById('weekly-vendedor-filter-dropdown');
-        if (vendedorDropdown && !vendedorDropdown._hasListener) {
-            vendedorDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
+
+        if (vendedorBtn && vendedorDropdown) {
+            vendedorBtn.onclick = (e) => {
+                e.stopPropagation();
+                vendedorDropdown.classList.toggle('hidden');
+                // Fechar outros
+                document.getElementById('weekly-supervisor-filter-dropdown')?.classList.add('hidden');
+                document.getElementById('weekly-fornecedor-filter-dropdown')?.classList.add('hidden');
+            };
+
+            vendedorDropdown.onchange = (e) => {
+                 if (e.target.type === 'checkbox') {
                     const val = e.target.value;
                     const checked = e.target.checked;
                     if (checked) selectedWeeklyVendedores.add(val);
@@ -21275,28 +21260,22 @@ const supervisorGroups = new Map();
                     updateWeeklyFilterText('weekly-vendedor-filter-text', selectedWeeklyVendedores, 'Todos');
                     updateWeeklyView();
                 }
-            });
-            vendedorDropdown._hasListener = true;
+            }
         }
 
         const fornecedorBtn = document.getElementById('weekly-fornecedor-filter-btn');
-        if (fornecedorBtn && !fornecedorBtn._hasListener) {
-            fornecedorBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.getElementById('weekly-fornecedor-filter-dropdown').classList.toggle('hidden');
-            });
-            document.addEventListener('click', (e) => {
-                const dd = document.getElementById('weekly-fornecedor-filter-dropdown');
-                if (dd && !dd.classList.contains('hidden') && !fornecedorBtn.contains(e.target) && !dd.contains(e.target)) {
-                    dd.classList.add('hidden');
-                }
-            });
-            fornecedorBtn._hasListener = true;
-        }
-
         const fornecedorDropdown = document.getElementById('weekly-fornecedor-filter-dropdown');
-        if (fornecedorDropdown && !fornecedorDropdown._hasListener) {
-            fornecedorDropdown.addEventListener('change', (e) => {
+
+        if (fornecedorBtn && fornecedorDropdown) {
+            fornecedorBtn.onclick = (e) => {
+                e.stopPropagation();
+                fornecedorDropdown.classList.toggle('hidden');
+                 // Fechar outros
+                document.getElementById('weekly-supervisor-filter-dropdown')?.classList.add('hidden');
+                document.getElementById('weekly-vendedor-filter-dropdown')?.classList.add('hidden');
+            };
+
+            fornecedorDropdown.onchange = (e) => {
                 if (e.target.type === 'checkbox') {
                     const val = e.target.value;
                     const checked = e.target.checked;
@@ -21306,13 +21285,29 @@ const supervisorGroups = new Map();
                     updateWeeklyFilterText('weekly-fornecedor-filter-text', selectedWeeklySuppliers, 'Todos');
                     updateWeeklyView();
                 }
+            }
+        }
+
+        // Global Click Listener for closing dropdowns (Ensure only one is attached)
+        if (!document._weeklyFilterListener) {
+            document.addEventListener('click', (e) => {
+                // Close all if clicking outside
+                if (!e.target.closest('#weekly-supervisor-filter-wrapper')) {
+                    document.getElementById('weekly-supervisor-filter-dropdown')?.classList.add('hidden');
+                }
+                if (!e.target.closest('#weekly-vendedor-filter-wrapper')) {
+                    document.getElementById('weekly-vendedor-filter-dropdown')?.classList.add('hidden');
+                }
+                if (!e.target.closest('#weekly-fornecedor-filter-wrapper')) {
+                    document.getElementById('weekly-fornecedor-filter-dropdown')?.classList.add('hidden');
+                }
             });
-            fornecedorDropdown._hasListener = true;
+            document._weeklyFilterListener = true;
         }
 
         const clearBtn = document.getElementById('clear-weekly-filters-btn');
-        if (clearBtn && !clearBtn._hasListener) {
-            clearBtn.addEventListener('click', () => {
+        if (clearBtn) {
+            clearBtn.onclick = () => {
                 selectedWeeklySupervisors.clear();
                 selectedWeeklyVendedores.clear();
                 selectedWeeklySuppliers.clear();
@@ -21320,8 +21315,7 @@ const supervisorGroups = new Map();
                 updateWeeklyVendedorFilter();
                 updateWeeklySupplierFilter();
                 updateWeeklyView();
-            });
-            clearBtn._hasListener = true;
+            };
         }
 
         // Populate Filters
@@ -21644,12 +21638,28 @@ const supervisorGroups = new Map();
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { stacked: false, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } },
-                    y: { stacked: false, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } }
+                    x: {
+                        stacked: false,
+                        grid: { color: '#334155' },
+                        ticks: { color: '#f8fafc', font: { weight: 'bold' } }
+                    },
+                    y: {
+                        stacked: false,
+                        grid: { color: '#334155' },
+                        ticks: { color: '#f8fafc', font: { weight: 'bold' } }
+                    }
                 },
                 plugins: {
-                    legend: { labels: { color: '#cbd5e1' } },
-                    tooltip: { mode: 'index', intersect: false }
+                    legend: { labels: { color: '#f8fafc', font: { weight: 'bold' } } },
+                    tooltip: { mode: 'index', intersect: false },
+                    datalabels: {
+                        color: '#f8fafc',
+                        anchor: 'end',
+                        align: 'top',
+                        offset: -4,
+                        font: { size: 10, weight: 'bold' },
+                        formatter: (val) => val > 0 ? (val >= 1000 ? (val/1000).toFixed(1) + 'k' : val.toFixed(0)) : ''
+                    }
                 }
             }
         });
