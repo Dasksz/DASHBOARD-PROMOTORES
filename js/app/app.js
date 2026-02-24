@@ -5484,6 +5484,7 @@
                     });
                 }
             }
+            }
             // ----------------------------------------------------
 
             // 1. Identify Target Clients (Active/Americanas/etc + Filtered)
