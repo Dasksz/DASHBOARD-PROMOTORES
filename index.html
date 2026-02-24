@@ -2348,11 +2348,25 @@
 
                     <div id="stock-filial-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Filial</label>
-                        <select id="stock-filial-filter" class="glass-input border border-slate-700 text-white text-sm rounded-lg block w-full p-2.5">
-                            <option value="all">Todas (05 + 08)</option>
-                            <option value="05">Filial 05</option>
-                            <option value="08">Filial 08</option>
-                        </select>
+                        <button id="stock-filial-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
+                            <span id="stock-filial-filter-text">Todas (05 + 08)</span>
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <input type="hidden" id="stock-filial-filter" value="all">
+                        <div id="stock-filial-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2">
+                            <label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
+                                <input type="radio" name="stock-filial" value="all" checked class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                                <span class="ml-2 text-sm text-slate-300">Todas (05 + 08)</span>
+                            </label>
+                            <label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
+                                <input type="radio" name="stock-filial" value="05" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                                <span class="ml-2 text-sm text-slate-300">Filial 05</span>
+                            </label>
+                            <label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
+                                <input type="radio" name="stock-filial" value="08" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                                <span class="ml-2 text-sm text-slate-300">Filial 08</span>
+                            </label>
+                        </div>
                     </div>
                      <div id="stock-supervisor-filter-wrapper" class="relative hidden">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
@@ -2376,7 +2390,7 @@
                 <h3 class="text-green-400 font-bold mb-2">Crescimento</h3>
                 <div class="overflow-y-auto max-h-60 custom-scrollbar">
                     <table class="w-full text-xs text-left text-slate-300" id="stock-growth-table">
-                        <thead class="text-slate-500 uppercase"><tr><th>Produto</th><th class="text-right">Venda</th><th class="text-right">Média</th></tr></thead>
+                        <thead class="text-slate-500 uppercase"><tr><th>Produto</th><th class="text-right">Venda Cx</th><th class="text-right">Média Cx</th><th class="text-right">Var %</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -2385,7 +2399,7 @@
                 <h3 class="text-red-400 font-bold mb-2">Queda</h3>
                 <div class="overflow-y-auto max-h-60 custom-scrollbar">
                     <table class="w-full text-xs text-left text-slate-300" id="stock-drop-table">
-                        <thead class="text-slate-500 uppercase"><tr><th>Produto</th><th class="text-right">Venda</th><th class="text-right">Média</th></tr></thead>
+                        <thead class="text-slate-500 uppercase"><tr><th>Produto</th><th class="text-right">Venda Cx</th><th class="text-right">Média Cx</th><th class="text-right">Var %</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -2394,7 +2408,7 @@
                 <h3 class="text-blue-400 font-bold mb-2">Novos com Venda</h3>
                 <div class="overflow-y-auto max-h-60 custom-scrollbar">
                     <table class="w-full text-xs text-left text-slate-300" id="stock-new-table">
-                        <thead class="text-slate-500 uppercase"><tr><th>Produto</th><th class="text-right">Venda</th></tr></thead>
+                        <thead class="text-slate-500 uppercase"><tr><th>Produto</th><th class="text-right">Venda Cx</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -2404,7 +2418,7 @@
                 <p class="text-[10px] text-slate-400 mb-2">Com estoque na filial, sem venda na carteira.</p>
                 <div class="overflow-y-auto max-h-60 custom-scrollbar">
                     <table class="w-full text-xs text-left text-slate-300" id="stock-lost-table">
-                        <thead class="text-slate-500 uppercase"><tr><th>Produto</th><th class="text-right">Estoque</th></tr></thead>
+                        <thead class="text-slate-500 uppercase"><tr><th>Produto</th><th class="text-right">Estoque (CX)</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -2416,15 +2430,15 @@
                 <h3 class="font-bold text-white">Análise Detalhada</h3>
             </div>
             <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
-                <table class="min-w-full text-sm text-left text-slate-300">
+                <table class="min-w-full text-sm text-left text-slate-300" id="stock-main-table">
                     <thead class="text-xs text-slate-400 uppercase glass-panel sticky top-0 z-10">
                         <tr>
                             <th class="px-4 py-3">Produto</th>
                             <th class="px-4 py-3 hidden md:table-cell">Fornecedor</th>
                             <th class="px-4 py-3 text-right">Estoque (CX)</th>
-                            <th class="px-4 py-3 text-right">Venda Mês</th>
-                            <th class="px-4 py-3 text-right hidden md:table-cell">Média Trim.</th>
-                            <th class="px-4 py-3 text-center">Status</th>
+                            <th class="px-4 py-3 text-right">Venda Cx</th>
+                            <th class="px-4 py-3 text-right hidden md:table-cell">Média Cx</th>
+                            <th class="px-4 py-3 text-center">Var %</th>
                         </tr>
                     </thead>
                     <tbody id="stock-main-table-body" class="divide-y divide-slate-800/50"></tbody>

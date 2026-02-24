@@ -22047,6 +22047,27 @@ const supervisorGroups = new Map();
                     e.stopPropagation();
                     supplierDd.classList.toggle('hidden');
                 });
+
+                // Add Change Listener for Supplier Filter
+                supplierDd.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if (e.target.checked) selectedStockSuppliers.push(val);
+                        else selectedStockSuppliers = selectedStockSuppliers.filter(s => s !== val);
+
+                        // Re-render to update counts/status if needed (optional for simple lists)
+                        // updateAllStockFilters({ skipFilter: 'supplier' });
+                        // But simpler: just update text and view
+                        const text = document.getElementById('stock-supplier-filter-text');
+                        updateSupplierFilter(supplierDd, text, selectedStockSuppliers, [], 'stock-dummy'); // Just to update text logic if needed, but easier to just do:
+
+                        if (selectedStockSuppliers.length === 0) text.textContent = 'Todos';
+                        else if (selectedStockSuppliers.length === 1) text.textContent = selectedStockSuppliers[0];
+                        else text.textContent = `${selectedStockSuppliers.length} Selecionadas`;
+
+                        handleStockFilterChange({ skipFilter: 'supplier' }); // Update dependent filters (Pasta/Product) and View
+                    }
+                });
             }
 
             const pastaBtn = document.getElementById('stock-pasta-filter-btn');
@@ -22056,6 +22077,38 @@ const supervisorGroups = new Map();
                     e.stopPropagation();
                     pastaDd.classList.toggle('hidden');
                 });
+
+                // Add Change Listener for Pasta Filter
+                pastaDd.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if (val === 'ALL') {
+                            const checkboxes = pastaDd.querySelectorAll('input[type="checkbox"]');
+                            const checked = e.target.checked;
+                            selectedStockPastas = [];
+                            checkboxes.forEach(cb => {
+                                if (cb.value !== 'ALL') {
+                                    cb.checked = checked;
+                                    if (checked) selectedStockPastas.push(cb.value);
+                                }
+                            });
+                        } else {
+                            if (e.target.checked) selectedStockPastas.push(val);
+                            else {
+                                selectedStockPastas = selectedStockPastas.filter(p => p !== val);
+                                const allChk = pastaDd.querySelector('input[value="ALL"]');
+                                if (allChk) allChk.checked = false;
+                            }
+                        }
+
+                        const text = document.getElementById('stock-pasta-filter-text');
+                        if (selectedStockPastas.length === 0) text.textContent = 'Todas';
+                        else if (selectedStockPastas.length === 1) text.textContent = selectedStockPastas[0];
+                        else text.textContent = `${selectedStockPastas.length} Selecionadas`;
+
+                        handleStockFilterChange({ skipFilter: 'pasta' });
+                    }
+                });
             }
 
             const productBtn = document.getElementById('stock-product-filter-btn');
@@ -22064,6 +22117,22 @@ const supervisorGroups = new Map();
                 productBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     productDd.classList.toggle('hidden');
+                });
+
+                // Add Change Listener for Product Filter
+                productDd.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if (e.target.checked) selectedStockProducts.push(val);
+                        else selectedStockProducts = selectedStockProducts.filter(p => p !== val);
+
+                        const text = document.getElementById('stock-product-filter-text');
+                        if (selectedStockProducts.length === 0) text.textContent = 'Todos';
+                        else if (selectedStockProducts.length === 1) text.textContent = '1 Selecionado';
+                        else text.textContent = `${selectedStockProducts.length} Selecionados`;
+
+                        handleStockFilterChange({ skipFilter: 'product' });
+                    }
                 });
             }
 
@@ -22078,6 +22147,8 @@ const supervisorGroups = new Map();
                     productDd.classList.add('hidden');
                 }
             });
+
+            setupStockFilialFilterHandlers(); // Initialize Filial Filter Handlers
 
             _stockListenersInitialized = true;
         }
@@ -22353,6 +22424,16 @@ const supervisorGroups = new Map();
             const avgHistory = historyMap.get(code) || 0;
             
             let status = 'neutral';
+            let variation = 0;
+
+            if (avgHistory > 0) {
+                variation = ((currentSales.qty - avgHistory) / avgHistory) * 100;
+            } else if (currentSales.qty > 0) {
+                variation = 100; // New product growth (0 -> N)
+            } else if (stockQty > 0) {
+                variation = -100; // Lost opportunity
+            }
+
             if (stockQty > 0 && currentSales.qty === 0) status = 'lost';
             else if (currentSales.qty > 0 && avgHistory === 0) status = 'new';
             else if (currentSales.qty > avgHistory * 1.1) status = 'growth'; 
@@ -22367,6 +22448,7 @@ const supervisorGroups = new Map();
                     sales: currentSales.qty,
                     val: currentSales.val,
                     avg: avgHistory,
+                    variation: variation,
                     status
                 });
             }
@@ -22403,18 +22485,31 @@ const supervisorGroups = new Map();
         data.forEach(d => {
             const tr = document.createElement('tr');
             tr.className = "border-b border-slate-700/50 hover:bg-white/5";
-            let cols = `
-                <td class="py-1 truncate max-w-[120px]" title="${d.name}">${d.code} - ${d.name}</td>
-                <td class="py-1 text-right font-mono">${d.sales.toFixed(0)}</td>
-            `;
+
+            let nameCol = `<td class="py-1 truncate max-w-[100px] text-[10px] md:text-xs" title="${d.name}">${d.code} - ${d.name}</td>`;
+
+            let cols = '';
             if (type === 'lost') {
                 cols = `
-                    <td class="py-1 truncate max-w-[120px]" title="${d.name}">${d.code} - ${d.name}</td>
-                    <td class="py-1 text-right font-bold text-orange-400 font-mono">${d.stock}</td>
+                    ${nameCol}
+                    <td class="py-1 text-right font-bold text-orange-400 font-mono text-xs">${d.stock.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 `;
-            } else if (type !== 'new') {
-                 cols += `<td class="py-1 text-right text-slate-500 font-mono">${d.avg.toFixed(0)}</td>`;
+            } else if (type === 'new') {
+                cols = `
+                    ${nameCol}
+                    <td class="py-1 text-right font-mono text-xs">${d.sales.toFixed(0)}</td>
+                `;
+            } else {
+                // Growth or Drop
+                const varColor = d.variation >= 0 ? 'text-green-400' : 'text-red-400';
+                cols = `
+                    ${nameCol}
+                    <td class="py-1 text-right font-mono text-xs">${d.sales.toFixed(0)}</td>
+                    <td class="py-1 text-right text-slate-500 font-mono text-xs">${d.avg.toFixed(0)}</td>
+                    <td class="py-1 text-right font-bold ${varColor} text-xs">${d.variation.toFixed(0)}%</td>
+                `;
             }
+
             tr.innerHTML = cols;
             tbody.appendChild(tr);
         });
@@ -22438,11 +22533,15 @@ const supervisorGroups = new Map();
              };
              
              let statusBadge = '';
-             if (d.status === 'growth') statusBadge = '<span class="text-xs font-bold text-green-400">Cresc.</span>';
-             else if (d.status === 'drop') statusBadge = '<span class="text-xs font-bold text-red-400">Queda</span>';
-             else if (d.status === 'new') statusBadge = '<span class="text-xs font-bold text-blue-400">Novo</span>';
-             else if (d.status === 'lost') statusBadge = '<span class="text-xs font-bold text-orange-400">Perdido</span>';
-             else statusBadge = '<span class="text-xs text-slate-500">-</span>';
+             let varFormatted = d.variation.toFixed(0) + '%';
+
+             if (d.status === 'new') {
+                 statusBadge = '<span class="text-xs font-bold text-blue-400">Novo</span>';
+             } else {
+                 if (d.variation > 0) statusBadge = `<span class="text-xs font-bold text-green-400">${varFormatted}</span>`;
+                 else if (d.variation < 0) statusBadge = `<span class="text-xs font-bold text-red-400">${varFormatted}</span>`;
+                 else statusBadge = '<span class="text-xs text-slate-500">-</span>';
+             }
              
              tr.innerHTML = `
                 <!-- Product: Visible Mobile (Truncated) -->
@@ -22457,7 +22556,7 @@ const supervisorGroups = new Map();
                 <td class="px-4 py-2 text-xs text-slate-400 hidden md:table-cell">${d.supplier}</td>
 
                 <!-- Stock: Visible Mobile (Left Aligned on Mobile) -->
-                <td class="px-2 py-2 text-[10px] md:text-xs text-left md:text-right font-mono text-blue-300 font-bold">${d.stock}</td>
+                <td class="px-2 py-2 text-[10px] md:text-xs text-left md:text-right font-mono text-blue-300 font-bold">${d.stock.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
 
                 <!-- Sales: Visible Mobile (Left Aligned on Mobile) -->
                 <td class="px-2 py-2 text-[10px] md:text-xs text-left md:text-right font-mono text-white">${d.sales.toFixed(0)}</td>
@@ -22471,9 +22570,50 @@ const supervisorGroups = new Map();
              tbody.appendChild(tr);
         });
     }
-    
-    const stockFilialSelect = document.getElementById('stock-filial-filter');
-    if(stockFilialSelect) stockFilialSelect.addEventListener('change', () => updateStockView());
+
+    function setupStockFilialFilterHandlers() {
+        const btn = document.getElementById('stock-filial-filter-btn');
+        const dropdown = document.getElementById('stock-filial-filter-dropdown');
+        const hiddenInput = document.getElementById('stock-filial-filter');
+        const textSpan = document.getElementById('stock-filial-filter-text');
+        const wrapper = document.getElementById('stock-filial-filter-wrapper');
+
+        if (btn && dropdown && hiddenInput) {
+            // Toggle Dropdown
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                if (wrapper) {
+                    if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
+                    else wrapper.classList.add('z-50');
+                }
+            });
+
+            // Handle Selection
+            dropdown.addEventListener('change', (e) => {
+                if (e.target.type === 'radio') {
+                    const val = e.target.value;
+                    const label = e.target.closest('label').querySelector('span').textContent;
+
+                    hiddenInput.value = val;
+                    if (textSpan) textSpan.textContent = label;
+
+                    dropdown.classList.add('hidden');
+                    if (wrapper) wrapper.classList.remove('z-50');
+
+                    updateStockView();
+                }
+            });
+
+            // Close on click outside
+            document.addEventListener('click', (e) => {
+                if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                    if (wrapper) wrapper.classList.remove('z-50');
+                }
+            });
+        }
+    }
 
     const clearStockFiltersBtn = document.getElementById('clear-stock-filters-btn');
     if (clearStockFiltersBtn) {
