@@ -7,7 +7,6 @@
         justify-content: center;
     }
     :root {
-        color-scheme: dark; /* Force native controls (scrollbars, selects) to dark mode */
         --bg-main: #020617; /* Deepest Blue/Black */
         --bg-card: #0f172a; /* Slate 900 */
         --card-bg: #0f172a;
@@ -253,11 +252,6 @@
         border-color: #334155 !important;
         color: white !important;
         border-radius: 0.5rem !important;
-    }
-    /* Ensure options inside select inherit dark theme */
-    select option {
-        background-color: #020617; /* Darker background (Slate 950) to avoid bluish tint of 800 */
-        color: #cbd5e1; /* Text Primary */
     }
     input:focus, select:focus {
         border-color: #FF5E00 !important;
