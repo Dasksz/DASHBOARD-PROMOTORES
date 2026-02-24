@@ -73,62 +73,63 @@
         function parseDate(dateString) {
             if (!dateString) return null;
             if (dateString instanceof Date) {
-                return !isNaN(dateString.getTime()) ? dateString : null;
+                return isNaN(dateString.getTime()) ? null : dateString;
             }
 
-            // Se for uma string, verifica o cache
-            if (typeof dateString === 'string') {
+            const type = typeof dateString;
+            if (type === 'string' || type === 'number') {
                 const cached = dateCache.get(dateString);
                 if (cached !== undefined) {
-                    return cached !== null ? new Date(cached) : null;
+                    return cached === null ? null : new Date(cached);
                 }
-            } else if (typeof dateString === 'number') {
-                // Check if number is a JS Timestamp (large number) or Excel Serial (small number)
-                // Excel dates are around 45000 (for year 2023). Timestamps are > 1.6e12
-                if (dateString > 1000000) {
-                    return new Date(dateString);
-                }
-                return new Date(Math.round((dateString - 25569) * 86400 * 1000));
             } else {
                 return null;
             }
 
             let result = null;
 
-            // NEW: Handle datetime strings by taking only the date part first.
-            const dateOnlyString = dateString.split(' ')[0];
-
-            // Handle "DD/MM/YYYY" format specifically.
-            if (dateOnlyString.length === 10 && dateOnlyString.charAt(2) === '/' && dateOnlyString.charAt(5) === '/') {
-                const [day, month, year] = dateOnlyString.split('/');
-                if (year && month && day && year.length === 4) {
-                    // Use UTC to avoid timezone issues when only date is provided.
-                    // Using Date.UTC ensures the date is created at 00:00:00 UTC directly.
-                    const utcDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
-                    if (!isNaN(utcDate.getTime())) {
-                        result = utcDate;
-                    }
-                }
-            }
-
-            if (!result) {
-                // Fallback for ISO 8601 or other formats that new Date() can parse.
-                // Try parsing the original string first, in case it's a valid ISO datetime.
-                const isoDate = new Date(dateString);
-                if (!isNaN(isoDate.getTime())) {
-                    result = isoDate;
+            if (type === 'number') {
+                if (dateString > 1000000) {
+                    result = new Date(dateString);
                 } else {
-                    // If that fails, try parsing just the date part.
-                    const isoDateFromDateOnly = new Date(dateOnlyString);
-                    if (!isNaN(isoDateFromDateOnly.getTime())) {
-                        result = isoDateFromDateOnly;
+                    result = new Date(Math.round((dateString - 25569) * 86400 * 1000));
+                }
+            } else {
+                // Optimized date-only extraction (avoiding split)
+                const spaceIndex = dateString.indexOf(' ');
+                const dateOnlyString = spaceIndex === -1 ? dateString : dateString.substring(0, spaceIndex);
+                const lenOnly = dateOnlyString.length;
+
+                // Handle "DD/MM/YYYY" format specifically.
+                if (lenOnly === 10 && dateOnlyString[2] === '/' && dateOnlyString[5] === '/') {
+                    const day = (dateOnlyString.charCodeAt(0) - 48) * 10 + (dateOnlyString.charCodeAt(1) - 48);
+                    const month = (dateOnlyString.charCodeAt(3) - 48) * 10 + (dateOnlyString.charCodeAt(4) - 48);
+                    const year = (dateOnlyString.charCodeAt(6) - 48) * 1000 + (dateOnlyString.charCodeAt(7) - 48) * 100 + (dateOnlyString.charCodeAt(8) - 48) * 10 + (dateOnlyString.charCodeAt(9) - 48);
+
+                    if (day > 0 && day <= 31 && month > 0 && month <= 12 && year > 1900) {
+                        const utcDate = new Date(Date.UTC(year, month - 1, day));
+                        if (!isNaN(utcDate.getTime())) {
+                            result = utcDate;
+                        }
+                    }
+                }
+
+                if (!result) {
+                    // Fallback for ISO 8601 or other formats that new Date() can parse.
+                    const isoDate = new Date(dateString);
+                    if (!isNaN(isoDate.getTime())) {
+                        result = isoDate;
+                    } else if (spaceIndex !== -1) {
+                        // If that fails, try parsing just the date part.
+                        const isoDateFromDateOnly = new Date(dateOnlyString);
+                        if (!isNaN(isoDateFromDateOnly.getTime())) {
+                            result = isoDateFromDateOnly;
+                        }
                     }
                 }
             }
 
-            // Armazena no cache (apenas strings)
             dateCache.set(dateString, result !== null ? result.getTime() : null);
-
             return result;
         }
 
