@@ -12483,8 +12483,15 @@ const supervisorGroups = new Map();
 
         function resetInnovationsMonthFilters() {
             innovationsMonthCityFilter.value = '';
+
             innovationsMonthFilialFilter.value = 'ambas';
+            const filialText = document.getElementById('innovations-month-filial-filter-text');
+            if(filialText) filialText.textContent = 'Ambas';
+
             innovationsMonthCategoryFilter.value = '';
+            const catText = document.getElementById('innovations-month-category-filter-text');
+            if(catText) catText.textContent = 'Todas';
+
             selectedInnovationsMonthTiposVenda = [];
 
             // Reset Supervisor/Seller Filters
@@ -12532,14 +12539,35 @@ const supervisorGroups = new Map();
             const allCategories = Object.keys(categories).sort();
 
             // Only update dropdown if empty or number of items changed significantly (simplistic check)
-            if (innovationsMonthCategoryFilter.options.length <= 1 && allCategories.length > 0) {
-                let optionsHtml = '<option value="">Todas as Categorias</option>';
+            const customDropdown = document.getElementById('innovations-month-category-filter-dropdown');
+            if (customDropdown && customDropdown.children.length <= 1 && allCategories.length > 0) {
+                let html = `
+                    <div class="dropdown-item p-2 hover:bg-slate-700 rounded cursor-pointer group flex items-center justify-between border-b border-slate-700/50 mb-1" data-value="">
+                        <span class="text-xs text-orange-400 font-bold uppercase tracking-wider">Todas as Categorias</span>
+                        ${currentFilterValue === '' ? '<svg class="w-4 h-4 text-[#FF5E00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                    </div>
+                `;
+
                 allCategories.forEach(cat => {
-                    optionsHtml += `<option value="${cat}">${cat}</option>`;
+                    const isSelected = cat === currentFilterValue;
+                    html += `
+                        <div class="dropdown-item p-2 hover:bg-slate-700 rounded cursor-pointer group flex items-center justify-between" data-value="${cat}">
+                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">${cat}</span>
+                            ${isSelected ? '<svg class="w-4 h-4 text-[#FF5E00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                        </div>
+                    `;
                 });
-                innovationsMonthCategoryFilter.innerHTML = optionsHtml;
-                if (allCategories.includes(currentFilterValue)) {
-                    innovationsMonthCategoryFilter.value = currentFilterValue;
+
+                customDropdown.innerHTML = html;
+
+                // Sync Text
+                const textSpan = document.getElementById('innovations-month-category-filter-text');
+                if (textSpan) {
+                    if (currentFilterValue && allCategories.includes(currentFilterValue)) {
+                        textSpan.textContent = currentFilterValue;
+                    } else {
+                        textSpan.textContent = 'Todas as Categorias';
+                    }
                 }
             }
 
@@ -13155,7 +13183,7 @@ const supervisorGroups = new Map();
             const coord = document.getElementById('innovations-month-coord-filter-text')?.textContent || 'Todos';
             const cocoord = document.getElementById('innovations-month-cocoord-filter-text')?.textContent || 'Todos';
             const promotor = document.getElementById('innovations-month-promotor-filter-text')?.textContent || 'Todos';
-            const filial = innovationsMonthFilialFilter.options[innovationsMonthFilialFilter.selectedIndex].text;
+            const filial = document.getElementById('innovations-month-filial-filter-text')?.textContent || 'Ambas';
             const cidade = innovationsMonthCityFilter.value.trim();
             const categoria = innovationsMonthCategoryFilter.value || 'Todas';
             const generationDate = new Date().toLocaleString('pt-BR');
@@ -16640,7 +16668,10 @@ const supervisorGroups = new Map();
         });
         setupHierarchyFilters('city', updateCityView);
         setupHierarchyFilters('comparison', updateComparisonView);
+        setupComparisonFilialFilterHandlers();
         setupHierarchyFilters('innovations-month', updateInnovationsMonthView);
+        setupInnovationsMonthCategoryFilterHandlers();
+        setupInnovationsMonthFilialFilterHandlers();
         setupHierarchyFilters('mix', updateMixView);
         setupHierarchyFilters('meta-realizado', updateMetaRealizadoView);
         setupHierarchyFilters('coverage', updateCoverageView);
@@ -24333,6 +24364,147 @@ const supervisorGroups = new Map();
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('mix-vendedor-filter-text'), selectedMixVendedores, 'Todos');
+        }
+
+        function setupComparisonFilialFilterHandlers() {
+            const btn = document.getElementById('comparison-filial-filter-btn');
+            const dropdown = document.getElementById('comparison-filial-filter-dropdown');
+            const hiddenInput = document.getElementById('comparison-filial-filter');
+            const textSpan = document.getElementById('comparison-filial-filter-text');
+            const wrapper = document.getElementById('comparison-filial-filter-wrapper');
+
+            if (btn && dropdown && hiddenInput) {
+                // Toggle Dropdown
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    if (wrapper) {
+                        if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
+                        else wrapper.classList.add('z-50');
+                    }
+                });
+
+                // Handle Selection
+                dropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'radio') {
+                        const val = e.target.value;
+                        const label = e.target.closest('label').querySelector('span').textContent;
+
+                        hiddenInput.value = val;
+                        if (textSpan) textSpan.textContent = label;
+
+                        dropdown.classList.add('hidden');
+                        if (wrapper) wrapper.classList.remove('z-50');
+
+                        // Trigger Updates
+                        updateAllComparisonFilters();
+                        updateComparisonView();
+                    }
+                });
+
+                // Close on click outside
+                document.addEventListener('click', (e) => {
+                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                        if (wrapper) wrapper.classList.remove('z-50');
+                    }
+                });
+            }
+        }
+
+        function setupInnovationsMonthCategoryFilterHandlers() {
+            const btn = document.getElementById('innovations-month-category-filter-btn');
+            const dropdown = document.getElementById('innovations-month-category-filter-dropdown');
+            const hiddenInput = document.getElementById('innovations-month-category-filter');
+            const textSpan = document.getElementById('innovations-month-category-filter-text');
+            const wrapper = document.getElementById('innovations-month-category-filter-wrapper');
+
+            if (btn && dropdown && hiddenInput) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    if (wrapper) {
+                        if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
+                        else wrapper.classList.add('z-50');
+                    }
+                });
+
+                // Selection logic is dynamic since options are added dynamically.
+                // We delegate the event listener to the dropdown container.
+                dropdown.addEventListener('click', (e) => {
+                    const item = e.target.closest('.dropdown-item');
+                    if (item) {
+                        const val = item.dataset.value;
+                        const label = item.textContent.trim();
+
+                        hiddenInput.value = val;
+                        if (textSpan) textSpan.textContent = label;
+
+                        dropdown.classList.add('hidden');
+                        if (wrapper) wrapper.classList.remove('z-50');
+
+                        // Trigger Update
+                        if (typeof updateInnovations === 'function') {
+                            updateInnovations();
+                        } else if (typeof updateInnovationsMonthView === 'function') {
+                            updateInnovationsMonthView();
+                        }
+                    }
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                        if (wrapper) wrapper.classList.remove('z-50');
+                    }
+                });
+            }
+        }
+
+        function setupInnovationsMonthFilialFilterHandlers() {
+            const btn = document.getElementById('innovations-month-filial-filter-btn');
+            const dropdown = document.getElementById('innovations-month-filial-filter-dropdown');
+            const hiddenInput = document.getElementById('innovations-month-filial-filter');
+            const textSpan = document.getElementById('innovations-month-filial-filter-text');
+            const wrapper = document.getElementById('innovations-month-filial-filter-wrapper');
+
+            if (btn && dropdown && hiddenInput) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    if (wrapper) {
+                        if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
+                        else wrapper.classList.add('z-50');
+                    }
+                });
+
+                dropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'radio') {
+                        const val = e.target.value;
+                        const label = e.target.closest('label').querySelector('span').textContent;
+
+                        hiddenInput.value = val;
+                        if (textSpan) textSpan.textContent = label;
+
+                        dropdown.classList.add('hidden');
+                        if (wrapper) wrapper.classList.remove('z-50');
+
+                        // Trigger Update
+                        if (typeof debouncedUpdateInnovationsMonth === 'function') {
+                            debouncedUpdateInnovationsMonth();
+                        } else if (typeof updateInnovationsMonthView === 'function') {
+                            updateInnovationsMonthView();
+                        }
+                    }
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                        if (wrapper) wrapper.classList.remove('z-50');
+                    }
+                });
+            }
         }
 
         function setupInnovationsMonthSupervisorFilterHandlers() {

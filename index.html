@@ -1152,13 +1152,29 @@
                 </div>
 
                 <!-- Filial -->
-                <div class="relative">
+                <div id="comparison-filial-filter-wrapper" class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Filial</label>
-                    <select id="comparison-filial-filter" class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full p-2.5">
-                        <option value="ambas">Ambas</option>
-                        <option value="05">05</option>
-                        <option value="08">08</option>
-                    </select>
+                    <button id="comparison-filial-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
+                        <span id="comparison-filial-filter-text">Ambas</span>
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <!-- Hidden input to store value -->
+                    <input type="hidden" id="comparison-filial-filter" value="ambas">
+
+                    <div id="comparison-filial-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2">
+                         <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">Ambas</span>
+                            <input type="radio" name="comparison-filial" value="ambas" checked class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                        </label>
+                        <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">05</span>
+                            <input type="radio" name="comparison-filial" value="05" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                        </label>
+                        <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">08</span>
+                            <input type="radio" name="comparison-filial" value="08" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                        </label>
+                    </div>
                 </div>
 
                 <!-- Product -->
@@ -1615,16 +1631,43 @@
             </div>
             <div class="flex flex-wrap gap-4 items-end mt-4 justify-between">
                  <!-- Category Filter -->
-                 <div class="relative flex-1 min-w-[200px]">
+                 <div id="innovations-month-category-filter-wrapper" class="relative flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Categoria</label>
-                    <select id="innovations-month-category-filter" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5">
-                        <option value="">Todas</option>
-                    </select>
+                    <button id="innovations-month-category-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
+                        <span id="innovations-month-category-filter-text">Todas</span>
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <!-- Hidden input -->
+                    <input type="hidden" id="innovations-month-category-filter" value="">
+
+                    <div id="innovations-month-category-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2">
+                        <!-- Options populated via JS -->
+                    </div>
                 </div>
                  <!-- Filial -->
-                 <div class="flex-1 min-w-[150px]">
+                 <div id="innovations-month-filial-filter-wrapper" class="relative flex-1 min-w-[150px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Filial</label>
-                    <select id="innovations-month-filial-filter" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5"><option value="ambas">Ambas</option><option value="05">05</option><option value="08">08</option></select>
+                    <button id="innovations-month-filial-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
+                        <span id="innovations-month-filial-filter-text">Ambas</span>
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <!-- Hidden input -->
+                    <input type="hidden" id="innovations-month-filial-filter" value="ambas">
+
+                    <div id="innovations-month-filial-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2">
+                        <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">Ambas</span>
+                            <input type="radio" name="innovations-filial" value="ambas" checked class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                        </label>
+                        <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">05</span>
+                            <input type="radio" name="innovations-filial" value="05" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                        </label>
+                        <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">08</span>
+                            <input type="radio" name="innovations-filial" value="08" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                        </label>
+                    </div>
                 </div>
                 <div class="flex gap-2 items-end">
                     <button id="clear-innovations-month-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg">Limpar</button>
