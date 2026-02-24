@@ -10559,6 +10559,11 @@ const supervisorGroups = new Map();
             updateCityMap();
 
             let { clients: clientsForAnalysis, sales: salesForAnalysis } = getCityFilteredData();
+
+            if (citySupplierFilterDropdown) {
+                selectedCitySuppliers = updateSupplierFilter(citySupplierFilterDropdown, citySupplierFilterText, selectedCitySuppliers, salesForAnalysis, 'city');
+            }
+
             const clientFilter = cityCodCliFilter.value.trim();
 
             const referenceDate = lastSaleDate;
@@ -15018,6 +15023,13 @@ const supervisorGroups = new Map();
                 cityCodCliFilter.addEventListener('input', (e) => {
                     e.target.value = e.target.value.replace(/[^0-9]/g, '');
                     debouncedUpdateCity();
+                });
+            }
+
+            if (citySupplierFilterBtn && citySupplierFilterDropdown) {
+                citySupplierFilterBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    citySupplierFilterDropdown.classList.toggle('hidden');
                 });
             }
 

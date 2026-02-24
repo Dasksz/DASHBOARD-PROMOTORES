@@ -939,7 +939,7 @@
                         </div>
 
                         <!-- Coordenador -->
-                        <div id="city-coord-filter-wrapper" class="relative">
+                        <div id="city-coord-filter-wrapper" class="relative z-30">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
                             <button id="city-coord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
                                 <span id="city-coord-filter-text">Todos</span>
@@ -949,7 +949,7 @@
                         </div>
 
                         <!-- Co-Coordenador -->
-                        <div id="city-cocoord-filter-wrapper" class="relative">
+                        <div id="city-cocoord-filter-wrapper" class="relative z-30">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
                             <button id="city-cocoord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
                                 <span id="city-cocoord-filter-text">Todos</span>
@@ -959,13 +959,23 @@
                         </div>
 
                         <!-- Promotor -->
-                        <div id="city-promotor-filter-wrapper" class="relative">
+                        <div id="city-promotor-filter-wrapper" class="relative z-30">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
                             <button id="city-promotor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
                                 <span id="city-promotor-filter-text">Todos</span>
                                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
                             <div id="city-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
+                        </div>
+
+                        <!-- Fornecedor -->
+                        <div class="relative">
+                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Fornecedor</label>
+                            <button id="city-supplier-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
+                                <span id="city-supplier-filter-text">Todos</span>
+                                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div id="city-supplier-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                         </div>
 
                         <!-- Cliente Input -->
@@ -987,7 +997,6 @@
                      </div>
                      <!-- Hidden/Extra filters for logic preservation -->
                      <div class="hidden">
-                        <button id="city-supplier-filter-btn"></button><div id="city-supplier-filter-dropdown"></div>
                         <button id="city-tipo-venda-filter-btn"></button><div id="city-tipo-venda-filter-dropdown"></div>
                      </div>
                 </div>
