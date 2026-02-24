@@ -11762,44 +11762,6 @@ const supervisorGroups = new Map();
         }
 
 
-        function setupComparisonFilialFilterHandlers() {
-            const wrapper = document.getElementById('comparison-filial-filter-wrapper');
-            if (!wrapper || wrapper._hasHandlers) return;
-
-            const btn = document.getElementById('comparison-filial-filter-btn');
-            const dropdown = document.getElementById('comparison-filial-filter-dropdown');
-            const hiddenInput = document.getElementById('comparison-filial-filter');
-            const textSpan = document.getElementById('comparison-filial-filter-text');
-
-            if (btn && dropdown && hiddenInput) {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    dropdown.classList.toggle('hidden');
-                });
-
-                const radios = dropdown.querySelectorAll('input[type="radio"]');
-                radios.forEach(radio => {
-                    radio.addEventListener('change', (e) => {
-                        if (e.target.checked) {
-                            hiddenInput.value = e.target.value;
-                            const label = e.target.closest('label').querySelector('span').textContent;
-                            if (textSpan) textSpan.textContent = label;
-                            dropdown.classList.add('hidden');
-                            if (typeof updateComparisonView === 'function') updateComparisonView();
-                        }
-                    });
-                });
-
-                document.addEventListener('click', (e) => {
-                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
-                        dropdown.classList.add('hidden');
-                    }
-                });
-
-                wrapper._hasHandlers = true;
-            }
-        }
-
         function updateComparisonView() {
             comparisonRenderId++;
             const currentRenderId = comparisonRenderId;
@@ -13922,7 +13884,6 @@ const supervisorGroups = new Map();
                         break;
                     case 'comparativo':
                         showViewElement(comparisonView);
-                        setupComparisonFilialFilterHandlers();
                         if (viewState.comparativo.dirty || !viewState.comparativo.rendered) {
                             updateAllComparisonFilters();
                             updateComparisonView();
