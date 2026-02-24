@@ -4654,6 +4654,14 @@
 
             // --- FIX: Ensure all sellers with Manual Targets are present in goalsBySeller ---
             goalsSellerTargets.forEach((targets, sellerName) => {
+                // Filter Check: Don't add global targets if we are in a filtered view
+                if (sellersSet.size > 0) {
+                    if (!sellersSet.has(sellerName)) return;
+                } else if (supervisorsSet.size > 0) {
+                    // If filtering by supervisor, only apply targets to sellers already found in the filtered client list
+                    if (!goalsBySeller.has(sellerName)) return;
+                }
+
                 // Add to map if missing
                 if (!goalsBySeller.has(sellerName)) {
                     goalsBySeller.set(sellerName, { totalFat: 0, totalVol: 0, totalPos: 0 });
