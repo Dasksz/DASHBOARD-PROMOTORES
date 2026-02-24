@@ -4528,6 +4528,40 @@
 
         function renderPositivacaoView() {
             setupHierarchyFilters('positivacao', () => handlePositivacaoFilterChange({ excludeFilter: 'hierarchy' }));
+            setupPositivacaoSupervisorFilterHandlers();
+
+            // Supplier Filter (New)
+            if (positivacaoSupplierFilterDropdown && !positivacaoSupplierFilterDropdown._hasListener) {
+                if (positivacaoSupplierFilterBtn) {
+                    // Clone to remove old listeners (if any)
+                    const newBtn = positivacaoSupplierFilterBtn.cloneNode(true);
+                    positivacaoSupplierFilterBtn.parentNode.replaceChild(newBtn, positivacaoSupplierFilterBtn);
+
+                    newBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        positivacaoSupplierFilterDropdown.classList.toggle('hidden');
+                    });
+
+                    // Close on click outside
+                    document.addEventListener('click', (e) => {
+                        if (!newBtn.contains(e.target) && !positivacaoSupplierFilterDropdown.contains(e.target)) {
+                            positivacaoSupplierFilterDropdown.classList.add('hidden');
+                        }
+                    });
+                }
+
+                positivacaoSupplierFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if (e.target.checked) selectedPositivacaoSuppliers.push(val);
+                        else selectedPositivacaoSuppliers = selectedPositivacaoSuppliers.filter(s => s !== val);
+
+                        selectedPositivacaoSuppliers = updateSupplierFilter(positivacaoSupplierFilterDropdown, positivacaoSupplierFilterText, selectedPositivacaoSuppliers, [...allSalesData, ...allHistoryData], 'positivacao');
+                        handlePositivacaoFilterChange({ excludeFilter: 'supplier' });
+                    }
+                });
+                positivacaoSupplierFilterDropdown._hasListener = true;
+            }
 
             // Setup other filters listeners
             if (positivacaoComRedeBtn && !positivacaoComRedeBtn._hasListener) {
@@ -4661,6 +4695,12 @@
             const filters = {
                 clientCodes: clientCodes
             };
+
+            // Add Supplier Filter
+            if (selectedPositivacaoSuppliers && selectedPositivacaoSuppliers.length > 0) {
+                filters.supplier = new Set(selectedPositivacaoSuppliers);
+            }
+
             const sales = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters);
 
             return { clients, sales };
@@ -4668,6 +4708,14 @@
 
         function updateAllPositivacaoFilters(options = {}) {
             const { skipFilter = null } = options;
+
+            // Populate Supplier Filter (if not skipping or if initializing)
+            if (skipFilter !== 'supplier') {
+                // For Suppliers, we usually show ALL options, not filtered by clients?
+                // The main updateSupplierFilter handles it using global data source.
+                selectedPositivacaoSuppliers = updateSupplierFilter(positivacaoSupplierFilterDropdown, positivacaoSupplierFilterText, selectedPositivacaoSuppliers, [...allSalesData, ...allHistoryData], 'positivacao');
+            }
+
             if (skipFilter !== 'rede') {
                  const { clients } = getPositivacaoFilteredData({ excludeFilter: 'rede' });
                  if (positivacaoRedeGroupFilter === 'com_rede') {
@@ -4689,6 +4737,7 @@
             selectedPositivacaoCoCoords = [];
             selectedPositivacaoPromotors = [];
             selectedPositivacaoRedes = [];
+            selectedPositivacaoSuppliers = []; // Reset Supplier
             positivacaoRedeGroupFilter = '';
             positivacaoCodCliFilter.value = '';
 
@@ -4697,6 +4746,7 @@
                 positivacaoRedeGroupContainer.querySelector('button[data-group=""]').classList.add('active');
             }
             if (positivacaoRedeFilterDropdown) positivacaoRedeFilterDropdown.classList.add('hidden');
+            if (positivacaoSupplierFilterDropdown) positivacaoSupplierFilterDropdown.classList.add('hidden');
 
             setupHierarchyFilters('positivacao');
             updateAllPositivacaoFilters();
