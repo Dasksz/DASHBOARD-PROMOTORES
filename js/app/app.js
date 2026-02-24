@@ -8518,6 +8518,20 @@ const supervisorGroups = new Map();
             selectedCoverageProducts = [];
             selectedCoverageTiposVenda = [];
 
+            // Reset Supervisor/Seller
+            selectedCoverageSupervisors.clear();
+            selectedCoverageVendedores.clear();
+            updateCoverageSupervisorFilter();
+            updateCoverageVendedorFilter();
+
+            // Reset Hierarchy
+            if (hierarchyState['coverage']) {
+                hierarchyState['coverage'].coords.clear();
+                hierarchyState['coverage'].cocoords.clear();
+                hierarchyState['coverage'].promotors.clear();
+                setupHierarchyFilters('coverage', updateCoverageView);
+            }
+
             updateAllCoverageFilters();
             updateCoverageView();
         }
