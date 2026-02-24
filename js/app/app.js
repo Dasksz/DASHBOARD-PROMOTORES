@@ -4584,20 +4584,20 @@
                 return true;
             });
 
-            // Filter by Supervisor (goals-summary)
-            if (selectedGoalsSummarySupervisors.size > 0) {
-                filteredSummaryClients = filteredSummaryClients.filter(c => {
+            // Filter by Supervisor (Meta-Realizado) - Seller Mode ONLY
+            if (adminViewMode === 'seller' && selectedMetaRealizadoSupervisors.size > 0) {
+                clients = clients.filter(c => {
                     const rca1 = String(c.rca1 || '').trim();
                     const details = sellerDetailsMap.get(rca1);
-                    return details && details.supervisor && selectedGoalsSummarySupervisors.has(details.supervisor);
+                    return details && details.supervisor && selectedMetaRealizadoSupervisors.has(details.supervisor);
                 });
             }
 
-            // Filter by Seller (goals-summary)
-            if (selectedGoalsSummaryVendedores.size > 0) {
-                filteredSummaryClients = filteredSummaryClients.filter(c => {
+            // Filter by Seller (Meta-Realizado) - Seller Mode ONLY
+            if (adminViewMode === 'seller' && selectedMetaRealizadoVendedores.size > 0) {
+                clients = clients.filter(c => {
                     const rca1 = String(c.rca1 || '').trim();
-                    return selectedGoalsSummaryVendedores.has(rca1);
+                    return selectedMetaRealizadoVendedores.has(rca1);
                 });
             }
 
@@ -4831,8 +4831,11 @@
                 // If I filter Supervisor "X", I show Seller Goals for X and Seller Sales for X.
                 // Let's use the standard filter logic:
 
-                if (supervisorsSet.size > 0 && !supervisorsSet.has(s.SUPERV)) continue;
-                if (sellersSet.size > 0 && !sellersSet.has(s.NOME)) continue;
+                // Supervisor/Seller/Supplier Filter on SALE row
+                if (adminViewMode === 'seller') {
+                    if (supervisorsSet.size > 0 && !supervisorsSet.has(s.SUPERV)) continue;
+                    if (sellersSet.size > 0 && !sellersSet.has(s.NOME)) continue;
+                }
 
                 // Client Filter: Ensure sale belongs to the same set of clients used for goals
                 if (!filteredClientCodes.has(String(s.CODCLI))) continue;
@@ -5417,15 +5420,35 @@
             const supervisorsSet = new Set();
             const sellersSet = new Set();
             
-            const hState = hierarchyState['meta-realizado'];
-            if (hState) {
-                // 1. Always try to populate supervisorsSet if Coords are selected (Direct Supervisor Filter)
-                if (hState.coords.size > 0) {
-                    hState.coords.forEach(c => {
-                        const name = optimizedData.coordMap.get(c);
-                        if(name) supervisorsSet.add(name);
+            // Populate Sets based on Admin View Mode
+            if (adminViewMode === 'seller') {
+                if (selectedMetaRealizadoVendedores.size > 0) {
+                    selectedMetaRealizadoVendedores.forEach(v => {
+                         const details = sellerDetailsMap.get(v);
+                         if (details) sellersSet.add(details.name);
+                         else sellersSet.add(v);
+                    });
+                } else if (selectedMetaRealizadoSupervisors.size > 0) {
+                    selectedMetaRealizadoSupervisors.forEach(sup => {
+                        const rcas = optimizedData.rcasBySupervisor.get(sup);
+                        if (rcas) {
+                            rcas.forEach(rca => {
+                                const details = sellerDetailsMap.get(rca);
+                                if (details) sellersSet.add(details.name);
+                            });
+                        }
                     });
                 }
+            } else {
+                const hState = hierarchyState['meta-realizado'];
+                if (hState) {
+                    // 1. Always try to populate supervisorsSet if Coords are selected (Direct Supervisor Filter)
+                    if (hState.coords.size > 0) {
+                        hState.coords.forEach(c => {
+                            const name = optimizedData.coordMap.get(c);
+                            if(name) supervisorsSet.add(name);
+                        });
+                    }
 
                 // 2. Resolve Promotor codes for sellersSet (Leaf Filter)
                 // Use drill-down logic: Promotor > Co-coord > Coord
@@ -5473,6 +5496,23 @@
                 if (rca1 === '') return false;
                 return true;
             });
+
+            // Filter by Supervisor (Meta-Realizado) - Seller Mode ONLY
+            if (adminViewMode === 'seller' && selectedMetaRealizadoSupervisors.size > 0) {
+                clients = clients.filter(c => {
+                    const rca1 = String(c.rca1 || '').trim();
+                    const details = sellerDetailsMap.get(rca1);
+                    return details && details.supervisor && selectedMetaRealizadoSupervisors.has(details.supervisor);
+                });
+            }
+
+            // Filter by Seller (Meta-Realizado) - Seller Mode ONLY
+            if (adminViewMode === 'seller' && selectedMetaRealizadoVendedores.size > 0) {
+                clients = clients.filter(c => {
+                    const rca1 = String(c.rca1 || '').trim();
+                    return selectedMetaRealizadoVendedores.has(rca1);
+                });
+            }
 
             // Optimization: Create Set of Client Codes
             const allowedClientCodes = new Set(clients.map(c => String(c['Código'] || c['codigo_cliente'])));
@@ -5537,8 +5577,10 @@
                 if (pasta === 'FOODS' && codFor !== window.SUPPLIER_CODES.FOODS[0]) continue;
 
                 // Supervisor/Seller/Supplier Filter on SALE row
-                if (supervisorsSet.size > 0 && !supervisorsSet.has(s.SUPERV)) continue;
-                if (sellersSet.size > 0 && !sellersSet.has(s.NOME)) continue;
+                if (adminViewMode === 'seller') {
+                    if (supervisorsSet.size > 0 && !supervisorsSet.has(s.SUPERV)) continue;
+                    if (sellersSet.size > 0 && !sellersSet.has(s.NOME)) continue;
+                }
                 if (suppliersSet.size > 0 && !suppliersSet.has(s.CODFOR)) continue;
 
                 const codCli = String(s.CODCLI);
