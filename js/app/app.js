@@ -16234,13 +16234,13 @@ const supervisorGroups = new Map();
 
             const mixComRedeBtn = document.getElementById('mix-com-rede-btn');
             const mixRedeWrapper = document.getElementById('mix-rede-filter-wrapper');
-            const mixRedeDropdown = document.getElementById('mix-rede-filter-dropdown');
+            const mixRedeFilterDropdown = document.getElementById('mix-rede-filter-dropdown');
 
             if (mixComRedeBtn) {
                 mixComRedeBtn.addEventListener('click', () => {
-                    if (mixRedeDropdown) {
-                        mixRedeDropdown.classList.toggle('hidden');
-                        if (!mixRedeDropdown.classList.contains('hidden')) {
+                    if (mixRedeFilterDropdown) {
+                        mixRedeFilterDropdown.classList.toggle('hidden');
+                        if (!mixRedeFilterDropdown.classList.contains('hidden')) {
                             if (mixRedeWrapper) mixRedeWrapper.classList.add('z-50');
                         } else {
                             if (mixRedeWrapper) mixRedeWrapper.classList.remove('z-50');
@@ -16259,7 +16259,7 @@ const supervisorGroups = new Map();
                         button.classList.add('active');
 
                         if (mixRedeGroupFilter !== 'com_rede') {
-                            if (mixRedeDropdown) mixRedeDropdown.classList.add('hidden');
+                            if (mixRedeFilterDropdown) mixRedeFilterDropdown.classList.add('hidden');
                             if (mixRedeWrapper) mixRedeWrapper.classList.remove('z-50');
                             selectedMixRedes = [];
                         } else {
