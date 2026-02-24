@@ -12480,7 +12480,14 @@ const supervisorGroups = new Map();
             updateInnovationsMonthVendedorFilter();
 
             // Reset Hierarchy
-            setupHierarchyFilters('innovations-month');
+            if (hierarchyState['innovations-month']) {
+                hierarchyState['innovations-month'].coords.clear();
+                hierarchyState['innovations-month'].cocoords.clear();
+                hierarchyState['innovations-month'].promotors.clear();
+                updateHierarchyDropdown('innovations-month', 'coord');
+                updateHierarchyDropdown('innovations-month', 'cocoord');
+                updateHierarchyDropdown('innovations-month', 'promotor');
+            }
 
             selectedInnovationsMonthTiposVenda = updateTipoVendaFilter(innovationsMonthTipoVendaFilterDropdown, innovationsMonthTipoVendaFilterText, selectedInnovationsMonthTiposVenda, [...allSalesData, ...allHistoryData]);
             updateInnovationsMonthView();
