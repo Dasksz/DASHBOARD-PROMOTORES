@@ -301,63 +301,61 @@
     window.parseDate = function(dateString) {
         if (!dateString) return null;
 
-        // Se já for um objeto Date, retorna diretamente
         if (dateString instanceof Date) {
-            return !isNaN(dateString.getTime()) ? dateString : null;
+            return isNaN(dateString.getTime()) ? null : dateString;
         }
 
-        // Se for uma string, verifica o cache
-        if (typeof dateString === 'string') {
+        const type = typeof dateString;
+        if (type === 'string' || type === 'number') {
             const cached = dateCache.get(dateString);
             if (cached !== undefined) {
-                return cached !== null ? new Date(cached) : null;
+                return cached === null ? null : new Date(cached);
             }
-        } else if (typeof dateString === 'number') {
-            // Se for um número (formato Excel ou Timestamp)
-            // Excel Serial Date (approx < 50000 for current dates, Timestamp is > 1000000000000)
-            // Heuristic: Values > 1,000,000 are treated as JS Timestamps (ms since 1970). Smaller values are Excel Serial Dates.
-            if (dateString > 1000000) {
-                return new Date(dateString);
-            }
-            return new Date(Math.round((dateString - 25569) * 86400 * 1000));
         } else {
             return null;
         }
 
         let result = null;
 
-        // Tentativa de parse para 'YYYY-MM-DDTHH:mm:ss.sssZ' ou 'YYYY-MM-DD'
-        // O construtor do Date já lida bem com isso, mas vamos garantir o UTC.
-        if (dateString.includes('T') || dateString.includes('-')) {
-             // Adiciona 'Z' se não tiver informação de fuso horário para forçar UTC
-            const isoString = dateString.endsWith('Z') ? dateString : dateString + 'Z';
-            const isoDate = new Date(isoString);
-            if (!isNaN(isoDate.getTime())) {
-                result = isoDate;
+        if (type === 'number') {
+            if (dateString > 1000000) {
+                result = new Date(dateString);
+            } else {
+                result = new Date(Math.round((dateString - 25569) * 86400 * 1000));
             }
-        }
+        } else {
+            const len = dateString.length;
 
-        // Tentativa de parse para 'DD/MM/YYYY'
-        if (!result && dateString.length === 10 && dateString.charAt(2) === '/' && dateString.charAt(5) === '/') {
-            const [day, month, year] = dateString.split('/');
-            if (year && month && day && year.length === 4) {
-                // Cria a data em UTC para evitar problemas de fuso horário
-                const utcDate = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
-                if (!isNaN(utcDate.getTime())) {
-                    result = utcDate;
+            // Tentativa de parse para 'DD/MM/YYYY'
+            if (len === 10 && dateString[2] === '/' && dateString[5] === '/') {
+                const day = (dateString.charCodeAt(0) - 48) * 10 + (dateString.charCodeAt(1) - 48);
+                const month = (dateString.charCodeAt(3) - 48) * 10 + (dateString.charCodeAt(4) - 48);
+                const year = (dateString.charCodeAt(6) - 48) * 1000 + (dateString.charCodeAt(7) - 48) * 100 + (dateString.charCodeAt(8) - 48) * 10 + (dateString.charCodeAt(9) - 48);
+
+                if (day > 0 && day <= 31 && month > 0 && month <= 12 && year > 1900) {
+                    const utcDate = new Date(Date.UTC(year, month - 1, day));
+                    if (!isNaN(utcDate.getTime())) {
+                        result = utcDate;
+                    }
+                }
+            }
+
+            if (!result && (dateString.includes('T') || dateString.includes('-'))) {
+                 // Adiciona 'Z' se não tiver informação de fuso horário para forçar UTC
+                const isoDate = new Date(dateString.endsWith('Z') ? dateString : dateString + 'Z');
+                if (!isNaN(isoDate.getTime())) {
+                    result = isoDate;
+                }
+            }
+
+            if (!result) {
+                const genericDate = new Date(dateString);
+                if (!isNaN(genericDate.getTime())) {
+                    result = genericDate;
                 }
             }
         }
 
-        // Fallback para outros formatos que o `new Date()` consegue interpretar
-        if (!result) {
-            const genericDate = new Date(dateString);
-            if (!isNaN(genericDate.getTime())) {
-                result = genericDate;
-            }
-        }
-
-        // Armazena no cache (apenas strings)
         dateCache.set(dateString, result !== null ? result.getTime() : null);
 
         return result;
