@@ -2469,6 +2469,10 @@
         const positivacaoSupplierFilterDropdown = document.getElementById('positivacao-supplier-filter-dropdown');
         const positivacaoCodCliFilter = document.getElementById('positivacao-codcli-filter');
         const positivacaoCodCliFilterSuggestions = document.getElementById('positivacao-codcli-filter-suggestions');
+        const positivacaoCityFilter = document.getElementById('positivacao-city-filter');
+        const positivacaoCitySuggestions = document.getElementById('positivacao-city-suggestions');
+        const cityCityFilter = document.getElementById('city-city-filter');
+        const cityCitySuggestions = document.getElementById('city-city-suggestions');
         const clearPositivacaoFiltersBtn = document.getElementById('clear-positivacao-filters-btn');
 
         const comparisonSupervisorFilter = document.getElementById('comparison-supervisor-filter');
@@ -10264,6 +10268,7 @@ const supervisorGroups = new Map();
             const { excludeFilter = null } = options;
 
             const clientFilter = cityCodCliFilter.value.trim().toLowerCase();
+            const cityFilter = cityCityFilter.value.trim().toLowerCase();
             const tiposVendaSet = new Set(selectedCityTiposVenda);
 
             // New Hierarchy Logic (with Seller Support)
@@ -10312,6 +10317,13 @@ const supervisorGroups = new Map();
 
             if (excludeFilter !== 'supplier' && selectedCitySuppliers.length > 0) {
                  // No filtering of clients list based on supplier for now.
+            }
+
+            if (excludeFilter !== 'city' && cityFilter) {
+                clients = clients.filter(c => {
+                    const cCity = (c.cidade || '').toLowerCase();
+                    return cCity.includes(cityFilter);
+                });
             }
 
             if (excludeFilter !== 'client' && clientFilter) {
@@ -10502,6 +10514,7 @@ const supervisorGroups = new Map();
             selectedCitySuppliers = [];
             selectedCityRedes = [];
             cityRedeGroupFilter = '';
+            if (cityCityFilter) cityCityFilter.value = '';
 
             if (cityCodCliFilter) cityCodCliFilter.value = '';
 
@@ -13914,6 +13927,61 @@ const supervisorGroups = new Map();
                                     if (!e.target.value) handleCityFilterChange();
                                 });
                                 cityCodCliFilter._hasTypeahead = true;
+                            }
+
+                            // City Filter Setup
+                            if (cityCityFilter && !cityCityFilter._hasListener) {
+                                const updateSuggestions = debounce(() => {
+                                    const val = cityCityFilter.value.trim().toLowerCase();
+                                    if (val.length < 1) {
+                                        cityCitySuggestions.classList.add('hidden');
+                                        return;
+                                    }
+                                    const { clients } = getCityFilteredData({ excludeFilter: 'city' });
+                                    const uniqueCities = new Set();
+                                    clients.forEach(c => {
+                                        if (c.cidade && c.cidade !== 'N/A') uniqueCities.add(c.cidade);
+                                    });
+                                    const matches = Array.from(uniqueCities).filter(c => c.toLowerCase().includes(val)).sort();
+
+                                    if (matches.length > 0) {
+                                        cityCitySuggestions.innerHTML = matches.slice(0, 10).map(c => {
+                                            const safeC = c.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                                            return `<div class="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300" data-val="${safeC}">${safeC}</div>`;
+                                        }).join('');
+                                        cityCitySuggestions.classList.remove('hidden');
+                                    } else {
+                                        cityCitySuggestions.classList.add('hidden');
+                                    }
+                                }, 300);
+
+                                cityCityFilter.addEventListener('input', (e) => {
+                                    updateSuggestions();
+                                    if (!e.target.value) handleCityFilterChange({ excludeFilter: 'city' });
+                                });
+
+                                cityCityFilter.addEventListener('focus', () => {
+                                    if (cityCityFilter.value.trim().length >= 1) {
+                                         cityCitySuggestions.classList.remove('hidden');
+                                    }
+                                });
+
+                                cityCitySuggestions.addEventListener('click', (e) => {
+                                    const item = e.target.closest('div');
+                                    if (item && item.dataset.val) {
+                                        cityCityFilter.value = item.dataset.val;
+                                        cityCitySuggestions.classList.add('hidden');
+                                        handleCityFilterChange();
+                                    }
+                                });
+
+                                document.addEventListener('click', (e) => {
+                                    if (!cityCityFilter.contains(e.target) && !cityCitySuggestions.contains(e.target)) {
+                                        cityCitySuggestions.classList.add('hidden');
+                                    }
+                                });
+
+                                cityCityFilter._hasListener = true;
                             }
 
                             updateAllCityFilters();
@@ -24757,6 +24825,65 @@ const supervisorGroups = new Map();
                 positivacaoCodCliFilter._hasListener = true;
             }
 
+            // City Filter
+            if (positivacaoCityFilter && !positivacaoCityFilter._hasListener) {
+                const updateSuggestions = debounce(() => {
+                    const val = positivacaoCityFilter.value.trim().toLowerCase();
+                    if (val.length < 1) {
+                        positivacaoCitySuggestions.classList.add('hidden');
+                        return;
+                    }
+
+                    const { clients } = getPositivacaoFilteredData({ excludeFilter: 'city' });
+                    const uniqueCities = new Set();
+                    clients.forEach(c => {
+                        if (c.cidade && c.cidade !== 'N/A') uniqueCities.add(c.cidade);
+                    });
+
+                    const matches = Array.from(uniqueCities).filter(c => c.toLowerCase().includes(val)).sort();
+
+                    if (matches.length > 0) {
+                        positivacaoCitySuggestions.innerHTML = matches.slice(0, 10).map(c => {
+                            const safeC = c.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                            return `<div class="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300" data-val="${safeC}">${safeC}</div>`;
+                        }).join('');
+                        positivacaoCitySuggestions.classList.remove('hidden');
+                    } else {
+                        positivacaoCitySuggestions.classList.add('hidden');
+                    }
+                }, 300);
+
+                positivacaoCityFilter.addEventListener('input', (e) => {
+                    updateSuggestions();
+                    if (!e.target.value) handlePositivacaoFilterChange();
+                });
+
+                positivacaoCityFilter.addEventListener('focus', () => {
+                    if (positivacaoCityFilter.value.trim().length >= 1) {
+                         positivacaoCitySuggestions.classList.remove('hidden');
+                    }
+                });
+
+                // Delegation for suggestions click
+                positivacaoCitySuggestions.addEventListener('click', (e) => {
+                    const item = e.target.closest('div');
+                    if (item && item.dataset.val) {
+                        positivacaoCityFilter.value = item.dataset.val;
+                        positivacaoCitySuggestions.classList.add('hidden');
+                        handlePositivacaoFilterChange();
+                    }
+                });
+
+                // Close suggestions on click outside
+                document.addEventListener('click', (e) => {
+                    if (!positivacaoCityFilter.contains(e.target) && !positivacaoCitySuggestions.contains(e.target)) {
+                        positivacaoCitySuggestions.classList.add('hidden');
+                    }
+                });
+
+                positivacaoCityFilter._hasListener = true;
+            }
+
             if (clearPositivacaoFiltersBtn && !clearPositivacaoFiltersBtn._hasListener) {
                 clearPositivacaoFiltersBtn.addEventListener('click', resetPositivacaoFilters);
                 clearPositivacaoFiltersBtn._hasListener = true;
@@ -24844,12 +24971,14 @@ const supervisorGroups = new Map();
             const isSemRede = positivacaoRedeGroupFilter === 'sem_rede';
             const redeSet = (isComRede && selectedPositivacaoRedes.length > 0) ? new Set(selectedPositivacaoRedes) : null;
             const clientFilter = positivacaoCodCliFilter.value.trim().toLowerCase();
+            const cityFilter = positivacaoCityFilter.value.trim().toLowerCase();
 
-            if (positivacaoRedeGroupFilter || clientFilter) {
+            if (positivacaoRedeGroupFilter || clientFilter || cityFilter) {
                  const temp = [];
                  const len = clients.length;
                  const checkRede = excludeFilter !== 'rede';
                  const checkClient = excludeFilter !== 'client' && !!clientFilter;
+                 const checkCity = excludeFilter !== 'city' && !!cityFilter;
 
                  for(let i=0; i<len; i++) {
                      const c = clients[i];
@@ -24860,6 +24989,10 @@ const supervisorGroups = new Map();
                         } else if (isSemRede) {
                             if (c.ramo && c.ramo !== 'N/A') continue;
                         }
+                     }
+                     if (checkCity) {
+                         const cCity = (c.cidade || '').toLowerCase();
+                         if (!cCity.includes(cityFilter)) continue;
                      }
                      if (checkClient) {
                         const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
@@ -24927,6 +25060,7 @@ const supervisorGroups = new Map();
             selectedPositivacaoSuppliers = []; // Reset Supplier
             positivacaoRedeGroupFilter = '';
             positivacaoCodCliFilter.value = '';
+            if (positivacaoCityFilter) positivacaoCityFilter.value = '';
 
             if (positivacaoRedeGroupContainer) {
                 positivacaoRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
