@@ -1754,18 +1754,43 @@
             const state = hierarchyState[viewPrefix];
 
             const els = {
-                coord: { btn: document.getElementById(`${viewPrefix}-coord-filter-btn`), dd: document.getElementById(`${viewPrefix}-coord-filter-dropdown`) },
-                cocoord: { btn: document.getElementById(`${viewPrefix}-cocoord-filter-btn`), dd: document.getElementById(`${viewPrefix}-cocoord-filter-dropdown`) },
-                promotor: { btn: document.getElementById(`${viewPrefix}-promotor-filter-btn`), dd: document.getElementById(`${viewPrefix}-promotor-filter-dropdown`) }
+                coord: {
+                    btn: document.getElementById(`${viewPrefix}-coord-filter-btn`),
+                    dd: document.getElementById(`${viewPrefix}-coord-filter-dropdown`),
+                    wrapper: document.getElementById(`${viewPrefix}-coord-filter-wrapper`)
+                },
+                cocoord: {
+                    btn: document.getElementById(`${viewPrefix}-cocoord-filter-btn`),
+                    dd: document.getElementById(`${viewPrefix}-cocoord-filter-dropdown`),
+                    wrapper: document.getElementById(`${viewPrefix}-cocoord-filter-wrapper`)
+                },
+                promotor: {
+                    btn: document.getElementById(`${viewPrefix}-promotor-filter-btn`),
+                    dd: document.getElementById(`${viewPrefix}-promotor-filter-dropdown`),
+                    wrapper: document.getElementById(`${viewPrefix}-promotor-filter-wrapper`)
+                }
             };
 
             const bindToggle = (el) => {
                 if (el.btn && el.dd) {
                     el.btn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        // Close others
-                        Object.values(els).forEach(x => { if(x.dd && x !== el) x.dd.classList.add('hidden'); });
-                        el.dd.classList.toggle('hidden');
+                        // Close others and reset z-index
+                        Object.values(els).forEach(x => {
+                            if(x.dd && x !== el) {
+                                x.dd.classList.add('hidden');
+                                if (x.wrapper) x.wrapper.classList.remove('z-50');
+                            }
+                        });
+
+                        const isHidden = el.dd.classList.contains('hidden');
+                        if (isHidden) {
+                            el.dd.classList.remove('hidden');
+                            if (el.wrapper) el.wrapper.classList.add('z-50');
+                        } else {
+                            el.dd.classList.add('hidden');
+                            if (el.wrapper) el.wrapper.classList.remove('z-50');
+                        }
                     });
                 }
             };
@@ -1779,6 +1804,7 @@
                     if (x.dd && !x.dd.classList.contains('hidden')) {
                         if (x.btn && !x.btn.contains(e.target) && !x.dd.contains(e.target)) {
                             x.dd.classList.add('hidden');
+                            if (x.wrapper) x.wrapper.classList.remove('z-50');
                         }
                     }
                 });
@@ -16070,10 +16096,19 @@ const supervisorGroups = new Map();
             }
 
             const mixTipoVendaBtn = document.getElementById('mix-tipo-venda-filter-btn');
+            const mixTipoVendaWrapper = document.getElementById('mix-tipo-venda-filter-wrapper');
+            const mixTipoVendaDd = document.getElementById('mix-tipo-venda-filter-dropdown');
+
             if (mixTipoVendaBtn) {
                 mixTipoVendaBtn.addEventListener('click', (e) => {
-                    const dd = document.getElementById('mix-tipo-venda-filter-dropdown');
-                    if (dd) dd.classList.toggle('hidden');
+                    if (mixTipoVendaDd) {
+                        mixTipoVendaDd.classList.toggle('hidden');
+                        if (!mixTipoVendaDd.classList.contains('hidden')) {
+                            if(mixTipoVendaWrapper) mixTipoVendaWrapper.classList.add('z-50');
+                        } else {
+                            if(mixTipoVendaWrapper) mixTipoVendaWrapper.classList.remove('z-50');
+                        }
+                    }
                 });
             }
 
@@ -16130,10 +16165,19 @@ const supervisorGroups = new Map();
             }
 
             const mixComRedeBtn = document.getElementById('mix-com-rede-btn');
+            const mixRedeWrapper = document.getElementById('mix-rede-filter-wrapper');
+            const mixRedeDropdown = document.getElementById('mix-rede-filter-dropdown');
+
             if (mixComRedeBtn) {
                 mixComRedeBtn.addEventListener('click', () => {
-                    const dd = document.getElementById('mix-rede-filter-dropdown');
-                    if (dd) dd.classList.toggle('hidden');
+                    if (mixRedeDropdown) {
+                        mixRedeDropdown.classList.toggle('hidden');
+                        if (!mixRedeDropdown.classList.contains('hidden')) {
+                            if (mixRedeWrapper) mixRedeWrapper.classList.add('z-50');
+                        } else {
+                            if (mixRedeWrapper) mixRedeWrapper.classList.remove('z-50');
+                        }
+                    }
                 });
             }
 
@@ -16145,17 +16189,23 @@ const supervisorGroups = new Map();
                         mixRedeGroupFilter = button.dataset.group;
                         document.getElementById('mix-rede-group-container').querySelectorAll('button').forEach(b => b.classList.remove('active'));
                         button.classList.add('active');
+
                         if (mixRedeGroupFilter !== 'com_rede') {
-                            const dd = document.getElementById('mix-rede-filter-dropdown');
-                            if (dd) dd.classList.add('hidden');
+                            if (mixRedeDropdown) mixRedeDropdown.classList.add('hidden');
+                            if (mixRedeWrapper) mixRedeWrapper.classList.remove('z-50');
                             selectedMixRedes = [];
+                        } else {
+                            // If switching TO com_rede, we might want to open it?
+                            // The original code didn't force open, just handled visibility if clicked.
+                            // But usually selecting the group "Com Rede" implies showing options if we want.
+                            // However, the button `mixComRedeBtn` handles the dropdown toggle.
+                            // So here we just ensure if we switch AWAY, we close and reset z-index.
                         }
                         handleMixFilterChange();
                     }
                 });
             }
 
-            const mixRedeFilterDropdown = document.getElementById('mix-rede-filter-dropdown');
             if (mixRedeFilterDropdown) {
                 mixRedeFilterDropdown.addEventListener('change', (e) => {
                     if (e.target.type === 'checkbox') {
@@ -16172,6 +16222,41 @@ const supervisorGroups = new Map();
                         handleMixFilterChange({ skipFilter: 'rede' });
                     }
                 });
+            }
+
+            // Global click to close Mix filters and reset Z-Index
+            if (!document._mixGlobalClickListener) {
+                document.addEventListener('click', (e) => {
+                    // Rede
+                    if (mixRedeFilterDropdown && !mixRedeFilterDropdown.classList.contains('hidden')) {
+                        if (mixComRedeBtn && !mixComRedeBtn.contains(e.target) && !mixRedeFilterDropdown.contains(e.target)) {
+                            // Only close if it's meant to be transient?
+                            // The UI logic implies it stays open if "Com Rede" is selected?
+                            // Actually, standard dropdown behavior suggests closing on outside click.
+                            // But here 'com_rede' is a state. If we hide the dropdown, we are just hiding the list, not changing the state.
+                            // BUT wait, in the click handler for `mixComRedeBtn`, we toggle visibility.
+                            // So yes, we should probably hide it on click outside if it's open.
+                            // However, let's just focus on z-index reset if hidden logic exists elsewhere or we force hide.
+
+                            // Let's force hide on outside click for better UX if standard dropdown
+                            mixRedeFilterDropdown.classList.add('hidden');
+                            if (mixRedeWrapper) mixRedeWrapper.classList.remove('z-50');
+                        }
+                    }
+
+                    // Tipo Venda
+                    const mixTipoVendaWrapper = document.getElementById('mix-tipo-venda-filter-wrapper');
+                    const mixTipoVendaDd = document.getElementById('mix-tipo-venda-filter-dropdown');
+                    const mixTipoVendaBtn = document.getElementById('mix-tipo-venda-filter-btn');
+
+                    if (mixTipoVendaDd && !mixTipoVendaDd.classList.contains('hidden')) {
+                        if (mixTipoVendaBtn && !mixTipoVendaBtn.contains(e.target) && !mixTipoVendaDd.contains(e.target)) {
+                            mixTipoVendaDd.classList.add('hidden');
+                            if (mixTipoVendaWrapper) mixTipoVendaWrapper.classList.remove('z-50');
+                        }
+                    }
+                });
+                document._mixGlobalClickListener = true;
             }
 
             const clearMixFiltersBtn = document.getElementById('clear-mix-filters-btn');
@@ -24019,6 +24104,9 @@ const supervisorGroups = new Map();
         }
 
         function setupMixSupervisorFilterHandlers() {
+            const supWrapper = document.getElementById('mix-supervisor-filter-wrapper');
+            const vendWrapper = document.getElementById('mix-vendedor-filter-wrapper');
+
             // Supervisor
             const supBtn = document.getElementById('mix-supervisor-filter-btn');
             const supDropdown = document.getElementById('mix-supervisor-filter-dropdown');
@@ -24028,8 +24116,19 @@ const supervisorGroups = new Map();
 
                 newBtn.onclick = (e) => {
                     e.stopPropagation();
-                    supDropdown.classList.toggle('hidden');
+                    const isHidden = supDropdown.classList.contains('hidden');
+
+                    // Close others
                     document.getElementById('mix-vendedor-filter-dropdown')?.classList.add('hidden');
+                    if(vendWrapper) vendWrapper.classList.remove('z-50');
+
+                    if(isHidden) {
+                        supDropdown.classList.remove('hidden');
+                        if(supWrapper) supWrapper.classList.add('z-50');
+                    } else {
+                        supDropdown.classList.add('hidden');
+                        if(supWrapper) supWrapper.classList.remove('z-50');
+                    }
                 };
                 supDropdown.onchange = (e) => {
                     if (e.target.type === 'checkbox') {
@@ -24054,8 +24153,19 @@ const supervisorGroups = new Map();
 
                 newBtn.onclick = (e) => {
                     e.stopPropagation();
-                    vendDropdown.classList.toggle('hidden');
+                    const isHidden = vendDropdown.classList.contains('hidden');
+
+                    // Close others
                     document.getElementById('mix-supervisor-filter-dropdown')?.classList.add('hidden');
+                    if(supWrapper) supWrapper.classList.remove('z-50');
+
+                    if(isHidden) {
+                        vendDropdown.classList.remove('hidden');
+                        if(vendWrapper) vendWrapper.classList.add('z-50');
+                    } else {
+                        vendDropdown.classList.add('hidden');
+                        if(vendWrapper) vendWrapper.classList.remove('z-50');
+                    }
                 };
                 vendDropdown.onchange = (e) => {
                     if (e.target.type === 'checkbox') {
@@ -24072,11 +24182,16 @@ const supervisorGroups = new Map();
             // Global close logic
             if (!document._mixFilterListener) {
                 document.addEventListener('click', (e) => {
+                    const supDd = document.getElementById('mix-supervisor-filter-dropdown');
+                    const vendDd = document.getElementById('mix-vendedor-filter-dropdown');
+
                     if (!e.target.closest('#mix-supervisor-filter-wrapper')) {
-                        document.getElementById('mix-supervisor-filter-dropdown')?.classList.add('hidden');
+                        if(supDd) supDd.classList.add('hidden');
+                        if(supWrapper) supWrapper.classList.remove('z-50');
                     }
                     if (!e.target.closest('#mix-vendedor-filter-wrapper')) {
-                        document.getElementById('mix-vendedor-filter-dropdown')?.classList.add('hidden');
+                        if(vendDd) vendDd.classList.add('hidden');
+                        if(vendWrapper) vendWrapper.classList.remove('z-50');
                     }
                 });
                 document._mixFilterListener = true;
