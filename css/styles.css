@@ -256,8 +256,8 @@
     }
     /* Ensure options inside select inherit dark theme */
     select option {
-        background-color: #1e293b;
-        color: white;
+        background-color: #020617; /* Darker background (Slate 950) to avoid bluish tint of 800 */
+        color: #cbd5e1; /* Text Primary */
     }
     input:focus, select:focus {
         border-color: #FF5E00 !important;
