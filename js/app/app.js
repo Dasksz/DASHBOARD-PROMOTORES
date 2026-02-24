@@ -10808,7 +10808,7 @@ const supervisorGroups = new Map();
             });
 
             // Special Handling for Meta Realizado: Inject Virtual Categories
-            if (filterType === 'metaRealizado' || filterType === 'main' || filterType === 'comparison') {
+            if (filterType === 'metaRealizado' || filterType === 'main' || filterType === 'comparison' || filterType === 'positivacao') {
                 if (suppliers.has(window.SUPPLIER_CODES.ELMA[0])) suppliers.set(window.SUPPLIER_CODES.ELMA[0], 'EXTRUSADOS');
                 if (suppliers.has(window.SUPPLIER_CODES.ELMA[1])) suppliers.set(window.SUPPLIER_CODES.ELMA[1], 'NÃO EXTRUSADOS');
                 if (suppliers.has(window.SUPPLIER_CODES.ELMA[2])) suppliers.set(window.SUPPLIER_CODES.ELMA[2], 'TORCIDA');
@@ -10834,7 +10834,7 @@ const supervisorGroups = new Map();
                     let displayName = name;
                     // For all pages except 'Meta Vs. Realizado', prefix Code to Name
                     // Request: Main (Visão Geral) should match Meta vs Realizado nomenclature (No Prefix, Split 1119)
-                    if (filterType !== 'metaRealizado' && filterType !== 'main' && filterType !== 'comparison') {
+                    if (filterType !== 'metaRealizado' && filterType !== 'main' && filterType !== 'comparison' && filterType !== 'positivacao') {
                         // Ensure we don't double prefix if name already starts with code (rare but possible in data)
                         if (!name.startsWith(cod)) {
                             displayName = `${cod} ${name}`;
@@ -24558,6 +24558,39 @@ const supervisorGroups = new Map();
             setupHierarchyFilters('positivacao', () => handlePositivacaoFilterChange({ excludeFilter: 'hierarchy' }));
             setupPositivacaoSupervisorFilterHandlers();
 
+            // Supplier Filter (New)
+            if (positivacaoSupplierFilterDropdown && !positivacaoSupplierFilterDropdown._hasListener) {
+                if (positivacaoSupplierFilterBtn) {
+                    // Clone to remove old listeners (if any)
+                    const newBtn = positivacaoSupplierFilterBtn.cloneNode(true);
+                    positivacaoSupplierFilterBtn.parentNode.replaceChild(newBtn, positivacaoSupplierFilterBtn);
+
+                    newBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        positivacaoSupplierFilterDropdown.classList.toggle('hidden');
+                    });
+
+                    // Close on click outside
+                    document.addEventListener('click', (e) => {
+                        if (!newBtn.contains(e.target) && !positivacaoSupplierFilterDropdown.contains(e.target)) {
+                            positivacaoSupplierFilterDropdown.classList.add('hidden');
+                        }
+                    });
+                }
+
+                positivacaoSupplierFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if (e.target.checked) selectedPositivacaoSuppliers.push(val);
+                        else selectedPositivacaoSuppliers = selectedPositivacaoSuppliers.filter(s => s !== val);
+
+                        selectedPositivacaoSuppliers = updateSupplierFilter(positivacaoSupplierFilterDropdown, positivacaoSupplierFilterText, selectedPositivacaoSuppliers, [...allSalesData, ...allHistoryData], 'positivacao');
+                        handlePositivacaoFilterChange({ excludeFilter: 'supplier' });
+                    }
+                });
+                positivacaoSupplierFilterDropdown._hasListener = true;
+            }
+
             // Setup other filters listeners
             if (positivacaoComRedeBtn && !positivacaoComRedeBtn._hasListener) {
                 positivacaoRedeGroupContainer.addEventListener('click', (e) => {
@@ -24722,6 +24755,12 @@ const supervisorGroups = new Map();
             const filters = {
                 clientCodes: clientCodes
             };
+
+            // Add Supplier Filter
+            if (selectedPositivacaoSuppliers && selectedPositivacaoSuppliers.length > 0) {
+                filters.supplier = new Set(selectedPositivacaoSuppliers);
+            }
+
             const sales = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters);
 
             return { clients, sales };
@@ -24729,6 +24768,14 @@ const supervisorGroups = new Map();
 
         function updateAllPositivacaoFilters(options = {}) {
             const { skipFilter = null } = options;
+
+            // Populate Supplier Filter (if not skipping or if initializing)
+            if (skipFilter !== 'supplier') {
+                // For Suppliers, we usually show ALL options, not filtered by clients?
+                // The main updateSupplierFilter handles it using global data source.
+                selectedPositivacaoSuppliers = updateSupplierFilter(positivacaoSupplierFilterDropdown, positivacaoSupplierFilterText, selectedPositivacaoSuppliers, [...allSalesData, ...allHistoryData], 'positivacao');
+            }
+
             if (skipFilter !== 'rede') {
                  const { clients } = getPositivacaoFilteredData({ excludeFilter: 'rede' });
                  if (positivacaoRedeGroupFilter === 'com_rede') {
@@ -24750,6 +24797,7 @@ const supervisorGroups = new Map();
             selectedPositivacaoCoCoords = [];
             selectedPositivacaoPromotors = [];
             selectedPositivacaoRedes = [];
+            selectedPositivacaoSuppliers = []; // Reset Supplier
             positivacaoRedeGroupFilter = '';
             positivacaoCodCliFilter.value = '';
 
@@ -24758,6 +24806,7 @@ const supervisorGroups = new Map();
                 positivacaoRedeGroupContainer.querySelector('button[data-group=""]').classList.add('active');
             }
             if (positivacaoRedeFilterDropdown) positivacaoRedeFilterDropdown.classList.add('hidden');
+            if (positivacaoSupplierFilterDropdown) positivacaoSupplierFilterDropdown.classList.add('hidden');
 
             setupHierarchyFilters('positivacao');
             updateAllPositivacaoFilters();
