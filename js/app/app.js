@@ -490,25 +490,51 @@
             });
         }
 
-        async function saveCoordinateToSupabase(clientCode, lat, lng, address) {
-            if (window.userRole !== 'adm') return;
+        let coordinateSaveBuffer = [];
+        let coordinateSaveTimer = null;
+
+        async function flushCoordinateBuffer() {
+            if (coordinateSaveTimer) {
+                clearTimeout(coordinateSaveTimer);
+                coordinateSaveTimer = null;
+            }
+            if (coordinateSaveBuffer.length === 0) return;
+
+            const batch = [...coordinateSaveBuffer];
+            coordinateSaveBuffer = [];
 
             try {
                 const { error } = await window.supabaseClient
                     .from('data_client_coordinates')
-                    .upsert({
-                        client_code: String(clientCode),
-                        lat: lat,
-                        lng: lng,
-                        address: address
-                    });
+                    .upsert(batch);
 
-                if (error) console.error("Error saving coordinate:", error);
-                else {
-                    clientCoordinatesMap.set(String(clientCode), { lat, lng, address });
+                if (error) {
+                    console.error("Error saving batch coordinates:", error);
+                } else {
+                    console.log(`[GeoSync] Batch saved ${batch.length} coordinates.`);
                 }
             } catch (e) {
-                console.error("Error saving coordinate:", e);
+                console.error("Error saving batch coordinates:", e);
+            }
+        }
+
+        async function saveCoordinateToSupabase(clientCode, lat, lng, address) {
+            if (window.userRole !== 'adm') return;
+
+            // Optimistic Update
+            clientCoordinatesMap.set(String(clientCode), { lat, lng, address });
+
+            coordinateSaveBuffer.push({
+                client_code: String(clientCode),
+                lat: lat,
+                lng: lng,
+                address: address
+            });
+
+            if (coordinateSaveBuffer.length >= 10) {
+                flushCoordinateBuffer();
+            } else if (!coordinateSaveTimer) {
+                coordinateSaveTimer = setTimeout(flushCoordinateBuffer, 5000);
             }
         }
 
