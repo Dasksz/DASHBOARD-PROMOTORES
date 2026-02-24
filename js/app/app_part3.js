@@ -4556,6 +4556,21 @@
                 positivacaoRedeFilterDropdown._hasListener = true;
             }
 
+            if (positivacaoSupplierFilterDropdown && !positivacaoSupplierFilterDropdown._hasListener) {
+                positivacaoSupplierFilterDropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox' && e.target.dataset.filterType === 'positivacao') {
+                        const { value, checked } = e.target;
+                        if (checked) {
+                            selectedPositivacaoSuppliers.push(value);
+                        } else {
+                            selectedPositivacaoSuppliers = selectedPositivacaoSuppliers.filter(s => s !== value);
+                        }
+                        handlePositivacaoFilterChange({ excludeFilter: 'supplier' });
+                    }
+                });
+                positivacaoSupplierFilterDropdown._hasListener = true;
+            }
+
             // Client Typeahead
             setupClientTypeahead('positivacao-codcli-filter', 'positivacao-codcli-filter-suggestions', (code) => {
                 handlePositivacaoFilterChange({ excludeFilter: 'client' });
@@ -4658,8 +4673,11 @@
             const clientCodes = new Set();
             for(let i=0; i<clients.length; i++) clientCodes.add(clients[i]['Código']);
 
+            const supplierSet = (excludeFilter !== 'supplier' && selectedPositivacaoSuppliers.length > 0) ? new Set(selectedPositivacaoSuppliers) : null;
+
             const filters = {
-                clientCodes: clientCodes
+                clientCodes: clientCodes,
+                supplier: supplierSet
             };
             const sales = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters);
 
@@ -4673,6 +4691,10 @@
                  if (positivacaoRedeGroupFilter === 'com_rede') {
                      selectedPositivacaoRedes = updateRedeFilter(positivacaoRedeFilterDropdown, positivacaoComRedeBtnText, selectedPositivacaoRedes, clients);
                  }
+            }
+            if (skipFilter !== 'supplier') {
+                const { sales } = getPositivacaoFilteredData({ excludeFilter: 'supplier' });
+                selectedPositivacaoSuppliers = updateSupplierFilter(positivacaoSupplierFilterDropdown, positivacaoSupplierFilterText, selectedPositivacaoSuppliers, sales, 'positivacao');
             }
         }
 
@@ -4689,6 +4711,7 @@
             selectedPositivacaoCoCoords = [];
             selectedPositivacaoPromotors = [];
             selectedPositivacaoRedes = [];
+            selectedPositivacaoSuppliers = [];
             positivacaoRedeGroupFilter = '';
             positivacaoCodCliFilter.value = '';
 
