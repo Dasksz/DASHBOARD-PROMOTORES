@@ -23665,12 +23665,12 @@ const supervisorGroups = new Map();
                         <!-- Left: Info -->
                         <div class="flex flex-col items-start">
                             <span class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5 md:mb-1">Realizado</span>
-                            <span class="text-sm md:text-2xl font-bold text-white drop-shadow-md">${formattedValue}</span>
+                            <span class="text-xs md:text-2xl font-bold text-white drop-shadow-md">${formattedValue}</span>
                         </div>
 
                         <!-- Center: Percentage -->
                         <div class="flex flex-col items-center">
-                             <span class="text-2xl md:text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_10px_rgba(251,146,60,0.8)]">
+                             <span class="text-xl md:text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_10px_rgba(251,146,60,0.8)]">
                                 ${displayPercentage}%
                             </span>
                         </div>
@@ -23678,7 +23678,7 @@ const supervisorGroups = new Map();
                         <!-- Right: Goal -->
                         <div class="flex flex-col items-end">
                             <span class="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5 md:mb-1">Meta</span>
-                            <span class="text-xs md:text-xl font-bold text-orange-400 drop-shadow-sm">${formattedGoal}</span>
+                            <span class="text-xs md:text-xl font-bold text-white drop-shadow-sm">${formattedGoal}</span>
                         </div>
                     </div>
 
