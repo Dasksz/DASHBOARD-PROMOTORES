@@ -2232,7 +2232,7 @@
                                  allowRca53 = true;
                              }
                         }
-                        const keep = (isAmericanas || rca1 !== '53' || allowRca53 || clientsWithSalesThisMonth.has(codcli));
+                        const keep = (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || allowRca53 || clientsWithSalesThisMonth.has(codcli));
 
                         if (keep) {
                             results.push(allClientsData.get(i));
@@ -2253,7 +2253,7 @@
                              allowRca53 = true;
                          }
                     }
-                    const keep = (isAmericanas || rca1 !== '53' || allowRca53 || clientsWithSalesThisMonth.has(codcli));
+                    const keep = (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || allowRca53 || clientsWithSalesThisMonth.has(codcli));
                     return keep;
                 });
                 return res;
@@ -2698,7 +2698,7 @@
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 if (isAmericanas) return true;
                 // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS (Empty RCA1)
-                if (rca1 === '53') return false;
+                if (window.userRole === 'adm' && rca1 === '53') return false;
                 if (rca1 === '') return false; // Exclude INATIVOS
                 return true;
             });
@@ -3057,7 +3057,7 @@
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 // Keep if Americanas OR Not 53 OR Has Sales
-                if (!isAmericanas && rca1 === '53' && !clientsWithSalesThisMonth.has(c['Código'])) return false;
+                if (window.userRole === 'adm' && !isAmericanas && rca1 === '53' && !clientsWithSalesThisMonth.has(c['Código'])) return false;
 
                 return true;
             });
@@ -3647,7 +3647,7 @@
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(cod));
+                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
             });
 
             if (activeClients.length === 0) return;
@@ -4171,7 +4171,7 @@
             const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
             if (isAmericanas) return true;
             // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS
-            if (rca1 === '53') return false;
+            if (window.userRole === 'adm' && rca1 === '53') return false;
             if (rca1 === '') return false; // Exclude INATIVOS
             return true;
         }
@@ -4217,7 +4217,7 @@
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(cod));
+                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
             });
 
             // Iterate Active Clients
@@ -4443,7 +4443,7 @@
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 // Same active logic as Goals
                 if (isAmericanas) return true;
-                if (rca1 === '53') return false;
+                if (window.userRole === 'adm' && rca1 === '53') return false;
                 if (rca1 === '') return false;
                 return true;
             });
@@ -5366,7 +5366,7 @@
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 if (isAmericanas) return true;
-                if (rca1 === '53') return false;
+                if (window.userRole === 'adm' && rca1 === '53') return false;
                 if (rca1 === '') return false;
                 return true;
             });
@@ -5774,7 +5774,7 @@
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(cod));
+                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
             });
 
             let count = 0;
@@ -5836,7 +5836,7 @@
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 if (isAmericanas) return true;
-                if (rca1 === '53') return false;
+                if (window.userRole === 'adm' && rca1 === '53') return false;
                 if (rca1 === '') return false;
                 return true;
             });
@@ -6074,7 +6074,7 @@
                 if (rca1 === '1001' || isAmericanas) continue;
 
                 // Exclude Balcão (53) and Inativos
-                if (rca1 === '53' || rca1 === '') continue;
+                if (window.userRole === 'adm' && (rca1 === '53' || rca1 === '')) continue;
 
                 // 2. Active Seller Check
                 let belongsToActiveSeller = true;
@@ -6181,7 +6181,7 @@
                     const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                     if (isAmericanas) return true;
                 // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS
-                    if (rca1 === '53') return false;
+                    if (window.userRole === 'adm' && rca1 === '53') return false;
                 if (rca1 === '') return false; // Exclude INATIVOS
                     return true;
                 });
@@ -6506,7 +6506,7 @@
                 // Is client active check (Same as others)
                 // Exclude Americanas explicitly from this calculation as per requirement
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                if (isAmericanas || (rca1 === '53' || rca1 === '053' || rca1 === '' || rca1 === 'INATIVOS')) return false;
+                if (isAmericanas || (window.userRole === 'adm' && (rca1 === '53' || rca1 === '053' || rca1 === '' || rca1 === 'INATIVOS'))) return false;
 
                 // Does client belong to seller? (Current Hierarchy)
                 return c.rcas.includes(sellerCode);
@@ -6761,7 +6761,7 @@
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(cod));
+                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
             });
 
             let count = 0;
@@ -7474,7 +7474,7 @@
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 if (isAmericanas) return true;
                 // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS
-                if (rca1 === '53') return false;
+                if (window.userRole === 'adm' && rca1 === '53') return false;
                 if (rca1 === '') return false; // Exclude INATIVOS
                 return true;
             });
@@ -9595,7 +9595,7 @@ const supervisorGroups = new Map();
                          allowRca53 = true;
                      }
                 }
-                return (isAmericanas || rca1 !== '53' || allowRca53 || clientsWithSalesThisMonth.has(c['Código']));
+                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || allowRca53 || clientsWithSalesThisMonth.has(c['Código']));
             });
 
             if (mainRedeGroupFilter === 'com_rede') {
@@ -10570,7 +10570,7 @@ const supervisorGroups = new Map();
             clientsForAnalysis = clientsForAnalysis.filter(c => {
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(c['Código']));
+                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(c['Código']));
             });
 
             // Show Loading
@@ -12481,7 +12481,7 @@ const supervisorGroups = new Map();
                 const rca1 = String(c.rca1 || '').trim();
                 if (rca1 === '306' || rca1 === '300') return false;
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(codcli));
+                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(codcli));
             });
             const activeClientsCount = activeClients.length;
             const activeClientCodes = new Set(activeClients.map(c => c['Código']));
@@ -17464,7 +17464,7 @@ const supervisorGroups = new Map();
                         const cod = String(c['Código'] || c['codigo_cliente']);
                         const rca1 = String(c.rca1 || '').trim();
                         const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                        return (isAmericanas || rca1 !== '53' || clientsWithSalesThisMonth.has(cod));
+                        return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
                     });
 
                     let total = 0;
