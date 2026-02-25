@@ -135,7 +135,7 @@ serve(async (req) => {
 
     // --- NEW LOGIC: Resolve Fixed Promoter and Co-Coordinator for Client ---
     let fixedCoCoordCode = null;
-
+    
     // Attempt to identify the client code
     const clientCodeForLookup = record.client_code || record.id_cliente;
 
@@ -174,7 +174,7 @@ serve(async (req) => {
                         promoterName = hierarchyData.nome_promotor;
                         console.log(`[Fixed Lookup] Resolved Fixed Promoter Name: ${promoterName} (Was: ${oldName})`);
                     }
-
+                    
                     // Capture Co-Coord Code
                     if (hierarchyData.cod_cocoord) {
                         fixedCoCoordCode = hierarchyData.cod_cocoord.trim();
@@ -233,6 +233,7 @@ serve(async (req) => {
                    }
                }
             }
+        }
         }
 
         // C. Get Co-Coordinator Email using ILIKE on role
