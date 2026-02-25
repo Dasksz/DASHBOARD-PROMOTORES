@@ -22060,6 +22060,11 @@ const supervisorGroups = new Map();
                 supplierBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     supplierDd.classList.toggle('hidden');
+                    // Close others
+                    document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-filial-filter-dropdown')?.classList.add('hidden');
                 });
 
                 // Add Change Listener for Supplier Filter
@@ -22084,41 +22089,40 @@ const supervisorGroups = new Map();
                 });
             }
 
+            // --- PASTA TOGGLE REPLACEMENT ---
+            // Try to find the wrapper. Usually inferred from button parent.
             const pastaBtn = document.getElementById('stock-pasta-filter-btn');
-            const pastaDd = document.getElementById('stock-pasta-filter-dropdown');
-            if (pastaBtn && pastaDd) {
-                pastaBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    pastaDd.classList.toggle('hidden');
-                });
+            const pastaWrapper = document.getElementById('stock-pasta-filter-wrapper') || (pastaBtn ? pastaBtn.parentElement : null);
 
-                // Add Change Listener for Pasta Filter
-                pastaDd.addEventListener('change', (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if (val === 'ALL') {
-                            const checkboxes = pastaDd.querySelectorAll('input[type="checkbox"]');
-                            const checked = e.target.checked;
-                            selectedStockPastas = [];
-                            checkboxes.forEach(cb => {
-                                if (cb.value !== 'ALL') {
-                                    cb.checked = checked;
-                                    if (checked) selectedStockPastas.push(cb.value);
-                                }
-                            });
-                        } else {
-                            if (e.target.checked) selectedStockPastas.push(val);
-                            else {
-                                selectedStockPastas = selectedStockPastas.filter(p => p !== val);
-                                const allChk = pastaDd.querySelector('input[value="ALL"]');
-                                if (allChk) allChk.checked = false;
+            if (pastaWrapper && !document.getElementById('stock-pasta-toggle-container')) {
+                // Determine initial state (default to PEPSICO)
+                let currentPasta = 'PEPSICO';
+                if (selectedStockPastas.length > 0) currentPasta = selectedStockPastas[0];
+                else selectedStockPastas = ['PEPSICO'];
+
+                pastaWrapper.innerHTML = `
+                    <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 tracking-wider">Pasta</label>
+                    <div class="bg-slate-900 p-1 rounded-lg flex shadow-inner border border-slate-700" id="stock-pasta-toggle-container">
+                        <button class="flex-1 py-1.5 px-2 text-[10px] md:text-xs font-bold rounded-md transition-all duration-200 ${currentPasta === 'PEPSICO' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'} stock-pasta-btn" data-pasta="PEPSICO">PEPSICO</button>
+                        <button class="flex-1 py-1.5 px-2 text-[10px] md:text-xs font-bold rounded-md transition-all duration-200 ${currentPasta === 'MULTIMARCAS' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'} stock-pasta-btn" data-pasta="MULTIMARCAS">MULTIMARCAS</button>
+                    </div>
+                `;
+
+                pastaWrapper.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('stock-pasta-btn')) {
+                        const val = e.target.dataset.pasta;
+                        selectedStockPastas = [val]; // Single select
+
+                        // Update UI
+                        pastaWrapper.querySelectorAll('.stock-pasta-btn').forEach(btn => {
+                            if (btn.dataset.pasta === val) {
+                                btn.classList.remove('text-slate-400', 'hover:bg-white/5');
+                                btn.classList.add('bg-teal-600', 'text-white', 'shadow-lg');
+                            } else {
+                                btn.classList.add('text-slate-400', 'hover:bg-white/5');
+                                btn.classList.remove('bg-teal-600', 'text-white', 'shadow-lg');
                             }
-                        }
-
-                        const text = document.getElementById('stock-pasta-filter-text');
-                        if (selectedStockPastas.length === 0) text.textContent = 'Todas';
-                        else if (selectedStockPastas.length === 1) text.textContent = selectedStockPastas[0];
-                        else text.textContent = `${selectedStockPastas.length} Selecionadas`;
+                        });
 
                         handleStockFilterChange({ skipFilter: 'pasta' });
                     }
@@ -22131,6 +22135,11 @@ const supervisorGroups = new Map();
                 productBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     productDd.classList.toggle('hidden');
+                    // Close others
+                    document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-filial-filter-dropdown')?.classList.add('hidden');
                 });
 
                 // Add Change Listener for Product Filter
@@ -22173,59 +22182,18 @@ const supervisorGroups = new Map();
 
         // 1. Update Supplier Filter
         if (skipFilter !== 'supplier') {
-            const suppliers = new Set();
-            products.forEach(p => { if(p.fornecedor) suppliers.add(p.fornecedor); });
-            
-            // Mock object structure for updateSupplierFilter (OBSERVACAOFOR/FORNECEDOR keys)
-            const supplierObjs = Array.from(suppliers).map(s => ({ OBSERVACAOFOR: s, FORNECEDOR: s }));
-            
             const dropdown = document.getElementById('stock-supplier-filter-dropdown');
             const text = document.getElementById('stock-supplier-filter-text');
-            if(dropdown) selectedStockSuppliers = updateSupplierFilter(dropdown, text, selectedStockSuppliers, supplierObjs, 'stock');
-        }
 
-        // 2. Update Pasta Filter
-        if (skipFilter !== 'pasta') {
-            // Get unique Pastas from products (via optimizedData.productPastaMap)
-            const pastas = new Set();
-            // Filter products first by selected Supplier if any
-            const supplierSet = selectedStockSuppliers.length > 0 ? new Set(selectedStockSuppliers) : null;
+            // Use global sales/history data to populate suppliers correctly (including virtuals like ELMA)
+            const supplierDataSource = [...allSalesData, ...allHistoryData];
 
-            products.forEach(p => {
-                if (supplierSet && !supplierSet.has(p.fornecedor)) return;
-                // Simplified Logic: PEPSICO vs MULTIMARCAS
-                const pasta = (window.SUPPLIER_CODES.PEPSICO.includes(String(p.fornecedor))) ? 'PEPSICO' : 'MULTIMARCAS';
-                if (pasta) pastas.add(pasta);
-            });
-
-            // Re-use logic similar to Supplier but for Pasta (custom simple renderer)
-            const dropdown = document.getElementById('stock-pasta-filter-dropdown');
-            const text = document.getElementById('stock-pasta-filter-text');
-            if (dropdown) {
-                let html = `
-                    <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-700/50 mb-1">
-                        <span class="text-xs text-orange-400 font-bold uppercase tracking-wider">Selecionar Todos</span>
-                        <input type="checkbox" value="ALL" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
-                    </label>
-                `;
-                const sortedPastas = Array.from(pastas).sort();
-                sortedPastas.forEach(p => {
-                    const checked = selectedStockPastas.includes(p) ? 'checked' : '';
-                    html += `
-                        <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(p)}</span>
-                            <input type="checkbox" value="${window.escapeHtml(p)}" ${checked} data-filter-type="stock-pasta" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
-                        </label>
-                    `;
-                });
-                dropdown.innerHTML = html;
-
-                // Update Text
-                if (selectedStockPastas.length === 0) text.textContent = 'Todas';
-                else if (selectedStockPastas.length === 1) text.textContent = selectedStockPastas[0];
-                else text.textContent = `${selectedStockPastas.length} Selecionadas`;
+            if(dropdown) {
+                selectedStockSuppliers = updateSupplierFilter(dropdown, text, selectedStockSuppliers, supplierDataSource, 'stock');
             }
         }
+
+        // 2. Update Pasta Filter (Disabled - Toggle Mode)
 
         // 3. Update Product Filter
         if (skipFilter !== 'product') {
@@ -22515,7 +22483,7 @@ const supervisorGroups = new Map();
                 `;
             } else {
                 // Growth or Drop
-                const varColor = d.variation >= 0 ? 'text-green-400' : 'text-red-400';
+                const varColor = d.variation >= 0 ? 'text-green-500' : 'text-red-500';
                 cols = `
                     ${nameCol}
                     <td class="py-1 text-right font-mono text-xs">${d.sales.toFixed(0)}</td>
@@ -22552,8 +22520,8 @@ const supervisorGroups = new Map();
              if (d.status === 'new') {
                  statusBadge = '<span class="text-xs font-bold text-blue-400">Novo</span>';
              } else {
-                 if (d.variation > 0) statusBadge = `<span class="text-xs font-bold text-green-400">${varFormatted}</span>`;
-                 else if (d.variation < 0) statusBadge = `<span class="text-xs font-bold text-red-400">${varFormatted}</span>`;
+                 if (d.variation > 0) statusBadge = `<span class="text-xs font-bold text-green-500">${varFormatted}</span>`;
+                 else if (d.variation < 0) statusBadge = `<span class="text-xs font-bold text-red-500">${varFormatted}</span>`;
                  else statusBadge = '<span class="text-xs text-slate-500">-</span>';
              }
              
@@ -22597,6 +22565,13 @@ const supervisorGroups = new Map();
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 dropdown.classList.toggle('hidden');
+
+                // Close others
+                document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
+                document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
+                document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
+                document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
+
                 if (wrapper) {
                     if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
                     else wrapper.classList.add('z-50');
@@ -25025,7 +25000,11 @@ const supervisorGroups = new Map();
                 newBtn.onclick = (e) => {
                     e.stopPropagation();
                     supDropdown.classList.toggle('hidden');
+                    // Close others
                     document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-filial-filter-dropdown')?.classList.add('hidden');
                 };
                 supDropdown.onchange = (e) => {
                     if (e.target.type === 'checkbox') {
@@ -25047,7 +25026,11 @@ const supervisorGroups = new Map();
                 newBtn.onclick = (e) => {
                     e.stopPropagation();
                     vendDropdown.classList.toggle('hidden');
+                    // Close others
                     document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-filial-filter-dropdown')?.classList.add('hidden');
                 };
                 vendDropdown.onchange = (e) => {
                     if (e.target.type === 'checkbox') {
