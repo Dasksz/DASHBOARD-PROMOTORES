@@ -22397,12 +22397,15 @@ const supervisorGroups = new Map();
 
             // Supplier Filter
             if (excludeFilter !== 'supplier' && supplierSet) {
-                if (!supplierSet.has(p.fornecedor)) return;
+                if (!supplierSet.has(p.codfor)) return;
             }
 
             // Pasta Filter
             if (excludeFilter !== 'pasta' && pastaSet) {
-                const pasta = (window.SUPPLIER_CODES.PEPSICO.includes(String(p.fornecedor))) ? 'PEPSICO' : 'MULTIMARCAS';
+                let pasta = optimizedData.productPastaMap.get(code);
+                if (!pasta) {
+                    pasta = (window.SUPPLIER_CODES.PEPSICO.includes(String(p.codfor))) ? 'PEPSICO' : 'MULTIMARCAS';
+                }
                 if (!pasta || !pastaSet.has(pasta)) return;
             }
 
@@ -22630,7 +22633,17 @@ const supervisorGroups = new Map();
             selectedStockProducts = [];
             
             // Reset UI
-            if (stockFilialSelect) stockFilialSelect.value = 'all';
+            const stockFilialInput = document.getElementById('stock-filial-filter');
+            const stockFilialText = document.getElementById('stock-filial-filter-text');
+            const stockFilialDropdown = document.getElementById('stock-filial-filter-dropdown');
+
+            if (stockFilialInput) stockFilialInput.value = 'all';
+            if (stockFilialText) stockFilialText.textContent = 'Todas (05 + 08)';
+            if (stockFilialDropdown) {
+                stockFilialDropdown.querySelectorAll('input[type="radio"]').forEach(r => {
+                    if (r.value === 'all') r.checked = true;
+                });
+            }
             
             // Re-render filters (Text and Checkboxes)
             const supplierDropdown = document.getElementById('stock-supplier-filter-dropdown');
