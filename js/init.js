@@ -226,6 +226,7 @@
 
                     if (hierarchyEntry && !isCoord && !isCocoord) {
                         isPromoter = true;
+                        window.userIsPromoter = true;
                         console.log(`[Init] User detected as Promoter: ${role}. Enabling targeted data fetching.`);
                     }
                 }
