@@ -20309,7 +20309,8 @@ const supervisorGroups = new Map();
         // Note: The structure in HTML is: roteiro-main-card -> div (Calendar Header) -> ...
         // We want to inject it in the header row.
 
-        if (header && (window.userRole || '').toLowerCase() !== 'promotor' && !document.getElementById('roteiro-promoter-filter')) {
+        // Only show if NOT a Promoter
+        if (header && !window.userIsPromoter && !document.getElementById('roteiro-promoter-filter')) {
             const filterContainer = document.createElement('div');
             filterContainer.className = 'hidden lg:block ml-auto mr-4'; // Desktop only
             filterContainer.innerHTML = `
@@ -20330,7 +20331,19 @@ const supervisorGroups = new Map();
             // Populate
             const select = filterContainer.querySelector('select');
             if (select && optimizedData.promotorMap) {
-                const sorted = Array.from(optimizedData.promotorMap.entries()).sort((a,b) => a[1].localeCompare(b[1]));
+                let promotersToShow = Array.from(optimizedData.promotorMap.entries());
+
+                // Co-Coordinator Restriction
+                if (userHierarchyContext.role === 'cocoord' && userHierarchyContext.cocoord) {
+                    const allowedPromotersSet = optimizedData.promotorsByCocoord.get(userHierarchyContext.cocoord);
+                    if (allowedPromotersSet) {
+                        promotersToShow = promotersToShow.filter(([code, name]) => allowedPromotersSet.has(code));
+                    } else {
+                        promotersToShow = [];
+                    }
+                }
+
+                const sorted = promotersToShow.sort((a,b) => a[1].localeCompare(b[1]));
                 sorted.forEach(([code, name]) => {
                     const opt = document.createElement('option');
                     opt.value = code;
@@ -20818,6 +20831,13 @@ const supervisorGroups = new Map();
 
 
         if (roteiroBtn) {
+            // Hide Roteiro for Sellers and Supervisors
+            if (window.userIsSeller || window.userIsSupervisor) {
+                roteiroBtn.classList.add('hidden');
+            } else {
+                roteiroBtn.classList.remove('hidden');
+            }
+
             // Remove old listeners (clone trick)
             const newBtn = roteiroBtn.cloneNode(true);
             roteiroBtn.parentNode.replaceChild(newBtn, roteiroBtn);
