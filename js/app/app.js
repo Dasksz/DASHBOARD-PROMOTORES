@@ -13812,7 +13812,7 @@ const supervisorGroups = new Map();
 
         function updateNavigationVisibility() {
             const role = (window.userRole || '').trim().toLowerCase();
-            const isRestricted = role === 'promotor' || role === 'vendedor' || window.userIsSeller;
+            const isRestricted = role === 'promotor' || role === 'vendedor' || window.userIsSeller || window.userIsPromoter;
 
             // Comparativo (Nav Links)
             document.querySelectorAll('[data-target="comparativo"]').forEach(el => {
@@ -13852,8 +13852,9 @@ const supervisorGroups = new Map();
             }
 
             if (view === 'weekly' || view === 'estoque' || view === 'comparativo') {
-                const role = (window.userRole || '').toLowerCase();
-                if (role === 'promotor' || role === 'vendedor' || window.userIsSeller) {
+                const role = (window.userRole || '').trim().toLowerCase();
+                // Check all restricted flags
+                if (role === 'promotor' || role === 'vendedor' || window.userIsSeller || window.userIsPromoter) {
                      window.showToast('warning', 'Acesso restrito a gestores.');
                      renderView('dashboard');
                      return;
