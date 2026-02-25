@@ -230,6 +230,18 @@ create table if not exists public.data_nota_perfeita (
 -- Index for fast client lookup in Loja Perfeita
 create index if not exists idx_nota_perfeita_codcli on public.data_nota_perfeita (codigo_cliente);
 
+-- 1.17 Tabela de Relação Rota Involves
+create table if not exists public.relacao_rota_involves (
+  id uuid default uuid_generate_v4 () primary key,
+  seller_code text, -- Código do Vendedor
+  involves_code text, -- Código na tabela de notas
+  created_at timestamp with time zone default now()
+);
+
+-- Index for fast lookup
+create index if not exists idx_relacao_rota_involves_seller on public.relacao_rota_involves (seller_code);
+create index if not exists idx_relacao_rota_involves_involves on public.relacao_rota_involves (involves_code);
+
 -- Ensure columns exist (Idempotency for older schemas)
 do $$
 BEGIN
@@ -303,7 +315,7 @@ BEGIN
   IF table_name NOT IN (
     'data_detailed', 'data_history', 'data_clients', 'data_orders', 
     'data_product_details', 'data_active_products', 'data_stock', 
-    'data_innovations', 'data_metadata', 'goals_distribution', 'data_hierarchy', 'data_titulos', 'data_nota_perfeita'
+    'data_innovations', 'data_metadata', 'goals_distribution', 'data_hierarchy', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves'
   ) THEN
     RAISE EXCEPTION 'Invalid table name.';
   END IF;
@@ -469,7 +481,8 @@ BEGIN
             'data_hierarchy',
             'data_client_promoters',
             'data_titulos',
-            'data_nota_perfeita'
+            'data_nota_perfeita',
+            'relacao_rota_involves'
         )
     LOOP
         -- Cleanup

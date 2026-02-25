@@ -279,6 +279,10 @@
         let clientLastBranch = new Map();
         let clientRamoMap = new Map();
 
+        // --- LOJA PERFEITA RESEARCHER FILTER STATE ---
+        let selectedLpResearchers = new Set();
+        let lpResearcherMap = new Map(); // involves_code (normalized) -> { sellerCode, sellerName }
+
         // --- EXPORT HELPERS ---
         function exportToExcel(sheets, fileName) {
             if (typeof XLSX === 'undefined') {
@@ -1892,6 +1896,30 @@
                             sellerLastSaleDateMap.set(codUsur, ts);
                             sellerDetailsMap.set(codUsur, { name: s.NOME, supervisor: s.SUPERV });
                         }
+                    }
+                }
+            }
+
+            // --- LOJA PERFEITA MAPPING ---
+            if (embeddedData.relacao_rota_involves) {
+                const rawRel = embeddedData.relacao_rota_involves;
+                const relArray = (rawRel instanceof ColumnarDataset) ? [] : rawRel; // Assuming standard array for now as fetchAll returns objects usually unless specified. JS init uses 'object' format.
+
+                // If it were columnar, we'd need to handle it, but init.js specified 'object'.
+                if (Array.isArray(rawRel)) {
+                    for (let i = 0; i < rawRel.length; i++) {
+                         const item = rawRel[i];
+                         // Try both lowercase and snake_case keys just in case
+                         const involvesCode = String(item.involves_code || item.INVOLVES_CODE || '').trim().toLowerCase();
+                         const sellerCode = String(item.seller_code || item.SELLER_CODE || '').trim();
+
+                         if (involvesCode) {
+                             const details = sellerDetailsMap.get(sellerCode);
+                             lpResearcherMap.set(involvesCode, {
+                                 sellerCode: sellerCode,
+                                 sellerName: details ? details.name : sellerCode
+                             });
+                         }
                     }
                 }
             }
@@ -26051,14 +26079,178 @@ const supervisorGroups = new Map();
 
         modal.classList.remove('hidden');
     };
+    function setupLpResearcherFilterHandlers() {
+        const btn = document.getElementById('lp-researcher-filter-btn');
+        const dropdown = document.getElementById('lp-researcher-filter-dropdown');
+        const wrapper = document.getElementById('lp-researcher-filter-wrapper');
+
+        if (btn && dropdown) {
+            // Remove old listeners (cloning technique)
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+
+            newBtn.onclick = (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                if (wrapper) {
+                        if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
+                        else wrapper.classList.add('z-50');
+                }
+            };
+
+            dropdown.onchange = (e) => {
+                if (e.target.type === 'checkbox') {
+                    const val = e.target.value;
+                    if (e.target.checked) selectedLpResearchers.add(val);
+                    else selectedLpResearchers.delete(val);
+
+                    updateFilterButtonText(document.getElementById('lp-researcher-filter-text'), selectedLpResearchers, 'Todos');
+                    handleLpFilterChange({ excludeFilter: 'researcher' });
+                }
+            };
+
+            // Global Close
+                if (!document._lpResearcherFilterListener) {
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('#lp-researcher-filter-wrapper')) {
+                        dropdown.classList.add('hidden');
+                        if(wrapper) wrapper.classList.remove('z-50');
+                    }
+                });
+                document._lpResearcherFilterListener = true;
+            }
+        }
+        updateLpResearcherFilter();
+    }
+
+    function updateLpResearcherFilter() {
+        const dropdown = document.getElementById('lp-researcher-filter-dropdown');
+        if(!dropdown) return;
+
+        // Re-implement simplified filtering logic just to get available researchers (Pre-Research Filter)
+        let allowedClientCodes = new Set();
+        const clients = (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller')
+            ? (() => {
+                    // Seller Mode Logic
+                    const list = [];
+                    const hasSup = selectedLpSupervisors.size > 0;
+                    const hasVend = selectedLpVendedores.size > 0;
+                    for(let i=0; i<allClientsData.length; i++) {
+                    const c = allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i];
+                    const rca1 = String(c.rca1 || '').trim();
+                    let keep = true;
+                    if (hasSup || hasVend) {
+                        const details = sellerDetailsMap.get(rca1);
+                        if (hasSup && (!details || !selectedLpSupervisors.has(details.supervisor))) keep = false;
+                        if (keep && hasVend && !selectedLpVendedores.has(rca1)) keep = false;
+                    }
+                    if (keep) list.push(c);
+                    }
+                    return list;
+                })()
+            : getHierarchyFilteredClients('lp', allClientsData);
+
+            // Apply Rede & Search
+            const isComRede = lpRedeGroupFilter === 'com_rede';
+            const isSemRede = lpRedeGroupFilter === 'sem_rede';
+            const redeSet = (isComRede && selectedLpRedes.length > 0) ? new Set(selectedLpRedes) : null;
+            const clientSearch = document.getElementById('lp-codcli-filter') ? document.getElementById('lp-codcli-filter').value.toLowerCase().trim() : '';
+
+            clients.forEach(c => {
+                if (isComRede) {
+                if (!c.ramo || c.ramo === 'N/A') return;
+                if (redeSet && !redeSet.has(c.ramo)) return;
+                } else if (isSemRede) {
+                if (c.ramo && c.ramo !== 'N/A') return;
+                }
+                if (clientSearch) {
+                const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
+                const name = (c.nomeCliente || '').toLowerCase();
+                if (!code.includes(clientSearch) && !name.includes(clientSearch)) return;
+                }
+                allowedClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+            });
+
+            // Scan Nota Perfeita
+            const researchers = new Set();
+            if (embeddedData.nota_perfeita) {
+                embeddedData.nota_perfeita.forEach(row => {
+                    if (allowedClientCodes.has(normalizeKey(row.codigo_cliente))) {
+                        if (row.pesquisador) researchers.add(row.pesquisador.trim());
+                    }
+                });
+            }
+
+            // Sort and Render
+            const sortedResearchers = Array.from(researchers).sort();
+            let html = '';
+
+            sortedResearchers.forEach(res => {
+                const normRes = res.toLowerCase();
+                // Resolve friendly name
+                let label = res;
+                let subLabel = '';
+
+                if (lpResearcherMap.has(normRes)) {
+                    const info = lpResearcherMap.get(normRes);
+                    // Format: "RCA 123 (João)" if name exists, else code
+                    if (info.sellerName && info.sellerName !== info.sellerCode) {
+                        label = `${getFirstName(info.sellerName)} (${info.sellerCode})`;
+                    } else {
+                        label = `RCA ${info.sellerCode}`;
+                    }
+                    // If label changed, maybe show original code as sublabel?
+                    // if (label !== res) subLabel = res;
+                }
+
+                const checked = selectedLpResearchers.has(res) ? 'checked' : '';
+                html += `
+                <label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer group border-b border-white/5 last:border-0">
+                    <input type="checkbox" value="${window.escapeHtml(res)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600 shrink-0">
+                    <div class="ml-2 flex flex-col min-w-0">
+                        <span class="text-xs text-slate-300 truncate font-bold group-hover:text-white transition-colors">${window.escapeHtml(label)}</span>
+                        ${(label !== res) ? `<span class="text-[9px] text-slate-500 truncate">Origem: ${window.escapeHtml(res)}</span>` : ''}
+                    </div>
+                </label>
+                `;
+            });
+
+            dropdown.innerHTML = html;
+            updateFilterButtonText(document.getElementById('lp-researcher-filter-text'), selectedLpResearchers, 'Todos');
+    }
+
     let lpState = { page: 1, limit: 50, filteredData: [] };
     let selectedLpRedes = [];
     let lpRedeGroupFilter = '';
     let lpRenderId = 0;
 
     function renderLojaPerfeitaView() {
-        setupHierarchyFilters('lp', () => handleLpFilterChange());
-            setupLpSupervisorFilterHandlers();
+        // Inject Researcher Filter (New)
+        const lpGrid = document.querySelector('#loja-perfeita-view .sticky-filters .grid');
+        if (lpGrid && !document.getElementById('lp-researcher-filter-wrapper')) {
+            const wrapper = document.createElement('div');
+            wrapper.id = 'lp-researcher-filter-wrapper';
+            wrapper.className = 'relative z-20';
+            wrapper.innerHTML = `
+                <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Pesquisador</label>
+                <button id="lp-researcher-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
+                    <span id="lp-researcher-filter-text">Todos</span>
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="lp-researcher-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
+            `;
+            // Insert before Client Filter if exists
+            const clientWrapper = document.getElementById('lp-codcli-filter-wrapper');
+            if (clientWrapper) {
+                 lpGrid.insertBefore(wrapper, clientWrapper);
+            } else {
+                 lpGrid.appendChild(wrapper);
+            }
+        }
+
+        setupHierarchyFilters('lp', () => handleLpFilterChange({ excludeFilter: 'hierarchy' }));
+        setupLpSupervisorFilterHandlers();
+        setupLpResearcherFilterHandlers();
 
         // Rede Filters
         const redeGroupContainer = document.getElementById('lp-rede-group-container');
@@ -26146,15 +26338,20 @@ const supervisorGroups = new Map();
         }
     }
 
-    function handleLpFilterChange() {
+    function handleLpFilterChange(options = {}) {
          if(window.lpUpdateTimeout) clearTimeout(window.lpUpdateTimeout);
          window.lpUpdateTimeout = setTimeout(() => {
+             const { excludeFilter } = options;
+             if (excludeFilter !== 'researcher') {
+                 updateLpResearcherFilter();
+             }
              updateLpView();
          }, 10);
     }
 
     function resetLpFilters() {
         selectedLpRedes = [];
+        selectedLpResearchers.clear();
         lpRedeGroupFilter = '';
         document.getElementById('lp-codcli-filter').value = '';
 
@@ -26166,8 +26363,12 @@ const supervisorGroups = new Map();
         const dd = document.getElementById('lp-rede-filter-dropdown');
         if(dd) dd.classList.add('hidden');
 
+        const ddRes = document.getElementById('lp-researcher-filter-dropdown');
+        if(ddRes) ddRes.classList.add('hidden');
+
         setupHierarchyFilters('lp'); // Reset hierarchy
         updateLpRedeFilter();
+        updateLpResearcherFilter();
         updateLpView();
     }
 
@@ -26247,7 +26448,14 @@ const supervisorGroups = new Map();
         }
 
         // 3. Filter Data
-        const filtered = rawData.filter(row => allowedClientCodes.has(normalizeKey(row.codigo_cliente))).map(row => {
+        const filtered = rawData.filter(row => {
+            if (!allowedClientCodes.has(normalizeKey(row.codigo_cliente))) return false;
+            // Researcher Filter
+            if (selectedLpResearchers.size > 0) {
+                if (!row.pesquisador || !selectedLpResearchers.has(row.pesquisador.trim())) return false;
+            }
+            return true;
+        }).map(row => {
              const c = clientMap.get(normalizeKey(row.codigo_cliente));
              return {
                  ...row,
