@@ -4518,12 +4518,18 @@
 
             // --- FIX: Ensure all sellers with Manual Targets are present in goalsBySeller ---
             goalsSellerTargets.forEach((targets, sellerName) => {
-                // Filter Check: Don't add global targets if we are in a filtered view
-                if (sellersSet.size > 0) {
+                // Determine if strict filters are active
+                const hasFilters = (adminViewMode === 'seller' && (selectedMetaRealizadoVendedores.size > 0 || selectedMetaRealizadoSupervisors.size > 0));
+
+                if (hasFilters) {
+                    // Strictly respect the filtered set
                     if (!sellersSet.has(sellerName)) return;
-                } else if (supervisorsSet.size > 0) {
-                    // If filtering by supervisor, only apply targets to sellers already found in the filtered client list
-                    if (!goalsBySeller.has(sellerName)) return;
+                } else {
+                    // No explicit filter (All View)
+                    // If not Admin, restrict to valid clients scope (prevent seeing other teams)
+                    if (window.userRole !== 'adm') {
+                        if (!goalsBySeller.has(sellerName)) return;
+                    }
                 }
 
                 // Add to map if missing
@@ -9917,18 +9923,76 @@ const supervisorGroups = new Map();
                         activeGoalKeys.add('PEPSICO_ALL');
                     }
 
-                    if (window.globalClientGoals) {
+                    const useManualSellerTargets = (typeof adminViewMode !== 'undefined' && (adminViewMode === 'seller' || adminViewMode === 'supervisor') && (!codcli));
+                    const metricSuffix = (currentProductMetric === 'peso') ? '_VOL' : '_FAT';
+
+                    if (useManualSellerTargets && typeof goalsSellerTargets !== 'undefined') {
+                        const sellerGoalMap = new Map();
+
                         goalClients.forEach(c => {
                             const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
-                            const clientGoals = window.globalClientGoals.get(codCli);
-                            if (clientGoals) {
-                                activeGoalKeys.forEach(key => {
-                                    if (clientGoals.has(key)) {
-                                        totalGoal += (clientGoals.get(key).fat || 0);
-                                    }
+                            const rca1 = String(c.rca1 || '').trim();
+
+                            let sellerName = rca1;
+                            if (optimizedData.rcaNameByCode && optimizedData.rcaNameByCode.has(rca1)) {
+                                sellerName = optimizedData.rcaNameByCode.get(rca1);
+                            } else if (rca1 === '1001') sellerName = 'AMERICANAS';
+
+                            if (!sellerGoalMap.has(sellerName)) {
+                                sellerGoalMap.set(sellerName, {
+                                    hasManualProfile: goalsSellerTargets.has(sellerName),
+                                    manualAddedKeys: new Set(),
+                                    total: 0
                                 });
                             }
+
+                            const entry = sellerGoalMap.get(sellerName);
+                            const clientGoals = window.globalClientGoals ? window.globalClientGoals.get(codCli) : null;
+
+                            activeGoalKeys.forEach(key => {
+                                let usedManual = false;
+                                if (entry.hasManualProfile) {
+                                    let manualKey = key;
+                                    if (key === 'PEPSICO_ALL') manualKey = 'pepsico_all';
+                                    else if (key === 'ELMA_ALL') manualKey = 'total_elma';
+                                    else if (key === 'FOODS_ALL') manualKey = 'total_foods';
+
+                                    const targetKey = `${manualKey}${metricSuffix}`;
+                                    const targets = goalsSellerTargets.get(sellerName);
+
+                                    if (targets && targets[targetKey] !== undefined) {
+                                        if (!entry.manualAddedKeys.has(key)) {
+                                            entry.total += targets[targetKey];
+                                            entry.manualAddedKeys.add(key);
+                                        }
+                                        usedManual = true;
+                                    }
+                                }
+
+                                if (!usedManual && clientGoals && clientGoals.has(key)) {
+                                    const val = (currentProductMetric === 'peso') ? (clientGoals.get(key).vol || 0) : (clientGoals.get(key).fat || 0);
+                                    entry.total += val;
+                                }
+                            });
                         });
+
+                        sellerGoalMap.forEach(entry => totalGoal += entry.total);
+
+                    } else {
+                        if (window.globalClientGoals) {
+                            goalClients.forEach(c => {
+                                const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
+                                const clientGoals = window.globalClientGoals.get(codCli);
+                                if (clientGoals) {
+                                    activeGoalKeys.forEach(key => {
+                                        if (clientGoals.has(key)) {
+                                            const val = (currentProductMetric === 'peso') ? (clientGoals.get(key).vol || 0) : (clientGoals.get(key).fat || 0);
+                                            totalGoal += val;
+                                        }
+                                    });
+                                }
+                            });
+                        }
                     }
 
                     renderLiquidGauge('salesByPersonChartContainer', totalRealized, totalGoal, 'Meta Geral');
