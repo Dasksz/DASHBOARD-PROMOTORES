@@ -1391,263 +1391,59 @@
         }
 
         function applyAdminViewVisibilityRules() {
-            // Weekly View Elements
-            const weeklyCoord = document.getElementById('weekly-coord-filter-wrapper');
-            const weeklyCocoord = document.getElementById('weekly-cocoord-filter-wrapper');
-            const weeklyPromotor = document.getElementById('weekly-promotor-filter-wrapper');
-            const weeklySupervisor = document.getElementById('weekly-supervisor-filter-wrapper');
-            const weeklyVendedor = document.getElementById('weekly-vendedor-filter-wrapper');
+            const contextRole = (userHierarchyContext && userHierarchyContext.role) ? userHierarchyContext.role : 'adm';
+            const isAdm = contextRole === 'adm';
+            const isCoord = contextRole === 'coord';
+            const isCocoord = contextRole === 'cocoord';
+            const isSupervisor = contextRole === 'supervisor';
 
-            // Comparison View Elements
-            const comparisonCoord = document.getElementById('comparison-coord-filter-wrapper');
-            const comparisonCocoord = document.getElementById('comparison-cocoord-filter-wrapper');
-            const comparisonPromotor = document.getElementById('comparison-promotor-filter-wrapper');
-            const comparisonSupervisor = document.getElementById('comparison-supervisor-filter-wrapper');
-            const comparisonVendedor = document.getElementById('comparison-vendedor-filter-wrapper');
+            // Rules
 
-            // Positivacao (Coverage) View Elements
-            const positivacaoCoord = document.getElementById('positivacao-coord-filter-wrapper');
-            const positivacaoCocoord = document.getElementById('positivacao-cocoord-filter-wrapper');
-            const positivacaoPromotor = document.getElementById('positivacao-promotor-filter-wrapper');
-            const positivacaoSupervisor = document.getElementById('positivacao-supervisor-filter-wrapper');
-            const positivacaoVendedor = document.getElementById('positivacao-vendedor-filter-wrapper');
+            // Hierarchy Filters Visibility
+            // Show only if in Promoter Mode AND role allows it (Adm, Coord, CoCoord)
+            const showCoord = (adminViewMode === 'promoter') && isAdm;
+            const showCocoord = (adminViewMode === 'promoter') && (isAdm || isCoord);
+            const showPromotor = (adminViewMode === 'promoter') && (isAdm || isCoord || isCocoord);
 
-            // City (GEO) View Elements
-            const cityCoord = document.getElementById('city-coord-filter-wrapper');
-            const cityCocoord = document.getElementById('city-cocoord-filter-wrapper');
-            const cityPromotor = document.getElementById('city-promotor-filter-wrapper');
-            const citySupervisor = document.getElementById('city-supervisor-filter-wrapper');
-            const cityVendedor = document.getElementById('city-vendedor-filter-wrapper');
+            // Sales Filters Visibility
+            // Show only if in Seller Mode AND role allows it (Adm, Coord, Supervisor)
+            // Supervisor hides "Supervisor Filter" because they ARE the supervisor.
+            // Seller hides "Supervisor" and "Vendedor" filters (they only see their data).
+            const showSupervisor = (adminViewMode === 'seller') && (isAdm || isCoord);
+            const showVendedor = (adminViewMode === 'seller') && (isAdm || isCoord || isSupervisor);
 
-            // Coverage View Elements
-            const coverageCoord = document.getElementById('coverage-coord-filter-wrapper');
-            const coverageCocoord = document.getElementById('coverage-cocoord-filter-wrapper');
-            const coveragePromotor = document.getElementById('coverage-promotor-filter-wrapper');
-            const coverageSupervisor = document.getElementById('coverage-supervisor-filter-wrapper');
-            const coverageVendedor = document.getElementById('coverage-vendedor-filter-wrapper');
+            const setVis = (id, show) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (show) el.classList.remove('hidden');
+                    else el.classList.add('hidden');
+                }
+            };
 
-            // Mix View Elements
-            const mixCoord = document.getElementById('mix-coord-filter-wrapper');
-            const mixCocoord = document.getElementById('mix-cocoord-filter-wrapper');
-            const mixPromotor = document.getElementById('mix-promotor-filter-wrapper');
-            const mixSupervisor = document.getElementById('mix-supervisor-filter-wrapper');
-            const mixVendedor = document.getElementById('mix-vendedor-filter-wrapper');
+            // Main (Overview) - Special IDs
+            setVis('main-coord-filter-wrapper', showCoord);
+            setVis('main-cocoord-filter-wrapper', showCocoord);
+            setVis('main-promotor-filter-wrapper', showPromotor);
+            setVis('main-supervisor-filter-wrapper', showSupervisor);
+            setVis('vendedor-filter-wrapper', showVendedor);
 
-            // Innovations View Elements
-            const innovCoord = document.getElementById('innovations-month-coord-filter-wrapper');
-            const innovCocoord = document.getElementById('innovations-month-cocoord-filter-wrapper');
-            const innovPromotor = document.getElementById('innovations-month-promotor-filter-wrapper');
-            const innovSupervisor = document.getElementById('innovations-month-supervisor-filter-wrapper');
-            const innovVendedor = document.getElementById('innovations-month-vendedor-filter-wrapper');
+            // Standard Views Prefixes
+            const views = [
+                'weekly', 'comparison', 'positivacao', 'city', 'coverage',
+                'mix', 'innovations-month', 'titulos', 'lp', 'history', 'meta-realizado'
+            ];
 
-            // Titulos View Elements
-            const titulosCoord = document.getElementById('titulos-coord-filter-wrapper');
-            const titulosCocoord = document.getElementById('titulos-cocoord-filter-wrapper');
-            const titulosPromotor = document.getElementById('titulos-promotor-filter-wrapper');
-            const titulosSupervisor = document.getElementById('titulos-supervisor-filter-wrapper');
-            const titulosVendedor = document.getElementById('titulos-vendedor-filter-wrapper');
+            views.forEach(prefix => {
+                setVis(`${prefix}-coord-filter-wrapper`, showCoord);
+                setVis(`${prefix}-cocoord-filter-wrapper`, showCocoord);
+                setVis(`${prefix}-promotor-filter-wrapper`, showPromotor);
+                setVis(`${prefix}-supervisor-filter-wrapper`, showSupervisor);
+                setVis(`${prefix}-vendedor-filter-wrapper`, showVendedor);
+            });
 
-            // LP View Elements
-            const lpCoord = document.getElementById('lp-coord-filter-wrapper');
-            const lpCocoord = document.getElementById('lp-cocoord-filter-wrapper');
-            const lpPromotor = document.getElementById('lp-promotor-filter-wrapper');
-            const lpSupervisor = document.getElementById('lp-supervisor-filter-wrapper');
-            const lpVendedor = document.getElementById('lp-vendedor-filter-wrapper');
-
-            // History View Elements
-            const historyCoord = document.getElementById('history-coord-filter-wrapper');
-            const historyCocoord = document.getElementById('history-cocoord-filter-wrapper');
-            const historyPromotor = document.getElementById('history-promotor-filter-wrapper');
-            const historySupervisor = document.getElementById('history-supervisor-filter-wrapper');
-            const historyVendedor = document.getElementById('history-vendedor-filter-wrapper');
-
-            // Stock View Elements
-            const stockSupervisor = document.getElementById('stock-supervisor-filter-wrapper');
-            const stockVendedor = document.getElementById('stock-vendedor-filter-wrapper');
-
-            // Meta Realizado View Elements
-            const metaRealizadoCoord = document.getElementById('meta-realizado-coord-filter-wrapper');
-            const metaRealizadoCocoord = document.getElementById('meta-realizado-cocoord-filter-wrapper');
-            const metaRealizadoPromotor = document.getElementById('meta-realizado-promotor-filter-wrapper');
-            const metaRealizadoSupervisor = document.getElementById('meta-realizado-supervisor-filter-wrapper');
-            const metaRealizadoVendedor = document.getElementById('meta-realizado-vendedor-filter-wrapper');
-
-            if (adminViewMode === 'promoter') {
-                if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.remove('hidden');
-                if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.remove('hidden');
-                if (mainPromotorFilterWrapper) mainPromotorFilterWrapper.classList.remove('hidden');
-                if (mainSupervisorFilterWrapper) mainSupervisorFilterWrapper.classList.add('hidden');
-                if (vendedorFilterWrapper) vendedorFilterWrapper.classList.add('hidden');
-
-                // Weekly
-                if (weeklyCoord) weeklyCoord.classList.remove('hidden');
-                if (weeklyCocoord) weeklyCocoord.classList.remove('hidden');
-                if (weeklyPromotor) weeklyPromotor.classList.remove('hidden');
-                if (weeklySupervisor) weeklySupervisor.classList.add('hidden');
-                if (weeklyVendedor) weeklyVendedor.classList.add('hidden');
-
-                // Comparison
-                if (comparisonCoord) comparisonCoord.classList.remove('hidden');
-                if (comparisonCocoord) comparisonCocoord.classList.remove('hidden');
-                if (comparisonPromotor) comparisonPromotor.classList.remove('hidden');
-                if (comparisonSupervisor) comparisonSupervisor.classList.add('hidden');
-                if (comparisonVendedor) comparisonVendedor.classList.add('hidden');
-
-                // Positivacao
-                if (positivacaoCoord) positivacaoCoord.classList.remove('hidden');
-                if (positivacaoCocoord) positivacaoCocoord.classList.remove('hidden');
-                if (positivacaoPromotor) positivacaoPromotor.classList.remove('hidden');
-                if (positivacaoSupervisor) positivacaoSupervisor.classList.add('hidden');
-                if (positivacaoVendedor) positivacaoVendedor.classList.add('hidden');
-
-                // City
-                if (cityCoord) cityCoord.classList.remove('hidden');
-                if (cityCocoord) cityCocoord.classList.remove('hidden');
-                if (cityPromotor) cityPromotor.classList.remove('hidden');
-                if (citySupervisor) citySupervisor.classList.add('hidden');
-                if (cityVendedor) cityVendedor.classList.add('hidden');
-
-                // Coverage
-                if (coverageCoord) coverageCoord.classList.remove('hidden');
-                if (coverageCocoord) coverageCocoord.classList.remove('hidden');
-                if (coveragePromotor) coveragePromotor.classList.remove('hidden');
-                if (coverageSupervisor) coverageSupervisor.classList.add('hidden');
-                if (coverageVendedor) coverageVendedor.classList.add('hidden');
-
-                // Mix
-                if (mixCoord) mixCoord.classList.remove('hidden');
-                if (mixCocoord) mixCocoord.classList.remove('hidden');
-                if (mixPromotor) mixPromotor.classList.remove('hidden');
-                if (mixSupervisor) mixSupervisor.classList.add('hidden');
-                if (mixVendedor) mixVendedor.classList.add('hidden');
-
-                // Innovations
-                if (innovCoord) innovCoord.classList.remove('hidden');
-                if (innovCocoord) innovCocoord.classList.remove('hidden');
-                if (innovPromotor) innovPromotor.classList.remove('hidden');
-                if (innovSupervisor) innovSupervisor.classList.add('hidden');
-                if (innovVendedor) innovVendedor.classList.add('hidden');
-
-                // Titulos
-                if (titulosCoord) titulosCoord.classList.remove('hidden');
-                if (titulosCocoord) titulosCocoord.classList.remove('hidden');
-                if (titulosPromotor) titulosPromotor.classList.remove('hidden');
-                if (titulosSupervisor) titulosSupervisor.classList.add('hidden');
-                if (titulosVendedor) titulosVendedor.classList.add('hidden');
-
-                // LP
-                if (lpCoord) lpCoord.classList.remove('hidden');
-                if (lpCocoord) lpCocoord.classList.remove('hidden');
-                if (lpPromotor) lpPromotor.classList.remove('hidden');
-                if (lpSupervisor) lpSupervisor.classList.add('hidden');
-                if (lpVendedor) lpVendedor.classList.add('hidden');
-
-                // History
-                if (historyCoord) historyCoord.classList.remove('hidden');
-                if (historyCocoord) historyCocoord.classList.remove('hidden');
-                if (historyPromotor) historyPromotor.classList.remove('hidden');
-                if (historySupervisor) historySupervisor.classList.add('hidden');
-                if (historyVendedor) historyVendedor.classList.add('hidden');
-
-                // Stock
-                if (stockSupervisor) stockSupervisor.classList.add('hidden');
-                if (stockVendedor) stockVendedor.classList.add('hidden');
-
-                // Meta Realizado
-                if (metaRealizadoCoord) metaRealizadoCoord.classList.remove('hidden');
-                if (metaRealizadoCocoord) metaRealizadoCocoord.classList.remove('hidden');
-                if (metaRealizadoPromotor) metaRealizadoPromotor.classList.remove('hidden');
-                if (metaRealizadoSupervisor) metaRealizadoSupervisor.classList.add('hidden');
-                if (metaRealizadoVendedor) metaRealizadoVendedor.classList.add('hidden');
-
-            } else {
-                if (mainCoordFilterWrapper) mainCoordFilterWrapper.classList.add('hidden');
-                if (mainCocoordFilterWrapper) mainCocoordFilterWrapper.classList.add('hidden');
-                if (mainPromotorFilterWrapper) mainPromotorFilterWrapper.classList.add('hidden');
-                if (mainSupervisorFilterWrapper) mainSupervisorFilterWrapper.classList.remove('hidden');
-                if (vendedorFilterWrapper) vendedorFilterWrapper.classList.remove('hidden');
-
-                // Weekly
-                if (weeklyCoord) weeklyCoord.classList.add('hidden');
-                if (weeklyCocoord) weeklyCocoord.classList.add('hidden');
-                if (weeklyPromotor) weeklyPromotor.classList.add('hidden');
-                if (weeklySupervisor) weeklySupervisor.classList.remove('hidden');
-                if (weeklyVendedor) weeklyVendedor.classList.remove('hidden');
-
-                // Comparison
-                if (comparisonCoord) comparisonCoord.classList.add('hidden');
-                if (comparisonCocoord) comparisonCocoord.classList.add('hidden');
-                if (comparisonPromotor) comparisonPromotor.classList.add('hidden');
-                if (comparisonSupervisor) comparisonSupervisor.classList.remove('hidden');
-                if (comparisonVendedor) comparisonVendedor.classList.remove('hidden');
-
-                // Positivacao
-                if (positivacaoCoord) positivacaoCoord.classList.add('hidden');
-                if (positivacaoCocoord) positivacaoCocoord.classList.add('hidden');
-                if (positivacaoPromotor) positivacaoPromotor.classList.add('hidden');
-                if (positivacaoSupervisor) positivacaoSupervisor.classList.remove('hidden');
-                if (positivacaoVendedor) positivacaoVendedor.classList.remove('hidden');
-
-                // City
-                if (cityCoord) cityCoord.classList.add('hidden');
-                if (cityCocoord) cityCocoord.classList.add('hidden');
-                if (cityPromotor) cityPromotor.classList.add('hidden');
-                if (citySupervisor) citySupervisor.classList.remove('hidden');
-                if (cityVendedor) cityVendedor.classList.remove('hidden');
-
-                // Coverage
-                if (coverageCoord) coverageCoord.classList.add('hidden');
-                if (coverageCocoord) coverageCocoord.classList.add('hidden');
-                if (coveragePromotor) coveragePromotor.classList.add('hidden');
-                if (coverageSupervisor) coverageSupervisor.classList.remove('hidden');
-                if (coverageVendedor) coverageVendedor.classList.remove('hidden');
-
-                // Mix
-                if (mixCoord) mixCoord.classList.add('hidden');
-                if (mixCocoord) mixCocoord.classList.add('hidden');
-                if (mixPromotor) mixPromotor.classList.add('hidden');
-                if (mixSupervisor) mixSupervisor.classList.remove('hidden');
-                if (mixVendedor) mixVendedor.classList.remove('hidden');
-
-                // Innovations
-                if (innovCoord) innovCoord.classList.add('hidden');
-                if (innovCocoord) innovCocoord.classList.add('hidden');
-                if (innovPromotor) innovPromotor.classList.add('hidden');
-                if (innovSupervisor) innovSupervisor.classList.remove('hidden');
-                if (innovVendedor) innovVendedor.classList.remove('hidden');
-
-                // Titulos
-                if (titulosCoord) titulosCoord.classList.add('hidden');
-                if (titulosCocoord) titulosCocoord.classList.add('hidden');
-                if (titulosPromotor) titulosPromotor.classList.add('hidden');
-                if (titulosSupervisor) titulosSupervisor.classList.remove('hidden');
-                if (titulosVendedor) titulosVendedor.classList.remove('hidden');
-
-                // LP
-                if (lpCoord) lpCoord.classList.add('hidden');
-                if (lpCocoord) lpCocoord.classList.add('hidden');
-                if (lpPromotor) lpPromotor.classList.add('hidden');
-                if (lpSupervisor) lpSupervisor.classList.remove('hidden');
-                if (lpVendedor) lpVendedor.classList.remove('hidden');
-
-                // History
-                if (historyCoord) historyCoord.classList.add('hidden');
-                if (historyCocoord) historyCocoord.classList.add('hidden');
-                if (historyPromotor) historyPromotor.classList.add('hidden');
-                if (historySupervisor) historySupervisor.classList.remove('hidden');
-                if (historyVendedor) historyVendedor.classList.remove('hidden');
-
-                // Stock
-                if (stockSupervisor) stockSupervisor.classList.remove('hidden');
-                if (stockVendedor) stockVendedor.classList.remove('hidden');
-
-                // Meta Realizado
-                if (metaRealizadoCoord) metaRealizadoCoord.classList.add('hidden');
-                if (metaRealizadoCocoord) metaRealizadoCocoord.classList.add('hidden');
-                if (metaRealizadoPromotor) metaRealizadoPromotor.classList.add('hidden');
-                if (metaRealizadoSupervisor) metaRealizadoSupervisor.classList.remove('hidden');
-                if (metaRealizadoVendedor) metaRealizadoVendedor.classList.remove('hidden');
-            }
+            // Stock View (Only Sales Filters)
+            setVis('stock-supervisor-filter-wrapper', showSupervisor);
+            setVis('stock-vendedor-filter-wrapper', showVendedor);
         }
 
         function toggleAdminViewMode() {
@@ -2776,6 +2572,16 @@
         let selectedVendedores = new Set();
         let selectedSupervisors = new Set();
         let adminViewMode = 'promoter'; // 'promoter' or 'seller'
+
+        // Dynamic Initialization based on Role
+        if (window.userRole === 'adm') {
+            adminViewMode = 'promoter';
+        } else if (window.userIsSupervisor || window.userIsSeller) {
+            adminViewMode = 'seller';
+        } else {
+            adminViewMode = 'promoter';
+        }
+
         let selectedCityRedes = [];
         let selectedPositivacaoRedes = [];
         let selectedComparisonRedes = [];
@@ -24231,28 +24037,30 @@ const supervisorGroups = new Map();
         // Enforce Menu Permissions
         if (window.userRole !== 'adm') {
             document.querySelectorAll('[data-target="goals"]').forEach(el => el.classList.add('hidden'));
+        }
 
-            if (window.userIsSupervisor || window.userIsSeller) {
-                adminViewMode = 'seller';
-                applyHierarchyVisibilityRules();
-                setupSupervisorFilterHandlers();
-                updateSupervisorFilterDropdown();
-                updateVendedorFilterDropdown();
-            }
-        } else {
-            // Admin View Logic
-            const adminViewToggleBtn = document.getElementById('admin-view-toggle-btn');
-            if (adminViewToggleBtn) {
+        // Setup Admin View Toggle Button (Only for Admins)
+        const adminViewToggleBtn = document.getElementById('admin-view-toggle-btn');
+        if (adminViewToggleBtn) {
+            if (window.userRole === 'adm') {
                 adminViewToggleBtn.classList.remove('hidden');
                 adminViewToggleBtn.addEventListener('click', toggleAdminViewMode);
+            } else {
+                adminViewToggleBtn.classList.add('hidden');
             }
-            
-            setupSupervisorFilterHandlers();
-            // Populate initially
-            updateSupervisorFilterDropdown();
-            // Apply initial visibility
-            applyHierarchyVisibilityRules();
+        }
+
+        // Apply Initial Visibility Rules
+        setupSupervisorFilterHandlers();
+        updateSupervisorFilterDropdown();
+        updateVendedorFilterDropdown();
+
+        // Ensure visibility rules are applied immediately
+        if (typeof applyAdminViewVisibilityRules === 'function') {
             applyAdminViewVisibilityRules();
+        }
+        if (typeof applyHierarchyVisibilityRules === 'function') {
+            applyHierarchyVisibilityRules();
         }
 
         // Enforce Weekly View Permissions (Block for Promoters/Sellers)
