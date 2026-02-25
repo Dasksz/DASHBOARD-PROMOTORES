@@ -5450,11 +5450,6 @@
                 if (pasta === 'ELMA' && !window.SUPPLIER_CODES.ELMA.includes(codFor)) continue;
                 if (pasta === 'FOODS' && codFor !== window.SUPPLIER_CODES.FOODS[0]) continue;
 
-                // Supervisor/Seller/Supplier Filter on SALE row
-                if (adminViewMode === 'seller') {
-                    if (supervisorsSet.size > 0 && !supervisorsSet.has(s.SUPERV)) continue;
-                    if (sellersSet.size > 0 && !sellersSet.has(s.NOME)) continue;
-                }
                 if (suppliersSet.size > 0 && !suppliersSet.has(s.CODFOR)) continue;
 
                 const codCli = String(s.CODCLI);
