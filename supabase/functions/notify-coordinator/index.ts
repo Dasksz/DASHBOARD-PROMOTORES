@@ -496,7 +496,7 @@ serve(async (req) => {
             Este é um e-mail automático do sistema de Dashboard Promotores.
         </p>
       </div>
-    `
+    `;
 
     // 7. Send Email via Provider
     if (USE_BREVO) {
