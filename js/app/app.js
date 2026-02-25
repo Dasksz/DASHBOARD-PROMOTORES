@@ -1904,7 +1904,7 @@
             if (embeddedData.relacao_rota_involves) {
                 const rawRel = embeddedData.relacao_rota_involves;
                 const relArray = (rawRel instanceof ColumnarDataset) ? [] : rawRel; // Assuming standard array for now as fetchAll returns objects usually unless specified. JS init uses 'object' format.
-
+                
                 // If it were columnar, we'd need to handle it, but init.js specified 'object'.
                 if (Array.isArray(rawRel)) {
                     for (let i = 0; i < rawRel.length; i++) {
@@ -1912,7 +1912,7 @@
                          // Try both lowercase and snake_case keys just in case
                          const involvesCode = String(item.involves_code || item.INVOLVES_CODE || '').trim().toLowerCase();
                          const sellerCode = String(item.seller_code || item.SELLER_CODE || '').trim();
-
+                         
                          if (involvesCode) {
                              const details = sellerDetailsMap.get(sellerCode);
                              lpResearcherMap.set(involvesCode, {
@@ -26129,7 +26129,7 @@ const supervisorGroups = new Map();
 
         // Re-implement simplified filtering logic just to get available researchers (Pre-Research Filter)
         let allowedClientCodes = new Set();
-        const clients = (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller')
+        const clients = (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') 
             ? (() => {
                     // Seller Mode Logic
                     const list = [];
@@ -26184,23 +26184,25 @@ const supervisorGroups = new Map();
             // Sort and Render
             const sortedResearchers = Array.from(researchers).sort();
             let html = '';
-
+            
             sortedResearchers.forEach(res => {
                 const normRes = res.toLowerCase();
                 // Resolve friendly name
                 let label = res;
-                let subLabel = '';
-
+                
                 if (lpResearcherMap.has(normRes)) {
                     const info = lpResearcherMap.get(normRes);
                     // Format: "RCA 123 (João)" if name exists, else code
-                    if (info.sellerName && info.sellerName !== info.sellerCode) {
-                        label = `${getFirstName(info.sellerName)} (${info.sellerCode})`;
-                    } else {
-                        label = `RCA ${info.sellerCode}`;
+                    let prefix = 'RCA';
+                    if (res.toUpperCase().includes('SUPERVISOR')) {
+                        prefix = 'Supervisor';
                     }
-                    // If label changed, maybe show original code as sublabel?
-                    // if (label !== res) subLabel = res;
+
+                    if (info.sellerName && info.sellerName !== info.sellerCode) {
+                        label = `${prefix} ${getFirstName(info.sellerName)} (${info.sellerCode})`;
+                    } else {
+                        label = `${prefix} ${info.sellerCode}`;
+                    }
                 }
 
                 const checked = selectedLpResearchers.has(res) ? 'checked' : '';
@@ -26230,7 +26232,7 @@ const supervisorGroups = new Map();
         if (lpGrid && !document.getElementById('lp-researcher-filter-wrapper')) {
             const wrapper = document.createElement('div');
             wrapper.id = 'lp-researcher-filter-wrapper';
-            wrapper.className = 'relative z-20';
+            wrapper.className = 'relative z-20'; 
             wrapper.innerHTML = `
                 <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Pesquisador</label>
                 <button id="lp-researcher-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
@@ -26362,7 +26364,7 @@ const supervisorGroups = new Map();
         }
         const dd = document.getElementById('lp-rede-filter-dropdown');
         if(dd) dd.classList.add('hidden');
-
+        
         const ddRes = document.getElementById('lp-researcher-filter-dropdown');
         if(ddRes) ddRes.classList.add('hidden');
 
