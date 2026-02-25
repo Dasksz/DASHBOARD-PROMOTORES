@@ -13810,7 +13810,32 @@ const supervisorGroups = new Map();
             el.classList.remove('hidden');
         }
 
+        function updateNavigationVisibility() {
+            const role = (window.userRole || '').trim().toLowerCase();
+            const isRestricted = role === 'promotor' || role === 'vendedor' || window.userIsSeller;
+
+            // Comparativo (Nav Links)
+            document.querySelectorAll('[data-target="comparativo"]').forEach(el => {
+                if (isRestricted) el.classList.add('hidden');
+                else el.classList.remove('hidden');
+            });
+
+            // Consultas Buttons (Estoque & Semanal)
+            const btnSemanal = document.getElementById('btn-consultas-semanal');
+            if (btnSemanal) {
+                if (isRestricted) btnSemanal.classList.add('hidden');
+                else btnSemanal.classList.remove('hidden');
+            }
+
+            const btnEstoque = document.getElementById('btn-consultas-estoque');
+            if (btnEstoque) {
+                if (isRestricted) btnEstoque.classList.add('hidden');
+                else btnEstoque.classList.remove('hidden');
+            }
+        }
+
         async function renderView(view, options = {}) {
+            updateNavigationVisibility();
             updateFabVisibility(view);
 
             if (view === 'goals') {
@@ -13826,7 +13851,7 @@ const supervisorGroups = new Map();
                 }
             }
 
-            if (view === 'weekly' || view === 'estoque') {
+            if (view === 'weekly' || view === 'estoque' || view === 'comparativo') {
                 const role = (window.userRole || '').toLowerCase();
                 if (role === 'promotor' || role === 'vendedor' || window.userIsSeller) {
                      window.showToast('warning', 'Acesso restrito a gestores.');
@@ -20059,6 +20084,7 @@ const supervisorGroups = new Map();
          }
     }
     
+    updateNavigationVisibility();
     window.renderView = renderView;
 
     // --- ROTEIRO LOGIC ---
