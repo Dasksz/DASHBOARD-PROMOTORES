@@ -21773,6 +21773,11 @@ const supervisorGroups = new Map();
             visitaAbertaId = response.data.id;
             clienteEmVisitaId = clientCode;
 
+            // Update Local Cache (Fix for Status not updating)
+            const normalizedCode = normalizeKey(clientCode);
+            if (!myMonthVisits.has(normalizedCode)) myMonthVisits.set(normalizedCode, []);
+            myMonthVisits.get(normalizedCode).push(response.data);
+
             // REFRESH UI (Keep Modal Open, Update State)
             if (isRoteiroMode) renderRoteiroView();
             openActionModal(currentActionClientCode, currentActionClientName); // Re-open/Refresh
@@ -21940,13 +21945,26 @@ const supervisorGroups = new Map();
         btn.disabled = true;
         btn.innerHTML = 'Finalizando...';
 
+        const checkoutTime = new Date().toISOString();
         try {
             const { error } = await window.supabaseClient
                 .from('visitas')
-                .update({ checkout_at: new Date().toISOString() })
+                .update({ checkout_at: checkoutTime })
                 .eq('id', visitaAbertaId);
 
             if (error) throw error;
+
+            // Update Local Cache
+            if (clienteEmVisitaId) {
+                const normalizedCode = normalizeKey(clienteEmVisitaId);
+                const visits = myMonthVisits.get(normalizedCode);
+                if (visits) {
+                    const visit = visits.find(v => v.id === visitaAbertaId);
+                    if (visit) {
+                        visit.checkout_at = checkoutTime;
+                    }
+                }
+            }
 
             visitaAbertaId = null;
             clienteEmVisitaId = null;
@@ -23369,6 +23387,21 @@ const supervisorGroups = new Map();
                     .eq('id', visitId);
 
                 if (error) throw error;
+
+                // Update Local Cache
+                if (clienteEmVisitaId) {
+                    const normalizedCode = normalizeKey(clienteEmVisitaId);
+                    const visits = myMonthVisits.get(normalizedCode);
+                    if (visits) {
+                        const visit = visits.find(v => v.id === visitId);
+                        if (visit) {
+                            visit.respostas = respostas;
+                        }
+                    }
+                }
+
+                // Refresh Roteiro View (Progress Bars)
+                if (typeof isRoteiroMode !== 'undefined' && isRoteiroMode) renderRoteiroView();
 
                 document.getElementById('modal-relatorio').classList.add('hidden');
                 window.showToast('success', 'Relatório salvo!');
