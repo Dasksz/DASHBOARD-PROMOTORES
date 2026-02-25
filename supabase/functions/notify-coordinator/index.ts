@@ -234,6 +234,7 @@ serve(async (req) => {
                }
             }
         }
+        }
 
         // C. Get Co-Coordinator Email using ILIKE on role
         if (coCoordCode) {
