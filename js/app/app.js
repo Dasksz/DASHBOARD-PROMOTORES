@@ -4709,11 +4709,6 @@
                 // If I filter Supervisor "X", I show Seller Goals for X and Seller Sales for X.
                 // Let's use the standard filter logic:
 
-                // Supervisor/Seller/Supplier Filter on SALE row
-                if (adminViewMode === 'seller') {
-                    if (supervisorsSet.size > 0 && !supervisorsSet.has(s.SUPERV)) continue;
-                    if (sellersSet.size > 0 && !sellersSet.has(s.NOME)) continue;
-                }
 
                 // Client Filter: Ensure sale belongs to the same set of clients used for goals
                 if (!filteredClientCodes.has(String(s.CODCLI))) continue;
@@ -9928,27 +9923,27 @@ const supervisorGroups = new Map();
 
                     if (useManualSellerTargets && typeof goalsSellerTargets !== 'undefined') {
                         const sellerGoalMap = new Map();
-
+                        
                         goalClients.forEach(c => {
                             const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
                             const rca1 = String(c.rca1 || '').trim();
-
+                            
                             let sellerName = rca1;
                             if (optimizedData.rcaNameByCode && optimizedData.rcaNameByCode.has(rca1)) {
                                 sellerName = optimizedData.rcaNameByCode.get(rca1);
                             } else if (rca1 === '1001') sellerName = 'AMERICANAS';
-
+                            
                             if (!sellerGoalMap.has(sellerName)) {
-                                sellerGoalMap.set(sellerName, {
-                                    hasManualProfile: goalsSellerTargets.has(sellerName),
+                                sellerGoalMap.set(sellerName, { 
+                                    hasManualProfile: goalsSellerTargets.has(sellerName), 
                                     manualAddedKeys: new Set(),
-                                    total: 0
+                                    total: 0 
                                 });
                             }
-
+                            
                             const entry = sellerGoalMap.get(sellerName);
                             const clientGoals = window.globalClientGoals ? window.globalClientGoals.get(codCli) : null;
-
+                            
                             activeGoalKeys.forEach(key => {
                                 let usedManual = false;
                                 if (entry.hasManualProfile) {
@@ -9956,10 +9951,10 @@ const supervisorGroups = new Map();
                                     if (key === 'PEPSICO_ALL') manualKey = 'pepsico_all';
                                     else if (key === 'ELMA_ALL') manualKey = 'total_elma';
                                     else if (key === 'FOODS_ALL') manualKey = 'total_foods';
-
+                                    
                                     const targetKey = `${manualKey}${metricSuffix}`;
                                     const targets = goalsSellerTargets.get(sellerName);
-
+                                    
                                     if (targets && targets[targetKey] !== undefined) {
                                         if (!entry.manualAddedKeys.has(key)) {
                                             entry.total += targets[targetKey];
@@ -9968,14 +9963,14 @@ const supervisorGroups = new Map();
                                         usedManual = true;
                                     }
                                 }
-
+                                
                                 if (!usedManual && clientGoals && clientGoals.has(key)) {
                                     const val = (currentProductMetric === 'peso') ? (clientGoals.get(key).vol || 0) : (clientGoals.get(key).fat || 0);
                                     entry.total += val;
                                 }
                             });
                         });
-
+                        
                         sellerGoalMap.forEach(entry => totalGoal += entry.total);
 
                     } else {
@@ -26171,14 +26166,7 @@ const supervisorGroups = new Map();
                 } else {
                     // Fallback
                     if (res.toUpperCase().includes('PROMOTOR')) {
-                        // Try to resolve from global Promotor Map
-                        const codeOnly = res.replace(/Promot\.|Promotor/gi, '').trim().toUpperCase();
-                        if (optimizedData.promotorMap && optimizedData.promotorMap.has(codeOnly)) {
-                            const name = optimizedData.promotorMap.get(codeOnly);
-                            label = `Promot. ${getFirstName(name)}`;
-                        } else {
-                            label = `Promot. ${res}`;
-                        }
+                        label = `Promot. ${res}`;
                         subtext = `Origem: ${res}`;
                     }
                 }
@@ -26546,14 +26534,7 @@ const supervisorGroups = new Map();
             } else {
                 // Fallback
                 if ((t.pesquisador||'').toUpperCase().includes('PROMOTOR')) {
-                    // Try to resolve from global Promotor Map
-                    const codeOnly = (t.pesquisador || '').replace(/Promot\.|Promotor/gi, '').trim().toUpperCase();
-                    if (optimizedData.promotorMap && optimizedData.promotorMap.has(codeOnly)) {
-                        const name = optimizedData.promotorMap.get(codeOnly);
-                        resDisplay = `Promot. ${getFirstName(name)}`;
-                    } else {
-                        resDisplay = `Promot. ${t.pesquisador}`;
-                    }
+                    resDisplay = `Promot. ${t.pesquisador}`;
                     resSub = t.pesquisador;
                 }
             }
