@@ -5568,7 +5568,14 @@
             } else {
                 // Fallback if map not found or entry missing
                 if ((t.pesquisador||'').toUpperCase().includes('PROMOTOR')) {
-                    resDisplay = `Promot. ${t.pesquisador}`;
+                    // Try to resolve from global Promotor Map
+                    const codeOnly = (t.pesquisador || '').replace(/Promot\.|Promotor/gi, '').trim().toUpperCase();
+                    if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(codeOnly)) {
+                        const name = optimizedData.promotorMap.get(codeOnly);
+                        resDisplay = `Promot. ${getFirstName(name)}`;
+                    } else {
+                        resDisplay = `Promot. ${t.pesquisador}`;
+                    }
                     resSub = t.pesquisador;
                 }
             }

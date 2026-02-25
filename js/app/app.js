@@ -26107,7 +26107,14 @@ const supervisorGroups = new Map();
                 } else {
                     // Fallback
                     if (res.toUpperCase().includes('PROMOTOR')) {
-                        label = `Promot. ${res}`;
+                        // Try to resolve from global Promotor Map
+                        const codeOnly = res.replace(/Promot\.|Promotor/gi, '').trim().toUpperCase();
+                        if (optimizedData.promotorMap && optimizedData.promotorMap.has(codeOnly)) {
+                            const name = optimizedData.promotorMap.get(codeOnly);
+                            label = `Promot. ${getFirstName(name)}`;
+                        } else {
+                            label = `Promot. ${res}`;
+                        }
                         subtext = `Origem: ${res}`;
                     }
                 }
@@ -26475,7 +26482,14 @@ const supervisorGroups = new Map();
             } else {
                 // Fallback
                 if ((t.pesquisador||'').toUpperCase().includes('PROMOTOR')) {
-                    resDisplay = `Promot. ${t.pesquisador}`;
+                    // Try to resolve from global Promotor Map
+                    const codeOnly = (t.pesquisador || '').replace(/Promot\.|Promotor/gi, '').trim().toUpperCase();
+                    if (optimizedData.promotorMap && optimizedData.promotorMap.has(codeOnly)) {
+                        const name = optimizedData.promotorMap.get(codeOnly);
+                        resDisplay = `Promot. ${getFirstName(name)}`;
+                    } else {
+                        resDisplay = `Promot. ${t.pesquisador}`;
+                    }
                     resSub = t.pesquisador;
                 }
             }
