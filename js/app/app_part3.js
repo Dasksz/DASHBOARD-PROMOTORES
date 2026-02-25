@@ -5381,6 +5381,12 @@
         lpRedeGroupFilter = '';
         document.getElementById('lp-codcli-filter').value = '';
 
+        if (hierarchyState['lp']) {
+            hierarchyState['lp'].coords.clear();
+            hierarchyState['lp'].cocoords.clear();
+            hierarchyState['lp'].promotors.clear();
+        }
+
         const groupContainer = document.getElementById('lp-rede-group-container');
         if(groupContainer) {
              groupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -5507,17 +5513,58 @@
 
         tbody.innerHTML = subset.map(t => {
             let colorStyle;
-            // Use inline styles to guarantee visibility (Red-500, Yellow-500, Green-500)
-            // Added !important to override global table styles on mobile
             if (t.nota_media < 50) colorStyle = 'color: #ef4444 !important;';
             else if (t.nota_media < 80) colorStyle = 'color: #eab308 !important;';
             else colorStyle = 'color: #22c55e !important;';
+
+            // Resolve Researcher Display
+            let resDisplay = t.pesquisador;
+            let resSub = '';
+
+            const resKey = (t.pesquisador || '').toLowerCase().trim();
+            if (typeof lpResearcherMap !== 'undefined' && lpResearcherMap.has(resKey)) {
+                const info = lpResearcherMap.get(resKey);
+                const isPromotor = resKey.toUpperCase().includes('PROMOTOR');
+
+                if (isPromotor) {
+                     if (info.sellerName && info.sellerName !== info.sellerCode) {
+                         resDisplay = `Promot. ${getFirstName(info.sellerName)}`;
+                     } else {
+                         resDisplay = `Promot. ${info.sellerCode}`;
+                     }
+                     resSub = t.pesquisador;
+                } else {
+                    let prefix = '';
+                    if (resKey.toUpperCase().includes('SUPERVISOR')) prefix = 'Sup. ';
+                    else if (!resKey.toUpperCase().includes('PROMOTOR')) prefix = 'RCA ';
+
+                    if (info.sellerName && info.sellerName !== info.sellerCode) {
+                        resDisplay = `${prefix}${getFirstName(info.sellerName)}`;
+                    } else {
+                        resDisplay = `${prefix}${info.sellerCode}`;
+                    }
+                    resSub = t.pesquisador;
+                }
+            } else {
+                // Fallback if map not found or entry missing
+                if ((t.pesquisador||'').toUpperCase().includes('PROMOTOR')) {
+                    resDisplay = `Promot. ${t.pesquisador}`;
+                    resSub = t.pesquisador;
+                }
+            }
+
+            const researcherHtml = `
+                <div class="flex flex-col justify-center">
+                    <span class="text-xs text-white font-bold leading-tight">${window.escapeHtml(resDisplay)}</span>
+                    <span class="text-[9px] text-slate-500 leading-tight">${window.escapeHtml(resSub)}</span>
+                </div>
+            `;
 
             return `
                 <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors flex md:table-row justify-between items-center">
                     <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${t.codigo_cliente}</td>
                     <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] border-none" title="${t.clientName}">${t.clientName}</td>
-                    <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${t.pesquisador}</td>
+                    <td class="px-4 py-3 hidden md:table-cell">${researcherHtml}</td>
                     <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
                     <td class="px-4 py-3 text-center font-bold border-none" style="${colorStyle}">${t.nota_media.toFixed(1)}</td>
                 </tr>

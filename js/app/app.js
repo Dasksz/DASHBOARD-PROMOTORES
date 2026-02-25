@@ -26222,19 +26222,38 @@ const supervisorGroups = new Map();
                 const normRes = res.toLowerCase();
                 // Resolve friendly name
                 let label = res;
-                
+                let subtext = '';
+
                 if (lpResearcherMap.has(normRes)) {
                     const info = lpResearcherMap.get(normRes);
-                    // Format: "RCA 123 (João)" if name exists, else code
-                    let prefix = 'RCA';
-                    if (res.toUpperCase().includes('SUPERVISOR')) {
-                        prefix = 'Supervisor';
-                    }
+                    const isPromotor = res.toUpperCase().includes('PROMOTOR');
 
-                    if (info.sellerName && info.sellerName !== info.sellerCode) {
-                        label = `${prefix} ${getFirstName(info.sellerName)} (${info.sellerCode})`;
+                    if (isPromotor) {
+                        if (info.sellerName && info.sellerName !== info.sellerCode) {
+                            label = `Promot. ${getFirstName(info.sellerName)}`;
+                        } else {
+                            label = `Promot. ${info.sellerCode}`;
+                        }
+                        subtext = `Origem: ${res}`;
                     } else {
-                        label = `${prefix} ${info.sellerCode}`;
+                        // Standard logic for others
+                        let prefix = 'RCA';
+                        if (res.toUpperCase().includes('SUPERVISOR')) {
+                            prefix = 'Supervisor';
+                        }
+
+                        if (info.sellerName && info.sellerName !== info.sellerCode) {
+                            label = `${prefix} ${getFirstName(info.sellerName)} (${info.sellerCode})`;
+                        } else {
+                            label = `${prefix} ${info.sellerCode}`;
+                        }
+                        if (label !== res) subtext = `Origem: ${res}`;
+                    }
+                } else {
+                    // Fallback
+                    if (res.toUpperCase().includes('PROMOTOR')) {
+                        label = `Promot. ${res}`;
+                        subtext = `Origem: ${res}`;
                     }
                 }
 
@@ -26244,7 +26263,7 @@ const supervisorGroups = new Map();
                     <input type="checkbox" value="${window.escapeHtml(res)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600 shrink-0">
                     <div class="ml-2 flex flex-col min-w-0">
                         <span class="text-xs text-slate-300 truncate font-bold group-hover:text-white transition-colors">${window.escapeHtml(label)}</span>
-                        ${(label !== res) ? `<span class="text-[9px] text-slate-500 truncate">Origem: ${window.escapeHtml(res)}</span>` : ''}
+                        ${subtext ? `<span class="text-[9px] text-slate-500 truncate">${window.escapeHtml(subtext)}</span>` : ''}
                     </div>
                 </label>
                 `;
@@ -26387,8 +26406,17 @@ const supervisorGroups = new Map();
     function resetLpFilters() {
         selectedLpRedes = [];
         selectedLpResearchers.clear();
+        selectedLpSupervisors.clear();
+        selectedLpVendedores.clear();
+
         lpRedeGroupFilter = '';
         document.getElementById('lp-codcli-filter').value = '';
+
+        if (hierarchyState['lp']) {
+            hierarchyState['lp'].coords.clear();
+            hierarchyState['lp'].cocoords.clear();
+            hierarchyState['lp'].promotors.clear();
+        }
 
         const groupContainer = document.getElementById('lp-rede-group-container');
         if(groupContainer) {
@@ -26401,9 +26429,11 @@ const supervisorGroups = new Map();
         const ddRes = document.getElementById('lp-researcher-filter-dropdown');
         if(ddRes) ddRes.classList.add('hidden');
 
-        setupHierarchyFilters('lp'); // Reset hierarchy
+        setupHierarchyFilters('lp'); // Reset hierarchy & update hierarchy dropdowns
         updateLpRedeFilter();
         updateLpResearcherFilter();
+        updateLpSupervisorFilter();
+        updateLpVendedorFilter();
         updateLpView();
     }
 
@@ -26553,17 +26583,60 @@ const supervisorGroups = new Map();
 
         tbody.innerHTML = subset.map(t => {
             let colorStyle;
-            // Use inline styles to guarantee visibility (Red-500, Yellow-500, Green-500)
-            // Added !important to override global table styles on mobile
             if (t.nota_media < 50) colorStyle = 'color: #ef4444 !important;'; 
             else if (t.nota_media < 80) colorStyle = 'color: #eab308 !important;';
             else colorStyle = 'color: #22c55e !important;';
             
+            // Resolve Researcher Display
+            let resDisplay = t.pesquisador;
+            let resSub = '';
+
+            const resKey = (t.pesquisador || '').toLowerCase().trim();
+            if (lpResearcherMap.has(resKey)) {
+                const info = lpResearcherMap.get(resKey);
+                const isPromotor = resKey.toUpperCase().includes('PROMOTOR');
+
+                if (isPromotor) {
+                     if (info.sellerName && info.sellerName !== info.sellerCode) {
+                         resDisplay = `Promot. ${getFirstName(info.sellerName)}`;
+                     } else {
+                         resDisplay = `Promot. ${info.sellerCode}`;
+                     }
+                     // If resolved name is different from origin code, show origin code as subtext
+                     // If t.pesquisador is the code, use it.
+                     resSub = t.pesquisador;
+                } else {
+                    let prefix = '';
+                    if (resKey.toUpperCase().includes('SUPERVISOR')) prefix = 'Sup. ';
+                    else if (!resKey.toUpperCase().includes('PROMOTOR')) prefix = 'RCA ';
+
+                    if (info.sellerName && info.sellerName !== info.sellerCode) {
+                        resDisplay = `${prefix}${getFirstName(info.sellerName)}`;
+                    } else {
+                        resDisplay = `${prefix}${info.sellerCode}`;
+                    }
+                    resSub = t.pesquisador;
+                }
+            } else {
+                // Fallback
+                if ((t.pesquisador||'').toUpperCase().includes('PROMOTOR')) {
+                    resDisplay = `Promot. ${t.pesquisador}`;
+                    resSub = t.pesquisador;
+                }
+            }
+
+            const researcherHtml = `
+                <div class="flex flex-col justify-center">
+                    <span class="text-xs text-white font-bold leading-tight">${window.escapeHtml(resDisplay)}</span>
+                    <span class="text-[9px] text-slate-500 leading-tight">${window.escapeHtml(resSub)}</span>
+                </div>
+            `;
+
             return `
                 <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors flex md:table-row justify-between items-center">
                     <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${t.codigo_cliente}</td>
                     <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] border-none" title="${t.clientName}">${t.clientName}</td>
-                    <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${t.pesquisador}</td>
+                    <td class="px-4 py-3 hidden md:table-cell">${researcherHtml}</td>
                     <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
                     <td class="px-4 py-3 text-center font-bold border-none" style="${colorStyle}">${t.nota_media.toFixed(1)}</td>
                 </tr>
