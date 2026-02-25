@@ -26189,18 +26189,20 @@ const supervisorGroups = new Map();
                 const normRes = res.toLowerCase();
                 // Resolve friendly name
                 let label = res;
-                let subLabel = '';
 
                 if (lpResearcherMap.has(normRes)) {
                     const info = lpResearcherMap.get(normRes);
                     // Format: "RCA 123 (João)" if name exists, else code
-                    if (info.sellerName && info.sellerName !== info.sellerCode) {
-                        label = `${getFirstName(info.sellerName)} (${info.sellerCode})`;
-                    } else {
-                        label = `RCA ${info.sellerCode}`;
+                    let prefix = 'RCA';
+                    if (res.toUpperCase().includes('SUPERVISOR')) {
+                        prefix = 'Supervisor';
                     }
-                    // If label changed, maybe show original code as sublabel?
-                    // if (label !== res) subLabel = res;
+
+                    if (info.sellerName && info.sellerName !== info.sellerCode) {
+                        label = `${prefix} ${getFirstName(info.sellerName)} (${info.sellerCode})`;
+                    } else {
+                        label = `${prefix} ${info.sellerCode}`;
+                    }
                 }
 
                 const checked = selectedLpResearchers.has(res) ? 'checked' : '';
