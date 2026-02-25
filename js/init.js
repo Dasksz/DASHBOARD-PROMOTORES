@@ -961,24 +961,19 @@
                     let isSupervisor = false;
                     const supervisedSellers = new Set();
 
-                    const checkSupervisorData = (dataset) => {
-                        if (dataset && dataset.values && dataset.values['CODSUPERVISOR']) {
-                            const supCol = dataset.values['CODSUPERVISOR'];
-                            const sellerCol = dataset.values['CODUSUR'];
+                    if (detailed.values && detailed.values['CODSUPERVISOR']) {
+                        const supCol = detailed.values['CODSUPERVISOR'];
+                        const sellerCol = detailed.values['CODUSUR'];
 
-                            // Check if ANY row has this supervisor code (case insensitive)
-                            for(let i=0; i<dataset.length; i++) {
-                                const rowSup = String(supCol[i] || '').trim().toLowerCase();
-                                if (rowSup === normalizedRole) {
-                                    isSupervisor = true;
-                                    if (sellerCol[i]) supervisedSellers.add(String(sellerCol[i]).trim());
-                                }
+                        // Check if ANY row has this supervisor code (case insensitive)
+                        for(let i=0; i<detailed.length; i++) {
+                            const rowSup = String(supCol[i] || '').trim().toLowerCase();
+                            if (rowSup === normalizedRole) {
+                                isSupervisor = true;
+                                if (sellerCol[i]) supervisedSellers.add(String(sellerCol[i]).trim());
                             }
                         }
-                    };
-
-                    checkSupervisorData(detailed);
-                    checkSupervisorData(history);
+                    }
 
                     // Check if Role matches any Seller Code (RCA) in Sales Data or Clients
                     let isSeller = false;

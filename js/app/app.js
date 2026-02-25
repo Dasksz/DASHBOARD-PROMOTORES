@@ -4709,11 +4709,6 @@
                 // If I filter Supervisor "X", I show Seller Goals for X and Seller Sales for X.
                 // Let's use the standard filter logic:
 
-                // Supervisor/Seller/Supplier Filter on SALE row
-                if (adminViewMode === 'seller') {
-                    if (supervisorsSet.size > 0 && !supervisorsSet.has(s.SUPERV)) continue;
-                    if (sellersSet.size > 0 && !sellersSet.has(s.NOME)) continue;
-                }
 
                 // Client Filter: Ensure sale belongs to the same set of clients used for goals
                 if (!filteredClientCodes.has(String(s.CODCLI))) continue;
