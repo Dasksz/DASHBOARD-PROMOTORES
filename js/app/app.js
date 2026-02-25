@@ -22053,6 +22053,25 @@ const supervisorGroups = new Map();
     let _stockListenersInitialized = false;
 
     function updateAllStockFilters(options = {}) {
+        // Enforce Default Pasta if Empty (Toggle Logic)
+        if (selectedStockPastas.length === 0) {
+            selectedStockPastas = ['PEPSICO'];
+        }
+
+        // Update Toggle UI if it exists
+        const pastaToggleContainer = document.getElementById('stock-pasta-toggle-container');
+        if (pastaToggleContainer) {
+            pastaToggleContainer.querySelectorAll('.stock-pasta-btn').forEach(btn => {
+                if (selectedStockPastas.includes(btn.dataset.pasta)) {
+                    btn.classList.remove('text-slate-400', 'hover:bg-white/5');
+                    btn.classList.add('bg-teal-600', 'text-white', 'shadow-lg');
+                } else {
+                    btn.classList.add('text-slate-400', 'hover:bg-white/5');
+                    btn.classList.remove('bg-teal-600', 'text-white', 'shadow-lg');
+                }
+            });
+        }
+
         if (!_stockListenersInitialized) {
             const supplierBtn = document.getElementById('stock-supplier-filter-btn');
             const supplierDd = document.getElementById('stock-supplier-filter-dropdown');
@@ -22163,9 +22182,7 @@ const supervisorGroups = new Map();
                 if (supplierBtn && !supplierBtn.contains(e.target) && supplierDd && !supplierDd.contains(e.target)) {
                     supplierDd.classList.add('hidden');
                 }
-                if (pastaBtn && !pastaBtn.contains(e.target) && pastaDd && !pastaDd.contains(e.target)) {
-                    pastaDd.classList.add('hidden');
-                }
+                // pastaDd was removed in favor of toggle buttons
                 if (productBtn && !productBtn.contains(e.target) && productDd && !productDd.contains(e.target)) {
                     productDd.classList.add('hidden');
                 }
