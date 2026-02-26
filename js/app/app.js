@@ -14685,6 +14685,14 @@ const supervisorGroups = new Map();
                 await conditionalUpload('data_product_details', data.product_details, 'hash_product_details', false, 'code');
                 await conditionalUpload('data_active_products', data.active_products, 'hash_active_products', false, 'code');
                 await conditionalUpload('data_hierarchy', data.hierarchy, 'hash_hierarchy', false);
+
+                // --- DIMENSION TABLES UPLOAD ---
+                await conditionalUpload('dim_vendedores', data.dim_vendedores, 'hash_dim_vendedores', false, 'codigo');
+                await conditionalUpload('dim_supervisores', data.dim_supervisores, 'hash_dim_supervisores', false, 'codigo');
+                await conditionalUpload('dim_fornecedores', data.dim_fornecedores, 'hash_dim_fornecedores', false, 'codigo');
+                await conditionalUpload('dim_produtos', data.dim_produtos, 'hash_dim_produtos', false, 'codigo');
+                // -------------------------------
+
                 // Make Titulos Optional: Only upload if data is present
                 if (data.titulos && data.titulos.length > 0) {
                     await conditionalUpload('data_titulos', data.titulos, 'hash_titulos', false);
