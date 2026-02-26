@@ -2354,63 +2354,97 @@
         const citySupplierFilterText = document.getElementById('city-supplier-filter-text');
         const citySupplierFilterDropdown = document.getElementById('city-supplier-filter-dropdown');
         // cityNameFilter removed
+        // Cache variables for Active Clients Optimization
+        let cachedActiveClientsBase = null;
+        let cachedActiveClientsRca53 = null;
+        let lastAllClientsData = null;
+
         function getActiveClientsData() {
             try {
-                // Optimized path for ColumnarDataset to avoid Proxy creation overhead during filtering
-                if (allClientsData instanceof ColumnarDataset) {
-                    const results = [];
-                    const data = allClientsData._data;
+                // Invalidate cache if source data reference changes
+                if (lastAllClientsData !== allClientsData) {
+                    cachedActiveClientsBase = null;
+                    lastAllClientsData = allClientsData;
+                }
+
+                if (!cachedActiveClientsBase) {
+                    cachedActiveClientsBase = [];
+                    cachedActiveClientsRca53 = [];
+
+                    const isColumnar = allClientsData instanceof ColumnarDataset;
                     const len = allClientsData.length;
 
-                    // Resolve columns efficiently
-                    const colCode = data['Código'] || data['codigo_cliente'] || [];
-                    const colRca1 = data['rca1'] || data['RCA 1'] || data['RCA1'] || [];
-                    const colRazao = data['razaoSocial'] || data['RAZAOSOCIAL'] || data['Cliente'] || data['CLIENTE'] || [];
+                    // Prepare Accessors for Columnar path
+                    let colCode, colRca1, colRazao;
+                    let data;
+                    if (isColumnar) {
+                        data = allClientsData._data;
+                        colCode = data['Código'] || data['codigo_cliente'] || [];
+                        colRca1 = data['rca1'] || data['RCA 1'] || data['RCA1'] || [];
+                        colRazao = data['razaoSocial'] || data['RAZAOSOCIAL'] || data['Cliente'] || data['CLIENTE'] || [];
+                    }
 
                     for (let i = 0; i < len; i++) {
-                        const codcli = String(colCode[i] || '');
-                        const rca1 = String(colRca1[i] || '').trim();
+                        let codcli, rca1, razao;
+                        let item;
+
+                        if (isColumnar) {
+                            codcli = String(colCode[i] || '');
+                            rca1 = String(colRca1[i] || '').trim();
+                            razao = colRazao[i];
+                            // Push to cache (hydrate Proxy now)
+                            item = allClientsData.get(i);
+                        } else {
+                            item = allClientsData[i];
+                            codcli = String(item['Código'] || item['codigo_cliente'] || '');
+                            rca1 = String(item.rca1 || '').trim();
+                            razao = item.razaoSocial || item.Cliente;
+                        }
 
                         let isAmericanas = false;
-                        const razao = colRazao[i];
                         if (razao && typeof razao === 'string' && razao.toUpperCase().includes('AMERICANAS')) {
                             isAmericanas = true;
                         }
 
-                        // Use the exact same logic as original
-                        // EXCEPTION: Allow RCA 53 if explicitly selected in filter OR implied by Supervisor
-                        let allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
-                        if (!allowRca53 && typeof selectedSupervisors !== 'undefined' && selectedSupervisors.size > 0 && typeof sellerDetailsMap !== 'undefined') {
-                             const d53 = sellerDetailsMap.get('53');
-                             if (d53 && selectedSupervisors.has(d53.supervisor)) {
-                                 allowRca53 = true;
-                             }
-                        }
-                        const keep = (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || allowRca53 || clientsWithSalesThisMonth.has(codcli));
+                        const hasSales = clientsWithSalesThisMonth.has(codcli);
 
-                        if (keep) {
-                            results.push(allClientsData.get(i));
+                        // Base Condition: Always Visible
+                        // Note: (window.userRole !== 'adm' || rca1 !== '53')
+                        // If user != adm, this is true.
+                        // If user == adm, this is (rca1 !== '53').
+                        // Combined with Americanas and Sales logic:
+                        const isBase = isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || hasSales;
+
+                        if (isBase) {
+                            cachedActiveClientsBase.push(item);
+                        } else {
+                            // If not base, it MUST be an inactive RCA 53 client seen by Admin.
+                            // Logic verification:
+                            // !isBase => !isAmericanas AND (user==adm && rca1=='53') AND !hasSales.
+                            // This is exactly the "Conditional RCA 53" group.
+                            cachedActiveClientsRca53.push(item);
                         }
                     }
-                    return results;
                 }
 
-                const res = allClientsData.filter(c => {
-                    const codcli = String(c['Código'] || c['codigo_cliente']);
-                    const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                    // EXCEPTION: Allow RCA 53 if explicitly selected in filter OR implied by Supervisor
-                    let allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
-                    if (!allowRca53 && typeof selectedSupervisors !== 'undefined' && selectedSupervisors.size > 0 && typeof sellerDetailsMap !== 'undefined') {
-                         const d53 = sellerDetailsMap.get('53');
-                         if (d53 && selectedSupervisors.has(d53.supervisor)) {
-                             allowRca53 = true;
-                         }
-                    }
-                    const keep = (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || allowRca53 || clientsWithSalesThisMonth.has(codcli));
-                    return keep;
-                });
-                return res;
+                // Check Filter State for RCA 53
+                // This logic mirrors the original dynamic check, but applied to the pre-computed group
+                let allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
+                if (!allowRca53 && typeof selectedSupervisors !== 'undefined' && selectedSupervisors.size > 0 && typeof sellerDetailsMap !== 'undefined') {
+                        const d53 = sellerDetailsMap.get('53');
+                        if (d53 && selectedSupervisors.has(d53.supervisor)) {
+                            allowRca53 = true;
+                        }
+                }
+
+                if (allowRca53 && cachedActiveClientsRca53.length > 0) {
+                    // Return combined list (concat creates a new array)
+                    return cachedActiveClientsBase.concat(cachedActiveClientsRca53);
+                }
+
+                // Return a copy to prevent external mutation of the cache
+                return cachedActiveClientsBase.slice();
+
             } catch (e) {
                 console.error("[ActiveClients] Error:", e);
                 return [];
