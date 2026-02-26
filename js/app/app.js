@@ -26377,6 +26377,11 @@ const supervisorGroups = new Map();
             const tbody = document.getElementById('positivacao-active-detail-table-body');
             if (!tbody) return;
 
+            // Clear existing content (Optimized cleanup)
+            while (tbody.firstChild) {
+                tbody.removeChild(tbody.firstChild);
+            }
+
             const { page, limit, data } = positivacaoActiveState;
             const total = data.length;
             const start = (page - 1) * limit;
@@ -26384,49 +26389,130 @@ const supervisorGroups = new Map();
             const subset = data.slice(start, end);
             const totalPages = Math.ceil(total / limit) || 1;
 
-            tbody.innerHTML = subset.map(data => {
-                const novoLabel = data.isNew ? `<span class="ml-2 text-xs font-semibold text-purple-400 bg-purple-900/50 px-2 py-0.5 rounded-full">NOVO</span>` : '';
+            // --- Optimization: Use DocumentFragment and Template ---
+            let template = document.getElementById('positivacao-active-row-template');
+            if (!template) {
+                template = document.createElement('template');
+                template.id = 'positivacao-active-row-template';
+                template.innerHTML = `
+                <tr class="hover:bg-slate-700">
+                    <!-- Desktop Columns -->
+                    <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline"></a></td>
+                    <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs"></td>
+                    <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">
+                        <div class="tooltip">
+                            <span class="tooltip-text" style="width: max-content; transform: translateX(-50%); margin-left: 0;"></span>
+                        </div>
+                    </td>
+                    <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"></td>
+                    <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"></td>
+                    <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm"></td>
+                    <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"></td>
+
+                    <!-- Mobile Card Layout -->
+                    <td class="md:hidden w-full p-3 border-b border-white/5 block">
+                        <div class="flex justify-between items-center mb-1">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                <a href="#" class="text-cyan-400 font-mono font-bold text-sm hover:underline shrink-0"></a>
+                                <span class="text-slate-300 text-xs font-medium truncate"></span>
+                            </div>
+                            <span class="text-green-400 font-bold text-sm shrink-0 ml-2"></span>
+                        </div>
+                        <div class="text-xs text-slate-500 font-medium truncate uppercase"></div>
+                    </td>
+                </tr>`;
+                document.body.appendChild(template);
+            }
+
+            // Pre-create Label element for cloning
+            const novoSpan = document.createElement('span');
+            novoSpan.className = 'ml-2 text-xs font-semibold text-purple-400 bg-purple-900/50 px-2 py-0.5 rounded-full';
+            novoSpan.textContent = 'NOVO';
+
+            const fragment = document.createDocumentFragment();
+
+            for (let i = 0; i < subset.length; i++) {
+                const item = subset[i];
+                const clone = template.content.cloneNode(true);
+                const tr = clone.firstElementChild;
+                const cells = tr.cells;
+
+                // Precompute values
+                const code = item['Código'];
+                const name = item.nomeCliente || 'N/A';
+                const city = item.cidade || 'N/A';
+                const bairro = item.bairro || 'N/A';
+                const rcaVal = (item.rcas && item.rcas.length > 0) ? item.rcas[0] : '-';
+                const fantasia = item.fantasia || '';
+                const totalFormatted = item.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                // Tooltip Logic
                 let tooltipParts = [];
-                if (data.pepsico > 0) tooltipParts.push(`PEPSICO: ${data.pepsico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
-                if (data.multimarcas > 0) tooltipParts.push(`MULTIMARCAS: ${data.multimarcas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
-                if (data.outros > 0.001) tooltipParts.push(`OUTROS: ${data.outros.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+                if (item.pepsico > 0) tooltipParts.push(`PEPSICO: ${item.pepsico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+                if (item.multimarcas > 0) tooltipParts.push(`MULTIMARCAS: ${item.multimarcas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
+                if (item.outros > 0.001) tooltipParts.push(`OUTROS: ${item.outros.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`);
                 const tooltipText = tooltipParts.length > 0 ? tooltipParts.join('<br>') : 'Sem detalhamento';
 
-                const rcaVal = (data.rcas && data.rcas.length > 0) ? data.rcas[0] : '-';
-                const razaoSocial = data.nomeCliente || 'N/A';
-                const fantasia = data.fantasia || '';
-                const cidade = data.cidade || 'N/A';
-                const bairro = data.bairro || 'N/A';
-                const totalFormatted = data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                // --- Populate Desktop Columns ---
 
-                return `<tr class="hover:bg-slate-700">
-                            <!-- Desktop Columns -->
-                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm"><a href="#" class="text-teal-400 hover:underline" data-codcli="${window.escapeHtml(data['Código'])}">${window.escapeHtml(data['Código'])}</a></td>
-                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm truncate max-w-[120px] md:max-w-xs" title="${window.escapeHtml(razaoSocial)}">${window.escapeHtml(razaoSocial)}${novoLabel}</td>
-                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">
-                                <div class="tooltip">${totalFormatted}
-                                    <span class="tooltip-text" style="width: max-content; transform: translateX(-50%); margin-left: 0;">${tooltipText}</span>
-                                </div>
-                            </td>
-                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">${window.escapeHtml(cidade)}</td>
-                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">${window.escapeHtml(bairro)}</td>
-                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-center text-[10px] md:text-sm">${formatDate(data.ultimaCompra)}</td>
-                            <td class="hidden md:table-cell px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">${window.escapeHtml(rcaVal)}</td>
+                // 0: Code Link
+                const link0 = cells[0].firstElementChild;
+                link0.textContent = code;
+                link0.dataset.codcli = code;
 
-                            <!-- Mobile Card Layout -->
-                            <td class="md:hidden w-full p-3 border-b border-white/5 block">
-                                <div class="flex justify-between items-center mb-1">
-                                    <div class="flex items-center gap-2 overflow-hidden">
-                                        <a href="#" class="text-cyan-400 font-mono font-bold text-sm hover:underline shrink-0" data-codcli="${window.escapeHtml(data['Código'])}">${window.escapeHtml(data['Código'])}</a>
-                                        <span class="text-slate-300 text-xs font-medium truncate">${window.escapeHtml(razaoSocial)}</span>
-                                        ${novoLabel}
-                                    </div>
-                                    <span class="text-green-400 font-bold text-sm shrink-0 ml-2">${totalFormatted}</span>
-                                </div>
-                                <div class="text-xs text-slate-500 font-medium truncate uppercase">${window.escapeHtml(fantasia)}</div>
-                            </td>
-                        </tr>`;
-            }).join('');
+                // 1: Name + Label
+                cells[1].title = name;
+                cells[1].textContent = name;
+                if (item.isNew) {
+                    cells[1].appendChild(novoSpan.cloneNode(true));
+                }
+
+                // 2: Total + Tooltip
+                const tooltipDiv = cells[2].firstElementChild;
+                const tooltipSpan = tooltipDiv.firstElementChild;
+                // Insert text before the span (safer than innerHTML on parent)
+                tooltipDiv.insertBefore(document.createTextNode(totalFormatted), tooltipSpan);
+                tooltipSpan.innerHTML = tooltipText;
+
+                // 3: City
+                cells[3].textContent = city;
+
+                // 4: Bairro
+                cells[4].textContent = bairro;
+
+                // 5: Date
+                cells[5].textContent = formatDate(item.ultimaCompra);
+
+                // 6: RCA
+                cells[6].textContent = rcaVal;
+
+                // --- Populate Mobile Layout ---
+                // Structure: td > (div > (div > (a, span), span), div)
+                const mobileContainer = cells[7];
+                const row1 = mobileContainer.firstElementChild;
+                const row2 = mobileContainer.lastElementChild; // Fantasia
+
+                const leftGroup = row1.firstElementChild;
+                const totalSpanMobile = row1.lastElementChild;
+
+                const linkMobile = leftGroup.firstElementChild;
+                const nameSpanMobile = leftGroup.children[1];
+
+                linkMobile.textContent = code;
+                linkMobile.dataset.codcli = code;
+                nameSpanMobile.textContent = name;
+
+                if (item.isNew) {
+                    leftGroup.appendChild(novoSpan.cloneNode(true));
+                }
+
+                totalSpanMobile.textContent = totalFormatted;
+                row2.textContent = fantasia;
+
+                fragment.appendChild(clone);
+            }
+
+            tbody.appendChild(fragment);
 
             // Update Pagination Controls
             document.getElementById('positivacao-active-prev-btn').disabled = page === 1;
