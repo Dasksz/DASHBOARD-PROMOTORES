@@ -1398,18 +1398,53 @@
 
                 // 3. DIM_FORNECEDORES
                 const dimFornecedoresMap = new Map();
+
+                const determinePasta = (nome) => {
+                     const n = String(nome || '').toUpperCase();
+                     return n.includes('PEPSICO') ? 'PEPSICO' : 'MULTIMARCAS';
+                };
+
                 // Extract from Products (Master Source)
                 productDetailsMap.forEach(p => {
                     if (p.codfor && p.fornecedor) {
-                        dimFornecedoresMap.set(p.codfor, { codigo: p.codfor, nome: p.fornecedor });
+                        dimFornecedoresMap.set(p.codfor, {
+                            codigo: p.codfor,
+                            nome: p.fornecedor,
+                            pasta: p.pasta || null
+                        });
                     }
                 });
-                // Fallback scan from Sales
-                salesDataRaw.forEach(s => {
-                    const c = String(s['CODFOR']||'').trim();
-                    const n = String(s['FORNECEDOR']||'').trim();
-                    if(c && n && !dimFornecedoresMap.has(c)) dimFornecedoresMap.set(c, { codigo: c, nome: n });
+
+                // Scan Processed Sales & History to Capture PASTA (OBSERVACAOFOR)
+                const allProcessedForDim = [...processedSalesData, ...processedHistoryData];
+                allProcessedForDim.forEach(item => {
+                    const cod = item.CODFOR;
+                    const nome = item.FORNECEDOR;
+                    const pasta = item.OBSERVACAOFOR;
+
+                    if (cod) {
+                        if (dimFornecedoresMap.has(cod)) {
+                            const entry = dimFornecedoresMap.get(cod);
+                            if (!entry.pasta && pasta) {
+                                entry.pasta = pasta;
+                            }
+                        } else if (nome) {
+                            dimFornecedoresMap.set(cod, {
+                                codigo: cod,
+                                nome: nome,
+                                pasta: pasta || determinePasta(nome)
+                            });
+                        }
+                    }
                 });
+
+                // Final Pass: Apply fallback for any supplier without pasta
+                dimFornecedoresMap.forEach(entry => {
+                    if (!entry.pasta) {
+                        entry.pasta = determinePasta(entry.nome);
+                    }
+                });
+
                 const finalDimFornecedores = Array.from(dimFornecedoresMap.values());
 
                 // 4. DIM_PRODUTOS
