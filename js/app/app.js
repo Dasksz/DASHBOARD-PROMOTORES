@@ -11962,7 +11962,7 @@ const supervisorGroups = new Map();
             selectedArray = selectedArray.filter(code => availableProductCodes.has(code));
 
             // Logic:
-            // 1. If Searching: Filter by matches. Sort by: Selected -> StartsWith -> Contains -> Alpha
+            // 1. If Searching: Filter by matches. Sort by: Relevance (Exact > StartsWith > Contains) > Alpha
             // 2. If Not Searching: Sort by: Selected -> Alpha
 
             if (searchTerm.length > 0) {
@@ -11979,21 +11979,41 @@ const supervisorGroups = new Map();
                 const codeB = b[0];
                 const nameB = b[1];
 
+                if (searchTerm.length > 0) {
+                    // Priority 1: Relevance (Searching)
+                    const nameALower = nameA.toLowerCase();
+                    const nameBLower = nameB.toLowerCase();
+                    const codeALower = codeA.toLowerCase();
+                    const codeBLower = codeB.toLowerCase();
+
+                    // Exact Match
+                    const exactA = nameALower === searchTerm || codeALower === searchTerm;
+                    const exactB = nameBLower === searchTerm || codeBLower === searchTerm;
+                    if (exactA && !exactB) return -1;
+                    if (!exactA && exactB) return 1;
+
+                    // Starts With Name
+                    const startNameA = nameALower.startsWith(searchTerm);
+                    const startNameB = nameBLower.startsWith(searchTerm);
+                    if (startNameA && !startNameB) return -1;
+                    if (!startNameA && startNameB) return 1;
+
+                    // Starts With Code
+                    const startCodeA = codeALower.startsWith(searchTerm);
+                    const startCodeB = codeBLower.startsWith(searchTerm);
+                    if (startCodeA && !startCodeB) return -1;
+                    if (!startCodeA && startCodeB) return 1;
+
+                    // Fallback to Alpha
+                    return nameA.localeCompare(nameB);
+                }
+
+                // If NOT searching, prioritize selected items
                 const isSelA = selectedArray.includes(codeA);
                 const isSelB = selectedArray.includes(codeB);
 
-                // Priority 1: Selected items on top
                 if (isSelA && !isSelB) return -1;
                 if (!isSelA && isSelB) return 1;
-
-                if (searchTerm.length > 0) {
-                    // Priority 2: Relevance (Starts With)
-                    const aStarts = nameA.toLowerCase().startsWith(searchTerm) || codeA.toLowerCase().startsWith(searchTerm);
-                    const bStarts = nameB.toLowerCase().startsWith(searchTerm) || codeB.toLowerCase().startsWith(searchTerm);
-
-                    if (aStarts && !bStarts) return -1;
-                    if (!aStarts && bStarts) return 1;
-                }
 
                 // Priority 3: Alphabetical
                 return nameA.localeCompare(nameB);
@@ -12003,7 +12023,7 @@ const supervisorGroups = new Map();
                 const htmlParts = [];
                 // Use a Set for fast lookup inside loop (optimization)
                 const selectedSet = new Set(selectedArray);
-
+                
                 for (let i = 0; i < products.length; i++) {
                     const [code, name] = products[i];
                     const isChecked = selectedSet.has(code);
@@ -12027,9 +12047,9 @@ const supervisorGroups = new Map();
             return selectedArray;
         }
 
-        function updateComparisonProductFilter() {
+        function updateComparisonProductFilter(skipRender = false) {
             const { currentSales, historySales } = getComparisonFilteredData({ excludeFilter: 'product' });
-            selectedComparisonProducts = updateProductFilter(comparisonProductFilterDropdown, comparisonProductFilterText, selectedComparisonProducts, [...currentSales, ...historySales], 'comparison');
+            selectedComparisonProducts = updateProductFilter(comparisonProductFilterDropdown, comparisonProductFilterText, selectedComparisonProducts, [...currentSales, ...historySales], 'comparison', skipRender);
         }
 
         function getActiveStockMap(filial) {
@@ -15749,7 +15769,7 @@ const supervisorGroups = new Map();
             comparisonProductFilterDropdown.addEventListener('change', (e) => {
                 if(e.target.dataset.filterType === 'comparison' && handleProductFilterChange(e, selectedComparisonProducts)) {
                     handleComparisonFilterChange();
-                    updateComparisonProductFilter();
+                    updateComparisonProductFilter(true); // Skip render to prevent list jumping while selecting
                 }
             });
 
@@ -23011,34 +23031,79 @@ const supervisorGroups = new Map();
         
         if (!listContainer) return selectedSet;
 
+        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
         // Ensure search listener is attached once
         if (searchInput && !searchInput._hasListener) {
-            searchInput.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                const labels = listContainer.querySelectorAll('label');
-                labels.forEach(label => {
-                    const txt = label.textContent.toLowerCase();
-                    if (txt.includes(term)) label.classList.remove('hidden');
-                    else label.classList.add('hidden');
-                });
-            });
+             const debouncedSearch = debounce(() => {
+                 updateAllStockFilters(); 
+             }, 300);
+            searchInput.addEventListener('input', debouncedSearch);
             searchInput._hasListener = true;
         }
 
-        // Render List
-        let html = '';
-        // Sort
-        products.sort((a,b) => a.descricao.localeCompare(b.descricao));
-        
-        // Limit rendering for performance if too many
-        const renderList = products.slice(0, 500); 
+        let renderList = products.slice();
 
-        renderList.forEach(p => {
+        // 1. Filter first (Relevance)
+        if (searchTerm.length > 0) {
+            renderList = renderList.filter(p => {
+                const codeMatch = String(p.code).toLowerCase().includes(searchTerm);
+                const descMatch = String(p.descricao).toLowerCase().includes(searchTerm);
+                return codeMatch || descMatch;
+            });
+        }
+
+        // 2. Sort
+        renderList.sort((a,b) => {
+             const codeA = String(a.code);
+             const nameA = String(a.descricao);
+             const codeB = String(b.code);
+             const nameB = String(b.descricao);
+             
+             if (searchTerm.length > 0) {
+                 // Relevance Sort
+                 const nameALower = nameA.toLowerCase();
+                 const nameBLower = nameB.toLowerCase();
+                 const codeALower = codeA.toLowerCase();
+                 const codeBLower = codeB.toLowerCase();
+
+                 const exactA = nameALower === searchTerm || codeALower === searchTerm;
+                 const exactB = nameBLower === searchTerm || codeBLower === searchTerm;
+                 if (exactA && !exactB) return -1;
+                 if (!exactA && exactB) return 1;
+
+                 const startNameA = nameALower.startsWith(searchTerm);
+                 const startNameB = nameBLower.startsWith(searchTerm);
+                 if (startNameA && !startNameB) return -1;
+                 if (!startNameA && startNameB) return 1;
+                 
+                 const startCodeA = codeALower.startsWith(searchTerm);
+                 const startCodeB = codeBLower.startsWith(searchTerm);
+                 if (startCodeA && !startCodeB) return -1;
+                 if (!startCodeA && startCodeB) return 1;
+                 
+                 return nameA.localeCompare(nameB);
+             }
+
+             // Selection Sort (Only if not searching)
+             const isSelA = selectedSet.includes(a.code);
+             const isSelB = selectedSet.includes(b.code);
+             if (isSelA && !isSelB) return -1;
+             if (!isSelA && isSelB) return 1;
+
+             return nameA.localeCompare(nameB);
+        });
+        
+        // Limit rendering for performance
+        const finalRender = renderList.slice(0, 500); 
+
+        let html = '';
+        finalRender.forEach(p => {
             const checked = selectedSet.includes(p.code) ? 'checked' : '';
             html += `
                 <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                    <span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(p.code)} - ${window.escapeHtml(p.descricao)}</span>
-                    <input type="checkbox" value="${window.escapeHtml(p.code)}" ${checked} data-filter-type="stock-product" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                    <span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(String(p.code))} - ${window.escapeHtml(p.descricao)}</span>
+                    <input type="checkbox" value="${window.escapeHtml(String(p.code))}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
                 </label>
             `;
         });
@@ -23060,9 +23125,15 @@ const supervisorGroups = new Map();
         });
 
         // Update Text
-        if (selectedSet.length === 0) textElement.textContent = 'Todos';
-        else if (selectedSet.length === 1) textElement.textContent = '1 Produto';
-        else textElement.textContent = `${selectedSet.length} Produtos`;
+        if (selectedSet.length === 0) {
+            textElement.textContent = 'Todos';
+        } else if (selectedSet.length === 1) {
+            const firstCode = selectedSet[0];
+            const p = products.find(x => String(x.code) === firstCode);
+            textElement.textContent = p ? p.descricao : firstCode;
+        } else {
+             textElement.textContent = `${selectedSet.length} Selecionados`;
+        }
 
         return selectedSet;
     }
