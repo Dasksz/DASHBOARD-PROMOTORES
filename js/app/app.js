@@ -13824,7 +13824,7 @@ const supervisorGroups = new Map();
 
                         // Access Control for Consultas Buttons
                         const role = (window.userRole || '').toLowerCase();
-                        const isRestricted = role === 'promotor' || role === 'vendedor' || window.userIsSeller;
+                        const isRestricted = role === 'promotor' || role === 'vendedor' || window.userIsSeller || window.userIsPromoter;
 
                         const btnSemanal = document.getElementById('btn-consultas-semanal');
                         const btnEstoque = document.getElementById('btn-consultas-estoque');
