@@ -1017,32 +1017,80 @@
                         else if (promotor === normalizedRole) allowedPromoters.add(promotor);
                     });
 
-                    // APPLY FILTERS
+                    // APPLY FILTERS (Source of Truth: Wallet/Carteira)
 
+                    // Unified Client Allowlist (The "Wallet")
+                    const allowedClientCodes = new Set();
+
+                    // --- 1. DEFINE WALLET ---
                     if (allowedPromoters.size > 0) {
-                        // --- PROMOTER / COORDINATOR LOGIC (EXISTING) ---
+                        // PROMOTER / COORDINATOR LOGIC
                         console.log(`[Access Control] Filtering for Trade Role '${role}'. Allowed Promoters: ${allowedPromoters.size}`);
 
-                        // 1. Filter Clients (Columnar)
                         const promotorCol = clients.values['PROMOTOR'] || [];
                         const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
-                        const allowedClientCodes = new Set();
-
-                        const newClientsValues = {};
-                        clients.columns.forEach(c => newClientsValues[c] = []);
-                        let newClientsLen = 0;
 
                         for(let i=0; i<clients.length; i++) {
                             const p = String(promotorCol[i] || '').trim().toLowerCase();
                             if (allowedPromoters.has(p)) {
                                 allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
+                            }
+                        }
+
+                    } else if (isSupervisor) {
+                        // SUPERVISOR LOGIC
+                        console.log(`[Access Control] Filtering for Supervisor Role '${role}'. Subordinate Sellers: ${supervisedSellers.size}`);
+                        window.userIsSupervisor = true;
+                        window.userSupervisorCode = normalizedRole;
+
+                        // Wallet source: Clients where RCA 1 matches any of the Supervisor's Sellers
+                        const rcaCol = clients.values['RCA 1'] || clients.values['RCA1'] || [];
+                        const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
+
+                        for(let i=0; i<clients.length; i++) {
+                            const rca = String(rcaCol[i] || '').trim();
+                            if (supervisedSellers.has(rca)) {
+                                allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
+                            }
+                        }
+
+                    } else if (isSeller) {
+                        // SELLER LOGIC
+                        console.log(`[Access Control] Filtering for Seller Role '${role}'`);
+                        window.userIsSeller = true;
+                        window.userSellerCode = normalizedRole;
+
+                        // Wallet source: Clients where RCA 1 matches the User Code
+                        const rcaCol = clients.values['RCA 1'] || clients.values['RCA1'] || [];
+                        const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
+
+                        for(let i=0; i<clients.length; i++) {
+                            const rca = String(rcaCol[i] || '').trim().toLowerCase();
+                            if (rca === normalizedRole) {
+                                allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
+                            }
+                        }
+                    }
+
+                    // --- 2. APPLY FILTER TO ALL DATASETS BASED ON WALLET ---
+                    if (allowedClientCodes.size > 0) {
+                        console.log(`[Access Control] Wallet Size: ${allowedClientCodes.size} Clients.`);
+
+                        // A. Filter Clients
+                        const newClientsValues = {};
+                        clients.columns.forEach(c => newClientsValues[c] = []);
+                        let newClientsLen = 0;
+                        const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
+
+                        for(let i=0; i<clients.length; i++) {
+                            if (allowedClientCodes.has(normalizeKey(clientCodesCol[i]))) {
                                 clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
                                 newClientsLen++;
                             }
                         }
                         filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
 
-                        // 2. Filter Detailed (Columnar)
+                        // B. Filter Detailed (Sales) - Strict Wallet Filter
                         const detCodCliCol = detailed.values['CODCLI'] || [];
                         const newDetailedValues = {};
                         detailed.columns.forEach(c => newDetailedValues[c] = []);
@@ -1056,7 +1104,7 @@
                         }
                         filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
 
-                        // 3. Filter History (Columnar)
+                        // C. Filter History - Strict Wallet Filter
                         const histCodCliCol = history.values['CODCLI'] || [];
                         const newHistoryValues = {};
                         history.columns.forEach(c => newHistoryValues[c] = []);
@@ -1070,143 +1118,7 @@
                         }
                         filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
 
-                        // 4. Filter Orders
-                        filteredOrders = orders.filter(o => allowedClientCodes.has(normalizeKey(o.codcli)));
-
-                    } else if (isSupervisor) {
-                        // --- SUPERVISOR LOGIC ---
-                        console.log(`[Access Control] Filtering for Supervisor Role '${role}'. Subordinate Sellers: ${supervisedSellers.size}`);
-                        window.userIsSupervisor = true;
-                        window.userSupervisorCode = normalizedRole;
-
-                        // 1. Filter Detailed (Sales) - By Supervisor Code directly
-                        const supCol = detailed.values['CODSUPERVISOR'] || [];
-                        const newDetailedValues = {};
-                        detailed.columns.forEach(c => newDetailedValues[c] = []);
-                        let newDetailedLen = 0;
-
-                        for(let i=0; i<detailed.length; i++) {
-                            if (String(supCol[i] || '').trim().toLowerCase() === normalizedRole) {
-                                detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c][i]));
-                                newDetailedLen++;
-                            }
-                        }
-                        filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
-
-                        // 2. Filter Clients - By RCA1 matching subordinate sellers
-                        // Note: supervisedSellers is populated from Sales Data. It might be incomplete if a seller has no sales.
-                        // However, we can filter Clients where RCA1 is in supervisedSellers OR we assume we can't see clients without sales link?
-                        // Better: We should also check client table to find any RCA that might be linked if we had a Seller->Supervisor map.
-                        // But without a separate hierarchy table for Sales, we rely on Sales Data or Client Data if available.
-                        // Since client data usually doesn't have 'Supervisor' column, we rely on 'RCA 1' matching 'CODUSUR' from sales we just filtered.
-
-                        const rcaCol = clients.values['RCA 1'] || clients.values['RCA1'] || [];
-                        const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
-                        const allowedClientCodes = new Set();
-
-                        const newClientsValues = {};
-                        clients.columns.forEach(c => newClientsValues[c] = []);
-                        let newClientsLen = 0;
-
-                        for(let i=0; i<clients.length; i++) {
-                            const rca = String(rcaCol[i] || '').trim();
-                            // Loose check: rca in supervisedSellers set (which contains exact codes found in sales)
-                            if (supervisedSellers.has(rca)) {
-                                allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
-                                clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
-                                newClientsLen++;
-                            }
-                        }
-                        filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
-
-                        // 3. Filter History - By Supervisor Code (if available) OR Client ID
-                        const histSupCol = history.values['CODSUPERVISOR'] || [];
-                        const histCodCliCol = history.values['CODCLI'] || [];
-                        const newHistoryValues = {};
-                        history.columns.forEach(c => newHistoryValues[c] = []);
-                        let newHistoryLen = 0;
-
-                        for(let i=0; i<history.length; i++) {
-                            // Check Supervisor column first if exists
-                            if (histSupCol.length > 0) {
-                                if (String(histSupCol[i] || '').trim().toLowerCase() === normalizedRole) {
-                                    history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
-                                    newHistoryLen++;
-                                    continue;
-                                }
-                            }
-                            // Fallback to Client ID
-                            if (allowedClientCodes.has(normalizeKey(histCodCliCol[i]))) {
-                                history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
-                                newHistoryLen++;
-                            }
-                        }
-                        filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
-
-                        // 4. Filter Orders
-                        filteredOrders = orders.filter(o => allowedClientCodes.has(normalizeKey(o.codcli)));
-
-                    } else if (isSeller) {
-                        // --- SELLER (RCA) LOGIC ---
-                        console.log(`[Access Control] Filtering for Seller Role '${role}'`);
-                        window.userIsSeller = true;
-                        window.userSellerCode = normalizedRole;
-
-                        // 1. Filter Detailed (Sales) - By CODUSUR
-                        const sellerCol = detailed.values['CODUSUR'] || [];
-                        const newDetailedValues = {};
-                        detailed.columns.forEach(c => newDetailedValues[c] = []);
-                        let newDetailedLen = 0;
-
-                        for(let i=0; i<detailed.length; i++) {
-                            if (String(sellerCol[i] || '').trim().toLowerCase() === normalizedRole) {
-                                detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c][i]));
-                                newDetailedLen++;
-                            }
-                        }
-                        filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
-
-                        // 2. Filter Clients - By RCA 1
-                        const rcaCol = clients.values['RCA 1'] || clients.values['RCA1'] || [];
-                        const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
-                        const allowedClientCodes = new Set();
-
-                        const newClientsValues = {};
-                        clients.columns.forEach(c => newClientsValues[c] = []);
-                        let newClientsLen = 0;
-
-                        for(let i=0; i<clients.length; i++) {
-                            if (String(rcaCol[i] || '').trim().toLowerCase() === normalizedRole) {
-                                allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
-                                clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
-                                newClientsLen++;
-                            }
-                        }
-                        filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
-
-                        // 3. Filter History - By CODUSUR OR Client ID
-                        const histSellerCol = history.values['CODUSUR'] || [];
-                        const histCodCliCol = history.values['CODCLI'] || [];
-                        const newHistoryValues = {};
-                        history.columns.forEach(c => newHistoryValues[c] = []);
-                        let newHistoryLen = 0;
-
-                        for(let i=0; i<history.length; i++) {
-                            if (histSellerCol.length > 0) {
-                                if (String(histSellerCol[i] || '').trim().toLowerCase() === normalizedRole) {
-                                    history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
-                                    newHistoryLen++;
-                                    continue;
-                                }
-                            }
-                            if (allowedClientCodes.has(normalizeKey(histCodCliCol[i]))) {
-                                history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
-                                newHistoryLen++;
-                            }
-                        }
-                        filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
-
-                        // 4. Filter Orders
+                        // D. Filter Orders
                         filteredOrders = orders.filter(o => allowedClientCodes.has(normalizeKey(o.codcli)));
 
                     } else {
