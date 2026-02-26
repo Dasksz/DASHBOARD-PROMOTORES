@@ -364,6 +364,157 @@
             }
         }
 
+        function setupCoverageRedeFilterHandlers() {
+            const redeGroupContainer = document.getElementById('coverage-rede-group-container');
+            const dropdown = document.getElementById('coverage-rede-filter-dropdown');
+            const comRedeBtn = document.getElementById('coverage-com-rede-btn');
+            const comRedeBtnText = document.getElementById('coverage-com-rede-btn-text');
+
+            if (redeGroupContainer) {
+                redeGroupContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('button');
+                    if (!btn) return;
+
+                    const group = btn.dataset.group;
+                    coverageRedeGroupFilter = group;
+
+                    // UI Update
+                    redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    if (group === 'com_rede') {
+                        dropdown.classList.remove('hidden');
+                        const { clients } = getCoverageFilteredData({ excludeFilter: 'rede' });
+                        selectedCoverageRedes = updateRedeFilter(dropdown, comRedeBtnText, selectedCoverageRedes, clients);
+                    } else {
+                        dropdown.classList.add('hidden');
+                        if (group !== 'com_rede' && comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
+                        updateCoverageView();
+                    }
+                });
+
+                if (dropdown) {
+                    dropdown.addEventListener('change', (e) => {
+                        if (e.target.type === 'checkbox') {
+                            const val = e.target.value;
+                            if (e.target.checked) selectedCoverageRedes.push(val);
+                            else selectedCoverageRedes = selectedCoverageRedes.filter(v => v !== val);
+
+                            const { clients } = getCoverageFilteredData({ excludeFilter: 'rede' });
+                            updateRedeFilter(dropdown, comRedeBtnText, selectedCoverageRedes, clients);
+                            updateCoverageView();
+                        }
+                    });
+                }
+
+                document.addEventListener('click', (e) => {
+                    if (comRedeBtn && dropdown && !comRedeBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            }
+        }
+
+        function setupCoveragePriceFilterHandlers() {
+            const minInput = document.getElementById('coverage-price-min');
+            const maxInput = document.getElementById('coverage-price-max');
+
+            const update = () => {
+                const min = minInput.value ? parseFloat(minInput.value) : null;
+                const max = maxInput.value ? parseFloat(maxInput.value) : null;
+                selectedCoveragePriceMin = isNaN(min) ? null : min;
+                selectedCoveragePriceMax = isNaN(max) ? null : max;
+                if(window.coverageUpdateTimeout) clearTimeout(window.coverageUpdateTimeout);
+                window.coverageUpdateTimeout = setTimeout(updateCoverageView, 500);
+            };
+
+            if (minInput) minInput.addEventListener('input', update);
+            if (maxInput) maxInput.addEventListener('input', update);
+        }
+
+        function setupCoverageDateFilterHandlers() {
+            const btn = document.getElementById('coverage-date-filter-btn');
+            const dropdown = document.getElementById('coverage-date-picker-dropdown');
+            const textSpan = document.getElementById('coverage-date-filter-text');
+
+            if (!btn || !dropdown) return;
+
+            // Inject Content
+            dropdown.innerHTML = `
+                <div class="flex flex-col gap-2">
+                    <button class="text-left px-3 py-2 hover:bg-slate-700 rounded text-sm text-white" data-range="current">Mês Atual</button>
+                    <div class="border-t border-slate-600 my-1"></div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] uppercase text-slate-500 font-bold">Início</label>
+                        <input type="date" id="coverage-date-start" class="bg-slate-800 border border-slate-600 rounded text-xs text-white p-1">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] uppercase text-slate-500 font-bold">Fim</label>
+                        <input type="date" id="coverage-date-end" class="bg-slate-800 border border-slate-600 rounded text-xs text-white p-1">
+                    </div>
+                    <button id="coverage-date-apply" class="mt-2 bg-[#FF5E00] hover:bg-[#CC4A00] text-white font-bold py-1 px-3 rounded text-xs">Aplicar</button>
+                </div>
+            `;
+
+            const startInput = document.getElementById('coverage-date-start');
+            const endInput = document.getElementById('coverage-date-end');
+            const applyBtn = document.getElementById('coverage-date-apply');
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                // Pre-fill
+                if (!startInput.value && !selectedCoverageDateRange.start) {
+                    const now = new Date();
+                    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+                    const toLocalDateInput = (date) => {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                    };
+
+                    startInput.value = toLocalDateInput(firstDay);
+                    endInput.value = toLocalDateInput(lastDay);
+                } else if (selectedCoverageDateRange.start) {
+                    startInput.value = selectedCoverageDateRange.start;
+                    endInput.value = selectedCoverageDateRange.end;
+                }
+            });
+
+            dropdown.addEventListener('click', (e) => {
+                const rangeBtn = e.target.closest('button[data-range]');
+                if (rangeBtn) {
+                    const range = rangeBtn.dataset.range;
+                    if (range === 'current') {
+                        selectedCoverageDateRange = { start: null, end: null, label: 'Mês Atual' };
+                        textSpan.textContent = 'Mês Atual';
+                        dropdown.classList.add('hidden');
+                        updateCoverageView();
+                    }
+                }
+            });
+
+            applyBtn.addEventListener('click', () => {
+                const s = startInput.value;
+                const e = endInput.value;
+                if (s && e) {
+                    selectedCoverageDateRange = { start: s, end: e, label: 'Personalizado' };
+                    textSpan.textContent = `${s.split('-').reverse().slice(0,2).join('/')} - ${e.split('-').reverse().slice(0,2).join('/')}`;
+                    dropdown.classList.add('hidden');
+                    updateCoverageView();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
         const QUARTERLY_DIVISOR = 3;
 
         // Optimized lastSaleDate calculation to avoid mapping huge array
@@ -2595,6 +2746,29 @@
         let comparisonRedeGroupFilter = '';
 
         let selectedInnovationsMonthTiposVenda = [];
+        let innovationsMonthRedeGroupFilter = '';
+        let selectedInnovationsMonthRedes = [];
+
+        // Coverage
+        let coverageRedeGroupFilter = '';
+        let selectedCoverageRedes = [];
+        let selectedCoverageDateRange = { start: null, end: null, label: 'Mês Atual' };
+        let selectedCoveragePriceMin = null;
+        let selectedCoveragePriceMax = null;
+
+        // Weekly
+        let weeklyRedeGroupFilter = '';
+        let selectedWeeklyRedes = [];
+        let weeklyFilialFilter = 'all';
+
+        // Stock
+        let selectedStockCities = [];
+        let selectedStockCategories = [];
+
+        // History
+        let historyRedeGroupFilter = '';
+        let selectedHistoryRedes = [];
+        let selectedHistoryTiposVenda = [];
 
         let selectedMixRedes = [];
         let mixRedeGroupFilter = '';
@@ -8279,7 +8453,9 @@ const supervisorGroups = new Map();
                 clients = getHierarchyFilteredClients('coverage', getActiveClientsData());
             }
 
-            if (filial !== 'ambas' || city) {
+            if (filial !== 'ambas' || city || !isExcluded('rede')) {
+                const redeSet = (coverageRedeGroupFilter === 'com_rede' && selectedCoverageRedes.length > 0) ? new Set(selectedCoverageRedes) : null;
+
                 clients = clients.filter(c => {
                     let pass = true;
                     if (filial !== 'ambas') {
@@ -8287,6 +8463,14 @@ const supervisorGroups = new Map();
                     }
                     if (pass && !isExcluded('city') && city) {
                         if ((c.cidade || '').toLowerCase() !== city) pass = false;
+                    }
+                    if (pass && !isExcluded('rede')) {
+                        if (coverageRedeGroupFilter === 'com_rede') {
+                            if (!c.ramo || c.ramo === 'N/A') pass = false;
+                            else if (redeSet && !redeSet.has(c.ramo)) pass = false;
+                        } else if (coverageRedeGroupFilter === 'sem_rede') {
+                            if (c.ramo && c.ramo !== 'N/A') pass = false;
+                        }
                     }
                     return pass;
                 });
@@ -8306,12 +8490,59 @@ const supervisorGroups = new Map();
             let sales = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters, excludeFilter);
             let history = getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters, excludeFilter);
 
-            const unitPriceInput = document.getElementById('coverage-unit-price-filter');
-            const unitPrice = unitPriceInput && unitPriceInput.value ? parseFloat(unitPriceInput.value) : null;
-            if (unitPrice !== null) {
-                const unitPriceFilter = s => (s.QTVENDA > 0 && Math.abs((s.VLVENDA / s.QTVENDA) - unitPrice) < 0.01);
-                sales = sales.filter(unitPriceFilter);
-                history = history.filter(unitPriceFilter);
+            // Date Filter (Proportional)
+            // Assumes sales have DTPED (timestamp or date string)
+            // selectedCoverageDateRange = { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' }
+            if (!isExcluded('date') && selectedCoverageDateRange.start && selectedCoverageDateRange.end) {
+                const start = parseDate(selectedCoverageDateRange.start).getTime();
+                const end = parseDate(selectedCoverageDateRange.end).getTime();
+
+                // Filter Sales (Current)
+                sales = sales.filter(s => s.DTPED >= start && s.DTPED <= end);
+
+                // Calculate Proportional Previous Month Range
+                const prevStart = new Date(start);
+                prevStart.setMonth(prevStart.getMonth() - 1);
+
+                const prevEnd = new Date(end);
+                prevEnd.setMonth(prevEnd.getMonth() - 1);
+
+                // Clamp end of month logic (auto-handled by setMonth but need to check if day overflowed)
+                // e.g. 31 March -> 31 Feb -> 3 March (JS Date behavior). We want last day of Feb.
+                // Fix: Check day.
+                const checkOverflow = (orig, target) => {
+                    if (orig.getDate() !== target.getDate()) {
+                        target.setDate(0); // Set to last day of previous month
+                    }
+                };
+                // Re-calculate strictly
+                const strictPrevStart = new Date(selectedCoverageDateRange.start);
+                const d1 = strictPrevStart.getDate();
+                strictPrevStart.setMonth(strictPrevStart.getMonth() - 1);
+                if (strictPrevStart.getDate() !== d1) strictPrevStart.setDate(0);
+
+                const strictPrevEnd = new Date(selectedCoverageDateRange.end);
+                const d2 = strictPrevEnd.getDate();
+                strictPrevEnd.setMonth(strictPrevEnd.getMonth() - 1);
+                if (strictPrevEnd.getDate() !== d2) strictPrevEnd.setDate(0);
+
+                const pStart = strictPrevStart.getTime();
+                const pEnd = strictPrevEnd.getTime();
+
+                history = history.filter(s => s.DTPED >= pStart && s.DTPED <= pEnd);
+            }
+
+            // Price Filter (Min/Max Unit Price)
+            if (!isExcluded('price') && (selectedCoveragePriceMin !== null || selectedCoveragePriceMax !== null)) {
+                const checkPrice = (s) => {
+                    if (!s.QTVENDA || s.QTVENDA === 0) return false;
+                    const price = s.VLVENDA / s.QTVENDA;
+                    if (selectedCoveragePriceMin !== null && price < selectedCoveragePriceMin) return false;
+                    if (selectedCoveragePriceMax !== null && price > selectedCoveragePriceMax) return false;
+                    return true;
+                };
+                sales = sales.filter(checkPrice);
+                history = history.filter(checkPrice);
             }
 
             return { sales, history, clients };
@@ -8343,8 +8574,27 @@ const supervisorGroups = new Map();
             coverageCityFilter.value = '';
             coverageFilialFilter.value = 'ambas';
 
-            const unitPriceInput = document.getElementById('coverage-unit-price-filter');
-            if(unitPriceInput) unitPriceInput.value = '';
+            // New Filters Reset
+            selectedCoveragePriceMin = null;
+            selectedCoveragePriceMax = null;
+            const pMin = document.getElementById('coverage-price-min');
+            const pMax = document.getElementById('coverage-price-max');
+            if(pMin) pMin.value = '';
+            if(pMax) pMax.value = '';
+
+            selectedCoverageDateRange = { start: null, end: null, label: 'Mês Atual' };
+            const dateBtnText = document.getElementById('coverage-date-filter-text');
+            if(dateBtnText) dateBtnText.textContent = 'Mês Atual';
+
+            coverageRedeGroupFilter = '';
+            selectedCoverageRedes = [];
+            const redeGroupContainer = document.getElementById('coverage-rede-group-container');
+            if (redeGroupContainer) {
+                redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                redeGroupContainer.querySelector('button[data-group=""]').classList.add('active');
+            }
+            const redeDropdown = document.getElementById('coverage-rede-filter-dropdown');
+            if (redeDropdown) redeDropdown.classList.add('hidden');
 
             const workingDaysInput = document.getElementById('coverage-working-days-input');
             if(workingDaysInput) workingDaysInput.value = customWorkingDaysCoverage;
@@ -12388,6 +12638,19 @@ const supervisorGroups = new Map();
                 clients = clients.filter(c => c.cidade && c.cidade.toLowerCase() === city);
             }
 
+            if (excludeFilter !== 'rede') {
+                if (innovationsMonthRedeGroupFilter === 'com_rede') {
+                    const redeSet = (selectedInnovationsMonthRedes.length > 0) ? new Set(selectedInnovationsMonthRedes) : null;
+                    clients = clients.filter(c => {
+                        if (!c.ramo || c.ramo === 'N/A') return false;
+                        if (redeSet && !redeSet.has(c.ramo)) return false;
+                        return true;
+                    });
+                } else if (innovationsMonthRedeGroupFilter === 'sem_rede') {
+                    clients = clients.filter(c => !c.ramo || c.ramo === 'N/A');
+                }
+            }
+
             return { clients };
         }
 
@@ -12397,6 +12660,16 @@ const supervisorGroups = new Map();
             innovationsMonthFilialFilter.value = 'ambas';
             const filialText = document.getElementById('innovations-month-filial-filter-text');
             if(filialText) filialText.textContent = 'Ambas';
+
+            selectedInnovationsMonthRedes = [];
+            innovationsMonthRedeGroupFilter = '';
+            const redeGroupContainer = document.getElementById('innovations-month-rede-group-container');
+            if (redeGroupContainer) {
+                redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                redeGroupContainer.querySelector('button[data-group=""]').classList.add('active');
+            }
+            const redeDropdown = document.getElementById('innovations-month-rede-filter-dropdown');
+            if (redeDropdown) redeDropdown.classList.add('hidden');
 
             innovationsMonthCategoryFilter.value = '';
             const catText = document.getElementById('innovations-month-category-filter-text');
@@ -13381,11 +13654,45 @@ const supervisorGroups = new Map();
 
 
         function openModal(pedidoId) {
-            const orderInfo = aggregatedOrders.find(order => order.PEDIDO == pedidoId);
-            const itemsDoPedido = allSalesData.filter(item => item.PEDIDO == pedidoId);
+            // Attempt to find order header
+            let orderInfo = aggregatedOrders.find(order => order.PEDIDO == pedidoId);
+
+            // Fallback: Search in History State (if available and matching)
+            if (!orderInfo && typeof historyTableState !== 'undefined' && historyTableState.filtered) {
+                orderInfo = historyTableState.filtered.find(o => o.PEDIDO == pedidoId);
+            }
+
+            // Attempt to find items
+            let itemsDoPedido = allSalesData.filter(item => item.PEDIDO == pedidoId);
+
+            // Fallback: Search in History Items
+            if (itemsDoPedido.length === 0 && allHistoryData) {
+                const len = allHistoryData.length;
+                for(let i=0; i<len; i++) {
+                    const item = allHistoryData instanceof ColumnarDataset ? allHistoryData.get(i) : allHistoryData[i];
+                    if (item.PEDIDO == pedidoId) itemsDoPedido.push(item);
+                }
+            }
+
+            // Fallback: Construct Header from items if missing
+            if (!orderInfo && itemsDoPedido.length > 0) {
+                const first = itemsDoPedido[0];
+                orderInfo = {
+                    PEDIDO: first.PEDIDO,
+                    CODCLI: first.CODCLI,
+                    CLIENTE_NOME: first.NOME || first.CLIENTE || 'N/A', // Try common keys
+                    NOME: first.SUPERV || 'N/A', // Best guess if missing
+                    DTPED: first.DTPED,
+                    DTSAIDA: first.DTSAIDA,
+                    CIDADE: first.CIDADE || 'N/A',
+                    VLVENDA: itemsDoPedido.reduce((acc, i) => acc + (Number(i.VLVENDA)||0), 0)
+                };
+            }
+
             if (!orderInfo) return;
+
             modalPedidoId.textContent = pedidoId;
-            modalHeaderInfo.innerHTML = `<div><p class="font-bold">Cód. Cliente:</p><p>${window.escapeHtml(orderInfo.CODCLI || 'N/A')}</p></div><div><p class="font-bold">Cliente:</p><p>${window.escapeHtml(orderInfo.CLIENTE_NOME || 'N/A')}</p></div><div><p class="font-bold">Vendedor:</p><p>${window.escapeHtml(orderInfo.NOME || 'N/A')}</p></div><div><p class="font-bold">Data Pedido:</p><p>${formatDate(orderInfo.DTPED)}</p></div><div><p class="font-bold">Data Faturamento:</p><p>${formatDate(orderInfo.DTSAIDA)}</p></div><div><p class="font-bold">Cidade:</p><p>${window.escapeHtml(orderInfo.CIDADE || 'N/A')}</p></div>`;
+            modalHeaderInfo.innerHTML = `<div><p class="font-bold">Cód. Cliente:</p><p>${window.escapeHtml(orderInfo.CODCLI || 'N/A')}</p></div><div><p class="font-bold">Cliente:</p><p>${window.escapeHtml(orderInfo.CLIENTE_NOME || orderInfo.CLIENTE || 'N/A')}</p></div><div><p class="font-bold">Vendedor:</p><p>${window.escapeHtml(orderInfo.NOME || orderInfo.VENDEDOR || 'N/A')}</p></div><div><p class="font-bold">Data Pedido:</p><p>${formatDate(orderInfo.DTPED)}</p></div><div><p class="font-bold">Data Faturamento:</p><p>${formatDate(orderInfo.DTSAIDA)}</p></div><div><p class="font-bold">Cidade:</p><p>${window.escapeHtml(orderInfo.CIDADE || 'N/A')}</p></div>`;
 
             modalTableBody.innerHTML = itemsDoPedido.map(item => {
                 const unitPrice = (item.QTVENDA > 0) ? (item.VLVENDA / item.QTVENDA) : 0;
@@ -16608,10 +16915,14 @@ const supervisorGroups = new Map();
         setupHierarchyFilters('innovations-month', updateInnovationsMonthView);
         setupInnovationsMonthCategoryFilterHandlers();
         setupInnovationsMonthFilialFilterHandlers();
+        setupInnovationsMonthRedeFilterHandlers();
         setupHierarchyFilters('mix', updateMixView);
         setupHierarchyFilters('meta-realizado', updateMetaRealizadoView);
         setupHierarchyFilters('coverage', updateCoverageView);
         setupCoverageSupervisorFilterHandlers(); // Initialize Coverage Supervisor Filters
+        setupCoverageRedeFilterHandlers();
+        setupCoveragePriceFilterHandlers();
+        setupCoverageDateFilterHandlers();
         setupHierarchyFilters('goals-gv', updateGoalsView);
         setupHierarchyFilters('goals-summary', updateGoalsSummaryView);
         setupHierarchyFilters('goals-sv', updateGoalsSvView);
@@ -21032,11 +21343,121 @@ const supervisorGroups = new Map();
         renderList();
     }
 
+    function setupHistoryRedeFilterHandlers() {
+        const redeGroupContainer = document.getElementById('history-rede-group-container');
+        const dropdown = document.getElementById('history-rede-filter-dropdown');
+        const comRedeBtn = document.getElementById('history-com-rede-btn');
+        const comRedeBtnText = document.getElementById('history-com-rede-btn-text');
+
+        if (redeGroupContainer) {
+            redeGroupContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+
+                const group = btn.dataset.group;
+                historyRedeGroupFilter = group;
+
+                redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                if (group === 'com_rede') {
+                    dropdown.classList.remove('hidden');
+                    // We need a list of clients available in history context.
+                    // Use allClientsData filtered by hierarchy/seller mode.
+                    let clients = [];
+                    if (typeof getHierarchyFilteredClients === 'function') {
+                        clients = getHierarchyFilteredClients('history', allClientsData);
+                    }
+                    selectedHistoryRedes = updateRedeFilter(dropdown, comRedeBtnText, selectedHistoryRedes, clients);
+                } else {
+                    dropdown.classList.add('hidden');
+                    if (group !== 'com_rede' && comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
+                    // We don't auto-update history view on filter change, only on "Filtrar" click usually?
+                    // The requirement says "Ao clicar para limpar os filtros...".
+                    // Usually History requires explicit "Filtrar" button for dates, but side filters might be instant or not.
+                    // Given the button structure, let's wait for "Filtrar" or auto-update?
+                    // User didn't specify. I will assume explicit "Filtrar" button triggers the main fetch, but maybe these filters work on the result?
+                    // No, `filterHistoryView` re-scans everything.
+                    // Let's NOT auto-trigger `filterHistoryView` here if it's heavy. The user has a "Filtrar" button.
+                    // BUT for Rede/Tipo Venda, users might expect instant feedback if data is loaded.
+                    // However, History View data loading depends on Date Range which might be huge.
+                    // I'll stick to manual "Filtrar" trigger for consistency with Date, OR just let the user click Filtrar.
+                    // Actually, for better UX, if data is already loaded (hasSearched=true), we could re-filter.
+                    if (historyTableState.hasSearched) filterHistoryView();
+                }
+            });
+
+            if (dropdown) {
+                dropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if (e.target.checked) selectedHistoryRedes.push(val);
+                        else selectedHistoryRedes = selectedHistoryRedes.filter(v => v !== val);
+
+                        let clients = [];
+                        if (typeof getHierarchyFilteredClients === 'function') {
+                            clients = getHierarchyFilteredClients('history', allClientsData);
+                        }
+                        updateRedeFilter(dropdown, comRedeBtnText, selectedHistoryRedes, clients);
+                        if (historyTableState.hasSearched) filterHistoryView();
+                    }
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                if (comRedeBtn && dropdown && !comRedeBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+    }
+
+    function setupHistoryTipoVendaFilterHandlers() {
+        const btn = document.getElementById('history-tipo-venda-filter-btn');
+        const dropdown = document.getElementById('history-tipo-venda-filter-dropdown');
+        const textSpan = document.getElementById('history-tipo-venda-filter-text');
+
+        if (btn && dropdown) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+            });
+
+            dropdown.addEventListener('change', (e) => {
+                if (e.target.type === 'checkbox') {
+                    const val = e.target.value;
+                    if (e.target.checked) selectedHistoryTiposVenda.push(val);
+                    else selectedHistoryTiposVenda = selectedHistoryTiposVenda.filter(v => v !== val);
+
+                    // We need sales data to update counts? Or just static list?
+                    // History can be huge. Let's pass empty or current sales for now, or just update text.
+                    const salesSource = allSalesData || [];
+                    updateTipoVendaFilter(dropdown, textSpan, selectedHistoryTiposVenda, salesSource);
+
+                    if (historyTableState.hasSearched) filterHistoryView();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+
+            // Initialize once with all sales data just to populate options
+            if (allSalesData) {
+                 updateTipoVendaFilter(dropdown, textSpan, selectedHistoryTiposVenda, allSalesData);
+            }
+        }
+    }
+
     let isHistoryViewInitialized = false;
     window.renderHistoryView = function() {
         if (!isHistoryViewInitialized) {
             setupHierarchyFilters('history', null); // Reuse hierarchy logic
             setupHistorySupervisorFilterHandlers();
+            setupHistoryRedeFilterHandlers();
+            setupHistoryTipoVendaFilterHandlers();
             
             // Set default dates (Current Month)
             const now = new Date();
@@ -21047,8 +21468,14 @@ const supervisorGroups = new Map();
             const endEl = document.getElementById('history-date-end');
             
             if (startEl && endEl) {
-                startEl.valueAsDate = firstDay;
-                endEl.valueAsDate = lastDay;
+                const toLocalDateInput = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+                startEl.value = toLocalDateInput(firstDay);
+                endEl.value = toLocalDateInput(lastDay);
             } else {
                 console.error("History date inputs not found!");
             }
@@ -21071,19 +21498,59 @@ const supervisorGroups = new Map();
                     document.getElementById('history-posicao-filter').value = '';
                     document.getElementById('history-codcli-filter').value = '';
 
+                    // Reset Rede
+                    historyRedeGroupFilter = '';
+                    selectedHistoryRedes = [];
+                    const redeGroupContainer = document.getElementById('history-rede-group-container');
+                    if (redeGroupContainer) {
+                        redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                        redeGroupContainer.querySelector('button[data-group=""]').classList.add('active');
+                    }
+                    const redeDropdown = document.getElementById('history-rede-filter-dropdown');
+                    if (redeDropdown) {
+                        redeDropdown.classList.add('hidden');
+                        redeDropdown.querySelectorAll('input').forEach(cb => cb.checked = false);
+                    }
+                    const comRedeBtnText = document.getElementById('history-com-rede-btn-text');
+                    if (comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
+
+                    // Reset Tipo Venda
+                    selectedHistoryTiposVenda = [];
+                    const tvDropdown = document.getElementById('history-tipo-venda-filter-dropdown');
+                    if (tvDropdown) {
+                        tvDropdown.querySelectorAll('input').forEach(cb => cb.checked = false);
+                        tvDropdown.classList.add('hidden');
+                    }
+                    const tvText = document.getElementById('history-tipo-venda-filter-text');
+                    if (tvText) tvText.textContent = 'Todos';
+
+                    // Reset Dates
                     const now = new Date();
                     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
                     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
                     const startEl = document.getElementById('history-date-start');
                     const endEl = document.getElementById('history-date-end');
-                    if (startEl) startEl.valueAsDate = firstDay;
-                    if (endEl) endEl.valueAsDate = lastDay;
+
+                    // Fix timezone issue by using local date strings
+                    const toLocalDateInput = (date) => {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                    };
+
+                    if (startEl) startEl.value = toLocalDateInput(firstDay);
+                    if (endEl) endEl.value = toLocalDateInput(lastDay);
 
                     setupHierarchyFilters('history');
                     updateHistorySupervisorFilter();
                     updateHistoryVendedorFilter();
 
-                    filterHistoryView();
+                    // Clear Table & Reset State (Requirement: Table must be empty)
+                    historyTableState.filtered = [];
+                    historyTableState.hasSearched = false;
+                    historyTableState.page = 1;
+                    renderHistoryTable();
                 });
             }
             
@@ -21235,8 +21702,36 @@ const supervisorGroups = new Map();
                         if (!selectedHistoryVendedores.has(rca)) continue;
                     }
 
+                    // Tipo Venda Filter
+                    if (selectedHistoryTiposVenda.length > 0) {
+                        if (!selectedHistoryTiposVenda.includes(String(s.TIPOVENDA))) continue;
+                    }
+
                     // 3. Client Check
                     const codCli = normalizeKey(s.CODCLI);
+
+                    // Rede Filter (Expensive - requires Client lookup)
+                    if (historyRedeGroupFilter !== '') {
+                        // We need the client object.
+                        // allClientsData is available globally but accessing by ID requires map or iteration.
+                        // clientMapForKPIs might be a Map<codCli, clientObj> available?
+                        // Wait, filterHistoryView uses clientMapForKPIs for text search later.
+                        // Let's assume clientMapForKPIs is populated?
+                        // If clientMapForKPIs is not available here, we might need to build it or assume it's global.
+                        // Actually, clientMapForKPIs is used below in text filter.
+                        const clientObj = clientMapForKPIs.get(codCli);
+                        if (clientObj) {
+                            if (historyRedeGroupFilter === 'com_rede') {
+                                if (!clientObj.ramo || clientObj.ramo === 'N/A') continue;
+                                if (selectedHistoryRedes.length > 0 && !selectedHistoryRedes.includes(clientObj.ramo)) continue;
+                            } else if (historyRedeGroupFilter === 'sem_rede') {
+                                if (clientObj.ramo && clientObj.ramo !== 'N/A') continue;
+                            }
+                        } else {
+                            // If client missing from master list
+                            if (historyRedeGroupFilter === 'com_rede') continue;
+                        }
+                    }
 
                     if (enforceHierarchy) {
                         if (!validClientCodes.has(codCli)) {
@@ -22214,6 +22709,93 @@ const supervisorGroups = new Map();
 
             setupStockFilialFilterHandlers(); // Initialize Filial Filter Handlers
 
+            // City Filter (Stock)
+            const stockCityInput = document.getElementById('stock-city-filter');
+            const stockCitySuggestions = document.getElementById('stock-city-suggestions');
+            if (stockCityInput && stockCitySuggestions) {
+                stockCityInput.addEventListener('input', (e) => {
+                    const val = e.target.value.trim().toLowerCase();
+                    if (val.length < 2) {
+                        stockCitySuggestions.classList.add('hidden');
+                        if (val.length === 0) {
+                            selectedStockCities = [];
+                            handleStockFilterChange({ skipFilter: 'city' });
+                        }
+                        return;
+                    }
+
+                    // Get Unique Cities
+                    const cities = new Set();
+                    if (allClientsData) {
+                        for(let i=0; i<allClientsData.length; i++) {
+                            const c = allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i];
+                            if (c.cidade) cities.add(c.cidade);
+                        }
+                    }
+                    const matches = Array.from(cities).filter(c => c.toLowerCase().includes(val)).sort().slice(0, 10);
+
+                    stockCitySuggestions.innerHTML = matches.map(c =>
+                        `<div class="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300">${c}</div>`
+                    ).join('');
+                    stockCitySuggestions.classList.remove('hidden');
+                });
+
+                stockCitySuggestions.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'DIV') {
+                        const city = e.target.textContent;
+                        stockCityInput.value = city;
+                        selectedStockCities = [city];
+                        stockCitySuggestions.classList.add('hidden');
+                        handleStockFilterChange({ skipFilter: 'city' });
+                    }
+                });
+
+                stockCityInput.addEventListener('blur', () => setTimeout(() => stockCitySuggestions.classList.add('hidden'), 200));
+                stockCityInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        stockCitySuggestions.classList.add('hidden');
+                        selectedStockCities = [stockCityInput.value];
+                        handleStockFilterChange({ skipFilter: 'city' });
+                        e.target.blur();
+                    }
+                });
+            }
+
+            // Category Filter (Stock)
+            const catBtn = document.getElementById('stock-category-filter-btn');
+            const catDd = document.getElementById('stock-category-filter-dropdown');
+            if (catBtn && catDd) {
+                catBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    catDd.classList.toggle('hidden');
+                    document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-filial-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
+                });
+
+                catDd.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if (e.target.checked) selectedStockCategories.push(val);
+                        else selectedStockCategories = selectedStockCategories.filter(c => c !== val);
+
+                        const text = document.getElementById('stock-category-filter-text');
+                        if (selectedStockCategories.length === 0) text.textContent = 'Todas';
+                        else text.textContent = `${selectedStockCategories.length} Selecionadas`;
+
+                        handleStockFilterChange({ skipFilter: 'category' });
+                    }
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                if (catBtn && !catBtn.contains(e.target) && catDd && !catDd.contains(e.target)) {
+                    catDd.classList.add('hidden');
+                }
+            });
+
             _stockListenersInitialized = true;
         }
 
@@ -22234,7 +22816,24 @@ const supervisorGroups = new Map();
             }
         }
 
-        // 2. Update Pasta Filter (Disabled - Toggle Mode)
+        // 2. Update Category Filter (Static)
+        if (skipFilter !== 'category') {
+            const dropdown = document.getElementById('stock-category-filter-dropdown');
+            if (dropdown && dropdown.innerHTML === '') {
+                const cats = ['CHEETOS', 'FANDANGOS', 'DORITOS', 'RUFFLES', 'TORCIDA', 'TODDYNHO', 'TODDY', 'QUAKER', 'KEROCOCO', 'EQLIBRI', 'LAYS'];
+                let html = '';
+                cats.sort().forEach(c => {
+                    const checked = selectedStockCategories.includes(c) ? 'checked' : '';
+                    html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
+                                <input type="checkbox" value="${c}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                                <span class="ml-2 text-sm text-slate-300">${c}</span>
+                             </label>`;
+                });
+                dropdown.innerHTML = html;
+            }
+        }
+
+        // 3. Update Pasta Filter (Disabled - Toggle Mode)
 
         // 3. Update Product Filter
         if (skipFilter !== 'product') {
@@ -22357,8 +22956,13 @@ const supervisorGroups = new Map();
         const activeClientCodes = new Set();
         const filteredClients = [];
 
-        // No 'Rede' filter anymore
+        // Filter by City (Stock View)
+        const citySet = selectedStockCities.length > 0 ? new Set(selectedStockCities.map(c => c.toLowerCase())) : null;
+
         for(const c of activeClients) {
+             if (citySet) {
+                 if (!c.cidade || !citySet.has(c.cidade.toLowerCase())) continue;
+             }
              activeClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
              filteredClients.push(c);
         }
@@ -22370,6 +22974,7 @@ const supervisorGroups = new Map();
         const filialFilter = filialFilterElement ? filialFilterElement.value : 'all';
 
         const salesMap = new Map(); 
+        // Note: clientCodes already filtered by city above, so sales will be filtered implicitly
         const salesFilters = { clientCodes: activeClientCodes };
         const salesList = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, salesFilters);
         
@@ -22415,9 +23020,23 @@ const supervisorGroups = new Map();
         const supplierSet = selectedStockSuppliers.length > 0 ? new Set(selectedStockSuppliers) : null;
         const pastaSet = selectedStockPastas.length > 0 ? new Set(selectedStockPastas) : null;
         const productSet = selectedStockProducts.length > 0 ? new Set(selectedStockProducts) : null;
+        const categorySet = selectedStockCategories.length > 0 ? new Set(selectedStockCategories) : null;
 
         products.forEach(p => {
             const code = p.code;
+
+            // Category Filter
+            if (excludeFilter !== 'category' && categorySet) {
+                const desc = (p.descricao || '').toUpperCase();
+                let match = false;
+                for (const cat of categorySet) {
+                    if (desc.includes(cat)) {
+                        match = true;
+                        break;
+                    }
+                }
+                if (!match) return;
+            }
 
             // Supplier Filter
             if (excludeFilter !== 'supplier' && supplierSet) {
@@ -22655,6 +23274,8 @@ const supervisorGroups = new Map();
             selectedStockSuppliers = [];
             selectedStockPastas = [];
             selectedStockProducts = [];
+            selectedStockCities = [];
+            selectedStockCategories = [];
             
             // Reset UI
             const stockFilialInput = document.getElementById('stock-filial-filter');
@@ -22668,15 +23289,25 @@ const supervisorGroups = new Map();
                     if (r.value === 'all') r.checked = true;
                 });
             }
+
+            const cityInput = document.getElementById('stock-city-filter');
+            if (cityInput) cityInput.value = '';
+            document.getElementById('stock-city-suggestions')?.classList.add('hidden');
+
+            const catDropdown = document.getElementById('stock-category-filter-dropdown');
+            if (catDropdown) catDropdown.querySelectorAll('input').forEach(cb => cb.checked = false);
+            document.getElementById('stock-category-filter-text').textContent = 'Todas';
             
             // Re-render filters (Text and Checkboxes)
             const supplierDropdown = document.getElementById('stock-supplier-filter-dropdown');
             if (supplierDropdown) supplierDropdown.querySelectorAll('input').forEach(cb => cb.checked = false);
-            document.getElementById('stock-supplier-filter-text').textContent = 'Todos';
+            const suppText = document.getElementById('stock-supplier-filter-text');
+            if(suppText) suppText.textContent = 'Todos';
 
             const pastaDropdown = document.getElementById('stock-pasta-filter-dropdown');
             if (pastaDropdown) pastaDropdown.querySelectorAll('input').forEach(cb => cb.checked = false);
-            document.getElementById('stock-pasta-filter-text').textContent = 'Todas';
+            const pastaText = document.getElementById('stock-pasta-filter-text');
+            if(pastaText) pastaText.textContent = 'Todas';
 
             const productDropdown = document.getElementById('stock-product-filter-dropdown');
             // Product list is dynamically rendered, just reset text
@@ -22807,6 +23438,78 @@ const supervisorGroups = new Map();
             }
         }
 
+        // Rede Filter (Weekly)
+        const redeGroupContainer = document.getElementById('weekly-rede-group-container');
+        const redeDropdown = document.getElementById('weekly-rede-filter-dropdown');
+        const comRedeBtn = document.getElementById('weekly-com-rede-btn');
+        const comRedeBtnText = document.getElementById('weekly-com-rede-btn-text');
+
+        if (redeGroupContainer) {
+            redeGroupContainer.onclick = (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+
+                const group = btn.dataset.group;
+                weeklyRedeGroupFilter = group;
+
+                redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                if (group === 'com_rede') {
+                    redeDropdown.classList.remove('hidden');
+                    // Need clients data to populate
+                    let clients = [];
+                    if (typeof getHierarchyFilteredClients === 'function') {
+                        clients = getHierarchyFilteredClients('weekly', allClientsData);
+                    }
+                    selectedWeeklyRedes = updateRedeFilter(redeDropdown, comRedeBtnText, selectedWeeklyRedes, clients);
+                } else {
+                    redeDropdown.classList.add('hidden');
+                    if (group !== 'com_rede' && comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
+                    updateWeeklyView();
+                }
+            };
+
+            if (redeDropdown) {
+                redeDropdown.onchange = (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if (e.target.checked) selectedWeeklyRedes.push(val);
+                        else selectedWeeklyRedes = selectedWeeklyRedes.filter(v => v !== val);
+
+                        let clients = [];
+                        if (typeof getHierarchyFilteredClients === 'function') {
+                            clients = getHierarchyFilteredClients('weekly', allClientsData);
+                        }
+                        updateRedeFilter(redeDropdown, comRedeBtnText, selectedWeeklyRedes, clients);
+                        updateWeeklyView();
+                    }
+                };
+            }
+        }
+
+        // Filial Filter (Weekly)
+        const filialBtn = document.getElementById('weekly-filial-filter-btn');
+        const filialDropdown = document.getElementById('weekly-filial-filter-dropdown');
+        const filialText = document.getElementById('weekly-filial-filter-text');
+
+        if (filialBtn && filialDropdown) {
+            filialBtn.onclick = (e) => {
+                e.stopPropagation();
+                filialDropdown.classList.toggle('hidden');
+            };
+
+            filialDropdown.onchange = (e) => {
+                if (e.target.type === 'radio') {
+                    weeklyFilialFilter = e.target.value;
+                    const label = e.target.closest('label').querySelector('span').textContent;
+                    filialText.textContent = label;
+                    filialDropdown.classList.add('hidden');
+                    updateWeeklyView();
+                }
+            };
+        }
+
         // Global Click Listener for closing dropdowns (Ensure only one is attached)
         if (!document._weeklyFilterListener) {
             document.addEventListener('click', (e) => {
@@ -22820,6 +23523,12 @@ const supervisorGroups = new Map();
                 if (!e.target.closest('#weekly-fornecedor-filter-wrapper')) {
                     document.getElementById('weekly-fornecedor-filter-dropdown')?.classList.add('hidden');
                 }
+                if (!e.target.closest('#weekly-rede-filter-wrapper') && comRedeBtn && !comRedeBtn.contains(e.target)) {
+                    document.getElementById('weekly-rede-filter-dropdown')?.classList.add('hidden');
+                }
+                if (!e.target.closest('#weekly-filial-filter-wrapper')) {
+                    document.getElementById('weekly-filial-filter-dropdown')?.classList.add('hidden');
+                }
             });
             document._weeklyFilterListener = true;
         }
@@ -22830,6 +23539,22 @@ const supervisorGroups = new Map();
                 selectedWeeklySupervisors.clear();
                 selectedWeeklyVendedores.clear();
                 selectedWeeklySuppliers.clear();
+
+                weeklyRedeGroupFilter = '';
+                selectedWeeklyRedes = [];
+                if (redeGroupContainer) {
+                    redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    redeGroupContainer.querySelector('button[data-group=""]').classList.add('active');
+                }
+                if (redeDropdown) redeDropdown.classList.add('hidden');
+                if (comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
+
+                weeklyFilialFilter = 'all';
+                if (filialText) filialText.textContent = 'Todas (05 + 08)';
+                // Reset radios
+                const radios = document.getElementsByName('weekly-filial');
+                radios.forEach(r => r.checked = r.value === 'all');
+
                 updateWeeklySupervisorFilter();
                 updateWeeklyVendedorFilter();
                 updateWeeklySupplierFilter();
@@ -22924,16 +23649,37 @@ const supervisorGroups = new Map();
         const isCol = allSalesData instanceof ColumnarDataset;
         const result = [];
 
-        if (isPromoterMode) {
-            const filteredClients = getHierarchyFilteredClients('weekly', allClientsData);
-            const clientCodes = new Set(filteredClients.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
+        // Rede / Filial filters
+        const checkRede = weeklyRedeGroupFilter !== '';
+        const isComRede = weeklyRedeGroupFilter === 'com_rede';
+        const isSemRede = weeklyRedeGroupFilter === 'sem_rede';
+        const redeSet = (isComRede && selectedWeeklyRedes.length > 0) ? new Set(selectedWeeklyRedes) : null;
+        const checkFilial = weeklyFilialFilter !== 'all';
 
+        if (isPromoterMode) {
+            let filteredClients = getHierarchyFilteredClients('weekly', allClientsData);
+
+            // Apply Rede Filter on Clients first
+            if (checkRede) {
+                filteredClients = filteredClients.filter(c => {
+                    if (isComRede) {
+                        if (!c.ramo || c.ramo === 'N/A') return false;
+                        if (redeSet && !redeSet.has(c.ramo)) return false;
+                    } else if (isSemRede) {
+                        if (c.ramo && c.ramo !== 'N/A') return false;
+                    }
+                    return true;
+                });
+            }
+
+            const clientCodes = new Set(filteredClients.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
             const hasSupp = selectedWeeklySuppliers.size > 0;
 
             for(let i=0; i<allSalesData.length; i++) {
                 const s = isCol ? allSalesData.get(i) : allSalesData[i];
                 if (!clientCodes.has(normalizeKey(s.CODCLI))) continue;
                 if (hasSupp && !selectedWeeklySuppliers.has(String(s.CODFOR))) continue;
+                if (checkFilial && String(s.FILIAL) !== weeklyFilialFilter) continue;
                 result.push(s);
             }
             return result;
@@ -22944,15 +23690,12 @@ const supervisorGroups = new Map();
         const hasVend = selectedWeeklyVendedores.size > 0;
         const hasSupp = selectedWeeklySuppliers.size > 0;
 
-        if (!hasSup && !hasVend && !hasSupp) {
-            return allSalesData;
-        }
-        
-        const colValues = isCol ? allSalesData._data : null;
         const total = allSalesData.length;
+        const colValues = isCol ? allSalesData._data : null;
         
         for(let i=0; i<total; i++) {
             let keep = true;
+            // Native Filters
             if (hasSup) {
                 const sup = isCol ? colValues['SUPERV'][i] : allSalesData[i].SUPERV;
                 if (!selectedWeeklySupervisors.has(sup)) keep = false;
@@ -22964,6 +23707,27 @@ const supervisorGroups = new Map();
             if (keep && hasSupp) {
                 const supp = isCol ? colValues['CODFOR'][i] : allSalesData[i].CODFOR;
                 if (!selectedWeeklySuppliers.has(supp)) keep = false;
+            }
+            if (keep && checkFilial) {
+                const fil = isCol ? colValues['FILIAL'][i] : allSalesData[i].FILIAL;
+                if (String(fil) !== weeklyFilialFilter) keep = false;
+            }
+
+            // Rede Filter (Expensive Lookup)
+            if (keep && checkRede) {
+                const codCli = isCol ? colValues['CODCLI'][i] : allSalesData[i].CODCLI;
+                const client = optimizedData.clientsById.get(normalizeKey(codCli));
+                if (client) {
+                    if (isComRede) {
+                        if (!client.ramo || client.ramo === 'N/A') keep = false;
+                        else if (redeSet && !redeSet.has(client.ramo)) keep = false;
+                    } else if (isSemRede) {
+                        if (client.ramo && client.ramo !== 'N/A') keep = false;
+                    }
+                } else {
+                    // Default behavior for unknown clients
+                    if (isComRede) keep = false;
+                }
             }
 
             if (keep) {
@@ -24656,6 +25420,69 @@ const supervisorGroups = new Map();
                     if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
                         dropdown.classList.add('hidden');
                         if (wrapper) wrapper.classList.remove('z-50');
+                    }
+                });
+            }
+        }
+
+        function setupInnovationsMonthRedeFilterHandlers() {
+            const redeGroupContainer = document.getElementById('innovations-month-rede-group-container');
+            const dropdown = document.getElementById('innovations-month-rede-filter-dropdown');
+            const comRedeBtn = document.getElementById('innovations-month-com-rede-btn');
+            const comRedeBtnText = document.getElementById('innovations-month-com-rede-btn-text');
+
+            if (redeGroupContainer) {
+                redeGroupContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('button');
+                    if (!btn) return;
+
+                    const group = btn.dataset.group;
+                    innovationsMonthRedeGroupFilter = group;
+
+                    // UI Update
+                    redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    if (group === 'com_rede') {
+                        dropdown.classList.remove('hidden');
+                        const { clients: clientsRede } = getInnovationsMonthFilteredData({ excludeFilter: 'rede' });
+                        selectedInnovationsMonthRedes = updateRedeFilter(dropdown, comRedeBtnText, selectedInnovationsMonthRedes, clientsRede);
+                    } else {
+                        dropdown.classList.add('hidden');
+                        // Do NOT clear selected redes immediately if switching to "Todos" or "Sem Rede",
+                        // but logic says if "sem_rede", selected redes don't apply.
+                        // If "com_rede" is deselected, we usually clear selections or just hide.
+                        // Let's follow mix pattern:
+                        if (group !== 'com_rede') {
+                             // Reset text?
+                             if (comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
+                        }
+                        updateInnovationsMonthView();
+                    }
+                });
+
+                // Dropdown Listener for Checkboxes (Delegation)
+                if (dropdown) {
+                    dropdown.addEventListener('change', (e) => {
+                        if (e.target.type === 'checkbox') {
+                            const val = e.target.value;
+                            if (e.target.checked) {
+                                selectedInnovationsMonthRedes.push(val);
+                            } else {
+                                selectedInnovationsMonthRedes = selectedInnovationsMonthRedes.filter(v => v !== val);
+                            }
+                            // Re-render dropdown to update count/text
+                            const { clients: clientsRede } = getInnovationsMonthFilteredData({ excludeFilter: 'rede' });
+                            updateRedeFilter(dropdown, comRedeBtnText, selectedInnovationsMonthRedes, clientsRede);
+                            updateInnovationsMonthView();
+                        }
+                    });
+                }
+
+                // Close dropdown on click outside
+                document.addEventListener('click', (e) => {
+                    if (comRedeBtn && dropdown && !comRedeBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
                     }
                 });
             }
