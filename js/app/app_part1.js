@@ -2259,8 +2259,8 @@
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 if (isAmericanas) return true;
                 // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS (Empty RCA1)
-                if (rca1 === '53') return false;
-                if (rca1 === '') return false; // Exclude INATIVOS
+                // if (rca1 === '53') return false;
+                // if (rca1 === '') return false; // Exclude INATIVOS
                 return true;
             });
 
@@ -3819,8 +3819,8 @@
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 // Same active logic as Goals
                 if (isAmericanas) return true;
-                if (rca1 === '53') return false;
-                if (rca1 === '') return false;
+                // if (rca1 === '53') return false;
+                // if (rca1 === '') return false;
                 return true;
             });
 
@@ -4585,8 +4585,8 @@
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 if (isAmericanas) return true;
-                if (rca1 === '53') return false;
-                if (rca1 === '') return false;
+                // if (rca1 === '53') return false;
+                // if (rca1 === '') return false;
                 return true;
             });
 
@@ -4660,6 +4660,7 @@
                 const codCli = String(s.CODCLI);
                 // Check if client is in allowed list (Active/Filtered)
                 // Note: User said "todos os clientes que possuírem metas OU vendas".
+                // Logic updated to include inactive clients in base list so they appear if they have goals OR sales.
                 // If a client has sales but was filtered out by "Active" check (e.g. Inactive RCA), should they appear?
                 // Usually yes, sales override status.
                 // However, we are filtering by Supervisor/Seller above.
