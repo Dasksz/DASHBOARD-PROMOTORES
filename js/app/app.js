@@ -23350,7 +23350,7 @@ const supervisorGroups = new Map();
             const stockFilialDropdown = document.getElementById('stock-filial-filter-dropdown');
 
             if (stockFilialInput) stockFilialInput.value = 'all';
-            if (stockFilialText) stockFilialText.textContent = 'Todas (05 + 08)';
+            if (stockFilialText) stockFilialText.textContent = 'Ambas';
             if (stockFilialDropdown) {
                 stockFilialDropdown.querySelectorAll('input[type="radio"]').forEach(r => {
                     if (r.value === 'all') r.checked = true;
@@ -23617,7 +23617,7 @@ const supervisorGroups = new Map();
                 if (comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
 
                 weeklyFilialFilter = 'all';
-                if (filialText) filialText.textContent = 'Todas (05 + 08)';
+                if (filialText) filialText.textContent = 'Ambas';
                 // Reset radios
                 const radios = document.getElementsByName('weekly-filial');
                 radios.forEach(r => r.checked = r.value === 'all');
