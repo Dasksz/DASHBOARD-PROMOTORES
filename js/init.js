@@ -1020,9 +1020,9 @@
                     // APPLY FILTERS (Source of Truth: Wallet/Carteira)
 
                     // Unified Client Allowlist (The "Wallet")
-                    const allowedClientCodes = new Set();
+                    const walletClientCodes = new Set();
 
-                    // --- 1. DEFINE WALLET ---
+                    // --- 1. DEFINE WALLET (FROM DATA_CLIENTS) ---
                     if (allowedPromoters.size > 0) {
                         // PROMOTER / COORDINATOR LOGIC
                         console.log(`[Access Control] Filtering for Trade Role '${role}'. Allowed Promoters: ${allowedPromoters.size}`);
@@ -1033,7 +1033,7 @@
                         for(let i=0; i<clients.length; i++) {
                             const p = String(promotorCol[i] || '').trim().toLowerCase();
                             if (allowedPromoters.has(p)) {
-                                allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
+                                walletClientCodes.add(normalizeKey(clientCodesCol[i]));
                             }
                         }
 
@@ -1050,7 +1050,7 @@
                         for(let i=0; i<clients.length; i++) {
                             const rca = String(rcaCol[i] || '').trim();
                             if (supervisedSellers.has(rca)) {
-                                allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
+                                walletClientCodes.add(normalizeKey(clientCodesCol[i]));
                             }
                         }
 
@@ -1067,37 +1067,74 @@
                         for(let i=0; i<clients.length; i++) {
                             const rca = String(rcaCol[i] || '').trim().toLowerCase();
                             if (rca === normalizedRole) {
-                                allowedClientCodes.add(normalizeKey(clientCodesCol[i]));
+                                walletClientCodes.add(normalizeKey(clientCodesCol[i]));
                             }
                         }
                     }
 
-                    // --- 2. APPLY FILTER TO ALL DATASETS BASED ON WALLET ---
-                    if (allowedClientCodes.size > 0) {
-                        console.log(`[Access Control] Wallet Size: ${allowedClientCodes.size} Clients.`);
+                    // --- 1.5 FIND GHOST CLIENTS (IN CURRENT SALES BUT NOT IN WALLET) ---
+                    // Rule: If a client has sales THIS MONTH for this Supervisor/Seller, include them in current view,
+                    // even if they are missing from data_clients. History remains strictly filtered by Wallet.
+                    const salesBasedClientCodes = new Set();
 
-                        // A. Filter Clients
+                    if (detailed.length > 0 && (isSupervisor || isSeller)) {
+                        const supCol = detailed.values['CODSUPERVISOR'] || [];
+                        const sellerCol = detailed.values['CODUSUR'] || []; // RCA Code
+                        const cliCol = detailed.values['CODCLI'] || [];
+                        const len = detailed.length;
+
+                        for(let i=0; i<len; i++) {
+                            const rowSup = String(supCol[i] || '').trim().toLowerCase();
+                            const rowSeller = String(sellerCol[i] || '').trim();
+                            const codCli = normalizeKey(cliCol[i]);
+
+                            let isMine = false;
+                            if (isSupervisor) {
+                                if (rowSup === normalizedRole) isMine = true;
+                                else if (supervisedSellers.has(rowSeller)) isMine = true;
+                            } else if (isSeller) {
+                                // Match RCA Code
+                                if (rowSeller.toLowerCase() === normalizedRole) isMine = true;
+                            }
+
+                            if (isMine) {
+                                salesBasedClientCodes.add(codCli);
+                            }
+                        }
+                        console.log(`[Access Control] Found ${salesBasedClientCodes.size} clients in current sales.`);
+                    }
+
+                    // --- 2. APPLY FILTER TO ALL DATASETS ---
+                    // Scope for Current Data (Detailed, Orders): Wallet OR Sales
+                    const allowedCurrentCodes = new Set([...walletClientCodes, ...salesBasedClientCodes]);
+                    // Scope for History: Wallet ONLY
+                    const allowedHistoryCodes = walletClientCodes;
+
+                    if (allowedCurrentCodes.size > 0) {
+                        console.log(`[Access Control] Wallet Size: ${walletClientCodes.size}. Current View Scope: ${allowedCurrentCodes.size}.`);
+
+                        // A. Filter Clients (Strictly Wallet - Ghost clients don't exist in data_clients table anyway)
                         const newClientsValues = {};
                         clients.columns.forEach(c => newClientsValues[c] = []);
                         let newClientsLen = 0;
                         const clientCodesCol = clients.values['CODIGO_CLIENTE'] || clients.values['Código'] || [];
 
                         for(let i=0; i<clients.length; i++) {
-                            if (allowedClientCodes.has(normalizeKey(clientCodesCol[i]))) {
+                            if (walletClientCodes.has(normalizeKey(clientCodesCol[i]))) {
                                 clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
                                 newClientsLen++;
                             }
                         }
                         filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
 
-                        // B. Filter Detailed (Sales) - Strict Wallet Filter
+                        // B. Filter Detailed (Sales) - Union Scope (Wallet + Ghost)
                         const detCodCliCol = detailed.values['CODCLI'] || [];
                         const newDetailedValues = {};
                         detailed.columns.forEach(c => newDetailedValues[c] = []);
                         let newDetailedLen = 0;
 
                         for(let i=0; i<detailed.length; i++) {
-                            if (allowedClientCodes.has(normalizeKey(detCodCliCol[i]))) {
+                            if (allowedCurrentCodes.has(normalizeKey(detCodCliCol[i]))) {
                                 detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c][i]));
                                 newDetailedLen++;
                             }
@@ -1111,15 +1148,15 @@
                         let newHistoryLen = 0;
 
                         for(let i=0; i<history.length; i++) {
-                            if (allowedClientCodes.has(normalizeKey(histCodCliCol[i]))) {
+                            if (allowedHistoryCodes.has(normalizeKey(histCodCliCol[i]))) {
                                 history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
                                 newHistoryLen++;
                             }
                         }
                         filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
 
-                        // D. Filter Orders
-                        filteredOrders = orders.filter(o => allowedClientCodes.has(normalizeKey(o.codcli)));
+                        // D. Filter Orders - Union Scope
+                        filteredOrders = orders.filter(o => allowedCurrentCodes.has(normalizeKey(o.codcli)));
 
                     } else {
                         console.warn(`[Access Control] Role '${role}' not found in hierarchy, supervisor list, or seller list. Showing empty view.`);
