@@ -70,6 +70,32 @@
             }
         };
 
+        // --- Helper Functions for Data Preservation ---
+        function columnarToRaw(columnarData) {
+            if (!columnarData || !columnarData.columns || !columnarData.values) return [];
+            const { columns, values, length } = columnarData;
+            const result = new Array(length);
+            for (let i = 0; i < length; i++) {
+                const row = {};
+                for (let j = 0; j < columns.length; j++) {
+                    const col = columns[j];
+                    row[col] = values[col][i];
+                }
+                result[i] = row;
+            }
+            return result;
+        }
+
+        function mapDbToCsvHistory(dbRow) {
+            const newRow = {};
+            for (const key in dbRow) {
+                // Convert DB keys (lowercase) to CSV keys (uppercase) for processing compatibility
+                newRow[key.toUpperCase()] = dbRow[key];
+            }
+            return newRow;
+        }
+        // ----------------------------------------------
+
         function parseDate(dateString) {
             if (!dateString) return null;
             if (dateString instanceof Date) {
@@ -262,11 +288,14 @@
         const readFile = (file, fileType) => {
             return new Promise((resolve, reject) => {
                 if (!file) {
-                    if (fileType !== 'innovations') {
-                         reject(new Error(`Arquivo obrigatório para '${fileType}' não foi fornecido.`));
+                    // Make specific file types optional
+                    const optionalTypes = ['innovations', 'history', 'hierarchy', 'titulos', 'products'];
+                    if (optionalTypes.includes(fileType)) {
+                         resolve([]);
                          return;
                     }
-                    resolve([]);
+
+                    reject(new Error(`Arquivo obrigatório para '${fileType}' não foi fornecido.`));
                     return;
                 }
 
@@ -808,7 +837,7 @@
         }
 
         self.onmessage = async (event) => {
-            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolvesFile1, notaInvolvesFile2, referenceData } = event.data;
+            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolvesFile1, notaInvolvesFile2, referenceData, fallbackData } = event.data;
 
             try {
                 self.postMessage({ type: 'progress', status: 'Lendo arquivos...', percentage: 10 });
@@ -824,17 +853,29 @@
                     readFile(notaInvolvesFile2, 'nota_perfeita').catch(() => [])  // Optional
                 ]);
 
+                // --- DATA PRESERVATION LOGIC ---
+                // History Fallback
+                let effectiveHistoryDataRaw = historyDataRaw;
+                if (historyDataRaw.length === 0 && fallbackData && fallbackData.history) {
+                    // Check if fallbackData.history has data (Columnar)
+                    if (fallbackData.history.length > 0) {
+                        self.postMessage({ type: 'progress', status: 'Reutilizando histórico existente...', percentage: 12 });
+                        const rawHistory = columnarToRaw(fallbackData.history);
+                        effectiveHistoryDataRaw = rawHistory.map(mapDbToCsvHistory);
+                    }
+                }
 
+                // Fallback Logic for other optional files is handled during processing below
+                // -------------------------------
 
                 self.postMessage({ type: 'progress', status: 'Criando mapa mestre de supervisores...', percentage: 20 });
                 const newRcaSupervisorMap = new Map();
                 const lastSaleDateMap = new Map();
 
-                // --- INÍCIO DA MODIFICAÇÃO: Usar vendas atuais E históricas para o mapa mestre ---
-                const allSalesForMap = [...salesDataRaw, ...historyDataRaw];
+                // Use effectiveHistoryDataRaw
+                const allSalesForMap = [...salesDataRaw, ...effectiveHistoryDataRaw];
 
                 allSalesForMap.forEach(row => {
-                // --- FIM DA MODIFICAÇÃO ---
                     try {
                         const codUsur = String(row['CODUSUR'] || '').trim();
                         // Filter out headers that might have slipped through
@@ -889,25 +930,42 @@
                 const activeProductCodesFromCadastro = new Set();
                 const productDetailsMap = new Map();
 
-                productsDataRaw.forEach(prod => {
-                    const productCode = String(prod['Código'] || '').trim();
-                    if (!productCode) return;
-                    activeProductCodesFromCadastro.add(productCode);
-                    let qtdeMaster = parseInt(prod['Qtde embalagem master(Compra)'], 10);
-                    if (isNaN(qtdeMaster) || qtdeMaster <= 0) qtdeMaster = 1;
-                    productMasterMap.set(productCode, qtdeMaster);
-                    if (!productDetailsMap.has(productCode)) {
-                            const dtCad = parseDate(prod['Dt.Cadastro']);
-                            productDetailsMap.set(productCode, {
-                                code: productCode,
-                                descricao: String(prod['Descrição'] || `Produto ${productCode}`),
-                                fornecedor: String(prod['Nome do fornecedor'] || 'N/A'),
-                                codfor: String(prod['Fornecedor'] || 'N/A'),
-                                dtCadastro: dtCad ? dtCad.getTime() : null,
-                                pasta: null
-                            });
-                        }
-                });
+                // Products Fallback
+                if (productsDataRaw.length === 0 && fallbackData && fallbackData.products) {
+                    self.postMessage({ type: 'progress', status: 'Reutilizando cadastro de produtos existente...', percentage: 32 });
+                    // Populate from fallback (Object/Map)
+                    Object.values(fallbackData.products).forEach(p => {
+                        productDetailsMap.set(p.code, p);
+                    });
+
+                    if (fallbackData.activeProducts) {
+                        fallbackData.activeProducts.forEach(p => activeProductCodesFromCadastro.add(p.code));
+                    } else {
+                        // Fallback: use all in map
+                        productDetailsMap.forEach((v, k) => activeProductCodesFromCadastro.add(k));
+                    }
+                } else {
+                    // Original Logic
+                    productsDataRaw.forEach(prod => {
+                        const productCode = String(prod['Código'] || '').trim();
+                        if (!productCode) return;
+                        activeProductCodesFromCadastro.add(productCode);
+                        let qtdeMaster = parseInt(prod['Qtde embalagem master(Compra)'], 10);
+                        if (isNaN(qtdeMaster) || qtdeMaster <= 0) qtdeMaster = 1;
+                        productMasterMap.set(productCode, qtdeMaster);
+                        if (!productDetailsMap.has(productCode)) {
+                                const dtCad = parseDate(prod['Dt.Cadastro']);
+                                productDetailsMap.set(productCode, {
+                                    code: productCode,
+                                    descricao: String(prod['Descrição'] || `Produto ${productCode}`),
+                                    fornecedor: String(prod['Nome do fornecedor'] || 'N/A'),
+                                    codfor: String(prod['Fornecedor'] || 'N/A'),
+                                    dtCadastro: dtCad ? dtCad.getTime() : null,
+                                    pasta: null
+                                });
+                            }
+                    });
+                }
 
 
                 const clientRcaOverrides = new Map();
@@ -923,36 +981,10 @@
                 const clientCnpjMap = new Map(); 
 
                 // Pre-populate if referenceData (existing clients) is provided AND current clients file is missing or we want to merge?
-                // Logic: If clientsFile is provided, use it as source of truth. If not, use referenceData.
-                // The Uploader logic in app.js typically sends both if user uploads. If user only uploads 'Nota', clientsFile is null.
-                // But wait, readFile(null) returns []. So clientsDataRaw is empty array.
                 
                 let sourceClients = clientsDataRaw;
-                if (sourceClients.length === 0 && referenceData && referenceData.clients) {
-                    // Use reference data if available and no new file
-                    // But referenceData might be in different format (processed objects).
-                    // We need a uniform way.
-                    // Actually, for the general dashboard refresh, we need full processing.
-                    // If clients are missing, dashboard will break. 
-                    // BUT for "Nota Perfeita" ONLY upload, we might want to just process that and return partial result?
-                    // The Worker always returns a FULL state object (replacing embeddedData). 
-                    // So we MUST have all data.
-                    // Assumption: The App will pass the *existing* raw data back to worker if no file selected?
-                    // No, that's heavy. 
-                    
-                    // CORRECTION: The `admin-uploader` usually requires ALL core files to be present for a full refresh.
-                    // If the user selects ONLY optional files, `app.js` should probably handle it differently or we are assuming a full re-upload.
-                    // However, the prompt implies adding a field. Usually users upload everything together.
-                    // IF they upload partially, they expect a merge?
-                    // Standard behavior of this app: Full Replacement.
-                    // So if I upload Notes, I must upload Clients too?
-                    // The user said: "nos faremos a logica para identificar o 'CNPJ/CPF' desse cliente...".
-                    
-                    // Decision: I will populate `clientCnpjMap` from `clientsDataRaw`. If empty, try `referenceData`.
-                    // `referenceData.cnpjMap` would be ideal.
-                    if (referenceData && referenceData.cnpjMap) {
-                        Object.entries(referenceData.cnpjMap).forEach(([k,v]) => clientCnpjMap.set(k, v));
-                    }
+                if (sourceClients.length === 0 && referenceData && referenceData.cnpjMap) {
+                    Object.entries(referenceData.cnpjMap).forEach(([k,v]) => clientCnpjMap.set(k, v));
                 }
 
                 // Helper to get value from multiple possible keys
@@ -1038,21 +1070,13 @@
 
                 // Pass collector and maxDate to processSalesData
                 const processedSalesData = processSalesData(salesDataRaw, clientMap, productMasterMap, newRcaSupervisorMap, stockLinesCollector, maxSalesDate).filter(item => item !== null);
-                // History data usually doesn't have stock lines, but passing null/null is safe or consistent
-                const processedHistoryData = processSalesData(historyDataRaw, clientMap, productMasterMap, newRcaSupervisorMap, null, null).filter(item => item !== null);
+
+                // Process History (using effective raw data)
+                const processedHistoryData = processSalesData(effectiveHistoryDataRaw, clientMap, productMasterMap, newRcaSupervisorMap, null, null).filter(item => item !== null);
 
                 // Update productMasterMap / productDetailsMap with info from stockLines (if missing)
-                // This ensures "Lost Products" table has Description/Supplier even if product is not in the Products File
                 stockLinesCollector.forEach(item => {
                     const code = item.PRODUTO;
-
-                    // CRITICAL: Ensure these products are considered "Active" so they appear in lists
-                    // --- MODIFICAÇÃO: Não reativar automaticamente produtos sem venda (apenas estoque) ---
-                    // activeProductCodesFromCadastro.add(code);
-
-                    // Note: productMasterMap stores qtdeMaster. We probably don't have that in stock lines,
-                    // but we have Description/Supplier which goes into productDetailsMap (used for display).
-
                     if (!productDetailsMap.has(code)) {
                         // Create a partial entry for display purposes
                         productDetailsMap.set(code, {
@@ -1275,39 +1299,61 @@
                     finalStockData.push({ product_code: code, filial: '08', stock_qty: qty });
                 });
 
-                const finalInnovationsData = innovationsDataRaw.map(item => ({
-                    codigo: item['Codigo'] || item['codigo'] || null,
-                    produto: item['Produto'] || item['produto'] || null,
-                    inovacoes: item['Inovacoes'] || item['inovacoes'] || null
-                }));
+                // Innovations Fallback
+                let finalInnovationsData;
+                if (innovationsDataRaw.length > 0) {
+                    finalInnovationsData = innovationsDataRaw.map(item => ({
+                        codigo: item['Codigo'] || item['codigo'] || null,
+                        produto: item['Produto'] || item['produto'] || null,
+                        inovacoes: item['Inovacoes'] || item['inovacoes'] || null
+                    }));
+                } else if (fallbackData && fallbackData.innovations) {
+                    finalInnovationsData = fallbackData.innovations;
+                } else {
+                    finalInnovationsData = [];
+                }
 
                 const finalMetadata = [];
                 finalMetadata.push({ key: 'passed_working_days', value: String(passedWorkingDaysCurrentMonth) });
                 finalMetadata.push({ key: 'last_update', value: new Date().toISOString() });
                 finalMetadata.push({ key: 'last_sale_date', value: String(maxTs) });
 
-                // Preserve 'senha_modal' from existing metadata (if available in raw metadata array)
-                const finalHierarchyData = hierarchyDataRaw.map(item => ({
-                    cod_coord: String(item['COD COORD.'] || '').trim(),
-                    nome_coord: String(item['COORDENADOR'] || '').trim(),
-                    cod_cocoord: String(item['COD CO-COORD.'] || '').trim(),
-                    nome_cocoord: String(item['CO-COORDENADOR'] || '').trim(),
-                    cod_promotor: String(item['COD PROMOTOR'] || '').trim(),
-                    nome_promotor: String(item['PROMOTOR'] || '').trim()
-                })).filter(h => h.cod_coord || h.cod_promotor);
+                // Hierarchy Fallback
+                let finalHierarchyData;
+                if (hierarchyDataRaw.length > 0) {
+                    finalHierarchyData = hierarchyDataRaw.map(item => ({
+                        cod_coord: String(item['COD COORD.'] || '').trim(),
+                        nome_coord: String(item['COORDENADOR'] || '').trim(),
+                        cod_cocoord: String(item['COD CO-COORD.'] || '').trim(),
+                        nome_cocoord: String(item['CO-COORDENADOR'] || '').trim(),
+                        cod_promotor: String(item['COD PROMOTOR'] || '').trim(),
+                        nome_promotor: String(item['PROMOTOR'] || '').trim()
+                    })).filter(h => h.cod_coord || h.cod_promotor);
+                } else if (fallbackData && fallbackData.hierarchy) {
+                    finalHierarchyData = fallbackData.hierarchy;
+                } else {
+                    finalHierarchyData = [];
+                }
 
-                // Process Titulos Data
-                const finalTitulosData = titulosDataRaw.map(item => {
-                    const dt = parseDate(item['DTVENC']);
-                    return {
-                        cod_cliente: normalizeKey(item['CODCLI']),
-                        vl_receber: parseBrazilianNumber(item['VLRECEBER']),
-                        qt_tit_receber: parseBrazilianNumber(item['QTTITRECEBER']),
-                        vl_titulos: parseBrazilianNumber(item['VLTITULOS']),
-                        qt_titulos: parseBrazilianNumber(item['QTTITULOS']),
-                        dt_vencimento: dt ? dt.toISOString().split('T')[0] : null
-                    };
-                }).filter(t => t.cod_cliente);
+                // Titulos Fallback
+                let finalTitulosData;
+                if (titulosDataRaw.length > 0) {
+                    finalTitulosData = titulosDataRaw.map(item => {
+                        const dt = parseDate(item['DTVENC']);
+                        return {
+                            cod_cliente: normalizeKey(item['CODCLI']),
+                            vl_receber: parseBrazilianNumber(item['VLRECEBER']),
+                            qt_tit_receber: parseBrazilianNumber(item['QTTITRECEBER']),
+                            vl_titulos: parseBrazilianNumber(item['VLTITULOS']),
+                            qt_titulos: parseBrazilianNumber(item['QTTITULOS']),
+                            dt_vencimento: dt ? dt.toISOString().split('T')[0] : null
+                        };
+                    }).filter(t => t.cod_cliente);
+                } else if (fallbackData && fallbackData.titulos) {
+                    finalTitulosData = fallbackData.titulos;
+                } else {
+                    finalTitulosData = [];
+                }
 
                 // Process Nota Perfeita
                 const { data: finalNotaPerfeitaData, uniqueCount: finalNotaPerfeitaCount } = processLojaPerfeita([nota1DataRaw, nota2DataRaw], clientCnpjMap);
