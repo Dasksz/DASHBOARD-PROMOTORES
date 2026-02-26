@@ -1312,6 +1312,54 @@
                 // Process Nota Perfeita
                 const { data: finalNotaPerfeitaData, uniqueCount: finalNotaPerfeitaCount } = processLojaPerfeita([nota1DataRaw, nota2DataRaw], clientCnpjMap);
 
+                // --- DIMENSION TABLES EXTRACTION (Optimization) ---
+                self.postMessage({ type: 'progress', status: 'Extraindo tabelas dimensão...', percentage: 96 });
+
+                // 1. DIM_VENDEDORES
+                const dimVendedoresMap = new Map();
+                newRcaSupervisorMap.forEach((info, codUsur) => {
+                    if (codUsur && info.NOME) {
+                        dimVendedoresMap.set(codUsur, { codigo: codUsur, nome: info.NOME });
+                    }
+                });
+                const finalDimVendedores = Array.from(dimVendedoresMap.values());
+
+                // 2. DIM_SUPERVISORES
+                const dimSupervisoresMap = new Map();
+                newRcaSupervisorMap.forEach((info) => {
+                    const codSup = info.CODSUPERVISOR;
+                    if (codSup && codSup !== '' && info.SUPERV) {
+                        dimSupervisoresMap.set(codSup, { codigo: codSup, nome: info.SUPERV });
+                    }
+                });
+                // Ensure manual "99 - INATIVOS" / "8 - BALCAO" if strictly needed, though logic covers it if present in sales
+                const finalDimSupervisores = Array.from(dimSupervisoresMap.values());
+
+                // 3. DIM_FORNECEDORES
+                const dimFornecedoresMap = new Map();
+                // Extract from Products (Master Source)
+                productDetailsMap.forEach(p => {
+                    if (p.codfor && p.fornecedor) {
+                        dimFornecedoresMap.set(p.codfor, { codigo: p.codfor, nome: p.fornecedor });
+                    }
+                });
+                // Fallback scan from Sales
+                salesDataRaw.forEach(s => {
+                    const c = String(s['CODFOR']||'').trim();
+                    const n = String(s['FORNECEDOR']||'').trim();
+                    if(c && n && !dimFornecedoresMap.has(c)) dimFornecedoresMap.set(c, { codigo: c, nome: n });
+                });
+                const finalDimFornecedores = Array.from(dimFornecedoresMap.values());
+
+                // 4. DIM_PRODUTOS
+                // Use productDetailsMap which is already robust (Master + Stock + Sales)
+                const finalDimProdutos = Array.from(productDetailsMap.values()).map(p => ({
+                    codigo: p.code,
+                    descricao: p.descricao,
+                    codfor: p.codfor
+                    // mix_marca/categoria filled by DB trigger
+                }));
+
                 // --- HASH COMPUTATION FOR CONDITIONAL UPLOADS ---
                 self.postMessage({ type: 'progress', status: 'Gerando assinaturas digitais...', percentage: 98 });
                 const hashes = await Promise.all([
@@ -1325,7 +1373,11 @@
                     computeHash(finalInnovationsData),
                     computeHash(finalHierarchyData),
                     computeHash(finalTitulosData),
-                    computeHash(finalNotaPerfeitaData)
+                    computeHash(finalNotaPerfeitaData),
+                    computeHash(finalDimVendedores),
+                    computeHash(finalDimSupervisores),
+                    computeHash(finalDimFornecedores),
+                    computeHash(finalDimProdutos)
                 ]);
 
                 finalMetadata.push({ key: 'hash_detailed', value: hashes[0] });
@@ -1340,6 +1392,10 @@
                 finalMetadata.push({ key: 'hash_titulos', value: hashes[9] });
                 finalMetadata.push({ key: 'hash_nota_perfeita', value: hashes[10] });
                 finalMetadata.push({ key: 'count_nota_perfeita_clients', value: String(finalNotaPerfeitaCount) });
+                finalMetadata.push({ key: 'hash_dim_vendedores', value: hashes[11] });
+                finalMetadata.push({ key: 'hash_dim_supervisores', value: hashes[12] });
+                finalMetadata.push({ key: 'hash_dim_fornecedores', value: hashes[13] });
+                finalMetadata.push({ key: 'hash_dim_produtos', value: hashes[14] });
 
 
                 self.postMessage({ type: 'progress', status: 'Pronto!', percentage: 100 });
@@ -1360,6 +1416,13 @@
                         nota_perfeita_count: finalNotaPerfeitaCount, // Pass explicitly for easier access
                         product_details: finalProductDetailsData,
                         active_products: finalActiveProductsData,
+
+                        // New Dimensions
+                        dim_vendedores: finalDimVendedores,
+                        dim_supervisores: finalDimSupervisores,
+                        dim_fornecedores: finalDimFornecedores,
+                        dim_produtos: finalDimProdutos,
+
                         metadata: finalMetadata,
 
                         // Legacy Maps for Frontend (if needed, or logic script handles it)

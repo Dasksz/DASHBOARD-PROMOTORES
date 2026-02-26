@@ -242,6 +242,35 @@ create table if not exists public.relacao_rota_involves (
 create index if not exists idx_relacao_rota_involves_seller on public.relacao_rota_involves (seller_code);
 create index if not exists idx_relacao_rota_involves_involves on public.relacao_rota_involves (involves_code);
 
+-- 1.18 DIMENSION TABLES (OPTIMIZATION)
+
+-- 1.18.1 DIM_VENDEDORES (Sellers)
+CREATE TABLE IF NOT EXISTS public.dim_vendedores (
+    codigo text PRIMARY KEY,
+    nome text
+);
+
+-- 1.18.2 DIM_SUPERVISORES (Supervisors)
+CREATE TABLE IF NOT EXISTS public.dim_supervisores (
+    codigo text PRIMARY KEY,
+    nome text
+);
+
+-- 1.18.3 DIM_FORNECEDORES (Suppliers)
+CREATE TABLE IF NOT EXISTS public.dim_fornecedores (
+    codigo text PRIMARY KEY,
+    nome text
+);
+
+-- 1.18.4 DIM_PRODUTOS (Products)
+CREATE TABLE IF NOT EXISTS public.dim_produtos (
+    codigo text PRIMARY KEY,
+    descricao text,
+    codfor text,
+    mix_marca text,
+    mix_categoria text
+);
+
 -- Ensure columns exist (Idempotency for older schemas)
 do $$
 BEGIN
@@ -315,7 +344,8 @@ BEGIN
   IF table_name NOT IN (
     'data_detailed', 'data_history', 'data_clients', 'data_orders', 
     'data_product_details', 'data_active_products', 'data_stock', 
-    'data_innovations', 'data_metadata', 'goals_distribution', 'data_hierarchy', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves'
+    'data_innovations', 'data_metadata', 'goals_distribution', 'data_hierarchy', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves',
+    'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos'
   ) THEN
     RAISE EXCEPTION 'Invalid table name.';
   END IF;
@@ -334,6 +364,41 @@ end;
 $$ LANGUAGE plpgsql SECURITY DEFINER
 set
   search_path = public;
+
+-- 2.5 Classify Product Mix (Auto-Trigger Function)
+CREATE OR REPLACE FUNCTION public.classify_product_mix()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- Initialize as null
+    NEW.mix_marca := NULL;
+    NEW.mix_categoria := NULL;
+
+    -- Brand Logic (Optimization: avoid ILIKE if possible, but description is unstructured)
+    IF NEW.descricao ILIKE '%CHEETOS%' THEN NEW.mix_marca := 'CHEETOS';
+    ELSIF NEW.descricao ILIKE '%DORITOS%' THEN NEW.mix_marca := 'DORITOS';
+    ELSIF NEW.descricao ILIKE '%FANDANGOS%' THEN NEW.mix_marca := 'FANDANGOS';
+    ELSIF NEW.descricao ILIKE '%RUFFLES%' THEN NEW.mix_marca := 'RUFFLES';
+    ELSIF NEW.descricao ILIKE '%TORCIDA%' THEN NEW.mix_marca := 'TORCIDA';
+    ELSIF NEW.descricao ILIKE '%TODDYNHO%' THEN NEW.mix_marca := 'TODDYNHO';
+    ELSIF NEW.descricao ILIKE '%TODDY %' THEN NEW.mix_marca := 'TODDY';
+    ELSIF NEW.descricao ILIKE '%QUAKER%' THEN NEW.mix_marca := 'QUAKER';
+    ELSIF NEW.descricao ILIKE '%KEROCOCO%' THEN NEW.mix_marca := 'KEROCOCO';
+    ELSIF NEW.descricao ILIKE '%EQLIBRI%' THEN NEW.mix_marca := 'EQLIBRI';
+    ELSIF NEW.descricao ILIKE '%LAYS%' THEN NEW.mix_marca := 'LAYS';
+    END IF;
+
+    -- Category Logic
+    IF NEW.mix_marca IN ('CHEETOS', 'DORITOS', 'FANDANGOS', 'RUFFLES', 'TORCIDA', 'EQLIBRI', 'LAYS') THEN
+        NEW.mix_categoria := 'SALTY';
+    ELSIF NEW.mix_marca IN ('TODDYNHO', 'TODDY', 'QUAKER', 'KEROCOCO') THEN
+        NEW.mix_categoria := 'FOODS';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
 
 -- ==============================================================================
 -- 3. TRIGGERS
@@ -371,6 +436,13 @@ create trigger on_auth_user_created
 after INSERT on auth.users for EACH row
 execute PROCEDURE public.handle_new_user ();
 
+-- 3.2 Auto-Classify Products (Mix Logic)
+DROP TRIGGER IF EXISTS trg_classify_products ON public.dim_produtos;
+CREATE TRIGGER trg_classify_products
+BEFORE INSERT OR UPDATE OF descricao ON public.dim_produtos
+FOR EACH ROW
+EXECUTE FUNCTION public.classify_product_mix();
+
 -- ==============================================================================
 -- 4. ROW LEVEL SECURITY (RLS) & POLICIES
 -- ==============================================================================
@@ -382,7 +454,7 @@ BEGIN
     FOR t IN 
         SELECT table_name FROM information_schema.tables 
         WHERE table_schema = 'public' 
-        AND (table_name LIKE 'data_%' OR table_name = 'goals_distribution' OR table_name = 'profiles')
+        AND (table_name LIKE 'data_%' OR table_name LIKE 'dim_%' OR table_name = 'goals_distribution' OR table_name = 'profiles')
     LOOP
         EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', t);
         
@@ -482,7 +554,11 @@ BEGIN
             'data_client_promoters',
             'data_titulos',
             'data_nota_perfeita',
-            'relacao_rota_involves'
+            'relacao_rota_involves',
+            'dim_vendedores',
+            'dim_supervisores',
+            'dim_fornecedores',
+            'dim_produtos'
         )
     LOOP
         -- Cleanup
