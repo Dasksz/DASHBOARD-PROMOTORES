@@ -14695,6 +14695,17 @@ const supervisorGroups = new Map();
                     return true;
                 };
 
+                // Helper to sanitize columnar data (remove specified columns)
+                const sanitizeColumnarForUpload = (data, excludeCols) => {
+                    if (!data || !data.columns) return data;
+                    const newCols = data.columns.filter(c => !excludeCols.includes(c.toUpperCase()));
+                    return {
+                        columns: newCols,
+                        values: data.values,
+                        length: data.length
+                    };
+                };
+
                 // Helper to perform conditional upload
                 const conditionalUpload = async (table, dataPart, hashKey, isCol, pk = 'id') => {
                     if (dataPart && (isCol ? dataPart.length > 0 : dataPart.length > 0)) {
@@ -14720,8 +14731,9 @@ const supervisorGroups = new Map();
                     }
                 };
 
-                await conditionalUpload('data_detailed', data.detailed, 'hash_detailed', true);
-                await conditionalUpload('data_history', data.history, 'hash_history', true);
+                const forbiddenDimCols = ['DESCRICAO', 'NOME', 'SUPERV', 'FORNECEDOR'];
+                await conditionalUpload('data_detailed', sanitizeColumnarForUpload(data.detailed, forbiddenDimCols), 'hash_detailed', true);
+                await conditionalUpload('data_history', sanitizeColumnarForUpload(data.history, forbiddenDimCols), 'hash_history', true);
                 await conditionalUpload('data_orders', data.byOrder, 'hash_orders', false);
                 await conditionalUpload('data_clients', data.clients, 'hash_clients', true);
                 await conditionalUpload('data_stock', data.stock, 'hash_stock', false);
