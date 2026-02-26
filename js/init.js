@@ -140,9 +140,47 @@
         const loaderText = document.getElementById('loader-text');
         const dashboardView = document.getElementById('main-dashboard');
 
+        // --- Loading Messages Logic ---
+        const activeLoadingLabels = new Set();
+        let loadingInterval = null;
+
+        const updateLoadingText = () => {
+            if (!loaderText) return;
+            if (activeLoadingLabels.size === 0) {
+                loaderText.textContent = 'Processando...';
+            } else {
+                // Pick the last added message or cycle?
+                // Simple stack approach: show the most recently added message (last in iteration)
+                const messages = Array.from(activeLoadingLabels);
+                const currentMsg = messages[messages.length - 1]; // Show latest
+                loaderText.textContent = currentMsg;
+            }
+        };
+
+        const startLoadingRotator = () => {
+            if (loadingInterval) clearInterval(loadingInterval);
+            updateLoadingText(); // Initial set
+
+            // Optional: Rotate messages if multiple are active, but stack (LIFO) is usually better UX for nested calls.
+            // For now, let's just ensure UI updates when Set changes.
+            // We'll call updateLoadingText() manually on add/remove.
+        };
+
+        const addLoadingLabel = (label) => {
+            if (!label) return;
+            activeLoadingLabels.add(label);
+            updateLoadingText();
+        };
+
+        const removeLoadingLabel = (label) => {
+            if (!label) return;
+            activeLoadingLabels.delete(label);
+            updateLoadingText();
+        };
+
         try {
             loader.classList.remove('hidden');
-            loaderText.textContent = 'Verificando dados...';
+            addLoadingLabel('Verificando dados...');
 
             // --- IndexedDB Cache Logic ---
             const DB_NAME = 'PrimeDashboardDB_V2';
@@ -182,6 +220,7 @@
             let metadataRemote = null;
             let metadataRemoteRaw = null;
             try {
+                addLoadingLabel('Verificando versão...');
                 const { data, error } = await supabaseClient.from('data_metadata').select('*');
                 if (!error && data && data.length > 0) {
                     metadataRemoteRaw = data;
@@ -190,6 +229,8 @@
                 }
             } catch (e) {
                 console.warn('Erro ao buscar metadados:', e);
+            } finally {
+                removeLoadingLabel('Verificando versão...');
             }
 
             // 2. Determine Role and Cache Strategy
@@ -205,8 +246,10 @@
                 if (cachedData && cachedData.hierarchy && cachedData.hierarchy.length > 0) {
                      hierarchyData = cachedData.hierarchy;
                 } else {
+                    addLoadingLabel('Carregando estrutura...');
                     const { data, error } = await supabaseClient.from('data_hierarchy').select('*');
                     if (!error) hierarchyData = data;
+                    removeLoadingLabel('Carregando estrutura...');
                 }
                 return hierarchyData;
             }
@@ -342,9 +385,12 @@
             }
 
             if (useCache) {
-                 loaderText.textContent = 'Processando cache...';
+                 // loaderText.textContent = 'Processando cache...';
+                 // Handled by addLoadingLabel
+                 addLoadingLabel('Carregando cache local...');
             } else {
-                 loaderText.textContent = 'Buscando dados...';
+                 // loaderText.textContent = 'Buscando dados...';
+                 addLoadingLabel('Iniciando sincronização...');
             }
 
             // Shared client map for both parsers
@@ -744,10 +790,17 @@
                 };
 
                 // Helper to decide source (Cache vs Fetch)
-                const getOrFetch = (tableName, cols, type, format, pk, filter, cacheKey) => {
+                const getOrFetch = (tableName, cols, type, format, pk, filter, cacheKey, loadingLabel) => {
                     if (tablesToFetch.has(tableName) || isPromoter) {
                         // console.log(`[Fetch] Fetching ${tableName}...`);
-                        return fetchAll(tableName, cols, type, format, pk, filter);
+                        if (loadingLabel) addLoadingLabel(loadingLabel);
+                        return fetchAll(tableName, cols, type, format, pk, filter).then(res => {
+                            if (loadingLabel) removeLoadingLabel(loadingLabel);
+                            return res;
+                        }).catch(err => {
+                            if (loadingLabel) removeLoadingLabel(loadingLabel);
+                            throw err;
+                        });
                     } else {
                         // console.log(`[Fetch] Using cached ${tableName}`);
                         // Return wrapped in promise to match Promise.all structure
@@ -755,28 +808,40 @@
                     }
                 };
 
+                // Wrapper for direct fetchAll to handle labels
+                const fetchWithLabel = (table, cols, type, fmt, pk, filter, label) => {
+                    if (label) addLoadingLabel(label);
+                    return fetchAll(table, cols, type, fmt, pk, filter).then(res => {
+                        if (label) removeLoadingLabel(label);
+                        return res;
+                    }).catch(err => {
+                        if (label) removeLoadingLabel(label);
+                        throw err;
+                    });
+                };
+
                 const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, titulosFetched, notaPerfeitaFetched, relacaoRotaInvolvesFetched] = await Promise.all([
-                    getOrFetch('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter, 'detailed'),
-                    getOrFetch('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter, 'history'),
-                    getOrFetch('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter, 'clients'),
-                    getOrFetch('data_product_details', null, null, 'object', 'code', null, 'products'),
-                    getOrFetch('data_active_products', null, null, 'object', 'code', null, 'activeProds'),
-                    getOrFetch('data_stock', colsStock, 'stock', 'columnar', 'id', null, 'stock'),
-                    getOrFetch('data_innovations', null, null, 'object', 'id', null, 'innovations'),
-                    fetchAll('data_metadata', null, null, 'object', 'key'), // Always fetch metadata fresh
-                    getOrFetch('data_orders', colsOrders, 'orders', 'object', 'id', applyClientFilter, 'orders'),
+                    getOrFetch('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter, 'detailed', 'Sincronizando vendas...'),
+                    getOrFetch('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter, 'history', 'Carregando histórico...'),
+                    getOrFetch('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter, 'clients', 'Baixando base de clientes...'),
+                    getOrFetch('data_product_details', null, null, 'object', 'code', null, 'products', 'Atualizando catálogo...'),
+                    getOrFetch('data_active_products', null, null, 'object', 'code', null, 'activeProds', 'Verificando mix ativo...'),
+                    getOrFetch('data_stock', colsStock, 'stock', 'columnar', 'id', null, 'stock', 'Sincronizando estoque...'),
+                    getOrFetch('data_innovations', null, null, 'object', 'id', null, 'innovations', 'Baixando inovações...'),
+                    fetchWithLabel('data_metadata', null, null, 'object', 'key', null, 'Verificando metadados...'), // Always fetch metadata fresh
+                    getOrFetch('data_orders', colsOrders, 'orders', 'object', 'id', applyClientFilter, 'orders', 'Verificando pedidos...'),
                     // Always fetch coordinates/promoters fresh or check hash?
                     // Let's treat them as small tables that are cheap to fetch, OR use conditional logic.
                     // Since Promoters edit coordinates/assignments often, maybe safer to fetch fresh or use hash?
                     // Hash logic handles them if they are in 'tablesToFetch'.
                     // BUT: 'data_client_coordinates' updates frequently outside of bulk upload.
                     // So we should probably ALWAYS fetch coordinates fresh to ensure syncing.
-                    fetchAll('data_client_coordinates', null, null, 'object', 'client_code'),
-                    getOrFetch('data_hierarchy', null, null, 'object', 'id', null, 'hierarchy'),
-                    getOrFetch('data_client_promoters', null, null, 'object', 'client_code', null, 'clientPromoters'),
-                    getOrFetch('data_titulos', null, null, 'object', 'id', null, 'titulos'),
-                    getOrFetch('data_nota_perfeita', null, null, 'object', 'id', null, 'nota_perfeita'),
-                    getOrFetch('relacao_rota_involves', null, null, 'object', 'id', null, 'relacao_rota_involves')
+                    fetchWithLabel('data_client_coordinates', null, null, 'object', 'client_code', null, 'Atualizando geolocalização...'),
+                    getOrFetch('data_hierarchy', null, null, 'object', 'id', null, 'hierarchy', 'Carregando hierarquia...'),
+                    getOrFetch('data_client_promoters', null, null, 'object', 'client_code', null, 'clientPromoters', 'Sincronizando roteiros...'),
+                    getOrFetch('data_titulos', null, null, 'object', 'id', null, 'titulos', 'Baixando títulos...'),
+                    getOrFetch('data_nota_perfeita', null, null, 'object', 'id', null, 'nota_perfeita', 'Verificando loja perfeita...'),
+                    getOrFetch('relacao_rota_involves', null, null, 'object', 'id', null, 'relacao_rota_involves', 'Carregando rotas...')
                 ]);
 
                 detailed = detailedUpper;
@@ -804,7 +869,10 @@
                 }
             }
 
-            loaderText.textContent = 'Processando...';
+            // Clear loading states (optional, but good practice)
+            activeLoadingLabels.clear();
+            updateLoadingText(); // Reset to "Processando..." or similar if logic dictates, but we are moving to next step
+            loaderText.textContent = 'Finalizando processamento...';
 
             // Normalize Client Promoters Keys (Ensure consistency with Clients)
             if (clientPromoters && clientPromoters.length > 0) {
