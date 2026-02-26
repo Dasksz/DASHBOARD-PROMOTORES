@@ -15057,9 +15057,8 @@ const supervisorGroups = new Map();
                     const notaInvolves1File = document.getElementById('nota-involves-1-input').files[0];
                     const notaInvolves2File = document.getElementById('nota-involves-2-input').files[0];
 
-                    if (!salesFile && !historyFile && !hierarchyFile && !notaInvolves1File && !notaInvolves2File) {
-                        // Titulos is optional, not required for basic operation
-                        window.showToast('warning', "Pelo menos um arquivo (Vendas, Histórico, Hierarquia ou Nota Involves) é necessário.");
+                    if (!salesFile && !historyFile && !hierarchyFile && !notaInvolves1File && !notaInvolves2File && !productsFile && !titulosFile && !innovationsFile) {
+                        window.showToast('warning', "Pelo menos um arquivo é necessário para iniciar o processamento.");
                         return;
                     }
 
@@ -15068,6 +15067,16 @@ const supervisorGroups = new Map();
 
                     document.getElementById('status-container').classList.remove('hidden');
                     document.getElementById('status-text').textContent = "Processando arquivos...";
+
+                    // Construct Fallback Data from current memory
+                    const fallbackData = {
+                        history: embeddedData.history,
+                        hierarchy: embeddedData.hierarchy,
+                        titulos: embeddedData.titulos,
+                        innovations: embeddedData.innovationsMonth,
+                        products: embeddedData.productDetails,
+                        activeProducts: embeddedData.activeProductCodes
+                    };
 
                     // Construct Reference Data (CNPJ Map) from current memory
                     // This allows optional file upload (e.g. just Nota Perfeita) without re-uploading Clients file
@@ -15110,7 +15119,8 @@ const supervisorGroups = new Map();
                         titulosFile, 
                         notaInvolvesFile1: notaInvolves1File, 
                         notaInvolvesFile2: notaInvolves2File,
-                        referenceData: referenceData // Pass the map
+                        referenceData: referenceData, // Pass the map
+                        fallbackData: fallbackData // Pass existing data for preservation
                     });
 
                     worker.onmessage = (e) => {
