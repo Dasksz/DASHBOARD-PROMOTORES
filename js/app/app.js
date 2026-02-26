@@ -3004,7 +3004,8 @@
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
 
-                    if (!isAmericanas && rca1 === '') continue;
+                    // FIX: Only filter orphans for Admins
+                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
 
                     let keep = true;
                     if (hasSup || hasVend) {
@@ -4175,7 +4176,8 @@
             if (isAmericanas) return true;
             // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS
             if (window.userRole === 'adm' && rca1 === '53') return false;
-            if (rca1 === '') return false; // Exclude INATIVOS
+            // FIX: Only exclude INATIVOS for Admins. Non-admins see everything in their wallet.
+            if (window.userRole === 'adm' && rca1 === '') return false; 
             return true;
         }
 
@@ -10204,7 +10206,9 @@ const supervisorGroups = new Map();
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                    if (!isAmericanas && rca1 === '') continue;
+                    
+                    // FIX: Only filter orphans for Admins
+                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
 
                     let keep = true;
                     if (hasSup || hasVend) {
@@ -12356,7 +12360,8 @@ const supervisorGroups = new Map();
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
 
-                    if (!isAmericanas && rca1 === '') continue;
+                    // FIX: Only filter orphans for Admins
+                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
 
                     let keep = true;
                     if (hasSup || hasVend) {
@@ -25342,8 +25347,9 @@ const supervisorGroups = new Map();
                     // Basic active check (similar to getActiveClientsData but simpler)
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                    // Exclude Inactive unless selected
-                    if (!isAmericanas && rca1 === '') continue; // Skip strictly inactive
+                    
+                    // FIX: Only filter orphans for Admins
+                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue; // Skip strictly inactive
 
                     let keep = true;
                     if (hasSup || hasVend) {
@@ -25803,7 +25809,10 @@ const supervisorGroups = new Map();
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                    if (!isAmericanas && rca1 === '') continue;
+                    
+                    // FIX: Only filter orphans for Admins
+                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
+                    
                     let keep = true;
                     if (hasSup || hasVend) {
                         const details = sellerDetailsMap.get(rca1);
