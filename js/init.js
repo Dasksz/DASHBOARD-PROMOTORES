@@ -326,12 +326,6 @@
                 checkTable('data_nota_perfeita', 'hash_nota_perfeita', 'nota_perfeita');
                 checkTable('relacao_rota_involves', 'hash_relacao_rota_involves', 'relacao_rota_involves');
 
-                // Dimensions
-                checkTable('dim_vendedores', 'hash_dim_vendedores', 'dim_vendedores');
-                checkTable('dim_supervisores', 'hash_dim_supervisores', 'dim_supervisores');
-                checkTable('dim_fornecedores', 'hash_dim_fornecedores', 'dim_fornecedores');
-                checkTable('dim_produtos', 'hash_dim_produtos', 'dim_produtos');
-
                 // If nothing to fetch, use cache completely
                 if (tablesToFetch.size === 0) {
                      console.log("Usando cache do IndexedDB (Versão 100% atualizada)");
@@ -344,7 +338,7 @@
             } else if (!cachedData) {
                 // Full Fetch required
                 console.log("Cache vazio. Baixando tudo...");
-                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos'].forEach(t => tablesToFetch.add(t));
+                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves'].forEach(t => tablesToFetch.add(t));
             }
 
             if (useCache) {
@@ -680,12 +674,9 @@
             };
 
             let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientPromoters, titulos, nota_perfeita, relacao_rota_involves;
-            let dimVendedores, dimSupervisores, dimFornecedores, dimProdutos;
             let clientCoordinates;
 
-            // Updated colsDetailed: REMOVED text columns (nome, superv, descricao, fornecedor, observacaofor)
-            // KEPT: id,pedido,codcli,codsupervisor,produto,codfor,codusur,qtvenda,vlvenda,vlbonific,totpesoliq,dtped,dtsaida,posicao,estoqueunit,tipovenda,filial,qtvenda_embalagem_master
-            const colsDetailed = 'id,pedido,codcli,codsupervisor,produto,codfor,codusur,qtvenda,vlvenda,vlbonific,totpesoliq,dtped,dtsaida,posicao,estoqueunit,tipovenda,filial,qtvenda_embalagem_master';
+            const colsDetailed = 'id,pedido,codcli,nome,superv,codsupervisor,produto,descricao,fornecedor,observacaofor,codfor,codusur,qtvenda,vlvenda,vlbonific,totpesoliq,dtped,dtsaida,posicao,estoqueunit,tipovenda,filial,qtvenda_embalagem_master';
             const colsClients = 'id,codigo_cliente,rca1,rca2,rcas,cidade,nomecliente,bairro,razaosocial,fantasia,cnpj_cpf,endereco,numero,cep,telefone,email,ramo,ultimacompra,datacadastro,bloqueio,inscricaoestadual';
             const colsStock = 'id,product_code,filial,stock_qty';
             const colsOrders = 'id,pedido,codcli,cliente_nome,cidade,nome,superv,fornecedores_str,dtped,dtsaida,posicao,vlvenda,totpesoliq,filial,tipovenda,fornecedores_list,codfors_list';
@@ -707,11 +698,6 @@
                 titulos = cachedData.titulos;
                 nota_perfeita = cachedData.nota_perfeita;
                 relacao_rota_involves = cachedData.relacao_rota_involves;
-
-                dimVendedores = cachedData.dim_vendedores;
-                dimSupervisores = cachedData.dim_supervisores;
-                dimFornecedores = cachedData.dim_fornecedores;
-                dimProdutos = cachedData.dim_produtos;
 
                 // Background updates for coordinates/promoters can happen here if needed,
                 // but usually conditional logic handles it if metadata hashes change.
@@ -769,7 +755,7 @@
                     }
                 };
 
-                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, titulosFetched, notaPerfeitaFetched, relacaoRotaInvolvesFetched, dimVendedoresFetched, dimSupervisoresFetched, dimFornecedoresFetched, dimProdutosFetched] = await Promise.all([
+                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, titulosFetched, notaPerfeitaFetched, relacaoRotaInvolvesFetched] = await Promise.all([
                     getOrFetch('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter, 'detailed'),
                     getOrFetch('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter, 'history'),
                     getOrFetch('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter, 'clients'),
@@ -790,13 +776,7 @@
                     getOrFetch('data_client_promoters', null, null, 'object', 'client_code', null, 'clientPromoters'),
                     getOrFetch('data_titulos', null, null, 'object', 'id', null, 'titulos'),
                     getOrFetch('data_nota_perfeita', null, null, 'object', 'id', null, 'nota_perfeita'),
-                    getOrFetch('relacao_rota_involves', null, null, 'object', 'id', null, 'relacao_rota_involves'),
-
-                    // Dimensions (IDs only or small tables)
-                    getOrFetch('dim_vendedores', 'codigo, nome', null, 'object', 'codigo', null, 'dim_vendedores'),
-                    getOrFetch('dim_supervisores', 'codigo, nome', null, 'object', 'codigo', null, 'dim_supervisores'),
-                    getOrFetch('dim_fornecedores', 'codigo, nome', null, 'object', 'codigo', null, 'dim_fornecedores'),
-                    getOrFetch('dim_produtos', 'codigo, descricao, codfor, mix_marca, mix_categoria', null, 'object', 'codigo', null, 'dim_produtos')
+                    getOrFetch('relacao_rota_involves', null, null, 'object', 'id', null, 'relacao_rota_involves')
                 ]);
 
                 detailed = detailedUpper;
@@ -815,16 +795,10 @@
                 nota_perfeita = notaPerfeitaFetched;
                 relacao_rota_involves = relacaoRotaInvolvesFetched;
 
-                dimVendedores = dimVendedoresFetched;
-                dimSupervisores = dimSupervisoresFetched;
-                dimFornecedores = dimFornecedoresFetched;
-                dimProdutos = dimProdutosFetched;
-
                 // Update Cache with Merged Data
                 if (!isPromoter) {
                     const dataToCache = {
-                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves,
-                        dim_vendedores: dimVendedores, dim_supervisores: dimSupervisores, dim_fornecedores: dimFornecedores, dim_produtos: dimProdutos
+                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves
                     };
                     saveToCache('dashboardData', dataToCache).then(() => console.log('Dados atualizados salvos no cache.'));
                 }
@@ -1219,12 +1193,6 @@
                 titulos: titulos,
                 nota_perfeita: nota_perfeita,
                 relacao_rota_involves: relacao_rota_involves,
-
-                dim_vendedores: dimVendedores,
-                dim_supervisores: dimSupervisores,
-                dim_fornecedores: dimFornecedores,
-                dim_produtos: dimProdutos,
-
                 passedWorkingDaysCurrentMonth: 1,
                 isColumnar: true
             };

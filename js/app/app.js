@@ -1,46 +1,6 @@
 (function() {
         const embeddedData = window.embeddedData;
 
-        // --- DIMENSION MAPS INITIALIZATION (Option A) ---
-        const vendedoresMap = new Map();
-        if (embeddedData.dim_vendedores) {
-            embeddedData.dim_vendedores.forEach(v => vendedoresMap.set(String(v.codigo).trim(), v.nome));
-        }
-
-        const supervisoresMap = new Map();
-        if (embeddedData.dim_supervisores) {
-            embeddedData.dim_supervisores.forEach(s => supervisoresMap.set(String(s.codigo).trim(), s.nome));
-        }
-
-        const fornecedoresMap = new Map();
-        if (embeddedData.dim_fornecedores) {
-            embeddedData.dim_fornecedores.forEach(f => fornecedoresMap.set(String(f.codigo).trim(), f.nome));
-        }
-
-        const produtosMap = new Map();
-        if (embeddedData.dim_produtos) {
-            embeddedData.dim_produtos.forEach(p => produtosMap.set(String(p.codigo).trim(), p));
-        }
-
-        // Global Helper for Views
-        window.resolveDim = (type, code) => {
-            if (!code) return 'N/A';
-            const cleanCode = String(code).trim();
-
-            if (type === 'vendedor') return vendedoresMap.get(cleanCode) || cleanCode;
-            if (type === 'supervisor') return supervisoresMap.get(cleanCode) || cleanCode;
-            if (type === 'fornecedor') return fornecedoresMap.get(cleanCode) || cleanCode;
-            if (type === 'produto') {
-                const p = produtosMap.get(cleanCode);
-                return p ? p.descricao : cleanCode;
-            }
-            if (type === 'produto_full') {
-                return produtosMap.get(cleanCode);
-            }
-            return code;
-        };
-        // ------------------------------------------------
-
         // --- CONFIGURATION MOVED TO utils.js ---
         // SUPPLIER_CONFIG, resolveSupplierPasta, GARBAGE_SELLER_KEYWORDS, isGarbageSeller available globally
 
@@ -72,23 +32,20 @@
             // Cache for supplier -> pasta mapping to avoid repeated config lookups
             const supplierCache = new Map();
 
-            const getResolvedPasta = (currentPasta, codFor) => {
+            const getResolvedPasta = (currentPasta, fornecedor) => {
                 // If we already have a valid pasta, return it
                 if (currentPasta && currentPasta !== '0' && currentPasta !== '00' && currentPasta !== 'N/A') {
                     return currentPasta;
                 }
 
                 // Check cache
-                const key = String(codFor || '').trim();
+                const key = String(fornecedor || '').toUpperCase();
                 if (supplierCache.has(key)) {
                     return supplierCache.get(key);
                 }
 
-                // Resolve Name from Map
-                const fornecedorName = window.resolveDim('fornecedor', codFor);
-
                 // Calculate and cache
-                const resolved = resolveSupplierPasta(currentPasta, fornecedorName);
+                const resolved = resolveSupplierPasta(currentPasta, fornecedor);
                 supplierCache.set(key, resolved);
                 return resolved;
             };
@@ -99,7 +56,7 @@
 
                 // Ensure columns exist or gracefully handle
                 const pastaCol = data['OBSERVACAOFOR'] || new Array(len).fill(null);
-                const supplierCodeCol = data['CODFOR'] || [];
+                const supplierCol = data['FORNECEDOR'] || [];
 
                 // If we created a new array for pasta, we must attach it to _data
                 if (!data['OBSERVACAOFOR']) {
@@ -111,8 +68,8 @@
 
                 for (let i = 0; i < len; i++) {
                     const originalPasta = pastaCol[i];
-                    const codFor = supplierCodeCol[i];
-                    const newPasta = getResolvedPasta(originalPasta, codFor);
+                    const fornecedor = supplierCol[i];
+                    const newPasta = getResolvedPasta(originalPasta, fornecedor);
 
                     // Only update if changed (optimization)
                     if (newPasta !== originalPasta) {
@@ -123,8 +80,8 @@
                  for (let i = 0; i < dataset.length; i++) {
                     const item = dataset[i];
                     const originalPasta = item['OBSERVACAOFOR'];
-                    const codFor = item['CODFOR'];
-                    const newPasta = getResolvedPasta(originalPasta, codFor);
+                    const fornecedor = item['FORNECEDOR'];
+                    const newPasta = getResolvedPasta(originalPasta, fornecedor);
 
                     if (newPasta !== originalPasta) {
                         item['OBSERVACAOFOR'] = newPasta;
@@ -135,26 +92,21 @@
 
         function sanitizeData(data) {
             if (!data) return [];
+            const forbidden = ['SUPERV', 'CODUSUR', 'CODSUPERVISOR', 'NOME', 'CODCLI', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX', 'SUPERVISOR'];
 
-            // OLD CHECK: const forbidden = ['SUPERV', 'CODUSUR', ...];
-            // NEW CHECK: Verify if CODUSUR exists in Dimension Table
-            // Exception: '1001' (Americanas) - although if it's in DB it should be in Dim.
-            // If Americanas is manually inserted in app.js, it might not be here yet.
-            // Actually, sanitize runs on RAW loaded data.
-            // If data_detailed has '1001', it implies it's in the DB.
-            // We assume dimension table is the source of truth.
+            // Check if it's a ColumnarDataset proxy or regular array.
+            // If it's a ColumnarDataset, we can't easily filter in-place without rebuilding.
+            // However, ColumnarDataset usually proxies access.
+            // Since we're trying to fix garbage, it's safer to check if we can filter.
 
             if (Array.isArray(data)) {
                 return data.filter(item => {
-                    const codUsur = String(item.CODUSUR || '').trim();
-                    // Valid if in Map OR is a known special code (just in case)
-                    if (vendedoresMap.has(codUsur)) return true;
-                    // Additional safety: if CODUSUR is empty/null, drop it
-                    if (!codUsur || codUsur === '0') return false;
-                    // Garbage check: if CODUSUR looks like a header "CODUSUR"
-                    if (codUsur.toUpperCase() === 'CODUSUR') return false;
-
-                    return false; // Not in Dim = Garbage
+                    const superv = String(item.SUPERV || '').trim().toUpperCase();
+                    const nome = String(item.NOME || '').trim().toUpperCase();
+                    const codUsur = String(item.CODUSUR || '').trim().toUpperCase();
+                    // Check against headers
+                    if (forbidden.includes(superv) || forbidden.includes(nome) || forbidden.includes(codUsur)) return false;
+                    return true;
                 });
             }
 
@@ -164,24 +116,26 @@
                 const keepIndices = [];
                 const values = data.values;
 
+                // Identify columns to check (case insensitive check usually handled by worker/init, but here we assume keys match)
+                // Typically 'SUPERV', 'NOME', 'CODUSUR' are uppercase keys from init.js parser.
+                const supervCol = values['SUPERV'] || values['supervisor'] || [];
+                const nomeCol = values['NOME'] || values['nome'] || [];
                 const codUsurCol = values['CODUSUR'] || values['codusur'] || [];
 
-                for (let i = 0; i < len; i++) {
-                     const codUsur = String(codUsurCol[i] || '').trim();
+                // If checking columns are completely missing, we assume data is clean or check is not applicable
+                if (!values['SUPERV'] && !values['NOME'] && !values['CODUSUR']) {
+                    return data;
+                }
 
-                     if (vendedoresMap.has(codUsur)) {
-                         keepIndices.push(i);
-                     } else {
-                         // Check strictly for garbage-like values to be safe,
-                         // OR strict dimension check? User said "sim" to strict check.
-                         // But if 1001 is missing from dim but present in sales, we lose data.
-                         // I'll assume 1001 is in dim if used.
-                         // But I'll allow if it's explicitly '1001' just to be safe for Americanas legacy.
-                         if (codUsur === '1001') {
-                             keepIndices.push(i);
-                         }
-                         // Otherwise skip
+                for (let i = 0; i < len; i++) {
+                     const superv = String(supervCol[i] || '').trim().toUpperCase();
+                     const nome = String(nomeCol[i] || '').trim().toUpperCase();
+                     const codUsur = String(codUsurCol[i] || '').trim().toUpperCase();
+
+                     if (forbidden.includes(superv) || forbidden.includes(nome) || forbidden.includes(codUsur)) {
+                         continue; // Skip (Garbage)
                      }
+                     keepIndices.push(i);
                 }
 
                 // If nothing filtered, return original
@@ -191,10 +145,12 @@
                 const newValues = {};
                 data.columns.forEach(col => {
                     const oldArr = values[col];
+                    // Defensive: if column array is missing or length mismatch, handle gracefully?
                     if (!oldArr) {
                         newValues[col] = [];
                         return;
                     }
+
                     const newArr = new Array(keepIndices.length);
                     for(let j=0; j<keepIndices.length; j++) {
                         newArr[j] = oldArr[keepIndices[j]];
@@ -1880,21 +1836,15 @@
                 for (let i = 0; i < source.length; i++) {
                     const s = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const codUsur = s.CODUSUR;
-
-                    // NEW: Resolve Names from Dimension Maps
-                    // Assuming s.NOME and s.SUPERV are GONE from source object
-                    const rcaName = vendedoresMap.get(codUsur) || 'Unknown';
-                    const supervisorName = supervisoresMap.get(s.CODSUPERVISOR) || 'N/A';
-
                     // Ignorar 'INATIVOS' e 'AMERICANAS' para evitar poluição do mapa de supervisores com lógica de fallback
-                    if (codUsur && rcaName !== 'INATIVOS' && rcaName !== 'AMERICANAS') {
+                    if (codUsur && s.NOME !== 'INATIVOS' && s.NOME !== 'AMERICANAS') {
                         const dt = parseDate(s.DTPED);
                         const ts = dt ? dt.getTime() : 0;
                         const lastTs = sellerLastSaleDateMap.get(codUsur) || 0;
 
                         if (ts >= lastTs || !sellerDetailsMap.has(codUsur)) {
                             sellerLastSaleDateMap.set(codUsur, ts);
-                            sellerDetailsMap.set(codUsur, { name: rcaName, supervisor: supervisorName });
+                            sellerDetailsMap.set(codUsur, { name: s.NOME, supervisor: s.SUPERV });
                         }
                     }
                 }
@@ -2137,12 +2087,8 @@
                     // Note: dataMap is now the dataset itself, we don't need to set anything into it.
                     // We just index the position 'i'.
 
-                    // RESOLVE NAMES VIA MAPS
-                    const codSupervisor = getVal(i, 'CODSUPERVISOR');
-                    const supervisor = supervisoresMap.get(String(codSupervisor || '').trim()) || 'N/A';
-
-                    const codUsur = getVal(i, 'CODUSUR');
-                    const rca = vendedoresMap.get(String(codUsur || '').trim()) || 'N/A';
+                    const supervisor = getVal(i, 'SUPERV') || 'N/A';
+                    const rca = getVal(i, 'NOME') || 'N/A';
 
                     // Use pre-normalized PASTA
                     let pasta = getVal(i, 'OBSERVACAOFOR');
@@ -2157,6 +2103,8 @@
                     const clientObj = clientMapForKPIs.get(String(client));
                     const city = (clientObj ? (clientObj.cidade || clientObj['Nome da Cidade']) : 'N/A').toLowerCase();
                     const filial = getVal(i, 'FILIAL');
+                    const codUsur = getVal(i, 'CODUSUR');
+                    const codSupervisor = getVal(i, 'CODSUPERVISOR');
 
                     if (!bySupervisor.has(supervisor)) bySupervisor.set(supervisor, new Set()); bySupervisor.get(supervisor).add(id);
                     if (!byRca.has(rca)) byRca.set(rca, new Set()); byRca.get(rca).add(id);
@@ -2168,9 +2116,7 @@
                         // Virtual Categories Logic (Shared with Meta vs Realizado)
                         // 1119 Split: TODDYNHO, TODDY, QUAKER/KEROCOCO
                         if (window.isFoods(supplier)) {
-                            // Resolve Description via Product Map
-                            const desc = (produtosMap.get(product)?.descricao || '').toUpperCase();
-
+                            const desc = String(getVal(i, 'DESCRICAO') || '').toUpperCase();
                             let virtualKey = null;
                             if (desc.includes('TODDYNHO')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
                             else if (desc.includes('TODDY')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
@@ -2997,7 +2943,7 @@
                             else if (codFor === window.SUPPLIER_CODES.ELMA[1]) key = window.SUPPLIER_CODES.ELMA[1];
                             else if (codFor === window.SUPPLIER_CODES.ELMA[2]) key = window.SUPPLIER_CODES.ELMA[2];
                             else if (window.isFoods(codFor)) {
-                                const desc = normalize(window.resolveDim('produto', historyValues['PRODUTO'][idx]) || '');
+                                const desc = normalize(historyValues['DESCRICAO'][idx] || '');
                                 if (desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
                                 else if (desc.includes('TODDY')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                                 else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
@@ -3057,7 +3003,7 @@
                             else if (codFor === window.SUPPLIER_CODES.ELMA[1]) key = window.SUPPLIER_CODES.ELMA[1];
                             else if (codFor === window.SUPPLIER_CODES.ELMA[2]) key = window.SUPPLIER_CODES.ELMA[2];
                             else if (window.isFoods(codFor)) {
-                                const desc = normalize(window.resolveDim('produto', sale.PRODUTO) || '');
+                                const desc = normalize(sale.DESCRICAO || '');
                                 if (desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
                                 else if (desc.includes('TODDY')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                                 else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
@@ -3440,7 +3386,7 @@
                 if (s.PEDIDO) clientOrders.get(s.PRODUTO).add(s.PEDIDO);
 
                 if (!clientProductDesc.has(s.PRODUTO)) {
-                    clientProductDesc.set(s.PRODUTO, window.resolveDim('produto', s.PRODUTO));
+                    clientProductDesc.set(s.PRODUTO, s.DESCRICAO);
                 }
             });
 
@@ -3939,7 +3885,7 @@
                     historyIds.forEach(id => {
                         const sale = optimizedData.historyById.get(id);
                         const codFor = String(sale.CODFOR);
-                        const desc = normalize(window.resolveDim('produto', sale.PRODUTO) || '');
+                        const desc = normalize(sale.DESCRICAO || '');
 
                         // Check against all target categories
                         targetCategories.forEach(subCat => {
@@ -4511,7 +4457,7 @@
                             if (!monthlySales.has(monthKey)) monthlySales.set(monthKey, new Set());
 
                             // Check brand/category match
-                            const desc = normalize(window.resolveDim('produto', sale.PRODUTO) || '');
+                            const desc = normalize(sale.DESCRICAO || '');
                             targetCategories.forEach(cat => {
                                 if (desc.includes(cat)) {
                                     monthlySales.get(monthKey).add(cat);
@@ -4991,7 +4937,7 @@
                     }
                     // 2. Virtual Category Logic for 1119 (Foods)
                     else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
-                        const desc = normalize(window.resolveDim('produto', s.PRODUTO) || '');
+                        const desc = normalize(s.DESCRICAO || '');
                         if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO) && desc.includes('TODDYNHO')) supplierMatch = true;
                         else if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.TODDY) && desc.includes('TODDY') && !desc.includes('TODDYNHO')) supplierMatch = true;
                         else if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO) && (desc.includes('QUAKER') || desc.includes('KEROCOCO'))) supplierMatch = true;
@@ -5947,7 +5893,7 @@
                         else if (codFor === window.SUPPLIER_CODES.ELMA[1]) key = window.SUPPLIER_CODES.ELMA[1];
                         else if (codFor === window.SUPPLIER_CODES.ELMA[2]) key = window.SUPPLIER_CODES.ELMA[2];
                         else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
-                            const desc = normalize(window.resolveDim('produto', sale.PRODUTO) || '');
+                            const desc = normalize(sale.DESCRICAO || '');
                             if (desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
                             else if (desc.includes('TODDY')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                             else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
@@ -6067,7 +6013,7 @@
                         if (!isRev) continue;
 
                         const codFor = String(sale.CODFOR);
-                        const desc = (window.resolveDim('produto', sale.PRODUTO) || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                        const desc = (sale.DESCRICAO || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 
                         if (category === 'pepsico_all') {
                              if (window.SUPPLIER_CODES.ELMA.includes(codFor) || (codFor === window.SUPPLIER_CODES.FOODS[0] && (desc.includes('TODDYNHO') || desc.includes('TODDY') || desc.includes('QUAKER') || desc.includes('KEROCOCO')))) {
@@ -6426,7 +6372,7 @@
                 } else {
                     if (codFor !== supplier) return false;
                     if (brand) {
-                        const desc = normalize(window.resolveDim('produto', sale.PRODUTO) || '');
+                        const desc = normalize(sale.DESCRICAO || '');
                         if (brand === 'TODDYNHO') {
                             if (!desc.includes('TODDYNHO')) return false;
                         } else if (brand === 'TODDY') {
@@ -6663,7 +6609,7 @@
 
                             // Special handling for broken down categories (FOODS)
                             if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
-                                const desc = normalize(window.resolveDim('produto', sale.PRODUTO) || '');
+                                const desc = normalize(sale.DESCRICAO || '');
                                 if (desc.includes('TODDYNHO')) saleKey = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
                                 else if (desc.includes('TODDY')) saleKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                                 else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) saleKey = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
@@ -7059,7 +7005,7 @@
                     for (let id of historyIds) {
                         const sale = optimizedData.historyById.get(id);
                         const codFor = String(sale.CODFOR);
-                        const desc = normalize(window.resolveDim('produto', sale.PRODUTO) || '');
+                        const desc = normalize(sale.DESCRICAO || '');
 
                         // Check Rev Type only? Usually yes for Positivação.
                         if ((sale.TIPOVENDA === '1' || sale.TIPOVENDA === '9') && checkSale(codFor, desc)) {
@@ -7273,7 +7219,7 @@
                 else {
                     if (codFor !== supplier) return false;
                     if (brand) {
-                        const desc = normalize(window.resolveDim('produto', sale.PRODUTO) || '');
+                        const desc = normalize(sale.DESCRICAO || '');
                         if (brand === 'TODDYNHO') { if (!desc.includes('TODDYNHO')) return false; }
                         else if (brand === 'TODDY') { if (!desc.includes('TODDY') || desc.includes('TODDYNHO')) return false; }
                         else if (brand === 'QUAKER_KEROCOCO') { if (!desc.includes('QUAKER') && !desc.includes('KEROCOCO')) return false; }
@@ -7968,7 +7914,7 @@
                         else if (codFor === window.SUPPLIER_CODES.ELMA[1]) matchedCats.push(window.SUPPLIER_CODES.ELMA[1]);
                         else if (codFor === window.SUPPLIER_CODES.ELMA[2]) matchedCats.push(window.SUPPLIER_CODES.ELMA[2]);
                         else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
-                            const desc = norm(window.resolveDim('produto', sale.PRODUTO) || '');
+                            const desc = norm(sale.DESCRICAO || '');
                             if (desc.includes('TODDYNHO')) matchedCats.push(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO);
                             else if (desc.includes('TODDY')) matchedCats.push(window.SUPPLIER_CODES.VIRTUAL.TODDY);
                             else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) matchedCats.push(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO);
@@ -8103,7 +8049,7 @@
                         if (!cMap.has(sale.CODCLI)) cMap.set(sale.CODCLI, { salty: new Set(), foods: new Set() });
                         const cData = cMap.get(sale.CODCLI);
                         if (sale.VLVENDA >= 1) {
-                            const desc = norm(window.resolveDim('produto', sale.PRODUTO));
+                            const desc = norm(sale.DESCRICAO);
                             MIX_SALTY_CATEGORIES.forEach(cat => { if (desc.includes(cat)) cData.salty.add(cat); });
                             MIX_FOODS_CATEGORIES.forEach(cat => { if (desc.includes(cat)) cData.foods.add(cat); });
                         }
@@ -9252,12 +9198,12 @@ const supervisorGroups = new Map();
 
                 const isForbidden = (str) => !str || FORBIDDEN_KEYS.includes(str.trim().toUpperCase());
 
-                const vendedor = window.resolveDim('vendedor', item.CODUSUR);
+                const vendedor = item.NOME || 'N/A';
                 if (!isForbidden(vendedor)) {
                     summary.vendasPorVendedor[vendedor] = (summary.vendasPorVendedor[vendedor] || 0) + vlVenda;
                 }
 
-                const supervisor = window.resolveDim('supervisor', item.CODSUPERVISOR);
+                const supervisor = item.SUPERV || 'N/A';
                 if (!isForbidden(supervisor)) {
                     summary.vendasPorSupervisor[supervisor] = (summary.vendasPorSupervisor[supervisor] || 0) + vlVenda;
                 }
@@ -9278,7 +9224,7 @@ const supervisorGroups = new Map();
                     summary.vendasPorPromotor[unk] = (summary.vendasPorPromotor[unk] || 0) + vlVenda;
                 }
 
-                const produto = window.resolveDim('produto', item.PRODUTO) || 'N/A';
+                const produto = item.DESCRICAO || 'N/A';
                 const codigo = item.PRODUTO || 'N/A';
                 if (!salesByProduct[produto]) salesByProduct[produto] = { faturamento: 0, peso: 0, codigo: codigo };
                 salesByProduct[produto].faturamento += vlVenda;
@@ -9290,7 +9236,7 @@ const supervisorGroups = new Map();
                 const rowPasta = item.OBSERVACAOFOR;
                 if (rowPasta === 'PEPSICO') {
                     const codFor = String(item.CODFOR);
-                    const desc = normalize(window.resolveDim('produto', item.PRODUTO) || '');
+                    const desc = normalize(item.DESCRICAO || '');
 
                     if (codFor === window.SUPPLIER_CODES.ELMA[0]) {
                         fornecedorLabel = 'Extrusados';
@@ -9530,7 +9476,7 @@ const supervisorGroups = new Map();
                     const cat = getCategory(code, item.FORNECEDOR || item.CODFOR);
                     currentMap.set(code, {
                         code: code,
-                        name: window.resolveDim('produto', item.PRODUTO),
+                        name: item.DESCRICAO,
                         category: cat,
                         currentVal: 0,
                         currentWeight: 0,
@@ -9569,7 +9515,7 @@ const supervisorGroups = new Map();
                         const cat = getCategory(code, item.FORNECEDOR || item.CODFOR);
                         currentMap.set(code, {
                             code: code,
-                            name: window.resolveDim('produto', item.PRODUTO),
+                            name: item.DESCRICAO,
                             category: cat,
                             currentVal: 0,
                             currentWeight: 0,
@@ -11079,10 +11025,9 @@ const supervisorGroups = new Map();
             const previousMonthYear = previousMonthDate.getUTCFullYear();
             const historyLastMonthData = allHistoryData.filter(sale => { const saleDate = parseDate(sale.DTPED); return saleDate && saleDate.getUTCMonth() === previousMonth && saleDate.getUTCFullYear() === previousMonthYear; });
             historyLastMonthData.forEach(sale => {
-                const sv = window.resolveDim('supervisor', sale.CODSUPERVISOR);
-                if (!sv || sv === 'BALCAO' || !sale.DTPED) return;
+                if (!sale.SUPERV || sale.SUPERV === 'BALCAO' || !sale.DTPED) return;
                 const saleDate = parseDate(sale.DTPED); if (!saleDate) return;
-                const supervisor = sv.toUpperCase(); const dateString = saleDate.toISOString().split('T')[0];
+                const supervisor = sale.SUPERV.toUpperCase(); const dateString = saleDate.toISOString().split('T')[0];
                 if (!salesBySupervisorByDay[supervisor]) salesBySupervisorByDay[supervisor] = {};
                 if (!salesBySupervisorByDay[supervisor][dateString]) salesBySupervisorByDay[supervisor][dateString] = 0;
                 salesBySupervisorByDay[supervisor][dateString] += sale.VLVENDA;
@@ -11108,9 +11053,8 @@ const supervisorGroups = new Map();
             const forbidden = ['CODFOR', 'FORNECEDOR', 'COD FOR', 'NOME DO FORNECEDOR', 'FORNECEDOR_NOME'];
             const suppliers = new Map();
             dataSource.forEach(s => {
-                const fName = window.resolveDim('fornecedor', s.CODFOR);
-                if(s.CODFOR && fName && !forbidden.includes(s.CODFOR.toUpperCase()) && !forbidden.includes(fName.toUpperCase())) {
-                    suppliers.set(s.CODFOR, fName);
+                if(s.CODFOR && s.FORNECEDOR && !forbidden.includes(s.CODFOR.toUpperCase()) && !forbidden.includes(s.FORNECEDOR.toUpperCase())) {
+                    suppliers.set(s.CODFOR, s.FORNECEDOR);
                 }
             });
 
@@ -11333,7 +11277,7 @@ const supervisorGroups = new Map();
                 const clientProducts = clientProductNetSales.get(sale.CODCLI);
 
                 if (!clientProducts.has(sale.PRODUTO)) {
-                    clientProducts.set(sale.PRODUTO, { netValue: 0, description: window.resolveDim('produto', sale.PRODUTO) });
+                    clientProducts.set(sale.PRODUTO, { netValue: 0, description: sale.DESCRICAO });
                 }
                 const productData = clientProducts.get(sale.PRODUTO);
                 productData.netValue += (Number(sale.VLVENDA) || 0);
@@ -11444,7 +11388,7 @@ const supervisorGroups = new Map();
                 const isValidType = (s.TIPOVENDA === '1' || s.TIPOVENDA === '9');
 
                 // Filter: Strict Foods Definition
-                if (!isValidFoodsProduct(String(s.CODFOR), window.resolveDim('produto', s.PRODUTO))) return;
+                if (!isValidFoodsProduct(String(s.CODFOR), s.DESCRICAO)) return;
 
                 if (isValidType) {
                     metrics.current.fat += s.VLVENDA;
@@ -11457,7 +11401,7 @@ const supervisorGroups = new Map();
 
                     if (!currentClientProductMap.has(s.CODCLI)) currentClientProductMap.set(s.CODCLI, new Map());
                     const cMap = currentClientProductMap.get(s.CODCLI);
-                    if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: window.resolveDim('produto', s.PRODUTO), codfor: String(s.CODFOR) });
+                    if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: s.DESCRICAO, codfor: String(s.CODFOR) });
                     cMap.get(s.PRODUTO).val += s.VLVENDA;
                 }
 
@@ -11528,7 +11472,7 @@ const supervisorGroups = new Map();
                 const monthKey = `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
 
                 // Filter: Strict Foods Definition (Apply here too)
-                if (!isValidFoodsProduct(String(s.CODFOR), window.resolveDim('produto', s.PRODUTO))) return;
+                if (!isValidFoodsProduct(String(s.CODFOR), s.DESCRICAO)) return;
 
                 // Filter: Only Type 1 and 9 count for Metrics (Fat/Peso/Charts)
                 const isValidType = (s.TIPOVENDA === '1' || s.TIPOVENDA === '9');
@@ -11556,7 +11500,7 @@ const supervisorGroups = new Map();
 
                     if (!mData.productMap.has(s.CODCLI)) mData.productMap.set(s.CODCLI, new Map());
                     const cMap = mData.productMap.get(s.CODCLI);
-                    if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: window.resolveDim('produto', s.PRODUTO), codfor: String(s.CODFOR) });
+                    if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: s.DESCRICAO, codfor: String(s.CODFOR) });
                     cMap.get(s.PRODUTO).val += s.VLVENDA;
                 }
 
@@ -11964,7 +11908,7 @@ const supervisorGroups = new Map();
             const listContainer = dropdown.querySelector('div[id$="-list"]');
             const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
-            const products = [...new Map(dataSource.map(s => [s.PRODUTO, window.resolveDim('produto', s.PRODUTO)]))
+            const products = [...new Map(dataSource.map(s => [s.PRODUTO, s.DESCRICAO]))
                 .entries()]
                 .filter(([code, desc]) => code && desc && !forbidden.includes(code.toUpperCase()) && !forbidden.includes(desc.toUpperCase()))
                 .sort((a,b) => a[1].localeCompare(b[1]));
@@ -12087,11 +12031,11 @@ const supervisorGroups = new Map();
                     currentClientsSet.set(s.CODCLI, (currentClientsSet.get(s.CODCLI) || 0) + val);
                     if (!currentClientProductMap.has(s.CODCLI)) currentClientProductMap.set(s.CODCLI, new Map());
                     const cMap = currentClientProductMap.get(s.CODCLI);
-                    if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: window.resolveDim('produto', s.PRODUTO), codfor: String(s.CODFOR) });
+                    if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: s.DESCRICAO, codfor: String(s.CODFOR) });
                     cMap.get(s.PRODUTO).val += val;
                 }
                 // Dynamic Grouping Key
-                let groupKey = window.resolveDim('supervisor', s.CODSUPERVISOR);
+                let groupKey = s.SUPERV;
                 if (typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter') {
                     const node = optimizedData.clientHierarchyMap.get(normalizeKey(s.CODCLI));
                     if (node) {
@@ -12166,12 +12110,12 @@ const supervisorGroups = new Map();
                         mData.clients.set(s.CODCLI, (mData.clients.get(s.CODCLI) || 0) + val);
                         if (!mData.productMap.has(s.CODCLI)) mData.productMap.set(s.CODCLI, new Map());
                         const cMap = mData.productMap.get(s.CODCLI);
-                        if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: window.resolveDim('produto', s.PRODUTO), codfor: String(s.CODFOR) });
+                        if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: s.DESCRICAO, codfor: String(s.CODFOR) });
                         cMap.get(s.PRODUTO).val += val;
                     }
 
                     // Dynamic Grouping Key History
-                    let hGroupKey = window.resolveDim('supervisor', s.CODSUPERVISOR);
+                    let hGroupKey = s.SUPERV;
                     if (typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter') {
                         const node = optimizedData.clientHierarchyMap.get(normalizeKey(s.CODCLI));
                         if (node) {
@@ -13767,15 +13711,14 @@ const supervisorGroups = new Map();
             // Fallback: Construct Header from items if missing
             if (!orderInfo && itemsDoPedido.length > 0) {
                 const first = itemsDoPedido[0];
-                const clientObj = clientMapForKPIs.get(String(first.CODCLI));
                 orderInfo = {
                     PEDIDO: first.PEDIDO,
                     CODCLI: first.CODCLI,
-                    CLIENTE_NOME: clientObj ? (clientObj.nomeCliente || clientObj.fantasia) : 'N/A',
-                    NOME: window.resolveDim('vendedor', first.CODUSUR),
+                    CLIENTE_NOME: first.NOME || first.CLIENTE || 'N/A', // Try common keys
+                    NOME: first.SUPERV || 'N/A', // Best guess if missing
                     DTPED: first.DTPED,
                     DTSAIDA: first.DTSAIDA,
-                    CIDADE: clientObj ? clientObj.cidade : (first.CIDADE || 'N/A'),
+                    CIDADE: first.CIDADE || 'N/A',
                     VLVENDA: itemsDoPedido.reduce((acc, i) => acc + (Number(i.VLVENDA)||0), 0)
                 };
             }
@@ -13795,7 +13738,7 @@ const supervisorGroups = new Map();
                 const weightStr = weight.toLocaleString('pt-BR', { minimumFractionDigits: 3 }) + ' Kg';
                 const qtyStr = item.QTVENDA;
 
-                const fullProductName = window.resolveDim('produto', item.PRODUTO) || '';
+                const fullProductName = item.DESCRICAO || '';
                 const parts = fullProductName.split('-');
                 // If hyphen exists, take part after first hyphen, otherwise whole string.
                 // Then truncate to fit nicely on mobile line (~27 chars).
@@ -13811,7 +13754,7 @@ const supervisorGroups = new Map();
                 return `
                 <tr class="hover:bg-slate-700">
                     <!-- Desktop Layout (Hidden on Mobile) -->
-                    <td class="hidden md:table-cell px-4 py-2">(${window.escapeHtml(item.PRODUTO)}) ${window.escapeHtml(window.resolveDim('produto', item.PRODUTO))}</td>
+                    <td class="hidden md:table-cell px-4 py-2">(${window.escapeHtml(item.PRODUTO)}) ${window.escapeHtml(item.DESCRICAO)}</td>
                     <td class="hidden md:table-cell px-4 py-2 text-right">${qtyStr}</td>
                     <td class="hidden md:table-cell px-4 py-2 text-right">${unitPriceStr}</td>
                     <td class="hidden md:table-cell px-4 py-2 text-right">${weightStr}</td>
@@ -17232,7 +17175,7 @@ const supervisorGroups = new Map();
                         if (!isRev) return;
 
                         const codFor = String(sale.CODFOR);
-                        const desc = (window.resolveDim('produto', sale.PRODUTO) || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                        const desc = (sale.DESCRICAO || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 
                         if (codFor === "707" || codFor === "708" || codFor === "752") {
                             clientElmaFat += sale.VLVENDA;
@@ -19173,19 +19116,56 @@ const supervisorGroups = new Map();
 
                       if (window.userIsSeller) {
                           let foundName = null;
-                          // Try Dimension Map First
-                          foundName = window.resolveDim('vendedor', role);
-                          if (!foundName || foundName === role) {
-                              // Fallback to SellerDetails
-                              if (typeof sellerDetailsMap !== 'undefined' && sellerDetailsMap.has(role)) {
-                                  const d = sellerDetailsMap.get(role);
-                                  if (d && d.name) foundName = d.name;
+                          if (typeof sellerDetailsMap !== 'undefined' && sellerDetailsMap.has(role)) {
+                              const d = sellerDetailsMap.get(role);
+                              if (d && d.name) foundName = d.name;
+                          }
+                          if (!foundName && typeof allSalesData !== 'undefined' && allSalesData) {
+                              const source = allSalesData;
+                              if (source instanceof ColumnarDataset) {
+                                  const raw = source._data || source.values;
+                                  if (raw) {
+                                      const codes = raw['CODUSUR'];
+                                      const names = raw['NOME'];
+                                      if (codes && names) {
+                                          for(let i=0; i<source.length; i++) {
+                                              if (String(codes[i]||'').trim().toUpperCase() === role) {
+                                                  foundName = names[i];
+                                                  break;
+                                              }
+                                          }
+                                      }
+                                  }
+                              } else {
+                                  const row = source.find(x => String(x.CODUSUR||'').trim().toUpperCase() === role);
+                                  if (row) foundName = row.NOME;
                               }
                           }
                           if (foundName) nameEl.textContent = formatName(foundName);
                       } else if (window.userIsSupervisor) {
-                          // Try Dimension Map
-                          let foundName = window.resolveDim('supervisor', role);
+                          // Try to find supervisor name in Sales Data
+                          let foundName = null;
+                          const source = allSalesData;
+                          if (source) {
+                              if (source instanceof ColumnarDataset) {
+                                  const raw = source._data || source.values;
+                                  if (raw) {
+                                      const codes = raw['CODSUPERVISOR'];
+                                      const names = raw['SUPERV'];
+                                      if (codes && names) {
+                                          for(let i=0; i<source.length; i++) {
+                                              if (String(codes[i]||'').trim().toUpperCase() === role) {
+                                                  foundName = names[i];
+                                                  break;
+                                              }
+                                          }
+                                      }
+                                  }
+                              } else {
+                                  const row = source.find(x => String(x.CODSUPERVISOR||'').trim().toUpperCase() === role);
+                                  if (row) foundName = row.SUPERV;
+                              }
+                          }
                           if (foundName) nameEl.textContent = formatName(foundName);
                       }
                  }
@@ -19958,7 +19938,7 @@ const supervisorGroups = new Map();
             bon: Number(s.VLBONIFIC) || 0,
             type: String(s.TIPOVENDA),
             prod: s.PRODUTO,
-            desc: window.resolveDim('produto', s.PRODUTO),
+            desc: s.DESCRICAO,
             qty: Number(s.QTVENDA) || 0
         });
 
@@ -21765,7 +21745,7 @@ const supervisorGroups = new Map();
 
                     // 2. Seller/Supervisor Filter Check (Order Level)
                     if (selectedHistorySupervisors.size > 0) {
-                        const sup = window.resolveDim('supervisor', s.CODSUPERVISOR);
+                        const sup = String(s.SUPERV || '').trim();
                         // Check exact match (or mapped if necessary, but standard is exact name)
                         if (!selectedHistorySupervisors.has(sup)) continue;
                     }
@@ -21967,14 +21947,6 @@ const supervisorGroups = new Map();
             else if (statusText === 'P') { statusText = 'Pendente'; statusColor = 'text-orange-400'; }
             else if (statusText === 'B') { statusText = 'Bloqueado'; statusColor = 'text-red-400'; }
 
-            // Resolve Dimensions (Frontend Join)
-            const client = clientMapForKPIs.get(String(order.CODCLI));
-            const clientName = client ? (client.nomeCliente || client.fantasia || client.Cliente || 'N/A') : 'N/A';
-            const clientFantasia = client ? (client.fantasia || clientName) : 'N/A';
-
-            const sellerName = window.resolveDim('vendedor', order.CODUSUR);
-            const supplierName = window.resolveDim('fornecedor', order.CODFOR);
-
             tr.innerHTML = `
                 <!-- Desktop Columns (Hidden on Mobile) -->
                 <td data-label="Data" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 font-mono">${window.escapeHtml(dateStr)}</td>
@@ -21982,11 +21954,11 @@ const supervisorGroups = new Map();
                     <button class="text-[#FF5E00] hover:text-[#CC4A00] hover:underline transition-colors order-link font-mono">${window.escapeHtml(order.PEDIDO)}</button>
                 </td>
                 <td data-label="Cliente" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3">
-                    <div class="text-xs md:text-sm text-white max-w-[120px] md:max-w-none truncate" title="${window.escapeHtml(clientName)}">${window.escapeHtml(clientName)}</div>
+                    <div class="text-xs md:text-sm text-white max-w-[120px] md:max-w-none truncate" title="${window.escapeHtml(order.CLIENTE_NOME || '')}">${window.escapeHtml(order.CLIENTE_NOME || 'N/A')}</div>
                     <div class="text-[10px] md:text-xs text-slate-500 font-mono">${window.escapeHtml(order.CODCLI)}</div>
                 </td>
-                <td data-label="Vendedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell truncate max-w-[100px]" title="${window.escapeHtml(sellerName)}">${window.escapeHtml(sellerName)}</td>
-                <td data-label="Fornecedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell" title="${window.escapeHtml(supplierName)}">${window.escapeHtml(supplierName)}</td>
+                <td data-label="Vendedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell truncate max-w-[100px]" title="${window.escapeHtml(order.NOME || '')}">${window.escapeHtml(order.NOME || '-')}</td>
+                <td data-label="Fornecedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(order.CODFOR || '-')}</td>
                 <td data-label="Valor" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold text-right">${valStr}</td>
                 <td data-label="Status" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-center ${statusColor}">${window.escapeHtml(statusText)}</td>
 
@@ -21998,7 +21970,7 @@ const supervisorGroups = new Map();
                             <button class="text-[#FF5E00] font-bold font-mono hover:underline order-link shrink-0 text-sm">${window.escapeHtml(order.PEDIDO)}</button>
                             <span class="text-slate-500 text-sm">|</span>
                             <span class="text-white font-bold truncate text-sm">
-                                ${window.escapeHtml(order.CODCLI)} - ${window.escapeHtml(clientFantasia)}
+                                ${window.escapeHtml(order.CODCLI)} - ${window.escapeHtml(order.CLIENTE_FANTASIA || order.CLIENTE_NOME || 'N/A')}
                             </span>
                         </div>
 
@@ -23792,8 +23764,7 @@ const supervisorGroups = new Map();
             let keep = true;
             // Native Filters
             if (hasSup) {
-                const supCode = isCol ? colValues['CODSUPERVISOR'][i] : allSalesData[i].CODSUPERVISOR;
-                const sup = window.resolveDim('supervisor', supCode);
+                const sup = isCol ? colValues['SUPERV'][i] : allSalesData[i].SUPERV;
                 if (!selectedWeeklySupervisors.has(sup)) keep = false;
             }
             if (keep && hasVend) {
