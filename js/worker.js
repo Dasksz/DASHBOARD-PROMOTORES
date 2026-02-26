@@ -294,7 +294,7 @@
                          resolve([]);
                          return;
                     }
-
+                    
                     reject(new Error(`Arquivo obrigatório para '${fileType}' não foi fornecido.`));
                     return;
                 }
@@ -937,9 +937,15 @@
                     Object.values(fallbackData.products).forEach(p => {
                         productDetailsMap.set(p.code, p);
                     });
-
+                    
                     if (fallbackData.activeProducts) {
-                        fallbackData.activeProducts.forEach(p => activeProductCodesFromCadastro.add(p.code));
+                        fallbackData.activeProducts.forEach(p => {
+                            if (p && typeof p === 'object' && p.code) {
+                                activeProductCodesFromCadastro.add(p.code);
+                            } else {
+                                activeProductCodesFromCadastro.add(p);
+                            }
+                        });
                     } else {
                         // Fallback: use all in map
                         productDetailsMap.forEach((v, k) => activeProductCodesFromCadastro.add(k));
@@ -1070,7 +1076,7 @@
 
                 // Pass collector and maxDate to processSalesData
                 const processedSalesData = processSalesData(salesDataRaw, clientMap, productMasterMap, newRcaSupervisorMap, stockLinesCollector, maxSalesDate).filter(item => item !== null);
-
+                
                 // Process History (using effective raw data)
                 const processedHistoryData = processSalesData(effectiveHistoryDataRaw, clientMap, productMasterMap, newRcaSupervisorMap, null, null).filter(item => item !== null);
 
