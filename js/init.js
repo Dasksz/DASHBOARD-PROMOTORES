@@ -368,6 +368,10 @@
                 checkTable('data_titulos', 'hash_titulos', 'titulos');
                 checkTable('data_nota_perfeita', 'hash_nota_perfeita', 'nota_perfeita');
                 checkTable('relacao_rota_involves', 'hash_relacao_rota_involves', 'relacao_rota_involves');
+                checkTable('dim_vendedores', 'hash_dim_vendedores', 'dim_vendedores');
+                checkTable('dim_supervisores', 'hash_dim_supervisores', 'dim_supervisores');
+                checkTable('dim_fornecedores', 'hash_dim_fornecedores', 'dim_fornecedores');
+                checkTable('dim_produtos', 'hash_dim_produtos', 'dim_produtos');
 
                 // If nothing to fetch, use cache completely
                 if (tablesToFetch.size === 0) {
@@ -381,7 +385,7 @@
             } else if (!cachedData) {
                 // Full Fetch required
                 console.log("Cache vazio. Baixando tudo...");
-                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves'].forEach(t => tablesToFetch.add(t));
+                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos'].forEach(t => tablesToFetch.add(t));
             }
 
             if (useCache) {
@@ -720,9 +724,11 @@
             };
 
             let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientPromoters, titulos, nota_perfeita, relacao_rota_involves;
+            let dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos;
             let clientCoordinates;
 
-            const colsDetailed = 'id,pedido,codcli,nome,superv,codsupervisor,produto,descricao,fornecedor,observacaofor,codfor,codusur,qtvenda,vlvenda,vlbonific,totpesoliq,dtped,dtsaida,posicao,estoqueunit,tipovenda,filial,qtvenda_embalagem_master';
+            // Updated colsDetailed to exclude text columns (nome, superv, descricao, fornecedor, observacaofor)
+            const colsDetailed = 'id,pedido,codcli,codsupervisor,produto,codfor,codusur,qtvenda,vlvenda,vlbonific,totpesoliq,dtped,dtsaida,posicao,estoqueunit,tipovenda,filial,qtvenda_embalagem_master';
             const colsClients = 'id,codigo_cliente,rca1,rca2,rcas,cidade,nomecliente,bairro,razaosocial,fantasia,cnpj_cpf,endereco,numero,cep,telefone,email,ramo,ultimacompra,datacadastro,bloqueio,inscricaoestadual';
             const colsStock = 'id,product_code,filial,stock_qty';
             const colsOrders = 'id,pedido,codcli,cliente_nome,cidade,nome,superv,fornecedores_str,dtped,dtsaida,posicao,vlvenda,totpesoliq,filial,tipovenda,fornecedores_list,codfors_list';
@@ -744,6 +750,10 @@
                 titulos = cachedData.titulos;
                 nota_perfeita = cachedData.nota_perfeita;
                 relacao_rota_involves = cachedData.relacao_rota_involves;
+                dim_vendedores = cachedData.dim_vendedores;
+                dim_supervisores = cachedData.dim_supervisores;
+                dim_fornecedores = cachedData.dim_fornecedores;
+                dim_produtos = cachedData.dim_produtos;
 
                 // Background updates for coordinates/promoters can happen here if needed,
                 // but usually conditional logic handles it if metadata hashes change.
@@ -820,7 +830,7 @@
                     });
                 };
 
-                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, titulosFetched, notaPerfeitaFetched, relacaoRotaInvolvesFetched] = await Promise.all([
+                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, titulosFetched, notaPerfeitaFetched, relacaoRotaInvolvesFetched, dimVendedoresFetched, dimSupervisoresFetched, dimFornecedoresFetched, dimProdutosFetched] = await Promise.all([
                     getOrFetch('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter, 'detailed', 'Sincronizando vendas...'),
                     getOrFetch('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter, 'history', 'Carregando histórico...'),
                     getOrFetch('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter, 'clients', 'Baixando base de clientes...'),
@@ -830,18 +840,16 @@
                     getOrFetch('data_innovations', null, null, 'object', 'id', null, 'innovations', 'Baixando inovações...'),
                     fetchWithLabel('data_metadata', null, null, 'object', 'key', null, 'Verificando metadados...'), // Always fetch metadata fresh
                     getOrFetch('data_orders', colsOrders, 'orders', 'object', 'id', applyClientFilter, 'orders', 'Verificando pedidos...'),
-                    // Always fetch coordinates/promoters fresh or check hash?
-                    // Let's treat them as small tables that are cheap to fetch, OR use conditional logic.
-                    // Since Promoters edit coordinates/assignments often, maybe safer to fetch fresh or use hash?
-                    // Hash logic handles them if they are in 'tablesToFetch'.
-                    // BUT: 'data_client_coordinates' updates frequently outside of bulk upload.
-                    // So we should probably ALWAYS fetch coordinates fresh to ensure syncing.
                     fetchWithLabel('data_client_coordinates', null, null, 'object', 'client_code', null, 'Atualizando geolocalização...'),
                     getOrFetch('data_hierarchy', null, null, 'object', 'id', null, 'hierarchy', 'Carregando hierarquia...'),
                     getOrFetch('data_client_promoters', null, null, 'object', 'client_code', null, 'clientPromoters', 'Sincronizando roteiros...'),
                     getOrFetch('data_titulos', null, null, 'object', 'id', null, 'titulos', 'Baixando títulos...'),
                     getOrFetch('data_nota_perfeita', null, null, 'object', 'id', null, 'nota_perfeita', 'Verificando loja perfeita...'),
-                    getOrFetch('relacao_rota_involves', null, null, 'object', 'id', null, 'relacao_rota_involves', 'Carregando rotas...')
+                    getOrFetch('relacao_rota_involves', null, null, 'object', 'id', null, 'relacao_rota_involves', 'Carregando rotas...'),
+                    getOrFetch('dim_vendedores', null, null, 'object', 'codigo', null, 'dim_vendedores', 'Baixando vendedores...'),
+                    getOrFetch('dim_supervisores', null, null, 'object', 'codigo', null, 'dim_supervisores', 'Baixando supervisores...'),
+                    getOrFetch('dim_fornecedores', null, null, 'object', 'codigo', null, 'dim_fornecedores', 'Baixando fornecedores...'),
+                    getOrFetch('dim_produtos', null, null, 'object', 'codigo', null, 'dim_produtos', 'Baixando produtos...')
                 ]);
 
                 detailed = detailedUpper;
@@ -859,11 +867,15 @@
                 titulos = titulosFetched;
                 nota_perfeita = notaPerfeitaFetched;
                 relacao_rota_involves = relacaoRotaInvolvesFetched;
+                dim_vendedores = dimVendedoresFetched;
+                dim_supervisores = dimSupervisoresFetched;
+                dim_fornecedores = dimFornecedoresFetched;
+                dim_produtos = dimProdutosFetched;
 
                 // Update Cache with Merged Data
                 if (!isPromoter) {
                     const dataToCache = {
-                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves
+                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos
                     };
                     saveToCache('dashboardData', dataToCache).then(() => console.log('Dados atualizados salvos no cache.'));
                 }
@@ -1261,6 +1273,10 @@
                 titulos: titulos,
                 nota_perfeita: nota_perfeita,
                 relacao_rota_involves: relacao_rota_involves,
+                dim_vendedores: dim_vendedores,
+                dim_supervisores: dim_supervisores,
+                dim_fornecedores: dim_fornecedores,
+                dim_produtos: dim_produtos,
                 passedWorkingDaysCurrentMonth: 1,
                 isColumnar: true
             };

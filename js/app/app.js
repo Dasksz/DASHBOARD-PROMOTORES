@@ -1,6 +1,45 @@
 (function() {
         const embeddedData = window.embeddedData;
 
+        // --- LOOKUP MAPS (New Architecture - Option A) ---
+        const maps = {
+            vendedores: new Map(),
+            supervisores: new Map(),
+            fornecedores: new Map(),
+            produtos: new Map()
+        };
+
+        if (embeddedData.dim_vendedores) {
+            embeddedData.dim_vendedores.forEach(v => maps.vendedores.set(String(v.codigo).trim(), v.nome));
+        }
+        if (embeddedData.dim_supervisores) {
+            embeddedData.dim_supervisores.forEach(s => maps.supervisores.set(String(s.codigo).trim(), s.nome));
+        }
+        if (embeddedData.dim_fornecedores) {
+            embeddedData.dim_fornecedores.forEach(f => maps.fornecedores.set(String(f.codigo).trim(), f.nome));
+        }
+        if (embeddedData.dim_produtos) {
+            embeddedData.dim_produtos.forEach(p => maps.produtos.set(String(p.codigo).trim(), p));
+        }
+
+        // Global Helper for resolving Dimensions
+        window.resolveDim = (type, code) => {
+            if (code === null || code === undefined) return 'N/A';
+            const cleanCode = String(code).trim();
+            if (cleanCode === '') return 'N/A';
+
+            const map = maps[type];
+            if (!map) return cleanCode;
+
+            if (type === 'produtos') {
+                // Return object for products
+                return map.get(cleanCode) || { descricao: `Produto ${cleanCode}` };
+            }
+
+            // Return Name or Fallback to Code
+            return map.get(cleanCode) || cleanCode;
+        };
+
         // --- CONFIGURATION MOVED TO utils.js ---
         // SUPPLIER_CONFIG, resolveSupplierPasta, GARBAGE_SELLER_KEYWORDS, isGarbageSeller available globally
 
@@ -32,20 +71,23 @@
             // Cache for supplier -> pasta mapping to avoid repeated config lookups
             const supplierCache = new Map();
 
-            const getResolvedPasta = (currentPasta, fornecedor) => {
+            const getResolvedPasta = (currentPasta, codFornecedor) => {
                 // If we already have a valid pasta, return it
                 if (currentPasta && currentPasta !== '0' && currentPasta !== '00' && currentPasta !== 'N/A') {
                     return currentPasta;
                 }
 
+                // Resolve Supplier Name from Code
+                const fornecedorName = window.resolveDim('fornecedores', codFornecedor);
+
                 // Check cache
-                const key = String(fornecedor || '').toUpperCase();
+                const key = String(fornecedorName || '').toUpperCase();
                 if (supplierCache.has(key)) {
                     return supplierCache.get(key);
                 }
 
                 // Calculate and cache
-                const resolved = resolveSupplierPasta(currentPasta, fornecedor);
+                const resolved = resolveSupplierPasta(currentPasta, fornecedorName);
                 supplierCache.set(key, resolved);
                 return resolved;
             };
@@ -56,7 +98,7 @@
 
                 // Ensure columns exist or gracefully handle
                 const pastaCol = data['OBSERVACAOFOR'] || new Array(len).fill(null);
-                const supplierCol = data['FORNECEDOR'] || [];
+                const supplierCodeCol = data['CODFOR'] || [];
 
                 // If we created a new array for pasta, we must attach it to _data
                 if (!data['OBSERVACAOFOR']) {
@@ -68,8 +110,8 @@
 
                 for (let i = 0; i < len; i++) {
                     const originalPasta = pastaCol[i];
-                    const fornecedor = supplierCol[i];
-                    const newPasta = getResolvedPasta(originalPasta, fornecedor);
+                    const codFornecedor = supplierCodeCol[i];
+                    const newPasta = getResolvedPasta(originalPasta, codFornecedor);
 
                     // Only update if changed (optimization)
                     if (newPasta !== originalPasta) {
@@ -80,8 +122,8 @@
                  for (let i = 0; i < dataset.length; i++) {
                     const item = dataset[i];
                     const originalPasta = item['OBSERVACAOFOR'];
-                    const fornecedor = item['FORNECEDOR'];
-                    const newPasta = getResolvedPasta(originalPasta, fornecedor);
+                    const codFornecedor = item['CODFOR'];
+                    const newPasta = getResolvedPasta(originalPasta, codFornecedor);
 
                     if (newPasta !== originalPasta) {
                         item['OBSERVACAOFOR'] = newPasta;
@@ -92,20 +134,18 @@
 
         function sanitizeData(data) {
             if (!data) return [];
-            const forbidden = ['SUPERV', 'CODUSUR', 'CODSUPERVISOR', 'NOME', 'CODCLI', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX', 'SUPERVISOR'];
+            // Updated forbidden list to exclude removed columns
+            const forbidden = ['SUPERV', 'CODUSUR', 'CODSUPERVISOR', 'CODCLI', 'PRODUTO', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX'];
+
+            // Since text columns are gone, we can't easily filter garbage by text content like "NOME" or "SUPERVISOR".
+            // We rely on ID validation or presence.
 
             // Check if it's a ColumnarDataset proxy or regular array.
-            // If it's a ColumnarDataset, we can't easily filter in-place without rebuilding.
-            // However, ColumnarDataset usually proxies access.
-            // Since we're trying to fix garbage, it's safer to check if we can filter.
-
             if (Array.isArray(data)) {
                 return data.filter(item => {
-                    const superv = String(item.SUPERV || '').trim().toUpperCase();
-                    const nome = String(item.NOME || '').trim().toUpperCase();
                     const codUsur = String(item.CODUSUR || '').trim().toUpperCase();
-                    // Check against headers
-                    if (forbidden.includes(superv) || forbidden.includes(nome) || forbidden.includes(codUsur)) return false;
+                    // Basic check: CODUSUR shouldn't be a header name if mixed in
+                    if (forbidden.includes(codUsur)) return false;
                     return true;
                 });
             }
@@ -116,23 +156,17 @@
                 const keepIndices = [];
                 const values = data.values;
 
-                // Identify columns to check (case insensitive check usually handled by worker/init, but here we assume keys match)
-                // Typically 'SUPERV', 'NOME', 'CODUSUR' are uppercase keys from init.js parser.
-                const supervCol = values['SUPERV'] || values['supervisor'] || [];
-                const nomeCol = values['NOME'] || values['nome'] || [];
                 const codUsurCol = values['CODUSUR'] || values['codusur'] || [];
 
                 // If checking columns are completely missing, we assume data is clean or check is not applicable
-                if (!values['SUPERV'] && !values['NOME'] && !values['CODUSUR']) {
+                if (!values['CODUSUR']) {
                     return data;
                 }
 
                 for (let i = 0; i < len; i++) {
-                     const superv = String(supervCol[i] || '').trim().toUpperCase();
-                     const nome = String(nomeCol[i] || '').trim().toUpperCase();
                      const codUsur = String(codUsurCol[i] || '').trim().toUpperCase();
 
-                     if (forbidden.includes(superv) || forbidden.includes(nome) || forbidden.includes(codUsur)) {
+                     if (forbidden.includes(codUsur)) {
                          continue; // Skip (Garbage)
                      }
                      keepIndices.push(i);
@@ -1836,15 +1870,20 @@
                 for (let i = 0; i < source.length; i++) {
                     const s = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const codUsur = s.CODUSUR;
+
+                    // Resolve Names via Lookups
+                    const nomeVendedor = window.resolveDim('vendedores', codUsur);
+
                     // Ignorar 'INATIVOS' e 'AMERICANAS' para evitar poluição do mapa de supervisores com lógica de fallback
-                    if (codUsur && s.NOME !== 'INATIVOS' && s.NOME !== 'AMERICANAS') {
+                    if (codUsur && nomeVendedor !== 'INATIVOS' && nomeVendedor !== 'AMERICANAS') {
                         const dt = parseDate(s.DTPED);
                         const ts = dt ? dt.getTime() : 0;
                         const lastTs = sellerLastSaleDateMap.get(codUsur) || 0;
 
                         if (ts >= lastTs || !sellerDetailsMap.has(codUsur)) {
                             sellerLastSaleDateMap.set(codUsur, ts);
-                            sellerDetailsMap.set(codUsur, { name: s.NOME, supervisor: s.SUPERV });
+                            const supervisorName = window.resolveDim('supervisores', s.CODSUPERVISOR);
+                            sellerDetailsMap.set(codUsur, { name: nomeVendedor, supervisor: supervisorName });
                         }
                     }
                 }
@@ -2087,24 +2126,28 @@
                     // Note: dataMap is now the dataset itself, we don't need to set anything into it.
                     // We just index the position 'i'.
 
-                    const supervisor = getVal(i, 'SUPERV') || 'N/A';
-                    const rca = getVal(i, 'NOME') || 'N/A';
+                    const codSupervisor = getVal(i, 'CODSUPERVISOR');
+                    const codUsur = getVal(i, 'CODUSUR');
+                    const product = getVal(i, 'PRODUTO');
+                    const codFor = getVal(i, 'CODFOR');
+
+                    // Resolve Dimensions
+                    const supervisor = window.resolveDim('supervisores', codSupervisor) || 'N/A';
+                    const rca = window.resolveDim('vendedores', codUsur) || 'N/A';
 
                     // Use pre-normalized PASTA
                     let pasta = getVal(i, 'OBSERVACAOFOR');
 
-                    const supplier = getVal(i, 'CODFOR');
+                    const supplier = codFor;
                     const client = normalizeKey(getVal(i, 'CODCLI'));
                     const position = getVal(i, 'POSICAO') || 'N/A';
                     const rede = clientRamoMap.get(client) || 'N/A';
                     const tipoVenda = getVal(i, 'TIPOVENDA');
-                    const product = getVal(i, 'PRODUTO');
+
                     // Optimized: Lookup City from Client Map (Removed from Sales Data to save space)
                     const clientObj = clientMapForKPIs.get(String(client));
                     const city = (clientObj ? (clientObj.cidade || clientObj['Nome da Cidade']) : 'N/A').toLowerCase();
                     const filial = getVal(i, 'FILIAL');
-                    const codUsur = getVal(i, 'CODUSUR');
-                    const codSupervisor = getVal(i, 'CODSUPERVISOR');
 
                     if (!bySupervisor.has(supervisor)) bySupervisor.set(supervisor, new Set()); bySupervisor.get(supervisor).add(id);
                     if (!byRca.has(rca)) byRca.set(rca, new Set()); byRca.get(rca).add(id);
@@ -2116,7 +2159,8 @@
                         // Virtual Categories Logic (Shared with Meta vs Realizado)
                         // 1119 Split: TODDYNHO, TODDY, QUAKER/KEROCOCO
                         if (window.isFoods(supplier)) {
-                            const desc = String(getVal(i, 'DESCRICAO') || '').toUpperCase();
+                            const productInfo = window.resolveDim('produtos', product);
+                            const desc = String(productInfo.descricao || '').toUpperCase();
                             let virtualKey = null;
                             if (desc.includes('TODDYNHO')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
                             else if (desc.includes('TODDY')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
