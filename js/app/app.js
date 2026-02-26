@@ -21064,6 +21064,7 @@ const supervisorGroups = new Map();
 
     let clientsTableState = { page: 1, limit: 200, filtered: [] };
     let historyTableState = { page: 1, limit: 50, filtered: [], hasSearched: false };
+    let cachedHistoryEmptyState = null;
 
     window.renderClientView = function() {
         const container = document.getElementById('clientes-list-container');
@@ -21836,18 +21837,32 @@ const supervisorGroups = new Map();
         const pagination = document.getElementById('history-pagination-controls');
         
         if (!tbody) return;
+
+        // Cache empty state if available
+        if (emptyState && !cachedHistoryEmptyState) {
+            cachedHistoryEmptyState = emptyState.cloneNode(true);
+            cachedHistoryEmptyState.id = 'history-empty-state-cached'; // Prevent ID duplicate issues
+        }
+
         tbody.innerHTML = '';
 
         if (!historyTableState.hasSearched || historyTableState.filtered.length === 0) {
-            tbody.appendChild(emptyState.cloneNode(true)); // Restore empty state
-            document.getElementById('history-empty-state').classList.remove('hidden'); // Ensure visible
-            if (historyTableState.hasSearched && historyTableState.filtered.length === 0) {
-                 // Show "No results" instead of "Select period"
-                 tbody.querySelector('p.text-lg').textContent = 'Nenhum pedido encontrado';
-                 tbody.querySelector('p.text-sm').textContent = 'Tente ajustar os filtros.';
+            if (cachedHistoryEmptyState) {
+                const clone = cachedHistoryEmptyState.cloneNode(true);
+                clone.classList.remove('hidden');
+
+                if (historyTableState.hasSearched && historyTableState.filtered.length === 0) {
+                    // Show "No results" instead of "Select period"
+                    const lgText = clone.querySelector('p.text-lg');
+                    const smText = clone.querySelector('p.text-sm');
+                    if(lgText) lgText.textContent = 'Nenhum pedido encontrado';
+                    if(smText) smText.textContent = 'Tente ajustar os filtros.';
+                }
+                tbody.appendChild(clone);
             }
-            countBadge.textContent = '0';
-            pagination.classList.add('hidden');
+
+            if(countBadge) countBadge.textContent = '0';
+            if(pagination) pagination.classList.add('hidden');
             return;
         }
 
@@ -23716,7 +23731,7 @@ const supervisorGroups = new Map();
             // Rede Filter (Expensive Lookup)
             if (keep && checkRede) {
                 const codCli = isCol ? colValues['CODCLI'][i] : allSalesData[i].CODCLI;
-                const client = optimizedData.clientsById.get(normalizeKey(codCli));
+                const client = clientMapForKPIs.get(normalizeKey(codCli));
                 if (client) {
                     if (isComRede) {
                         if (!client.ramo || client.ramo === 'N/A') keep = false;
