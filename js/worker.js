@@ -8,7 +8,7 @@
         const mandatoryColumns = {
             sales: ['CODCLI', 'PEDIDO', 'CODUSUR', 'CODSUPERVISOR', 'DTPED', 'DTSAIDA', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX'],
             clients: [], // Validation relaxed to support variable headers (aliases handled in processing)
-            products: ['Código', 'Qtde embalagem master(Compra)', 'Descrição', 'Nome do fornecedor', 'Fornecedor', 'Dt.Cadastro'],
+            products: ['Código', 'Descrição', 'Nome do fornecedor', 'Fornecedor', 'Dt.Cadastro'], // Relaxed Master Pack check
             history: ['CODCLI', 'NOME', 'SUPERV', 'PEDIDO', 'CODUSUR', 'CODSUPERVISOR', 'DTPED', 'DTSAIDA', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'POSICAO', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX'],
             hierarchy: ['COD COORD.', 'COORDENADOR', 'COD CO-COORD.', 'CO-COORDENADOR', 'COD PROMOTOR', 'PROMOTOR'],
             titulos: ['CODCLI', 'VLRECEBER', 'DTVENC', 'VLTITULOS', 'QTTITRECEBER', 'QTTITULOS'],
@@ -37,7 +37,7 @@
             },
             products: {
                 'Código': 'number',
-                'Qtde embalagem master(Compra)': 'number',
+                // 'Qtde embalagem master(Compra)': 'number', // Removed strict check
                 'Dt.Cadastro': 'date'
             },
             history: {
@@ -930,6 +930,22 @@
                 const activeProductCodesFromCadastro = new Set();
                 const productDetailsMap = new Map();
 
+                // Helper to get value from multiple possible keys (Moved up for Products)
+                const getVal = (row, keys) => {
+                    if (!row) return undefined;
+                    // Direct match first
+                    for (const k of keys) {
+                        if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') return row[k];
+                    }
+                    // Case-insensitive match
+                    const rowKeys = Object.keys(row);
+                    for (const k of keys) {
+                        const match = rowKeys.find(rk => rk.trim().toUpperCase() === k.toUpperCase());
+                        if (match && row[match] !== undefined && row[match] !== null && String(row[match]).trim() !== '') return row[match];
+                    }
+                    return undefined;
+                };
+
                 // Products Fallback
                 if (productsDataRaw.length === 0 && fallbackData && fallbackData.products) {
                     self.postMessage({ type: 'progress', status: 'Reutilizando cadastro de produtos existente...', percentage: 32 });
@@ -951,14 +967,23 @@
                         productDetailsMap.forEach((v, k) => activeProductCodesFromCadastro.add(k));
                     }
                 } else {
-                    // Original Logic
+                    // Original Logic with Enhanced Alias Support for Master Pack
+                    const masterQtyKeys = ['Qtde embalagem master(Compra)', 'Qtde. Emb. Master', 'Qtde Master', 'Qtd Master', 'Emb. Master', 'QTDE_MASTER', 'QTD_MASTER'];
+
                     productsDataRaw.forEach(prod => {
-                        const productCode = String(prod['Código'] || '').trim();
-                        if (!productCode) return;
+                        // Apply normalizeKey to be consistent with client/sales logic if IDs are numeric but padded
+                        const rawCode = String(prod['Código'] || '').trim();
+                        if (!rawCode) return;
+
+                        const productCode = normalizeKey(rawCode) || rawCode;
                         activeProductCodesFromCadastro.add(productCode);
-                        let qtdeMaster = parseInt(prod['Qtde embalagem master(Compra)'], 10);
+
+                        const valMaster = getVal(prod, masterQtyKeys);
+                        let qtdeMaster = parseInt(valMaster, 10);
                         if (isNaN(qtdeMaster) || qtdeMaster <= 0) qtdeMaster = 1;
+
                         productMasterMap.set(productCode, qtdeMaster);
+
                         if (!productDetailsMap.has(productCode)) {
                                 const dtCad = parseDate(prod['Dt.Cadastro']);
                                 productDetailsMap.set(productCode, {
@@ -992,22 +1017,6 @@
                 if (sourceClients.length === 0 && referenceData && referenceData.cnpjMap) {
                     Object.entries(referenceData.cnpjMap).forEach(([k,v]) => clientCnpjMap.set(k, v));
                 }
-
-                // Helper to get value from multiple possible keys
-                const getVal = (row, keys) => {
-                    if (!row) return undefined;
-                    // Direct match first
-                    for (const k of keys) {
-                        if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') return row[k];
-                    }
-                    // Case-insensitive match
-                    const rowKeys = Object.keys(row);
-                    for (const k of keys) {
-                        const match = rowKeys.find(rk => rk.trim().toUpperCase() === k.toUpperCase());
-                        if (match && row[match] !== undefined && row[match] !== null && String(row[match]).trim() !== '') return row[match];
-                    }
-                    return undefined;
-                };
 
                 sourceClients.forEach(client => {
                     const codCliRaw = getVal(client, ['Código', 'CODIGO', 'Codigo', 'Cod. Cliente', 'CODCLI', 'CodCliente']);
