@@ -939,7 +939,13 @@
                     });
 
                     if (fallbackData.activeProducts) {
-                        fallbackData.activeProducts.forEach(p => activeProductCodesFromCadastro.add(p.code));
+                        fallbackData.activeProducts.forEach(p => {
+                            if (p && typeof p === 'object' && p.code) {
+                                activeProductCodesFromCadastro.add(p.code);
+                            } else {
+                                activeProductCodesFromCadastro.add(p);
+                            }
+                        });
                     } else {
                         // Fallback: use all in map
                         productDetailsMap.forEach((v, k) => activeProductCodesFromCadastro.add(k));
