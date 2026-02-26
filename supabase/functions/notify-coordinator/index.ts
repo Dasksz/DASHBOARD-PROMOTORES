@@ -101,144 +101,122 @@ serve(async (req) => {
     let clientName = record.client_code || record.id_cliente; // Fallback
     let targetEmail = record.coordenador_email;
 
-    // --- Metadata Lookup ---
-    const lookupPromoterMeta = async () => {
-        try {
-            const { data: pProfile } = await supabase.from('profiles').select('email, role').eq('id', record.id_promotor).single();
-            if (pProfile) {
-                 // Try to resolve name from Hierarchy
-                 const { data: hInfo } = await supabase.from('data_hierarchy').select('nome_promotor').ilike('cod_promotor', (pProfile.role || '').trim()).maybeSingle();
-                 if (hInfo?.nome_promotor) return hInfo.nome_promotor;
-                 else if (pProfile.email) return pProfile.email.split('@')[0]; // Simple fallback
-            }
-        } catch(e) { console.error('Meta lookup failed', e); }
-        return null;
-    };
+    // --- OPTIMIZED PARALLEL LOOKUPS ---
+    // Fetch critical data in parallel:
+    // 1. Promoter Profile (for natural hierarchy lookup & email fallback)
+    // 2. Client Info (for display name)
+    // 3. Fixed Promoter Assignment (for client-specific routing)
 
-    const lookupClientMeta = async () => {
-        try {
-            if (record.client_code) {
-                const { data: cInfo } = await supabase.from('data_clients').select('fantasia, razaosocial').eq('codigo_cliente', record.client_code).maybeSingle();
-                if (cInfo) return cInfo.fantasia || cInfo.razaosocial || null;
-            }
-        } catch(e) { console.error('Client meta lookup failed', e); }
-        return null;
-    };
+    const clientCodeForLookup = record.client_code || record.id_cliente;
+    const normalizedClientCode = clientCodeForLookup ? String(clientCodeForLookup).trim() : null;
 
-    const [resolvedPromoterName, resolvedClientName] = await Promise.all([
-        lookupPromoterMeta(),
-        lookupClientMeta()
+    console.log('Starting parallel metadata lookups...');
+    
+    const [promoterProfileRes, clientInfoRes, assignmentRes] = await Promise.all([
+        // 1. Promoter Profile
+        supabase.from('profiles').select('email, role').eq('id', record.id_promotor).single(),
+
+        // 2. Client Info
+        normalizedClientCode ?
+            supabase.from('data_clients').select('fantasia, razaosocial').eq('codigo_cliente', normalizedClientCode).maybeSingle() :
+            Promise.resolve({ data: null, error: null }),
+
+        // 3. Fixed Assignment
+        normalizedClientCode ?
+            supabase.from('data_client_promoters').select('promoter_code').eq('client_code', normalizedClientCode).maybeSingle() :
+            Promise.resolve({ data: null, error: null })
     ]);
 
-    if (resolvedPromoterName) promoterName = resolvedPromoterName;
-    if (resolvedClientName) clientName = resolvedClientName;
+    // Process Initial Results
+    const promoterProfile = promoterProfileRes.data;
+    const clientInfo = clientInfoRes.data;
+    const assignmentData = assignmentRes.data;
 
-    // --- NEW LOGIC: Resolve Fixed Promoter and Co-Coordinator for Client ---
-    let fixedCoCoordCode = null;
-    
-    // Attempt to identify the client code
-    const clientCodeForLookup = record.client_code || record.id_cliente;
-
-    if (clientCodeForLookup) {
-        const normalizedClientCode = String(clientCodeForLookup).trim();
-        console.log(`[Fixed Lookup] Looking up fixed promoter/co-coord for client: ${normalizedClientCode}`);
-
-        try {
-            // 1. Find assigned promoter code from data_client_promoters
-            const { data: assignmentData, error: assignmentError } = await supabase
-                .from('data_client_promoters')
-                .select('promoter_code')
-                .eq('client_code', normalizedClientCode)
-                .maybeSingle();
-
-            if (assignmentError) {
-                console.error('[Fixed Lookup] Error fetching client promoter:', assignmentError);
-            } else if (assignmentData && assignmentData.promoter_code) {
-                const fixedPromoterCode = assignmentData.promoter_code.trim();
-                console.log(`[Fixed Lookup] Found Fixed Promoter Code: ${fixedPromoterCode}`);
-
-                // 2. Get Promoter Name and Co-Coord Code from Hierarchy
-                const { data: hierarchyData, error: hierarchyError } = await supabase
-                    .from('data_hierarchy')
-                    .select('nome_promotor, cod_cocoord')
-                    .ilike('cod_promotor', fixedPromoterCode)
-                    .limit(1)
-                    .maybeSingle();
-
-                if (hierarchyError) {
-                    console.error('[Fixed Lookup] Error fetching hierarchy:', hierarchyError);
-                } else if (hierarchyData) {
-                    // Override Promoter Name for Email Body
-                    if (hierarchyData.nome_promotor) {
-                        const oldName = promoterName;
-                        promoterName = hierarchyData.nome_promotor;
-                        console.log(`[Fixed Lookup] Resolved Fixed Promoter Name: ${promoterName} (Was: ${oldName})`);
-                    }
-                    
-                    // Capture Co-Coord Code
-                    if (hierarchyData.cod_cocoord) {
-                        fixedCoCoordCode = hierarchyData.cod_cocoord.trim();
-                        console.log(`[Fixed Lookup] Resolved Fixed Co-Coord Code: ${fixedCoCoordCode}`);
-                    }
-                }
-            } else {
-                console.log(`[Fixed Lookup] No fixed promoter assignment found for client ${normalizedClientCode}`);
-            }
-        } catch (e) {
-            console.error('[Fixed Lookup] Unexpected error:', e);
-        }
+    // Resolve Client Name
+    if (clientInfo) {
+        clientName = clientInfo.fantasia || clientInfo.razaosocial || clientName;
     }
 
-    // 4. Resolve Coordinator Email (Robust Logic)
-    if (!targetEmail || fixedCoCoordCode) {
-      console.log('Coordinator email missing or Fixed Code Found. Attempting robust lookup...');
-      
+    // Determine Promoter Codes needed for Hierarchy Lookup
+    const naturalPromoterCode = promoterProfile?.role ? promoterProfile.role.trim() : null;
+    const fixedPromoterCode = assignmentData?.promoter_code ? assignmentData.promoter_code.trim() : null;
+
+    // Determine Hierarchy Lookups needed
+    // We need to look up hierarchy info for BOTH codes if they exist and are different
+    // to correctly resolve names and co-coord codes according to priority.
+
+    const hierarchyLookups = [];
+    const lookupMap = new Map(); // Maps 'natural' or 'fixed' -> index in hierarchyResults
+
+    if (fixedPromoterCode) {
+        lookupMap.set('fixed', hierarchyLookups.length);
+        hierarchyLookups.push(
+            supabase.from('data_hierarchy').select('nome_promotor, cod_cocoord').ilike('cod_promotor', fixedPromoterCode).limit(1).maybeSingle()
+        );
+    }
+
+    if (naturalPromoterCode && naturalPromoterCode !== fixedPromoterCode) {
+        lookupMap.set('natural', hierarchyLookups.length);
+        hierarchyLookups.push(
+             supabase.from('data_hierarchy').select('nome_promotor, cod_cocoord').ilike('cod_promotor', naturalPromoterCode).limit(1).maybeSingle()
+        );
+    } else if (naturalPromoterCode && naturalPromoterCode === fixedPromoterCode) {
+        // Reuse fixed lookup if codes are same
+        lookupMap.set('natural', lookupMap.get('fixed'));
+    }
+
+    // Execute Hierarchy Lookups
+    console.log(`Executing ${hierarchyLookups.length} hierarchy lookups...`);
+    const hierarchyResults = hierarchyLookups.length > 0 ? await Promise.all(hierarchyLookups) : [];
+
+    // Extract Data Helper
+    const getHierarchyData = (type) => {
+        const index = lookupMap.get(type);
+        if (index !== undefined && hierarchyResults[index]) {
+            return hierarchyResults[index].data;
+        }
+        return null;
+    };
+
+    const fixedHierarchy = getHierarchyData('fixed');
+    const naturalHierarchy = getHierarchyData('natural');
+
+    // --- RESOLVE PROMOTER NAME ---
+    // Priority: Fixed Hierarchy Name > Natural Hierarchy Name > Natural Profile Email > ID
+    if (fixedHierarchy?.nome_promotor) {
+        promoterName = fixedHierarchy.nome_promotor;
+        console.log(`Resolved Promoter Name (Fixed): ${promoterName}`);
+    } else if (naturalHierarchy?.nome_promotor) {
+        promoterName = naturalHierarchy.nome_promotor;
+        console.log(`Resolved Promoter Name (Natural): ${promoterName}`);
+    } else if (promoterProfile?.email) {
+        promoterName = promoterProfile.email.split('@')[0];
+        console.log(`Resolved Promoter Name (Email): ${promoterName}`);
+    }
+
+    // --- RESOLVE CO-COORDINATOR CODE ---
+    let coCoordCode = null;
+    // Priority: Fixed Hierarchy CoCoord > Record CoCoord > Natural Hierarchy CoCoord
+    if (fixedHierarchy?.cod_cocoord) {
+        coCoordCode = fixedHierarchy.cod_cocoord.trim();
+        console.log(`Resolved Co-Coord Code (Fixed): ${coCoordCode}`);
+    } else if (record.cod_cocoord) {
+        coCoordCode = record.cod_cocoord.trim();
+        console.log(`Resolved Co-Coord Code (Record): ${coCoordCode}`);
+    } else if (naturalHierarchy?.cod_cocoord) {
+        coCoordCode = naturalHierarchy.cod_cocoord.trim();
+        console.log(`Resolved Co-Coord Code (Natural): ${coCoordCode}`);
+    }
+
+    // --- RESOLVE COORDINATOR EMAIL ---
+    // Now we need the email for the resolved coCoordCode
+
+    if (!targetEmail || coCoordCode) { // If targetEmail already set in record, we might skip, but logic implies we overwrite or robustly find. Original logic checks (!targetEmail || fixedCoCoordCode).
+      console.log('Resolving Target Email...');
       try {
-        let coCoordCode = fixedCoCoordCode; // Priority 1: Fixed Co-Coord
-
-        // A. Check if co-coordinator code was passed in the record (Priority 2)
-        if (!coCoordCode) {
-            if (record.cod_cocoord) {
-                coCoordCode = record.cod_cocoord.trim();
-                console.log(`Co-Coordinator Code found in record: '${coCoordCode}'`);
-            } else {
-                // B. If not, try to look up via Promoter Code (Role) -> Hierarchy
-            const { data: promoterProfile, error: profileError } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', record.id_promotor)
-              .single();
-
-            if (profileError || !promoterProfile) {
-               console.error('Lookup Failed: Promoter profile not found.', profileError);
-            } else {
-               let promoterCode = (promoterProfile.role || '').trim();
-               console.log(`Promoter Code found: '${promoterCode}'`);
-
-               if (promoterCode) {
-                   const { data: hierarchy, error: hierError } = await supabase
-                     .from('data_hierarchy')
-                     .select('cod_cocoord')
-                     .ilike('cod_promotor', promoterCode)
-                     .limit(1)
-                     .maybeSingle();
-
-                   if (hierError) console.error('Lookup Error (Hierarchy):', hierError);
-                   
-                   if (hierarchy?.cod_cocoord) {
-                      coCoordCode = hierarchy.cod_cocoord.trim();
-                      console.log(`Co-Coordinator Code resolved from Hierarchy: '${coCoordCode}'`);
-                   } else {
-                       console.log(`No Co-Coordinator found for Promoter Code '${promoterCode}' in Hierarchy.`);
-                   }
-               }
-            }
-        }
-        }
-
-        // C. Get Co-Coordinator Email using ILIKE on role
+        // A. Primary: Co-Coordinator Profile
         if (coCoordCode) {
-            const { data: coCoordProfile } = await supabase
+             const { data: coCoordProfile } = await supabase
               .from('profiles')
               .select('email')
               .ilike('role', coCoordCode)
@@ -253,7 +231,7 @@ serve(async (req) => {
             }
         }
 
-        // D. Fallback 1: General Coordinator (ILIKE)
+        // B. Fallback 1: General Coordinator (ILIKE)
         if (!targetEmail) {
            console.log('Fallback 1: Looking for General Coordinator (coord)...');
            const { data: coordUser } = await supabase
@@ -268,13 +246,14 @@ serve(async (req) => {
            }
         }
 
-        // E. Fallback 2: Admin (ILIKE 'adm' OR 'admin')
+        // C. Fallback 2: Admin (ILIKE 'adm' OR 'admin')
         if (!targetEmail) {
            console.log('Fallback 2: Looking for Admin (adm)...');
+           // Parallelize Admin Check if possible, or keep sequential as it's fallback
            let { data: admUser } = await supabase
              .from('profiles')
              .select('email')
-             .ilike('role', 'adm') // Case insensitive 'adm'
+             .ilike('role', 'adm')
              .limit(1)
              .maybeSingle();
              
@@ -283,7 +262,7 @@ serve(async (req) => {
                const { data: adminUser } = await supabase
                  .from('profiles')
                  .select('email')
-                 .ilike('role', 'admin') // Case insensitive 'admin'
+                 .ilike('role', 'admin')
                  .limit(1)
                  .maybeSingle();
                admUser = adminUser;
@@ -295,9 +274,11 @@ serve(async (req) => {
            }
         }
 
-        // F. Update Record if found
+        // D. Update Record if found
         if (targetEmail) {
            console.log(`Updating visit record with resolved email: ${targetEmail}`);
+           // Fire and forget update to not block email sending? Or wait?
+           // Original waited. We'll wait to ensure consistency.
            const { error: updateError } = await supabase
              .from('visitas')
              .update({ coordenador_email: targetEmail })
