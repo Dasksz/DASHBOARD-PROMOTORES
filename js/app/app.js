@@ -16,7 +16,10 @@
             embeddedData.dim_supervisores.forEach(s => maps.supervisores.set(String(s.codigo).trim(), s.nome));
         }
         if (embeddedData.dim_fornecedores) {
-            embeddedData.dim_fornecedores.forEach(f => maps.fornecedores.set(String(f.codigo).trim(), f.nome));
+            embeddedData.dim_fornecedores.forEach(f => {
+                // Store object to include 'pasta' if available
+                maps.fornecedores.set(String(f.codigo).trim(), { nome: f.nome, pasta: f.pasta });
+            });
         }
         if (embeddedData.dim_produtos) {
             embeddedData.dim_produtos.forEach(p => maps.produtos.set(String(p.codigo).trim(), p));
@@ -36,8 +39,27 @@
                 return map.get(cleanCode) || { descricao: `Produto ${cleanCode}` };
             }
 
+            if (type === 'fornecedores') {
+                // Return object or string depending on what is stored.
+                // Legacy: stored string name. New: stores object.
+                const val = map.get(cleanCode);
+                if (val && typeof val === 'object') return val.nome;
+                return val || cleanCode;
+            }
+
             // Return Name or Fallback to Code
             return map.get(cleanCode) || cleanCode;
+        };
+
+        // Helper to resolve Pasta from Dimension directly
+        window.resolveSupplierPastaFromDim = (code) => {
+            if (!code) return null;
+            const cleanCode = String(code).trim();
+            const map = maps['fornecedores'];
+            if (!map) return null;
+            const val = map.get(cleanCode);
+            if (val && typeof val === 'object' && val.pasta) return val.pasta;
+            return null;
         };
 
         // --- CONFIGURATION MOVED TO utils.js ---
@@ -76,6 +98,10 @@
                 if (currentPasta && currentPasta !== '0' && currentPasta !== '00' && currentPasta !== 'N/A') {
                     return currentPasta;
                 }
+
+                // NEW: Try to resolve from Dimension Table first
+                const dimPasta = window.resolveSupplierPastaFromDim(codFornecedor);
+                if (dimPasta) return dimPasta;
 
                 // Resolve Supplier Name from Code
                 const fornecedorName = window.resolveDim('fornecedores', codFornecedor);
@@ -14786,7 +14812,7 @@ const supervisorGroups = new Map();
                     }
                 };
 
-                const forbiddenDimCols = ['DESCRICAO', 'NOME', 'SUPERV', 'FORNECEDOR'];
+                const forbiddenDimCols = ['DESCRICAO', 'NOME', 'SUPERV', 'FORNECEDOR', 'OBSERVACAOFOR'];
                 await conditionalUpload('data_detailed', sanitizeColumnarForUpload(data.detailed, forbiddenDimCols), 'hash_detailed', true);
                 await conditionalUpload('data_history', sanitizeColumnarForUpload(data.history, forbiddenDimCols), 'hash_history', true);
                 await conditionalUpload('data_orders', data.byOrder, 'hash_orders', false);

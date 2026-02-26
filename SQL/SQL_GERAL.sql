@@ -259,7 +259,8 @@ CREATE TABLE IF NOT EXISTS public.dim_supervisores (
 -- 1.18.3 DIM_FORNECEDORES (Suppliers)
 CREATE TABLE IF NOT EXISTS public.dim_fornecedores (
     codigo text PRIMARY KEY,
-    nome text
+    nome text,
+    pasta text
 );
 
 -- 1.18.4 DIM_PRODUTOS (Products)
@@ -280,6 +281,7 @@ BEGIN
     ALTER TABLE public.data_orders ADD COLUMN IF NOT EXISTS fornecedores_list text[];
     ALTER TABLE public.data_orders ADD COLUMN IF NOT EXISTS codfors_list text[];
     ALTER TABLE public.data_product_details ADD COLUMN IF NOT EXISTS pasta text;
+    ALTER TABLE public.dim_fornecedores ADD COLUMN IF NOT EXISTS pasta text;
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_frequency text;
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_ref_date timestamp with time zone;
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_days text;
