@@ -11948,30 +11948,65 @@ const supervisorGroups = new Map();
         function updateProductFilter(dropdown, filterText, selectedArray, dataSource, filterType = 'comparison', skipRender = false) {
             if (!dropdown) return selectedArray;
             const forbidden = ['PRODUTO', 'DESCRICAO', 'CODIGO', 'CÓDIGO', 'DESCRIÇÃO'];
-            const searchInput = dropdown.querySelector('input[type="text"]');
+            // FIX: Support type="search" which is used in HTML
+            const searchInput = dropdown.querySelector('input[type="text"], input[type="search"]');
             const listContainer = dropdown.querySelector('div[id$="-list"]');
-            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-            const products = [...new Map(dataSource.map(s => [s.PRODUTO, s.DESCRICAO]))
+            let products = [...new Map(dataSource.map(s => [s.PRODUTO, s.DESCRICAO]))
                 .entries()]
-                .filter(([code, desc]) => code && desc && !forbidden.includes(code.toUpperCase()) && !forbidden.includes(desc.toUpperCase()))
-                .sort((a,b) => a[1].localeCompare(b[1]));
+                .filter(([code, desc]) => code && desc && !forbidden.includes(code.toUpperCase()) && !forbidden.includes(desc.toUpperCase()));
 
             // Filter selectedArray to keep only items present in the current dataSource
             const availableProductCodes = new Set(products.map(p => p[0]));
             selectedArray = selectedArray.filter(code => availableProductCodes.has(code));
 
-            const filteredProducts = searchTerm.length > 0
-                ? products.filter(([code, name]) =>
-                    name.toLowerCase().includes(searchTerm) || code.toLowerCase().includes(searchTerm)
-                  )
-                : products;
+            // Logic:
+            // 1. If Searching: Filter by matches. Sort by: Selected -> StartsWith -> Contains -> Alpha
+            // 2. If Not Searching: Sort by: Selected -> Alpha
+
+            if (searchTerm.length > 0) {
+                products = products.filter(([code, name]) => {
+                    const codeMatch = code.toLowerCase().includes(searchTerm);
+                    const nameMatch = name.toLowerCase().includes(searchTerm);
+                    return codeMatch || nameMatch;
+                });
+            }
+
+            products.sort((a, b) => {
+                const codeA = a[0];
+                const nameA = a[1];
+                const codeB = b[0];
+                const nameB = b[1];
+
+                const isSelA = selectedArray.includes(codeA);
+                const isSelB = selectedArray.includes(codeB);
+
+                // Priority 1: Selected items on top
+                if (isSelA && !isSelB) return -1;
+                if (!isSelA && isSelB) return 1;
+
+                if (searchTerm.length > 0) {
+                    // Priority 2: Relevance (Starts With)
+                    const aStarts = nameA.toLowerCase().startsWith(searchTerm) || codeA.toLowerCase().startsWith(searchTerm);
+                    const bStarts = nameB.toLowerCase().startsWith(searchTerm) || codeB.toLowerCase().startsWith(searchTerm);
+
+                    if (aStarts && !bStarts) return -1;
+                    if (!aStarts && bStarts) return 1;
+                }
+
+                // Priority 3: Alphabetical
+                return nameA.localeCompare(nameB);
+            });
 
             if (!skipRender && listContainer) {
                 const htmlParts = [];
-                for (let i = 0; i < filteredProducts.length; i++) {
-                    const [code, name] = filteredProducts[i];
-                    const isChecked = selectedArray.includes(code);
+                // Use a Set for fast lookup inside loop (optimization)
+                const selectedSet = new Set(selectedArray);
+
+                for (let i = 0; i < products.length; i++) {
+                    const [code, name] = products[i];
+                    const isChecked = selectedSet.has(code);
                     htmlParts.push(`
                         <label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer">
                             <input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${code}" ${isChecked ? 'checked' : ''}>

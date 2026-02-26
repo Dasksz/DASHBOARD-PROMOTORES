@@ -358,12 +358,17 @@
                 const salesBySeller = {};
 
                 sales.forEach(s => {
+                    // FIX: Filter non-sales (e.g. transfers) to avoid inflated numbers
+                    if (!isAlternativeMode(selectedCoverageTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+
                     const client = clientMapForKPIs.get(String(s.CODCLI));
                     const city = client ? (client.cidade || client['Nome da Cidade'] || 'N/A') : 'N/A';
-                    salesByCity[city] = (salesByCity[city] || 0) + s.QTVENDA_EMBALAGEM_MASTER;
+                    const qty = Number(s.QTVENDA_EMBALAGEM_MASTER) || 0;
+
+                    salesByCity[city] = (salesByCity[city] || 0) + qty;
 
                     const seller = s.NOME || 'N/A';
-                    salesBySeller[seller] = (salesBySeller[seller] || 0) + s.QTVENDA_EMBALAGEM_MASTER;
+                    salesBySeller[seller] = (salesBySeller[seller] || 0) + qty;
                 });
 
                 // 1. Chart Data for Cities
