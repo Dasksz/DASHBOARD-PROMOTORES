@@ -36,7 +36,8 @@
 
             if (type === 'produtos') {
                 // Return object for products
-                return map.get(cleanCode) || { descricao: `Produto ${cleanCode}` };
+                // Ensure qtde_master is available even if map entry is missing (fallback object)
+                return map.get(cleanCode) || { descricao: `Produto ${cleanCode}`, qtde_master: 1 };
             }
 
             if (type === 'fornecedores') {

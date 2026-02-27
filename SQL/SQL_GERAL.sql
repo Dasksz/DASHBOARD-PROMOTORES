@@ -123,7 +123,8 @@ create table if not exists public.data_product_details (
   fornecedor text,
   codfor text,
   dtcadastro timestamp with time zone,
-  pasta text
+  pasta text,
+  qtde_master numeric
 );
 
 -- 1.6 Tabela de Produtos Ativos
@@ -269,7 +270,8 @@ CREATE TABLE IF NOT EXISTS public.dim_produtos (
     descricao text,
     codfor text,
     mix_marca text,
-    mix_categoria text
+    mix_categoria text,
+    qtde_master numeric
 );
 
 -- Ensure columns exist (Idempotency for older schemas)
@@ -281,7 +283,9 @@ BEGIN
     ALTER TABLE public.data_orders ADD COLUMN IF NOT EXISTS fornecedores_list text[];
     ALTER TABLE public.data_orders ADD COLUMN IF NOT EXISTS codfors_list text[];
     ALTER TABLE public.data_product_details ADD COLUMN IF NOT EXISTS pasta text;
+    ALTER TABLE public.data_product_details ADD COLUMN IF NOT EXISTS qtde_master numeric;
     ALTER TABLE public.dim_fornecedores ADD COLUMN IF NOT EXISTS pasta text;
+    ALTER TABLE public.dim_produtos ADD COLUMN IF NOT EXISTS qtde_master numeric;
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_frequency text;
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_ref_date timestamp with time zone;
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_days text;

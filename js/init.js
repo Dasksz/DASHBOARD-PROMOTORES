@@ -974,6 +974,7 @@
                         fornecedor: p.fornecedor,
                         codfor: p.codfor,
                         dtCadastro: p.dtcadastro ? new Date(p.dtcadastro).getTime() : null,
+                        qtde_master: p.qtde_master || 1,
                         ...p
                     };
                 });
