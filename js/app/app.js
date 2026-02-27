@@ -5,7 +5,7 @@
             // But the chart ID is 'faturamentoPorFornecedor'.
             
             // Logic: Group by CODFOR, but use resolved Name.
-            // Special handling for Foods Virtual Categories if requested?
+            // Special handling for Foods Virtual Categories if requested? 
             // The image shows "Quaker / Kero Coco", "Toddy", "Toddynho", "Torcida", "Não Extrusados", "Extrusados".
             // These look like the keys from `SUPPLIER_CONFIG`.
             
@@ -13,7 +13,11 @@
             const useConfig = typeof window.SUPPLIER_CONFIG !== 'undefined';
 
             filteredSales.forEach(s => {
-                const val = Number(s.VLVENDA) || 0;
+                // Use getValueForSale to respect current metric (Faturamento vs Peso vs Bonus)
+                // Note: The chart title says "Share por Categoria", usually implying Revenue (Faturamento).
+                // However, respecting the global filter makes it consistent.
+                // If the user selects "Bonificações" (Tipo 5/11), this will show Share of Bonus.
+                const val = getValueForSale(s, selectedTiposVenda);
                 let key = s.CODFOR;
                 let label = s.CODFOR;
 
