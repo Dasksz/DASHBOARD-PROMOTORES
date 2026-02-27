@@ -31,10 +31,6 @@
                 const currentVal = clientMap.get(s.PRODUTO) || 0;
                 const val = getValueForSale(s, selectedMixTiposVenda);
                 clientMap.set(s.PRODUTO, currentVal + val);
-
-                if (!clientProductDesc.has(s.PRODUTO)) {
-                    clientProductDesc.set(s.PRODUTO, s.DESCRICAO);
-                }
             });
 
             // 2. Determinar Categorias Positivadas por Cliente
@@ -47,7 +43,8 @@
 
                 productsMap.forEach((netValue, prodCode) => {
                     if (netValue >= 1) {
-                        const desc = normalize(clientProductDesc.get(prodCode) || '');
+                        const resolved = window.resolveDim('produtos', prodCode);
+                        const desc = normalize(resolved.descricao || '');
 
                         // Checar Salty
                         MIX_SALTY_CATEGORIES.forEach(cat => {

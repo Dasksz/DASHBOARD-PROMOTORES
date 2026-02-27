@@ -107,7 +107,7 @@
 
             // --- ASYNC CHUNKED PROCESSING ---
             runAsyncChunked(productsToAnalyze, (productCode) => {
-                const productInfo = productDetailsMap.get(productCode) || { descricao: `Produto ${productCode}`};
+                const productInfo = window.resolveDim('produtos', productCode);
 
                 let clientsWhoGotProductCurrent = 0;
                 let clientsWhoGotProductPrevious = 0;

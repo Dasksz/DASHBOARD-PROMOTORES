@@ -12003,13 +12003,18 @@ const supervisorGroups = new Map();
             const listContainer = dropdown.querySelector('div[id$="-list"]');
             const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-            let products = [...new Map(dataSource.map(s => {
-                    const pObj = window.resolveDim('produtos', s.PRODUTO);
-                    const d = (typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || s.PRODUTO);
-                    return [s.PRODUTO, d];
-                }))
-                .entries()]
-                .filter(([code, desc]) => code && desc && !forbidden.includes(code.toUpperCase()) && !forbidden.includes(desc.toUpperCase()));
+            // Extract unique codes first
+            const uniqueCodes = new Set();
+            dataSource.forEach(s => {
+                if (s.PRODUTO) uniqueCodes.add(String(s.PRODUTO).trim());
+            });
+
+            const products = Array.from(uniqueCodes)
+                .filter(code => code && !forbidden.includes(code.toUpperCase()))
+                .map(code => {
+                    const resolved = window.resolveDim('produtos', code);
+                    return [code, resolved.descricao || code];
+                });
 
             // Filter selectedArray to keep only items present in the current dataSource
             const availableProductCodes = new Set(products.map(p => p[0]));
