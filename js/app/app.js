@@ -12015,7 +12015,7 @@ const supervisorGroups = new Map();
                 if (s.PRODUTO) uniqueCodes.add(String(s.PRODUTO).trim());
             });
 
-            const products = Array.from(uniqueCodes)
+            let products = Array.from(uniqueCodes)
                 .filter(code => code && !forbidden.includes(code.toUpperCase()))
                 .map(code => {
                     const resolved = window.resolveDim('produtos', code);
