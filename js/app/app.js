@@ -16017,10 +16017,28 @@ const supervisorGroups = new Map();
                 selectedComparisonTiposVenda = [];
                 currentComparisonFornecedor = 'PEPSICO';
                 selectedComparisonSuppliers = [];
+                selectedComparisonProducts = [];
                 comparisonRedeGroupFilter = '';
                 selectedComparisonRedes = [];
+                comparisonFilialFilter = 'ambas'; // Reset Filial State
+
                 selectedComparisonSupervisors.clear();
                 selectedComparisonVendedores.clear();
+
+                if (hierarchyState['comparison']) {
+                    hierarchyState['comparison'].coords.clear();
+                    hierarchyState['comparison'].cocoords.clear();
+                    hierarchyState['comparison'].promotors.clear();
+                }
+
+                // Reset Filial UI
+                const filialInputs = document.querySelectorAll('input[name="comparison-filial"]');
+                filialInputs.forEach(inp => {
+                    if (inp.value === 'ambas') inp.checked = true;
+                    else inp.checked = false;
+                });
+                const filialText = document.getElementById('comparison-filial-filter-text');
+                if (filialText) filialText.textContent = 'Ambas';
 
                 const supDropdown = document.getElementById('comparison-supervisor-filter-dropdown');
                 if (supDropdown) {
@@ -16033,8 +16051,21 @@ const supervisorGroups = new Map();
                     vendDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
                     updateFilterButtonText(document.getElementById('comparison-vendedor-filter-text'), selectedComparisonVendedores, 'Todos');
                 }
+
                 // Refresh Vendedor Dropdown (options) based on empty supervisor selection
                 if (typeof updateComparisonVendedorFilter === 'function') updateComparisonVendedorFilter();
+
+                // Reset Product Filter UI
+                if (comparisonProductFilterDropdown) {
+                    comparisonProductFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    updateFilterButtonText(comparisonProductFilterText, new Set(), 'Todos');
+                }
+
+                // Reset Tipo Venda UI
+                if (comparisonTipoVendaFilterDropdown) {
+                    comparisonTipoVendaFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    updateFilterButtonText(comparisonTipoVendaFilterText, new Set(), 'Todos');
+                }
 
                 if (comparisonCityFilter) comparisonCityFilter.value = '';
 
