@@ -11133,8 +11133,13 @@ const supervisorGroups = new Map();
             const forbidden = ['CODFOR', 'FORNECEDOR', 'COD FOR', 'NOME DO FORNECEDOR', 'FORNECEDOR_NOME'];
             const suppliers = new Map();
             dataSource.forEach(s => {
-                if(s.CODFOR && s.FORNECEDOR && !forbidden.includes(s.CODFOR.toUpperCase()) && !forbidden.includes(s.FORNECEDOR.toUpperCase())) {
-                    suppliers.set(s.CODFOR, s.FORNECEDOR);
+                const codFor = s.CODFOR;
+                if (codFor && !forbidden.includes(String(codFor).toUpperCase())) {
+                    // Resolve name from dimension instead of relying on s.FORNECEDOR (which is removed)
+                    const name = window.resolveDim('fornecedores', codFor);
+                    if (name && name !== 'N/A') {
+                        suppliers.set(codFor, name);
+                    }
                 }
             });
 
