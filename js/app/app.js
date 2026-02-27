@@ -12018,7 +12018,40 @@ const supervisorGroups = new Map();
             const city = comparisonCityFilter.value.trim().toLowerCase();
             const filial = comparisonFilialFilter.value;
 
-            let clients = getHierarchyFilteredClients('comparison', allClientsData);
+            let clients;
+            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+                clients = [];
+                const hasSup = selectedComparisonSupervisors.size > 0;
+                const hasVend = selectedComparisonVendedores.size > 0;
+
+                const source = allClientsData;
+                const len = source.length;
+
+                for(let i=0; i<len; i++) {
+                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
+                    // Basic active check (similar to getActiveClientsData but simpler)
+                    const rca1 = String(c.rca1 || '').trim();
+                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+
+                    // FIX: Only filter orphans for Admins
+                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue; // Skip strictly inactive
+
+                    let keep = true;
+                    if (hasSup || hasVend) {
+                        const details = sellerDetailsMap.get(rca1);
+                        if (hasSup) {
+                            if (!details || !selectedComparisonSupervisors.has(details.supervisor)) keep = false;
+                        }
+                        if (keep && hasVend) {
+                            if (!selectedComparisonVendedores.has(rca1)) keep = false;
+                        }
+                    }
+
+                    if (keep) clients.push(c);
+                }
+            } else {
+                clients = getHierarchyFilteredClients('comparison', allClientsData);
+            }
 
             if (comparisonRedeGroupFilter) {
                 if (comparisonRedeGroupFilter === 'com_rede') {
