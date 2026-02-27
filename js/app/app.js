@@ -1680,7 +1680,11 @@
             updateVendedorFilterDropdown();
             updateDashboard();
 
-            if (currentActiveView === 'positivacao' && typeof updatePositivacaoView === 'function') {
+            if (currentActiveView === 'comparativo' && typeof updateComparisonView === 'function') {
+                if (typeof updateComparisonSupervisorFilter === 'function') updateComparisonSupervisorFilter();
+                if (typeof updateComparisonVendedorFilter === 'function') updateComparisonVendedorFilter();
+                updateComparisonView();
+            } else if (currentActiveView === 'positivacao' && typeof updatePositivacaoView === 'function') {
                 if (typeof updatePositivacaoSupervisorFilter === 'function') updatePositivacaoSupervisorFilter();
                 if (typeof updatePositivacaoVendedorFilter === 'function') updatePositivacaoVendedorFilter();
                 updatePositivacaoView();
@@ -15896,6 +15900,8 @@ const supervisorGroups = new Map();
                 selectedComparisonSuppliers = [];
                 comparisonRedeGroupFilter = '';
                 selectedComparisonRedes = [];
+                selectedComparisonSupervisors.clear();
+                selectedComparisonVendedores.clear();
 
                 if (comparisonCityFilter) comparisonCityFilter.value = '';
 
@@ -15926,6 +15932,8 @@ const supervisorGroups = new Map();
                     if (pepsicoBtn) pepsicoBtn.classList.add('active');
                 }
 
+                updateComparisonSupervisorFilter();
+                updateComparisonVendedorFilter();
                 handleComparisonFilterChange();
             };
 
@@ -25784,6 +25792,8 @@ const supervisorGroups = new Map();
                 });
             }
         }
+
+        setupComparisonSupervisorFilterHandlers();
 
         function setupInnovationsMonthCategoryFilterHandlers() {
             const btn = document.getElementById('innovations-month-category-filter-btn');
