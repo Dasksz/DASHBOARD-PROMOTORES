@@ -1921,6 +1921,9 @@
                 }
             }
 
+            // Ensure manual entries are also string keys (e.g. AMERICANAS)
+            // Handled below but good to double check keys are strings.
+
             // --- LOJA PERFEITA MAPPING ---
             if (embeddedData.relacao_rota_involves) {
                 const rawRel = embeddedData.relacao_rota_involves;
@@ -16038,6 +16041,14 @@ const supervisorGroups = new Map();
                 if (comparisonTipoVendaFilterDropdown) {
                     comparisonTipoVendaFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
                     updateTipoVendaFilter(comparisonTipoVendaFilterDropdown, comparisonTipoVendaFilterText, selectedComparisonTiposVenda, [...allSalesData, ...allHistoryData]);
+                }
+
+                // FIX: Ensure Filter Button Text resets to 'Todos'
+                if (document.getElementById('comparison-supervisor-filter-text')) {
+                    document.getElementById('comparison-supervisor-filter-text').textContent = 'Todos';
+                }
+                if (document.getElementById('comparison-vendedor-filter-text')) {
+                    document.getElementById('comparison-vendedor-filter-text').textContent = 'Todos';
                 }
 
                 if (comparisonSupplierFilterDropdown) {
