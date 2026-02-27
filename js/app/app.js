@@ -2286,6 +2286,17 @@
                 sale.DTPED = parseDate(sale.DTPED);
                 sale.DTSAIDA = parseDate(sale.DTSAIDA);
 
+                // Default Resolution (Historical)
+                if (sale.CODUSUR) {
+                    sale.NOME = window.resolveDim('vendedores', sale.CODUSUR);
+                    const historicalDetails = sellerDetailsMap.get(String(sale.CODUSUR));
+                    if (historicalDetails) {
+                        sale.SUPERV = historicalDetails.supervisor;
+                    } else if (sale.CODSUPERVISOR) {
+                        sale.SUPERV = window.resolveDim('supervisores', sale.CODSUPERVISOR);
+                    }
+                }
+
                 if (sale.CODCLI !== americanasCodCli) {
                     const currentSellerCode = clientToCurrentSellerMap.get(sale.CODCLI);
                     if (currentSellerCode) {
@@ -11105,9 +11116,10 @@ const supervisorGroups = new Map();
             const previousMonthYear = previousMonthDate.getUTCFullYear();
             const historyLastMonthData = allHistoryData.filter(sale => { const saleDate = parseDate(sale.DTPED); return saleDate && saleDate.getUTCMonth() === previousMonth && saleDate.getUTCFullYear() === previousMonthYear; });
             historyLastMonthData.forEach(sale => {
-                if (!sale.SUPERV || sale.SUPERV === 'BALCAO' || !sale.DTPED) return;
+                const supervisorName = window.resolveDim('supervisores', sale.CODSUPERVISOR);
+                if (!supervisorName || supervisorName === 'BALCAO' || !sale.DTPED) return;
                 const saleDate = parseDate(sale.DTPED); if (!saleDate) return;
-                const supervisor = sale.SUPERV.toUpperCase(); const dateString = saleDate.toISOString().split('T')[0];
+                const supervisor = supervisorName.toUpperCase(); const dateString = saleDate.toISOString().split('T')[0];
                 if (!salesBySupervisorByDay[supervisor]) salesBySupervisorByDay[supervisor] = {};
                 if (!salesBySupervisorByDay[supervisor][dateString]) salesBySupervisorByDay[supervisor][dateString] = 0;
                 salesBySupervisorByDay[supervisor][dateString] += sale.VLVENDA;
@@ -11493,9 +11505,10 @@ const supervisorGroups = new Map();
                 }
 
                 // Supervisor Data
-                if (s.SUPERV && isValidType) {
-                    if (!metrics.charts.supervisorData[s.SUPERV]) metrics.charts.supervisorData[s.SUPERV] = { current: 0, history: 0 };
-                    metrics.charts.supervisorData[s.SUPERV].current += s.VLVENDA;
+                const sup = window.resolveDim('supervisores', s.CODSUPERVISOR);
+                if (sup && isValidType) {
+                    if (!metrics.charts.supervisorData[sup]) metrics.charts.supervisorData[sup] = { current: 0, history: 0 };
+                    metrics.charts.supervisorData[sup].current += s.VLVENDA;
                 }
 
                 // Weekly Chart (Current)
@@ -11599,9 +11612,10 @@ const supervisorGroups = new Map();
                 }
 
                 // Supervisor History
-                if (s.SUPERV && isValidType) {
-                    if (!metrics.charts.supervisorData[s.SUPERV]) metrics.charts.supervisorData[s.SUPERV] = { current: 0, history: 0 };
-                    metrics.charts.supervisorData[s.SUPERV].history += s.VLVENDA;
+                const sup = window.resolveDim('supervisores', s.CODSUPERVISOR);
+                if (sup && isValidType) {
+                    if (!metrics.charts.supervisorData[sup]) metrics.charts.supervisorData[sup] = { current: 0, history: 0 };
+                    metrics.charts.supervisorData[sup].history += s.VLVENDA;
                 }
 
                 // Weekly History (Average logic)
@@ -12192,7 +12206,7 @@ const supervisorGroups = new Map();
                     cMap.get(s.PRODUTO).val += val;
                 }
                 // Dynamic Grouping Key
-                let groupKey = s.SUPERV;
+                let groupKey = window.resolveDim('supervisores', s.CODSUPERVISOR);
                 if (typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter') {
                     const node = optimizedData.clientHierarchyMap.get(normalizeKey(s.CODCLI));
                     if (node) {
@@ -12276,7 +12290,7 @@ const supervisorGroups = new Map();
                     }
 
                     // Dynamic Grouping Key History
-                    let hGroupKey = s.SUPERV;
+                    let hGroupKey = window.resolveDim('supervisores', s.CODSUPERVISOR);
                     if (typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter') {
                         const node = optimizedData.clientHierarchyMap.get(normalizeKey(s.CODCLI));
                         if (node) {
@@ -21918,7 +21932,7 @@ const supervisorGroups = new Map();
 
                     // 2. Seller/Supervisor Filter Check (Order Level)
                     if (selectedHistorySupervisors.size > 0) {
-                        const sup = String(s.SUPERV || '').trim();
+                        const sup = window.resolveDim('supervisores', s.CODSUPERVISOR);
                         // Check exact match (or mapped if necessary, but standard is exact name)
                         if (!selectedHistorySupervisors.has(sup)) continue;
                     }
@@ -21964,7 +21978,7 @@ const supervisorGroups = new Map();
                             // Check Orphan Match
                             let isOrphanMatch = false;
                             if (effectiveCoords.size > 0) {
-                                 const supName = String(s.SUPERV || '').toUpperCase().trim();
+                                 const supName = window.resolveDim('supervisores', s.CODSUPERVISOR).toUpperCase().trim();
                                  const supCode = String(s.CODSUPERVISOR || '').toUpperCase().trim();
                                  if (supCode && effectiveCoords.has(supCode)) isOrphanMatch = true;
                                  else if (supName && typeof optimizedData !== 'undefined' && optimizedData.supervisorCodeByName) {
@@ -23988,7 +24002,8 @@ const supervisorGroups = new Map();
             let keep = true;
             // Native Filters
             if (hasSup) {
-                const sup = isCol ? colValues['SUPERV'][i] : allSalesData[i].SUPERV;
+                const supCode = isCol ? (colValues['CODSUPERVISOR'] ? colValues['CODSUPERVISOR'][i] : '') : (allSalesData[i].CODSUPERVISOR || '');
+                const sup = window.resolveDim('supervisores', supCode);
                 if (!selectedWeeklySupervisors.has(sup)) keep = false;
             }
             if (keep && hasVend) {
@@ -24087,7 +24102,8 @@ const supervisorGroups = new Map();
                  } else {
                      // Seller Mode
                      if (hasSup) {
-                         const sup = isColHistory ? colHist['SUPERV'][i] : allHistoryData[i].SUPERV;
+                         const supCode = isColHistory ? (colHist['CODSUPERVISOR'] ? colHist['CODSUPERVISOR'][i] : '') : (allHistoryData[i].CODSUPERVISOR || '');
+                         const sup = window.resolveDim('supervisores', supCode);
                          if (!selectedWeeklySupervisors.has(sup)) keep = false;
                      }
                      if (keep && hasVend) {
