@@ -16053,7 +16053,7 @@ const supervisorGroups = new Map();
                 selectedComparisonProducts = [];
                 comparisonRedeGroupFilter = '';
                 selectedComparisonRedes = [];
-                comparisonFilialFilter = 'ambas'; // Reset Filial State
+                if (comparisonFilialFilter) comparisonFilialFilter.value = 'ambas'; // Reset Filial State
 
                 selectedComparisonSupervisors.clear();
                 selectedComparisonVendedores.clear();
