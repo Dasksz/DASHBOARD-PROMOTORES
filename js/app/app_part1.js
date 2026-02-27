@@ -1588,7 +1588,8 @@
                         // Virtual Categories Logic (Shared with Meta vs Realizado)
                         // 1119 Split: TODDYNHO, TODDY, QUAKER/KEROCOCO
                         if (window.isFoods(supplier)) {
-                            const desc = String(getVal(i, 'DESCRICAO') || '').toUpperCase();
+                            const pObj = window.resolveDim('produtos', product);
+                            const desc = String(pObj.descricao || getVal(i, 'DESCRICAO') || '').toUpperCase();
                             let virtualKey = null;
                             if (desc.includes('TODDYNHO')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
                             else if (desc.includes('TODDY')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
@@ -10369,14 +10370,24 @@ const supervisorGroups = new Map();
         function updateProductFilter(dropdown, filterText, selectedArray, dataSource, filterType = 'comparison', skipRender = false) {
             if (!dropdown) return selectedArray;
             const forbidden = ['PRODUTO', 'DESCRICAO', 'CODIGO', 'CÓDIGO', 'DESCRIÇÃO'];
-            const searchInput = dropdown.querySelector('input[type="text"]');
+            // FIX: Support type="search" which is used in HTML
+            const searchInput = dropdown.querySelector('input[type="text"], input[type="search"]');
             const listContainer = dropdown.querySelector('div[id$="-list"]');
-            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-            const products = [...new Map(dataSource.map(s => [s.PRODUTO, s.DESCRICAO]))
-                .entries()]
-                .filter(([code, desc]) => code && desc && !forbidden.includes(code.toUpperCase()) && !forbidden.includes(desc.toUpperCase()))
-                .sort((a,b) => a[1].localeCompare(b[1]));
+            // Extract unique codes first
+            const uniqueCodes = new Set();
+            dataSource.forEach(s => {
+                if (s.PRODUTO) uniqueCodes.add(String(s.PRODUTO).trim());
+            });
+
+            const products = Array.from(uniqueCodes)
+                .filter(code => code && !forbidden.includes(code.toUpperCase()))
+                .map(code => {
+                    const resolved = window.resolveDim('produtos', code);
+                    return [code, resolved.descricao || code];
+                })
+                .sort((a, b) => a[1].localeCompare(b[1]));
 
             // Filter selectedArray to keep only items present in the current dataSource
             const availableProductCodes = new Set(products.map(p => p[0]));
