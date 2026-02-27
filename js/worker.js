@@ -837,7 +837,7 @@
         }
 
         self.onmessage = async (event) => {
-            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolvesFile1, notaInvolvesFile2, referenceData, fallbackData } = event.data;
+            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolvesFile1, notaInvolvesFile2, referenceData, fallbackData, fallbackDimensions } = event.data;
 
             try {
                 self.postMessage({ type: 'progress', status: 'Lendo arquivos...', percentage: 10 });
@@ -854,6 +854,50 @@
                 ]);
 
                 // --- DATA PRESERVATION LOGIC ---
+                // Helper to hydrate missing dimensions in fallback data
+                const hydrateDimensions = (data) => {
+                    if (!fallbackDimensions || !data || data.length === 0) return;
+
+                    const { vendedores, supervisores, fornecedores, produtos } = fallbackDimensions;
+                    const vendMap = new Map((vendedores || []).map(v => [String(v.codigo).trim(), v.nome]));
+                    const supMap = new Map((supervisores || []).map(s => [String(s.codigo).trim(), s.nome]));
+                    const forMap = new Map((fornecedores || []).map(f => [String(f.codigo).trim(), f.nome]));
+                    const prodMap = new Map((produtos || []).map(p => [String(p.codigo).trim(), p]));
+
+                    for(let i=0; i<data.length; i++) {
+                        const row = data[i];
+                        // Vendedor
+                        if (!row['NOME']) {
+                            const cod = String(row['CODUSUR'] || '').trim();
+                            if(cod && vendMap.has(cod)) row['NOME'] = vendMap.get(cod);
+                        }
+                        // Supervisor (Name)
+                        if (!row['SUPERV']) {
+                            const cod = String(row['CODSUPERVISOR'] || '').trim();
+                            if(cod && supMap.has(cod)) row['SUPERV'] = supMap.get(cod);
+                        }
+                        // Fornecedor
+                        if (!row['FORNECEDOR']) {
+                            const cod = String(row['CODFOR'] || '').trim();
+                            if(cod && forMap.has(cod)) row['FORNECEDOR'] = forMap.get(cod);
+                        }
+                        // Produto
+                        if (!row['DESCRICAO']) {
+                            const cod = String(row['PRODUTO'] || '').trim();
+                            if(cod && prodMap.has(cod)) {
+                                const p = prodMap.get(cod);
+                                row['DESCRICAO'] = p.descricao;
+                                // Hydrate other product fields if missing
+                                if (!row['FORNECEDOR'] && p.codfor) {
+                                     // Try to resolve supplier name from product's codfor if main supplier lookup failed
+                                     const forName = forMap.get(String(p.codfor).trim());
+                                     if(forName) row['FORNECEDOR'] = forName;
+                                }
+                            }
+                        }
+                    }
+                };
+
                 // History Fallback
                 let effectiveHistoryDataRaw = historyDataRaw;
                 if (historyDataRaw.length === 0 && fallbackData && fallbackData.history) {
@@ -862,6 +906,9 @@
                         self.postMessage({ type: 'progress', status: 'Reutilizando histórico existente...', percentage: 12 });
                         const rawHistory = columnarToRaw(fallbackData.history);
                         effectiveHistoryDataRaw = rawHistory.map(mapDbToCsvHistory);
+
+                        // Hydrate dimensions for History (Crucial for filtering/display)
+                        hydrateDimensions(effectiveHistoryDataRaw);
                     }
                 }
 
