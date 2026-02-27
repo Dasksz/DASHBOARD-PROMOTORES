@@ -3258,7 +3258,7 @@
 
         // --- MIX VIEW LOGIC ---
         const MIX_SALTY_CATEGORIES = ['CHEETOS', 'DORITOS', 'FANDANGOS', 'RUFFLES', 'TORCIDA'];
-        const MIX_FOODS_CATEGORIES = ['TODDYNHO', 'TODDY ', 'QUAKER', 'KEROCOCO'];
+        const MIX_FOODS_CATEGORIES = ['TODDYNHO', 'TODDY', 'QUAKER', 'KEROCOCO'];
 
         function getMixFilteredData(options = {}) {
             const { excludeFilter = null } = options;
@@ -3456,7 +3456,9 @@
                 if (s.PEDIDO) clientOrders.get(s.PRODUTO).add(s.PEDIDO);
 
                 if (!clientProductDesc.has(s.PRODUTO)) {
-                    clientProductDesc.set(s.PRODUTO, s.DESCRICAO);
+                    // Resolve description/metadata from Dimension Table
+                    const pObj = window.resolveDim('produtos', s.PRODUTO);
+                    clientProductDesc.set(s.PRODUTO, pObj);
                 }
             });
 
@@ -3472,11 +3474,17 @@
 
                 productsMap.forEach((netValue, prodCode) => {
                     if (netValue >= 1) {
-                        const desc = normalize(clientProductDesc.get(prodCode) || '');
+                        const prodData = clientProductDesc.get(prodCode);
+                        // Fallback to empty string if missing
+                        const desc = normalize((prodData && prodData.descricao) ? prodData.descricao : '');
+                        const mixMarca = (prodData && prodData.mix_marca) ? String(prodData.mix_marca).toUpperCase() : '';
+
                         const orders = clientProductOrders.get(codCli)?.get(prodCode) || new Set();
 
                         const checkAndAdd = (cat) => {
-                            if (desc.includes(cat)) {
+                            // Check explicit mix_marca first, then fuzzy description match
+                            const match = (mixMarca === cat) || desc.includes(cat);
+                            if (match) {
                                 positivatedCats.add(cat);
                                 if (!categoryOrders.has(cat)) categoryOrders.set(cat, new Set());
                                 orders.forEach(o => categoryOrders.get(cat).add(o));
@@ -5007,7 +5015,9 @@
                     }
                     // 2. Virtual Category Logic for 1119 (Foods)
                     else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
-                        const desc = normalize(s.DESCRICAO || '');
+                        // Resolve Description
+                        const pObj = window.resolveDim('produtos', s.PRODUTO);
+                        const desc = normalize((typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || ''));
                         if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO) && desc.includes('TODDYNHO')) supplierMatch = true;
                         else if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.TODDY) && desc.includes('TODDY') && !desc.includes('TODDYNHO')) supplierMatch = true;
                         else if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO) && (desc.includes('QUAKER') || desc.includes('KEROCOCO'))) supplierMatch = true;
@@ -5016,7 +5026,7 @@
                     if (!supplierMatch) continue;
                 }
 
-                const sellerName = s.NOME;
+                const sellerName = window.resolveDim('vendedores', s.CODUSUR);
                 const valFat = Number(s.VLVENDA) || 0;
                 const valVol = Number(s.TOTPESOLIQ) || 0;
                 const weekIdx = getWeekIndex(d);
@@ -9088,7 +9098,7 @@ const supervisorGroups = new Map();
                         const promotorName = (hierarchy && hierarchy.promotor) ? hierarchy.promotor.name : 'N/A';
                         salesByPromotor[promotorName] = (salesByPromotor[promotorName] || 0) + s.QTVENDA_EMBALAGEM_MASTER;
                     } else {
-                        const seller = s.NOME || 'N/A';
+                        const seller = window.resolveDim('vendedores', s.CODUSUR);
                         salesBySeller[seller] = (salesBySeller[seller] || 0) + s.QTVENDA_EMBALAGEM_MASTER;
                     }
                 });
@@ -11458,7 +11468,10 @@ const supervisorGroups = new Map();
                 const isValidType = (s.TIPOVENDA === '1' || s.TIPOVENDA === '9');
 
                 // Filter: Strict Foods Definition
-                if (!isValidFoodsProduct(String(s.CODFOR), s.DESCRICAO)) return;
+                // Resolve Description if missing
+                const pObj = window.resolveDim('produtos', s.PRODUTO);
+                const desc = (typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || '');
+                if (!isValidFoodsProduct(String(s.CODFOR), desc)) return;
 
                 if (isValidType) {
                     metrics.current.fat += s.VLVENDA;
@@ -11471,7 +11484,11 @@ const supervisorGroups = new Map();
 
                     if (!currentClientProductMap.has(s.CODCLI)) currentClientProductMap.set(s.CODCLI, new Map());
                     const cMap = currentClientProductMap.get(s.CODCLI);
-                    if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: s.DESCRICAO, codfor: String(s.CODFOR) });
+                    if (!cMap.has(s.PRODUTO)) {
+                        const pObj = window.resolveDim('produtos', s.PRODUTO);
+                        const pDesc = (typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || '');
+                        cMap.set(s.PRODUTO, { val: 0, desc: pDesc, codfor: String(s.CODFOR) });
+                    }
                     cMap.get(s.PRODUTO).val += s.VLVENDA;
                 }
 
@@ -11542,7 +11559,10 @@ const supervisorGroups = new Map();
                 const monthKey = `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
 
                 // Filter: Strict Foods Definition (Apply here too)
-                if (!isValidFoodsProduct(String(s.CODFOR), s.DESCRICAO)) return;
+                // Resolve Description if missing
+                const pObj = window.resolveDim('produtos', s.PRODUTO);
+                const desc = (typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || '');
+                if (!isValidFoodsProduct(String(s.CODFOR), desc)) return;
 
                 // Filter: Only Type 1 and 9 count for Metrics (Fat/Peso/Charts)
                 const isValidType = (s.TIPOVENDA === '1' || s.TIPOVENDA === '9');
@@ -11570,7 +11590,11 @@ const supervisorGroups = new Map();
 
                     if (!mData.productMap.has(s.CODCLI)) mData.productMap.set(s.CODCLI, new Map());
                     const cMap = mData.productMap.get(s.CODCLI);
-                    if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: s.DESCRICAO, codfor: String(s.CODFOR) });
+                    if (!cMap.has(s.PRODUTO)) {
+                        const pObj = window.resolveDim('produtos', s.PRODUTO);
+                        const pDesc = (typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || '');
+                        cMap.set(s.PRODUTO, { val: 0, desc: pDesc, codfor: String(s.CODFOR) });
+                    }
                     cMap.get(s.PRODUTO).val += s.VLVENDA;
                 }
 
@@ -11979,7 +12003,11 @@ const supervisorGroups = new Map();
             const listContainer = dropdown.querySelector('div[id$="-list"]');
             const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-            let products = [...new Map(dataSource.map(s => [s.PRODUTO, s.DESCRICAO]))
+            let products = [...new Map(dataSource.map(s => {
+                    const pObj = window.resolveDim('produtos', s.PRODUTO);
+                    const d = (typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || s.PRODUTO);
+                    return [s.PRODUTO, d];
+                }))
                 .entries()]
                 .filter(([code, desc]) => code && desc && !forbidden.includes(code.toUpperCase()) && !forbidden.includes(desc.toUpperCase()));
 
@@ -12156,7 +12184,11 @@ const supervisorGroups = new Map();
                     currentClientsSet.set(s.CODCLI, (currentClientsSet.get(s.CODCLI) || 0) + val);
                     if (!currentClientProductMap.has(s.CODCLI)) currentClientProductMap.set(s.CODCLI, new Map());
                     const cMap = currentClientProductMap.get(s.CODCLI);
-                    if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: s.DESCRICAO, codfor: String(s.CODFOR) });
+                    if (!cMap.has(s.PRODUTO)) {
+                        const pObj = window.resolveDim('produtos', s.PRODUTO);
+                        const pDesc = (typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || '');
+                        cMap.set(s.PRODUTO, { val: 0, desc: pDesc, codfor: String(s.CODFOR) });
+                    }
                     cMap.get(s.PRODUTO).val += val;
                 }
                 // Dynamic Grouping Key
@@ -12235,7 +12267,11 @@ const supervisorGroups = new Map();
                         mData.clients.set(s.CODCLI, (mData.clients.get(s.CODCLI) || 0) + val);
                         if (!mData.productMap.has(s.CODCLI)) mData.productMap.set(s.CODCLI, new Map());
                         const cMap = mData.productMap.get(s.CODCLI);
-                        if (!cMap.has(s.PRODUTO)) cMap.set(s.PRODUTO, { val: 0, desc: s.DESCRICAO, codfor: String(s.CODFOR) });
+                        if (!cMap.has(s.PRODUTO)) {
+                            const pObj = window.resolveDim('produtos', s.PRODUTO);
+                            const pDesc = (typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || '');
+                            cMap.set(s.PRODUTO, { val: 0, desc: pDesc, codfor: String(s.CODFOR) });
+                        }
                         cMap.get(s.PRODUTO).val += val;
                     }
 
@@ -20075,7 +20111,7 @@ const supervisorGroups = new Map();
             bon: Number(s.VLBONIFIC) || 0,
             type: String(s.TIPOVENDA),
             prod: s.PRODUTO,
-            desc: s.DESCRICAO,
+            desc: (function() { const p = window.resolveDim('produtos', s.PRODUTO); return (typeof p === 'object' ? p.descricao : p) || s.DESCRICAO; })(),
             qty: Number(s.QTVENDA) || 0
         });
 
@@ -21975,7 +22011,7 @@ const supervisorGroups = new Map();
                             PEDIDO: key,
                             DTPED: s.DTPED, // Keep timestamp
                             CODCLI: s.CODCLI,
-                            NOME: s.NOME,
+                            NOME: window.resolveDim('vendedores', s.CODUSUR),
                             CODFOR: s.CODFOR,
                             VLVENDA: 0,
                             POSICAO: s.POSICAO,
