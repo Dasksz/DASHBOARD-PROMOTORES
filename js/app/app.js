@@ -9568,7 +9568,7 @@ const supervisorGroups = new Map();
                     const cat = getCategory(code, item.FORNECEDOR || item.CODFOR);
                     currentMap.set(code, {
                         code: code,
-                        name: item.DESCRICAO,
+                        name: window.resolveDim('produtos', code).descricao,
                         category: cat,
                         currentVal: 0,
                         currentWeight: 0,
@@ -9607,7 +9607,7 @@ const supervisorGroups = new Map();
                         const cat = getCategory(code, item.FORNECEDOR || item.CODFOR);
                         currentMap.set(code, {
                             code: code,
-                            name: item.DESCRICAO,
+                            name: window.resolveDim('produtos', code).descricao,
                             category: cat,
                             currentVal: 0,
                             currentWeight: 0,
