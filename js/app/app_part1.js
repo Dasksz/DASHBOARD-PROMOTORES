@@ -10386,29 +10386,83 @@ const supervisorGroups = new Map();
                 if (s.PRODUTO) uniqueCodes.add(String(s.PRODUTO).trim());
             });
 
-            const products = Array.from(uniqueCodes)
+            let products = Array.from(uniqueCodes)
                 .filter(code => code && !forbidden.includes(code.toUpperCase()))
                 .map(code => {
                     const resolved = window.resolveDim('produtos', code);
                     return [code, resolved.descricao || code];
-                })
-                .sort((a, b) => a[1].localeCompare(b[1]));
+                });
 
             // Filter selectedArray to keep only items present in the current dataSource
             const availableProductCodes = new Set(products.map(p => p[0]));
             selectedArray = selectedArray.filter(code => availableProductCodes.has(code));
 
-            const filteredProducts = searchTerm.length > 0
-                ? products.filter(([code, name]) =>
-                    name.toLowerCase().includes(searchTerm) || code.toLowerCase().includes(searchTerm)
-                  )
-                : products;
+            // Logic:
+            // 1. If Searching: Filter by matches. Sort by: Relevance (Exact > StartsWith > Contains) > Alpha
+            // 2. If Not Searching: Sort by: Selected -> Alpha
+
+            if (searchTerm.length > 0) {
+                products = products.filter(([code, name]) => {
+                    const codeMatch = code.toLowerCase().includes(searchTerm);
+                    const nameMatch = name.toLowerCase().includes(searchTerm);
+                    return codeMatch || nameMatch;
+                });
+            }
+
+            products.sort((a, b) => {
+                const codeA = a[0];
+                const nameA = a[1];
+                const codeB = b[0];
+                const nameB = b[1];
+
+                if (searchTerm.length > 0) {
+                    // Priority 1: Relevance (Searching)
+                    const nameALower = nameA.toLowerCase();
+                    const nameBLower = nameB.toLowerCase();
+                    const codeALower = codeA.toLowerCase();
+                    const codeBLower = codeB.toLowerCase();
+
+                    // Exact Match
+                    const exactA = nameALower === searchTerm || codeALower === searchTerm;
+                    const exactB = nameBLower === searchTerm || codeBLower === searchTerm;
+                    if (exactA && !exactB) return -1;
+                    if (!exactA && exactB) return 1;
+
+                    // Starts With Name
+                    const startNameA = nameALower.startsWith(searchTerm);
+                    const startNameB = nameBLower.startsWith(searchTerm);
+                    if (startNameA && !startNameB) return -1;
+                    if (!startNameA && startNameB) return 1;
+
+                    // Starts With Code
+                    const startCodeA = codeALower.startsWith(searchTerm);
+                    const startCodeB = codeBLower.startsWith(searchTerm);
+                    if (startCodeA && !startCodeB) return -1;
+                    if (!startCodeA && startCodeB) return 1;
+
+                    // Fallback to Alpha
+                    return nameA.localeCompare(nameB);
+                }
+
+                // If NOT searching, prioritize selected items
+                const isSelA = selectedArray.includes(codeA);
+                const isSelB = selectedArray.includes(codeB);
+
+                if (isSelA && !isSelB) return -1;
+                if (!isSelA && isSelB) return 1;
+
+                // Priority 3: Alphabetical
+                return nameA.localeCompare(nameB);
+            });
 
             if (!skipRender && listContainer) {
                 const htmlParts = [];
-                for (let i = 0; i < filteredProducts.length; i++) {
-                    const [code, name] = filteredProducts[i];
-                    const isChecked = selectedArray.includes(code);
+                // Use a Set for fast lookup inside loop (optimization)
+                const selectedSet = new Set(selectedArray);
+
+                for (let i = 0; i < products.length; i++) {
+                    const [code, name] = products[i];
+                    const isChecked = selectedSet.has(code);
                     htmlParts.push(`
                         <label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer">
                             <input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${code}" ${isChecked ? 'checked' : ''}>
