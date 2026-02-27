@@ -454,7 +454,7 @@
                     vendorName = 'AMERICANAS';
                     codUsur = '1001';
                     supervisorName = 'BALCAO';
-                    codSupervisor = '';
+                    codSupervisor = '8';
                     isAmericanas = true;
 
                     if (clientInfo.rcas) {
@@ -524,17 +524,6 @@
                 }
                 // --- FIM DA MODIFICAÇÃO ---
 
-
-                // --- INICIO DA MODIFICAÇÃO: REGRA INATIVOS ---
-                // Se o cliente não tiver RCA1 cadastrado na planilha de clientes, rotular como INATIVOS
-                // (Isso substitui o vendedor original da venda, pois a carteira está 'sem dono')
-                // EXCEÇÃO: Se deve preservar original (venda atual de cliente sem cadastro/RCA 53), não aplica INATIVOS.
-                if (!shouldPreserveOriginalRca && !isAmericanas && (!clientInfo || !clientInfo.rca1 || clientInfo.rca1.trim() === '')) {
-                    vendorName = 'INATIVOS';
-                    supervisorName = 'INATIVOS'; // Alterado de BALCAO para INATIVOS
-                    codSupervisor = '99'; // Alterado de 8 para 99 para separar do Balcão
-                }
-                // --- FIM DA MODIFICAÇÃO ---
 
                 const supervisorUpper = (supervisorName || '').trim().toUpperCase();
                 if (supervisorUpper === 'BALCAO' || supervisorUpper === 'BALCÃO') supervisorName = 'BALCAO';
@@ -972,6 +961,15 @@
                     }
                 });
 
+                // --- NEW: Collect Sold Product Codes for Filtering ---
+                const soldProductCodes = new Set();
+                const collectProducts = (row) => {
+                     const p = String(row["PRODUTO"] || "").trim();
+                     if (p && p.toUpperCase() !== "PRODUTO" && p.toUpperCase() !== "CÓDIGO") soldProductCodes.add(normalizeKey(p));
+                };
+                salesDataRaw.forEach(collectProducts);
+                effectiveHistoryDataRaw.forEach(collectProducts);
+                // ----------------------------------------------------
                 self.postMessage({ type: 'progress', status: 'Mapeando produtos e criando lista de ativos...', percentage: 30 });
                 const productMasterMap = new Map();
                 const activeProductCodesFromCadastro = new Set();
@@ -1022,7 +1020,8 @@
                         const rawCode = String(prod['Código'] || '').trim();
                         if (!rawCode) return;
                         
-                        const productCode = normalizeKey(rawCode) || rawCode; 
+                        const productCode = normalizeKey(rawCode) || rawCode;
+                        if (!soldProductCodes.has(productCode)) return;
                         activeProductCodesFromCadastro.add(productCode);
                         
                         const valMaster = getVal(prod, masterQtyKeys);
@@ -1455,6 +1454,10 @@
                     }
                 });
                 // Ensure manual "99 - INATIVOS" / "8 - BALCAO" if strictly needed, though logic covers it if present in sales
+                if (!dimSupervisoresMap.has('8')) {
+                    dimSupervisoresMap.set('8', { codigo: '8', nome: 'BALCAO' });
+                }
+
                 const finalDimSupervisores = Array.from(dimSupervisoresMap.values());
 
                 // 3. DIM_FORNECEDORES
