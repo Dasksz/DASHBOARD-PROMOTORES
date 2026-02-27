@@ -882,7 +882,7 @@
                         const supervCheck = String(row['SUPERV'] || '').trim().toUpperCase();
                         if (codUsur.toUpperCase() === 'CODUSUR' || codUsur.toUpperCase() === 'COD USUR' || supervCheck === 'SUPERV' || supervCheck === 'SUPERVISOR' || isNaN(parseInt(codUsur))) return;
 
-                        if (codUsur === '1001') return;
+                        // Removed explicit block of '1001' to allow processing if present
 
                         const dtPed = row['DTPED'];
                         if (!codUsur || !dtPed) return;
@@ -1390,6 +1390,13 @@
                         dimVendedoresMap.set(codUsur, { codigo: codUsur, nome: info.NOME });
                     }
                 });
+
+                // --- FORCE AMERICANAS (1001) INTO DIMENSION TABLE ---
+                if (!dimVendedoresMap.has('1001')) {
+                    dimVendedoresMap.set('1001', { codigo: '1001', nome: 'AMERICANAS' });
+                }
+                // ----------------------------------------------------
+
                 const finalDimVendedores = Array.from(dimVendedoresMap.values());
 
                 // 2. DIM_SUPERVISORES
