@@ -961,6 +961,15 @@
                     }
                 });
 
+                // --- NEW: Collect Sold Product Codes for Filtering ---
+                const soldProductCodes = new Set();
+                const collectProducts = (row) => {
+                     const p = String(row["PRODUTO"] || "").trim();
+                     if (p && p.toUpperCase() !== "PRODUTO" && p.toUpperCase() !== "CÓDIGO") soldProductCodes.add(normalizeKey(p));
+                };
+                salesDataRaw.forEach(collectProducts);
+                effectiveHistoryDataRaw.forEach(collectProducts);
+                // ----------------------------------------------------
                 self.postMessage({ type: 'progress', status: 'Mapeando produtos e criando lista de ativos...', percentage: 30 });
                 const productMasterMap = new Map();
                 const activeProductCodesFromCadastro = new Set();
@@ -1011,7 +1020,8 @@
                         const rawCode = String(prod['Código'] || '').trim();
                         if (!rawCode) return;
                         
-                        const productCode = normalizeKey(rawCode) || rawCode; 
+                        const productCode = normalizeKey(rawCode) || rawCode;
+                        if (!soldProductCodes.has(productCode)) return;
                         activeProductCodesFromCadastro.add(productCode);
                         
                         const valMaster = getVal(prod, masterQtyKeys);
