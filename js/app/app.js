@@ -1909,12 +1909,13 @@
                     if (codUsur && nomeVendedor !== 'INATIVOS' && nomeVendedor !== 'AMERICANAS') {
                         const dt = parseDate(s.DTPED);
                         const ts = dt ? dt.getTime() : 0;
-                        const lastTs = sellerLastSaleDateMap.get(codUsur) || 0;
+                        const key = String(codUsur).trim(); // Force String Key
+                        const lastTs = sellerLastSaleDateMap.get(key) || 0;
 
-                        if (ts >= lastTs || !sellerDetailsMap.has(codUsur)) {
-                            sellerLastSaleDateMap.set(codUsur, ts);
+                        if (ts >= lastTs || !sellerDetailsMap.has(key)) {
+                            sellerLastSaleDateMap.set(key, ts);
                             const supervisorName = window.resolveDim('supervisores', s.CODSUPERVISOR);
-                            sellerDetailsMap.set(codUsur, { name: nomeVendedor, supervisor: supervisorName });
+                            sellerDetailsMap.set(key, { name: nomeVendedor, supervisor: supervisorName });
                         }
                     }
                 }
@@ -16017,6 +16018,20 @@ const supervisorGroups = new Map();
                 selectedComparisonRedes = [];
                 selectedComparisonSupervisors.clear();
                 selectedComparisonVendedores.clear();
+
+                const supDropdown = document.getElementById('comparison-supervisor-filter-dropdown');
+                if (supDropdown) {
+                    supDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    updateFilterButtonText(document.getElementById('comparison-supervisor-filter-text'), selectedComparisonSupervisors, 'Todos');
+                }
+
+                const vendDropdown = document.getElementById('comparison-vendedor-filter-dropdown');
+                if (vendDropdown) {
+                    vendDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                    updateFilterButtonText(document.getElementById('comparison-vendedor-filter-text'), selectedComparisonVendedores, 'Todos');
+                }
+                // Refresh Vendedor Dropdown (options) based on empty supervisor selection
+                if (typeof updateComparisonVendedorFilter === 'function') updateComparisonVendedorFilter();
 
                 if (comparisonCityFilter) comparisonCityFilter.value = '';
 
