@@ -16027,7 +16027,7 @@ const supervisorGroups = new Map();
 
                 if (comparisonSupplierFilterDropdown) {
                     comparisonSupplierFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-                    updateSupplierFilter(comparisonSupplierFilterDropdown, comparisonSupplierFilterText, selectedComparisonSuppliers, supplierOptionsData, 'comparison');
+                    updateSupplierFilter(comparisonSupplierFilterDropdown, comparisonSupplierFilterText, selectedComparisonSuppliers, [...allSalesData, ...allHistoryData], 'comparison');
                 }
 
                 if (comparisonRedeFilterDropdown) {
