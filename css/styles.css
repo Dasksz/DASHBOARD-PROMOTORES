@@ -1730,3 +1730,48 @@ html.light .bg-green-900\/30 {
     #stock-view table .hidden {
         display: none !important;
     }
+
+/* Mobile KPI Compact Mode */
+@media (max-width: 640px) {
+    .kpi-card {
+        padding: 0.75rem !important; /* p-3 */
+    }
+
+    /* Values (Main & Comparison) */
+    .kpi-card h3,
+    .kpi-card .text-2xl,
+    .kpi-card .text-3xl {
+        font-size: 1.1rem !important;
+        line-height: 1.2 !important;
+        margin-bottom: 0.25rem !important;
+        margin-top: 0.25rem !important;
+    }
+
+    /* Title Labels */
+    .kpi-card p.text-slate-400,
+    .kpi-card p.text-slate-300 {
+        font-size: 0.65rem !important;
+        line-height: 1 !important;
+        margin-bottom: 0.125rem !important;
+    }
+
+    /* Subtitles / Secondary Info */
+    .kpi-card p.text-slate-500,
+    .kpi-card p.text-xs,
+    .kpi-card p.text-sm {
+        font-size: 0.6rem !important;
+        margin-top: 0.125rem !important;
+    }
+
+    /* Icon Container */
+    .kpi-card .p-2 {
+        padding: 0.25rem !important;
+        border-radius: 0.375rem !important;
+    }
+
+    /* Icon SVG */
+    .kpi-card svg {
+        width: 1rem !important;
+        height: 1rem !important;
+    }
+}
