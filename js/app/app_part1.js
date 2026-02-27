@@ -7874,12 +7874,12 @@ const supervisorGroups = new Map();
                     if (cityContainer) cityContainer.classList.remove('hidden');
                     if (sellerContainer) sellerContainer.classList.add('hidden');
                     if (toggleBtn) toggleBtn.textContent = 'Ver Vendedores';
-                    if (chartTitle) chartTitle.textContent = 'Top 10 Cidades (Quantidade de Caixas)';
+                    if (chartTitle) chartTitle.textContent = 'Top 10 Cidades - Caixas';
                 } else {
                     if (cityContainer) cityContainer.classList.add('hidden');
                     if (sellerContainer) sellerContainer.classList.remove('hidden');
                     if (toggleBtn) toggleBtn.textContent = 'Ver Cidades';
-                    if (chartTitle) chartTitle.textContent = 'Top 10 Vendedores (Quantidade de Caixas)';
+                    if (chartTitle) chartTitle.textContent = 'Top 10 Vendedores - Caixas';
                 }
             }, () => currentRenderId !== coverageRenderId);
         }
