@@ -992,8 +992,13 @@
                                     fornecedor: String(prod['Nome do fornecedor'] || 'N/A'),
                                     codfor: String(prod['Fornecedor'] || 'N/A'),
                                     dtCadastro: dtCad ? dtCad.getTime() : null,
-                                    pasta: null
+                                    pasta: null,
+                                    qtde_master: qtdeMaster
                                 });
+                            } else {
+                                // Update qtde_master if product already exists
+                                const existing = productDetailsMap.get(productCode);
+                                existing.qtde_master = qtdeMaster;
                             }
                     });
                 }
@@ -1100,7 +1105,8 @@
                             fornecedor: item.FORNECEDOR || 'N/A',
                             codfor: item.CODFOR || 'N/A',
                             dtCadastro: item.DTPED, // Use the fixed date (Max Date)
-                            pasta: item.PASTA || item.OBSERVACAOFOR || null // Ensure Pasta is available
+                            pasta: item.PASTA || item.OBSERVACAOFOR || null, // Ensure Pasta is available
+                            qtde_master: 1 // Default to 1 for stock lines if unknown
                         });
                     }
                 });
@@ -1122,7 +1128,8 @@
                                 fornecedor: sale.FORNECEDOR || 'N/A',
                                 codfor: sale.CODFOR || 'N/A',
                                 dtCadastro: sale.DTPED,
-                                pasta: sale.OBSERVACAOFOR || null
+                                pasta: sale.OBSERVACAOFOR || null,
+                                qtde_master: 1 // Default
                             });
                         }
                     }
@@ -1452,7 +1459,8 @@
                 const finalDimProdutos = Array.from(productDetailsMap.values()).map(p => ({
                     codigo: p.code,
                     descricao: p.descricao,
-                    codfor: p.codfor
+                    codfor: p.codfor,
+                    qtde_master: p.qtde_master || 1
                     // mix_marca/categoria filled by DB trigger
                 }));
 
