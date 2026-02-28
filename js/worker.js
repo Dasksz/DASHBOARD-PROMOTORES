@@ -124,6 +124,7 @@
                 // Optimized date-only extraction (avoiding split)
                 const spaceIndex = dateString.indexOf(' ');
                 const dateOnlyString = spaceIndex === -1 ? dateString : dateString.substring(0, spaceIndex);
+                const timeString = spaceIndex !== -1 ? dateString.substring(spaceIndex + 1).trim() : '';
                 const lenOnly = dateOnlyString.length;
 
                 // Handle "DD/MM/YYYY" format specifically.
@@ -132,8 +133,18 @@
                     const month = (dateOnlyString.charCodeAt(3) - 48) * 10 + (dateOnlyString.charCodeAt(4) - 48);
                     const year = (dateOnlyString.charCodeAt(6) - 48) * 1000 + (dateOnlyString.charCodeAt(7) - 48) * 100 + (dateOnlyString.charCodeAt(8) - 48) * 10 + (dateOnlyString.charCodeAt(9) - 48);
 
+                    let hours = 0, minutes = 0, seconds = 0;
+                    if (timeString) {
+                        const timeParts = timeString.split(':');
+                        if (timeParts.length >= 2) {
+                            hours = parseInt(timeParts[0], 10) || 0;
+                            minutes = parseInt(timeParts[1], 10) || 0;
+                            seconds = parseInt(timeParts[2], 10) || 0;
+                        }
+                    }
+
                     if (day > 0 && day <= 31 && month > 0 && month <= 12 && year > 1900) {
-                        const utcDate = new Date(Date.UTC(year, month - 1, day));
+                        const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
                         if (!isNaN(utcDate.getTime())) {
                             result = utcDate;
                         }
