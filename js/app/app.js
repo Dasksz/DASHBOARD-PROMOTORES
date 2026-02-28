@@ -23739,7 +23739,7 @@ const supervisorGroups = new Map();
         const growth = data.filter(d => d.status === 'growth').sort((a,b) => b.sales - a.sales).slice(0, 50);
         const drop = data.filter(d => d.status === 'drop').sort((a,b) => b.avg - a.avg).slice(0, 50);
         const newData = data.filter(d => d.status === 'new').sort((a,b) => b.sales - a.sales).slice(0, 50);
-        const lost = data.filter(d => d.status === 'lost').sort((a,b) => b.stock - a.stock).slice(0, 50);
+        const lost = data.filter(d => d.status === 'lost' && d.stock > 0).sort((a,b) => b.stock - a.stock).slice(0, 50);
         
         renderMiniStockTable('stock-growth-table', growth, 'growth');
         renderMiniStockTable('stock-drop-table', drop, 'drop');
@@ -23771,15 +23771,15 @@ const supervisorGroups = new Map();
             } else if (type === 'new') {
                 cols = `
                     ${nameCol}
-                    <td class="py-1 text-right font-mono text-xs">${d.sales.toFixed(0)}</td>
+                    <td class="py-1 text-right text-orange-400 font-mono text-xs">${d.sales.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
                 `;
             } else {
                 // Growth or Drop
                 const varColor = d.variation >= 0 ? 'text-green-500' : 'text-red-500';
                 cols = `
                     ${nameCol}
-                    <td class="py-1 text-right font-mono text-xs">${d.sales.toFixed(0)}</td>
-                    <td class="py-1 text-right text-slate-500 font-mono text-xs">${d.avg.toFixed(0)}</td>
+                    <td class="py-1 text-right font-mono text-xs">${d.sales.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
+                    <td class="py-1 text-right text-slate-500 font-mono text-xs">${d.avg.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
                     <td class="py-1 text-right font-bold ${varColor} text-xs">${d.variation.toFixed(0)}%</td>
                 `;
             }
