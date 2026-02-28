@@ -23769,13 +23769,15 @@ const supervisorGroups = new Map();
                     <td class="py-1 text-right font-bold text-orange-400 font-mono text-xs">${d.stock.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 `;
             } else if (type === 'new') {
+                const trClass = "border-b border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10";
+                tr.className = trClass;
                 cols = `
                     ${nameCol}
-                    <td class="py-1 text-right text-orange-400 font-mono text-xs">${d.sales.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
+                    <td class="py-1 text-right text-orange-400 font-mono text-xs font-bold">${d.sales.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
                 `;
             } else {
                 // Growth or Drop
-                const varColor = d.variation >= 0 ? 'text-green-500' : 'text-red-500';
+                const varColor = d.variation >= 0 ? 'text-green-400' : 'text-red-400';
                 cols = `
                     ${nameCol}
                     <td class="py-1 text-right font-mono text-xs">${d.sales.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
