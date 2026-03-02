@@ -580,8 +580,6 @@ BEGIN
         EXECUTE format('DROP POLICY IF EXISTS "Enable read access for all users" ON public.%I;', t);
         EXECUTE format('DROP POLICY IF EXISTS "Enable insert/update for authenticated users" ON public.%I;', t);
         EXECUTE format('DROP POLICY IF EXISTS "Acesso leitura aprovados" ON public.%I;', t);
-        EXECUTE format('DROP POLICY IF EXISTS "Admin Write Access" ON public.%I;', t);
-        EXECUTE format('DROP POLICY IF EXISTS "Unified Read Access" ON public.%I;', t);
         
         -- Create New Standardized Policies
         EXECUTE format('CREATE POLICY "Acesso Leitura Unificado" ON public.%I FOR SELECT TO authenticated USING (public.is_admin() OR public.is_approved());', t);
