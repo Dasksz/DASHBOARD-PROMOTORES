@@ -14563,7 +14563,7 @@ const supervisorGroups = new Map();
 
             // This function now runs after the loader is visible
             const updateContent = () => {
-                [mainDashboard, cityView, positivacaoView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view'), document.getElementById('clientes-view'), document.getElementById('produtos-view'), document.getElementById('consultas-view'), document.getElementById('history-view'), document.getElementById('titulos-view'), document.getElementById('loja-perfeita-view'), document.getElementById('weekly-view')].forEach(el => {
+                [mainDashboard, cityView, positivacaoView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view'), document.getElementById('clientes-view'), document.getElementById('produtos-view'), document.getElementById('consultas-view'), document.getElementById('history-view'), document.getElementById('titulos-view'), document.getElementById('loja-perfeita-view'), document.getElementById('weekly-view'), document.getElementById('rpc-view')].forEach(el => {
                     if(el) el.classList.add('hidden');
                 });
 
@@ -14831,6 +14831,9 @@ const supervisorGroups = new Map();
                             viewState.metaRealizado.rendered = true;
                             viewState.metaRealizado.dirty = false;
                         }
+                        break;
+                    case 'rpc':
+                        showViewElement(document.getElementById('rpc-view'));
                         break;
                 }
             };
