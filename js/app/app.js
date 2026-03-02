@@ -14225,7 +14225,7 @@ const supervisorGroups = new Map();
         }
 
         function openClientModal(codcli) {
-            const clientData = allClientsData.find(c => String(c['Código']) === String(codcli));
+            const clientData = clientMapForKPIs.get(String(codcli));
             if (!clientData) return;
 
             const getVal = (obj, keys) => {
