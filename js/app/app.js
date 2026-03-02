@@ -14456,6 +14456,16 @@ const supervisorGroups = new Map();
             const role = (window.userRole || '').trim().toLowerCase();
             const isRestricted = role === 'promotor' || role === 'vendedor' || window.userIsSeller || window.userIsPromoter;
 
+            // RPC View (Adm Only)
+            const btnMenuRpc = document.getElementById('rpc-view-btn');
+            if (btnMenuRpc) {
+                if (role === 'adm') {
+                    btnMenuRpc.classList.remove('hidden');
+                } else {
+                    btnMenuRpc.classList.add('hidden');
+                }
+            }
+
             // Comparativo (Nav Links)
             document.querySelectorAll('[data-target="comparativo"]').forEach(el => {
                 if (isRestricted) el.classList.add('hidden');
