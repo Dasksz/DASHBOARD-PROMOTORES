@@ -14493,6 +14493,14 @@ const supervisorGroups = new Map();
                 }
             }
 
+            if (view === 'rpc') {
+                if (window.userRole !== 'adm') {
+                    window.showToast('warning', 'Acesso restrito a administradores.');
+                    renderView('dashboard');
+                    return;
+                }
+            }
+
             if (view === 'weekly' || view === 'estoque' || view === 'comparativo') {
                 const role = (window.userRole || '').trim().toLowerCase();
                 // Check all restricted flags

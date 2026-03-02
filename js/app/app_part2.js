@@ -75,6 +75,14 @@
                 }
             }
 
+            if (view === 'rpc') {
+                if (window.userRole !== 'adm') {
+                    window.showToast('warning', 'Acesso restrito a administradores.');
+                    renderView('dashboard');
+                    return;
+                }
+            }
+
             // Push to history if not navigating back
             if (!options.skipHistory && currentActiveView && currentActiveView !== view) {
                 viewHistory.push(currentActiveView);
