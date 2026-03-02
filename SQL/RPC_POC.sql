@@ -20,13 +20,13 @@ DECLARE
     v_total_fat numeric := 0;
     v_total_peso numeric := 0;
     v_total_pos_clientes integer := 0;
-
+    
     v_mix_salty_count integer := 0;
     v_mix_foods_count integer := 0;
-
+    
     v_total_metas numeric := 0;
     v_total_inovacoes integer := 0;
-
+    
     v_resultado json;
     v_month_key text;
 BEGIN
@@ -35,15 +35,15 @@ BEGIN
     v_month_key := TO_CHAR(MAKE_DATE(p_ano, p_mes, 1), 'YYYY-MM');
 
     -- 1. Totais Gerais (Faturamento e Peso Líquido)
-    SELECT
+    SELECT 
         COALESCE(SUM(vlvenda), 0),
         COALESCE(SUM(totpesoliq), 0)
-    INTO
+    INTO 
         v_total_fat,
         v_total_peso
     FROM data_detailed d
-    WHERE
-        EXTRACT(YEAR FROM d.dtped) = p_ano
+    WHERE 
+        EXTRACT(YEAR FROM d.dtped) = p_ano 
         AND EXTRACT(MONTH FROM d.dtped) = p_mes
         AND (p_filial IS NULL OR d.filial = ANY(p_filial))
         AND (p_vendedor IS NULL OR d.codusur = ANY(p_vendedor));
@@ -52,35 +52,35 @@ BEGIN
     SELECT COUNT(DISTINCT codcli)
     INTO v_total_pos_clientes
     FROM data_detailed d
-    WHERE
-        EXTRACT(YEAR FROM d.dtped) = p_ano
+    WHERE 
+        EXTRACT(YEAR FROM d.dtped) = p_ano 
         AND EXTRACT(MONTH FROM d.dtped) = p_mes
         AND (p_filial IS NULL OR d.filial = ANY(p_filial))
         AND (p_vendedor IS NULL OR d.codusur = ANY(p_vendedor));
 
     -- 3. Mix de Produtos (Salty e Foods)
     -- Fazemos um JOIN com a tabela dim_produtos para ler a classificação (mix_categoria)
-    SELECT
+    SELECT 
         COUNT(DISTINCT CASE WHEN p.mix_categoria = 'SALTY' THEN d.codcli END),
         COUNT(DISTINCT CASE WHEN p.mix_categoria = 'FOODS' THEN d.codcli END)
-    INTO
+    INTO 
         v_mix_salty_count,
         v_mix_foods_count
     FROM data_detailed d
     JOIN dim_produtos p ON d.produto = p.codigo
-    WHERE
-        EXTRACT(YEAR FROM d.dtped) = p_ano
+    WHERE 
+        EXTRACT(YEAR FROM d.dtped) = p_ano 
         AND EXTRACT(MONTH FROM d.dtped) = p_mes
         AND (p_filial IS NULL OR d.filial = ANY(p_filial))
         AND (p_vendedor IS NULL OR d.codusur = ANY(p_vendedor));
 
     -- 4. Metas (Tabela goals_distribution)
-    -- As metas são salvas em um campo JSON. Para simplificar no SQL, tentamos buscar a soma das metas dos vendedores, se existir,
+    -- As metas são salvas em um campo JSON. Para simplificar no SQL, tentamos buscar a soma das metas dos vendedores, se existir, 
     -- ou apenas retornar 0 caso a estrutura seja muito complexa para um PoC genérico.
     -- Vamos ler a meta agregada (Targets Gerais) para 'ALL' e 'GENERAL'.
-    SELECT
+    SELECT 
         COALESCE(
-            (goals_data->'targets'->'ALL'->>'fat')::numeric,
+            (goals_data->'targets'->'ALL'->>'fat')::numeric, 
             0
         ) INTO v_total_metas
     FROM goals_distribution
@@ -93,8 +93,8 @@ BEGIN
     INTO v_total_inovacoes
     FROM data_detailed d
     JOIN data_innovations i ON d.produto = i.codigo
-    WHERE
-        EXTRACT(YEAR FROM d.dtped) = p_ano
+    WHERE 
+        EXTRACT(YEAR FROM d.dtped) = p_ano 
         AND EXTRACT(MONTH FROM d.dtped) = p_mes
         AND (p_filial IS NULL OR d.filial = ANY(p_filial))
         AND (p_vendedor IS NULL OR d.codusur = ANY(p_vendedor));
