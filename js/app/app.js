@@ -11392,10 +11392,11 @@ const supervisorGroups = new Map();
         function calculateAverageMixComDevolucao(salesData, targetCodfors) {
              if (!salesData || salesData.length === 0 || !targetCodfors || targetCodfors.length === 0) return 0;
 
+            const targetCodforsSet = new Set(targetCodfors.map(String));
             const clientProductNetValue = new Map();
 
             for (const sale of salesData) {
-                if (!targetCodfors.includes(String(sale.CODFOR))) continue;
+                if (!targetCodforsSet.has(String(sale.CODFOR))) continue;
                 if (!sale.CODCLI || !sale.PRODUTO) continue;
 
                 if (!clientProductNetValue.has(sale.CODCLI)) {
