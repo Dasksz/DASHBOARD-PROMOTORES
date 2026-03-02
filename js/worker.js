@@ -4,6 +4,7 @@
         const dateCache = new Map();
 
         const FORBIDDEN_KEYS = ['SUPERV', 'CODUSUR', 'CODSUPERVISOR', 'NOME', 'CODCLI', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX', 'SUPERVISOR', 'PASTA', 'RAMO', 'ATIVIDADE', 'CIDADE', 'MUNICIPIO', 'BAIRRO'];
+        const FORBIDDEN_KEYS_SET = new Set(FORBIDDEN_KEYS);
 
         const mandatoryColumns = {
             sales: ['CODCLI', 'PEDIDO', 'CODUSUR', 'CODSUPERVISOR', 'DTPED', 'DTSAIDA', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX'],
@@ -380,11 +381,12 @@
             const result = [];
             const len = rawData.length;
 
+            // Enhanced robust detection: Check against forbidden keys list
+            const checkHeader = (val) => val && FORBIDDEN_KEYS_SET.has(val.trim().toUpperCase());
+
             for (let i = 0; i < len; i++) {
                 const rawRow = rawData[i];
                 // --- HEADER DETECTION: Ignore rows that look like headers ---
-                // Enhanced robust detection: Check against forbidden keys list
-                const checkHeader = (val) => val && FORBIDDEN_KEYS.includes(val.trim().toUpperCase());
 
                 if (
                     checkHeader(String(rawRow['CODCLI'] || '')) ||
