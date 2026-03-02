@@ -14,28 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const kpiMetas = document.getElementById('rpc-metas');
     const kpiInovacoes = document.getElementById('rpc-inovacoes');
 
-    // Verifica se o usuário tem permissão para ver o botão (somente 'adm')
-    // Usamos um pequeno atraso para garantir que o window.userRole já foi populado pelo init.js
-    setTimeout(() => {
-        const btnMenuRpc = document.getElementById('rpc-view-btn');
-        if (btnMenuRpc && window.userRole === 'adm') {
-            btnMenuRpc.classList.remove('hidden');
-
-            // Adiciona o evento de clique para abrir a view (integração com a navegação existente)
-            btnMenuRpc.addEventListener('click', () => {
-                if (typeof window.renderView === 'function') {
-                    window.renderView('rpc');
-                } else {
-                    // Fallback se renderView não estiver disponível no escopo global
-                    document.querySelectorAll('.view, [id$="-view"], #main-dashboard').forEach(el => {
-                        if (el.id !== 'rpc-view') el.classList.add('hidden');
-                    });
-                    const view = document.getElementById('rpc-view');
-                    if(view) view.classList.remove('hidden');
-                }
-            });
-        }
-    }, 1000);
 
     // Lógica para buscar os dados via RPC
     if (btnFetchRpc) {
