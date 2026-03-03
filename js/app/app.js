@@ -4829,32 +4829,37 @@
             // Apply Positivation Overrides from goalsSellerTargets (Imported Absolute Values)
             // Apply Overrides from goalsSellerTargets (Imported Absolute Values for Pos, Fat, Vol)
 
-            // --- FIX: Ensure all sellers with Manual Targets are present in goalsBySeller ---
-            goalsSellerTargets.forEach((targets, sellerName) => {
-                // Determine if strict filters are active
-                const hasFilters = (adminViewMode === 'seller' && (selectedMetaRealizadoVendedores.size > 0 || selectedMetaRealizadoSupervisors.size > 0));
+            // Skip applying manual seller goals entirely when looking at specific promotors
+            // The goal of a promotor should only be the sum of their assigned clients.
+            if (adminViewMode !== 'promotor') {
 
-                if (hasFilters) {
-                    // Strictly respect the filtered set
-                    if (!sellersSet.has(sellerName)) return;
-                } else {
-                    // No explicit filter (All View)
-                    // If not Admin, restrict to valid clients scope (prevent seeing other teams)
-                    if (window.userRole !== 'adm') {
-                        if (!goalsBySeller.has(sellerName)) return;
+                // --- FIX: Ensure all sellers with Manual Targets are present in goalsBySeller ---
+                goalsSellerTargets.forEach((targets, sellerName) => {
+                    // Determine if strict filters are active
+                    const hasFilters = (adminViewMode === 'seller' && (selectedMetaRealizadoVendedores.size > 0 || selectedMetaRealizadoSupervisors.size > 0));
+
+                    if (hasFilters) {
+                        // Strictly respect the filtered set
+                        if (!sellersSet.has(sellerName)) return;
+                    } else {
+                        // No explicit filter (All View)
+                        // If not Admin, restrict to valid clients scope (prevent seeing other teams)
+                        if (window.userRole !== 'adm') {
+                            if (!goalsBySeller.has(sellerName)) return;
+                        }
                     }
-                }
 
-                // Add to map if missing
-                if (!goalsBySeller.has(sellerName)) {
-                    goalsBySeller.set(sellerName, { totalFat: 0, totalVol: 0, totalPos: 0 });
-                }
-            });
+                    // Add to map if missing
+                    if (!goalsBySeller.has(sellerName)) {
+                        goalsBySeller.set(sellerName, { totalFat: 0, totalVol: 0, totalPos: 0 });
+                    }
+                });
+            }
             // ---------------------------------------------------------------------------------
 
             goalsBySeller.forEach((goals, sellerName) => {
                 const targets = goalsSellerTargets.get(sellerName);
-                if (targets) {
+                if (targets && adminViewMode !== 'promotor') {
                     // 1. Positivação Overrides
                     let overrideKey = null;
 
