@@ -3069,9 +3069,9 @@
             setupHierarchyFilters('history', null); // Reuse hierarchy logic
 
             // Set default dates (Current Month)
-            const now = new Date();
-            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const now = typeof lastSaleDate !== 'undefined' && lastSaleDate ? new Date(lastSaleDate) : new Date();
+                    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
             const startEl = document.getElementById('history-date-start');
             const endEl = document.getElementById('history-date-end');
@@ -3467,7 +3467,7 @@
         const { data: { user } } = await window.supabaseClient.auth.getUser();
         if (!user) return;
 
-        const now = new Date();
+        const now = typeof lastSaleDate !== 'undefined' && lastSaleDate ? new Date(lastSaleDate) : new Date();
         const y = now.getFullYear();
         const m = String(now.getMonth() + 1).padStart(2, '0');
         const isoStart = `${y}-${m}-01T00:00:00`; // Local start of month

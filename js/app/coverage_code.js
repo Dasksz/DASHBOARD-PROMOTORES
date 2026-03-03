@@ -733,14 +733,14 @@
             const prevMonthYear = prevMonthDate.getUTCFullYear();
 
             // --- PROPORTIONAL RATIO CALCULATION (Current Month vs Previous Month) ---
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth();
+            const refDate = (typeof lastSaleDate !== 'undefined' && lastSaleDate) ? new Date(lastSaleDate) : new Date();
+            const currentYear = refDate.getUTCFullYear();
+            const currentMonth = refDate.getUTCMonth();
 
             // Calculate Current Month Progress
             const totalWDCurrent = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-            // Use 'now' (Local) which getPassedWorkingDaysInMonth will interpret as UTC components to match check
-            const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, now);
+            // Use lastSaleDate (UTC) to match check
+            const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, refDate);
 
             const ratio = totalWDCurrent > 0 ? (passedWDCurrent / totalWDCurrent) : 1;
 
