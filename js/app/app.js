@@ -526,7 +526,7 @@
                 dropdown.classList.toggle('hidden');
                 // Pre-fill
                 if (!startInput.value && !selectedCoverageDateRange.start) {
-                    const now = new Date();
+                    const now = typeof lastSaleDate !== 'undefined' && lastSaleDate ? new Date(lastSaleDate) : new Date();
                     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
                     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
@@ -9511,14 +9511,14 @@ const supervisorGroups = new Map();
             const prevMonthYear = prevMonthDate.getUTCFullYear();
 
             // --- PROPORTIONAL RATIO CALCULATION (Current Month vs Previous Month) ---
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth();
+            const refDate = (typeof lastSaleDate !== 'undefined' && lastSaleDate) ? new Date(lastSaleDate) : new Date();
+            const currentYear = refDate.getUTCFullYear();
+            const currentMonth = refDate.getUTCMonth();
             
             // Calculate Current Month Progress
             const totalWDCurrent = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-            // Use 'now' (Local) which getPassedWorkingDaysInMonth will interpret as UTC components to match check
-            const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, now);
+            // Use lastSaleDate (UTC) to match check
+            const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, refDate);
             
             const ratio = totalWDCurrent > 0 ? (passedWDCurrent / totalWDCurrent) : 1;
 
@@ -22024,9 +22024,9 @@ const supervisorGroups = new Map();
             setupHistoryTipoVendaFilterHandlers();
             
             // Set default dates (Current Month)
-            const now = new Date();
-            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const now = typeof lastSaleDate !== 'undefined' && lastSaleDate ? new Date(lastSaleDate) : new Date();
+                    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
             
             const startEl = document.getElementById('history-date-start');
             const endEl = document.getElementById('history-date-end');
@@ -22089,7 +22089,7 @@ const supervisorGroups = new Map();
                     if (tvText) tvText.textContent = 'Todos';
 
                     // Reset Dates
-                    const now = new Date();
+                    const now = typeof lastSaleDate !== 'undefined' && lastSaleDate ? new Date(lastSaleDate) : new Date();
                     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
                     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
                     const startEl = document.getElementById('history-date-start');
@@ -22603,7 +22603,7 @@ const supervisorGroups = new Map();
         const { data: { user } } = await window.supabaseClient.auth.getUser();
         if (!user) return;
 
-        const now = new Date();
+        const now = typeof lastSaleDate !== 'undefined' && lastSaleDate ? new Date(lastSaleDate) : new Date();
         const y = now.getFullYear();
         const m = String(now.getMonth() + 1).padStart(2, '0');
         const isoStart = `${y}-${m}-01T00:00:00`; // Local start of month
@@ -25440,11 +25440,11 @@ const supervisorGroups = new Map();
             const prevMonthYear = prevMonthDate.getUTCFullYear();
 
             // Calculate Cutoff Ratio
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth();
+            const refDate = (typeof lastSaleDate !== 'undefined' && lastSaleDate) ? new Date(lastSaleDate) : new Date();
+            const currentYear = refDate.getUTCFullYear();
+            const currentMonth = refDate.getUTCMonth();
             const totalWDCurrent = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-            const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, now);
+            const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, refDate);
             const ratio = totalWDCurrent > 0 ? (passedWDCurrent / totalWDCurrent) : 1;
             const totalWDPrev = getWorkingDaysInMonth(prevMonthYear, prevMonthIndex, selectedHolidays);
             const targetWDPrev = Math.round(totalWDPrev * ratio);
