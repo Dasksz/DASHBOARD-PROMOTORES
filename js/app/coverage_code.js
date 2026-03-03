@@ -1044,6 +1044,16 @@
                 }
             }
 
+            const stockEl05 = document.getElementById('product-performance-stock-05');
+            const stockEl08 = document.getElementById('product-performance-stock-08');
+
+            if (stockEl05) {
+                stockEl05.textContent = s05.toLocaleString('pt-BR');
+            }
+            if (stockEl08) {
+                stockEl08.textContent = s08.toLocaleString('pt-BR');
+            }
+
             // Sales Logic
             // If Fat -> Show Value. If Weight -> Show Qty (Boxes) as per user request
             if (metricLabelEl) metricLabelEl.textContent = isFat ? 'Valor' : 'Caixas';
