@@ -9846,6 +9846,16 @@ const supervisorGroups = new Map();
                 }
             }
 
+            const stockEl05 = document.getElementById('product-performance-stock-05');
+            const stockEl08 = document.getElementById('product-performance-stock-08');
+
+            if (stockEl05) {
+                stockEl05.textContent = s05.toLocaleString('pt-BR');
+            }
+            if (stockEl08) {
+                stockEl08.textContent = s08.toLocaleString('pt-BR');
+            }
+
             // Sales Logic
             // If Fat -> Show Value. If Weight -> Show Qty (Boxes) as per user request
             if (metricLabelEl) metricLabelEl.textContent = isFat ? 'Valor' : 'Caixas';
@@ -28577,6 +28587,33 @@ const supervisorGroups = new Map();
         // Stock
         const stockEl = document.getElementById('product-performance-stock');
         if (stockEl) stockEl.textContent = (item.stock || 0).toLocaleString('pt-BR');
+
+        const stockEl05 = document.getElementById('product-performance-stock-05');
+        const stockEl08 = document.getElementById('product-performance-stock-08');
+
+        // Em inovações, nós podemos não ter s05 e s08 separados prontamente disponíveis no item.
+        // Se item.s05 e item.s08 existirem, podemos usar. Caso contrário, podemos esconder a seção ou mostrar '--'.
+        // Vamos checar se window.stockData05 está disponível para fazer o lookup.
+        let s05 = '--', s08 = '--';
+        if (window.stockData05 && window.stockData08) {
+             const getStockFromMap = (map, code) => {
+                 let s = map.get(code);
+                 if (s !== undefined) return s;
+                 const num = parseInt(code, 10);
+                 if (!isNaN(num)) {
+                     const sNoZeros = map.get(String(num));
+                     if (sNoZeros !== undefined) return sNoZeros;
+                 }
+                 const sString = String(code);
+                 if (map.has(sString)) return map.get(sString);
+                 return 0;
+             };
+             s05 = getStockFromMap(window.stockData05, item.productCode);
+             s08 = getStockFromMap(window.stockData08, item.productCode);
+        }
+
+        if (stockEl05) stockEl05.textContent = typeof s05 === 'number' ? s05.toLocaleString('pt-BR') : s05;
+        if (stockEl08) stockEl08.textContent = typeof s08 === 'number' ? s08.toLocaleString('pt-BR') : s08;
 
         // Since this modal is shared with Coverage view which has "Sales", we might need to handle those fields.
         // In Innovations context, we don't usually have "Sales Value" readily available in the item object 
