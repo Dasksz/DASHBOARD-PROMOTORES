@@ -27553,10 +27553,10 @@ const supervisorGroups = new Map();
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                    
+
                     // FIX: Only filter orphans for Admins
                     if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
-                    
+
                     let keep = true;
                     if (hasSup || hasVend) {
                         const details = sellerDetailsMap.get(rca1);
@@ -27578,6 +27578,7 @@ const supervisorGroups = new Map();
             const isSemRede = titulosRedeGroupFilter === 'sem_rede';
             const redeSet = (isComRede && selectedTitulosRedes.length > 0) ? new Set(selectedTitulosRedes) : null;
             const clientSearch = document.getElementById('titulos-codcli-filter').value.toLowerCase().trim();
+            const citySearch = document.getElementById('titulos-city-filter') ? document.getElementById('titulos-city-filter').value.toLowerCase().trim() : '';
 
             const allowedClientCodes = new Set();
             for(let i=0; i<allowedClients.length; i++) {
@@ -27596,6 +27597,12 @@ const supervisorGroups = new Map();
                     const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
                     const name = (c.nomeCliente || '').toLowerCase();
                     if (!code.includes(clientSearch) && !name.includes(clientSearch)) continue;
+                }
+
+                // City Search
+                if (citySearch) {
+                    const city = (c.cidade || '').toLowerCase();
+                    if (!city.includes(citySearch)) continue;
                 }
 
                 allowedClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
@@ -27625,7 +27632,7 @@ const supervisorGroups = new Map();
             };
 
             let totalReceber = 0;
-            
+
             let countCritical = 0;
             const today = new Date();
             today.setHours(0,0,0,0);
@@ -27656,7 +27663,7 @@ const supervisorGroups = new Map();
                         // Calculate days overdue if past due
                         if (dtVenc < today) {
                              const diffTime = Math.abs(today - dtVenc);
-                             daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                             daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                         }
                     }
 
@@ -27715,6 +27722,7 @@ const supervisorGroups = new Map();
             renderTitulosKPIs(totalReceber, criticalDebt, uniqueClientsCritical, totalCount);
             renderTitulosTable();
         }
+
 
         function renderTitulosKPIs(total, critical, criticalCount, count) {
             document.getElementById('titulos-kpi-total-debt').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -28673,7 +28681,7 @@ const supervisorGroups = new Map();
             if (e.target === modal) closeModal();
         };
     };
-})();
+
     window.openInnovationsProductModal = function(productCode) {
         if (!window.innovationsDataMap || !window.innovationsDataMap.has(String(productCode))) return;
         const item = window.innovationsDataMap.get(String(productCode));
@@ -28770,200 +28778,6 @@ const supervisorGroups = new Map();
         };
 
         modal.classList.remove('hidden');
-    };
-        function updateTitulosView() {
-            titulosRenderId++;
-            const currentId = titulosRenderId;
-
-            // 1. Get Data
-            const rawTitulos = embeddedData.titulos; // Columnar
-            if (!rawTitulos || !rawTitulos.length) {
-                // Empty state
-                renderTitulosKPIs(0, 0, 0, 0);
-                titulosTableState.filteredData = [];
-                renderTitulosTable();
-                return;
-            }
-
-            // 2. Filter Clients Base (Hierarchy + Rede)
-            // Use Hierarchy Filter
-            let allowedClients;
-            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                allowedClients = [];
-                const hasSup = selectedTitulosSupervisors.size > 0;
-                const hasVend = selectedTitulosVendedores.size > 0;
-                const source = allClientsData;
-                const len = source.length;
-                for(let i=0; i<len; i++) {
-                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
-                    const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-
-                    // FIX: Only filter orphans for Admins
-                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
-
-                    let keep = true;
-                    if (hasSup || hasVend) {
-                        const details = sellerDetailsMap.get(rca1);
-                        if (hasSup) {
-                            if (!details || !selectedTitulosSupervisors.has(details.supervisor)) keep = false;
-                        }
-                        if (keep && hasVend) {
-                            if (!selectedTitulosVendedores.has(rca1)) keep = false;
-                        }
-                    }
-                    if (keep) allowedClients.push(c);
-                }
-            } else {
-                allowedClients = getHierarchyFilteredClients('titulos', allClientsData);
-            }
-
-            // Apply Rede Filter
-            const isComRede = titulosRedeGroupFilter === 'com_rede';
-            const isSemRede = titulosRedeGroupFilter === 'sem_rede';
-            const redeSet = (isComRede && selectedTitulosRedes.length > 0) ? new Set(selectedTitulosRedes) : null;
-            const clientSearch = document.getElementById('titulos-codcli-filter').value.toLowerCase().trim();
-            const citySearch = document.getElementById('titulos-city-filter') ? document.getElementById('titulos-city-filter').value.toLowerCase().trim() : '';
-
-            const allowedClientCodes = new Set();
-            for(let i=0; i<allowedClients.length; i++) {
-                const c = allowedClients[i]; // Proxy or Object
-
-                // Rede Check
-                if (isComRede) {
-                    if (!c.ramo || c.ramo === 'N/A') continue;
-                    if (redeSet && !redeSet.has(c.ramo)) continue;
-                } else if (isSemRede) {
-                    if (c.ramo && c.ramo !== 'N/A') continue;
-                }
-
-                // Search Check (Name/Code) - Optimization: Check here to reduce set size
-                if (clientSearch) {
-                    const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
-                    const name = (c.nomeCliente || '').toLowerCase();
-                    if (!code.includes(clientSearch) && !name.includes(clientSearch)) continue;
-                }
-
-                // City Search
-                if (citySearch) {
-                    const city = (c.cidade || '').toLowerCase();
-                    if (!city.includes(citySearch)) continue;
-                }
-
-                allowedClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
-            }
-
-            // 3. Filter Titulos based on Allowed Client Codes
-            const filteredTitulos = [];
-            const isCol = rawTitulos instanceof ColumnarDataset;
-            const len = rawTitulos.length;
-
-            // Indices
-            // We assume column names from SQL: cod_cliente, vl_receber, etc.
-            // But 'embeddedData.titulos' comes from 'fetchAll' which uses CSV parser.
-            // The CSV parser uppercases headers. So: COD_CLIENTE, VL_RECEBER, etc.
-
-            // Let's verify column names dynamically or assume standard
-            // Standard from CSV parser: keys are UPPERCASE of DB columns.
-            // DB: cod_cliente -> CSV: COD_CLIENTE
-
-            // Optimized read with Dual Case Check (Lowercase and Uppercase)
-            const getVal = (i, col) => {
-                const val = isCol ? (rawTitulos._data[col] ? rawTitulos._data[col][i] : undefined) : rawTitulos[i][col];
-                if (val !== undefined) return val;
-                // Try Uppercase
-                const colUpper = col.toUpperCase();
-                return isCol ? (rawTitulos._data[colUpper] ? rawTitulos._data[colUpper][i] : undefined) : rawTitulos[i][colUpper];
-            };
-
-            let totalReceber = 0;
-
-            let countCritical = 0;
-            const today = new Date();
-            today.setHours(0,0,0,0);
-
-            // Critical Date: 60 days ago
-            const criticalDate = new Date();
-            criticalDate.setDate(today.getDate() - 60);
-
-            for (let i=0; i<len; i++) {
-                const codCli = normalizeKey(getVal(i, 'cod_cliente'));
-
-                if (allowedClientCodes.has(codCli)) {
-                    // Match!
-                    const valReceber = Number(getVal(i, 'vl_receber')) || 0;
-                    const valOriginal = Number(getVal(i, 'vl_titulos')) || 0;
-                    const dtVenc = parseDate(getVal(i, 'dt_vencimento'));
-
-                    totalReceber += valReceber;
-
-                    let isCritical = false;
-                    let daysOverdue = 0;
-
-                    if (dtVenc && valReceber > 0) {
-                        if (dtVenc < criticalDate) {
-                            isCritical = true;
-                            countCritical++;
-                        }
-                        // Calculate days overdue if past due
-                        if (dtVenc < today) {
-                             const diffTime = Math.abs(today - dtVenc);
-                             daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        }
-                    }
-
-                    // Enrich Data for Table
-                    // Resolve Client Name and RCA
-                    const clientObj = clientMapForKPIs.get(codCli);
-                    let clientName = 'Desconhecido';
-                    let rcaName = 'N/A';
-                    let city = 'N/A';
-
-                    if (clientObj) {
-                         let c = clientObj;
-                         if (typeof clientObj === 'number') {
-                             c = allClientsData.get(clientObj);
-                         }
-
-                         clientName = c.nomeCliente || c.fantasia || 'N/A';
-                         city = c.cidade || 'N/A';
-                         const rcaCode = String(c.rca1 || '').trim();
-                         // Resolve RCA Name
-                         if (optimizedData.rcaNameByCode && optimizedData.rcaNameByCode.has(rcaCode)) {
-                             rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode;
-                         } else {
-                             rcaName = rcaCode;
-                         }
-                    }
-
-                    filteredTitulos.push({
-                        codCli,
-                        clientName,
-                        rcaName,
-                        city,
-                        dtVenc,
-                        valReceber,
-                        valOriginal,
-                        isCritical,
-                        daysOverdue
-                    });
-                }
-            }
-
-            // Update State
-            titulosTableState.filteredData = filteredTitulos;
-            titulosTableState.page = 1;
-
-            // Sort by Date Ascending (Oldest first usually for debt)
-            titulosTableState.filteredData.sort((a,b) => (a.dtVenc || 0) - (b.dtVenc || 0));
-
-            // KPIs
-            const totalCount = filteredTitulos.length;
-            const uniqueClientsCritical = new Set(filteredTitulos.filter(t => t.isCritical).map(t => t.codCli)).size;
-
-            // Calculate Total Critical Debt
-            const criticalDebt = filteredTitulos.reduce((acc, t) => t.isCritical ? acc + t.valReceber : acc, 0);
-
-            renderTitulosKPIs(totalReceber, criticalDebt, uniqueClientsCritical, totalCount);
-            renderTitulosTable();
-        }
+}
+}
+})();
