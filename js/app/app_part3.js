@@ -3793,9 +3793,10 @@
 
                 // Update Visuals if needed (e.g. City Map if open)
                 if (heatLayer) {
-                    if (heatLayer._map) {
+                    if (leafletMap && leafletMap.hasLayer(heatLayer)) {
                         heatLayer.addLatLng([currentGeoLat, currentGeoLng, 1]);
                     } else {
+                        if (!heatLayer._latlngs) heatLayer._latlngs = [];
                         heatLayer._latlngs.push([currentGeoLat, currentGeoLng, 1]);
                     }
                 }
