@@ -95,6 +95,15 @@
             }
             return newRow;
         }
+
+        function normalizeText(text) {
+            if (!text) return '';
+            return String(text)
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '') // Remove accents
+                .toUpperCase()
+                .trim();
+        }
         // ----------------------------------------------
 
         function parseDate(dateString) {
@@ -1208,59 +1217,60 @@
                     return dateA - dateB;
                 });
 
-                const clientLastBranch = new Map();
-                const clientsWith05Purchase = new Set();
+                self.postMessage({ type: 'progress', status: 'Aplicando regras de Filial por Cidade...', percentage: 78 });
 
-                allProcessedSales.forEach(sale => {
-                    const codCli = sale.CODCLI;
-                    const filial = sale.FILIAL;
-                    if (codCli && filial) {
-                        clientLastBranch.set(codCli, filial);
-                        if (filial === '05') {
-                            clientsWith05Purchase.add(codCli);
-                        }
-                    }
-                });
+                // 1. Prepare configuration map
+                const cityBranchConfigMap = new Map();
+                if (e.data.fallbackData && e.data.fallbackData.configCityBranches) {
+                    // configCityBranches is fetched as an object { 'id': {cidade: ..., filial: ...} }
+                    Object.values(e.data.fallbackData.configCityBranches).forEach(config => {
+                        const normalizedCity = normalizeText(config.cidade);
+                        cityBranchConfigMap.set(normalizedCity, String(config.filial).padStart(2, '0'));
+                    });
+                }
 
+                // 2. Map clients to branches and check missing cities
                 const clientBranchOverride = new Map();
-                clientsWith05Purchase.forEach(codCli => {
-                    const lastBranch = clientLastBranch.get(codCli);
-                    if (lastBranch && lastBranch === '08') {
-                        clientBranchOverride.set(codCli, '08');
+                const missingCities = new Set();
+
+                clientMap.forEach((client, codcli) => {
+                    const cityStr = client.cidade || client['Nome da Cidade'] || '';
+                    if (cityStr) {
+                        const normalizedCity = normalizeText(cityStr);
+                        if (cityBranchConfigMap.has(normalizedCity)) {
+                            clientBranchOverride.set(codcli, cityBranchConfigMap.get(normalizedCity));
+                        } else {
+                            // City found in client base but NOT in the config table
+                            missingCities.add(cityStr.trim().toUpperCase());
+                        }
                     }
                 });
 
-                const applyBranchOverride = (salesArray, overrideMap) => {
-                    // Use standard loop for better performance in worker
+                // 3. Send warning for missing cities
+                if (missingCities.size > 0) {
+                    const missingArray = Array.from(missingCities);
+                    const displayList = missingArray.slice(0, 10).join(', ');
+                    const extraStr = missingArray.length > 10 ? `... e mais ${missingArray.length - 10}` : '';
+                    self.postMessage({
+                        type: 'warning',
+                        message: `Faltam ${missingArray.length} cidades na configuração de filial. Ex: ${displayList}${extraStr}. (Verifique config_city_branches)`
+                    });
+                }
+
+                const applyBranchOverride = (salesArray) => {
                     for(let i=0; i<salesArray.length; i++) {
                         const sale = salesArray[i];
-                        const override = overrideMap.get(sale.CODCLI);
-                        if (override && sale.FILIAL === '05') {
-                            sale.FILIAL = override;
+                        const codCli = sale.CODCLI;
+                        const overrideBranch = clientBranchOverride.get(codCli);
+                        if (overrideBranch) {
+                            sale.FILIAL = overrideBranch;
                         }
                     }
                     return salesArray;
                 };
 
-                let finalSalesData = applyBranchOverride(processedSalesData, clientBranchOverride);
-                let finalHistoryData = applyBranchOverride(processedHistoryData, clientBranchOverride);
-
-                self.postMessage({ type: 'progress', status: 'Aplicando regra específica para Supervisor Tiago...', percentage: 78 });
-                const tiagoSellersToMoveTo08 = new Set(['291', '292', '293', '284', '289', '287', '286']);
-
-                const applyTiagoRule = (salesArray) => {
-                    for(let i=0; i<salesArray.length; i++) {
-                        const sale = salesArray[i];
-                        if (sale.CODSUPERVISOR === '12' && tiagoSellersToMoveTo08.has(sale.CODUSUR)) {
-                            sale.FILIAL = '08';
-                        }
-                    }
-                    return salesArray;
-                };
-
-                finalSalesData = applyTiagoRule(finalSalesData);
-                finalHistoryData = applyTiagoRule(finalHistoryData);
-
+                let finalSalesData = applyBranchOverride(processedSalesData);
+                let finalHistoryData = applyBranchOverride(processedHistoryData);
 
                 self.postMessage({ type: 'progress', status: 'Atualizando datas de compra...', percentage: 80 });
                 const latestSaleDateByClient = new Map();

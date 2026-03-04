@@ -15629,7 +15629,8 @@ const supervisorGroups = new Map();
                         titulos: embeddedData.titulos,
                         innovations: embeddedData.innovationsMonth,
                         products: embeddedData.productDetails,
-                        activeProducts: embeddedData.activeProductCodes
+                        activeProducts: embeddedData.activeProductCodes,
+                        configCityBranches: window.configCityBranches || []
                     };
 
                     // Construct Reference Data (CNPJ Map) from current memory
@@ -15682,6 +15683,8 @@ const supervisorGroups = new Map();
                         if (type === 'progress') {
                             document.getElementById('status-text').textContent = status;
                             document.getElementById('progress-bar').style.width = percentage + '%';
+                        } else if (type === 'warning') {
+                            window.showToast('warning', message, 8000); // 8 seconds to allow reading
                         } else if (type === 'result') {
                             if (data.nota_perfeita_count !== undefined && data.nota_perfeita_count > 0) {
                                 window.showToast('success', `${data.nota_perfeita_count} clientes identificados no arquivo 'Loja Perfeita'.`);
@@ -28673,7 +28676,7 @@ const supervisorGroups = new Map();
             if (e.target === modal) closeModal();
         };
     };
-})();
+
     window.openInnovationsProductModal = function(productCode) {
         if (!window.innovationsDataMap || !window.innovationsDataMap.has(String(productCode))) return;
         const item = window.innovationsDataMap.get(String(productCode));
@@ -28967,3 +28970,5 @@ const supervisorGroups = new Map();
             renderTitulosKPIs(totalReceber, criticalDebt, uniqueClientsCritical, totalCount);
             renderTitulosTable();
         }
+    }
+})();
