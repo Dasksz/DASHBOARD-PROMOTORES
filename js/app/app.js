@@ -24195,6 +24195,17 @@ const supervisorGroups = new Map();
                 selectedWeeklyVendedores.clear();
                 selectedWeeklySuppliers.clear();
 
+                const resetUI = (id, textId) => {
+                    const dd = document.getElementById(id);
+                    if (dd) dd.querySelectorAll('input').forEach(cb => cb.checked = false);
+                    const text = document.getElementById(textId);
+                    // FIX: Ensure Filter Button Text resets to 'Todos'
+                    if (text) text.textContent = 'Todos';
+                };
+
+                resetUI('weekly-supervisor-filter-dropdown', 'weekly-supervisor-filter-text');
+                resetUI('weekly-vendedor-filter-dropdown', 'weekly-vendedor-filter-text');
+
                 weeklyRedeGroupFilter = '';
                 selectedWeeklyRedes = [];
                 if (redeGroupContainer) {
