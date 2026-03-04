@@ -13425,15 +13425,26 @@ const supervisorGroups = new Map();
             // "Innovations Month Selection Coverage" -> Sales
             // "Innovations Month Bonus Coverage" -> Bonus
 
+            // Positivados calculation
+            const positivadosCurrentSet = new Set();
+            mapsCurrent.mainMap.forEach((_, codCli) => { if (activeClientCodes.has(codCli)) positivadosCurrentSet.add(codCli); });
+            mapsCurrent.bonusMap.forEach((_, codCli) => { if (activeClientCodes.has(codCli)) positivadosCurrentSet.add(codCli); });
+            const positivadosCurrentCount = positivadosCurrentSet.size;
+
+            const positivadosPreviousSet = new Set();
+            mapsPrevious.mainMap.forEach((_, codCli) => { if (activeClientCodes.has(codCli)) positivadosPreviousSet.add(codCli); });
+            mapsPrevious.bonusMap.forEach((_, codCli) => { if (activeClientCodes.has(codCli)) positivadosPreviousSet.add(codCli); });
+            const positivadosPreviousCount = positivadosPreviousSet.size;
+
             const selectionCoveredCountCurrent = clientsWhoGotAnyVisibleProductCurrent.size;
-            const selectionCoveragePercentCurrent = activeClientsCount > 0 ? (selectionCoveredCountCurrent / activeClientsCount) * 100 : 0;
+            const selectionCoveragePercentCurrent = positivadosCurrentCount > 0 ? (selectionCoveredCountCurrent / positivadosCurrentCount) * 100 : 0;
             const selectionCoveredCountPrevious = clientsWhoGotAnyVisibleProductPrevious.size;
-            const selectionCoveragePercentPrevious = activeClientsCount > 0 ? (selectionCoveredCountPrevious / activeClientsCount) * 100 : 0;
+            const selectionCoveragePercentPrevious = positivadosPreviousCount > 0 ? (selectionCoveredCountPrevious / positivadosPreviousCount) * 100 : 0;
 
             const bonusCoveredCountCurrent = clientsWhoGotBonusAnyVisibleProductCurrent.size;
-            const bonusCoveragePercentCurrent = activeClientsCount > 0 ? (bonusCoveredCountCurrent / activeClientsCount) * 100 : 0;
+            const bonusCoveragePercentCurrent = positivadosCurrentCount > 0 ? (bonusCoveredCountCurrent / positivadosCurrentCount) * 100 : 0;
             const bonusCoveredCountPrevious = clientsWhoGotBonusAnyVisibleProductPrevious.size;
-            const bonusCoveragePercentPrevious = activeClientsCount > 0 ? (bonusCoveredCountPrevious / activeClientsCount) * 100 : 0;
+            const bonusCoveragePercentPrevious = positivadosPreviousCount > 0 ? (bonusCoveredCountPrevious / positivadosPreviousCount) * 100 : 0;
 
             // Update DOM
             innovationsMonthActiveClientsKpi.textContent = activeClientsCount.toLocaleString('pt-BR');
@@ -13444,14 +13455,14 @@ const supervisorGroups = new Map();
             document.getElementById('innovations-month-top-coverage-title').textContent = selectedCategory ? 'Produto Maior Cobertura' : 'Categ. Maior Cobertura';
 
             innovationsMonthSelectionCoverageValueKpi.textContent = `${selectionCoveragePercentCurrent.toFixed(2)}%`;
-            innovationsMonthSelectionCoverageCountKpi.textContent = `${selectionCoveredCountCurrent.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')}`;
+            innovationsMonthSelectionCoverageCountKpi.textContent = `${selectionCoveredCountCurrent.toLocaleString('pt-BR')} de ${positivadosCurrentCount.toLocaleString('pt-BR')}`;
             innovationsMonthSelectionCoverageValueKpiPrevious.textContent = `${selectionCoveragePercentPrevious.toFixed(2)}%`;
-            innovationsMonthSelectionCoverageCountKpiPrevious.textContent = `${selectionCoveredCountPrevious.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
+            innovationsMonthSelectionCoverageCountKpiPrevious.textContent = `${selectionCoveredCountPrevious.toLocaleString('pt-BR')} de ${positivadosPreviousCount.toLocaleString('pt-BR')} clientes`;
 
             innovationsMonthBonusCoverageValueKpi.textContent = `${bonusCoveragePercentCurrent.toFixed(2)}%`;
-            innovationsMonthBonusCoverageCountKpi.textContent = `${bonusCoveredCountCurrent.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
+            innovationsMonthBonusCoverageCountKpi.textContent = `${bonusCoveredCountCurrent.toLocaleString('pt-BR')} de ${positivadosCurrentCount.toLocaleString('pt-BR')} clientes`;
             innovationsMonthBonusCoverageValueKpiPrevious.textContent = `${bonusCoveragePercentPrevious.toFixed(2)}%`;
-            innovationsMonthBonusCoverageCountKpiPrevious.textContent = `${bonusCoveredCountPrevious.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
+            innovationsMonthBonusCoverageCountKpiPrevious.textContent = `${bonusCoveredCountPrevious.toLocaleString('pt-BR')} de ${positivadosPreviousCount.toLocaleString('pt-BR')} clientes`;
 
             // Prepare Data for Chart and Table
             chartLabels = Object.keys(categoryAnalysis).sort((a,b) => categoryAnalysis[b].coverageCurrent - categoryAnalysis[a].coverageCurrent);
