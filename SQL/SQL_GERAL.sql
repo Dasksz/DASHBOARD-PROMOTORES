@@ -964,7 +964,7 @@ ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 
 -- =========================================================================================
 -- Tabela: config_city_branches
--- Descrição: Configuração manual de filiais por cidade.
+-- Descrição: Configuração manual de filiais por cidade. 
 -- Substitui as regras antigas de "última filial" e "Regra do Tiago".
 -- =========================================================================================
 
@@ -990,11 +990,20 @@ DROP POLICY IF EXISTS "Authenticated Read Access" ON public.config_city_branches
 CREATE POLICY "Authenticated Read Access" ON public.config_city_branches FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Admin All Operations" ON public.config_city_branches FOR ALL USING (
     EXISTS (
-        SELECT 1 FROM public.app_users
-        WHERE app_users.id = auth.uid()
-        AND app_users.role = 'adm'
+        SELECT 1 FROM public.profiles 
+        WHERE profiles.id = auth.uid() 
+        AND profiles.role = 'adm'
     )
 );
+
+-- Define update trigger function if missing
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Trigger para updated_at
 DROP TRIGGER IF EXISTS set_config_city_branches_updated_at ON public.config_city_branches;
@@ -1002,3 +1011,4 @@ CREATE TRIGGER set_config_city_branches_updated_at
 BEFORE UPDATE ON public.config_city_branches
 FOR EACH ROW
 EXECUTE FUNCTION public.handle_updated_at();
+
