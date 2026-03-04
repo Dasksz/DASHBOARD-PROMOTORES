@@ -8,6 +8,7 @@
             fornecedores: new Map(),
             produtos: new Map()
         };
+        window.maps = maps;
 
         if (embeddedData.dim_vendedores) {
             embeddedData.dim_vendedores.forEach(v => maps.vendedores.set(String(v.codigo).trim(), v.nome));
