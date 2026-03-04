@@ -3218,8 +3218,8 @@
         // formatDate moved to utils.js
 
         function buildInnovationSalesMaps(salesData, mainTypes, bonusTypes) {
-            // First accumulate VLVENDA for each client/product/type
-            const accumulatedSales = new Map();
+            const mainMap = new Map(); // Map<CODCLI, Map<PRODUTO, Set<CODUSUR>>>
+            const bonusMap = new Map();
             const mainSet = new Set(mainTypes);
             const bonusSet = new Set(bonusTypes);
 
@@ -3232,40 +3232,21 @@
                 const codCli = sale.CODCLI;
                 const prod = sale.PRODUTO;
                 const rca = sale.CODUSUR;
-                const val = parseFloat(sale.VLVENDA) || 0;
-
-                const key = `${codCli}_${prod}_${isMain ? 'main' : 'bonus'}`;
-                if (!accumulatedSales.has(key)) {
-                    accumulatedSales.set(key, { codCli, prod, isMain, isBonus, total: 0, rcas: new Set() });
-                }
-                const record = accumulatedSales.get(key);
-                record.total += val;
-                record.rcas.add(rca);
-            });
-
-            const mainMap = new Map(); // Map<CODCLI, Map<PRODUTO, Set<CODUSUR>>>
-            const bonusMap = new Map();
-
-            accumulatedSales.forEach(record => {
-                if (record.total < 1) return; // Only count if >= 1
-
-                const { codCli, prod, rcas, isMain, isBonus } = record;
 
                 if (isMain) {
                     if (!mainMap.has(codCli)) mainMap.set(codCli, new Map());
                     const clientMap = mainMap.get(codCli);
                     if (!clientMap.has(prod)) clientMap.set(prod, new Set());
-                    rcas.forEach(rca => clientMap.get(prod).add(rca));
+                    clientMap.get(prod).add(rca);
                 }
 
                 if (isBonus) {
                     if (!bonusMap.has(codCli)) bonusMap.set(codCli, new Map());
                     const clientMap = bonusMap.get(codCli);
                     if (!clientMap.has(prod)) clientMap.set(prod, new Set());
-                    rcas.forEach(rca => clientMap.get(prod).add(rca));
+                    clientMap.get(prod).add(rca);
                 }
             });
-
             return { mainMap, bonusMap };
         }
 
@@ -13199,12 +13180,11 @@ const supervisorGroups = new Map();
             const currentSelectionKey = currentSelection.slice().sort().join(',');
 
             // Caching Strategy: Reuse maps if Tipo Venda selection hasn't changed
-            let mapsCurrent, mapsPrevious, mapsPrevious2, mapsPrevious3;
+            let mapsCurrent, mapsPrevious, mapsPrevious2;
             if (viewState.inovacoes.lastTypesKey === currentSelectionKey && viewState.inovacoes.cache) {
                 mapsCurrent = viewState.inovacoes.cache.mapsCurrent;
                 mapsPrevious = viewState.inovacoes.cache.mapsPrevious;
                 mapsPrevious2 = viewState.inovacoes.cache.mapsPrevious2;
-                mapsPrevious3 = viewState.inovacoes.cache.mapsPrevious3;
             } else {
                 const mainTypes = currentSelection.filter(t => t !== '5' && t !== '11');
                 const bonusTypes = currentSelection.filter(t => t === '5' || t === '11');
@@ -13212,7 +13192,7 @@ const supervisorGroups = new Map();
                 // Optimized Map Building (2 passes instead of 4)
                 mapsCurrent = buildInnovationSalesMaps(allSalesData, mainTypes, bonusTypes);
 
-                // Calculate Date Ranges for T-1 (Prev), T-2 (Prev-Prev) and T-3 (Prev-Prev-Prev)
+                // Calculate Date Ranges for T-1 (Prev) and T-2 (Prev-Prev)
                 const currentYear = lastSaleDate.getUTCFullYear();
                 const currentMonth = lastSaleDate.getUTCMonth();
 
@@ -13227,12 +13207,6 @@ const supervisorGroups = new Map();
                 const prev2MonthEnd = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
                 const tsPrev2Start = prev2MonthStart.getTime();
                 const tsPrev2End = prev2MonthEnd.getTime();
-
-                // T-3: Previous Previous Previous Month
-                const prev3MonthStart = new Date(Date.UTC(currentYear, currentMonth - 3, 1));
-                const prev3MonthEnd = new Date(Date.UTC(currentYear, currentMonth - 2, 1));
-                const tsPrev3Start = prev3MonthStart.getTime();
-                const tsPrev3End = prev3MonthEnd.getTime();
 
                 // Filter History Data
                 const filterHistory = (start, end) => {
@@ -13263,18 +13237,16 @@ const supervisorGroups = new Map();
 
                 const previousMonthData = filterHistory(tsPrevStart, tsPrevEnd);
                 const previousMonthData2 = filterHistory(tsPrev2Start, tsPrev2End);
-                const previousMonthData3 = filterHistory(tsPrev3Start, tsPrev3End);
 
                 mapsPrevious = buildInnovationSalesMaps(previousMonthData, mainTypes, bonusTypes);
                 mapsPrevious2 = buildInnovationSalesMaps(previousMonthData2, mainTypes, bonusTypes);
-                mapsPrevious3 = buildInnovationSalesMaps(previousMonthData3, mainTypes, bonusTypes);
 
                 viewState.inovacoes.lastTypesKey = currentSelectionKey;
-                viewState.inovacoes.cache = { mapsCurrent, mapsPrevious, mapsPrevious2, mapsPrevious3 };
+                viewState.inovacoes.cache = { mapsCurrent, mapsPrevious, mapsPrevious2 };
             }
 
             // Structures to hold results
-            // categoryResults[catName] = { current: Set, previous: Set, previous2: Set, previous3: Set ... }
+            // categoryResults[catName] = { current: Set, previous: Set, previous2: Set, ... }
             const categoryResults = {};
             const productResults = {};
 
@@ -13283,20 +13255,18 @@ const supervisorGroups = new Map();
                     current: new Set(),
                     previous: new Set(),
                     previous2: new Set(),
-                    previous3: new Set(),
                     bonusCurrent: new Set(),
                     bonusPrevious: new Set(),
-                    bonusPrevious2: new Set(),
-                    bonusPrevious3: new Set()
+                    bonusPrevious2: new Set()
                 };
                 categories[cat].productCodes.forEach(p => {
-                    productResults[p] = { current: new Set(), previous: new Set(), previous2: new Set(), previous3: new Set() };
+                    productResults[p] = { current: new Set(), previous: new Set(), previous2: new Set() };
                 });
             }
 
             // Helper to process maps and populate sets
             const processMap = (salesMap, periodType, isBonus) => {
-                // periodType: 'current', 'previous', 'previous2', 'previous3'
+                // periodType: 'current', 'previous', 'previous2'
                 salesMap.forEach((productsMap, codCli) => {
                     // Only count if client is in the filtered active list for the current month
                     if (periodType === 'current' && !activeClientCodes.has(codCli)) return;
@@ -13307,13 +13277,9 @@ const supervisorGroups = new Map();
 
                         // Add to Category Set (Normal or Bonus)
                         if (categoryResults[category]) {
-                            let targetSet = periodType;
-                            if (isBonus) {
-                                if (periodType === 'current') targetSet = 'bonusCurrent';
-                                else if (periodType === 'previous') targetSet = 'bonusPrevious';
-                                else if (periodType === 'previous2') targetSet = 'bonusPrevious2';
-                                else if (periodType === 'previous3') targetSet = 'bonusPrevious3';
-                            }
+                            const targetSet = isBonus
+                                ? (periodType === 'current' ? 'bonusCurrent' : (periodType === 'previous' ? 'bonusPrevious' : 'bonusPrevious2'))
+                                : periodType;
 
                             categoryResults[category][targetSet].add(codCli);
                         }
@@ -13326,15 +13292,13 @@ const supervisorGroups = new Map();
                 });
             };
 
-            // Process all 8 maps efficiently
+            // Process all 6 maps efficiently
             processMap(mapsCurrent.mainMap, 'current', false);
             processMap(mapsCurrent.bonusMap, 'current', true);
             processMap(mapsPrevious.mainMap, 'previous', false);
             processMap(mapsPrevious.bonusMap, 'previous', true);
             processMap(mapsPrevious2.mainMap, 'previous2', false);
             processMap(mapsPrevious2.bonusMap, 'previous2', true);
-            processMap(mapsPrevious3.mainMap, 'previous3', false);
-            processMap(mapsPrevious3.bonusMap, 'previous3', true);
 
             // Consolidate Results
             const categoryAnalysis = {};
@@ -13345,7 +13309,7 @@ const supervisorGroups = new Map();
                     const pCode = String(product.Codigo).trim();
                     if (productResults[pCode]) {
                         const count = productResults[pCode].current.size;
-                        const coverage = positivadosCurrentCount > 0 ? (count / positivadosCurrentCount) * 100 : 0;
+                        const coverage = activeClientsCount > 0 ? (count / activeClientsCount) * 100 : 0;
                         if (coverage > topCoverageItem.coverage) {
                             topCoverageItem = { name: `(${pCode}) ${product.produto || product.Produto}`, coverage, clients: count };
                         }
@@ -13356,7 +13320,7 @@ const supervisorGroups = new Map();
                 for (const cat in categoryResults) {
                     const unionSet = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
                     const count = unionSet.size;
-                    const coverage = positivadosCurrentCount > 0 ? (count / positivadosCurrentCount) * 100 : 0;
+                    const coverage = activeClientsCount > 0 ? (count / activeClientsCount) * 100 : 0;
 
                     if (coverage > topCoverageItem.coverage) {
                         topCoverageItem = { name: cat, coverage, clients: count };
@@ -13383,14 +13347,36 @@ const supervisorGroups = new Map();
                 const currentUnion = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
                 const previousUnion = new Set([...categoryResults[cat].previous, ...categoryResults[cat].bonusPrevious]);
                 const previous2Union = new Set([...categoryResults[cat].previous2, ...categoryResults[cat].bonusPrevious2]);
-                const previous3Union = new Set([...categoryResults[cat].previous3, ...categoryResults[cat].bonusPrevious3]);
 
                 const countCurr = currentUnion.size;
                 const countPrev = previousUnion.size;
                 const countPrev2 = previous2Union.size;
-                const countPrev3 = previous3Union.size;
 
-            // First define the positivados count since we need it as the denominator everywhere now
+                const covCurr = activeClientsCount > 0 ? (countCurr / activeClientsCount) * 100 : 0;
+                const covPrev = activeClientsCount > 0 ? (countPrev / activeClientsCount) * 100 : 0;
+                const covPrev2 = activeClientsCount > 0 ? (countPrev2 / activeClientsCount) * 100 : 0;
+
+                const varPct = covPrev > 0 ? ((covCurr - covPrev) / covPrev) * 100 : (covCurr > 0 ? Infinity : 0);
+
+                categoryAnalysis[cat] = {
+                    coverageCurrent: covCurr,
+                    coveragePrevious: covPrev,
+                    coveragePrevious2: covPrev2,
+                    variation: varPct,
+                    clientsCount: countCurr,
+                    clientsPreviousCount: countPrev
+                };
+            }
+
+            // Total KPI calculations (Union of Sets)
+            // Note: Original code did:
+            // clientsWhoGotAnyVisibleProductCurrent -> Sales
+            // clientsWhoGotBonusAnyVisibleProductCurrent -> Bonus
+            // It kept them separate for the KPI cards at the top.
+            // "Innovations Month Selection Coverage" -> Sales
+            // "Innovations Month Bonus Coverage" -> Bonus
+
+            // Positivados calculation
             const positivadosCurrentSet = new Set();
             mapsCurrent.mainMap.forEach((_, codCli) => { if (activeClientCodes.has(codCli)) positivadosCurrentSet.add(codCli); });
             mapsCurrent.bonusMap.forEach((_, codCli) => { if (activeClientCodes.has(codCli)) positivadosCurrentSet.add(codCli); });
@@ -13400,89 +13386,6 @@ const supervisorGroups = new Map();
             mapsPrevious.mainMap.forEach((_, codCli) => { positivadosPreviousSet.add(codCli); });
             mapsPrevious.bonusMap.forEach((_, codCli) => { positivadosPreviousSet.add(codCli); });
             const positivadosPreviousCount = positivadosPreviousSet.size;
-
-            const positivadosPrevious2Set = new Set();
-            mapsPrevious2.mainMap.forEach((_, codCli) => { positivadosPrevious2Set.add(codCli); });
-            mapsPrevious2.bonusMap.forEach((_, codCli) => { positivadosPrevious2Set.add(codCli); });
-            const positivadosPrevious2Count = positivadosPrevious2Set.size;
-
-            const positivadosPrevious3Set = new Set();
-            mapsPrevious3.mainMap.forEach((_, codCli) => { positivadosPrevious3Set.add(codCli); });
-            mapsPrevious3.bonusMap.forEach((_, codCli) => { positivadosPrevious3Set.add(codCli); });
-            const positivadosPrevious3Count = positivadosPrevious3Set.size;
-
-
-            if (selectedCategory && categories[selectedCategory]) {
-                categories[selectedCategory].products.forEach(product => {
-                    const pCode = String(product.Codigo).trim();
-                    if (productResults[pCode]) {
-                        const count = productResults[pCode].current.size;
-                        const coverage = positivadosCurrentCount > 0 ? (count / positivadosCurrentCount) * 100 : 0;
-                        if (coverage > topCoverageItem.coverage) {
-                            topCoverageItem = { name: `(${pCode}) ${product.produto || product.Produto}`, coverage, clients: count };
-                        }
-                    }
-                });
-            } else {
-                // Top Category Logic
-                for (const cat in categoryResults) {
-                    const unionSet = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
-                    const count = unionSet.size;
-                    const coverage = positivadosCurrentCount > 0 ? (count / positivadosCurrentCount) * 100 : 0;
-
-                    if (coverage > topCoverageItem.coverage) {
-                        topCoverageItem = { name: cat, coverage, clients: count };
-                    }
-                }
-            }
-
-            // Calculate Global KPIs (Union of all categories selected)
-            const clientsWhoGotAnyVisibleProductCurrent = new Set();
-            const clientsWhoGotAnyVisibleProductPrevious = new Set();
-            const clientsWhoGotBonusAnyVisibleProductCurrent = new Set();
-            const clientsWhoGotBonusAnyVisibleProductPrevious = new Set();
-
-            for (const cat in categoryResults) {
-                if (selectedCategory && cat !== selectedCategory) continue;
-
-                // Merge sets into global KPI sets (KPIs only track T vs T-1 for now, but we have T-2 data available)
-                categoryResults[cat].current.forEach(c => clientsWhoGotAnyVisibleProductCurrent.add(c));
-                categoryResults[cat].previous.forEach(c => clientsWhoGotAnyVisibleProductPrevious.add(c));
-                categoryResults[cat].bonusCurrent.forEach(c => clientsWhoGotBonusAnyVisibleProductCurrent.add(c));
-                categoryResults[cat].bonusPrevious.forEach(c => clientsWhoGotBonusAnyVisibleProductPrevious.add(c));
-
-                // Prepare Analysis Object for Chart/Table
-                const currentUnion = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
-                const previousUnion = new Set([...categoryResults[cat].previous, ...categoryResults[cat].bonusPrevious]);
-                const previous2Union = new Set([...categoryResults[cat].previous2, ...categoryResults[cat].bonusPrevious2]);
-                const previous3Union = new Set([...categoryResults[cat].previous3, ...categoryResults[cat].bonusPrevious3]);
-
-                const countCurr = currentUnion.size;
-                const countPrev = previousUnion.size;
-                const countPrev2 = previous2Union.size;
-                const countPrev3 = previous3Union.size;
-
-                const covCurr = positivadosCurrentCount > 0 ? (countCurr / positivadosCurrentCount) * 100 : 0;
-                const covPrev = positivadosPreviousCount > 0 ? (countPrev / positivadosPreviousCount) * 100 : 0;
-                const covPrev2 = positivadosPrevious2Count > 0 ? (countPrev2 / positivadosPrevious2Count) * 100 : 0;
-                const covPrev3 = positivadosPrevious3Count > 0 ? (countPrev3 / positivadosPrevious3Count) * 100 : 0;
-
-                const varPct = covPrev > 0 ? ((covCurr - covPrev) / covPrev) * 100 : (covCurr > 0 ? Infinity : 0);
-
-                categoryAnalysis[cat] = {
-                    coverageCurrent: covCurr,
-                    coveragePrevious: covPrev,
-                    coveragePrevious2: covPrev2,
-                    coveragePrevious3: covPrev3,
-                    variation: varPct,
-                    clientsCount: countCurr,
-                    clientsPreviousCount: countPrev,
-                    clientsPrevious2Count: countPrev2,
-                    clientsPrevious3Count: countPrev3
-                };
-            }
-
-            // Total KPI calculations (Union of Sets)
 
             const selectionCoveredCountCurrent = clientsWhoGotAnyVisibleProductCurrent.size;
             const selectionCoveragePercentCurrent = positivadosCurrentCount > 0 ? (selectionCoveredCountCurrent / positivadosCurrentCount) * 100 : 0;
@@ -13494,13 +13397,12 @@ const supervisorGroups = new Map();
             const bonusCoveredCountPrevious = clientsWhoGotBonusAnyVisibleProductPrevious.size;
             const bonusCoveragePercentPrevious = positivadosPreviousCount > 0 ? (bonusCoveredCountPrevious / positivadosPreviousCount) * 100 : 0;
 
-            // Update DOM to use positivadosCurrentCount as the main Base KPI, to reflect vlvenda >= 1 logic universally.
-            innovationsMonthActiveClientsKpi.textContent = positivadosCurrentCount.toLocaleString('pt-BR');
+            // Update DOM
+            innovationsMonthActiveClientsKpi.textContent = activeClientsCount.toLocaleString('pt-BR');
             innovationsMonthTopCoverageValueKpi.textContent = `${topCoverageItem.coverage.toFixed(2)}%`;
             innovationsMonthTopCoverageKpi.textContent = topCoverageItem.name;
             innovationsMonthTopCoverageKpi.title = topCoverageItem.name;
-            const mediaPorCliente = positivadosCurrentCount > 0 ? (topCoverageItem.clients / positivadosCurrentCount).toFixed(2) : '0.00';
-            innovationsMonthTopCoverageCountKpi.textContent = `Média: ${mediaPorCliente}`;
+            innovationsMonthTopCoverageCountKpi.textContent = `${topCoverageItem.clients.toLocaleString('pt-BR')} PDVs`;
             document.getElementById('innovations-month-top-coverage-title').textContent = selectedCategory ? 'Produto Maior Cobertura' : 'Categ. Maior Cobertura';
 
             innovationsMonthSelectionCoverageValueKpi.textContent = `${selectionCoveragePercentCurrent.toFixed(2)}%`;
@@ -13531,14 +13433,10 @@ const supervisorGroups = new Map();
 
                     const clientsCurrentCount = pRes ? pRes.current.size : 0;
                     const clientsPreviousCount = pRes ? pRes.previous.size : 0;
-                    const clientsPrevious2Count = pRes ? pRes.previous2.size : 0;
-                    const clientsPrevious3Count = pRes ? pRes.previous3.size : 0;
 
-                    const coverageCurrent = positivadosCurrentCount > 0 ? (clientsCurrentCount / positivadosCurrentCount) * 100 : 0;
-                    const coveragePrevious = positivadosPreviousCount > 0 ? (clientsPreviousCount / positivadosPreviousCount) * 100 : 0;
+                    const coverageCurrent = activeClientsCount > 0 ? (clientsCurrentCount / activeClientsCount) * 100 : 0;
+                    const coveragePrevious = activeClientsCount > 0 ? (clientsPreviousCount / activeClientsCount) * 100 : 0;
                     const variation = coveragePrevious > 0 ? ((coverageCurrent - coveragePrevious) / coveragePrevious) * 100 : (coverageCurrent > 0 ? Infinity : 0);
-
-                    const mediaTri = (clientsPreviousCount + clientsPrevious2Count + clientsPrevious3Count) / 3;
 
                     tableData.push({
                         categoryName,
@@ -13549,8 +13447,7 @@ const supervisorGroups = new Map();
                         clientsPreviousCount,
                         coverageCurrent,
                         clientsCurrentCount,
-                        variation,
-                        mediaTri
+                        variation
                     });
                 });
             });
@@ -13593,11 +13490,8 @@ const supervisorGroups = new Map();
                     variationContent = `<span>-</span>`;
                 }
 
-                // Calculate Média Tri for the category Group
-                const catMediaTri = ((catGroup.metrics.clientsPreviousCount || 0) + (catGroup.metrics.clientsPrevious2Count || 0) + (catGroup.metrics.clientsPrevious3Count || 0)) / 3;
-
                 // Spacer Row (between categories) - Hidden on Mobile to create list effect
-                const spacerRow = index > 0 ? `<tr class="hidden md:table-row h-2 bg-transparent border-none pointer-events-none"><td colspan="7"></td></tr>` : '';
+                const spacerRow = index > 0 ? `<tr class="hidden md:table-row h-2 bg-transparent border-none pointer-events-none"><td colspan="6"></td></tr>` : '';
 
                 // Refined styling: Border bottom for mobile (list view), Rounded/Border for Desktop (card view via md: classes if desired, or simplified globally)
                 // User requested "not cards", so we flatten it.
@@ -13609,8 +13503,8 @@ const supervisorGroups = new Map();
                 const catRow = `
                     ${spacerRow}
                     <tr class="glass-panel-heavy hover:bg-slate-700 cursor-pointer transition-colors border-b border-slate-700 group" data-toggle="${catId}">
-                        <!-- Mobile View (Colspan 7) -->
-                        <td class="md:hidden px-3 py-3" colspan="7">
+                        <!-- Mobile View (Colspan 6) -->
+                        <td class="md:hidden px-3 py-3" colspan="6">
                             <div class="flex justify-between items-center w-full">
                                 <div class="flex items-center gap-2">
                                     <svg class="w-4 h-4 transform transition-transform text-slate-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
@@ -13629,9 +13523,6 @@ const supervisorGroups = new Map();
                         </td>
                         <td class="px-2 py-3 text-xs text-slate-400 text-left italic hidden md:table-cell">${catGroup.items.length} Produtos</td>
                         <td class="px-2 py-3 text-sm text-center font-mono font-bold text-blue-400 hidden md:table-cell">${catGroup.stock.toLocaleString('pt-BR')}</td>
-                        <td class="px-2 py-3 text-xs text-center hidden md:table-cell">
-                            <div class="tooltip font-mono text-slate-300">${catMediaTri.toFixed(1)}</div>
-                        </td>
                         <td class="px-2 py-3 text-xs text-center hidden md:table-cell">
                             <div class="tooltip">${catGroup.metrics.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.clientsPreviousCount} PDVs</span></div>
                         </td>
@@ -13669,7 +13560,7 @@ const supervisorGroups = new Map();
                     return `
                     <tr class="hidden bg-slate-900/50 hover:bg-glass ${borderClass} border-l border-r border-slate-700" data-parent="${catId}">
                         <!-- Mobile View Cell (Clickable) -->
-                        <td class="md:hidden p-2 cursor-pointer hover:bg-white/5" colspan="7" onclick="openInnovationsProductModal('${item.productCode}')">
+                        <td class="md:hidden p-2 cursor-pointer hover:bg-white/5" colspan="6" onclick="openInnovationsProductModal('${item.productCode}')">
                             <div class="flex items-center text-xs whitespace-nowrap overflow-hidden w-full">
                                 <span class="font-mono text-slate-500 mr-1.5 flex-shrink-0">${item.productCode}</span>
                                 <span class="text-slate-300 mr-1">-</span>
@@ -13687,9 +13578,6 @@ const supervisorGroups = new Map();
                              </div>
                         </td>
                         <td class="hidden md:table-cell px-2 py-2 text-xs md:text-sm text-center font-mono text-slate-400">${item.stock.toLocaleString('pt-BR')}</td>
-                        <td class="hidden md:table-cell px-2 py-2 text-[10px] md:text-xs text-center text-slate-500">
-                            <div class="font-mono">${item.mediaTri.toFixed(1)}</div>
-                        </td>
                         <td class="hidden md:table-cell px-2 py-2 text-[10px] md:text-xs text-center text-slate-500">
                             <div class="tooltip">${item.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${item.clientsPreviousCount} PDVs</span></div>
                         </td>
@@ -13726,17 +13614,14 @@ const supervisorGroups = new Map();
             const labelT = monthNames[currentMonthIdx];
             const labelT1 = monthNames[(currentMonthIdx - 1 + 12) % 12];
             const labelT2 = monthNames[(currentMonthIdx - 2 + 12) % 12];
-            const labelT3 = monthNames[(currentMonthIdx - 3 + 12) % 12];
 
-            // Chart Update (Bar Chart Replacement - 4 Columns)
+            // Chart Update (Bar Chart Replacement - 3 Columns)
             const chartDataCurrent = chartLabels.map(cat => categoryAnalysis[cat].coverageCurrent);
             const chartDataPrevious = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious);
             const chartDataPrevious2 = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious2);
-            const chartDataPrevious3 = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious3);
 
             if (chartLabels.length > 0) {
                 createChart('innovations-month-chart', 'bar', chartLabels, [
-                    { label: labelT3, data: chartDataPrevious3, backgroundColor: '#a855f7' }, // Purple
                     { label: labelT2, data: chartDataPrevious2, backgroundColor: '#3b82f6' }, // Blue
                     { label: labelT1, data: chartDataPrevious, backgroundColor: '#eab308' }, // Dark Mustard
                     { label: labelT, data: chartDataCurrent, backgroundColor: '#06b6d4' }   // Cyan
@@ -13956,7 +13841,7 @@ const supervisorGroups = new Map();
                  doc.text("Gráfico não disponível para os filtros selecionados.", 14, 50);
             }
 
-            const head = [['Categoria', 'Produto', 'Estoque', 'Média Tri.', 'Cob. Mês Ant.', 'Cob. Mês Atual', 'Variação']];
+            const head = [['Categoria', 'Produto', 'Estoque', 'Cob. Mês Ant.', 'Cob. Mês Atual', 'Variação']];
             const body = [];
 
             innovationsMonthTableDataForExport.forEach(item => {
@@ -13973,7 +13858,6 @@ const supervisorGroups = new Map();
                     item.categoryName,
                     `${item.productCode} - ${item.productName}`,
                     item.stock.toLocaleString('pt-BR'),
-                    item.mediaTri.toFixed(1),
                     `${item.coveragePrevious.toFixed(2)}% (${item.clientsPreviousCount} PDVs)`,
                     `${item.coverageCurrent.toFixed(2)}% (${item.clientsCurrentCount} PDVs)`,
                     variationContent
