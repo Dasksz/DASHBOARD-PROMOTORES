@@ -988,11 +988,6 @@
                     document.getElementById('status-container').classList.remove('hidden');
                     document.getElementById('status-text').textContent = "Processando arquivos...";
 
-                    // Construct Fallback Data from current memory
-                    const fallbackData = {
-                        configCityBranches: window.configCityBranches || []
-                    };
-
                     // Construct Reference Data (CNPJ Map) from current memory
                     // This allows optional file upload (e.g. just Nota Perfeita) without re-uploading Clients file
                     const referenceData = { cnpjMap: {} };
@@ -1034,8 +1029,7 @@
                         titulosFile,
                         notaInvolvesFile1: notaInvolves1File,
                         notaInvolvesFile2: notaInvolves2File,
-                        referenceData: referenceData, // Pass the map
-                        fallbackData: fallbackData
+                        referenceData: referenceData // Pass the map
                     });
 
                     worker.onmessage = (e) => {
@@ -1043,8 +1037,6 @@
                         if (type === 'progress') {
                             document.getElementById('status-text').textContent = status;
                             document.getElementById('progress-bar').style.width = percentage + '%';
-                        } else if (type === 'warning') {
-                            window.showToast('warning', message, 8000); // 8 seconds to allow reading
                         } else if (type === 'result') {
                             if (data.nota_perfeita_count !== undefined && data.nota_perfeita_count > 0) {
                                 window.showToast('success', `${data.nota_perfeita_count} clientes identificados no arquivo 'Loja Perfeita'.`);

@@ -372,7 +372,6 @@
                 checkTable('dim_supervisores', 'hash_dim_supervisores', 'dim_supervisores');
                 checkTable('dim_fornecedores', 'hash_dim_fornecedores', 'dim_fornecedores');
                 checkTable('dim_produtos', 'hash_dim_produtos', 'dim_produtos');
-                checkTable('config_city_branches', 'hash_config_city_branches', 'config_city_branches');
 
                 // If nothing to fetch, use cache completely
                 if (tablesToFetch.size === 0) {
@@ -386,7 +385,7 @@
             } else if (!cachedData) {
                 // Full Fetch required
                 console.log("Cache vazio. Baixando tudo...");
-                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos', 'config_city_branches'].forEach(t => tablesToFetch.add(t));
+                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos'].forEach(t => tablesToFetch.add(t));
             }
 
             if (useCache) {
@@ -755,7 +754,6 @@
                 dim_supervisores = cachedData.dim_supervisores;
                 dim_fornecedores = cachedData.dim_fornecedores;
                 dim_produtos = cachedData.dim_produtos;
-                window.configCityBranches = cachedData.config_city_branches;
 
                 // Background updates for coordinates/promoters can happen here if needed,
                 // but usually conditional logic handles it if metadata hashes change.
@@ -832,7 +830,7 @@
                     });
                 };
 
-                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, titulosFetched, notaPerfeitaFetched, relacaoRotaInvolvesFetched, dimVendedoresFetched, dimSupervisoresFetched, dimFornecedoresFetched, dimProdutosFetched, configCityBranchesFetched] = await Promise.all([
+                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, titulosFetched, notaPerfeitaFetched, relacaoRotaInvolvesFetched, dimVendedoresFetched, dimSupervisoresFetched, dimFornecedoresFetched, dimProdutosFetched] = await Promise.all([
                     getOrFetch('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter, 'detailed', 'Sincronizando vendas...'),
                     getOrFetch('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter, 'history', 'Carregando histórico...'),
                     getOrFetch('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter, 'clients', 'Baixando base de clientes...'),
@@ -851,8 +849,7 @@
                     getOrFetch('dim_vendedores', null, null, 'object', 'codigo', null, 'dim_vendedores', 'Baixando vendedores...'),
                     getOrFetch('dim_supervisores', null, null, 'object', 'codigo', null, 'dim_supervisores', 'Baixando supervisores...'),
                     getOrFetch('dim_fornecedores', null, null, 'object', 'codigo', null, 'dim_fornecedores', 'Baixando fornecedores...'),
-                    getOrFetch('dim_produtos', null, null, 'object', 'codigo', null, 'dim_produtos', 'Baixando produtos...'),
-                    getOrFetch('config_city_branches', null, null, 'object', 'id', null, 'config_city_branches', 'Carregando configurações de filiais...')
+                    getOrFetch('dim_produtos', null, null, 'object', 'codigo', null, 'dim_produtos', 'Baixando produtos...')
                 ]);
 
                 detailed = detailedUpper;
@@ -875,13 +872,10 @@
                 dim_fornecedores = dimFornecedoresFetched;
                 dim_produtos = dimProdutosFetched;
 
-                // Set globally for Worker initialization
-                window.configCityBranches = configCityBranchesFetched;
-
                 // Update Cache with Merged Data
                 if (!isPromoter) {
                     const dataToCache = {
-                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches: configCityBranchesFetched
+                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos
                     };
                     saveToCache('dashboardData', dataToCache).then(() => console.log('Dados atualizados salvos no cache.'));
                 }
