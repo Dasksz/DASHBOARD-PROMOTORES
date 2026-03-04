@@ -1,0 +1,28 @@
+--- js/worker.js
++++ js/worker.js
+@@ -1089,6 +1089,11 @@
+
+                     const rca1 = String(getVal(client, ['RCA 1', 'RCA', 'Rca 1', 'Vendedor 1', 'VENDEDOR']) || '').trim();
+                     const rcas = new Set();
+                     if (rca1) rcas.add(rca1);
++
++                    const nomeRca = String(getVal(client, ['Nome RCA', 'NOME RCA', 'NOME_RCA', 'Vendedor Nome']) || '').trim();
++                    if (rca1 && nomeRca && nomeRca !== 'N/A' && nomeRca !== '') {
++                        clientSellersMap.set(rca1, nomeRca);
++                    }
+
+                     const ucRaw = getVal(client, ['Data da Última Compra', 'Ultima Compra', 'DTULTCOMPRA', 'Data Ultima Compra']);
+@@ -1443,9 +1448,13 @@
+
+                 // 1. DIM_VENDEDORES
+                 const dimVendedoresMap = new Map();
++                clientSellersMap.forEach((nome, codUsur) => {
++                    dimVendedoresMap.set(codUsur, { codigo: codUsur, nome: nome });
++                });
++
+                 newRcaSupervisorMap.forEach((info, codUsur) => {
+-                    if (codUsur && info.NOME) {
++                    if (codUsur && info.NOME && !dimVendedoresMap.has(codUsur)) {
+                         dimVendedoresMap.set(codUsur, { codigo: codUsur, nome: info.NOME });
+                     }
+                 });
