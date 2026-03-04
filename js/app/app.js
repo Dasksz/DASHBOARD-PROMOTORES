@@ -13220,13 +13220,7 @@ const supervisorGroups = new Map();
             const { clients: filteredClients } = getInnovationsMonthFilteredData();
 
 
-            const activeClients = filteredClients.filter(c => {
-                const codcli = c['Código'];
-                const rca1 = String(c.rca1 || '').trim();
-                if (rca1 === '306' || rca1 === '300') return false;
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(codcli));
-            });
+            const activeClients = filteredClients;
             const activeClientsCount = activeClients.length;
             const activeClientCodes = new Set(activeClients.map(c => c['Código']));
 
