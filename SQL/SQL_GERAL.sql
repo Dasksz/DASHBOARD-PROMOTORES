@@ -990,9 +990,9 @@ DROP POLICY IF EXISTS "Authenticated Read Access" ON public.config_city_branches
 CREATE POLICY "Authenticated Read Access" ON public.config_city_branches FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Admin All Operations" ON public.config_city_branches FOR ALL USING (
     EXISTS (
-        SELECT 1 FROM public.app_users
-        WHERE app_users.id = auth.uid()
-        AND app_users.role = 'adm'
+        SELECT 1 FROM public.profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.role = 'adm'
     )
 );
 
