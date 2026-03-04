@@ -754,6 +754,7 @@
                 dim_supervisores = cachedData.dim_supervisores;
                 dim_fornecedores = cachedData.dim_fornecedores;
                 dim_produtos = cachedData.dim_produtos;
+                window.configCityBranches = cachedData.config_city_branches;
 
                 // Background updates for coordinates/promoters can happen here if needed,
                 // but usually conditional logic handles it if metadata hashes change.
@@ -849,7 +850,8 @@
                     getOrFetch('dim_vendedores', null, null, 'object', 'codigo', null, 'dim_vendedores', 'Baixando vendedores...'),
                     getOrFetch('dim_supervisores', null, null, 'object', 'codigo', null, 'dim_supervisores', 'Baixando supervisores...'),
                     getOrFetch('dim_fornecedores', null, null, 'object', 'codigo', null, 'dim_fornecedores', 'Baixando fornecedores...'),
-                    getOrFetch('dim_produtos', null, null, 'object', 'codigo', null, 'dim_produtos', 'Baixando produtos...')
+                    getOrFetch('dim_produtos', null, null, 'object', 'codigo', null, 'dim_produtos', 'Baixando produtos...'),
+                    getOrFetch('config_city_branches', null, null, 'object', 'id', null, 'config_city_branches', 'Carregando configurações de filiais...')
                 ]);
 
                 detailed = detailedUpper;
@@ -871,11 +873,15 @@
                 dim_supervisores = dimSupervisoresFetched;
                 dim_fornecedores = dimFornecedoresFetched;
                 dim_produtos = dimProdutosFetched;
+                const configCityBranches = results[19]; // Index of config_city_branches in the Promise.all array
+
+                // Set globally for Worker initialization
+                window.configCityBranches = configCityBranches;
 
                 // Update Cache with Merged Data
                 if (!isPromoter) {
                     const dataToCache = {
-                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos
+                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches: configCityBranches
                     };
                     saveToCache('dashboardData', dataToCache).then(() => console.log('Dados atualizados salvos no cache.'));
                 }
