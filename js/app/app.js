@@ -20851,7 +20851,7 @@ const supervisorGroups = new Map();
                              
                              // CRITICAL FIX: Update underlying embeddedData.clients.length if needed
                              // renderWalletTable iterates embeddedData.clients directly
-                             if (embeddedData.clients && typeof embeddedData.clients.length === 'number') {
+                             if (embeddedData.clients && typeof embeddedData.clients.length === 'number' && !Array.isArray(embeddedData.clients)) {
                                  embeddedData.clients.length++;
                              }
                          } else {
