@@ -996,6 +996,15 @@ CREATE POLICY "Admin All Operations" ON public.config_city_branches FOR ALL USIN
     )
 );
 
+-- Define update trigger function if missing
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Trigger para updated_at
 DROP TRIGGER IF EXISTS set_config_city_branches_updated_at ON public.config_city_branches;
 CREATE TRIGGER set_config_city_branches_updated_at
