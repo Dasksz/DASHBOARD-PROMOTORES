@@ -2113,7 +2113,7 @@
                 // Logic: Americanas OR (Not Balcão AND Not Inactive) OR Has Sales
                 const isAmericanas = (client.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 const rca1Val = String(client.rca1 || '').trim();
-                const isActive = (isAmericanas || rca1Val !== '53' || clientsWithSalesThisMonth.has(codCli));
+                const isActive = true;
 
                 optimizedData.searchIndices.clients[i] = {
                     i: i, // Store index for O(1) retrieval
@@ -2448,7 +2448,6 @@
         // cityNameFilter removed
         // Cache variables for Active Clients Optimization
         let cachedActiveClientsBase = null;
-        let cachedActiveClientsRca53 = null;
         let lastAllClientsData = null;
 
         function getActiveClientsData() {
@@ -2461,7 +2460,6 @@
 
                 if (!cachedActiveClientsBase) {
                     cachedActiveClientsBase = [];
-                    cachedActiveClientsRca53 = [];
 
                     const isColumnar = allClientsData instanceof ColumnarDataset;
                     const len = allClientsData.length;
@@ -2498,40 +2496,13 @@
                             isAmericanas = true;
                         }
 
-                        const hasSales = clientsWithSalesThisMonth.has(codcli);
-
                         // Base Condition: Always Visible
-                        // Note: (window.userRole !== 'adm' || rca1 !== '53')
-                        // If user != adm, this is true.
-                        // If user == adm, this is (rca1 !== '53').
-                        // Combined with Americanas and Sales logic:
-                        const isBase = isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || hasSales;
+                        const isBase = true; // All active non-inativos are visible now
 
                         if (isBase) {
                             cachedActiveClientsBase.push(item);
-                        } else {
-                            // If not base, it MUST be an inactive RCA 53 client seen by Admin.
-                            // Logic verification:
-                            // !isBase => !isAmericanas AND (user==adm && rca1=='53') AND !hasSales.
-                            // This is exactly the "Conditional RCA 53" group.
-                            cachedActiveClientsRca53.push(item);
                         }
                     }
-                }
-
-                // Check Filter State for RCA 53
-                // This logic mirrors the original dynamic check, but applied to the pre-computed group
-                let allowRca53 = (typeof selectedVendedores !== 'undefined' && selectedVendedores.has('53'));
-                if (!allowRca53 && typeof selectedSupervisors !== 'undefined' && selectedSupervisors.size > 0 && typeof sellerDetailsMap !== 'undefined') {
-                        const d53 = sellerDetailsMap.get('53');
-                        if (d53 && selectedSupervisors.has(d53.supervisor)) {
-                            allowRca53 = true;
-                        }
-                }
-
-                if (allowRca53 && cachedActiveClientsRca53.length > 0) {
-                    // Return combined list (concat creates a new array)
-                    return cachedActiveClientsBase.concat(cachedActiveClientsRca53);
                 }
 
                 // Return a copy to prevent external mutation of the cache
@@ -3002,8 +2973,6 @@
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 if (isAmericanas) return true;
-                // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS (Empty RCA1)
-                if (window.userRole === 'adm' && rca1 === '53') return false;
                 if (rca1 === '') return false; // Exclude INATIVOS
                 return true;
             });
@@ -3359,12 +3328,6 @@
                 if (checkCity) {
                     if (!c.cidade || c.cidade.toLowerCase() !== city) return false;
                 }
-
-                // 4. Active Logic
-                const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                // Keep if Americanas OR Not 53 OR Has Sales
-                if (window.userRole === 'adm' && !isAmericanas && rca1 === '53' && !clientsWithSalesThisMonth.has(c['Código'])) return false;
 
                 return true;
             });
@@ -3962,7 +3925,7 @@
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
+                return true;
             });
 
             if (activeClients.length === 0) return;
@@ -4533,7 +4496,7 @@
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
+                return true;
             });
 
             // Iterate Active Clients
@@ -6097,7 +6060,7 @@
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
+                return true;
             });
 
             let count = 0;
@@ -6159,7 +6122,6 @@
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                 if (isAmericanas) return true;
-                if (window.userRole === 'adm' && rca1 === '53') return false;
                 if (rca1 === '') return false;
                 return true;
             });
@@ -6396,8 +6358,8 @@
                 // Exclude Americanas (Specific Rule for Mix Base)
                 if (rca1 === '1001' || isAmericanas) continue;
 
-                // Exclude Balcão (53) and Inativos
-                if (window.userRole === 'adm' && (rca1 === '53' || rca1 === '')) continue;
+                // Exclude Inativos
+                if (window.userRole === 'adm' && rca1 === '') continue;
 
                 // 2. Active Seller Check
                 let belongsToActiveSeller = true;
@@ -6503,8 +6465,6 @@
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                     if (isAmericanas) return true;
-                // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS
-                    if (window.userRole === 'adm' && rca1 === '53') return false;
                 if (rca1 === '') return false; // Exclude INATIVOS
                     return true;
                 });
@@ -7080,12 +7040,7 @@
 
             const clients = optimizedData.clientsByRca.get(sellerCode) || [];
             // Filter active clients same as main view
-            const activeClients = clients.filter(c => {
-                const cod = String(c['Código'] || c['codigo_cliente']);
-                const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
-            });
+            const activeClients = clients;
 
             let count = 0;
             // Identify which products belong to this category
@@ -10009,7 +9964,7 @@ const supervisorGroups = new Map();
                          allowRca53 = true;
                      }
                 }
-                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || allowRca53 || clientsWithSalesThisMonth.has(c['Código']));
+                return true;
             });
 
             if (mainRedeGroupFilter === 'com_rede') {
@@ -11043,13 +10998,6 @@ const supervisorGroups = new Map();
                         else if (s.OBSERVACAOFOR === 'MULTIMARCAS') entry.multimarcas += val;
                     }
                 }
-            });
-
-            // Filter clients universe
-            clientsForAnalysis = clientsForAnalysis.filter(c => {
-                const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(c['Código']));
             });
 
             // Show Loading
@@ -13264,16 +13212,24 @@ const supervisorGroups = new Map();
                 const filterHistory = (start, end) => {
                     return allHistoryData.filter(item => {
                         const val = item.DTPED;
+                        if (!val) return false;
+                        
                         let ts = 0;
                         if (typeof val === 'number') {
                             if (val < 100000) {
+                                 // Excel serial date to Unix timestamp (days since Dec 30, 1899)
                                  ts = Math.round((val - 25569) * 86400 * 1000);
+                                 // Shift to UTC timezone to match start/end boundary generation
+                                 ts += new Date(ts).getTimezoneOffset() * 60000;
                             } else {
                                  ts = val;
                             }
                         } else {
                             const d = parseDate(val);
-                            if(d) ts = d.getTime();
+                            if(d) {
+                                // Assume parsed date is local, get UTC timestamp for comparison
+                                ts = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+                            }
                         }
                         return ts >= start && ts < end;
                     });
@@ -13312,8 +13268,8 @@ const supervisorGroups = new Map();
             const processMap = (salesMap, periodType, isBonus) => {
                 // periodType: 'current', 'previous', 'previous2'
                 salesMap.forEach((productsMap, codCli) => {
-                    // Only count if client is in the filtered active list
-                    if (!activeClientCodes.has(codCli)) return;
+                    // Only count if client is in the filtered active list for the current month
+                    if (periodType === 'current' && !activeClientCodes.has(codCli)) return;
 
                     productsMap.forEach((rcas, prodCode) => {
                         const category = globalProductToCategoryMap ? globalProductToCategoryMap.get(prodCode) : null;
@@ -13427,8 +13383,8 @@ const supervisorGroups = new Map();
             const positivadosCurrentCount = positivadosCurrentSet.size;
 
             const positivadosPreviousSet = new Set();
-            mapsPrevious.mainMap.forEach((_, codCli) => { if (activeClientCodes.has(codCli)) positivadosPreviousSet.add(codCli); });
-            mapsPrevious.bonusMap.forEach((_, codCli) => { if (activeClientCodes.has(codCli)) positivadosPreviousSet.add(codCli); });
+            mapsPrevious.mainMap.forEach((_, codCli) => { positivadosPreviousSet.add(codCli); });
+            mapsPrevious.bonusMap.forEach((_, codCli) => { positivadosPreviousSet.add(codCli); });
             const positivadosPreviousCount = positivadosPreviousSet.size;
 
             const selectionCoveredCountCurrent = clientsWhoGotAnyVisibleProductCurrent.size;
@@ -17696,7 +17652,7 @@ const supervisorGroups = new Map();
                 const cod = String(c["Código"] || c["codigo_cliente"]);
                 const rca1 = String(c.rca1 || "").trim();
                 const isAmericanas = (c.razaoSocial || "").toUpperCase().includes("AMERICANAS");
-                return (isAmericanas || rca1 !== "53" || clientsWithSalesThisMonth.has(cod));
+                return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
             });
 
             activeClients.forEach(client => {
