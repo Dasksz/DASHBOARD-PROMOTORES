@@ -1211,12 +1211,6 @@
 
                 self.postMessage({ type: 'progress', status: 'Aplicando regra de filial...', percentage: 75 });
 
-                const allProcessedSales = [...processedSalesData, ...processedHistoryData].sort((a, b) => {
-                    const dateA = parseDate(a.DTPED) || new Date(0);
-                    const dateB = parseDate(b.DTPED) || new Date(0);
-                    return dateA - dateB;
-                });
-
                 self.postMessage({ type: 'progress', status: 'Aplicando regras de Filial por Cidade...', percentage: 78 });
 
                 // 1. Prepare configuration map
@@ -1257,7 +1251,7 @@
                     });
                 }
 
-                const applyBranchOverride = (salesArray) => {
+                const applyBranchOverrideAndSort = (salesArray) => {
                     for(let i=0; i<salesArray.length; i++) {
                         const sale = salesArray[i];
                         const codCli = sale.CODCLI;
@@ -1266,11 +1260,17 @@
                             sale.FILIAL = overrideBranch;
                         }
                     }
-                    return salesArray;
+                    
+                    // The old logic sorted all processed sales here. Let's do it for each array.
+                    return salesArray.sort((a, b) => {
+                        const dateA = parseDate(a.DTPED) || new Date(0);
+                        const dateB = parseDate(b.DTPED) || new Date(0);
+                        return dateA - dateB;
+                    });
                 };
 
-                let finalSalesData = applyBranchOverride(processedSalesData);
-                let finalHistoryData = applyBranchOverride(processedHistoryData);
+                let finalSalesData = applyBranchOverrideAndSort(processedSalesData);
+                let finalHistoryData = applyBranchOverrideAndSort(processedHistoryData);
 
                 self.postMessage({ type: 'progress', status: 'Atualizando datas de compra...', percentage: 80 });
                 const latestSaleDateByClient = new Map();

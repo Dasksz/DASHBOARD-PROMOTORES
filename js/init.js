@@ -372,6 +372,7 @@
                 checkTable('dim_supervisores', 'hash_dim_supervisores', 'dim_supervisores');
                 checkTable('dim_fornecedores', 'hash_dim_fornecedores', 'dim_fornecedores');
                 checkTable('dim_produtos', 'hash_dim_produtos', 'dim_produtos');
+                checkTable('config_city_branches', 'hash_config_city_branches', 'config_city_branches');
 
                 // If nothing to fetch, use cache completely
                 if (tablesToFetch.size === 0) {
@@ -385,7 +386,7 @@
             } else if (!cachedData) {
                 // Full Fetch required
                 console.log("Cache vazio. Baixando tudo...");
-                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos'].forEach(t => tablesToFetch.add(t));
+                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos', 'config_city_branches'].forEach(t => tablesToFetch.add(t));
             }
 
             if (useCache) {
