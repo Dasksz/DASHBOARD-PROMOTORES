@@ -306,7 +306,7 @@
                          resolve([]);
                          return;
                     }
-                    
+
                     reject(new Error(`Arquivo obrigatório para '${fileType}' não foi fornecido.`));
                     return;
                 }
@@ -721,7 +721,7 @@
                     const y = dateObj.getUTCFullYear();
                     return `${monthsPT[m]} de ${y}`;
                 }
-                
+
                 // Return original if not a valid date
                 return String(val).trim();
             };
@@ -737,11 +737,11 @@
                 // Check exact match (trimmed/upper)
                 let match = keys.find(k => k.trim().toUpperCase() === keyUpper);
                 if (match) return row[match];
-                
+
                 // Check partial containment (e.g. " CNPJ ", "CNPJ/CPF")
                 match = keys.find(k => k.toUpperCase().includes(keyUpper));
                 if (match) return row[match];
-                
+
                 return undefined;
             };
 
@@ -759,7 +759,7 @@
                 }
 
                 const cnpjClean = cnpjStr.replace(/[^0-9]/g, '');
-                
+
                 // Lookup Client Code & Determine Final CNPJ (with padding if needed)
                 let codCli = clientCnpjMap.get(cnpjClean);
                 let finalCnpj = cnpjClean; // Default to cleaned raw
@@ -772,7 +772,7 @@
                         finalCnpj = padded14;
                     }
                 }
-                
+
                 if (!codCli && cnpjClean.length <= 11) {
                     const padded11 = cnpjClean.padStart(11, '0');
                     const match11 = clientCnpjMap.get(padded11);
@@ -783,15 +783,15 @@
                 }
 
                 if (!codCli) return; // Skip if client not found
-                
+
                 uniqueClientsFound.add(codCli);
 
                 const pesquisador = String(getVal(row, 'Pesquisador') || '').trim().toUpperCase();
                 const key = `${codCli}_${pesquisador}`;
-                
+
                 const notaRaw = getVal(row, 'Nota Média') || getVal(row, 'Nota Media'); // Fuzzy
                 const nota = typeof notaRaw === 'number' ? notaRaw : parseFloat(String(notaRaw || '0').replace(',', '.'));
-                
+
                 if (isNaN(nota)) return;
 
                 const current = grouped.get(key);
@@ -1011,7 +1011,7 @@
                     Object.values(fallbackData.products).forEach(p => {
                         productDetailsMap.set(p.code, p);
                     });
-                    
+
                     if (fallbackData.activeProducts) {
                         fallbackData.activeProducts.forEach(p => {
                             if (p && typeof p === 'object' && p.code) {
@@ -1027,22 +1027,22 @@
                 } else {
                     // Original Logic with Enhanced Alias Support for Master Pack
                     const masterQtyKeys = ['Qtde embalagem master(Compra)', 'Qtde. Emb. Master', 'Qtde Master', 'Qtd Master', 'Emb. Master', 'QTDE_MASTER', 'QTD_MASTER'];
-                    
+
                     productsDataRaw.forEach(prod => {
                         // Apply normalizeKey to be consistent with client/sales logic if IDs are numeric but padded
                         const rawCode = String(prod['Código'] || '').trim();
                         if (!rawCode) return;
-                        
+
                         const productCode = normalizeKey(rawCode) || rawCode;
                         if (!soldProductCodes.has(productCode)) return;
                         activeProductCodesFromCadastro.add(productCode);
-                        
+
                         const valMaster = getVal(prod, masterQtyKeys);
                         let qtdeMaster = parseInt(valMaster, 10);
                         if (isNaN(qtdeMaster) || qtdeMaster <= 0) qtdeMaster = 1;
-                        
+
                         productMasterMap.set(productCode, qtdeMaster);
-                        
+
                         if (!productDetailsMap.has(productCode)) {
                                 const dtCad = parseDate(prod['Dt.Cadastro']);
                                 productDetailsMap.set(productCode, {
@@ -1073,11 +1073,11 @@
                 self.postMessage({ type: 'progress', status: 'Processando clientes...', percentage: 50 });
                 const clientMap = new Map();
                 // CNPJ Lookup Map for Nota Perfeita
-                const clientCnpjMap = new Map(); 
+                const clientCnpjMap = new Map();
                 const clientSellersMap = new Map();
 
                 // Pre-populate if referenceData (existing clients) is provided AND current clients file is missing or we want to merge?
-                
+
                 let sourceClients = clientsDataRaw;
                 if (sourceClients.length === 0 && referenceData && referenceData.cnpjMap) {
                     Object.entries(referenceData.cnpjMap).forEach(([k,v]) => clientCnpjMap.set(k, v));
@@ -1092,11 +1092,6 @@
                     const rcas = new Set();
                     if (rca1) rcas.add(rca1);
 
-                    const nomeRca = String(getVal(client, ['Nome RCA', 'NOME RCA', 'NOME_RCA', 'Vendedor Nome']) || '').trim();
-                    if (rca1 && nomeRca && nomeRca !== 'N/A' && nomeRca !== '') {
-                        clientSellersMap.set(rca1, nomeRca);
-                    }
-
                     const ucRaw = getVal(client, ['Data da Última Compra', 'Ultima Compra', 'DTULTCOMPRA', 'Data Ultima Compra']);
                     const dcRaw = getVal(client, ['Data e Hora de Cadastro', 'Data Cadastro', 'DTCADASTRO', 'Data de Cadastro']);
 
@@ -1110,7 +1105,7 @@
 
                     // Fallback logic for Name
                     const nomeCliente = (fantasia !== 'N/A') ? fantasia : razao;
-                    
+
                     const cnpjRaw = String(getVal(client, ['CNPJ/CPF', 'CNPJ', 'CPF', 'Cgc/Cpf']) || 'N/A');
                     const cnpjClean = cnpjRaw.replace(/[^0-9]/g, '');
                     if (cnpjClean) clientCnpjMap.set(cnpjClean, codCli);
@@ -1155,7 +1150,7 @@
 
                 // Pass collector and maxDate to processSalesData
                 const processedSalesData = processSalesData(salesDataRaw, clientMap, productMasterMap, newRcaSupervisorMap, stockLinesCollector, maxSalesDate).filter(item => item !== null);
-                
+
                 // Process History (using effective raw data)
                 const processedHistoryData = processSalesData(effectiveHistoryDataRaw, clientMap, productMasterMap, newRcaSupervisorMap, null, null).filter(item => item !== null);
 
@@ -1450,12 +1445,8 @@
 
                 // 1. DIM_VENDEDORES
                 const dimVendedoresMap = new Map();
-                clientSellersMap.forEach((nome, codUsur) => {
-                    dimVendedoresMap.set(codUsur, { codigo: codUsur, nome: nome });
-                });
-
                 newRcaSupervisorMap.forEach((info, codUsur) => {
-                    if (codUsur && info.NOME && !dimVendedoresMap.has(codUsur)) {
+                    if (codUsur && info.NOME) {
                         dimVendedoresMap.set(codUsur, { codigo: codUsur, nome: info.NOME });
                     }
                 });
