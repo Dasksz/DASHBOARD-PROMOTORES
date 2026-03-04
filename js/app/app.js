@@ -850,10 +850,11 @@
                         const cityMapContainer = document.getElementById('city-map-container');
                         if (heatLayer && cityMapContainer && !cityMapContainer.classList.contains('hidden')) {
                             // Fix: Check if layer is active on map to avoid "Cannot read properties of null (reading '_animating')"
-                            if (heatLayer._map) {
+                            if (leafletMap && leafletMap.hasLayer(heatLayer)) {
                                 heatLayer.addLatLng([result.lat, result.lng, 1]);
                             } else {
                                 // If layer is hidden (e.g. high zoom), just update data source without redraw
+                                if (!heatLayer._latlngs) heatLayer._latlngs = [];
                                 heatLayer._latlngs.push([result.lat, result.lng, 1]);
                             }
                         }
@@ -22984,9 +22985,10 @@ const supervisorGroups = new Map();
 
                 // Update Visuals if needed (e.g. City Map if open)
                 if (heatLayer) {
-                    if (heatLayer._map) {
+                    if (leafletMap && leafletMap.hasLayer(heatLayer)) {
                         heatLayer.addLatLng([currentGeoLat, currentGeoLng, 1]);
                     } else {
+                        if (!heatLayer._latlngs) heatLayer._latlngs = [];
                         heatLayer._latlngs.push([currentGeoLat, currentGeoLng, 1]);
                     }
                 }
