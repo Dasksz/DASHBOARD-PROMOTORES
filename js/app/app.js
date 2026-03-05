@@ -22780,11 +22780,16 @@ const supervisorGroups = new Map();
         const m = String(now.getMonth() + 1).padStart(2, '0');
         const isoStart = `${y}-${m}-01T00:00:00`; // Local start of month
 
-        const { data, error } = await window.supabaseClient
+        let query = window.supabaseClient
             .from('visitas')
             .select('id, client_code, id_cliente, created_at, checkout_at, respostas')
-            .eq('id_promotor', user.id)
             .gte('created_at', isoStart);
+
+        if (window.userRole !== 'adm') {
+            query = query.eq('id_promotor', user.id);
+        }
+
+        const { data, error } = await query;
 
         if (data) {
             myMonthVisits.clear();
