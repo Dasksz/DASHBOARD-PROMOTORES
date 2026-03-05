@@ -2227,10 +2227,17 @@
         let matchedClient = null;
 
         // Helper to search
+        const searchTerms = term.split(' ').filter(t => t.length > 0 && t !== '-');
         const check = (c) => {
-            return (c.nomeCliente || '').toLowerCase().includes(term) ||
-                   (c.fantasia || '').toLowerCase().includes(term) ||
-                   (String(c['Código'] || c['codigo_cliente'])).includes(term);
+            const nome = (c.nomeCliente || '').toLowerCase();
+            const fantasia = (c.fantasia || '').toLowerCase();
+            const codigo = String(c['Código'] || c['codigo_cliente']).toLowerCase();
+
+            return searchTerms.every(t =>
+                nome.includes(t) ||
+                fantasia.includes(t) ||
+                codigo.includes(t)
+            );
         };
 
         if (allClientsData instanceof ColumnarDataset) {
@@ -2506,9 +2513,17 @@
 
                 // 3. Search Term Filter (If active)
                 if (searchTerm) {
-                    const match = (c.nomeCliente || '').toLowerCase().includes(searchTerm) ||
-                                  (c.fantasia || '').toLowerCase().includes(searchTerm) ||
-                                  (String(c['Código'] || c['codigo_cliente'])).includes(searchTerm);
+                    const searchTerms = searchTerm.split(' ').filter(t => t.length > 0 && t !== '-');
+                    const nome = (c.nomeCliente || '').toLowerCase();
+                    const fantasia = (c.fantasia || '').toLowerCase();
+                    const codigo = String(c['Código'] || c['codigo_cliente']).toLowerCase();
+
+                    const match = searchTerms.every(t =>
+                        nome.includes(t) ||
+                        fantasia.includes(t) ||
+                        codigo.includes(t)
+                    );
+
                     if (!match) continue;
                 }
 
