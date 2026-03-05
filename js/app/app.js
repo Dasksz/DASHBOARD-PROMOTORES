@@ -21003,7 +21003,7 @@ const supervisorGroups = new Map();
     function calculateNextRoteiroDate(client, fromDate = new Date()) {
         const freq = client.ITINERARY_FREQUENCY || client.itinerary_frequency;
         const refDateStr = client.ITINERARY_NEXT_DATE || client.itinerary_next_date;
-        const daysStr = client.ITINERARY_DAYS || client.itinerary_days || '';
+        const daysStr = String(client.ITINERARY_DAYS || client.itinerary_days || '').replace(/[\[\]\s]/g, '');
 
         if (!freq || !refDateStr) return null;
 
@@ -21383,8 +21383,20 @@ const supervisorGroups = new Map();
             for (let i = 0; i < len; i++) {
                 const c = isColumnar ? dataset.get(i) : dataset[i];
 
-                // 1. Basic Roteiro Check
-                if (!c.ITINERARY_FREQUENCY && !c.itinerary_frequency) continue;
+                // 1. Basic Roteiro Check (and Out of Route Check)
+                const c_cod = window.normalizeKey ? window.normalizeKey(c['Código'] || c['codigo_cliente']) : String(c['Código'] || c['codigo_cliente']).trim();
+                const c_visits = (typeof myMonthVisits !== 'undefined' && myMonthVisits) ? (myMonthVisits.get(c_cod) || []) : [];
+                const c_todaysVisit = c_visits.find(v => {
+                    const d = new Date(v.created_at);
+                    return d.getDate() === date.getDate() &&
+                           d.getMonth() === date.getMonth() &&
+                           d.getFullYear() === date.getFullYear();
+                });
+
+                const hasFreq = !!(c.ITINERARY_FREQUENCY || c.itinerary_frequency);
+
+                if (!hasFreq && !c_todaysVisit) continue; // Skip if no freq and no visit today
+
 
                 // 2. Promoter Filter (Desktop Admin/Coord)
                 if (selectedPromoter) {
@@ -21411,9 +21423,26 @@ const supervisorGroups = new Map();
         clients.forEach(c => {
             const freq = c.ITINERARY_FREQUENCY || c.itinerary_frequency;
             const refDateStr = c.ITINERARY_NEXT_DATE || c.itinerary_next_date;
-            const daysStr = c.ITINERARY_DAYS || c.itinerary_days || '';
+            const daysStr = String(c.ITINERARY_DAYS || c.itinerary_days || '').replace(/[\[\]\s]/g, '');
             
-            if (!freq || !refDateStr) return;
+            if (!freq || !refDateStr) {
+                // Not scheduled, but let's check if they have a visit
+                const cod = window.normalizeKey ? window.normalizeKey(c['Código'] || c['codigo_cliente']) : String(c['Código'] || c['codigo_cliente']).trim();
+                const clientVisits = (typeof myMonthVisits !== 'undefined' && myMonthVisits) ? (myMonthVisits.get(cod) || []) : [];
+                const todaysVisit = clientVisits.find(v => {
+                    const d = new Date(v.created_at);
+                    return d.getDate() === date.getDate() &&
+                           d.getMonth() === date.getMonth() &&
+                           d.getFullYear() === date.getFullYear();
+                });
+
+                if (todaysVisit) {
+                    c._isScheduled = false;
+                    c._todaysVisit = todaysVisit;
+                    scheduledClients.push(c);
+                }
+                return;
+            }
             
             let utcRef;
             if (refDateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -21455,7 +21484,18 @@ const supervisorGroups = new Map();
                 }
             }
             
-            if (isScheduled) {
+            const cod = window.normalizeKey ? window.normalizeKey(c['Código'] || c['codigo_cliente']) : String(c['Código'] || c['codigo_cliente']).trim();
+            const clientVisits = (typeof myMonthVisits !== 'undefined' && myMonthVisits) ? (myMonthVisits.get(cod) || []) : [];
+            const todaysVisit = clientVisits.find(v => {
+                const d = new Date(v.created_at);
+                return d.getDate() === date.getDate() &&
+                       d.getMonth() === date.getMonth() &&
+                       d.getFullYear() === date.getFullYear();
+            });
+
+            if (isScheduled || !!todaysVisit) {
+                c._isScheduled = isScheduled;
+                c._todaysVisit = todaysVisit;
                 scheduledClients.push(c);
             }
         });
@@ -21501,12 +21541,29 @@ const supervisorGroups = new Map();
                 const clientVisits = myMonthVisits.get(cod) || [];
 
                 // Find visit for THIS date (Local)
-                const todaysVisit = clientVisits.find(v => {
+                const todaysVisit = c._todaysVisit || clientVisits.find(v => {
                     const d = new Date(v.created_at);
                     return d.getDate() === date.getDate() &&
                            d.getMonth() === date.getMonth() &&
                            d.getFullYear() === date.getFullYear();
                 });
+
+                // Format check-in / check-out date string
+                let visitTimeStr = '';
+                if (todaysVisit) {
+                    const chkIn = new Date(todaysVisit.checkout_at || todaysVisit.created_at);
+                    const dd = String(chkIn.getDate()).padStart(2, '0');
+                    const mm = String(chkIn.getMonth() + 1).padStart(2, '0');
+                    const yyyy = chkIn.getFullYear();
+                    const hh = String(chkIn.getHours()).padStart(2, '0');
+                    const min = String(chkIn.getMinutes()).padStart(2, '0');
+                    const ss = String(chkIn.getSeconds()).padStart(2, '0');
+                    visitTimeStr = `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
+                }
+
+                const isForaDeRota = !c._isScheduled && !!todaysVisit;
+                const isToday = (date.getDate() === (new Date()).getDate() && date.getMonth() === (new Date()).getMonth() && date.getFullYear() === (new Date()).getFullYear());
+
 
                 const hasVisit = !!todaysVisit;
                 const hasSurvey = hasVisit && todaysVisit.respostas;
@@ -21544,7 +21601,7 @@ const supervisorGroups = new Map();
                                     </svg>
                                 ` : ''}
                             </div>
-                            <div class="text-xs text-slate-400 font-mono">${cod} • ${c.cidade || ''}</div>
+                            <div class="text-xs text-slate-400 font-mono flex flex-wrap items-center gap-1">${cod} • ${c.cidade || ''} ${visitTimeStr ? '• ' + visitTimeStr : ''} ${(isForaDeRota && isToday) ? '<span class="ml-2 px-1.5 py-0.5 bg-orange-900/50 text-orange-400 border border-orange-500/30 rounded text-[10px] font-bold">Atendido fora de rota</span>' : ''}</div>
                         </div>
                     </div>
                     <div>
