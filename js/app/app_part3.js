@@ -3555,6 +3555,13 @@
         
         const { data, error } = await query;
 
+        if (window.userRole !== 'adm') {
+            query = query.eq('id_promotor', user.id);
+        }
+
+        // Add limit to prevent silent 1000 truncation for admins loading all users
+        const { data, error } = await query.limit(50000);
+
         if (data) {
             myMonthVisits.clear();
             data.forEach(v => {
