@@ -21437,7 +21437,7 @@ const supervisorGroups = new Map();
                 const c_cod = window.normalizeKey ? window.normalizeKey(c['Código'] || c['codigo_cliente']) : String(c['Código'] || c['codigo_cliente']).trim();
                 const c_visits = (typeof myMonthVisits !== 'undefined' && myMonthVisits) ? (myMonthVisits.get(c_cod) || []) : [];
                 const c_todaysVisit = c_visits.find(v => {
-                    const d = new Date(v.created_at);
+                    const vCreatedAt = String(v.created_at || "").endsWith("Z") || String(v.created_at || "").match(/[+-]\d{2}:\d{2}$/) ? v.created_at : v.created_at + "Z"; const d = new Date(vCreatedAt);
                     return d.getDate() === date.getDate() &&
                            d.getMonth() === date.getMonth() &&
                            d.getFullYear() === date.getFullYear();
@@ -21488,7 +21488,7 @@ const supervisorGroups = new Map();
                 const cod = window.normalizeKey ? window.normalizeKey(c['Código'] || c['codigo_cliente']) : String(c['Código'] || c['codigo_cliente']).trim();
                 const clientVisits = (typeof myMonthVisits !== 'undefined' && myMonthVisits) ? (myMonthVisits.get(cod) || []) : [];
                 const todaysVisit = clientVisits.find(v => {
-                    const d = new Date(v.created_at);
+                    const vCreatedAt = String(v.created_at || "").endsWith("Z") || String(v.created_at || "").match(/[+-]\d{2}:\d{2}$/) ? v.created_at : v.created_at + "Z"; const d = new Date(vCreatedAt);
                     return d.getDate() === date.getDate() &&
                            d.getMonth() === date.getMonth() &&
                            d.getFullYear() === date.getFullYear();
@@ -21545,7 +21545,7 @@ const supervisorGroups = new Map();
             const cod = window.normalizeKey ? window.normalizeKey(c['Código'] || c['codigo_cliente']) : String(c['Código'] || c['codigo_cliente']).trim();
             const clientVisits = (typeof myMonthVisits !== 'undefined' && myMonthVisits) ? (myMonthVisits.get(cod) || []) : [];
             const todaysVisit = clientVisits.find(v => {
-                const d = new Date(v.created_at);
+                const vCreatedAt = String(v.created_at || "").endsWith("Z") || String(v.created_at || "").match(/[+-]\d{2}:\d{2}$/) ? v.created_at : v.created_at + "Z"; const d = new Date(vCreatedAt);
                 return d.getDate() === date.getDate() &&
                        d.getMonth() === date.getMonth() &&
                        d.getFullYear() === date.getFullYear();
@@ -21600,7 +21600,7 @@ const supervisorGroups = new Map();
 
                 // Find visit for THIS date (Local)
                 const todaysVisit = c._todaysVisit || clientVisits.find(v => {
-                    const d = new Date(v.created_at);
+                    const vCreatedAt = String(v.created_at || "").endsWith("Z") || String(v.created_at || "").match(/[+-]\d{2}:\d{2}$/) ? v.created_at : v.created_at + "Z"; const d = new Date(vCreatedAt);
                     return d.getDate() === date.getDate() &&
                            d.getMonth() === date.getMonth() &&
                            d.getFullYear() === date.getFullYear();
@@ -21609,7 +21609,7 @@ const supervisorGroups = new Map();
                 // Format check-in / check-out date string
                 let visitTimeStr = '';
                 if (todaysVisit) {
-                    const chkIn = new Date(todaysVisit.checkout_at || todaysVisit.created_at);
+                    const tVisitTime = todaysVisit.checkout_at || todaysVisit.created_at; const tVisitTimeStr = String(tVisitTime || "").endsWith("Z") || String(tVisitTime || "").match(/[+-]\d{2}:\d{2}$/) ? tVisitTime : tVisitTime + "Z"; const chkIn = new Date(tVisitTimeStr);
                     const dd = String(chkIn.getDate()).padStart(2, '0');
                     const mm = String(chkIn.getMonth() + 1).padStart(2, '0');
                     const yyyy = chkIn.getFullYear();
