@@ -16422,6 +16422,28 @@ const supervisorGroups = new Map();
 
             innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
 
+            setupClientTypeahead('innovations-month-codcli-filter', 'innovations-month-codcli-filter-suggestions', (code) => {
+                const input = document.getElementById('innovations-month-codcli-filter');
+                if (input) input.value = code;
+                document.getElementById('innovations-month-codcli-filter-suggestions').classList.add('hidden');
+                updateInnovationsMonthView();
+            });
+
+            const innovCodCliFilterElem = document.getElementById('innovations-month-codcli-filter');
+            if (innovCodCliFilterElem) {
+                innovCodCliFilterElem.addEventListener('input', (e) => {
+                    if (e.target.value === '') updateInnovationsMonthView();
+                });
+                innovCodCliFilterElem.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        document.getElementById('innovations-month-codcli-filter-suggestions').classList.add('hidden', 'manual-hide');
+                        updateInnovationsMonthView();
+                        e.target.blur();
+                    }
+                });
+            }
+
+
             const debouncedUpdateInnovationsMonth = debounce(updateInnovations, 400);
 
             const debouncedInnovationsCityUpdate = debounce(() => {
@@ -17106,6 +17128,27 @@ const supervisorGroups = new Map();
 
             const mixFilialFilter = document.getElementById('mix-filial-filter');
             if (mixFilialFilter) mixFilialFilter.addEventListener('change', updateMix);
+
+            setupClientTypeahead('mix-codcli-filter', 'mix-codcli-filter-suggestions', (code) => {
+                const input = document.getElementById('mix-codcli-filter');
+                if (input) input.value = code;
+                document.getElementById('mix-codcli-filter-suggestions').classList.add('hidden');
+                updateMix();
+            });
+
+            const mixCodcliFilterElem = document.getElementById('mix-codcli-filter');
+            if (mixCodcliFilterElem) {
+                mixCodcliFilterElem.addEventListener('input', (e) => {
+                    if (e.target.value === '') updateMix();
+                });
+                mixCodcliFilterElem.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        document.getElementById('mix-codcli-filter-suggestions').classList.add('hidden', 'manual-hide');
+                        updateMix();
+                        e.target.blur();
+                    }
+                });
+            }
 
             const mixCityFilter = document.getElementById('mix-city-filter');
             const mixCitySuggestions = document.getElementById('mix-city-suggestions');
