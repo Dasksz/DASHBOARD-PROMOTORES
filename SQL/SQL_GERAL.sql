@@ -747,8 +747,8 @@ USING (
     SELECT 1 FROM public.profiles
     WHERE id = auth.uid()
     AND (
-      role = 'adm'
-      OR role IN (SELECT cod_coord FROM public.data_hierarchy)
+      role = 'adm' 
+      OR role IN (SELECT cod_coord FROM public.data_hierarchy) 
       OR role IN (SELECT cod_cocoord FROM public.data_hierarchy)
     )
   )
