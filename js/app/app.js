@@ -3288,8 +3288,6 @@
             const tiposVendaSet = new Set(selectedMixTiposVenda);
             const city = document.getElementById('mix-city-filter').value.trim().toLowerCase();
             const filial = document.getElementById('mix-filial-filter').value;
-            const mixCodCliFilterElem = document.getElementById('mix-codcli-filter');
-            const clientFilter = mixCodCliFilterElem ? mixCodCliFilterElem.value.trim().toLowerCase() : '';
 
             // --- SELLER MODE / HIERARCHY MODE LOGIC ---
             let clients;
@@ -3334,8 +3332,6 @@
 
             const checkFilial = filial !== 'ambas';
             const checkCity = excludeFilter !== 'city' && !!city;
-            const checkClient = excludeFilter !== 'client' && !!clientFilter;
-            const checkClient = excludeFilter !== 'client' && !!clientFilter;
 
             // Removed Supervisor/Seller checks
             // if (excludeFilter !== 'supplier' && selectedCitySuppliers.length > 0) { ... }
@@ -3359,17 +3355,6 @@
                 // 3. City Logic
                 if (checkCity) {
                     if (!c.cidade || c.cidade.toLowerCase() !== city) return false;
-                }
-
-                // 4. Client Logic
-                if (checkClient) {
-                    const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
-                    const name = (c.nomeCliente || '').toLowerCase();
-                    const c_city = (c.cidade || '').toLowerCase();
-                    const bairro = (c.bairro || '').toLowerCase();
-                    const cnpj = String(c['CNPJ/CPF'] || c.cnpj_cpf || '').replace(/\D/g, '');
-
-                    if (!code.includes(clientFilter) && !name.includes(clientFilter) && !c_city.includes(clientFilter) && !bairro.includes(clientFilter) && !cnpj.includes(clientFilter)) return false;
                 }
 
                 return true;
@@ -3417,9 +3402,6 @@
         }
 
         function resetMixFilters() {
-            document.getElementById('mix-city-filter').value = '';
-            const mixCodcliFilterElem = document.getElementById('mix-codcli-filter');
-            if (mixCodcliFilterElem) mixCodcliFilterElem.value = '';
             selectedMixTiposVenda = [];
             selectedMixRedes = [];
             mixRedeGroupFilter = '';
@@ -13051,8 +13033,6 @@ const supervisorGroups = new Map();
 
             const city = innovationsMonthCityFilter.value.trim().toLowerCase();
             const filial = innovationsMonthFilialFilter.value;
-            const innovCodCliFilterElem = document.getElementById('innovations-month-codcli-filter');
-            const clientFilter = innovCodCliFilterElem ? innovCodCliFilterElem.value.trim().toLowerCase() : '';
 
             // --- SELLER MODE / HIERARCHY MODE LOGIC ---
             let clients;
@@ -13097,18 +13077,6 @@ const supervisorGroups = new Map();
                 clients = clients.filter(c => c.cidade && c.cidade.toLowerCase() === city);
             }
 
-            if (excludeFilter !== 'client' && clientFilter) {
-                clients = clients.filter(c => {
-                    const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
-                    const name = (c.nomeCliente || '').toLowerCase();
-                    const c_city = (c.cidade || '').toLowerCase();
-                    const bairro = (c.bairro || '').toLowerCase();
-                    const cnpj = String(c['CNPJ/CPF'] || c.cnpj_cpf || '').replace(/\D/g, '');
-
-                    return code.includes(clientFilter) || name.includes(clientFilter) || c_city.includes(clientFilter) || bairro.includes(clientFilter) || cnpj.includes(clientFilter);
-                });
-            }
-
             if (excludeFilter !== 'rede') {
                 if (innovationsMonthRedeGroupFilter === 'com_rede') {
                     const redeSet = (selectedInnovationsMonthRedes.length > 0) ? new Set(selectedInnovationsMonthRedes) : null;
@@ -13127,8 +13095,6 @@ const supervisorGroups = new Map();
 
         function resetInnovationsMonthFilters() {
             innovationsMonthCityFilter.value = '';
-            const innovCodCliFilterElem = document.getElementById('innovations-month-codcli-filter');
-            if (innovCodCliFilterElem) innovCodCliFilterElem.value = '';
 
             innovationsMonthFilialFilter.value = 'ambas';
             const filialText = document.getElementById('innovations-month-filial-filter-text');
@@ -16456,27 +16422,6 @@ const supervisorGroups = new Map();
 
             innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
 
-            setupClientTypeahead('innovations-month-codcli-filter', 'innovations-month-codcli-filter-suggestions', (code) => {
-                const input = document.getElementById('innovations-month-codcli-filter');
-                if (input) input.value = code;
-                document.getElementById('innovations-month-codcli-filter-suggestions').classList.add('hidden');
-                updateInnovationsMonthView();
-            });
-
-            const innovCodCliFilterElem = document.getElementById('innovations-month-codcli-filter');
-            if (innovCodCliFilterElem) {
-                innovCodCliFilterElem.addEventListener('input', (e) => {
-                    if (e.target.value === '') updateInnovationsMonthView();
-                });
-                innovCodCliFilterElem.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        document.getElementById('innovations-month-codcli-filter-suggestions').classList.add('hidden', 'manual-hide');
-                        updateInnovationsMonthView();
-                        e.target.blur();
-                    }
-                });
-            }
-
             const debouncedUpdateInnovationsMonth = debounce(updateInnovations, 400);
 
             const debouncedInnovationsCityUpdate = debounce(() => {
@@ -17161,27 +17106,6 @@ const supervisorGroups = new Map();
 
             const mixFilialFilter = document.getElementById('mix-filial-filter');
             if (mixFilialFilter) mixFilialFilter.addEventListener('change', updateMix);
-
-            setupClientTypeahead('mix-codcli-filter', 'mix-codcli-filter-suggestions', (code) => {
-                const input = document.getElementById('mix-codcli-filter');
-                if (input) input.value = code;
-                document.getElementById('mix-codcli-filter-suggestions').classList.add('hidden');
-                updateMix();
-            });
-
-            const mixCodcliFilterElem = document.getElementById('mix-codcli-filter');
-            if (mixCodcliFilterElem) {
-                mixCodcliFilterElem.addEventListener('input', (e) => {
-                    if (e.target.value === '') updateMix();
-                });
-                mixCodcliFilterElem.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        document.getElementById('mix-codcli-filter-suggestions').classList.add('hidden', 'manual-hide');
-                        updateMix();
-                        e.target.blur();
-                    }
-                });
-            }
 
             const mixCityFilter = document.getElementById('mix-city-filter');
             const mixCitySuggestions = document.getElementById('mix-city-suggestions');
