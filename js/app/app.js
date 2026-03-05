@@ -3218,8 +3218,9 @@
         // formatDate moved to utils.js
 
         function buildInnovationSalesMaps(salesData, mainTypes, bonusTypes) {
-            const mainMap = new Map(); // Map<CODCLI, Map<PRODUTO, Set<CODUSUR>>>
-            const bonusMap = new Map();
+            // Updated to track cumulative values: Map<CODCLI, Map<PRODUTO, { rcas: Set<CODUSUR>, val: number }>>
+            const mainMapRaw = new Map();
+            const bonusMapRaw = new Map();
             const mainSet = new Set(mainTypes);
             const bonusSet = new Set(bonusTypes);
 
@@ -3232,21 +3233,47 @@
                 const codCli = sale.CODCLI;
                 const prod = sale.PRODUTO;
                 const rca = sale.CODUSUR;
+                const val = Number(sale.VLVENDA) || 0; // Use VLVENDA to check the >= 1 rule
 
                 if (isMain) {
-                    if (!mainMap.has(codCli)) mainMap.set(codCli, new Map());
-                    const clientMap = mainMap.get(codCli);
-                    if (!clientMap.has(prod)) clientMap.set(prod, new Set());
-                    clientMap.get(prod).add(rca);
+                    if (!mainMapRaw.has(codCli)) mainMapRaw.set(codCli, new Map());
+                    const clientMap = mainMapRaw.get(codCli);
+                    if (!clientMap.has(prod)) clientMap.set(prod, { rcas: new Set(), val: 0 });
+                    const entry = clientMap.get(prod);
+                    entry.rcas.add(rca);
+                    entry.val += val;
                 }
 
                 if (isBonus) {
-                    if (!bonusMap.has(codCli)) bonusMap.set(codCli, new Map());
-                    const clientMap = bonusMap.get(codCli);
-                    if (!clientMap.has(prod)) clientMap.set(prod, new Set());
-                    clientMap.get(prod).add(rca);
+                    if (!bonusMapRaw.has(codCli)) bonusMapRaw.set(codCli, new Map());
+                    const clientMap = bonusMapRaw.get(codCli);
+                    if (!clientMap.has(prod)) clientMap.set(prod, { rcas: new Set(), val: 0 });
+                    const entry = clientMap.get(prod);
+                    entry.rcas.add(rca);
+                    entry.val += val;
                 }
             });
+
+            // Filter maps to only keep entries with val >= 1
+            const filterMap = (rawMap) => {
+                const filteredMap = new Map();
+                rawMap.forEach((clientMap, codCli) => {
+                    const filteredClientMap = new Map();
+                    clientMap.forEach((entry, prod) => {
+                        if (entry.val >= 1) {
+                            filteredClientMap.set(prod, entry.rcas);
+                        }
+                    });
+                    if (filteredClientMap.size > 0) {
+                        filteredMap.set(codCli, filteredClientMap);
+                    }
+                });
+                return filteredMap;
+            };
+
+            const mainMap = filterMap(mainMapRaw);
+            const bonusMap = filterMap(bonusMapRaw);
+
             return { mainMap, bonusMap };
         }
 
@@ -13180,11 +13207,12 @@ const supervisorGroups = new Map();
             const currentSelectionKey = currentSelection.slice().sort().join(',');
 
             // Caching Strategy: Reuse maps if Tipo Venda selection hasn't changed
-            let mapsCurrent, mapsPrevious, mapsPrevious2;
+            let mapsCurrent, mapsPrevious, mapsPrevious2, mapsPrevious3;
             if (viewState.inovacoes.lastTypesKey === currentSelectionKey && viewState.inovacoes.cache) {
                 mapsCurrent = viewState.inovacoes.cache.mapsCurrent;
                 mapsPrevious = viewState.inovacoes.cache.mapsPrevious;
                 mapsPrevious2 = viewState.inovacoes.cache.mapsPrevious2;
+                mapsPrevious3 = viewState.inovacoes.cache.mapsPrevious3;
             } else {
                 const mainTypes = currentSelection.filter(t => t !== '5' && t !== '11');
                 const bonusTypes = currentSelection.filter(t => t === '5' || t === '11');
@@ -13218,17 +13246,18 @@ const supervisorGroups = new Map();
                         if (typeof val === 'number') {
                             if (val < 100000) {
                                  // Excel serial date to Unix timestamp (days since Dec 30, 1899)
-                                 ts = Math.round((val - 25569) * 86400 * 1000);
-                                 // Shift to UTC timezone to match start/end boundary generation
-                                 ts += new Date(ts).getTimezoneOffset() * 60000;
+                                 // Adding Timezone Offset so it matches UTC boundaries properly.
+                                 // The formula in utils.js returns a UTC date, we just need its timestamp.
+                                 const utcDate = new Date(Math.round((val - 25569) * 86400 * 1000));
+                                 ts = utcDate.getTime() + (utcDate.getTimezoneOffset() * 60000);
                             } else {
                                  ts = val;
                             }
                         } else {
+                            // Use global parseDate which returns a UTC Date object
                             const d = parseDate(val);
                             if(d) {
-                                // Assume parsed date is local, get UTC timestamp for comparison
-                                ts = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+                                ts = d.getTime(); // parseDate already ensures it's UTC time internally
                             }
                         }
                         return ts >= start && ts < end;
@@ -13238,11 +13267,19 @@ const supervisorGroups = new Map();
                 const previousMonthData = filterHistory(tsPrevStart, tsPrevEnd);
                 const previousMonthData2 = filterHistory(tsPrev2Start, tsPrev2End);
 
+                // T-3: Previous Previous Previous Month
+                const prev3MonthStart = new Date(Date.UTC(currentYear, currentMonth - 3, 1));
+                const prev3MonthEnd = new Date(Date.UTC(currentYear, currentMonth - 2, 1));
+                const tsPrev3Start = prev3MonthStart.getTime();
+                const tsPrev3End = prev3MonthEnd.getTime();
+                const previousMonthData3 = filterHistory(tsPrev3Start, tsPrev3End);
+
                 mapsPrevious = buildInnovationSalesMaps(previousMonthData, mainTypes, bonusTypes);
                 mapsPrevious2 = buildInnovationSalesMaps(previousMonthData2, mainTypes, bonusTypes);
+                mapsPrevious3 = buildInnovationSalesMaps(previousMonthData3, mainTypes, bonusTypes);
 
                 viewState.inovacoes.lastTypesKey = currentSelectionKey;
-                viewState.inovacoes.cache = { mapsCurrent, mapsPrevious, mapsPrevious2 };
+                viewState.inovacoes.cache = { mapsCurrent, mapsPrevious, mapsPrevious2, mapsPrevious3 };
             }
 
             // Structures to hold results
@@ -13255,12 +13292,14 @@ const supervisorGroups = new Map();
                     current: new Set(),
                     previous: new Set(),
                     previous2: new Set(),
+                    previous3: new Set(),
                     bonusCurrent: new Set(),
                     bonusPrevious: new Set(),
-                    bonusPrevious2: new Set()
+                    bonusPrevious2: new Set(),
+                    bonusPrevious3: new Set()
                 };
                 categories[cat].productCodes.forEach(p => {
-                    productResults[p] = { current: new Set(), previous: new Set(), previous2: new Set() };
+                    productResults[p] = { current: new Set(), previous: new Set(), previous2: new Set(), previous3: new Set() };
                 });
             }
 
@@ -13292,13 +13331,15 @@ const supervisorGroups = new Map();
                 });
             };
 
-            // Process all 6 maps efficiently
+            // Process all maps efficiently
             processMap(mapsCurrent.mainMap, 'current', false);
             processMap(mapsCurrent.bonusMap, 'current', true);
             processMap(mapsPrevious.mainMap, 'previous', false);
             processMap(mapsPrevious.bonusMap, 'previous', true);
             processMap(mapsPrevious2.mainMap, 'previous2', false);
             processMap(mapsPrevious2.bonusMap, 'previous2', true);
+            processMap(mapsPrevious3.mainMap, 'previous3', false);
+            processMap(mapsPrevious3.bonusMap, 'previous3', true);
 
             // Consolidate Results
             const categoryAnalysis = {};
@@ -13347,14 +13388,19 @@ const supervisorGroups = new Map();
                 const currentUnion = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
                 const previousUnion = new Set([...categoryResults[cat].previous, ...categoryResults[cat].bonusPrevious]);
                 const previous2Union = new Set([...categoryResults[cat].previous2, ...categoryResults[cat].bonusPrevious2]);
+                const previous3Union = new Set([...categoryResults[cat].previous3, ...categoryResults[cat].bonusPrevious3]);
 
                 const countCurr = currentUnion.size;
                 const countPrev = previousUnion.size;
                 const countPrev2 = previous2Union.size;
+                const countPrev3 = previous3Union.size;
 
                 const covCurr = activeClientsCount > 0 ? (countCurr / activeClientsCount) * 100 : 0;
                 const covPrev = activeClientsCount > 0 ? (countPrev / activeClientsCount) * 100 : 0;
                 const covPrev2 = activeClientsCount > 0 ? (countPrev2 / activeClientsCount) * 100 : 0;
+                const covPrev3 = activeClientsCount > 0 ? (countPrev3 / activeClientsCount) * 100 : 0;
+
+                const avgQuarterlyCount = (countPrev + countPrev2 + countPrev3) / 3;
 
                 const varPct = covPrev > 0 ? ((covCurr - covPrev) / covPrev) * 100 : (covCurr > 0 ? Infinity : 0);
 
@@ -13362,9 +13408,11 @@ const supervisorGroups = new Map();
                     coverageCurrent: covCurr,
                     coveragePrevious: covPrev,
                     coveragePrevious2: covPrev2,
+                    coveragePrevious3: covPrev3,
                     variation: varPct,
                     clientsCount: countCurr,
-                    clientsPreviousCount: countPrev
+                    clientsPreviousCount: countPrev,
+                    avgQuarterlyCount: avgQuarterlyCount
                 };
             }
 
@@ -13376,7 +13424,7 @@ const supervisorGroups = new Map();
             // "Innovations Month Selection Coverage" -> Sales
             // "Innovations Month Bonus Coverage" -> Bonus
 
-            // Positivados calculation
+            // Positivados calculation (Denominator)
             const positivadosCurrentSet = new Set();
             mapsCurrent.mainMap.forEach((_, codCli) => { if (activeClientCodes.has(codCli)) positivadosCurrentSet.add(codCli); });
             mapsCurrent.bonusMap.forEach((_, codCli) => { if (activeClientCodes.has(codCli)) positivadosCurrentSet.add(codCli); });
@@ -13388,21 +13436,25 @@ const supervisorGroups = new Map();
             const positivadosPreviousCount = positivadosPreviousSet.size;
 
             const selectionCoveredCountCurrent = clientsWhoGotAnyVisibleProductCurrent.size;
-            const selectionCoveragePercentCurrent = positivadosCurrentCount > 0 ? (selectionCoveredCountCurrent / positivadosCurrentCount) * 100 : 0;
+            // Percentual is Selection / Total Active Clients
+            const selectionCoveragePercentCurrent = activeClientsCount > 0 ? (selectionCoveredCountCurrent / activeClientsCount) * 100 : 0;
             const selectionCoveredCountPrevious = clientsWhoGotAnyVisibleProductPrevious.size;
-            const selectionCoveragePercentPrevious = positivadosPreviousCount > 0 ? (selectionCoveredCountPrevious / positivadosPreviousCount) * 100 : 0;
+            const selectionCoveragePercentPrevious = activeClientsCount > 0 ? (selectionCoveredCountPrevious / activeClientsCount) * 100 : 0;
 
             const bonusCoveredCountCurrent = clientsWhoGotBonusAnyVisibleProductCurrent.size;
-            const bonusCoveragePercentCurrent = positivadosCurrentCount > 0 ? (bonusCoveredCountCurrent / positivadosCurrentCount) * 100 : 0;
+            const bonusCoveragePercentCurrent = activeClientsCount > 0 ? (bonusCoveredCountCurrent / activeClientsCount) * 100 : 0;
             const bonusCoveredCountPrevious = clientsWhoGotBonusAnyVisibleProductPrevious.size;
-            const bonusCoveragePercentPrevious = positivadosPreviousCount > 0 ? (bonusCoveredCountPrevious / positivadosPreviousCount) * 100 : 0;
+            const bonusCoveragePercentPrevious = activeClientsCount > 0 ? (bonusCoveredCountPrevious / activeClientsCount) * 100 : 0;
+
+            // Calculate Top Category Average (Mix/Cliente)
+            const topCategoryAvg = positivadosCurrentCount > 0 ? (topCoverageItem.clients / positivadosCurrentCount) : 0;
 
             // Update DOM
             innovationsMonthActiveClientsKpi.textContent = activeClientsCount.toLocaleString('pt-BR');
             innovationsMonthTopCoverageValueKpi.textContent = `${topCoverageItem.coverage.toFixed(2)}%`;
             innovationsMonthTopCoverageKpi.textContent = topCoverageItem.name;
             innovationsMonthTopCoverageKpi.title = topCoverageItem.name;
-            innovationsMonthTopCoverageCountKpi.textContent = `${topCoverageItem.clients.toLocaleString('pt-BR')} PDVs`;
+            innovationsMonthTopCoverageCountKpi.textContent = `${topCategoryAvg.toFixed(2)} Mix/Cliente`;
             document.getElementById('innovations-month-top-coverage-title').textContent = selectedCategory ? 'Produto Maior Cobertura' : 'Categ. Maior Cobertura';
 
             innovationsMonthSelectionCoverageValueKpi.textContent = `${selectionCoveragePercentCurrent.toFixed(2)}%`;
@@ -13436,6 +13488,11 @@ const supervisorGroups = new Map();
 
                     const coverageCurrent = activeClientsCount > 0 ? (clientsCurrentCount / activeClientsCount) * 100 : 0;
                     const coveragePrevious = activeClientsCount > 0 ? (clientsPreviousCount / activeClientsCount) * 100 : 0;
+                    const clientsPrevious2Count = pRes ? pRes.previous2.size : 0;
+                    const clientsPrevious3Count = pRes ? pRes.previous3.size : 0;
+                    const avgQuarterlyCount = (clientsPreviousCount + clientsPrevious2Count + clientsPrevious3Count) / 3;
+                    const avgQuarterlyCoverage = activeClientsCount > 0 ? (avgQuarterlyCount / activeClientsCount) * 100 : 0;
+
                     const variation = coveragePrevious > 0 ? ((coverageCurrent - coveragePrevious) / coveragePrevious) * 100 : (coverageCurrent > 0 ? Infinity : 0);
 
                     tableData.push({
@@ -13447,7 +13504,9 @@ const supervisorGroups = new Map();
                         clientsPreviousCount,
                         coverageCurrent,
                         clientsCurrentCount,
-                        variation
+                        variation,
+                        avgQuarterlyCount,
+                        avgQuarterlyCoverage
                     });
                 });
             });
@@ -13464,7 +13523,7 @@ const supervisorGroups = new Map();
                         name: cat,
                         stock: 0,
                         items: [],
-                        metrics: categoryAnalysis[cat] || { coverageCurrent: 0, coveragePrevious: 0, variation: 0, clientsCount: 0, clientsPreviousCount: 0 }
+                        metrics: categoryAnalysis[cat] || { coverageCurrent: 0, coveragePrevious: 0, coveragePrevious2: 0, coveragePrevious3: 0, variation: 0, clientsCount: 0, clientsPreviousCount: 0, avgQuarterlyCount: 0 }
                     };
                 }
                 groupedTableData[cat].items.push(item);
@@ -13491,7 +13550,7 @@ const supervisorGroups = new Map();
                 }
 
                 // Spacer Row (between categories) - Hidden on Mobile to create list effect
-                const spacerRow = index > 0 ? `<tr class="hidden md:table-row h-2 bg-transparent border-none pointer-events-none"><td colspan="6"></td></tr>` : '';
+                const spacerRow = index > 0 ? `<tr class="hidden md:table-row h-2 bg-transparent border-none pointer-events-none"><td colspan="7"></td></tr>` : '';
 
                 // Refined styling: Border bottom for mobile (list view), Rounded/Border for Desktop (card view via md: classes if desired, or simplified globally)
                 // User requested "not cards", so we flatten it.
@@ -13504,7 +13563,7 @@ const supervisorGroups = new Map();
                     ${spacerRow}
                     <tr class="glass-panel-heavy hover:bg-slate-700 cursor-pointer transition-colors border-b border-slate-700 group" data-toggle="${catId}">
                         <!-- Mobile View (Colspan 6) -->
-                        <td class="md:hidden px-3 py-3" colspan="6">
+                        <td class="md:hidden px-3 py-3" colspan="7">
                             <div class="flex justify-between items-center w-full">
                                 <div class="flex items-center gap-2">
                                     <svg class="w-4 h-4 transform transition-transform text-slate-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
@@ -13523,6 +13582,9 @@ const supervisorGroups = new Map();
                         </td>
                         <td class="px-2 py-3 text-xs text-slate-400 text-left italic hidden md:table-cell">${catGroup.items.length} Produtos</td>
                         <td class="px-2 py-3 text-sm text-center font-mono font-bold text-blue-400 hidden md:table-cell">${catGroup.stock.toLocaleString('pt-BR')}</td>
+                        <td class="px-2 py-3 text-xs text-center hidden md:table-cell">
+                            <div class="tooltip">${((activeClientsCount > 0 ? catGroup.metrics.avgQuarterlyCount / activeClientsCount : 0) * 100).toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.avgQuarterlyCount.toFixed(1)} PDVs</span></div>
+                        </td>
                         <td class="px-2 py-3 text-xs text-center hidden md:table-cell">
                             <div class="tooltip">${catGroup.metrics.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.clientsPreviousCount} PDVs</span></div>
                         </td>
@@ -13560,7 +13622,7 @@ const supervisorGroups = new Map();
                     return `
                     <tr class="hidden bg-slate-900/50 hover:bg-glass ${borderClass} border-l border-r border-slate-700" data-parent="${catId}">
                         <!-- Mobile View Cell (Clickable) -->
-                        <td class="md:hidden p-2 cursor-pointer hover:bg-white/5" colspan="6" onclick="openInnovationsProductModal('${item.productCode}')">
+                        <td class="md:hidden p-2 cursor-pointer hover:bg-white/5" colspan="7" onclick="openInnovationsProductModal('${item.productCode}')">
                             <div class="flex items-center text-xs whitespace-nowrap overflow-hidden w-full">
                                 <span class="font-mono text-slate-500 mr-1.5 flex-shrink-0">${item.productCode}</span>
                                 <span class="text-slate-300 mr-1">-</span>
@@ -13578,6 +13640,9 @@ const supervisorGroups = new Map();
                              </div>
                         </td>
                         <td class="hidden md:table-cell px-2 py-2 text-xs md:text-sm text-center font-mono text-slate-400">${item.stock.toLocaleString('pt-BR')}</td>
+                        <td class="hidden md:table-cell px-2 py-2 text-[10px] md:text-xs text-center text-slate-500">
+                            <div class="tooltip">${item.avgQuarterlyCoverage.toFixed(2)}%<span class="tooltip-text">${item.avgQuarterlyCount.toFixed(1)} PDVs</span></div>
+                        </td>
                         <td class="hidden md:table-cell px-2 py-2 text-[10px] md:text-xs text-center text-slate-500">
                             <div class="tooltip">${item.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${item.clientsPreviousCount} PDVs</span></div>
                         </td>
@@ -13614,14 +13679,17 @@ const supervisorGroups = new Map();
             const labelT = monthNames[currentMonthIdx];
             const labelT1 = monthNames[(currentMonthIdx - 1 + 12) % 12];
             const labelT2 = monthNames[(currentMonthIdx - 2 + 12) % 12];
+            const labelT3 = monthNames[(currentMonthIdx - 3 + 12) % 12];
 
-            // Chart Update (Bar Chart Replacement - 3 Columns)
+            // Chart Update (Bar Chart Replacement - 4 Columns)
             const chartDataCurrent = chartLabels.map(cat => categoryAnalysis[cat].coverageCurrent);
             const chartDataPrevious = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious);
             const chartDataPrevious2 = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious2);
+            const chartDataPrevious3 = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious3);
 
             if (chartLabels.length > 0) {
                 createChart('innovations-month-chart', 'bar', chartLabels, [
+                    { label: labelT3, data: chartDataPrevious3, backgroundColor: '#a855f7' }, // Purple
                     { label: labelT2, data: chartDataPrevious2, backgroundColor: '#3b82f6' }, // Blue
                     { label: labelT1, data: chartDataPrevious, backgroundColor: '#eab308' }, // Dark Mustard
                     { label: labelT, data: chartDataCurrent, backgroundColor: '#06b6d4' }   // Cyan
