@@ -3221,18 +3221,19 @@
             // Updated to track cumulative values: Map<CODCLI, Map<PRODUTO, { rcas: Set<CODUSUR>, val: number }>>
             const mainMapRaw = new Map();
             const bonusMapRaw = new Map();
-            const mainSet = new Set(mainTypes);
-            const bonusSet = new Set(bonusTypes);
+            const mainSet = new Set(mainTypes.map(String));
+            const bonusSet = new Set(bonusTypes.map(String));
 
             salesData.forEach(sale => {
-                const isMain = mainSet.has(sale.TIPOVENDA);
-                const isBonus = bonusSet.has(sale.TIPOVENDA);
+                const tipoVendaStr = String(sale.TIPOVENDA);
+                const isMain = mainSet.has(tipoVendaStr);
+                const isBonus = bonusSet.has(tipoVendaStr);
 
                 if (!isMain && !isBonus) return;
 
-                const codCli = sale.CODCLI;
-                const prod = sale.PRODUTO;
-                const rca = sale.CODUSUR;
+                const codCli = String(sale.CODCLI).trim();
+                const prod = String(sale.PRODUTO).trim();
+                const rca = String(sale.CODUSUR).trim();
                 const val = Number(sale.VLVENDA) || 0; // Use VLVENDA to check the >= 1 rule
 
                 if (isMain) {
@@ -13197,12 +13198,12 @@ const supervisorGroups = new Map();
 
             const activeClients = filteredClients;
             const activeClientsCount = activeClients.length;
-            const activeClientCodes = new Set(activeClients.map(c => c['Código']));
+            const activeClientCodes = new Set(activeClients.map(c => String(c['Código']).trim()));
 
             // --- OPTIMIZED AGGREGATION LOGIC ---
 
             // Determine types to use
-            const availableTypes = new Set([...allSalesData.map(s => s.TIPOVENDA), ...allHistoryData.map(s => s.TIPOVENDA)]);
+            const availableTypes = new Set([...allSalesData.map(s => String(s.TIPOVENDA)), ...allHistoryData.map(s => String(s.TIPOVENDA))]);
             let currentSelection = selectedInnovationsMonthTiposVenda.length > 0 ? selectedInnovationsMonthTiposVenda : Array.from(availableTypes);
             const currentSelectionKey = currentSelection.slice().sort().join(',');
 
@@ -13214,8 +13215,8 @@ const supervisorGroups = new Map();
                 mapsPrevious2 = viewState.inovacoes.cache.mapsPrevious2;
                 mapsPrevious3 = viewState.inovacoes.cache.mapsPrevious3;
             } else {
-                const mainTypes = currentSelection.filter(t => t !== '5' && t !== '11');
-                const bonusTypes = currentSelection.filter(t => t === '5' || t === '11');
+                const mainTypes = currentSelection.map(String).filter(t => t !== '5' && t !== '11');
+                const bonusTypes = currentSelection.map(String).filter(t => t === '5' || t === '11');
 
                 // Optimized Map Building (2 passes instead of 4)
                 mapsCurrent = buildInnovationSalesMaps(allSalesData, mainTypes, bonusTypes);
@@ -13307,11 +13308,14 @@ const supervisorGroups = new Map();
             const processMap = (salesMap, periodType, isBonus) => {
                 // periodType: 'current', 'previous', 'previous2'
                 salesMap.forEach((productsMap, codCli) => {
+                    // codCli is already a string, but ensuring safety
+                    const codCliStr = String(codCli).trim();
                     // Only count if client is in the filtered active list for the current month
-                    if (periodType === 'current' && !activeClientCodes.has(codCli)) return;
+                    if (periodType === 'current' && !activeClientCodes.has(codCliStr)) return;
 
                     productsMap.forEach((rcas, prodCode) => {
-                        const category = globalProductToCategoryMap ? globalProductToCategoryMap.get(prodCode) : null;
+                        const prodCodeStr = String(prodCode).trim();
+                        const category = globalProductToCategoryMap ? globalProductToCategoryMap.get(prodCodeStr) : null;
                         if (!category) return;
 
                         // Add to Category Set (Normal or Bonus)
@@ -13320,12 +13324,12 @@ const supervisorGroups = new Map();
                                 ? (periodType === 'current' ? 'bonusCurrent' : (periodType === 'previous' ? 'bonusPrevious' : 'bonusPrevious2'))
                                 : periodType;
 
-                            categoryResults[category][targetSet].add(codCli);
+                            categoryResults[category][targetSet].add(codCliStr);
                         }
 
                         // Add to Product Set (For Top Item Logic)
-                        if (productResults[prodCode]) {
-                            productResults[prodCode][periodType].add(codCli);
+                        if (productResults[prodCodeStr]) {
+                            productResults[prodCodeStr][periodType].add(codCliStr);
                         }
                     });
                 });
@@ -13426,13 +13430,13 @@ const supervisorGroups = new Map();
 
             // Positivados calculation (Denominator)
             const positivadosCurrentSet = new Set();
-            mapsCurrent.mainMap.forEach((_, codCli) => { if (activeClientCodes.has(codCli)) positivadosCurrentSet.add(codCli); });
-            mapsCurrent.bonusMap.forEach((_, codCli) => { if (activeClientCodes.has(codCli)) positivadosCurrentSet.add(codCli); });
+            mapsCurrent.mainMap.forEach((_, codCli) => { const c = String(codCli).trim(); if (activeClientCodes.has(c)) positivadosCurrentSet.add(c); });
+            mapsCurrent.bonusMap.forEach((_, codCli) => { const c = String(codCli).trim(); if (activeClientCodes.has(c)) positivadosCurrentSet.add(c); });
             const positivadosCurrentCount = positivadosCurrentSet.size;
 
             const positivadosPreviousSet = new Set();
-            mapsPrevious.mainMap.forEach((_, codCli) => { positivadosPreviousSet.add(codCli); });
-            mapsPrevious.bonusMap.forEach((_, codCli) => { positivadosPreviousSet.add(codCli); });
+            mapsPrevious.mainMap.forEach((_, codCli) => { positivadosPreviousSet.add(String(codCli).trim()); });
+            mapsPrevious.bonusMap.forEach((_, codCli) => { positivadosPreviousSet.add(String(codCli).trim()); });
             const positivadosPreviousCount = positivadosPreviousSet.size;
 
             const selectionCoveredCountCurrent = clientsWhoGotAnyVisibleProductCurrent.size;
@@ -13476,7 +13480,7 @@ const supervisorGroups = new Map();
                 const categoryData = categories[categoryName];
 
                 categoryData.products.forEach((product) => {
-                    const productCode = product.Codigo;
+                    const productCode = String(product.Codigo).trim();
                     const productName = product.produto || product.Produto;
                     const stock = activeStockMap.get(productCode) || 0;
 
