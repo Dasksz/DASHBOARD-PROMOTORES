@@ -3335,7 +3335,6 @@
             const checkFilial = filial !== 'ambas';
             const checkCity = excludeFilter !== 'city' && !!city;
             const checkClient = excludeFilter !== 'client' && !!clientFilter;
-            const checkClient = excludeFilter !== 'client' && !!clientFilter;
 
             // Removed Supervisor/Seller checks
             // if (excludeFilter !== 'supplier' && selectedCitySuppliers.length > 0) { ... }
