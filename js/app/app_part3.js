@@ -3193,8 +3193,106 @@
                 console.error("History date inputs not found!");
             }
 
+            let historySupplierFilterBtn = document.getElementById('history-supplier-filter-btn');
+            let historySupplierFilterText = document.getElementById('history-supplier-filter-text');
+            let historySupplierFilterDropdown = document.getElementById('history-supplier-filter-dropdown');
+            let selectedHistorySuppliers = [];
+
             const filterBtn = document.getElementById('history-filter-btn');
             if(filterBtn) filterBtn.addEventListener('click', filterHistoryView);
+
+            // Initialize Supplier Filter Dropdown Options
+            if (historySupplierFilterDropdown) {
+                selectedHistorySuppliers = updateSupplierFilter(historySupplierFilterDropdown, historySupplierFilterText, selectedHistorySuppliers, [...allSalesData, ...allHistoryData], 'history');
+
+                if (!historySupplierFilterDropdown._hasListener) {
+                    historySupplierFilterBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        historySupplierFilterDropdown.classList.toggle('hidden');
+                    });
+
+                    document.addEventListener('click', (e) => {
+                        if (!historySupplierFilterBtn.contains(e.target) && !historySupplierFilterDropdown.contains(e.target)) {
+                            historySupplierFilterDropdown.classList.add('hidden');
+                        }
+                    });
+
+                    historySupplierFilterDropdown.addEventListener('change', (e) => {
+                         if (e.target.type === 'checkbox') {
+                             const val = e.target.value;
+                             if (e.target.checked) selectedHistorySuppliers.push(val);
+                             else selectedHistorySuppliers = selectedHistorySuppliers.filter(s => s !== val);
+                             selectedHistorySuppliers = updateSupplierFilter(historySupplierFilterDropdown, historySupplierFilterText, selectedHistorySuppliers, [...allSalesData, ...allHistoryData], 'history');
+                             // Auto-filter on change
+                             historyTableState.page = 1;
+                             filterHistoryView();
+                         }
+                    });
+                    historySupplierFilterDropdown._hasListener = true;
+                }
+            }
+
+            // Initialize Supplier Filter Dropdown Options
+            if (historySupplierFilterDropdown) {
+                selectedHistorySuppliers = updateSupplierFilter(historySupplierFilterDropdown, historySupplierFilterText, selectedHistorySuppliers, [...allSalesData, ...allHistoryData], 'history');
+
+                if (!historySupplierFilterDropdown._hasListener) {
+                    historySupplierFilterBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        historySupplierFilterDropdown.classList.toggle('hidden');
+                    });
+
+                    document.addEventListener('click', (e) => {
+                        if (!historySupplierFilterBtn.contains(e.target) && !historySupplierFilterDropdown.contains(e.target)) {
+                            historySupplierFilterDropdown.classList.add('hidden');
+                        }
+                    });
+
+                    historySupplierFilterDropdown.addEventListener('change', (e) => {
+                         if (e.target.type === 'checkbox') {
+                             const val = e.target.value;
+                             if (e.target.checked) selectedHistorySuppliers.push(val);
+                             else selectedHistorySuppliers = selectedHistorySuppliers.filter(s => s !== val);
+                             selectedHistorySuppliers = updateSupplierFilter(historySupplierFilterDropdown, historySupplierFilterText, selectedHistorySuppliers, [...allSalesData, ...allHistoryData], 'history');
+                             // Auto-filter on change
+                             historyTableState.page = 1;
+                             filterHistoryView();
+                         }
+                    });
+                    historySupplierFilterDropdown._hasListener = true;
+                }
+            }
+
+            // Initialize Supplier Filter Dropdown Options
+            if (historySupplierFilterDropdown) {
+                selectedHistorySuppliers = updateSupplierFilter(historySupplierFilterDropdown, historySupplierFilterText, selectedHistorySuppliers, [...allSalesData, ...allHistoryData], 'history');
+
+                if (!historySupplierFilterDropdown._hasListener) {
+                    historySupplierFilterBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        historySupplierFilterDropdown.classList.toggle('hidden');
+                    });
+
+                    document.addEventListener('click', (e) => {
+                        if (!historySupplierFilterBtn.contains(e.target) && !historySupplierFilterDropdown.contains(e.target)) {
+                            historySupplierFilterDropdown.classList.add('hidden');
+                        }
+                    });
+
+                    historySupplierFilterDropdown.addEventListener('change', (e) => {
+                         if (e.target.type === 'checkbox') {
+                             const val = e.target.value;
+                             if (e.target.checked) selectedHistorySuppliers.push(val);
+                             else selectedHistorySuppliers = selectedHistorySuppliers.filter(s => s !== val);
+                             selectedHistorySuppliers = updateSupplierFilter(historySupplierFilterDropdown, historySupplierFilterText, selectedHistorySuppliers, [...allSalesData, ...allHistoryData], 'history');
+                             // Auto-filter on change
+                             historyTableState.page = 1;
+                             filterHistoryView();
+                         }
+                    });
+                    historySupplierFilterDropdown._hasListener = true;
+                }
+            }
 
             // Pagination listeners
             document.getElementById('history-prev-page-btn').addEventListener('click', () => {
@@ -4772,9 +4870,15 @@
             // Supplier Filter (New)
             if (positivacaoSupplierFilterDropdown && !positivacaoSupplierFilterDropdown._hasListener) {
                 if (positivacaoSupplierFilterBtn) {
-                    // Clone to remove old listeners (if any)
+                    // Fetch the current text element BEFORE cloning, so we don't lose reference to the original
+                    let currentTextEl = document.getElementById('positivacao-supplier-filter-text');
+
                     const newBtn = positivacaoSupplierFilterBtn.cloneNode(true);
                     positivacaoSupplierFilterBtn.parentNode.replaceChild(newBtn, positivacaoSupplierFilterBtn);
+
+                    // Re-assign the global reference to the cloned elements to prevent modifying detached DOM nodes
+                    positivacaoSupplierFilterBtn = newBtn;
+                    positivacaoSupplierFilterText = newBtn.querySelector('#positivacao-supplier-filter-text') || currentTextEl;
 
                     newBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
