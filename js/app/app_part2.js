@@ -2787,7 +2787,7 @@ innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
         calculateHistoricalBests(); // <-- MOVIDA PARA CIMA
         // Initialize Hierarchy Filters
         setupHierarchyFilters('main', updateDashboard);
-        setupHierarchyFilters('city', updateCityView);
+
         setupHierarchyFilters('comparison', updateComparisonView);
         setupHierarchyFilters('innovations-month', updateInnovationsMonthView);
         setupHierarchyFilters('mix', updateMixView);
