@@ -21007,7 +21007,8 @@ const supervisorGroups = new Map();
     function toggleRoteiroMode() {
         isRoteiroMode = !isRoteiroMode;
 
-        if (isRoteiroMode && window.userRole === 'promotor') {
+        const isPromotorUserLocal = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+        if (isRoteiroMode && isPromotorUserLocal) {
             const todayRef = new Date();
             todayRef.setHours(0,0,0,0);
             if (roteiroDate.getTime() < todayRef.getTime()) {
@@ -21315,7 +21316,8 @@ const supervisorGroups = new Map();
             todayRef.setHours(0,0,0,0);
             const dRef = new Date(d);
             dRef.setHours(0,0,0,0);
-            const isPast = dRef.getTime() < todayRef.getTime() && window.userRole === 'promotor';
+            const isPromotorUser = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+            const isPast = dRef.getTime() < todayRef.getTime() && isPromotorUser;
 
             const dayEl = document.createElement('div');
             dayEl.className = `flex flex-col items-center justify-center p-2 rounded-lg min-w-[50px] transition-colors ${isSelected ? 'bg-purple-600 text-white shadow-lg scale-110' : (isPast ? 'text-slate-600 opacity-50 cursor-not-allowed' : 'text-slate-400 hover:bg-white/5 cursor-pointer')}`;
@@ -21349,7 +21351,8 @@ const supervisorGroups = new Map();
         nextBtn.parentNode.replaceChild(newNext, nextBtn);
 
         newPrev.onclick = () => {
-            if (window.userRole === 'promotor') {
+            const isPromotorUserLocal = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+            if (isPromotorUserLocal) {
                 const today = new Date();
                 today.setHours(0,0,0,0);
                 const prevDate = new Date(roteiroDate);
@@ -21370,7 +21373,8 @@ const supervisorGroups = new Map();
         };
 
         // Visual Feedback for disabled button
-        if (window.userRole === 'promotor') {
+        const isPromotorUserLocal = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+            if (isPromotorUserLocal) {
             const today = new Date();
             today.setHours(0,0,0,0);
             const roteiroRef = new Date(roteiroDate);
@@ -21448,7 +21452,8 @@ const supervisorGroups = new Map();
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         dateDisplay.textContent = date.toLocaleDateString('pt-BR', options);
 
-        const isPast = viewDate < today && window.userRole === 'promotor';
+        const isPromotorUser = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+        const isPast = viewDate < today && isPromotorUser;
 
         // Filter Logic
         let clients = [];
@@ -24660,7 +24665,8 @@ const supervisorGroups = new Map();
     }
     
     function updateWeeklyView() {
-        if (window.userRole === 'promotor') return;
+        const isPromotorUserLocal = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+        if (isPromotorUserLocal) return;
         
         const filteredSales = getWeeklyFilteredData();
         const isPromoterMode = typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter';
