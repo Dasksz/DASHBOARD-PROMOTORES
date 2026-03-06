@@ -2057,6 +2057,15 @@
 
     function toggleRoteiroMode() {
         isRoteiroMode = !isRoteiroMode;
+
+        if (isRoteiroMode && window.userRole === 'promotor') {
+            const todayRef = new Date();
+            todayRef.setHours(0,0,0,0);
+            if (roteiroDate.getTime() < todayRef.getTime()) {
+                roteiroDate = new Date();
+                roteiroDate.setHours(0,0,0,0);
+            }
+        }
         const btn = document.getElementById('toggle-roteiro-btn');
         const roteiroContainer = document.getElementById('roteiro-container');
         const listWrapper = document.getElementById('clientes-list-view-wrapper');
@@ -2352,18 +2361,28 @@
             const isSelected = d.getTime() === roteiroDate.getTime();
             const isToday = d.toDateString() === new Date().toDateString();
 
+
+            const todayRef = new Date();
+            todayRef.setHours(0,0,0,0);
+            const isPast = d.getTime() < todayRef.getTime() && window.userRole === 'promotor';
+
             const dayEl = document.createElement('div');
-            dayEl.className = `flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer min-w-[50px] transition-colors ${isSelected ? 'bg-purple-600 text-white shadow-lg scale-110' : 'text-slate-400 hover:bg-white/5'}`;
+            dayEl.className = `flex flex-col items-center justify-center p-2 rounded-lg min-w-[50px] transition-colors ${isSelected ? 'bg-purple-600 text-white shadow-lg scale-110' : (isPast ? 'text-slate-600 opacity-50 cursor-not-allowed' : 'text-slate-400 hover:bg-white/5 cursor-pointer')}`;
+
 
             dayEl.innerHTML = `
                 <span class="text-[10px] font-bold tracking-wider ${isToday && !isSelected ? 'text-purple-600' : ''}">${weekDays[d.getDay()]}</span>
                 <span class="text-lg font-bold ${isToday && !isSelected ? 'text-purple-600' : ''}">${d.getDate()}</span>
             `;
 
-            dayEl.onclick = () => {
-                roteiroDate = d;
-                renderRoteiroView();
-            };
+
+            if (!isPast) {
+                dayEl.onclick = () => {
+                    roteiroDate = d;
+                    renderRoteiroView();
+                };
+            }
+
 
             strip.appendChild(dayEl);
         }
@@ -2665,6 +2684,7 @@
 
                 // Format check-in / check-out date string
                 let visitTimeStr = '';
+                let isLatestVisit = false;
                 if (todaysVisit) {
                     const tVisitTime = todaysVisit.checkout_at || todaysVisit.created_at; const tVisitTimeStr = String(tVisitTime || "").endsWith("Z") || String(tVisitTime || "").match(/[+-]\d{2}:\d{2}$/) ? tVisitTime : tVisitTime + "Z"; const chkIn = new Date(tVisitTimeStr);
                     const dd = String(chkIn.getDate()).padStart(2, '0');
@@ -2674,6 +2694,24 @@
                     const min = String(chkIn.getMinutes()).padStart(2, '0');
                     const ss = String(chkIn.getSeconds()).padStart(2, '0');
                     visitTimeStr = `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
+                } else if (clientVisits && clientVisits.length > 0) {
+                    // Find latest visit
+                    let latestVisit = clientVisits[0];
+                    for (let j = 1; j < clientVisits.length; j++) {
+                        const lTime = new Date(latestVisit.checkout_at || latestVisit.created_at).getTime();
+                        const cTime = new Date(clientVisits[j].checkout_at || clientVisits[j].created_at).getTime();
+                        if (cTime > lTime) latestVisit = clientVisits[j];
+                    }
+                    if (latestVisit) {
+                        const tVisitTime = latestVisit.checkout_at || latestVisit.created_at; const tVisitTimeStr = String(tVisitTime || "").endsWith("Z") || String(tVisitTime || "").match(/[+-]\d{2}:\d{2}$/) ? tVisitTime : tVisitTime + "Z"; const chkIn = new Date(tVisitTimeStr);
+                        const dd = String(chkIn.getDate()).padStart(2, '0');
+                        const mm = String(chkIn.getMonth() + 1).padStart(2, '0');
+                        const yyyy = chkIn.getFullYear();
+                        const hh = String(chkIn.getHours()).padStart(2, '0');
+                        const min = String(chkIn.getMinutes()).padStart(2, '0');
+                        visitTimeStr = `Últ. visita: ${dd}/${mm}/${yyyy} ${hh}:${min}`;
+                        isLatestVisit = true;
+                    }
                 }
 
                 const isForaDeRota = !c._isScheduled && !!todaysVisit;
@@ -2716,7 +2754,7 @@
                                     </svg>
                                 ` : ''}
                             </div>
-                            <div class="text-xs text-slate-400 font-mono flex flex-wrap items-center gap-1">${cod} • ${c.cidade || ''} ${visitTimeStr ? '• ' + visitTimeStr : ''} ${(isForaDeRota && isToday) ? '<span class="ml-2 px-1.5 py-0.5 bg-orange-900/50 text-orange-400 border border-orange-500/30 rounded text-[10px] font-bold">Atendido fora de rota</span>' : ''}</div>
+                            <div class="text-xs text-slate-400 font-mono flex flex-wrap items-center gap-1">${cod} • ${c.cidade || ''} ${visitTimeStr ? '• <span class="text-slate-300">' + visitTimeStr + '</span>' : ''} ${(isForaDeRota && isToday) ? '<span class="ml-2 px-1.5 py-0.5 bg-orange-900/50 text-orange-400 border border-orange-500/30 rounded text-[10px] font-bold">Atendido fora de rota</span>' : ''}</div>
                         </div>
                     </div>
                     <div>
