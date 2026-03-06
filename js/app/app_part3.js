@@ -2499,6 +2499,8 @@
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         dateDisplay.textContent = date.toLocaleDateString('pt-BR', options);
 
+        const isPast = viewDate < today && window.userRole === 'promotor';
+
         // Filter Logic
         let clients = [];
         const searchTerm = (searchInput && searchInput.value) ? searchInput.value.toLowerCase().trim() : '';
@@ -2658,7 +2660,10 @@
             const emptyTitle = emptyState.querySelector('h3');
             const emptyDesc = emptyState.querySelector('p');
 
-            if (forceEmpty && searchTerm) {
+            if (isPast) {
+                emptyTitle.textContent = "Acesso Negado";
+                emptyDesc.textContent = "Não é possível consultar roteiro de dias passados";
+            } else if (forceEmpty && searchTerm) {
                 emptyTitle.textContent = "Cliente sem roteiro";
                 emptyDesc.textContent = "O cliente pesquisado não possui agendamento.";
             } else if (searchTerm) {

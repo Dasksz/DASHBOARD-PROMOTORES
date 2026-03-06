@@ -21448,6 +21448,8 @@ const supervisorGroups = new Map();
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         dateDisplay.textContent = date.toLocaleDateString('pt-BR', options);
 
+        const isPast = viewDate < today && window.userRole === 'promotor';
+
         // Filter Logic
         let clients = [];
         const searchTerm = (searchInput && searchInput.value) ? searchInput.value.toLowerCase().trim() : '';
@@ -21598,7 +21600,7 @@ const supervisorGroups = new Map();
         let surveyCount = 0;
         
         // Render List
-        if (scheduledClients.length === 0 || forceEmpty) {
+        if (scheduledClients.length === 0 || forceEmpty || isPast) {
             listContainer.innerHTML = '';
             emptyState.classList.remove('hidden');
             statsPanel.classList.add('hidden'); // Hide stats if no clients
@@ -21607,7 +21609,10 @@ const supervisorGroups = new Map();
             const emptyTitle = emptyState.querySelector('h3');
             const emptyDesc = emptyState.querySelector('p');
 
-            if (forceEmpty && searchTerm) {
+            if (isPast) {
+                emptyTitle.textContent = "Acesso Negado";
+                emptyDesc.textContent = "Não é possível consultar roteiro de dias passados";
+            } else if (forceEmpty && searchTerm) {
                 emptyTitle.textContent = "Cliente sem roteiro";
                 emptyDesc.textContent = "O cliente pesquisado não possui agendamento.";
             } else if (searchTerm) {
