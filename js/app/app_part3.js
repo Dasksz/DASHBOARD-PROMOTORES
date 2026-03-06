@@ -4934,6 +4934,19 @@
         }
 
         function resetPositivacaoFilters() {
+
+            if (hierarchyState['positivacao']) {
+                hierarchyState['positivacao'].coords.clear();
+                hierarchyState['positivacao'].cocoords.clear();
+                hierarchyState['positivacao'].promotors.clear();
+            }
+
+            if (typeof selectedPositivacaoSupervisors !== 'undefined') selectedPositivacaoSupervisors.clear();
+            if (typeof selectedPositivacaoVendedores !== 'undefined') selectedPositivacaoVendedores.clear();
+
+            if (typeof updatePositivacaoSupervisorFilter === 'function') updatePositivacaoSupervisorFilter();
+            if (typeof updatePositivacaoVendedorFilter === 'function') updatePositivacaoVendedorFilter();
+
             selectedPositivacaoCoords = [];
             selectedPositivacaoCoCoords = [];
             selectedPositivacaoPromotors = [];
@@ -5213,6 +5226,19 @@
             selectedTitulosRedes = [];
             titulosRedeGroupFilter = '';
             document.getElementById('titulos-codcli-filter').value = '';
+            if(document.getElementById('titulos-city-filter')) document.getElementById('titulos-city-filter').value = '';
+
+            if (hierarchyState['titulos']) {
+                hierarchyState['titulos'].coords.clear();
+                hierarchyState['titulos'].cocoords.clear();
+                hierarchyState['titulos'].promotors.clear();
+            }
+
+            if (typeof selectedTitulosSupervisors !== 'undefined') selectedTitulosSupervisors.clear();
+            if (typeof selectedTitulosVendedores !== 'undefined') selectedTitulosVendedores.clear();
+
+            if (typeof updateTitulosSupervisorFilter === 'function') updateTitulosSupervisorFilter();
+            if (typeof updateTitulosVendedorFilter === 'function') updateTitulosVendedorFilter();
 
             const groupContainer = document.getElementById('titulos-rede-group-container');
             if(groupContainer) {
