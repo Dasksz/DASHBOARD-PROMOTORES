@@ -5,6 +5,39 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
+
+// Helper to safely format dates to BRT (UTC-3) without relying on Intl/ICU data in Deno
+function formatBRT(dateInput: any) {
+    if (!dateInput) return { dateStr: '--/--/----', timeStr: '--:--' };
+
+    let normalizedStr = dateInput;
+    if (typeof dateInput === 'string') {
+        normalizedStr = dateInput.replace(' ', 'T');
+        if (normalizedStr.endsWith('+00')) {
+             normalizedStr = normalizedStr.replace('+00', 'Z');
+        }
+    }
+
+    const date = new Date(normalizedStr);
+    if (isNaN(date.getTime())) return { dateStr: '--/--/----', timeStr: '--:--' };
+
+    // Calculate BRT offset (UTC-3)
+    const offset = -3 * 60 * 60 * 1000;
+    const brtDate = new Date(date.getTime() + offset);
+
+    const dd = String(brtDate.getUTCDate()).padStart(2, '0');
+    const mm = String(brtDate.getUTCMonth() + 1).padStart(2, '0');
+    const yyyy = brtDate.getUTCFullYear();
+
+    const hours = String(brtDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(brtDate.getUTCMinutes()).padStart(2, '0');
+
+    return {
+        dateStr: `${dd}/${mm}/${yyyy}`,
+        timeStr: `${hours}:${minutes}`
+    };
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -352,9 +385,9 @@ serve(async (req) => {
     const rejectUrl = `${supabaseUrl}/functions/v1/reject-visit?id=${record.id}`
 
     // Formatting Dates
-    const visitDate = new Date(record.data_visita).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-    const checkInTime = new Date(record.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', timeZone: 'America/Sao_Paulo'});
-    const checkOutTime = record.checkout_at ? new Date(record.checkout_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', timeZone: 'America/Sao_Paulo'}) : '--:--';
+    const visitDate = formatBRT(record.data_visita).dateStr;
+    const checkInTime = formatBRT(record.created_at).timeStr;
+    const checkOutTime = record.checkout_at ? formatBRT(record.checkout_at).timeStr : '--:--';
 
     // Parsing Survey Answers Table
     let answersRows = '';
