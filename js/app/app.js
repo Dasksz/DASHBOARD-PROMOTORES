@@ -18200,9 +18200,10 @@ const supervisorGroups = new Map();
                     const newValStr = formatGoalValue(newVal, u.type);
                     const diffStr = formatGoalValue(diff, u.type);
 
-                    let diffClass = "text-slate-500";
-                    if (diff > 0.001) diffClass = "text-green-400 font-bold";
-                    else if (diff < -0.001) diffClass = "text-red-400 font-bold";
+                    let diffColor = "#94a3b8";
+                    let diffWeight = "normal";
+                    if (diff > 0.001) { diffColor = "#4ade80"; diffWeight = "bold"; }
+                    else if (diff < -0.001) { diffColor = "#f87171"; diffWeight = "bold"; }
 
                     const sellerCode = optimizedData.rcaCodeByName.get(u.seller) || '-';
 
@@ -18215,7 +18216,7 @@ const supervisorGroups = new Map();
                         <td class="px-4 py-2 text-xs text-blue-300">${displayCategory}</td>
                         <td class="px-4 py-2 text-xs text-slate-400 font-mono text-right">${currentValStr}</td>
                         <td class="px-4 py-2 text-xs text-white font-bold font-mono text-right">${newValStr}</td>
-                        <td class="px-4 py-2 text-xs ${diffClass} font-mono text-right">${diff > 0 ? '+' : ''}${diffStr}</td>
+                        <td class="px-4 py-2 text-xs font-mono text-right" style="color: ${diffColor}; font-weight: ${diffWeight};">${diff > 0 ? '+' : ''}${diffStr}</td>
                         <td class="px-4 py-2 text-center text-xs"><span class="px-2 py-1 rounded-full bg-blue-900/50 text-blue-200 text-[10px]">Importar</span></td>
                     `;
                     analysisBody.appendChild(row);
