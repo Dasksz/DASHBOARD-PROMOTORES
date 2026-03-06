@@ -352,9 +352,9 @@ serve(async (req) => {
     const rejectUrl = `${supabaseUrl}/functions/v1/reject-visit?id=${record.id}`
 
     // Formatting Dates
-    const visitDate = new Date(record.data_visita).toLocaleDateString('pt-BR');
-    const checkInTime = new Date(record.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-    const checkOutTime = record.checkout_at ? new Date(record.checkout_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--';
+    const visitDate = new Date(record.data_visita).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    const checkInTime = new Date(record.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', timeZone: 'America/Sao_Paulo'});
+    const checkOutTime = record.checkout_at ? new Date(record.checkout_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit', timeZone: 'America/Sao_Paulo'}) : '--:--';
 
     // Parsing Survey Answers Table
     let answersRows = '';
