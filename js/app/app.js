@@ -2539,8 +2539,8 @@
         const positivacaoTipoVendaFilterBtn = document.getElementById('positivacao-tipo-venda-filter-btn');
         const positivacaoTipoVendaFilterText = document.getElementById('positivacao-tipo-venda-filter-text');
         const positivacaoTipoVendaFilterDropdown = document.getElementById('positivacao-tipo-venda-filter-dropdown');
-        const positivacaoSupplierFilterBtn = document.getElementById('positivacao-supplier-filter-btn');
-        const positivacaoSupplierFilterText = document.getElementById('positivacao-supplier-filter-text');
+        let positivacaoSupplierFilterBtn = document.getElementById('positivacao-supplier-filter-btn');
+        let positivacaoSupplierFilterText = document.getElementById('positivacao-supplier-filter-text');
         const positivacaoSupplierFilterDropdown = document.getElementById('positivacao-supplier-filter-dropdown');
         const positivacaoCodCliFilter = document.getElementById('positivacao-codcli-filter');
         const positivacaoCodCliFilterSuggestions = document.getElementById('positivacao-codcli-filter-suggestions');
@@ -2809,6 +2809,11 @@
         let selectedLpVendedores = new Set();
         let selectedHistorySupervisors = new Set();
         let selectedHistoryVendedores = new Set();
+
+        let historySupplierFilterBtn = document.getElementById('history-supplier-filter-btn');
+        let historySupplierFilterText = document.getElementById('history-supplier-filter-text');
+        let historySupplierFilterDropdown = document.getElementById('history-supplier-filter-dropdown');
+        let selectedHistorySuppliers = [];
         let selectedStockSupervisors = new Set();
         let selectedStockVendedores = new Set();
         let selectedPositivacaoSuppliers = [];
@@ -22220,6 +22225,37 @@ const supervisorGroups = new Map();
             const filterBtn = document.getElementById('history-filter-btn');
             if(filterBtn) filterBtn.addEventListener('click', filterHistoryView);
 
+            // Initialize Supplier Filter Dropdown Options
+            if (historySupplierFilterDropdown) {
+                selectedHistorySuppliers = updateSupplierFilter(historySupplierFilterDropdown, historySupplierFilterText, selectedHistorySuppliers, [...allSalesData, ...allHistoryData], 'history');
+
+                if (!historySupplierFilterDropdown._hasListener) {
+                    historySupplierFilterBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        historySupplierFilterDropdown.classList.toggle('hidden');
+                    });
+
+                    document.addEventListener('click', (e) => {
+                        if (!historySupplierFilterBtn.contains(e.target) && !historySupplierFilterDropdown.contains(e.target)) {
+                            historySupplierFilterDropdown.classList.add('hidden');
+                        }
+                    });
+
+                    historySupplierFilterDropdown.addEventListener('change', (e) => {
+                         if (e.target.type === 'checkbox') {
+                             const val = e.target.value;
+                             if (e.target.checked) selectedHistorySuppliers.push(val);
+                             else selectedHistorySuppliers = selectedHistorySuppliers.filter(s => s !== val);
+                             selectedHistorySuppliers = updateSupplierFilter(historySupplierFilterDropdown, historySupplierFilterText, selectedHistorySuppliers, [...allSalesData, ...allHistoryData], 'history');
+                             // Auto-filter on change
+                             historyTableState.page = 1;
+                             filterHistoryView();
+                         }
+                    });
+                    historySupplierFilterDropdown._hasListener = true;
+                }
+            }
+
             const clearBtn = document.getElementById('clear-history-filters-btn');
             if(clearBtn) {
                 clearBtn.addEventListener('click', () => {
@@ -22234,6 +22270,12 @@ const supervisorGroups = new Map();
 
                     document.getElementById('history-posicao-filter').value = '';
                     document.getElementById('history-codcli-filter').value = '';
+
+                    selectedHistorySuppliers = [];
+                    if (historySupplierFilterDropdown) {
+                        historySupplierFilterDropdown.querySelectorAll('input').forEach(cb => cb.checked = false);
+                        selectedHistorySuppliers = updateSupplierFilter(historySupplierFilterDropdown, historySupplierFilterText, selectedHistorySuppliers, [...allSalesData, ...allHistoryData], 'history');
+                    }
 
                     // Reset Rede
                     historyRedeGroupFilter = '';
@@ -26819,9 +26861,15 @@ const supervisorGroups = new Map();
             // Supplier Filter (New)
             if (positivacaoSupplierFilterDropdown && !positivacaoSupplierFilterDropdown._hasListener) {
                 if (positivacaoSupplierFilterBtn) {
-                    // Clone to remove old listeners (if any)
+                    // Fetch the current text element BEFORE cloning, so we don't lose reference to the original
+                    let currentTextEl = document.getElementById('positivacao-supplier-filter-text');
+
                     const newBtn = positivacaoSupplierFilterBtn.cloneNode(true);
                     positivacaoSupplierFilterBtn.parentNode.replaceChild(newBtn, positivacaoSupplierFilterBtn);
+
+                    // Re-assign the global reference to the cloned elements to prevent modifying detached DOM nodes
+                    positivacaoSupplierFilterBtn = newBtn;
+                    positivacaoSupplierFilterText = newBtn.querySelector('#positivacao-supplier-filter-text') || currentTextEl;
 
                     newBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
