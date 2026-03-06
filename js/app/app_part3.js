@@ -2364,7 +2364,9 @@
 
             const todayRef = new Date();
             todayRef.setHours(0,0,0,0);
-            const isPast = d.getTime() < todayRef.getTime() && window.userRole === 'promotor';
+            const dRef = new Date(d);
+            dRef.setHours(0,0,0,0);
+            const isPast = dRef.getTime() < todayRef.getTime() && window.userRole === 'promotor';
 
             const dayEl = document.createElement('div');
             dayEl.className = `flex flex-col items-center justify-center p-2 rounded-lg min-w-[50px] transition-colors ${isSelected ? 'bg-purple-600 text-white shadow-lg scale-110' : (isPast ? 'text-slate-600 opacity-50 cursor-not-allowed' : 'text-slate-400 hover:bg-white/5 cursor-pointer')}`;
@@ -2403,9 +2405,10 @@
                 today.setHours(0,0,0,0);
                 const prevDate = new Date(roteiroDate);
                 prevDate.setDate(prevDate.getDate() - 1);
+                prevDate.setHours(0,0,0,0); // Explicitly zero time
 
                 // If trying to go before today, block
-                if (prevDate < today) {
+                if (prevDate.getTime() < today.getTime()) {
                     return;
                 }
             }
@@ -2421,7 +2424,9 @@
         if (window.userRole === 'promotor') {
             const today = new Date();
             today.setHours(0,0,0,0);
-            const isToday = roteiroDate.getTime() === today.getTime();
+            const roteiroRef = new Date(roteiroDate);
+            roteiroRef.setHours(0,0,0,0);
+            const isToday = roteiroRef.getTime() === today.getTime();
             if (isToday) {
                 newPrev.classList.add('opacity-50', 'cursor-not-allowed');
             } else {
