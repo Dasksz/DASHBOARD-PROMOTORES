@@ -17571,7 +17571,7 @@ const supervisorGroups = new Map();
             updateVendedorFilterDropdown();
             updateDashboard();
         });
-        setupHierarchyFilters('city', updateCityView);
+
         setupHierarchyFilters('comparison', updateComparisonView);
         setupComparisonFilialFilterHandlers();
         setupHierarchyFilters('innovations-month', updateInnovationsMonthView);
