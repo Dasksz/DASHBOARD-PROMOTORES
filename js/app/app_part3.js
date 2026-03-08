@@ -4166,7 +4166,7 @@
 
             // Handle Múltiplas Fotos (Antes/Depois ou Geral)
             const fotosArray = [];
-
+            
             // Helper to upload a single file
             const uploadFile = async (file, prefix) => {
                 if (!file || file.size === 0) return null;
@@ -4193,7 +4193,7 @@
             // Read state from window.visitaFotosState
             if (window.visitaFotosState) {
                 const isModoAntesDepois = window.visitaFotosState.modoAntesDepois;
-
+                
                 if (isModoAntesDepois) {
                     // Upload Antes
                     for (let i = 0; i < window.visitaFotosState.antes.length; i++) {
@@ -4220,7 +4220,7 @@
             if (fotosArray.length > 0) {
                 respostas.fotos = fotosArray; // Append array of urls
             }
-
+            
             // Cleanup legacy field if it somehow got in
             delete respostas.foto_gondola;
 
