@@ -8,12 +8,12 @@ const FeedVisitas = (() => {
     let feedData = [];
 
     // DOM Elements
-    const container = document.getElementById('feed-visitas-view');
+    const container = document.getElementById('feed-view');
     const cardsContainer = document.getElementById('feed-cards-container');
     const loadingIndicator = document.getElementById('feed-loading');
     const dateFilter = document.getElementById('feed-date-filter');
-    const promotorFilter = document.getElementById('feed-promotor-filter');
-    const clienteFilter = document.getElementById('feed-cliente-filter');
+    const promotorFilter = document.getElementById('feed-user-filter');
+    const clienteFilter = document.getElementById('feed-client-filter');
 
     // Init
     function init() {

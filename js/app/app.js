@@ -19514,63 +19514,103 @@ const supervisorGroups = new Map();
 
     let selectedRackOptions = new Set();
 
-    function initCustomFileInput() {
-        const inputGallery = document.getElementById('visita-foto-input');
-        const inputCamera = document.getElementById('visita-foto-input-camera');
-        
-        const btnGallery = document.getElementById('trigger-gallery-btn');
-        const btnCamera = document.getElementById('trigger-camera-btn');
-        
-        const triggerArea = document.getElementById('visita-foto-trigger');
-        const preview = document.getElementById('visita-foto-preview');
-        const filenameEl = document.getElementById('visita-foto-filename');
-        const removeBtn = document.getElementById('visita-foto-remove');
+        function initCustomFileInput() {
+        const state = window.visitaFotosState;
+        if (!state) return;
 
-        if (!inputGallery || !preview) return;
+        const btnGeral = document.getElementById('foto-tipo-geral');
+        const btnAntesDepois = document.getElementById('foto-tipo-antes-depois');
+        const containerGeral = document.getElementById('fotos-geral-container');
+        const containerAntesDepois = document.getElementById('fotos-antes-depois-container');
 
-        // Bind Buttons
-        if (btnGallery) btnGallery.onclick = (e) => { e.stopPropagation(); inputGallery.click(); };
-        if (btnCamera) btnCamera.onclick = (e) => { e.stopPropagation(); inputCamera.click(); };
-        
-        // Fallback for clicking the dashed area (Default to Gallery if clicked outside buttons)
-        if (triggerArea) triggerArea.onclick = (e) => {
-            if (e.target !== btnGallery && e.target !== btnCamera && !btnGallery.contains(e.target) && !btnCamera.contains(e.target)) {
-               // Optional: Do nothing or default? Let's do nothing to force explicit choice, 
-               // or default to gallery. User requested "Camera OR Photo".
-               // Explicit buttons handle it.
+        if (!btnGeral || !btnAntesDepois) return;
+
+        const setModo = (modo) => {
+            state.modo = modo;
+            if (modo === 'geral') {
+                btnGeral.classList.replace('text-slate-400', 'text-white');
+                btnGeral.classList.replace('hover:text-white', 'bg-[#FF5E00]');
+                btnGeral.classList.add('shadow-md');
+                btnAntesDepois.classList.replace('text-white', 'text-slate-400');
+                btnAntesDepois.classList.replace('bg-[#FF5E00]', 'hover:text-white');
+                btnAntesDepois.classList.remove('shadow-md');
+                containerGeral.classList.remove('hidden');
+                containerAntesDepois.classList.add('hidden');
+            } else {
+                btnAntesDepois.classList.replace('text-slate-400', 'text-white');
+                btnAntesDepois.classList.replace('hover:text-white', 'bg-[#FF5E00]');
+                btnAntesDepois.classList.add('shadow-md');
+                btnGeral.classList.replace('text-white', 'text-slate-400');
+                btnGeral.classList.replace('bg-[#FF5E00]', 'hover:text-white');
+                btnGeral.classList.remove('shadow-md');
+                containerAntesDepois.classList.remove('hidden');
+                containerGeral.classList.add('hidden');
             }
         };
 
-        const handleFileSelect = (file, sourceInput) => {
-            if (file) {
-                filenameEl.textContent = file.name;
-                triggerArea.classList.add('hidden');
-                preview.classList.remove('hidden');
-                
-                // Clear the OTHER input to avoid confusion
-                if (sourceInput === inputGallery && inputCamera) inputCamera.value = '';
-                if (sourceInput === inputCamera && inputGallery) inputGallery.value = '';
+        btnGeral.onclick = () => setModo('geral');
+        btnAntesDepois.onclick = () => setModo('antes-depois');
+
+        window.removeFotoVisita = (type, index) => {
+            if (state.fotos[type] && state.fotos[type].length > index) {
+                state.fotos[type].splice(index, 1);
+                if (type === 'geral' && window.updateGeralPreview) window.updateGeralPreview();
+                if (type === 'antes' && window.updateAntesPreview) window.updateAntesPreview();
+                if (type === 'depois' && window.updateDepoisPreview) window.updateDepoisPreview();
             }
         };
 
-        inputGallery.onchange = () => {
-            if (inputGallery.files && inputGallery.files.length > 0) handleFileSelect(inputGallery.files[0], inputGallery);
+        const setupInput = (type, inputId, previewId, countId) => {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            const count = document.getElementById(countId);
+            if (!input || !preview || !count) return;
+
+            const updatePreview = () => {
+                preview.innerHTML = '';
+                state.fotos[type].forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const div = document.createElement('div');
+                        div.className = 'relative aspect-square rounded-lg overflow-hidden border border-slate-700 bg-slate-800';
+                        div.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">
+                        <button type="button" class="absolute top-1 right-1 bg-red-600/90 hover:bg-red-500 text-white p-1 rounded-md transition-colors" onclick="window.removeFotoVisita('${type}', ${index})">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>`;
+                        preview.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                count.textContent = `(${state.fotos[type].length}/${state.max[type]})`;
+            };
+
+            if (type === 'geral') window.updateGeralPreview = updatePreview;
+            if (type === 'antes') window.updateAntesPreview = updatePreview;
+            if (type === 'depois') window.updateDepoisPreview = updatePreview;
+
+            input.onchange = (e) => {
+                if (!e.target.files) return;
+                const files = Array.from(e.target.files);
+                let added = 0;
+                for (const file of files) {
+                    if (state.fotos[type].length >= state.max[type]) break;
+                    if (file.size > 5 * 1024 * 1024) {
+                        if (window.showToast) window.showToast('error', `A imagem ${file.name} excede o limite de 5MB.`);
+                        continue;
+                    }
+                    state.fotos[type].push(file);
+                    added++;
+                }
+                if (added > 0) updatePreview();
+                input.value = '';
+            };
+
+            updatePreview();
         };
 
-        if (inputCamera) {
-            inputCamera.onchange = () => {
-                if (inputCamera.files && inputCamera.files.length > 0) handleFileSelect(inputCamera.files[0], inputCamera);
-            };
-        }
-
-        if (removeBtn) {
-            removeBtn.onclick = () => {
-                inputGallery.value = '';
-                if (inputCamera) inputCamera.value = '';
-                triggerArea.classList.remove('hidden');
-                preview.classList.add('hidden');
-            };
-        }
+        setupInput('geral', 'input-foto-geral', 'preview-geral', 'count-geral');
+        setupInput('antes', 'input-foto-antes', 'preview-antes', 'count-antes');
+        setupInput('depois', 'input-foto-depois', 'preview-depois', 'count-depois');
     }
 
     function resetCustomFileInput() {
@@ -25034,26 +25074,26 @@ const supervisorGroups = new Map();
 
             // Read state from window.visitaFotosState
             if (window.visitaFotosState) {
-                const isModoAntesDepois = window.visitaFotosState.modoAntesDepois;
+                const isModoAntesDepois = window.visitaFotosState.modo === 'antes-depois';
 
                 if (isModoAntesDepois) {
                     // Upload Antes
-                    for (let i = 0; i < window.visitaFotosState.antes.length; i++) {
+                    for (let i = 0; i < window.visitaFotosState.fotos.antes.length; i++) {
                         btn.innerHTML = `Enviando foto ANTES ${i+1}...`;
-                        const url = await uploadFile(window.visitaFotosState.antes[i], 'antes');
+                        const url = await uploadFile(window.visitaFotosState.fotos.antes[i], 'antes');
                         if (url) fotosArray.push({ url, tipo: 'antes' });
                     }
                     // Upload Depois
-                    for (let i = 0; i < window.visitaFotosState.depois.length; i++) {
+                    for (let i = 0; i < window.visitaFotosState.fotos.depois.length; i++) {
                         btn.innerHTML = `Enviando foto DEPOIS ${i+1}...`;
-                        const url = await uploadFile(window.visitaFotosState.depois[i], 'depois');
+                        const url = await uploadFile(window.visitaFotosState.fotos.depois[i], 'depois');
                         if (url) fotosArray.push({ url, tipo: 'depois' });
                     }
                 } else {
                     // Upload Geral
-                    for (let i = 0; i < window.visitaFotosState.geral.length; i++) {
+                    for (let i = 0; i < window.visitaFotosState.fotos.geral.length; i++) {
                         btn.innerHTML = `Enviando foto GERAL ${i+1}...`;
-                        const url = await uploadFile(window.visitaFotosState.geral[i], 'geral');
+                        const url = await uploadFile(window.visitaFotosState.fotos.geral[i], 'geral');
                         if (url) fotosArray.push({ url, tipo: 'geral' });
                     }
                 }
