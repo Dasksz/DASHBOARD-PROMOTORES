@@ -8,15 +8,23 @@ const FeedVisitas = (() => {
     let feedData = [];
 
     // DOM Elements
-    const container = document.getElementById('feed-view');
-    const cardsContainer = document.getElementById('feed-cards-container');
-    const loadingIndicator = document.getElementById('feed-loading');
-    const dateFilter = document.getElementById('feed-date-filter');
-    const promotorFilter = document.getElementById('feed-user-filter');
-    const clienteFilter = document.getElementById('feed-client-filter');
+    let container;
+    let cardsContainer;
+    let loadingIndicator;
+    let dateFilter;
+    let promotorFilter;
+    let clienteFilter;
+
 
     // Init
     function init() {
+        container = document.getElementById('feed-view');
+        cardsContainer = document.getElementById('feed-cards-container');
+        loadingIndicator = document.getElementById('feed-loading');
+        dateFilter = document.getElementById('feed-date-filter');
+        promotorFilter = document.getElementById('feed-user-filter');
+        clienteFilter = document.getElementById('feed-client-filter');
+
         if (!container) return;
         
         // Setup filters
