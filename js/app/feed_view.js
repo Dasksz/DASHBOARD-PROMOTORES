@@ -18,7 +18,7 @@ const FeedVisitas = (() => {
     // Init
     function init() {
         if (!container) return;
-
+        
         // Setup filters
         const today = new Date();
         const yyyy = today.getFullYear();
@@ -27,10 +27,10 @@ const FeedVisitas = (() => {
         dateFilter.value = `${yyyy}-${mm}-${dd}`;
 
         setupFilters();
-
+        
         // Setup infinite scroll
         window.addEventListener('scroll', handleScroll);
-
+        
         // Initial load
         loadFeed();
     }
@@ -41,13 +41,13 @@ const FeedVisitas = (() => {
 
         dateFilter.addEventListener('change', () => { resetFeed(); loadFeed(); });
         promotorFilter.addEventListener('change', () => { resetFeed(); loadFeed(); });
-
+        
         // Debounce for text input
         let debounceTimer;
         clienteFilter.addEventListener('input', () => {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
-                resetFeed();
+                resetFeed(); 
                 loadFeed();
             }, 500);
         });
@@ -97,15 +97,15 @@ const FeedVisitas = (() => {
             let query = window.supabaseClient
                 .from('visitas')
                 .select(`
-                    id,
-                    created_at,
-                    id_promotor,
-                    id_cliente,
-                    client_code,
-                    data_visita,
-                    checkout_at,
-                    respostas,
-                    observacao,
+                    id, 
+                    created_at, 
+                    id_promotor, 
+                    id_cliente, 
+                    client_code, 
+                    data_visita, 
+                    checkout_at, 
+                    respostas, 
+                    observacao, 
                     status,
                     profiles:id_promotor (name, email)
                 `)
@@ -121,7 +121,7 @@ const FeedVisitas = (() => {
             // Role / RLS equivalent filtering (Client side fallback just in case)
             const role = (window.userRole || '').trim().toLowerCase();
             const isRestricted = role === 'promotor' || role === 'vendedor' || window.userIsSeller || window.userIsPromoter;
-
+            
             if (isRestricted) {
                 // For restricted users, filter only their own visits (id_promotor = window.userId)
                 // Since id_promotor in visitas is auth.users UUID, we can use the RLS or explicit filter
@@ -150,7 +150,7 @@ const FeedVisitas = (() => {
 
             // Client side filtering for text and specific promotor code if needed
             let filteredData = data;
-
+            
             if (clienteVal) {
                 filteredData = filteredData.filter(v => {
                     const clientName = (window.resolveDim('clientes', v.client_code || v.id_cliente) || {nome: ''}).nome.toLowerCase();
@@ -187,19 +187,19 @@ const FeedVisitas = (() => {
     }
 
     // Helper: MD5 Hash for Gravatar (Simple implementation)
-    // For a real app, you might want to include a small md5 library,
+    // For a real app, you might want to include a small md5 library, 
     // but for now we can try to use standard crypto or a fallback.
     async function getGravatarUrl(email) {
         if (!email) return null;
         const normalizedEmail = email.trim().toLowerCase();
-
+        
         try {
             // Use Web Crypto API
             const msgBuffer = new TextEncoder().encode(normalizedEmail);
             const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
             const hashArray = Array.from(new Uint8Array(hashBuffer));
             const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
+            
             // Note: Gravatar uses MD5, but we are using SHA-256 here which Gravatar ALSO supports via sha256!
             // Actually, Gravatar standard is MD5. Since we don't have MD5 easily, we can use ui-avatars as fallback
             return `https://ui-avatars.com/api/?name=${encodeURIComponent(normalizedEmail)}&background=random`;
@@ -215,7 +215,7 @@ const FeedVisitas = (() => {
         // 1. Resolve Data
         const clientCode = visit.client_code || visit.id_cliente;
         const clientInfo = window.resolveDim('clientes', clientCode) || { nome: 'Cliente Desconhecido' };
-
+        
         let promotorName = 'Usuário';
         let promotorEmail = '';
         if (visit.profiles) {
@@ -232,7 +232,7 @@ const FeedVisitas = (() => {
         // 2. Parse Photos
         let fotosHtml = '';
         let fotos = [];
-
+        
         if (visit.respostas && visit.respostas.fotos && Array.isArray(visit.respostas.fotos)) {
             fotos = visit.respostas.fotos;
         } else if (visit.respostas && visit.respostas.foto_url) {
@@ -244,7 +244,7 @@ const FeedVisitas = (() => {
             const slidesHtml = fotos.map((foto, index) => {
                 let badgeClass = 'bg-slate-800/80 text-white';
                 let badgeText = 'GERAL';
-
+                
                 if (foto.tipo === 'antes') {
                     badgeClass = 'bg-red-500/80 text-white';
                     badgeText = 'ANTES';
@@ -307,7 +307,7 @@ const FeedVisitas = (() => {
                 ${visit.observacao ? `
                 <p class="text-sm text-slate-300 mb-3 whitespace-pre-line leading-relaxed"><span class="font-bold text-white">Obs:</span> ${visit.observacao}</p>
                 ` : ''}
-
+                
                 ${renderRespostasResumo(visit.respostas)}
             </div>
         `;
@@ -335,23 +335,23 @@ const FeedVisitas = (() => {
 
     function renderRespostasResumo(respostas) {
         if (!respostas || Object.keys(respostas).length === 0) return '';
-
+        
         let html = '<div class="flex flex-wrap gap-2 mt-2">';
-
+        
         // Loop through keys that are not 'fotos' or 'foto_url'
         for (const [key, value] of Object.entries(respostas)) {
             if (key === 'fotos' || key === 'foto_url') continue;
-
+            
             // Format key
             const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
+            
             html += `
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
                     <span class="text-slate-500">${label}:</span> ${value}
                 </span>
             `;
         }
-
+        
         html += '</div>';
         return html;
     }
