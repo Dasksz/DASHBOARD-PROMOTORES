@@ -24999,52 +24999,65 @@ const supervisorGroups = new Map();
             const obs = respostas.observacoes;
             delete respostas.observacoes; // Store obs separately in column
 
-            // Handle Photo Upload
-            // Check both inputs
-            let fotoFile = formData.get('foto_gondola'); // From Gallery Input (name="foto_gondola")
+            // Handle Múltiplas Fotos (Antes/Depois ou Geral)
+            const fotosArray = [];
             
-            // Check Camera Input manually if main is empty
-            if (!fotoFile || fotoFile.size === 0) {
-                const cameraInput = document.getElementById('visita-foto-input-camera');
-                if (cameraInput && cameraInput.files.length > 0) {
-                    fotoFile = cameraInput.files[0];
-                }
-            }
-
-            delete respostas.foto_gondola; // Remove file object from JSON
-
-            let fotoUrl = null;
-
-            if (fotoFile && fotoFile.size > 0) {
-                btn.innerHTML = 'Enviando foto...';
+            // Helper to upload a single file
+            const uploadFile = async (file, prefix) => {
+                if (!file || file.size === 0) return null;
+                const fileName = `${visitId}_${prefix}_${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
                 try {
-                    const fileName = `${visitId}_${Date.now()}.jpg`;
                     const { data, error: uploadError } = await window.supabaseClient
                         .storage
                         .from('visitas-images')
-                        .upload(fileName, fotoFile, {
-                            cacheControl: '3600',
-                            upsert: false
-                        });
+                        .upload(fileName, file, { cacheControl: '3600', upsert: false });
 
-                    if (uploadError) {
-                        console.error('Erro no upload:', uploadError);
-                        // Don't block submission, just log error
-                    } else {
+                    if (!uploadError) {
                         const { data: publicUrlData } = window.supabaseClient
                             .storage
                             .from('visitas-images')
                             .getPublicUrl(fileName);
-                        
-                        if (publicUrlData) {
-                            fotoUrl = publicUrlData.publicUrl;
-                            respostas.foto_url = fotoUrl; // Store URL in answers
-                        }
+                        return publicUrlData ? publicUrlData.publicUrl : null;
                     }
-                } catch (uploadErr) {
-                    console.error('Exceção no upload:', uploadErr);
+                } catch (e) {
+                    console.error('Upload error:', e);
+                }
+                return null;
+            };
+
+            // Read state from window.visitaFotosState
+            if (window.visitaFotosState) {
+                const isModoAntesDepois = window.visitaFotosState.modoAntesDepois;
+
+                if (isModoAntesDepois) {
+                    // Upload Antes
+                    for (let i = 0; i < window.visitaFotosState.antes.length; i++) {
+                        btn.innerHTML = `Enviando foto ANTES ${i+1}...`;
+                        const url = await uploadFile(window.visitaFotosState.antes[i], 'antes');
+                        if (url) fotosArray.push({ url, tipo: 'antes' });
+                    }
+                    // Upload Depois
+                    for (let i = 0; i < window.visitaFotosState.depois.length; i++) {
+                        btn.innerHTML = `Enviando foto DEPOIS ${i+1}...`;
+                        const url = await uploadFile(window.visitaFotosState.depois[i], 'depois');
+                        if (url) fotosArray.push({ url, tipo: 'depois' });
+                    }
+                } else {
+                    // Upload Geral
+                    for (let i = 0; i < window.visitaFotosState.geral.length; i++) {
+                        btn.innerHTML = `Enviando foto GERAL ${i+1}...`;
+                        const url = await uploadFile(window.visitaFotosState.geral[i], 'geral');
+                        if (url) fotosArray.push({ url, tipo: 'geral' });
+                    }
                 }
             }
+
+            if (fotosArray.length > 0) {
+                respostas.fotos = fotosArray; // Append array of urls
+            }
+
+            // Cleanup legacy field if it somehow got in
+            delete respostas.foto_gondola;
 
             btn.innerHTML = 'Salvando dados...';
 
