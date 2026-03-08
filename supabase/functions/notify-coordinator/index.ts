@@ -396,10 +396,21 @@ serve(async (req) => {
         for (const [key, value] of Object.entries(answers)) {
             // Clean keys if needed (e.g. remove snake_case) or use label map
             const questionLabel = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            // Determine if value needs special formatting (e.g. image URL)
+            // Determine if value needs special formatting (e.g. image URL or Array of Photos)
             let displayValue = String(value);
-            if (displayValue.startsWith('http') && (displayValue.includes('supabase') || displayValue.includes('.png') || displayValue.includes('.jpg'))) {
+
+            if (key === 'fotos' && Array.isArray(value)) {
+                // Handle new array of objects format
+                displayValue = value.map(foto => {
+                    const tipoLabel = foto.tipo ? foto.tipo.toUpperCase() : 'GERAL';
+                    return `<a href="${foto.url}" style="color: #2563eb; text-decoration: underline; margin-right: 8px;">Ver Foto (${tipoLabel})</a>`;
+                }).join('<br>');
+            } else if (typeof displayValue === 'string' && displayValue.startsWith('http') && (displayValue.includes('supabase') || displayValue.includes('.png') || displayValue.includes('.jpg'))) {
+                // Legacy support for plain strings
                 displayValue = `<a href="${displayValue}" style="color: #2563eb; text-decoration: underline;">Ver Foto</a>`;
+            } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                // Fallback for other objects just in case
+                displayValue = JSON.stringify(value);
             }
 
             answersRows += `

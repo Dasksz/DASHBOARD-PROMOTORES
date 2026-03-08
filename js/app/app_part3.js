@@ -672,7 +672,7 @@
                 if (added > 0) updatePreview();
                 input.value = '';
             };
-
+            
             updatePreview();
         };
 

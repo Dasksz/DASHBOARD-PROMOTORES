@@ -70,8 +70,8 @@ const FeedVisitas = (() => {
         hasMore = true;
         feedData = [];
         cardsContainer.innerHTML = '';
-        cardsContainer.appendChild(loadingIndicator);
-        loadingIndicator.classList.remove('hidden');
+        if(loadingIndicator) cardsContainer.appendChild(loadingIndicator);
+        if(loadingIndicator) loadingIndicator.classList.remove('hidden');
     }
 
     function handleScroll() {
@@ -87,7 +87,7 @@ const FeedVisitas = (() => {
     async function loadFeed() {
         if (isLoading || !hasMore) return;
         isLoading = true;
-        loadingIndicator.classList.remove('hidden');
+        if(loadingIndicator) loadingIndicator.classList.remove('hidden');
 
         try {
             const dateVal = dateFilter.value; // YYYY-MM-DD
@@ -159,7 +159,7 @@ const FeedVisitas = (() => {
             }
 
             // Remove loading indicator temporarily
-            loadingIndicator.remove();
+            if(loadingIndicator) loadingIndicator.remove();
 
             filteredData.forEach(visit => {
                 const card = createFeedCard(visit);
@@ -172,8 +172,8 @@ const FeedVisitas = (() => {
 
             // Re-append loading at the bottom if has more
             if (hasMore) {
-                cardsContainer.appendChild(loadingIndicator);
-                loadingIndicator.classList.add('hidden'); // hide until next scroll
+                if(loadingIndicator) cardsContainer.appendChild(loadingIndicator);
+                if(loadingIndicator) loadingIndicator.classList.add('hidden'); // hide until next scroll
             }
 
             feedData = [...feedData, ...filteredData];
