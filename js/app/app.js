@@ -845,7 +845,7 @@
                     const result = await geocodeAddressNominatim(address);
                     if (result) {
                         console.log(`[GeoSync] Sucesso: ${client.nomeCliente} -> Salvo.`);
-                        const codCli = String(client['Código'] || client['codigo_cliente']);
+                        const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                         await saveCoordinateToSupabase(codCli, result.lat, result.lng, result.formatted_address);
 
                         const cityMapContainer = document.getElementById('city-map-container');
@@ -1098,7 +1098,7 @@
 
             // Heatmap Loop (Sync - Fast) - Update UI immediately
             clients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const coords = clientCoordinatesMap.get(codCli);
 
                 if (coords) {
@@ -1192,7 +1192,7 @@
             const clientsToProcess = currentFilteredClients;
 
             runAsyncChunked(clientsToProcess, (client) => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const coords = clientCoordinatesMap.get(codCli);
 
                 if (coords) {
@@ -2987,7 +2987,7 @@
             const historyValues = isHistoryColumnar ? optimizedData.historyById._source.values : null;
 
             activeClients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 // Temp accumulation for this client to ensure Positive Balance check
@@ -3974,7 +3974,7 @@
             let totalSellerHistory = 0;
 
             activeClients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const historyIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 if (!clientSubCatHistory.has(codCli)) clientSubCatHistory.set(codCli, new Map());
@@ -4017,7 +4017,7 @@
             const subCatCount = targetCategories.length;
 
             activeClients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const subCatMap = clientSubCatHistory.get(codCli);
 
                 targetCategories.forEach(subCat => {
@@ -4537,7 +4537,7 @@
             const targetCategories = type === 'salty' ? MIX_SALTY_CATEGORIES : MIX_FOODS_CATEGORIES;
 
             activeClients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const historyIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 if (historyIds) {
@@ -4790,7 +4790,7 @@
             const goalsBySeller = new Map();
 
             clients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const rcaCode = String(client.rca1 || '');
                 const rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode; // Map code to name for grouping
 
@@ -5721,7 +5721,7 @@
 
             // A. Populate Goals
             clients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 if (!clientMap.has(codCli)) {
                     clientMap.set(codCli, { clientObj: client, goal: 0, salesTotal: 0, salesWeeks: new Array(weeks.length).fill(0) });
                 }
@@ -5771,7 +5771,7 @@
 
                 if (suppliersSet.size > 0 && !suppliersSet.has(s.CODFOR)) continue;
 
-                const codCli = String(s.CODCLI);
+                const codCli = normalizeKey(String(s.CODCLI));
                 // Check if client is in allowed list (Active/Filtered)
                 // Note: User said "todos os clientes que possuírem metas OU vendas".
                 // If a client has sales but was filtered out by "Active" check (e.g. Inactive RCA), should they appear?
@@ -6099,7 +6099,7 @@
             let count = 0;
 
             activeClients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
 
                 // For Mix Salty/Foods, we exclude Americanas from the base count (Seller 1001)
                 const rca1 = String(client.rca1 || '').trim();
@@ -6382,7 +6382,7 @@
             // Use standard loop for performance
             for (let i = 0; i < allClientsData.length; i++) {
                 const client = allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i];
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
 
                 // 1. Exclusions (Structure)
                 const rca1 = String(client.rca1 || '').trim();
@@ -6503,7 +6503,7 @@
                 });
 
                 allActiveClients.forEach(client => {
-                    const codCli = String(client['Código'] || client['codigo_cliente']);
+                    const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                     const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
                     if (clientHistoryIds) {
                         let sumFat = 0;
@@ -6533,7 +6533,7 @@
             const clientMetrics = [];
 
             filteredClients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 let sumFat = 0;
@@ -6694,7 +6694,7 @@
             const distributionMap = new Map(); // Map<ClientCod, Map<Key, AvgValue>>
 
             filteredClients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 if (!distributionMap.has(codCli)) distributionMap.set(codCli, new Map());
@@ -6739,7 +6739,7 @@
 
             // 2. Distribute
             filteredClients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const clientMap = distributionMap.get(codCli);
 
                 if (!globalClientGoals.has(codCli)) globalClientGoals.set(codCli, new Map());
@@ -7096,7 +7096,7 @@
             };
 
             activeClients.forEach(client => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const historyIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
                 if (historyIds) {
                     // Check if client bought ANY product in category
@@ -7334,7 +7334,7 @@
             let totalAvgFat = 0; let totalPrevFat = 0; let totalAvgVol = 0; let totalPrevVol = 0; let sumActiveMonths = 0; let totalPrevClients = 0;
 
             runAsyncChunked(filteredClients, (client) => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 let cSumFat = 0; let cSumVol = 0; let cPrevFat = 0; let cPrevVol = 0;
@@ -7977,7 +7977,7 @@
 
             // ASYNC LOOP
             runAsyncChunked(filteredClients, (client) => {
-                const codCli = String(client['Código'] || client['codigo_cliente']);
+                const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 let sellerName = 'N/A';
@@ -10315,7 +10315,7 @@ const supervisorGroups = new Map();
                         activeGoalKeys.add('PEPSICO_ALL');
                     }
 
-                    const useManualSellerTargets = (typeof adminViewMode !== 'undefined' && (adminViewMode === 'seller' || adminViewMode === 'supervisor') && (!codcli));
+                    const useManualSellerTargets = false; // User requested to always use client aggregated goals
                     const metricSuffix = (currentProductMetric === 'peso') ? '_VOL' : '_FAT';
 
                     if (useManualSellerTargets && typeof goalsSellerTargets !== 'undefined') {
@@ -16576,7 +16576,7 @@ const supervisorGroups = new Map();
                             for (const [k, v] of Object.entries(val)) {
                                 clientMap.set(k, v);
                             }
-                            globalClientGoals.set(key, clientMap);
+                            globalClientGoals.set(normalizeKey(key), clientMap);
                         }
 
                         // --- RE-AGGREGATE TOTALS (Fix for Dashboard 0 issue) ---
@@ -17783,7 +17783,7 @@ const supervisorGroups = new Map();
             });
 
             activeClients.forEach(client => {
-                const codCli = String(client["Código"] || client["codigo_cliente"]);
+                const codCli = normalizeKey(String(client["Código"] || client["codigo_cliente"]));
                 const historyIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
 
                 if (historyIds) {
@@ -18466,7 +18466,7 @@ const supervisorGroups = new Map();
                     const leafCategories = resolveGoalCategory(category);
 
                     activeClients.forEach(client => {
-                        const codCli = String(client['Código'] || client['codigo_cliente']);
+                        const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                         const clientGoals = globalClientGoals.get(codCli);
                         if (clientGoals) {
                             leafCategories.forEach(leaf => {
