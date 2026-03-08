@@ -3645,7 +3645,7 @@ innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
                     const leafCategories = resolveGoalCategory(category);
 
                     activeClients.forEach(client => {
-                        const codCli = String(client['Código'] || client['codigo_cliente']);
+                        const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                         const clientGoals = globalClientGoals.get(codCli);
                         if (clientGoals) {
                             leafCategories.forEach(leaf => {
