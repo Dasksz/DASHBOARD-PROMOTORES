@@ -1,26 +1,35 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
 serve(async (req) => {
-  const url = new URL(req.url)
-  const id = url.searchParams.get("id")
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
 
-  if (!id) return new Response("ID inválido", { status: 400 })
+  const url = new URL(req.url);
+  const id = url.searchParams.get("id");
+
+  if (!id) return new Response("ID inválido", { status: 400 });
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  )
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  );
 
   const { error } = await supabase
     .from("visitas")
     .update({ status: "aprovado" })
-    .eq("id", id)
+    .eq("id", id);
 
-  if (error) return new Response("Erro: " + error.message, { status: 500 })
+  if (error) return new Response("Erro: " + error.message, { status: 500 });
 
-  return new Response(
-    `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -98,16 +107,15 @@ serve(async (req) => {
         </div>
         <h1>Visita Aprovada</h1>
         <p>O registro foi validado e salvo com sucesso. Obrigado por manter os dados atualizados.</p>
-        <button onclick="window.close()" class="btn">Fechar Janela</button>
+        <p style="color: #94a3b8; font-size: 14px;">Você já pode fechar esta aba e voltar ao email ou sistema.</p>
     </div>
 </body>
-</html>`,
-    {
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;",
-        "X-Content-Type-Options": "nosniff"
-      }
-    }
-  )
-})
+</html>`;
+
+  return new Response(html, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "text/html; charset=utf-8",
+    },
+  });
+});
