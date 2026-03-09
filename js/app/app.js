@@ -176,6 +176,8 @@
                     if (forbidden.includes(codUsur)) return false;
                     return true;
                 });
+
+
             }
 
             // Handle Columnar Object (Raw)
@@ -219,6 +221,8 @@
                     }
                     newValues[col] = newArr;
                 });
+
+
 
                 return {
                     columns: data.columns,
@@ -298,6 +302,8 @@
                     value: function(i) { return this[i]; },
                     enumerable: false
                 });
+
+
             }
             return data;
         };
@@ -364,8 +370,12 @@
                                 newRow[k] = row[k];
                             }
                         });
+
+
                         return newRow;
                     });
+
+
                     const ws = XLSX.utils.json_to_sheet(cleanData);
                     XLSX.utils.book_append_sheet(wb, ws, name.substring(0, 31)); // Sheet names max 31 chars
                     hasData = true;
@@ -396,6 +406,8 @@
                     e.stopPropagation();
                     container.classList.toggle('active');
                 });
+
+
             }
 
             // Global click to close
@@ -413,6 +425,8 @@
                     container.classList.remove('active');
                     pdfHandler();
                 });
+
+
             }
 
             if (excelBtn && excelHandler) {
@@ -423,6 +437,8 @@
                     container.classList.remove('active');
                     excelHandler();
                 });
+
+
             }
         }
 
@@ -455,6 +471,8 @@
                     }
                 });
 
+
+
                 if (dropdown) {
                     dropdown.addEventListener('change', (e) => {
                         if (e.target.type === 'checkbox') {
@@ -467,6 +485,8 @@
                             updateCoverageView();
                         }
                     });
+
+
                 }
 
                 document.addEventListener('click', (e) => {
@@ -474,6 +494,8 @@
                         dropdown.classList.add('hidden');
                     }
                 });
+
+
             }
         }
 
@@ -631,6 +653,8 @@
                     lng: parseFloat(c.lng),
                     address: c.address
                 });
+
+
             });
         }
 
@@ -1040,6 +1064,8 @@
                         }
                     }
                 });
+
+
             }
 
         }
@@ -1062,6 +1088,8 @@
                 const response = await fetch(url, {
                     headers: { 'User-Agent': 'PrimeDashboardApp/1.0' }
                 });
+
+
                 if (!response.ok) return null;
                 const data = await response.json();
                 if (data && data.length > 0) {
@@ -1243,6 +1271,8 @@
                         opacity: 1,
                         fillOpacity: 0.8
                     });
+
+
 
                     marker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, 0] });
                     clientMarkersLayer.addLayer(marker);
@@ -1519,6 +1549,8 @@
                     if(children) children.forEach(child => validCodes.add(child));
                 });
 
+
+
                 // Apply User Context Restriction for CoCoord level
                 if (userHierarchyContext.role === 'cocoord' || userHierarchyContext.role === 'promotor') {
                     // Restrict to own cocoord
@@ -1549,6 +1581,8 @@
                         const children = optimizedData.cocoordsByCoord.get(c);
                         if(children) children.forEach(child => validCoCoords.add(child));
                     });
+
+
                     
                     // Filter by User Context
                     if (userHierarchyContext.role === 'cocoord' || userHierarchyContext.role === 'promotor') {
@@ -1568,6 +1602,8 @@
                     const children = optimizedData.promotorsByCocoord.get(c);
                     if(children) children.forEach(child => validCodes.add(child));
                 });
+
+
 
                 // Apply User Context Restriction for Promotor level
                 if (userHierarchyContext.role === 'promotor') {
@@ -1717,12 +1753,16 @@
                     mainSupervisorFilterDropdown.classList.toggle('hidden');
                 });
 
+
+
                 // Close on Outside Click
                 document.addEventListener('click', (e) => {
                     if (!mainSupervisorFilterBtn.contains(e.target) && !mainSupervisorFilterDropdown.contains(e.target)) {
                         mainSupervisorFilterDropdown.classList.add('hidden');
                     }
                 });
+
+
 
                 // Handle Selection
                 mainSupervisorFilterDropdown.addEventListener('change', (e) => {
@@ -1739,6 +1779,8 @@
                                     else selectedSupervisors.delete(cb.value);
                                 }
                             });
+
+
                             if (!isChecked) selectedSupervisors.clear();
                         } else {
                             if (isChecked) {
@@ -1764,6 +1806,8 @@
                         updateDashboard();
                     }
                 });
+
+
             }
         }
 
@@ -1804,6 +1848,8 @@
                             }
                         });
 
+
+
                         const isHidden = el.dd.classList.contains('hidden');
                         if (isHidden) {
                             el.dd.classList.remove('hidden');
@@ -1813,6 +1859,8 @@
                             if (el.wrapper) el.wrapper.classList.remove('z-50');
                         }
                     });
+
+
                 }
             };
             bindToggle(els.coord);
@@ -1829,6 +1877,8 @@
                         }
                     }
                 });
+
+
             });
 
             const bindChange = (level, nextLevel, nextNextLevel) => {
@@ -1856,6 +1906,8 @@
                             if (onUpdate) onUpdate();
                         }
                     });
+
+
                 }
             };
 
@@ -1945,6 +1997,8 @@
                                  sellerCode: sellerCode,
                                  sellerName: details ? details.name : sellerCode
                              });
+
+
                          }
                     }
                 }
@@ -2008,8 +2062,12 @@
                             cocoord: { code: cocoordCode, name: cocoordName },
                             promotor: { code: promotorCode, name: promotorName }
                         });
+
+
                     }
                 });
+
+
             }
 
             optimizedData.clientPromotersMap = new Map(); // Fast lookup for modal
@@ -2037,6 +2095,8 @@
                         sampleLogged = true;
                     }
                 });
+
+
             } else {
                 console.warn("[DEBUG] embeddedData.clientPromoters is missing or empty.");
             }
@@ -2720,6 +2780,7 @@
             wallet: { dirty: true, rendered: false },
             positivacao: { dirty: true, rendered: false }, 
             estoque: { dirty: true, rendered: false },
+            feed: { dirty: true, rendered: false },
             weekly: { dirty: true, rendered: false }
         };
 
@@ -3057,6 +3118,8 @@
                                 }
                             }
                         });
+
+
                     } else {
                         // Fallback: Original Logic
                         clientHistoryIds.forEach(id => {
@@ -3112,6 +3175,8 @@
                                 }
                             }
                         });
+
+
                     }
                 }
 
@@ -3129,6 +3194,8 @@
                             globalGoalsMetrics[key].monthlyClientsSets.get(mKey).add(codCli);
                         }
                     });
+
+
                 }
             });
 
@@ -3156,7 +3223,11 @@
                         const targetSet = target.monthlyClientsSets.get(monthKey);
                         set.forEach(c => targetSet.add(c));
                     });
+
+
                 });
+
+
             };
 
             aggregateToAll('ELMA_ALL', window.SUPPLIER_CODES.ELMA);
@@ -3270,10 +3341,14 @@
                             filteredClientMap.set(prod, entry.rcas);
                         }
                     });
+
+
                     if (filteredClientMap.size > 0) {
                         filteredMap.set(codCli, filteredClientMap);
                     }
                 });
+
+
                 return filteredMap;
             };
 
@@ -3518,6 +3593,8 @@
                         MIX_FOODS_CATEGORIES.forEach(checkAndAdd);
                     }
                 });
+
+
                 clientPositivatedCategories.set(codCli, positivatedCats);
                 clientCategoryOrders.set(codCli, categoryOrders);
             });
@@ -3631,6 +3708,8 @@
                     plugins: { legend: { position: 'right' } }
                 });
 
+
+
                 // Seller Efficiency Chart
                 const sellerStats = {};
                 tableData.forEach(row => {
@@ -3641,6 +3720,8 @@
                     if (row.hasSalty) sellerStats[seller].salty++;
                     if (row.hasFoods) sellerStats[seller].foods++;
                 });
+
+
 
                 // Responsive Limit (Top 5 Mobile, Top 10 Desktop)
                 const isMobile = window.innerWidth < 768;
@@ -3697,6 +3778,8 @@
                     if (cityA > cityB) return 1;
                     return (a.name || '').localeCompare(b.name || '');
                 });
+
+
 
                 mixTableDataForExport = tableData;
 
@@ -3932,6 +4015,8 @@
                         goals_data: payload
                     });
 
+
+
                 if (error) {
                     console.error('Erro ao salvar metas:', error);
                     alert('Erro ao salvar metas no banco de dados. Verifique o console.');
@@ -4006,7 +4091,11 @@
                                 }
                             }
                         });
+
+
                     });
+
+
                 }
             });
 
@@ -4041,6 +4130,8 @@
                     if (metric === 'fat') target.fat = goalVal;
                     else if (metric === 'vol') target.vol = goalVal;
                 });
+
+
             });
             console.log(`[Goals] Distributed ${newTotalValue} (${metric}) for ${sellerName} / ${categoryId} (Cascade: ${targetCategories.join(',')})`);
         }
@@ -4295,9 +4386,13 @@
                             colCellsForSupTotal[col.id].pos.push(`${getColLet(cIdx)}${excelRow}`);
                         }
                     });
+
+
                     ws_data.push(rowData);
                     currentRow++;
                 });
+
+
 
                 // Supervisor Total Row
                 const supRowData = [createCell(sup.code, totalRowStyle), createCell(sup.name.toUpperCase(), totalRowStyle)];
@@ -4389,6 +4484,8 @@
                         colCellsForGrandTotal[col.id].pos.push(`${getColLet(cIdx)}${excelSupRow}`);
                     }
                 });
+
+
 
                 ws_data.push(supRowData);
                 currentRow++;
@@ -4501,6 +4598,8 @@
                     const details = sellerDetailsMap.get(rca1);
                     return details && details.supervisor && selectedGoalsGvSupervisors.has(details.supervisor);
                 });
+
+
             }
 
             // Filter by Seller (goals-gv)
@@ -4509,6 +4608,8 @@
                     const rca1 = String(c.rca1 || '').trim();
                     return selectedGoalsGvVendedores.has(rca1);
                 });
+
+
             }
 
             // Filter by Client Code
@@ -4562,14 +4663,20 @@
                                     monthlySales.get(monthKey).add(cat);
                                 }
                             });
+
+
                         }
                     });
+
+
 
                     // Count Successful Months
                     monthlySales.forEach(brandsSet => {
                         const achieved = targetCategories.every(cat => brandsSet.has(cat));
                         if (achieved) totalMixMonths++;
                     });
+
+
                 }
             });
 
@@ -4638,6 +4745,8 @@
                          end: new Date(currentWeekEnd),
                          workingDays: workingDaysInWeek
                      });
+
+
                 }
 
                 // Next week starts day after currentWeekEnd
@@ -4663,6 +4772,8 @@
                         if (details) sellersSet.add(details.name);
                         else sellersSet.add(v);
                     });
+
+
                 } else if (selectedMetaRealizadoSupervisors.size > 0) {
                     selectedMetaRealizadoSupervisors.forEach(sup => {
                         const rcas = optimizedData.rcasBySupervisor.get(sup);
@@ -4671,8 +4782,12 @@
                                 const details = sellerDetailsMap.get(rca);
                                 if (details) sellersSet.add(details.name);
                             });
+
+
                         }
                     });
+
+
                 }
             } else {
                 const hState = hierarchyState['meta-realizado'];
@@ -4689,6 +4804,8 @@
                              const children = optimizedData.promotorsByCocoord.get(cc);
                              if (children) children.forEach(p => validCodes.add(p));
                          });
+
+
                     }
                     // 3. Coords
                     else if (hState.coords.size > 0) {
@@ -4699,8 +4816,12 @@
                                      const children = optimizedData.promotorsByCocoord.get(cc);
                                      if (children) children.forEach(p => validCodes.add(p));
                                  });
+
+
                              }
                         });
+
+
                     }
 
                     // Map Codes to Names
@@ -4712,6 +4833,8 @@
                             const rcaName = optimizedData.rcaNameByCode.get(code);
                             if (rcaName) sellersSet.add(rcaName);
                         });
+
+
                     }
                 }
             }
@@ -4737,6 +4860,8 @@
                         }
                     }
                 });
+
+
             } else {
                 // Default Pasta Groups
                 if (pasta === 'PEPSICO') {
@@ -4767,6 +4892,8 @@
                     const details = sellerDetailsMap.get(rca1);
                     return details && details.supervisor && selectedMetaRealizadoSupervisors.has(details.supervisor);
                 });
+
+
             }
 
             // Filter by Seller (Meta-Realizado) - Seller Mode ONLY
@@ -4775,6 +4902,8 @@
                     const rca1 = String(c.rca1 || '').trim();
                     return selectedMetaRealizadoVendedores.has(rca1);
                 });
+
+
             }
 
             // Implement Supplier Filter Logic (Virtual IDs for Foods) - Step 7
@@ -4813,6 +4942,8 @@
                             if ((g.fat || 0) > 0) hasGoal = true;
                         }
                     });
+
+
 
                     if (!goalsBySeller.has(rcaName)) {
                         goalsBySeller.set(rcaName, { totalFat: 0, totalVol: 0, totalPos: 0 });
@@ -4853,6 +4984,8 @@
                         goalsBySeller.set(sellerName, { totalFat: 0, totalVol: 0, totalPos: 0 });
                     }
                 });
+
+
             }
             // ---------------------------------------------------------------------------------
 
@@ -4919,6 +5052,8 @@
                             hasOverrideVol = true;
                         }
                     });
+
+
 
                     // 2. Aggregate fallbacks: If individual targets are missing, check for aggregate keys
                     // but ONLY if the current selection matches the aggregate (full pasta or no filter)
@@ -5154,6 +5289,8 @@
                         <td class="px-2 py-3 text-right ${realClass} text-xs font-medium border-r border-b border-slate-700 hidden md:table-cell">${wRealStr}</td>
                     `;
                 });
+
+
 
                 // Mobile Content (Compact List) - WRAPPED IN TD
                 const mobileContent = `
@@ -5405,6 +5542,8 @@
                         }
                     }
                 });
+
+
             }
         }
 
@@ -5476,6 +5615,8 @@
                         document.getElementById('meta-realizado-vendedor-filter-dropdown')?.classList.add('hidden');
                     }
                 });
+
+
                 document._metaRealizadoFilterListener = true;
             }
 
@@ -5503,6 +5644,8 @@
                 sellerDetailsMap.forEach((d, code) => {
                     if (selectedMetaRealizadoSupervisors.has(d.supervisor)) validRcas.add(code);
                 });
+
+
             } else {
                 sellerDetailsMap.forEach((d, code) => validRcas.add(code));
             }
@@ -5560,6 +5703,8 @@
                     return { meta: wMeta, real: wReal, isPast: isPast };
                 });
 
+
+
                 rowData.push({
                     name: sellerName,
                     metaTotal: targetTotalGoal,
@@ -5569,6 +5714,8 @@
                     posGoal: posGoal,
                     posRealized: posRealized
                 });
+
+
             });
 
             // Sort by Meta Total Descending
@@ -5620,6 +5767,8 @@
                          if (details) sellersSet.add(details.name);
                          else sellersSet.add(v);
                     });
+
+
                 } else if (selectedMetaRealizadoSupervisors.size > 0) {
                     selectedMetaRealizadoSupervisors.forEach(sup => {
                         const rcas = optimizedData.rcasBySupervisor.get(sup);
@@ -5628,8 +5777,12 @@
                                 const details = sellerDetailsMap.get(rca);
                                 if (details) sellersSet.add(details.name);
                             });
+
+
                         }
                     });
+
+
                 }
             } else {
                 const hState = hierarchyState['meta-realizado'];
@@ -5640,6 +5793,8 @@
                             const name = optimizedData.coordMap.get(c);
                             if(name) supervisorsSet.add(name);
                         });
+
+
                     }
 
                 // 2. Resolve Promotor codes for sellersSet (Leaf Filter)
@@ -5652,6 +5807,8 @@
                         const children = optimizedData.promotorsByCocoord.get(cc);
                         if (children) children.forEach(p => validCodes.add(p));
                     });
+
+
                 } else if (hState.coords.size > 0) {
                     hState.coords.forEach(c => {
                         const cocoords = optimizedData.cocoordsByCoord.get(c);
@@ -5660,8 +5817,12 @@
                                 const children = optimizedData.promotorsByCocoord.get(cc);
                                 if (children) children.forEach(p => validCodes.add(p));
                             });
+
+
                         }
                     });
+
+
                 }
 
                 // 3. Map codes to names in sellersSet
@@ -5674,6 +5835,8 @@
                         const rcaName = optimizedData.rcaNameByCode.get(code);
                         if (rcaName) sellersSet.add(rcaName);
                     });
+
+
                 }
             }
             }
@@ -5697,6 +5860,8 @@
                     const details = sellerDetailsMap.get(rca1);
                     return details && details.supervisor && selectedMetaRealizadoSupervisors.has(details.supervisor);
                 });
+
+
             }
 
             // Filter by Seller (Meta-Realizado) - Seller Mode ONLY
@@ -5705,6 +5870,8 @@
                     const rca1 = String(c.rca1 || '').trim();
                     return selectedMetaRealizadoVendedores.has(rca1);
                 });
+
+
             }
 
             // Optimization: Create Set of Client Codes
@@ -5732,6 +5899,8 @@
                     goalKeys.forEach(k => {
                         if (cGoals.has(k)) entry.goal += (cGoals.get(k).fat || 0);
                     });
+
+
                 }
             });
 
@@ -5812,6 +5981,8 @@
                     return { meta: adjustedGoals[i], real: data.salesWeeks[i], isPast: isPast };
                 });
 
+
+
                 // Resolve Vendor Name
                 let vendorName = 'N/A';
                 const rcaCode = (data.clientObj.rcas && data.clientObj.rcas.length > 0) ? data.clientObj.rcas[0] : (data.clientObj.rca1 || 'N/A');
@@ -5836,6 +6007,8 @@
                     realTotal: data.salesTotal,
                     weekData: weekData
                 });
+
+
             });
 
             // Sort: High Potential? High Sales?
@@ -5927,6 +6100,8 @@
                             <td class="px-2 py-3 text-right ${realClass} text-xs font-medium border-r border-b border-slate-700 hidden md:table-cell">${wRealStr}</td>
                         `;
                     });
+
+
 
                     // Mobile Content (Compact List) - WRAPPED IN TD
                     const mobileContent = `
@@ -6036,7 +6211,11 @@
                                 }
                             }
                         });
+
+
                     });
+
+
                 }
 
                 for (const key in clientTotals) {
@@ -6049,6 +6228,8 @@
                             metricsMap[key].monthlyClientsSets.get(mKey).add(codCli);
                         }
                     });
+
+
                 }
             });
 
@@ -6078,6 +6259,8 @@
                  supervisorsList.forEach(sup => {
                      (optimizedData.rcasBySupervisor.get(sup) || []).forEach(r => rcas.add(r));
                  });
+
+
                  clients = clients.filter(c => c.rcas.some(r => rcas.has(r)));
              }
              clients = clients.filter(c => isActiveClient(c));
@@ -6212,6 +6395,8 @@
                                 summaryGoalsSums[key].vol += val.vol;
                             }
                         });
+
+
                     }
                 }
             });
@@ -6248,6 +6433,8 @@
                         }
                     }
                 });
+
+
                 return total;
             };
 
@@ -6443,6 +6630,8 @@
                         adjustment += val;
                     }
                 });
+
+
             }
 
             return naturalCount + adjustment;
@@ -6502,6 +6691,8 @@
                     return true;
                 });
 
+
+
                 allActiveClients.forEach(client => {
                     const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                     const clientHistoryIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
@@ -6521,11 +6712,15 @@
                             }
                         });
 
+
+
                         // NEW LOGIC: Simple Average (Sum / 3) regardless of active months
                         globalTotalAvgFat += (sumFat / QUARTERLY_DIVISOR);
                         globalTotalAvgVol += (sumVol / QUARTERLY_DIVISOR); // Kg (No / 1000)
                     }
                 });
+
+
 
                 globalGoalsTotalsCache[cacheKey] = { fat: globalTotalAvgFat, vol: globalTotalAvgVol };
             }
@@ -6576,6 +6771,8 @@
                             }
                         }
                     });
+
+
                 }
 
                 // NEW LOGIC: Simple Average (Sum / 3) regardless of active months
@@ -6611,6 +6808,8 @@
                                 metaVol += g.vol;
                             }
                         });
+
+
                     }
                 } else {
                     if (globalClientGoals.has(codCli)) {
@@ -6642,6 +6841,8 @@
                     metaPos: metaPos,
                     monthlyBreakdown: monthlyValues
                 });
+
+
             });
 
             // Calculate auto distribution if goal is set but individual goals are zero (first run)
@@ -6667,6 +6868,8 @@
                         goalsTargets[key].vol += val.vol;
                     }
                 });
+
+
             });
         }
 
@@ -6726,6 +6929,8 @@
                                 }
                             }
                         });
+
+
                     }
 
                     // Apply divisor
@@ -6735,6 +6940,8 @@
                     clientMap.set(targetKey, avg);
                     totalDenominator += avg;
                 });
+
+
             });
 
             // 2. Distribute
@@ -6762,6 +6969,8 @@
                     if (type === 'fat') g.fat = newGoal;
                     else g.vol = newGoal;
                 });
+
+
             });
 
             recalculateTotalGoals();
@@ -6841,6 +7050,8 @@
                             if (s.TIPOVENDA === '1' || s.TIPOVENDA === '9') sumFat += s.VLVENDA;
                         }
                     });
+
+
                 }
                 if (sumFat >= 1) naturalCount++;
             });
@@ -7379,6 +7590,8 @@
                             }
                         }
                     });
+
+
                 }
 
                 // Mix Calculation: Average Unique Products per Month
@@ -7389,8 +7602,12 @@
                     mixProducts.forEach(k => {
                         if (k.endsWith(mKey)) uniqueCount++;
                     });
+
+
                     sumUniqueProducts += uniqueCount;
                 });
+
+
                 const mixPdvAvg = monthKeys.length > 0 ? sumUniqueProducts / 3 : 0; // Using 3 as quarterly divisor
 
                 let activeMonthsCount = 0;
@@ -7515,6 +7732,8 @@
                             }
                         });
 
+
+
                         // 2. Sum (Override OR (Natural + Adjustment))
                         let sumTotal = 0;
                         visibleSellers.forEach(seller => {
@@ -7527,6 +7746,8 @@
                                 sumTotal += (nat + adj);
                             }
                         });
+
+
 
                         // Override the standard calculation
                         absoluteOverride = sumTotal;
@@ -7553,6 +7774,8 @@
                                     showConfirmationModal(`Confirmar distribuição Top-Down de Positivação (${val}) para ${contextName}?`, () => {
                                         handleDistributePositivation(val, contextKey, clientMetrics);
                                     });
+
+
                                 } else {
                                     const filterDesc = getFilterDescription();
                                     // Validation: Check against PEPSICO Limit
@@ -7591,6 +7814,8 @@
                                             updateGoalsView();
                                         }
                                     });
+
+
                                 }
                             };
                         }
@@ -7619,6 +7844,8 @@
                         }
                     });
 
+
+
                     const naturalSaltyTarget = Math.round(naturalMixBase * 0.50);
                     const naturalFoodsTarget = Math.round(naturalMixBase * 0.30);
 
@@ -7644,6 +7871,8 @@
                                 }
                             });
 
+
+
                             // 2. Sum
                             let sumTotal = 0;
                             visibleSellers.forEach(seller => {
@@ -7657,6 +7886,8 @@
                                     sumTotal += (nat + adj);
                                 }
                             });
+
+
                             absOverride = sumTotal;
                         }
 
@@ -7684,10 +7915,14 @@
                                             showConfirmationModal(`Confirmar distribuição Proporcional de Mix ${type === 'salty' ? 'Salty' : 'Foods'} (${val}) para ${contextName}? (Base: Histórico)`, () => {
                                                 handleDistributeMix(val, type, contextKey, clientMetrics);
                                             });
+
+
                                         } else {
                                             showConfirmationModal(`Confirmar ajuste de Meta Mix ${type === 'salty' ? 'Salty' : 'Foods'} para ${valStr} (Vendedor: ${getFirstName(sellerName)})?`, () => {
                                                 saveMixAdjustment(type, val, sellerName);
                                             });
+
+
                                         }
                                     };
                                 }
@@ -7868,6 +8103,8 @@
                     if (el) groupSum += parseVal(el.value);
                 });
 
+
+
                 // Update Group Total Input (Read-only)
                 const groupInput = document.querySelector(`.goals-sv-input[data-seller-id="${sellerId}"][data-col-id="${groupTotalId}"][data-field="${field}"]`);
                 if (groupInput) {
@@ -8030,8 +8267,12 @@
                                 if (isPrev) t.prevFat += sale.VLVENDA;
                                 if (monthKey) t.monthly[monthKey] = (t.monthly[monthKey] || 0) + sale.VLVENDA;
                             });
+
+
                         }
                     });
+
+
                 }
 
                 // Aggregate to Seller
@@ -8063,7 +8304,11 @@
                         if (!sData.monthlyValues[m.key]) sData.monthlyValues[m.key] = 0;
                         sData.monthlyValues[m.key] += (t.monthly[m.key] || 0);
                     });
+
+
                 });
+
+
 
                 // Calculate Aggregate Positivation for Client (Unique Client Count)
                 let clientElmaFat = (clientCatTotals[window.SUPPLIER_CODES.ELMA[0]]?.fat || 0) + (clientCatTotals[window.SUPPLIER_CODES.ELMA[1]]?.fat || 0) + (clientCatTotals[window.SUPPLIER_CODES.ELMA[2]]?.fat || 0);
@@ -8092,12 +8337,16 @@
                             }
                         });
 
+
+
                         // Use calculated unique client count for Total Elma/Foods
                         if (aggCol.id === 'total_elma') sumPos = sellerObj.elmaPos || 0;
                         else if (aggCol.id === 'total_foods') sumPos = sellerObj.foodsPos || 0;
 
                         sellerObj.data[aggCol.id] = { metaFat: sumFat, metaVol: sumVol, metaPos: sumPos, avgVol: sumAvgVol, avgFat: sumAvgFat, monthlyValues: monthlySum };
                     });
+
+
 
                     // Mix Metrics
                     const historyIds = optimizedData.indices.history.byRca.get(sellerObj.name) || [];
@@ -8116,6 +8365,8 @@
                         const name = optimizedData.rcaNameByCode.get(code) || code;
                         return name === sellerObj.name;
                     });
+
+
                     sellerClients.forEach(c => {
                         // Check if active (Total Fat > 1 in history)
                         const hIds = optimizedData.indices.history.byClient.get(normalizeKey(c['Código']));
@@ -8131,6 +8382,8 @@
                         }
                         if (totalFat >= 1) activeClientsCount++;
                     });
+
+
 
                     // Mix Calc (re-implement or optimize?)
                     // Mix calculation requires detailed product analysis per client.
@@ -8152,6 +8405,8 @@
                             MIX_FOODS_CATEGORIES.forEach(cat => { if (desc.includes(cat)) cData.foods.add(cat); });
                         }
                     });
+
+
                     let sumSalty = 0; let sumFoods = 0;
                     const months = Array.from(monthlyData.keys()).sort().slice(-3);
                     const divisor = months.length > 0 ? months.length : 1;
@@ -8162,8 +8417,12 @@
                             if (d.salty.size >= MIX_SALTY_CATEGORIES.length) mSalty++;
                             if (d.foods.size >= MIX_FOODS_CATEGORIES.length) mFoods++;
                         });
+
+
                         sumSalty += mSalty; sumFoods += mFoods;
                     });
+
+
 
                     // Calculate Mix Targets using ELMA Base (Natural + Adjustment) to match GV 'RESUMO' Logic
                     // Base logic: Active Elma Clients (elmaPos) + ELMA Adjustments
@@ -8194,6 +8453,8 @@
                     // Pedev uses Total Elma (Natural). We'll update it after adjustment loop to be safe.
                     sellerObj.data['pedev'] = { metaPos: Math.round(totalElma.metaPos * 0.9) };
                 });
+
+
 
                 // Group Supervisors
 
@@ -8276,12 +8537,16 @@
                     // Handled above via posKeys['geral'] = 'PEPSICO_ALL'.
                 });
 
+
+
 const supervisorGroups = new Map();
                 sellerMap.forEach(seller => {
                     const supName = seller.supervisor;
                     if (!supervisorGroups.has(supName)) supervisorGroups.set(supName, { name: supName, id: supName.replace(/[^a-zA-Z0-9]/g, '_'), code: optimizedData.supervisorCodeByName.get(supName) || '', sellers: [], totals: {} });
                     supervisorGroups.get(supName).sellers.push(seller);
                 });
+
+
 
                 // Aggregate Totals
                 supervisorGroups.forEach(group => {
@@ -8296,7 +8561,11 @@ const supervisorGroups = new Map();
                                 if (s.monthlyValues) quarterMonths.forEach(m => t.monthlyValues[m.key] += s.monthlyValues[m.key]);
                             }
                         });
+
+
                     });
+
+
 
                     // Recalculate Mix Targets for Supervisor using Group Aggregates to match Global Logic
                     // 1. Calculate Group Natural Base (Sum of sellers' natural bases)
@@ -8309,12 +8578,16 @@ const supervisorGroups = new Map();
                         }
                     });
 
+
+
                     // 2. Calculate Group Adjustments
                     let groupPepsicoAdj = 0;
                     if (goalsPosAdjustments['PEPSICO_ALL']) {
                         group.sellers.forEach(seller => {
                             groupPepsicoAdj += (goalsPosAdjustments['PEPSICO_ALL'].get(seller.name) || 0);
                         });
+
+
                     }
 
                     const groupPepsicoBase = groupPepsicoNatural + groupPepsicoAdj;
@@ -8339,6 +8612,8 @@ const supervisorGroups = new Map();
                     // if (group.totals['mix_foods']) group.totals['mix_foods'].metaMix = groupMixFoodsMeta + groupMixFoodsAdj;
                 });
 
+
+
                 // Recalculate Grand Total (Geral PRIME) using Global Aggregates
                 // We can sum the recalculated Group totals which are now consistent, or redo Global.
                 // Let's redo Global to be absolutely sure "A = B".
@@ -8354,7 +8629,11 @@ const supervisorGroups = new Map();
                         // Sum metaMix
                         t.metaMix += s.metaMix || 0;
                     });
+
+
                 });
+
+
 
                 // Recalculate Grand Total Mix - DISABLED (Use Sum)
                 // grandTotalRow.totals['mix_salty'].metaMix = Math.round(globalElmaBase * 0.50) + globalMixSaltyAdj;
@@ -8378,6 +8657,8 @@ const supervisorGroups = new Map();
                     if (col.type === 'tonnage') colspan = 3; if (col.type === 'mix') colspan = 3; if (col.type === 'geral') colspan = 4;
                     headerHTML += `<th colspan="${colspan}" class="px-2 py-2 text-center font-bold border-r border-b border-slate-700 ${col.colorClass}">${col.label}</th>`;
                 });
+
+
                 headerHTML += `</tr><tr>`;
                 svColumns.forEach(col => {
                     if (col.type === 'standard') headerHTML += `<th colspan="${monthsCount + 1}" class="px-1 py-1 text-center border-r border-slate-700/50 bg-glass">HISTÓRICO FAT.</th><th colspan="2" class="px-1 py-1 text-center border-r border-slate-700/50 bg-glass">FATURAMENTO</th><th colspan="2" class="px-1 py-1 text-center border-r border-slate-700 bg-glass">POSITIVAÇÃO</th>`;
@@ -8386,6 +8667,8 @@ const supervisorGroups = new Map();
                     else if (col.type === 'geral') headerHTML += `<th colspan="2" class="px-1 py-1 text-center border-r border-slate-700/50 bg-glass">FATURAMENTO</th><th class="px-1 py-1 text-center border-r border-slate-700/50 bg-glass">KG</th><th class="px-1 py-1 text-center border-r border-slate-700 bg-glass">POSITIVAÇÃO</th>`;
                     else if (col.type === 'pedev') headerHTML += `<th class="px-1 py-1 text-center border-r border-slate-700/50 bg-glass">META</th>`;
                 });
+
+
                 headerHTML += `</tr><tr>`;
                 const gearIcon = ``; /* Removed Icon as per request to remove editing option, but kept column structure */
                 svColumns.forEach(col => {
@@ -8397,6 +8680,8 @@ const supervisorGroups = new Map();
                     else if (col.type === 'geral') headerHTML += `<th class="px-1 py-1 text-right border-r border-b border-slate-700 text-slate-500 font-normal">Média Trim.</th><th class="px-1 py-1 text-right border-r border-b border-slate-700 text-slate-500 font-normal">Meta</th><th class="px-1 py-1 text-right border-r border-b border-slate-700 text-slate-500 font-normal">Meta</th><th class="px-1 py-1 text-center border-r border-b border-slate-700 text-slate-500 font-normal">Meta</th>`;
                     else if (col.type === 'pedev') headerHTML += `<th class="px-1 py-1 text-center border-r border-b border-slate-700 text-slate-500 font-normal">Meta</th>`;
                 });
+
+
                 headerHTML += `</tr></thead>`;
 
                 let bodyHTML = `<tbody class="divide-y divide-slate-800 bg-glass">`;
@@ -8411,6 +8696,8 @@ const supervisorGroups = new Map();
                         grandTotals[col.id].avgFat += sup.totals[col.id].avgFat;
                         if (sup.totals[col.id].monthlyValues) quarterMonths.forEach(m => grandTotals[col.id].monthlyValues[m.key] += sup.totals[col.id].monthlyValues[m.key]);
                     });
+
+
 
                     sup.sellers.sort((a, b) => (b.data['total_elma']?.metaFat || 0) - (a.data['total_elma']?.metaFat || 0));
                     sup.sellers.forEach(seller => {
@@ -8431,8 +8718,12 @@ const supervisorGroups = new Map();
                                 bodyHTML += `<td class="px-1 py-1 text-center text-pink-400 font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="pedev" data-field="pos" id="pedev-${seller.id || seller.name.replace(/\s+/g,'_')}-pos">${d.metaPos}</td>`;
                             }
                         });
+
+
                         bodyHTML += `</tr>`;
                     });
+
+
 
                     bodyHTML += `<tr class="glass-panel-heavy font-bold border-b border-slate-600"><td class="px-2 py-2 text-center text-slate-400 font-mono">${sup.code}</td><td class="px-2 py-2 text-left text-white uppercase tracking-wider">${sup.name}</td>`;
                     svColumns.forEach(col => {
@@ -8445,8 +8736,12 @@ const supervisorGroups = new Map();
                         else if (col.type === 'geral') bodyHTML += `<td class="px-1 py-1 text-right text-slate-400 border-r border-slate-700">${d.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right text-white border-r border-slate-700" id="total-sup-${sup.id}-geral-fat">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right text-white border-r border-slate-700" id="total-sup-${sup.id}-geral-ton">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-center text-white border-r border-slate-700" id="total-sup-${sup.id}-geral-pos">${d.metaPos}</td>`;
                         else if (col.type === 'pedev') bodyHTML += `<td class="px-1 py-1 text-center text-pink-400 border-r border-slate-700" id="total-sup-${sup.id}-pedev-pos">${Math.round(sup.totals['total_elma']?.metaPos * 0.9)}</td>`;
                     });
+
+
                     bodyHTML += `</tr>`;
                 });
+
+
 
                 // Grand Total
                 bodyHTML += `<tr class="glass-panel font-bold text-white border-t-2 border-slate-500 sticky bottom-0 z-20"><td class="px-2 py-3 text-center uppercase tracking-wider">GV</td><td class="px-2 py-3 text-left uppercase tracking-wider">Geral PRIME</td>`;
@@ -8469,6 +8764,8 @@ const supervisorGroups = new Map();
                     else if (col.type === 'geral') bodyHTML += `<td class="px-1 py-2 text-right text-slate-500 border-r border-slate-700">${avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-2 text-right text-white border-r border-slate-700" id="total-grand-geral-fat">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-2 text-right text-white border-r border-slate-700" id="total-grand-geral-ton">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-2 text-center text-white border-r border-slate-700" id="total-grand-geral-pos">${d.metaPos}</td>`;
                     else if (col.type === 'pedev') bodyHTML += `<td class="px-1 py-2 text-center text-pink-400 border-r border-slate-700" id="total-grand-pedev-pos">${Math.round(grandTotalRow.totals['total_elma']?.metaPos * 0.9)}</td>`;
                 });
+
+
                 bodyHTML += `</tr></tbody>`;
                 mainTable.innerHTML = headerHTML + bodyHTML;
             }, () => currentRenderId !== goalsSvRenderId);
@@ -8606,6 +8903,8 @@ const supervisorGroups = new Map();
                     }
                     return pass;
                 });
+
+
             }
 
             const clientCodes = new Set(clients.map(c => c['Código']));
@@ -8878,6 +9177,8 @@ const supervisorGroups = new Map();
                             clientSelectionValueCurrent.set(buyer, (clientSelectionValueCurrent.get(buyer) || 0) + val);
                         }
                     });
+
+
                 }
 
                 // Check Previous
@@ -8889,6 +9190,8 @@ const supervisorGroups = new Map();
                             clientSelectionValuePrevious.set(buyer, (clientSelectionValuePrevious.get(buyer) || 0) + val);
                         }
                     });
+
+
                 }
 
                 const coverageCurrent = activeClientsCount > 0 ? (clientsWhoGotProductCurrent / activeClientsCount) * 100 : 0;
@@ -8919,6 +9222,8 @@ const supervisorGroups = new Map();
                     const d = parseDate(s.DTPED);
                     return d && (d.getUTCFullYear() < currentYear || (d.getUTCFullYear() === currentYear && d.getUTCMonth() < currentMonth));
                 });
+
+
                 const soldThisMonth = (boxesSoldCurrentMap.get(productCode) || 0) > 0;
                 const isFactuallyNewOrReactivated = (!hasHistory && soldThisMonth);
 
@@ -8949,6 +9254,8 @@ const supervisorGroups = new Map();
                     }
                 });
 
+
+
                 const dailyAvgSale = totalQtySoldInRange / daysDivisor;
                 const trendDays = dailyAvgSale > 0 ? (stockQty / dailyAvgSale) : (stockQty > 0 ? Infinity : 0);
 
@@ -8976,6 +9283,8 @@ const supervisorGroups = new Map();
                     clientsCurrentCount: clientsWhoGotProductCurrent,
                     coverageCurrent: coverageCurrent
                 });
+
+
             }, () => {
                 // --- ON COMPLETE CALLBACK (Render UI) ---
                 if (currentRenderId !== coverageRenderId) return;
@@ -9004,6 +9313,8 @@ const supervisorGroups = new Map();
                     return b.stockQty - a.stockQty;
                 });
 
+
+
                 let filteredTableData = tableData.filter(item => item.boxesSoldCurrentMonth > 0);
 
                 if (coverageTrendFilter !== 'all') {
@@ -9014,6 +9325,8 @@ const supervisorGroups = new Map();
                         if (coverageTrendFilter === 'good') return isFinite(trend) && trend >= 30;
                         return false;
                     });
+
+
                 }
 
                 const totalBoxesFiltered = filteredTableData.reduce((sum, item) => sum + item.boxesSoldCurrentMonth, 0);
@@ -9125,6 +9438,8 @@ const supervisorGroups = new Map();
                         salesBySeller[seller] = (salesBySeller[seller] || 0) + qty;
                     }
                 });
+
+
 
                 // 1. Chart Data for Cities
                 const isMobile = window.innerWidth < 768;
@@ -9387,6 +9702,8 @@ const supervisorGroups = new Map();
                     if (isObject(pVal) && isObject(oVal)) prev[key] = mergeDeep(pVal, oVal);
                     else prev[key] = oVal;
                 });
+
+
                 return prev;
             }, {});
         };
@@ -9590,6 +9907,8 @@ const supervisorGroups = new Map();
                         currentClients: new Set(),
                         prevClients: new Set()
                     });
+
+
                 }
                 const entry = currentMap.get(code);
                 entry.currentVal += val;
@@ -9629,6 +9948,8 @@ const supervisorGroups = new Map();
                         currentClients: new Set(),
                         prevClients: new Set()
                         });
+
+
                     }
                     const entry = currentMap.get(code);
                     entry.prevVal += val;
@@ -9680,6 +10001,8 @@ const supervisorGroups = new Map();
                     prevPdv,
                     pdvVariation
                 });
+
+
             });
 
             // Sort by Absolute Variation Descending
@@ -10055,6 +10378,8 @@ const supervisorGroups = new Map();
                         const details = sellerDetailsMap.get(rca);
                         return details && selectedSupervisors.has(details.supervisor);
                     });
+
+
                 }
 
                 // Apply Seller Filter if active
@@ -10070,6 +10395,8 @@ const supervisorGroups = new Map();
                         const ids = indices.byClient.get(normalizeKey(code));
                         if (ids) ids.forEach(id => hierarchyIds.add(id));
                     });
+
+
                     setsToIntersect.push(hierarchyIds);
                 }
 
@@ -10079,6 +10406,8 @@ const supervisorGroups = new Map();
                     selectedTiposVenda.forEach(tipo => {
                         (indices.byTipoVenda.get(tipo) || []).forEach(id => tipoVendaIds.add(id));
                     });
+
+
                     setsToIntersect.push(tipoVendaIds);
                 }
 
@@ -10098,6 +10427,8 @@ const supervisorGroups = new Map();
                             (indices.bySupplier.get(sup) || []).forEach(id => supplierIds.add(id));
                         }
                     });
+
+
                     setsToIntersect.push(supplierIds);
                 }
 
@@ -10116,6 +10447,8 @@ const supervisorGroups = new Map();
                     clientCodesInRede.forEach(clientCode => {
                          (indices.byClient.get(normalizeKey(clientCode)) || []).forEach(id => redeIds.add(id));
                     });
+
+
                     setsToIntersect.push(redeIds);
                 }
 
@@ -10260,6 +10593,8 @@ const supervisorGroups = new Map();
                             const details = sellerDetailsMap.get(rca);
                             return details && selectedSupervisors.has(details.supervisor);
                         });
+
+
                     }
 
                     // Apply Seller Filter if active
@@ -10306,6 +10641,8 @@ const supervisorGroups = new Map();
                         selectedMainSuppliers.forEach(s => {
                             mapSupplierToKey(s).forEach(k => activeGoalKeys.add(k));
                         });
+
+
                     } else if (currentFornecedor) {
                         mapSupplierToKey(currentFornecedor).forEach(k => activeGoalKeys.add(k));
                     }
@@ -10336,6 +10673,8 @@ const supervisorGroups = new Map();
                                     manualAddedKeys: new Set(),
                                     total: 0 
                                 });
+
+
                             }
                             
                             const entry = sellerGoalMap.get(sellerName);
@@ -10366,7 +10705,11 @@ const supervisorGroups = new Map();
                                     entry.total += val;
                                 }
                             });
+
+
                         });
+
+
                         
                         sellerGoalMap.forEach(entry => totalGoal += entry.total);
 
@@ -10382,8 +10725,12 @@ const supervisorGroups = new Map();
                                             totalGoal += val;
                                         }
                                     });
+
+
                                 }
                             });
+
+
                         }
                     }
 
@@ -10412,6 +10759,8 @@ const supervisorGroups = new Map();
                             }
                         }
                     });
+
+
                 }
 
                 // 2. Aggregate Actuals by Category (Resolving Dimensions)
@@ -10519,8 +10868,12 @@ const supervisorGroups = new Map();
                             full: 100,
                             columnSettings: { fill: window.am5.color(colors[index % colors.length]) }
                         });
+
+
                     }
                 });
+
+
 
                 renderCategoryRadarChart(radarData);
 
@@ -10707,6 +11060,8 @@ const supervisorGroups = new Map();
                     const cCity = (c.cidade || '').toLowerCase();
                     return cCity.includes(cityFilter);
                 });
+
+
             }
 
             if (excludeFilter !== 'client' && clientFilter) {
@@ -10721,6 +11076,8 @@ const supervisorGroups = new Map();
 
                     return name.includes(clientFilter) || city.includes(clientFilter) || bairro.includes(clientFilter) || cnpj.includes(clientFilter);
                  });
+
+
             }
 
             // Normalize keys for robust filtering against normalized indices
@@ -10799,6 +11156,8 @@ const supervisorGroups = new Map();
                         document.getElementById('city-vendedor-filter-dropdown')?.classList.add('hidden');
                     }
                 });
+
+
                 document._cityFilterListener = true;
             }
 
@@ -10831,6 +11190,8 @@ const supervisorGroups = new Map();
                 sellerDetailsMap.forEach((d, code) => {
                     if (selectedCitySupervisors.has(d.supervisor)) validRcas.add(code);
                 });
+
+
             } else {
                 sellerDetailsMap.forEach((d, code) => validRcas.add(code));
             }
@@ -11102,6 +11463,8 @@ const supervisorGroups = new Map();
                 });
 
 
+
+
                 const cityChartTitleEl = document.getElementById('city-chart-title');
                 const cityChartOptions = { indexAxis: 'y', scales: { x: { grace: '15%' } }, plugins: { datalabels: { align: 'end', anchor: 'end', color: '#cbd5e1', font: { size: 14, weight: 'bold' }, formatter: (value) => (value / 1000).toFixed(1) + 'k', offset: 8 } } };
                 const totalFaturamentoCidade = salesForAnalysis.reduce((sum, item) => sum + item.VLVENDA, 0);
@@ -11123,6 +11486,8 @@ const supervisorGroups = new Map();
                     cidade = cidade || 'N/A';
                     salesByCity[cidade] = (salesByCity[cidade] || 0) + sale.VLVENDA;
                 });
+
+
                 const sortedCidades = Object.entries(salesByCity).sort(([, a], [, b]) => b - a).slice(0, 10);
                 createChart('salesByClientInCityChart', 'bar', sortedCidades.map(([name]) => name), sortedCidades.map(([, total]) => total), cityChartOptions);
             }, () => currentRenderId !== cityRenderId);
@@ -11176,6 +11541,8 @@ const supervisorGroups = new Map();
                     end: weekEnd,
                     id: weekCount++
                 });
+
+
 
                 // Next week starts day after weekEnd
                 currentDate = new Date(weekEnd);
@@ -11630,6 +11997,8 @@ const supervisorGroups = new Map();
                     }
                 });
 
+
+
                 if (pepsicoCount > 0) {
                     sumMix += pepsicoCount;
                     countMixClients++;
@@ -11675,6 +12044,8 @@ const supervisorGroups = new Map();
                         clients: new Map(), // Client -> Total
                         productMap: new Map() // Client -> Product -> Data
                     });
+
+
                 }
                 const mData = historyMonths.get(monthKey);
 
@@ -11769,6 +12140,8 @@ const supervisorGroups = new Map();
                         }
                     });
 
+
+
                     if (pepsicoCount > 0) {
                         mSumMix += pepsicoCount;
                         mCountMixClients++;
@@ -11776,6 +12149,8 @@ const supervisorGroups = new Map();
                     if (boughtCatsSalty.size >= saltyCategories.length) mCountSalty++;
                     if (boughtCatsFoods.size >= foodsCategories.length) mCountFoods++;
                 });
+
+
 
                 sumMixPep += (mCountMixClients > 0 ? mSumMix / mCountMixClients : 0);
                 sumPosSalty += mCountSalty;
@@ -11791,6 +12166,8 @@ const supervisorGroups = new Map();
                     clients: posClients,
                     key: mKey
                 });
+
+
             });
 
             // Finish History Averages
@@ -11871,6 +12248,8 @@ const supervisorGroups = new Map();
                             foundAny = true;
                         }
                     });
+
+
                     if (foundAny) setsToIntersect.push(unionIds);
                     else return [];
                 }
@@ -11895,6 +12274,8 @@ const supervisorGroups = new Map();
                         foundAny = true;
                     }
                 });
+
+
                 if (foundAny) setsToIntersect.push(ids);
                 else return [];
             }
@@ -11909,6 +12290,8 @@ const supervisorGroups = new Map();
                         foundAny = true;
                     }
                 });
+
+
                 if (foundAny) setsToIntersect.push(ids);
                 else return [];
             }
@@ -11923,6 +12306,8 @@ const supervisorGroups = new Map();
                         foundAny = true;
                     }
                 });
+
+
                 if (foundAny) setsToIntersect.push(ids);
                 else return [];
             }
@@ -11937,6 +12322,8 @@ const supervisorGroups = new Map();
                         foundAny = true;
                     }
                 });
+
+
                 if (foundAny) setsToIntersect.push(ids);
                 else return [];
             }
@@ -12161,6 +12548,8 @@ const supervisorGroups = new Map();
                         document.getElementById('comparison-vendedor-filter-dropdown')?.classList.add('hidden');
                     }
                 });
+
+
                 document._comparisonFilterListener = true;
             }
 
@@ -12193,6 +12582,8 @@ const supervisorGroups = new Map();
                 sellerDetailsMap.forEach((d, code) => {
                     if (selectedComparisonSupervisors.has(d.supervisor)) validRcas.add(code);
                 });
+
+
             } else {
                 sellerDetailsMap.forEach((d, code) => validRcas.add(code));
             }
@@ -12260,6 +12651,8 @@ const supervisorGroups = new Map();
                     return [code, resolved.descricao || code];
                 });
 
+
+
             // Filter selectedArray to keep only items present in the current dataSource
             const availableProductCodes = new Set(products.map(p => p[0]));
             selectedArray = selectedArray.filter(code => availableProductCodes.has(code));
@@ -12274,6 +12667,8 @@ const supervisorGroups = new Map();
                     const nameMatch = name.toLowerCase().includes(searchTerm);
                     return codeMatch || nameMatch;
                 });
+
+
             }
 
             products.sort((a, b) => {
@@ -12485,10 +12880,14 @@ const supervisorGroups = new Map();
                             foodsCategories.forEach(cat => { if (desc.includes(cat)) boughtCatsFoods.add(cat); });
                         }
                     });
+
+
                     if (pepsicoCount > 0) { sumMix += pepsicoCount; countMixClients++; }
                     if (boughtCatsSalty.size >= saltyCategories.length) countSalty++;
                     if (boughtCatsFoods.size >= foodsCategories.length) countFoods++;
                 });
+
+
                 metrics.current.mixPepsico = countMixClients > 0 ? sumMix / countMixClients : 0;
                 metrics.current.positivacaoSalty = countSalty;
                 metrics.current.positivacaoFoods = countFoods;
@@ -12597,10 +12996,14 @@ const supervisorGroups = new Map();
                                     foodsCategories.forEach(cat => { if (desc.includes(cat)) boughtCatsFoods.add(cat); });
                                 }
                             });
+
+
                             if (pepsicoCount > 0) { mSumMix += pepsicoCount; mCountMixClients++; }
                             if (boughtCatsSalty.size >= saltyCategories.length) mCountSalty++;
                             if (boughtCatsFoods.size >= foodsCategories.length) mCountFoods++;
                         });
+
+
                         sumMixPep += (mCountMixClients > 0 ? mSumMix / mCountMixClients : 0);
                         sumPosSalty += mCountSalty;
                         sumPosFoods += mCountFoods;
@@ -12609,6 +13012,8 @@ const supervisorGroups = new Map();
                         const label = new Date(Date.UTC(parseInt(y), parseInt(m), 1)).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit', timeZone: 'UTC' });
                         metrics.charts.monthlyData.push({ label, fat: mData.fat, clients: posClients });
                     });
+
+
 
                     metrics.history.avgClients = sumClients / QUARTERLY_DIVISOR;
                     metrics.history.avgMixPepsico = sumMixPep / QUARTERLY_DIVISOR;
@@ -12760,6 +13165,8 @@ const supervisorGroups = new Map();
                             }
                         });
 
+
+
                         // 2. Prepare History Averages by Working Day Index
                         // We need average for 1st WD, 2nd WD, etc.
                         const historyWorkingDaySums = new Map(); // Index -> Sum
@@ -12787,6 +13194,8 @@ const supervisorGroups = new Map();
                                 historySalesByMonthDay.set(key, (historySalesByMonthDay.get(key) || 0) + val);
                             }
                         });
+
+
 
                         // Now iterate months in history (last 3) to map to Working Day Indices
                         // Identify unique months in history
@@ -12819,6 +13228,8 @@ const supervisorGroups = new Map();
                                 }
                             }
                         });
+
+
 
                         // 3. Construct Axis and Datasets
                         let currentWDCounter = 0;
@@ -12985,6 +13396,8 @@ const supervisorGroups = new Map();
                                         const share = totalWeightRemaining > 0 ? (weight / totalWeightRemaining) : (1 / remainingDaysIndices.length);
                                         weekData[dayIndex] = remainder * share;
                                     });
+
+
                                 }
                             }
                         }
@@ -13090,6 +13503,8 @@ const supervisorGroups = new Map();
                         if (redeSet && !redeSet.has(c.ramo)) return false;
                         return true;
                     });
+
+
                 } else if (innovationsMonthRedeGroupFilter === 'sem_rede') {
                     clients = clients.filter(c => !c.ramo || c.ramo === 'N/A');
                 }
@@ -13159,6 +13574,8 @@ const supervisorGroups = new Map();
                     globalInnovationCategories[categoryName].products.push({ ...item, Codigo: productCode, Inovacoes: categoryName });
                     globalProductToCategoryMap.set(productCode, categoryName);
                 });
+
+
             }
 
             const categories = globalInnovationCategories || {};
@@ -13184,6 +13601,8 @@ const supervisorGroups = new Map();
                         </div>
                     `;
                 });
+
+
 
                 customDropdown.innerHTML = html;
 
@@ -13268,6 +13687,8 @@ const supervisorGroups = new Map();
                         }
                         return ts >= start && ts < end;
                     });
+
+
                 };
 
                 const previousMonthData = filterHistory(tsPrevStart, tsPrevEnd);
@@ -13307,6 +13728,8 @@ const supervisorGroups = new Map();
                 categories[cat].productCodes.forEach(p => {
                     productResults[p] = { current: new Set(), previous: new Set(), previous2: new Set(), previous3: new Set() };
                 });
+
+
             }
 
             // Helper to process maps and populate sets
@@ -13337,7 +13760,11 @@ const supervisorGroups = new Map();
                             productResults[prodCodeStr][periodType].add(codCliStr);
                         }
                     });
+
+
                 });
+
+
             };
 
             // Process all maps efficiently
@@ -13365,6 +13792,8 @@ const supervisorGroups = new Map();
                         }
                     }
                 });
+
+
             } else {
                 // Top Category Logic
                 for (const cat in categoryResults) {
@@ -13517,7 +13946,11 @@ const supervisorGroups = new Map();
                         avgQuarterlyCount,
                         avgQuarterlyCoverage
                     });
+
+
                 });
+
+
             });
 
             tableData.sort((a,b) => b.coverageCurrent - a.coverageCurrent);
@@ -13679,6 +14112,8 @@ const supervisorGroups = new Map();
                         children.forEach(row => row.classList.toggle('hidden'));
                     }
                 });
+
+
                 innovationsMonthTableBody._hasToggleListener = true;
             }
 
@@ -13727,6 +14162,8 @@ const supervisorGroups = new Map();
                     scales: { y: { ticks: { callback: (v) => `${v}%` } } },
                     layout: { padding: { top: 20 } }
                 });
+
+
             } else {
                 showNoDataMessage('innovations-month-chart', 'Sem dados de inovações para exibir com os filtros atuais.');
             }
@@ -13765,6 +14202,8 @@ const supervisorGroups = new Map();
                     const inBonus = categoryResults[catName].bonusCurrent.has(codcli);
                     status[catName] = inMain || inBonus;
                 });
+
+
 
                 // Explicit copy for robustness against Proxies
                 return {
@@ -13815,8 +14254,12 @@ const supervisorGroups = new Map();
                     chartLabels.forEach(catName => {
                         tableBodyHTML += `<td class="px-2 py-1.5 text-center">${client.innovationStatus[catName] ? checkIcon : xIcon}</td>`;
                     });
+
+
                     tableBodyHTML += `</tr>`;
                 });
+
+
                 if (innovationsByClientTableBody) innovationsByClientTableBody.innerHTML = tableBodyHTML;
 
                 // Update Pagination Controls
@@ -13844,12 +14287,16 @@ const supervisorGroups = new Map();
                                 renderInnovationsPage(currentPage);
                             }
                         });
+
+
                         newNextBtn.addEventListener('click', () => {
                             if (currentPage < totalPages) {
                                 currentPage++;
                                 renderInnovationsPage(currentPage);
                             }
                         });
+
+
 
                     } else {
                         controls.classList.add('hidden');
@@ -13992,8 +14439,12 @@ const supervisorGroups = new Map();
                         };
                         row.push(cell);
                     });
+
+
                     return row;
                 });
+
+
 
                 doc.autoTable({
                     head: clientInnovationsHead,
@@ -14011,6 +14462,8 @@ const supervisorGroups = new Map();
                     },
                     alternateRowStyles: { fillColor: [240, 248, 255] },
                 });
+
+
             }
 
             const pageCount = doc.internal.getNumberOfPages();
@@ -14607,7 +15060,9 @@ const supervisorGroups = new Map();
                 'produtos': 'Produtos',
                 'consultas': 'Consultas',
                 'history': 'Histórico de Pedidos',
-                'titulos': 'Títulos em Aberto'
+                'titulos': 'Títulos em Aberto',
+                'feed': 'Feed de Visitas',
+                'feed': 'Feed de Visitas'
             };
             const friendlyName = viewNameMap[view] || 'a página';
 
@@ -14617,11 +15072,18 @@ const supervisorGroups = new Map();
             const updateContent = () => {
                 [mainDashboard, cityView, positivacaoView, comparisonView, stockView, innovationsMonthView, coverageView, document.getElementById('mix-view'), goalsView, document.getElementById('meta-realizado-view'), document.getElementById('ai-insights-full-page'), document.getElementById('wallet-view'), document.getElementById('clientes-view'), document.getElementById('produtos-view'), document.getElementById('consultas-view'), document.getElementById('history-view'), document.getElementById('titulos-view'), document.getElementById('loja-perfeita-view'), document.getElementById('weekly-view'), document.getElementById('feed-view')].forEach(el => {
                     if(el) el.classList.add('hidden');
+
+
                 });
+                if (chartView) chartView.classList.add("hidden");
+
+
 
                 document.querySelectorAll('.nav-link').forEach(link => {
                     link.classList.remove('active-nav');
                 });
+
+
 
                 const activeLink = document.querySelector(`.nav-link[data-target="${view}"]`);
                 if (activeLink) {
@@ -14637,6 +15099,8 @@ const supervisorGroups = new Map();
                         link.classList.add('glass-panel-heavy', 'text-slate-300');
                     }
                 });
+
+
 
                 switch(view) {
                     case 'history':
@@ -14752,9 +15216,13 @@ const supervisorGroups = new Map();
                                 setupClientTypeahead('city-codcli-filter', 'city-codcli-filter-suggestions', () => {
                                     handleCityFilterChange();
                                 });
+
+
                                 cityCodCliFilter.addEventListener('input', (e) => {
                                     if (!e.target.value) handleCityFilterChange();
                                 });
+
+
                                 cityCodCliFilter._hasTypeahead = true;
                             }
 
@@ -14771,6 +15239,8 @@ const supervisorGroups = new Map();
                                     clients.forEach(c => {
                                         if (c.cidade && c.cidade !== 'N/A') uniqueCities.add(c.cidade);
                                     });
+
+
                                     const matches = Array.from(uniqueCities).filter(c => c.toLowerCase().includes(val)).sort();
 
                                     if (matches.length > 0) {
@@ -14789,11 +15259,15 @@ const supervisorGroups = new Map();
                                     if (!e.target.value) handleCityFilterChange({ excludeFilter: 'city' });
                                 });
 
+
+
                                 cityCityFilter.addEventListener('focus', () => {
                                     if (cityCityFilter.value.trim().length >= 1) {
                                          cityCitySuggestions.classList.remove('hidden');
                                     }
                                 });
+
+
 
                                 cityCitySuggestions.addEventListener('click', (e) => {
                                     const item = e.target.closest('div');
@@ -14804,11 +15278,15 @@ const supervisorGroups = new Map();
                                     }
                                 });
 
+
+
                                 document.addEventListener('click', (e) => {
                                     if (!cityCityFilter.contains(e.target) && !cityCitySuggestions.contains(e.target)) {
                                         cityCitySuggestions.classList.add('hidden');
                                     }
                                 });
+
+
 
                                 cityCityFilter._hasListener = true;
                             }
@@ -14958,11 +15436,15 @@ const supervisorGroups = new Map();
                         body: JSON.stringify(batch)
                     });
 
+
+
                     if (!response.ok) {
                         const errorText = await response.text();
                         throw new Error(`Erro Supabase (${response.status}): ${errorText}`);
                     }
                 });
+
+
             };
 
             const clearTable = async (table, pkColumn = 'id') => {
@@ -14978,6 +15460,8 @@ const supervisorGroups = new Map();
                             },
                             body: JSON.stringify({ table_name: table })
                         });
+
+
 
                         if (rpcResponse.ok) {
                             return; // Success
@@ -15001,6 +15485,8 @@ const supervisorGroups = new Map();
                                 'Prefer': 'count=exact' // Request count to verify
                             }
                         });
+
+
 
                         if (response.ok) {
                             return; // Success
@@ -15029,6 +15515,8 @@ const supervisorGroups = new Map();
                                 'Content-Type': 'application/json'
                             }
                         });
+
+
 
                         if (!selectRes.ok) throw new Error(`Erro ao buscar IDs para exclusão em lote de ${table}`);
                         const rows = await selectRes.json();
@@ -15253,6 +15741,8 @@ const supervisorGroups = new Map();
                                     }
                                 }
                             });
+
+
                         }
                     } catch (e) {
                         console.warn("[Upload] Failed to preserve manual keys:", e);
@@ -15318,6 +15808,8 @@ const supervisorGroups = new Map();
                         (idx.bairroLower && idx.bairroLower.includes(term))
                     );
                 });
+
+
 
                 if (match) {
                     results.push(allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i]);
@@ -15390,6 +15882,8 @@ const supervisorGroups = new Map();
                     };
                     suggestions.appendChild(div);
                 });
+
+
                 suggestions.classList.remove('hidden');
             }
         }
@@ -15448,15 +15942,21 @@ const supervisorGroups = new Map();
                     scrollLeft = navContainer.scrollLeft;
                 });
 
+
+
                 navContainer.addEventListener('mouseleave', () => {
                     isDown = false;
                     navContainer.classList.remove('cursor-grabbing');
                 });
 
+
+
                 navContainer.addEventListener('mouseup', () => {
                     isDown = false;
                     navContainer.classList.remove('cursor-grabbing');
                 });
+
+
 
                 navContainer.addEventListener('mousemove', (e) => {
                     if (!isDown) return;
@@ -15465,6 +15965,8 @@ const supervisorGroups = new Map();
                     const walk = (x - startX) * 2; // Scroll-fast
                     navContainer.scrollLeft = scrollLeft - walk;
                 });
+
+
             }
 
             // Uploader Logic
@@ -15512,6 +16014,8 @@ const supervisorGroups = new Map();
                         }
                     }
                 });
+
+
             }
 
             const checkPassword = () => {
@@ -15545,6 +16049,8 @@ const supervisorGroups = new Map();
                         }
                     }
                 });
+
+
             }
 
             if (pwdConfirm) {
@@ -15554,16 +16060,22 @@ const supervisorGroups = new Map();
                 pwdCancel.addEventListener('click', () => {
                     if (pwdModal) pwdModal.classList.add('hidden');
                 });
+
+
             }
             if (pwdInput) {
                 pwdInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') checkPassword();
                 });
+
+
             }
             if (adminCloseBtn) {
                 adminCloseBtn.addEventListener('click', () => {
                     adminModal.classList.add('hidden');
                 });
+
+
             }
 
             const generateBtn = document.getElementById('generate-btn');
@@ -15625,6 +16137,8 @@ const supervisorGroups = new Map();
                                     const code = String(c['Código'] || c['codigo_cliente'] || c['CODCLI'] || '').trim();
                                     if (cnpj && code) referenceData.cnpjMap[cnpj] = code;
                                 });
+
+
                             }
                         } catch (e) {
                             console.warn("Error building reference CNPJ map:", e);
@@ -15645,6 +16159,8 @@ const supervisorGroups = new Map();
                         fallbackData: fallbackData // Pass existing data for preservation
                     });
 
+
+
                     worker.onmessage = (e) => {
                         const { type, data, status, percentage, message } = e.data;
                         if (type === 'progress') {
@@ -15662,6 +16178,8 @@ const supervisorGroups = new Map();
                         }
                     };
                 });
+
+
             }
 
             const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
@@ -15686,6 +16204,8 @@ const supervisorGroups = new Map();
                     handleNavClick(e);
                     toggleMobileMenu();
                 });
+
+
             });
 
             const supervisorFilterBtn = document.getElementById('supervisor-filter-btn');
@@ -15699,6 +16219,8 @@ const supervisorGroups = new Map();
                         updateDashboard();
                     }
                 });
+
+
             }
 
             const fornecedorFilterBtn = document.getElementById('fornecedor-filter-btn');
@@ -15720,6 +16242,8 @@ const supervisorGroups = new Map();
                         updateDashboard();
                     }
                 });
+
+
             }
 
             if (vendedorFilterBtn && vendedorFilterDropdown) {
@@ -15737,6 +16261,8 @@ const supervisorGroups = new Map();
                                         selectedVendedores.add(input.value);
                                     }
                                 });
+
+
                             } else {
                                 inputs.forEach(input => input.checked = false);
                                 selectedVendedores.clear();
@@ -15766,6 +16292,8 @@ const supervisorGroups = new Map();
                         updateDashboard();
                     }
                 });
+
+
             }
 
             if (tipoVendaFilterBtn && tipoVendaFilterDropdown) {
@@ -15780,6 +16308,8 @@ const supervisorGroups = new Map();
                         updateDashboard();
                     }
                 });
+
+
             }
 
             if (posicaoFilter) posicaoFilter.addEventListener('change', () => {  updateDashboard(); });
@@ -15790,11 +16320,15 @@ const supervisorGroups = new Map();
 
                     debouncedUpdateDashboard();
                 });
+
+
                 codcliFilter.addEventListener('input', (e) => {
                     if (!e.target.value) {
                          debouncedUpdateDashboard();
                     }
                 });
+
+
                 // Make Lupa Icon Interactive
                 const codcliSearchIcon = document.getElementById('codcli-search-icon');
                 if (codcliSearchIcon) {
@@ -15803,6 +16337,8 @@ const supervisorGroups = new Map();
 
                         updateDashboard(); // Immediate update
                     });
+
+
                 }
             }
 
@@ -15817,6 +16353,8 @@ const supervisorGroups = new Map();
                         goalsGvCodcliFilter.dispatchEvent(new Event('input'));
                     }
                 });
+
+
                 goalsGvCodcliFilter.addEventListener('input', (e) => {
                     if (!e.target.value) {
                         if (typeof updateGoalsView === 'function') {
@@ -15825,6 +16363,8 @@ const supervisorGroups = new Map();
                         }
                     }
                 });
+
+
                 // Make Goals Lupa Icon Interactive
                 const goalsGvSearchIcon = document.getElementById('goals-gv-search-icon');
                 if (goalsGvSearchIcon) {
@@ -15837,6 +16377,8 @@ const supervisorGroups = new Map();
                             goalsGvCodcliFilter.dispatchEvent(new Event('input'));
                         }
                     });
+
+
                 }
             }
             if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', () => { resetMainFilters(); markDirty('dashboard'); });
@@ -15858,6 +16400,8 @@ const supervisorGroups = new Map();
                         updateDashboard();
                     }
                 });
+
+
             }
             if (mainRedeFilterDropdown) {
                 mainRedeFilterDropdown.addEventListener('change', (e) => {
@@ -15870,6 +16414,8 @@ const supervisorGroups = new Map();
                         updateDashboard();
                     }
                 });
+
+
             }
 
             // --- City View Filters ---
@@ -15889,6 +16435,8 @@ const supervisorGroups = new Map();
                         handleCityFilterChange({ skipFilter: 'supplier' });
                     }
                 });
+
+
             }
 
             if (cityTipoVendaFilterBtn && cityTipoVendaFilterDropdown) {
@@ -15904,6 +16452,8 @@ const supervisorGroups = new Map();
                         handleCityFilterChange({ skipFilter: 'tipoVenda' });
                     }
                 });
+
+
             }
 
             if (cityComRedeBtn) cityComRedeBtn.addEventListener('click', () => cityRedeFilterDropdown.classList.toggle('hidden'));
@@ -15922,6 +16472,8 @@ const supervisorGroups = new Map();
                         handleCityFilterChange();
                     }
                 });
+
+
             }
             if (cityRedeFilterDropdown) {
                 cityRedeFilterDropdown.addEventListener('change', (e) => {
@@ -15937,6 +16489,8 @@ const supervisorGroups = new Map();
                         handleCityFilterChange({ skipFilter: 'rede' });
                     }
                 });
+
+
             }
 
             const toggleCityMapBtn = document.getElementById('toggle-city-map-btn');
@@ -15975,6 +16529,8 @@ const supervisorGroups = new Map();
                         `;
                     }
                 });
+
+
             }
 
             if (clearCityFiltersBtn) clearCityFiltersBtn.addEventListener('click', () => { resetCityFilters(); markDirty('cidades'); });
@@ -15984,6 +16540,8 @@ const supervisorGroups = new Map();
                     e.target.value = e.target.value.replace(/[^0-9]/g, '');
                     debouncedUpdateCity();
                 });
+
+
             }
 
             if (citySupplierFilterBtn && citySupplierFilterDropdown) {
@@ -15991,6 +16549,8 @@ const supervisorGroups = new Map();
                     e.stopPropagation();
                     citySupplierFilterDropdown.classList.toggle('hidden');
                 });
+
+
             }
 
             // debouncedCitySearch removed
@@ -16035,6 +16595,8 @@ const supervisorGroups = new Map();
 
                     updateDashboard();
                 });
+
+
             });
 
             const updateComparison = () => {
@@ -16147,6 +16709,8 @@ const supervisorGroups = new Map();
                     if (inp.value === 'ambas') inp.checked = true;
                     else inp.checked = false;
                 });
+
+
                 const filialText = document.getElementById('comparison-filial-filter-text');
                 if (filialText) filialText.textContent = 'Ambas';
 
@@ -16273,6 +16837,8 @@ const supervisorGroups = new Map();
                         btn.classList.add('text-slate-400');
                     }
                 });
+
+
             };
 
             if (toggleDailyBtn) {
@@ -16282,6 +16848,8 @@ const supervisorGroups = new Map();
                     document.getElementById('comparison-monthly-metric-container').classList.add('hidden');
                     updateComparisonView();
                 });
+
+
             }
 
             toggleWeeklyBtn.addEventListener('click', () => {
@@ -16315,12 +16883,16 @@ const supervisorGroups = new Map();
                     updateComparison();
                 });
 
+
+
                 toggleMonthlyClientsBtn.addEventListener('click', () => {
                     comparisonMonthlyMetric = 'clientes';
                     toggleMonthlyClientsBtn.classList.add('active');
                     toggleMonthlyFatBtn.classList.remove('active');
                     updateComparison();
                 });
+
+
             }
 
             if (mainHolidayPickerBtn) {
@@ -16328,12 +16900,16 @@ const supervisorGroups = new Map();
                     renderCalendar(calendarState.year, calendarState.month);
                     holidayModal.classList.remove('hidden');
                 });
+
+
             }
             if (comparisonHolidayPickerBtn) {
                 comparisonHolidayPickerBtn.addEventListener('click', () => {
                     renderCalendar(calendarState.year, calendarState.month);
                     holidayModal.classList.remove('hidden');
                 });
+
+
             }
             if (holidayModalCloseBtn) {
                 holidayModalCloseBtn.addEventListener('click', () => holidayModal.classList.add('hidden'));
@@ -16347,6 +16923,8 @@ const supervisorGroups = new Map();
                     updateComparison();
                     updateDashboard();
                 });
+
+
             }
             if (calendarContainer) {
                 calendarContainer.addEventListener('click', (e) => {
@@ -16375,6 +16953,8 @@ const supervisorGroups = new Map();
                         renderCalendar(calendarState.year, calendarState.month);
                     }
                 });
+
+
             }
 
 
@@ -16395,6 +16975,8 @@ const supervisorGroups = new Map();
                         positivacaoFab.classList.remove('active');
                         exportClientsPDF(positivacaoDataForExport.active, 'Relatório de Clientes Ativos no Mês', 'clientes_ativos', true);
                     });
+
+
                 }
 
                 if (pdfInactiveBtn) {
@@ -16405,6 +16987,8 @@ const supervisorGroups = new Map();
                         positivacaoFab.classList.remove('active');
                         exportClientsPDF(positivacaoDataForExport.inactive, 'Relatório de Clientes Inativos (Sem Compra)', 'clientes_inativos', false);
                     });
+
+
                 }
 
                 if (excelBtn) {
@@ -16418,6 +17002,8 @@ const supervisorGroups = new Map();
                         if(positivacaoDataForExport.inactive && positivacaoDataForExport.inactive.length) sheets['Inativos'] = positivacaoDataForExport.inactive;
                         exportToExcel(sheets, 'Positivacao_Clientes');
                     });
+
+
                 }
             }
 
@@ -16446,6 +17032,8 @@ const supervisorGroups = new Map();
                 innovCodCliFilterElem.addEventListener('input', (e) => {
                     if (e.target.value === '') updateInnovationsMonthView();
                 });
+
+
                 innovCodCliFilterElem.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         document.getElementById('innovations-month-codcli-filter-suggestions').classList.add('hidden', 'manual-hide');
@@ -16453,6 +17041,8 @@ const supervisorGroups = new Map();
                         e.target.blur();
                     }
                 });
+
+
             }
 
 
@@ -16527,6 +17117,8 @@ const supervisorGroups = new Map();
                     currentCoverageChartMode = currentCoverageChartMode === 'city' ? 'seller' : 'city';
                     updateCoverageView();
                 });
+
+
             }
 
             // --- Mix View Event Listeners ---
@@ -16657,6 +17249,8 @@ const supervisorGroups = new Map();
                         if (indicator) indicator.remove();
                     });
 
+
+
                     btn.classList.remove('text-slate-400', 'font-medium');
                     btn.classList.add('active', 'text-teal-400', 'font-bold', 'border-b-2', 'border-teal-400');
 
@@ -16694,6 +17288,8 @@ const supervisorGroups = new Map();
                     goalsTableState.currentPage = 1;
                     updateGoals();
                 });
+
+
             }
 
             // Category Toggle Logic
@@ -16722,6 +17318,8 @@ const supervisorGroups = new Map();
                         btn.classList.add('bg-[#334155]', 'text-slate-400', 'border-slate-700');
                     }
                 });
+
+
 
                 // Hide All Sub-tabs
                 if(subTabsPepsico) subTabsPepsico.classList.add('hidden');
@@ -16800,6 +17398,8 @@ const supervisorGroups = new Map();
                         btn.classList.remove('border-teal-500', 'text-teal-500', 'active');
                         btn.classList.add('border-transparent', 'hover:text-slate-300', 'hover:border-slate-300', 'text-slate-400');
                     });
+
+
                     e.target.classList.remove('border-transparent', 'hover:text-slate-300', 'hover:border-slate-300', 'text-slate-400');
                     e.target.classList.add('border-teal-500', 'text-teal-500', 'active');
 
@@ -16830,7 +17430,11 @@ const supervisorGroups = new Map();
                     showConfirmationModal(`Você deseja inserir esta meta de Faturamento (${val}) para: ${filterDesc}?`, () => {
                         distributeGoals('fat');
                     });
+
+
                 });
+
+
             }
 
             const btnDistributeVol = document.getElementById('btn-distribute-vol');
@@ -16841,7 +17445,11 @@ const supervisorGroups = new Map();
                     showConfirmationModal(`Você deseja inserir esta meta de Volume (${val}) para: ${filterDesc}?`, () => {
                         distributeGoals('vol');
                     });
+
+
                 });
+
+
             }
 
             const btnDistributeMixSalty = document.getElementById('btn-distribute-mix-salty');
@@ -16868,7 +17476,11 @@ const supervisorGroups = new Map();
                         // Let's implement a specific helper function "saveMixAdjustment" that recalculates natural base for single seller.
                         saveMixAdjustment('salty', val, sellerName);
                     });
+
+
                 });
+
+
             }
 
             const btnDistributeMixFoods = document.getElementById('btn-distribute-mix-foods');
@@ -16880,7 +17492,11 @@ const supervisorGroups = new Map();
                         const val = parseFloat(valStr.replace(/\./g, '').replace(',', '.')) || 0;
                         saveMixAdjustment('foods', val, sellerName);
                     });
+
+
                 });
+
+
             }
 
             // Add Input Listeners for Real-time State Updates
@@ -16976,9 +17592,13 @@ const supervisorGroups = new Map();
                             }
                         });
 
+
+
                         debouncedUpdateMetaRealizado();
                     }
                 });
+
+
 
                 // Initialize default active button style
                 metaRealizadoPastaContainer.querySelectorAll('.pasta-btn').forEach(b => {
@@ -16987,6 +17607,8 @@ const supervisorGroups = new Map();
                         b.classList.add('bg-teal-600', 'hover:bg-teal-500');
                     }
                 });
+
+
             }
 
             // Toggle Metric Logic
@@ -17027,6 +17649,8 @@ const supervisorGroups = new Map();
 
                     updateMetaRealizado();
                 });
+
+
             }
 
             // Clear Filters
@@ -17054,11 +17678,15 @@ const supervisorGroups = new Map();
                     if (ddEl) ddEl.querySelectorAll('input').forEach(cb => cb.checked = false);
                 });
 
+
+
                 // Reset Pasta UI (Deactivate all, since PEPSICO button is gone)
                 metaRealizadoPastaContainer.querySelectorAll('.pasta-btn').forEach(b => {
                     b.classList.add('bg-slate-700');
                     b.classList.remove('bg-teal-600', 'hover:bg-teal-500');
                 });
+
+
 
                 debouncedUpdateMetaRealizado();
             });
@@ -17106,6 +17734,8 @@ const supervisorGroups = new Map();
                     const dropdown = document.getElementById('mix-supervisor-filter-dropdown');
                     if(dropdown) dropdown.classList.toggle('hidden');
                 });
+
+
             }
 
             const mixTipoVendaBtn = document.getElementById('mix-tipo-venda-filter-btn');
@@ -17123,6 +17753,8 @@ const supervisorGroups = new Map();
                         }
                     }
                 });
+
+
             }
 
             const mixTipoVendaDropdown = document.getElementById('mix-tipo-venda-filter-dropdown');
@@ -17136,6 +17768,8 @@ const supervisorGroups = new Map();
                         markDirty('mix');
                     }
                 });
+
+
             }
 
             const mixFilialFilter = document.getElementById('mix-filial-filter');
@@ -17153,6 +17787,8 @@ const supervisorGroups = new Map();
                 mixCodcliFilterElem.addEventListener('input', (e) => {
                     if (e.target.value === '') updateMix();
                 });
+
+
                 mixCodcliFilterElem.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         document.getElementById('mix-codcli-filter-suggestions').classList.add('hidden', 'manual-hide');
@@ -17160,6 +17796,8 @@ const supervisorGroups = new Map();
                         e.target.blur();
                     }
                 });
+
+
             }
 
             const mixCityFilter = document.getElementById('mix-city-filter');
@@ -17176,11 +17814,15 @@ const supervisorGroups = new Map();
                     e.target.value = e.target.value.replace(/[0-9]/g, '');
                     debouncedMixCityUpdate();
                 });
+
+
                 mixCityFilter.addEventListener('focus', () => {
                     const { clients } = getMixFilteredData({ excludeFilter: 'city' });
                     mixCitySuggestions.classList.remove('manual-hide');
                     updateCitySuggestions(mixCityFilter, mixCitySuggestions, clients);
                 });
+
+
                 mixCityFilter.addEventListener('blur', () => setTimeout(() => mixCitySuggestions.classList.add('hidden'), 150));
                 mixCityFilter.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
@@ -17189,6 +17831,8 @@ const supervisorGroups = new Map();
                         e.target.blur();
                     }
                 });
+
+
                 mixCitySuggestions.addEventListener('click', (e) => {
                     if (e.target.tagName === 'DIV') {
                         mixCityFilter.value = e.target.textContent;
@@ -17196,6 +17840,8 @@ const supervisorGroups = new Map();
                         updateMix();
                     }
                 });
+
+
             }
 
             const mixComRedeBtn = document.getElementById('mix-com-rede-btn');
@@ -17213,6 +17859,8 @@ const supervisorGroups = new Map();
                         }
                     }
                 });
+
+
             }
 
             const mixRedeGroupContainer = document.getElementById('mix-rede-group-container');
@@ -17238,6 +17886,8 @@ const supervisorGroups = new Map();
                         handleMixFilterChange();
                     }
                 });
+
+
             }
 
             if (mixRedeFilterDropdown) {
@@ -17256,6 +17906,8 @@ const supervisorGroups = new Map();
                         handleMixFilterChange({ skipFilter: 'rede' });
                     }
                 });
+
+
             }
 
             // Global click to close Mix filters and reset Z-Index
@@ -17290,6 +17942,8 @@ const supervisorGroups = new Map();
                         }
                     }
                 });
+
+
                 document._mixGlobalClickListener = true;
             }
 
@@ -17310,6 +17964,8 @@ const supervisorGroups = new Map();
                     markDirty('mix');
                     updateMixView();
                 });
+
+
             }
 
             const mixPrevPageBtn = document.getElementById('mix-prev-page-btn');
@@ -17320,6 +17976,8 @@ const supervisorGroups = new Map();
                         updateMixView();
                     }
                 });
+
+
             }
 
             const mixNextPageBtn = document.getElementById('mix-next-page-btn');
@@ -17330,6 +17988,8 @@ const supervisorGroups = new Map();
                         updateMixView();
                     }
                 });
+
+
             }
 
             document.addEventListener('click', (e) => {
@@ -17451,6 +18111,8 @@ const supervisorGroups = new Map();
                         e.target.blur();
                     }
                 });
+
+
                 coverageUnitPriceInput.addEventListener('blur', updateCoverage);
             }
 
@@ -17744,6 +18406,8 @@ const supervisorGroups = new Map();
                         adjustedGoals[i] = newGoal;
                     }
                 });
+
+
             } else {
                 // If no remaining days (month over), the deficit just sits there (or we add to last week?)
                 // Usually just leave as is.
@@ -17756,6 +18420,8 @@ const supervisorGroups = new Map();
                          adjustedGoals[i] = dailyGoal * week.workingDays;
                     }
                 });
+
+
             }
 
             return adjustedGoals;
@@ -17808,6 +18474,8 @@ const supervisorGroups = new Map();
                             }
                         }
                     });
+
+
 
                     if (clientElmaFat >= 1) defaults.elmaPos++;
                     if (clientFoodsFat >= 1) defaults.foodsPos++;
@@ -17992,6 +18660,8 @@ const supervisorGroups = new Map();
                     keys.forEach((k, i) => {
                         if (k) colMap[`${cat}_${k}`] = colIdx + i;
                     });
+
+
                     colIdx += keys.length;
                 };
 
@@ -18131,6 +18801,8 @@ const supervisorGroups = new Map();
                     if (!isNaN(val)) updates.push({ type: 'rev', seller: sellerName, category: cat, val: val });
                 });
 
+
+
                 // 2. Volume
                 // Metas de Volume são importadas pelos Totais (KG ELMA / KG FOODS) e distribuídas automaticamente
                 const volCats = ['tonelada_elma', 'tonelada_foods'];
@@ -18139,6 +18811,8 @@ const supervisorGroups = new Map();
                     if (!isNaN(val)) updates.push({ type: 'vol', seller: sellerName, category: cat, val: val });
                 });
 
+
+
                 // 3. Positivation
                 const posCats = ['pepsico_all', 'total_elma', 'total_foods', '707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
                 posCats.forEach(cat => {
@@ -18146,12 +18820,16 @@ const supervisorGroups = new Map();
                     if (!isNaN(val)) updates.push({ type: 'pos', seller: sellerName, category: cat, val: Math.round(val) });
                 });
 
+
+
                 // 4. Mix
                 const mixCats = ['mix_salty', 'mix_foods'];
                 mixCats.forEach(cat => {
                     const val = getPriorityValue(cat, 'MIX');
                     if (!isNaN(val)) updates.push({ type: 'mix', seller: sellerName, category: cat, val: Math.round(val) });
                 });
+
+
             }
             return updates;
         }
@@ -18234,6 +18912,8 @@ const supervisorGroups = new Map();
                     analysisBody.appendChild(row);
                 });
 
+
+
                 // Update Pagination Controls
                 const prevBtn = document.getElementById('import-prev-page-btn');
                 const nextBtn = document.getElementById('import-next-page-btn');
@@ -18275,6 +18955,8 @@ const supervisorGroups = new Map();
                         renderImportTable();
                     }
                 });
+
+
             }
             if (nextBtn) {
                 nextBtn.addEventListener('click', () => {
@@ -18284,6 +18966,8 @@ const supervisorGroups = new Map();
                         renderImportTable();
                     }
                 });
+
+
             }
 
             importBtn.addEventListener('click', () => {
@@ -18324,6 +19008,8 @@ const supervisorGroups = new Map();
                     dropZone.addEventListener(eventName, preventDefaults, false);
                 });
 
+
+
                 function preventDefaults(e) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -18333,25 +19019,37 @@ const supervisorGroups = new Map();
                     dropZone.addEventListener(eventName, () => {
                         dropZone.classList.add('bg-slate-700/50', 'border-teal-500');
                     });
+
+
                 });
+
+
 
                 ['dragleave', 'drop'].forEach(eventName => {
                     dropZone.addEventListener(eventName, () => {
                         dropZone.classList.remove('bg-slate-700/50', 'border-teal-500');
                     });
+
+
                 });
+
+
 
                 dropZone.addEventListener('drop', (e) => {
                     const dt = e.dataTransfer;
                     const files = dt.files;
                     handleFiles(files);
                 });
+
+
             }
 
             if (fileInput) {
                 fileInput.addEventListener('change', (e) => {
                     handleFiles(e.target.files);
                 });
+
+
             }
 
             function handleFiles(files) {
@@ -18462,6 +19160,8 @@ const supervisorGroups = new Map();
                         return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
                     });
 
+
+
                     let total = 0;
                     const leafCategories = resolveGoalCategory(category);
 
@@ -18476,8 +19176,12 @@ const supervisorGroups = new Map();
                                     else if (type === 'vol') total += (goal.vol || 0);
                                 }
                             });
+
+
                         }
                     });
+
+
                     return total;
                 }
                 return 0;
@@ -18513,6 +19217,8 @@ const supervisorGroups = new Map();
                                 total_fat_diff: 0,
                                 sellers: []
                             });
+
+
                         }
                         return supervisorsMap.get(supervisorName);
                     };
@@ -18602,6 +19308,8 @@ const supervisorGroups = new Map();
                             diff: diff,
                             impact: impact
                         });
+
+
                     }
 
                     const optimizedContext = { supervisors: [] };
@@ -18642,11 +19350,17 @@ const supervisorGroups = new Map();
                             };
                         });
 
+
+
                         optimizedContext.supervisors.push({
                             name: sup.name,
                             top_variations: topVariations
                         });
+
+
                     });
+
+
 
                     const promptText = `
                         Atue como um Gerente Nacional de Vendas da Prime Distribuição.
@@ -18697,6 +19411,8 @@ const supervisorGroups = new Map();
                         })
                     });
 
+
+
                     const data = await response.json();
                     if (data.error) throw new Error(data.error.message);
 
@@ -18727,6 +19443,8 @@ const supervisorGroups = new Map();
                                         }
                                     });
 
+
+
                                     // Enforce Limits (Safety Net)
                                     // If AI hallucinates or context structure varies, ensure BALCAO/Americanas is capped at 5
                                     // Other supervisors can show up to 10
@@ -18736,6 +19454,8 @@ const supervisorGroups = new Map();
                                     sup.variations = cleanVariations.slice(0, limit);
                                 }
                             });
+
+
                         }
                     } catch (e) {
                         console.error("AI JSON Parse Error", e);
@@ -18777,6 +19497,8 @@ const supervisorGroups = new Map();
                     }
                 });
 
+
+
                 new Chart(ctx, {
                     type: 'bar',
                     data: {
@@ -18811,6 +19533,8 @@ const supervisorGroups = new Map();
                         }
                     }
                 });
+
+
             }
 
             const btnGenerateAi = document.getElementById('btn-generate-ai');
@@ -18900,6 +19624,8 @@ const supervisorGroups = new Map();
                         }
                     });
 
+
+
                     // 2. Backfill Defaults for ALL Active Sellers
                     // Iterate all active sellers to ensure their calculated "Suggestions" are saved if not manually set.
                     // We get active sellers from optimizedData.rcasBySupervisor
@@ -18919,7 +19645,11 @@ const supervisorGroups = new Map();
                                 }
                             }
                         });
+
+
                     });
+
+
 
                     activeSellerNames.forEach(sellerName => {
                         if (!goalsSellerTargets.has(sellerName)) goalsSellerTargets.set(sellerName, {});
@@ -18934,6 +19664,8 @@ const supervisorGroups = new Map();
                         if (targets['mix_salty'] === undefined) targets['mix_salty'] = defaults.mixSalty;
                         if (targets['mix_foods'] === undefined) targets['mix_foods'] = defaults.mixFoods;
                     });
+
+
 
                     // Save to Supabase (SKIPPED - Load to Memory Only)
                     // const success = await saveGoalsToSupabase();
@@ -19006,6 +19738,8 @@ const supervisorGroups = new Map();
                     weekCells.push(w.meta.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
                     weekCells.push(w.real.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
                 });
+
+
                 return [
                     getFirstName(row.name),
                     row.metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
@@ -19060,6 +19794,8 @@ const supervisorGroups = new Map();
                     weekCells.push(w.meta.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
                     weekCells.push(w.real.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
                 });
+
+
                 return [
                     row.codcli,
                     row.razaoSocial,
@@ -19128,6 +19864,8 @@ const supervisorGroups = new Map();
                     const el = document.getElementById(id);
                     if (el) el.classList.add('hidden');
                 });
+
+
 
                 // Show AI Page
                 fullPage.classList.remove('hidden');
@@ -19210,6 +19948,8 @@ const supervisorGroups = new Map();
                                     </tr>
                                 `;
                             });
+
+
                         }
 
                         html += `
@@ -19221,6 +19961,8 @@ const supervisorGroups = new Map();
                             </div>
                         `;
                     });
+
+
                 }
 
                 html += `</div>`;
@@ -19250,6 +19992,8 @@ const supervisorGroups = new Map();
                             totalProposed += u.val;
                         }
                     });
+
+
                 }
 
                 const diff = totalProposed - totalCurrent;
@@ -19305,6 +20049,8 @@ const supervisorGroups = new Map();
                             }
                         }
                     });
+
+
                 }
             }
 
@@ -19433,6 +20179,8 @@ const supervisorGroups = new Map();
                     diagnosisModal.classList.remove('hidden');
                 });
 
+
+
                 diagnosisCloseBtn.addEventListener('click', () => diagnosisModal.classList.add('hidden'));
                 
                 diagnosisCopyBtn.addEventListener('click', () => {
@@ -19441,7 +20189,11 @@ const supervisorGroups = new Map();
                         diagnosisCopyBtn.innerHTML = `<span class="text-green-300 font-bold">Copiado!</span>`;
                         setTimeout(() => diagnosisCopyBtn.innerHTML = originalText, 2000);
                     });
+
+
                 });
+
+
             }
 
             function generateSystemDiagnosis() {
@@ -19581,6 +20333,8 @@ const supervisorGroups = new Map();
                     };
                     reader.readAsDataURL(file);
                 });
+
+
                 count.textContent = `(${state.fotos[type].length}/${state.max[type]})`;
             };
 
@@ -19953,6 +20707,8 @@ const supervisorGroups = new Map();
                      };
                      dropdown.appendChild(div);
                 });
+
+
             }
             
             // Auto Select
@@ -20018,6 +20774,8 @@ const supervisorGroups = new Map();
                         clientCodes.push(normalizeKey(cp.client_code));
                     }
                 });
+
+
             }
             
             if (clientCodes.length > 0) {
@@ -20076,12 +20834,16 @@ const supervisorGroups = new Map();
                                          
                                          if(dataset.values[colName]) dataset.values[colName].push(val);
                                      });
+
+
                                      dataset.length++;
                                  } else if (Array.isArray(dataset)) {
                                      dataset.push(mapped);
                                  }
                                  existingCodes.add(normalizeKey(newClient.codigo_cliente));
                             });
+
+
                         }
                     } catch (e) {
                         console.error("Erro ao buscar clientes faltantes:", e);
@@ -20308,6 +21070,8 @@ const supervisorGroups = new Map();
                     const sale = allSalesData instanceof ColumnarDataset ? allSalesData.get(idx) : allSalesData[idx];
                     salesSum += (Number(sale.VLVENDA) || 0);
                 });
+
+
                 // If total sum is <= 0 and we have transactions, consider it a return scenario
                 if (salesSum <= 0) {
                     isNegativeBalance = true;
@@ -20402,6 +21166,8 @@ const supervisorGroups = new Map();
                     name: prev,
                     restore: () => switchTab(prev, { skipHistory: true })
                 });
+
+
             }
             
             activeTab = tabName;
@@ -20582,6 +21348,8 @@ const supervisorGroups = new Map();
                     document.querySelectorAll('input[name="itinerary-day"]:checked').forEach(cb => {
                         selectedDays.push(cb.value);
                     });
+
+
                 }
                 const daysStr = selectedDays.join(',');
 
@@ -20726,6 +21494,8 @@ const supervisorGroups = new Map();
                     p.qty += it.qty;
                     p.val += (it.bon || it.val);
                 });
+
+
                 
                 let detailsHtml = '<table class="w-full text-left text-slate-400 compact-mobile-table"><thead><tr class="text-[10px] uppercase border-b border-slate-700/50"><th class="py-1">Prod</th><th class="py-1 text-right">Qtd</th><th class="py-1 text-right">Valor</th></tr></thead><tbody>';
                 prodMap.forEach((v, k) => {
@@ -20737,6 +21507,8 @@ const supervisorGroups = new Map();
                         </tr>
                     `;
                 });
+
+
                 detailsHtml += '</tbody></table>';
                 details.innerHTML = detailsHtml;
                 
@@ -20984,6 +21756,8 @@ const supervisorGroups = new Map();
                                  
                          if(dataset._data[col]) dataset._data[col].push(val);
                              });
+
+
                              dataset.length++;
                              
                              // CRITICAL FIX: Update underlying embeddedData.clients.length if needed
@@ -21326,9 +22100,13 @@ const supervisorGroups = new Map();
                     select.appendChild(opt);
                 });
 
+
+
                 select.addEventListener('change', () => {
                     renderRoteiroClients(roteiroDate);
                 });
+
+
             }
         }
     }
@@ -21527,6 +22305,8 @@ const supervisorGroups = new Map();
                            d.getFullYear() === date.getFullYear();
                 });
 
+
+
                 const hasFreq = !!(c.ITINERARY_FREQUENCY || c.itinerary_frequency);
 
                 if (!hasFreq && !c_todaysVisit) continue; // Skip if no freq and no visit today
@@ -21577,6 +22357,8 @@ const supervisorGroups = new Map();
                            d.getMonth() === date.getMonth() &&
                            d.getFullYear() === date.getFullYear();
                 });
+
+
 
                 if (todaysVisit) {
                     c._isScheduled = false;
@@ -21692,6 +22474,8 @@ const supervisorGroups = new Map();
                            d.getMonth() === date.getMonth() &&
                            d.getFullYear() === date.getFullYear();
                 });
+
+
 
                 // Format check-in / check-out date string
                 let visitTimeStr = '';
@@ -21845,6 +22629,8 @@ const supervisorGroups = new Map();
                     itinerary_ref_date: nextDate,
                     itinerary_days: days
                 });
+
+
             }
 
             // 3. Update allClientsData (In-memory Columnar)
@@ -22009,7 +22795,11 @@ const supervisorGroups = new Map();
                                    c.bairroLower.includes(term) ||
                                    c.cnpj.includes(term);
                         });
+
+
                     });
+
+
                 }
                 
                 // Sort by Name (using pre-stored name)
@@ -22146,6 +22936,8 @@ const supervisorGroups = new Map();
                     };
                     suggestionsEl.appendChild(div);
                 });
+
+
                 suggestionsEl.classList.remove('hidden');
             };
 
@@ -22157,6 +22949,8 @@ const supervisorGroups = new Map();
                         suggestionsEl.classList.add('hidden');
                     }
                 });
+
+
                 searchInput._hasRoteiroBlurListener = true;
             }
 
@@ -22244,6 +23038,8 @@ const supervisorGroups = new Map();
                         if (historyTableState.hasSearched) filterHistoryView();
                     }
                 });
+
+
             }
 
             document.addEventListener('click', (e) => {
@@ -22335,11 +23131,15 @@ const supervisorGroups = new Map();
                         historySupplierFilterDropdown.classList.toggle('hidden');
                     });
 
+
+
                     document.addEventListener('click', (e) => {
                         if (!historySupplierFilterBtn.contains(e.target) && !historySupplierFilterDropdown.contains(e.target)) {
                             historySupplierFilterDropdown.classList.add('hidden');
                         }
                     });
+
+
 
                     historySupplierFilterDropdown.addEventListener('change', (e) => {
                          if (e.target.type === 'checkbox') {
@@ -22352,6 +23152,8 @@ const supervisorGroups = new Map();
                              filterHistoryView();
                          }
                     });
+
+
                     historySupplierFilterDropdown._hasListener = true;
                 }
             }
@@ -22431,6 +23233,8 @@ const supervisorGroups = new Map();
                     historyTableState.page = 1;
                     renderHistoryTable();
                 });
+
+
             }
             
             // Pagination listeners
@@ -22645,6 +23449,8 @@ const supervisorGroups = new Map();
                                        city.toLowerCase().includes(term) ||
                                        bairro.toLowerCase().includes(term);
                              });
+
+
                              if (!match) continue;
                         }
                     }
@@ -22671,6 +23477,8 @@ const supervisorGroups = new Map();
                             CLIENTE_NOME: cName,
                             CLIENTE_FANTASIA: cFantasia
                         });
+
+
                     }
                     const o = ordersMap.get(key);
                     o.VLVENDA += (Number(s.VLVENDA) || 0);
@@ -23224,6 +24032,8 @@ const supervisorGroups = new Map();
                     shadowSize: [41, 41]
                 });
 
+
+
                 geoUpdateFixedMarker = L.marker([existingCoord.lat, existingCoord.lng], { 
                     draggable: false, 
                     title: "Localização Cadastrada",
@@ -23279,6 +24089,8 @@ const supervisorGroups = new Map();
                         updated_at: new Date().toISOString()
                     });
 
+
+
                 if (error) throw error;
 
                 // Update Local Cache
@@ -23287,6 +24099,8 @@ const supervisorGroups = new Map();
                     lng: currentGeoLng,
                     address: 'Atualizado Manualmente'
                 });
+
+
 
                 // Update Visuals if needed (e.g. City Map if open)
                 if (heatLayer) {
@@ -23391,6 +24205,8 @@ const supervisorGroups = new Map();
                          }
                      }
                  });
+
+
              }
         }
 
@@ -23509,6 +24325,8 @@ const supervisorGroups = new Map();
                     document.getElementById('stock-filial-filter-dropdown')?.classList.add('hidden');
                 });
 
+
+
                 // Add Change Listener for Supplier Filter
                 supplierDd.addEventListener('change', (e) => {
                     if (e.target.type === 'checkbox') {
@@ -23529,6 +24347,8 @@ const supervisorGroups = new Map();
                         handleStockFilterChange({ skipFilter: 'supplier' }); // Update dependent filters (Pasta/Product) and View
                     }
                 });
+
+
             }
 
             // --- PASTA TOGGLE REPLACEMENT ---
@@ -23566,9 +24386,13 @@ const supervisorGroups = new Map();
                             }
                         });
 
+
+
                         handleStockFilterChange({ skipFilter: 'pasta' });
                     }
                 });
+
+
             }
 
             const productBtn = document.getElementById('stock-product-filter-btn');
@@ -23583,6 +24407,8 @@ const supervisorGroups = new Map();
                     document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
                     document.getElementById('stock-filial-filter-dropdown')?.classList.add('hidden');
                 });
+
+
 
                 // Add Change Listener for Product Filter
                 productDd.addEventListener('change', (e) => {
@@ -23599,6 +24425,8 @@ const supervisorGroups = new Map();
                         handleStockFilterChange({ skipFilter: 'product' });
                     }
                 });
+
+
             }
 
             document.addEventListener('click', (e) => {
@@ -23644,6 +24472,8 @@ const supervisorGroups = new Map();
                     stockCitySuggestions.classList.remove('hidden');
                 });
 
+
+
                 stockCitySuggestions.addEventListener('click', (e) => {
                     if (e.target.tagName === 'DIV') {
                         const city = e.target.textContent;
@@ -23654,6 +24484,8 @@ const supervisorGroups = new Map();
                     }
                 });
 
+
+
                 stockCityInput.addEventListener('blur', () => setTimeout(() => stockCitySuggestions.classList.add('hidden'), 200));
                 stockCityInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
@@ -23663,6 +24495,8 @@ const supervisorGroups = new Map();
                         e.target.blur();
                     }
                 });
+
+
             }
 
             // Category Filter (Stock)
@@ -23679,6 +24513,8 @@ const supervisorGroups = new Map();
                     document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
                 });
 
+
+
                 catDd.addEventListener('change', (e) => {
                     if (e.target.type === 'checkbox') {
                         const val = e.target.value;
@@ -23692,6 +24528,8 @@ const supervisorGroups = new Map();
                         handleStockFilterChange({ skipFilter: 'category' });
                     }
                 });
+
+
             }
 
             document.addEventListener('click', (e) => {
@@ -23733,6 +24571,8 @@ const supervisorGroups = new Map();
                                 <span class="ml-2 text-sm text-slate-300">${c}</span>
                              </label>`;
                 });
+
+
                 dropdown.innerHTML = html;
             }
         }
@@ -24056,6 +24896,8 @@ const supervisorGroups = new Map();
                     variation: variation,
                     status
                 });
+
+
             }
         });
         
@@ -24250,6 +25092,8 @@ const supervisorGroups = new Map();
                 stockFilialDropdown.querySelectorAll('input[type="radio"]').forEach(r => {
                     if (r.value === 'all') r.checked = true;
                 });
+
+
             }
 
             const cityInput = document.getElementById('stock-city-filter');
@@ -24643,6 +25487,8 @@ const supervisorGroups = new Map();
                     }
                     return true;
                 });
+
+
             }
 
             const clientCodes = new Set(filteredClients.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
@@ -24988,6 +25834,8 @@ const supervisorGroups = new Map();
                 ordersMap.forEach((orders, cat) => {
                     categories.push({ name: cat, orders: Array.from(orders) });
                 });
+
+
             }
             
             // Sort alphabetical
@@ -25538,6 +26386,8 @@ const supervisorGroups = new Map();
                     name: item.categoryName,
                     children: []
                 });
+
+
                 rootData.children.push(catMap.get(item.categoryName));
             }
 
@@ -25551,6 +26401,8 @@ const supervisorGroups = new Map();
                     stock: item.stock,
                     code: item.productCode
                 });
+
+
             }
         });
 
@@ -26011,6 +26863,8 @@ const supervisorGroups = new Map();
                         document.getElementById('positivacao-vendedor-filter-dropdown')?.classList.add('hidden');
                     }
                 });
+
+
                 document._positivacaoFilterListener = true;
             }
 
@@ -26043,6 +26897,8 @@ const supervisorGroups = new Map();
                 sellerDetailsMap.forEach((d, code) => {
                     if (selectedPositivacaoSupervisors.has(d.supervisor)) validRcas.add(code);
                 });
+
+
             } else {
                 sellerDetailsMap.forEach((d, code) => validRcas.add(code));
             }
@@ -26124,6 +26980,8 @@ const supervisorGroups = new Map();
                         document.getElementById('coverage-vendedor-filter-dropdown')?.classList.add('hidden');
                     }
                 });
+
+
                 document._coverageFilterListener = true;
             }
 
@@ -26156,6 +27014,8 @@ const supervisorGroups = new Map();
                 sellerDetailsMap.forEach((d, code) => {
                     if (selectedCoverageSupervisors.has(d.supervisor)) validRcas.add(code);
                 });
+
+
             } else {
                 sellerDetailsMap.forEach((d, code) => validRcas.add(code));
             }
@@ -26267,6 +27127,8 @@ const supervisorGroups = new Map();
                         if(vendWrapper) vendWrapper.classList.remove('z-50');
                     }
                 });
+
+
                 document._mixFilterListener = true;
             }
 
@@ -26299,6 +27161,8 @@ const supervisorGroups = new Map();
                 sellerDetailsMap.forEach((d, code) => {
                     if (selectedMixSupervisors.has(d.supervisor)) validRcas.add(code);
                 });
+
+
             } else {
                 sellerDetailsMap.forEach((d, code) => validRcas.add(code));
             }
@@ -26337,6 +27201,8 @@ const supervisorGroups = new Map();
                     }
                 });
 
+
+
                 // Handle Selection
                 dropdown.addEventListener('change', (e) => {
                     if (e.target.type === 'radio') {
@@ -26355,6 +27221,8 @@ const supervisorGroups = new Map();
                     }
                 });
 
+
+
                 // Close on click outside
                 document.addEventListener('click', (e) => {
                     if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
@@ -26362,6 +27230,8 @@ const supervisorGroups = new Map();
                         if (wrapper) wrapper.classList.remove('z-50');
                     }
                 });
+
+
             }
         }
 
@@ -26383,6 +27253,8 @@ const supervisorGroups = new Map();
                         else wrapper.classList.add('z-50');
                     }
                 });
+
+
 
                 // Selection logic is dynamic since options are added dynamically.
                 // We delegate the event listener to the dropdown container.
@@ -26407,12 +27279,16 @@ const supervisorGroups = new Map();
                     }
                 });
 
+
+
                 document.addEventListener('click', (e) => {
                     if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
                         dropdown.classList.add('hidden');
                         if (wrapper) wrapper.classList.remove('z-50');
                     }
                 });
+
+
             }
         }
 
@@ -26452,6 +27328,8 @@ const supervisorGroups = new Map();
                     }
                 });
 
+
+
                 // Dropdown Listener for Checkboxes (Delegation)
                 if (dropdown) {
                     dropdown.addEventListener('change', (e) => {
@@ -26468,6 +27346,8 @@ const supervisorGroups = new Map();
                             updateInnovationsMonthView();
                         }
                     });
+
+
                 }
 
                 // Close dropdown on click outside
@@ -26476,6 +27356,8 @@ const supervisorGroups = new Map();
                         dropdown.classList.add('hidden');
                     }
                 });
+
+
             }
         }
 
@@ -26495,6 +27377,8 @@ const supervisorGroups = new Map();
                         else wrapper.classList.add('z-50');
                     }
                 });
+
+
 
                 dropdown.addEventListener('change', (e) => {
                     if (e.target.type === 'radio') {
@@ -26516,12 +27400,16 @@ const supervisorGroups = new Map();
                     }
                 });
 
+
+
                 document.addEventListener('click', (e) => {
                     if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
                         dropdown.classList.add('hidden');
                         if (wrapper) wrapper.classList.remove('z-50');
                     }
                 });
+
+
             }
         }
 
@@ -26586,6 +27474,8 @@ const supervisorGroups = new Map();
                         document.getElementById('innovations-month-vendedor-filter-dropdown')?.classList.add('hidden');
                     }
                 });
+
+
                 document._innovationsMonthFilterListener = true;
             }
 
@@ -26618,6 +27508,8 @@ const supervisorGroups = new Map();
                 sellerDetailsMap.forEach((d, code) => {
                     if (selectedInnovationsMonthSupervisors.has(d.supervisor)) validRcas.add(code);
                 });
+
+
             } else {
                 sellerDetailsMap.forEach((d, code) => validRcas.add(code));
             }
@@ -26690,6 +27582,8 @@ const supervisorGroups = new Map();
                         document.getElementById('titulos-vendedor-filter-dropdown')?.classList.add('hidden');
                     }
                 });
+
+
                 document._titulosFilterListener = true;
             }
             updateTitulosSupervisorFilter();
@@ -26770,6 +27664,8 @@ const supervisorGroups = new Map();
                         document.getElementById('lp-vendedor-filter-dropdown')?.classList.add('hidden');
                     }
                 });
+
+
                 document._lpFilterListener = true;
             }
             updateLpSupervisorFilter();
@@ -26852,6 +27748,8 @@ const supervisorGroups = new Map();
                         document.getElementById('history-vendedor-filter-dropdown')?.classList.add('hidden');
                     }
                 });
+
+
                 document._historyFilterListener = true;
             }
             updateHistorySupervisorFilter();
@@ -26940,6 +27838,8 @@ const supervisorGroups = new Map();
                         document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
                     }
                 });
+
+
                 document._stockFilterListener = true;
             }
             updateStockSupervisorFilter();
@@ -26990,12 +27890,16 @@ const supervisorGroups = new Map();
                         positivacaoSupplierFilterDropdown.classList.toggle('hidden');
                     });
 
+
+
                     // Close on click outside
                     document.addEventListener('click', (e) => {
                         if (!newBtn.contains(e.target) && !positivacaoSupplierFilterDropdown.contains(e.target)) {
                             positivacaoSupplierFilterDropdown.classList.add('hidden');
                         }
                     });
+
+
                 }
 
                 positivacaoSupplierFilterDropdown.addEventListener('change', (e) => {
@@ -27008,6 +27912,8 @@ const supervisorGroups = new Map();
                         handlePositivacaoFilterChange({ excludeFilter: 'supplier' });
                     }
                 });
+
+
                 positivacaoSupplierFilterDropdown._hasListener = true;
             }
 
@@ -27030,6 +27936,8 @@ const supervisorGroups = new Map();
                     }
                     handlePositivacaoFilterChange({ excludeFilter: 'rede' });
                 });
+
+
                 positivacaoComRedeBtn._hasListener = true;
             }
 
@@ -27047,6 +27955,8 @@ const supervisorGroups = new Map();
                 positivacaoCodCliFilter.addEventListener('input', (e) => {
                     if (!e.target.value) handlePositivacaoFilterChange({ excludeFilter: 'client' });
                 });
+
+
                 positivacaoCodCliFilter._hasListener = true;
             }
 
@@ -27064,6 +27974,8 @@ const supervisorGroups = new Map();
                     clients.forEach(c => {
                         if (c.cidade && c.cidade !== 'N/A') uniqueCities.add(c.cidade);
                     });
+
+
 
                     const matches = Array.from(uniqueCities).filter(c => c.toLowerCase().includes(val)).sort();
 
@@ -27083,11 +27995,15 @@ const supervisorGroups = new Map();
                     if (!e.target.value) handlePositivacaoFilterChange();
                 });
 
+
+
                 positivacaoCityFilter.addEventListener('focus', () => {
                     if (positivacaoCityFilter.value.trim().length >= 1) {
                          positivacaoCitySuggestions.classList.remove('hidden');
                     }
                 });
+
+
 
                 // Delegation for suggestions click
                 positivacaoCitySuggestions.addEventListener('click', (e) => {
@@ -27099,12 +28015,16 @@ const supervisorGroups = new Map();
                     }
                 });
 
+
+
                 // Close suggestions on click outside
                 document.addEventListener('click', (e) => {
                     if (!positivacaoCityFilter.contains(e.target) && !positivacaoCitySuggestions.contains(e.target)) {
                         positivacaoCitySuggestions.classList.add('hidden');
                     }
                 });
+
+
 
                 positivacaoCityFilter._hasListener = true;
             }
@@ -27122,6 +28042,8 @@ const supervisorGroups = new Map();
                         renderPositivacaoActiveTable();
                     }
                 });
+
+
                 pActivePrev._hasListener = true;
 
                 document.getElementById('positivacao-active-next-btn').addEventListener('click', () => {
@@ -27132,12 +28054,16 @@ const supervisorGroups = new Map();
                     }
                 });
 
+
+
                 document.getElementById('positivacao-inactive-prev-btn').addEventListener('click', () => {
                     if(positivacaoInactiveState.page > 1) {
                         positivacaoInactiveState.page--;
                         renderPositivacaoInactiveTable();
                     }
                 });
+
+
 
                 document.getElementById('positivacao-inactive-next-btn').addEventListener('click', () => {
                     const max = Math.ceil(positivacaoInactiveState.data.length / positivacaoInactiveState.limit);
@@ -27146,6 +28072,8 @@ const supervisorGroups = new Map();
                         renderPositivacaoInactiveTable();
                     }
                 });
+
+
             }
 
             // Initial Update
@@ -27358,6 +28286,8 @@ const supervisorGroups = new Map();
                         outros: total - det.pepsico - det.multimarcas,
                         isNew
                     });
+
+
                 } else {
                     c.isReturn = (total < 0);
                     c.isNewForInactiveLabel = isNew && !parseDate(c.ultimaCompra);
@@ -27609,6 +28539,8 @@ const supervisorGroups = new Map();
                     else redeDropdown.classList.add('hidden');
                     handleTitulosFilterChange();
                 });
+
+
                 redeGroupContainer._hasListener = true;
             }
 
@@ -27626,6 +28558,8 @@ const supervisorGroups = new Map();
                 clientInput.addEventListener('input', (e) => {
                      if (!e.target.value) handleTitulosFilterChange();
                 });
+
+
                 clientInput._hasListener = true;
             }
 
@@ -27660,6 +28594,8 @@ const supervisorGroups = new Map();
                         if (c.cidade && c.cidade !== 'N/A') cities.add(c.cidade);
                     });
 
+
+
                     const matches = Array.from(cities).filter(c => c.toLowerCase().includes(val)).sort();
 
                     if (matches.length > 0) {
@@ -27678,11 +28614,15 @@ const supervisorGroups = new Map();
                     if (!e.target.value) handleTitulosFilterChange();
                 });
 
+
+
                 cityInput.addEventListener('focus', () => {
                     if (cityInput.value.trim().length >= 1) {
                          suggestions.classList.remove('hidden');
                     }
                 });
+
+
 
                 suggestions.addEventListener('click', (e) => {
                     const item = e.target.closest('div');
@@ -27693,11 +28633,15 @@ const supervisorGroups = new Map();
                     }
                 });
 
+
+
                 document.addEventListener('click', (e) => {
                     if (!cityInput.contains(e.target) && !suggestions.contains(e.target)) {
                         suggestions.classList.add('hidden');
                     }
                 });
+
+
 
                 cityInput._hasListener = true;
             }
@@ -27708,6 +28652,8 @@ const supervisorGroups = new Map();
                 clearBtn.addEventListener('click', () => {
                      resetTitulosFilters();
                 });
+
+
                 clearBtn._hasListener = true;
             }
 
@@ -27721,6 +28667,8 @@ const supervisorGroups = new Map();
                         renderTitulosTable();
                     }
                 });
+
+
                 prevBtn._hasListener = true;
             }
             if(nextBtn && !nextBtn._hasListener) {
@@ -27731,6 +28679,8 @@ const supervisorGroups = new Map();
                         renderTitulosTable();
                     }
                 });
+
+
                 nextBtn._hasListener = true;
             }
 
@@ -27960,6 +28910,8 @@ const supervisorGroups = new Map();
                         isCritical,
                         daysOverdue
                     });
+
+
                 }
             }
 
@@ -28143,6 +29095,8 @@ const supervisorGroups = new Map();
                         if(wrapper) wrapper.classList.remove('z-50');
                     }
                 });
+
+
                 document._lpResearcherFilterListener = true;
             }
         }
@@ -28205,6 +29159,8 @@ const supervisorGroups = new Map();
                         if (row.pesquisador) researchers.add(row.pesquisador.trim());
                     }
                 });
+
+
             }
 
             // Sort and Render
@@ -28795,6 +29751,8 @@ const supervisorGroups = new Map();
                         }
                     }
                 });
+
+
                 document._goalsFilterListener = true;
             }
 
@@ -29212,6 +30170,8 @@ const supervisorGroups = new Map();
                         isCritical,
                         daysOverdue
                     });
+
+
                 }
             }
 
