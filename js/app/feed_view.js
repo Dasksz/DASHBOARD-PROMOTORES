@@ -1,5 +1,12 @@
 const FeedVisitas = (() => {
     let isLoading = false;
+    let isLoadingMore = false;
+    let hasMore = true;
+    let currentPage = 0;
+    const PAGE_SIZE = 10;
+    let observer = null;
+    let currentStartBound = null;
+    let currentEndBound = null;
     let initialized = false;
 
     // DOM 
@@ -24,8 +31,79 @@ const FeedVisitas = (() => {
         }
 
         // Always reload when opened to ensure fresh data and check errors
+        resetFeed();
         loadFeed();
         initialized = true;
+    }
+
+    function resetFeed() {
+        currentPage = 0;
+        hasMore = true;
+        if (cardsContainer) cardsContainer.innerHTML = '';
+        if (observer) {
+            observer.disconnect();
+            observer = null;
+        }
+        removeLoadingMoreIndicator();
+    }
+
+    function removeLoadingMoreIndicator() {
+        const loader = document.getElementById('feed-load-more-indicator');
+        if (loader) loader.remove();
+    }
+
+    function addLoadingMoreIndicator() {
+        removeLoadingMoreIndicator();
+        if (!cardsContainer) return;
+        const loader = document.createElement('div');
+        loader.id = 'feed-load-more-indicator';
+        loader.className = 'w-full py-6 flex justify-center items-center';
+        loader.innerHTML = `<svg class="w-8 h-8 text-[#FF5E00] animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>`;
+        cardsContainer.appendChild(loader);
+    }
+
+    function setupObserver() {
+        if (!cardsContainer || !hasMore) return;
+
+        // Find the last card
+        const cards = cardsContainer.querySelectorAll('.glass-card');
+        if (cards.length === 0) return;
+        const lastCard = cards[cards.length - 1];
+
+        if (observer) observer.disconnect();
+
+        observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !isLoading && !isLoadingMore && hasMore) {
+                loadMoreFeed();
+            }
+        }, {
+            root: null,
+            rootMargin: '100px',
+            threshold: 0.1
+        });
+
+        observer.observe(lastCard);
+    }
+
+    async function loadMoreFeed() {
+        if (isLoading || isLoadingMore || !hasMore) return;
+        isLoadingMore = true;
+        addLoadingMoreIndicator();
+
+        try {
+            currentPage++;
+            await fetchFeedData();
+        } catch (error) {
+            console.error("Erro ao carregar mais posts:", error);
+            currentPage--; // Revert
+        } finally {
+            isLoadingMore = false;
+            removeLoadingMoreIndicator();
+            setupObserver();
+        }
     }
 
     function showError(msg) {
@@ -52,13 +130,13 @@ const FeedVisitas = (() => {
         if (isLoading) return;
         isLoading = true;
 
+        resetFeed();
         hideError();
         if (loadingIndicator) loadingIndicator.classList.remove('hidden');
-        if (cardsContainer) cardsContainer.innerHTML = '';
         if (periodInfo) periodInfo.textContent = 'Carregando...';
 
         try {
-            console.log("FeedVisitas: Buscando dados...");
+            console.log("FeedVisitas: Buscando dados iniciais...");
 
             // Determine current month context based on lastSaleDate
             let contextDate = new Date();
@@ -75,8 +153,8 @@ const FeedVisitas = (() => {
             }
             
             const bounds = getMonthBounds(contextDate);
-            const start = bounds.start;
-            const end = bounds.end;
+            currentStartBound = bounds.start;
+            currentEndBound = bounds.end;
             
             // Format for display
             const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -86,58 +164,9 @@ const FeedVisitas = (() => {
                 periodInfo.textContent = `Mês: ${monthName}/${year}`;
             }
 
-            // Simple Query: visits within the month
-            let query = window.supabaseClient
-                .from('visitas')
-                .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, profiles:id_promotor(name)`)
-                .gte('created_at', start.toISOString())
-                .lte('created_at', end.toISOString())
-                .order('created_at', { ascending: false })
-                .limit(50); // Setting a reasonable limit to prevent huge payload
+            await fetchFeedData();
 
-            // Filtro RLS para promotores para evitar tela em branco por RLS violation silently se Supabase estiver barrando leitura total
-            const role = (window.userRole || '').trim().toLowerCase();
-            const isRestricted = role === 'promotor' || role === 'vendedor' || window.userIsSeller || window.userIsPromoter;
-            if (isRestricted && window.userId) {
-                query = query.eq('id_promotor', window.userId);
-            }
-
-            const { data, error } = await query;
-
-            if (error) {
-                console.error("FeedVisitas Supabase Error:", error);
-                throw error;
-            }
-
-            console.log("FeedVisitas: Dados recebidos:", data ? data.length : 0);
-
-            // Fetch client names from data_clients
-            const clientNamesMap = new Map();
-            if (data && data.length > 0) {
-                const uniqueClientCodes = [...new Set(data.map(v => v.client_code).filter(c => c))];
-                if (uniqueClientCodes.length > 0) {
-                    try {
-                        const { data: clientsData, error: clientsError } = await window.supabaseClient
-                            .from('data_clients')
-                            .select('codigo_cliente, nomecliente, cnpj_cpf, endereco')
-                            .in('codigo_cliente', uniqueClientCodes);
-
-                        if (clientsError) {
-                            console.error("Erro ao buscar nomes dos clientes:", clientsError);
-                        } else if (clientsData) {
-                            clientsData.forEach(c => {
-                                clientNamesMap.set(String(c.codigo_cliente).trim(), {nome: c.nomecliente, cnpj: c.cnpj_cpf, endereco: c.endereco });
-                            });
-                        }
-                    } catch (err) {
-                        console.error("Exceção ao buscar nomes dos clientes:", err);
-                    }
-                }
-            }
-
-            if (loadingIndicator) loadingIndicator.classList.add('hidden');
-
-            if (!data || data.length === 0) {
+            if (cardsContainer && cardsContainer.children.length === 0) {
                 cardsContainer.innerHTML = `
                     <div class="glass-panel p-8 text-center rounded-2xl border border-slate-700/50">
                         <div class="flex justify-center mb-4">
@@ -150,10 +179,72 @@ const FeedVisitas = (() => {
                         <p class="text-slate-300 font-medium">Nenhuma visita registrada no mês atual (${monthName}/${year}).</p>
                         <p class="text-slate-500 text-sm mt-2">Visitas registradas aparecerão aqui.</p>
                     </div>`;
-                return;
             }
 
-            data.forEach(visit => {
+        } catch (error) {
+            console.error('FeedVisitas Erro Fatal:', error);
+            showError(`Falha ao carregar visitas: ${error.message || 'Erro desconhecido'}`);
+        } finally {
+            if (loadingIndicator) loadingIndicator.classList.add('hidden');
+            isLoading = false;
+        }
+    }
+
+    async function fetchFeedData() {
+        if (!currentStartBound || !currentEndBound) return;
+
+        const from = currentPage * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+
+        let query = window.supabaseClient
+            .from('visitas')
+            .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, profiles:id_promotor(name)`)
+            .gte('created_at', currentStartBound.toISOString())
+            .lte('created_at', currentEndBound.toISOString())
+            .order('created_at', { ascending: false })
+            .range(from, to);
+
+        const role = (window.userRole || '').trim().toLowerCase();
+        const isRestricted = role === 'promotor' || role === 'vendedor' || window.userIsSeller || window.userIsPromoter;
+        if (isRestricted && window.userId) {
+            query = query.eq('id_promotor', window.userId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data || data.length < PAGE_SIZE) {
+            hasMore = false; // No more pages to load
+        }
+
+        if (!data || data.length === 0) {
+            return;
+        }
+
+        // Fetch client names from data_clients
+        const clientNamesMap = new Map();
+        const uniqueClientCodes = [...new Set(data.map(v => v.client_code).filter(c => c))];
+        if (uniqueClientCodes.length > 0) {
+            try {
+                const { data: clientsData } = await window.supabaseClient
+                    .from('data_clients')
+                    .select('codigo_cliente, nomecliente, cnpj_cpf, endereco')
+                    .in('codigo_cliente', uniqueClientCodes);
+
+                if (clientsData) {
+                    clientsData.forEach(c => {
+                        clientNamesMap.set(String(c.codigo_cliente).trim(), {nome: c.nomecliente, cnpj: c.cnpj_cpf, endereco: c.endereco });
+                    });
+                }
+            } catch (err) {
+                console.error("Exceção ao buscar nomes dos clientes:", err);
+            }
+        }
+
+        data.forEach(visit => {
                 const card = document.createElement('div');
                 card.className = 'glass-card rounded-xl shadow-lg border border-slate-700/50 hover:border-slate-600 transition-colors animate-fade-in-up max-w-xl mx-auto w-full overflow-hidden flex flex-col';
 
@@ -216,7 +307,9 @@ const FeedVisitas = (() => {
                                     if (foto.url.startsWith('http')) {
                                         urlStr = foto.url;
                                     } else {
-                                        urlStr = window.supabaseClient.storage.from('visitas-images').getPublicUrl(foto.url).data.publicUrl;
+                                        // Usa o recurso de transformação de imagem do Supabase para reduzir resolução e qualidade, deixando mais leve
+                                        const { data: urlData } = window.supabaseClient.storage.from('visitas-images').getPublicUrl(foto.url);
+                                        urlStr = urlData.publicUrl + '?width=500&quality=60';
                                     }
                                 }
                                 if (urlStr) {
@@ -235,7 +328,9 @@ const FeedVisitas = (() => {
                                     if (typeof value === 'string' && value.startsWith('http')) {
                                         url = value;
                                     } else if (typeof value === 'string') {
-                                        url = window.supabaseClient.storage.from('visitas-images').getPublicUrl(value).data.publicUrl;
+                                        // Usa o recurso de transformação de imagem do Supabase para reduzir resolução e qualidade, deixando mais leve
+                                        const { data: urlData } = window.supabaseClient.storage.from('visitas-images').getPublicUrl(value);
+                                        url = urlData.publicUrl + '?width=500&quality=60';
                                     }
                                     
                                     if (url) {
@@ -394,15 +489,9 @@ const FeedVisitas = (() => {
                     </div>
                 `;
                 cardsContainer.appendChild(card);
-            });
+        });
 
-        } catch (error) {
-            console.error('FeedVisitas Erro Fatal:', error);
-            showError(`Falha ao carregar visitas: ${error.message || 'Erro desconhecido'}`);
-            if (loadingIndicator) loadingIndicator.classList.add('hidden');
-        } finally {
-            isLoading = false;
-        }
+        setupObserver();
     }
 
     function openLocationModal(visitId) {
