@@ -155,7 +155,7 @@ const FeedVisitas = (() => {
 
             data.forEach(visit => {
                 const card = document.createElement('div');
-                card.className = 'glass-card p-4 rounded-xl shadow-lg border border-slate-700/50 hover:border-slate-600 transition-colors animate-fade-in-up max-w-md mx-auto w-full';
+                card.className = 'glass-card rounded-xl shadow-lg border border-slate-700/50 hover:border-slate-600 transition-colors animate-fade-in-up max-w-xl mx-auto w-full overflow-hidden flex flex-col';
 
                 // Try to resolve client info from fetched data_clients map, fallback to code
                 let clientName = 'Cliente Desconhecido';
@@ -211,7 +211,14 @@ const FeedVisitas = (() => {
                     if (respostasObj && typeof respostasObj === 'object') {
                         if (respostasObj.fotos && Array.isArray(respostasObj.fotos)) {
                             respostasObj.fotos.forEach(foto => {
-                                const urlStr = foto.url ? window.supabaseClient.storage.from('visitas-images').getPublicUrl(foto.url).data.publicUrl : '';
+                                let urlStr = '';
+                                if (foto.url && typeof foto.url === 'string') {
+                                    if (foto.url.startsWith('http')) {
+                                        urlStr = foto.url;
+                                    } else {
+                                        urlStr = window.supabaseClient.storage.from('visitas-images').getPublicUrl(foto.url).data.publicUrl;
+                                    }
+                                }
                                 if (urlStr) {
                                     fotos.push({
                                         url: urlStr,
@@ -250,7 +257,7 @@ const FeedVisitas = (() => {
                 // Building the horizontal carousel HTML
                 let fotosHtml = '';
                 if (fotos.length > 0) {
-                    fotosHtml += `<div class="mt-3 flex overflow-x-auto gap-3 pb-2 snap-x snap-mandatory" style="scrollbar-width: none;">`;
+                    fotosHtml += `<div class="flex overflow-x-auto snap-x snap-mandatory w-full bg-slate-900 border-y border-slate-800" style="scrollbar-width: none;">`;
                     fotos.forEach(foto => {
                         const url = foto.url;
                         if (!url) return;
@@ -279,8 +286,12 @@ const FeedVisitas = (() => {
                         `;
 
                         fotosHtml += `
-                            <div class="relative flex-none w-full aspect-square rounded-lg overflow-hidden snap-center bg-slate-800 border border-slate-700/50">
-                                <img src="${url}" class="w-full h-full object-cover" loading="lazy" alt="Foto da Visita">
+                            <div class="relative flex-none min-w-full aspect-square overflow-hidden snap-center bg-slate-800 flex items-center justify-center text-slate-500">
+                                <img src="${url}" class="w-full h-full object-cover absolute inset-0 z-10" loading="lazy" alt="Foto da Visita" onerror="this.onerror=null; this.parentElement.classList.add('image-error'); this.style.display='none'; this.nextElementSibling.classList.remove('hidden'); this.nextElementSibling.classList.add('flex');">
+                                <div class="hidden z-0 flex-col items-center justify-center text-xs text-slate-500 gap-2">
+                                    <i class="fas fa-image text-2xl mb-1"></i>
+                                    <span>Imagem indisponível</span>
+                                </div>
                                 ${badgeHtml}
                                 ${locationBtnHtml}
                             </div>
@@ -319,8 +330,14 @@ const FeedVisitas = (() => {
 
                     if (respostasFormatadas.length > 0) {
                         resumoRespostasHtml = `
-                            <div class="mt-3 bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
-                                ${respostasFormatadas.join('')}
+                            <div class="mt-2">
+                                <button onclick="window.FeedVisitas.toggleResumo(this, '${visit.id}')" class="text-sm text-slate-400 font-medium hover:text-slate-200 transition-colors cursor-pointer inline-flex items-center gap-1">
+                                    <span>Mais</span>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </button>
+                                <div id="resumo-visita-${visit.id}" class="hidden mt-2 bg-slate-800/50 rounded-lg p-3 border border-slate-700/50 transition-all duration-300">
+                                    ${respostasFormatadas.join('')}
+                                </div>
                             </div>
                         `;
                     }
@@ -333,19 +350,21 @@ const FeedVisitas = (() => {
                 }
 
                 card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2 gap-4">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 mb-1">
-                                <p class="text-sm font-bold text-white truncate">${promotorName}</p>
-                                ${statusHtml}
-                            </div>
-                            <p class="text-xs text-[#FF5E00] font-medium truncate" title="${clientName}">${clientName}</p>
+                    <div class="p-4 flex flex-col gap-1 border-b border-slate-700/50">
+                        <div class="flex items-center gap-2">
+                            <p class="text-sm font-bold text-white truncate max-w-[120px]" title="${promotorName}">${promotorName}</p>
+                            <span class="text-xs text-[#FF5E00] font-medium truncate flex-1" title="${clientName}">${clientName}</span>
                         </div>
-                        <span class="text-xs text-slate-400 bg-slate-800/80 px-2 py-1 rounded whitespace-nowrap border border-slate-700/50">${formattedDate}</span>
                     </div>
                     ${fotosHtml}
-                    ${resumoRespostasHtml}
-                    ${observacoesTexto ? `<div class="mt-1 text-sm text-slate-300 pt-1 leading-relaxed"><span class="font-medium text-white">Obs:</span> ${observacoesTexto}</div>` : ''}
+                    <div class="p-4 flex flex-col gap-2">
+                        <div class="flex items-center justify-between w-full mb-1">
+                            <span class="text-xs text-slate-400">${formattedDate}</span>
+                            ${statusHtml}
+                        </div>
+                        ${observacoesTexto ? `<div class="text-sm text-slate-300 leading-relaxed"><span class="font-medium text-white">Obs:</span> ${observacoesTexto}</div>` : ''}
+                        ${resumoRespostasHtml}
+                    </div>
                 `;
                 cardsContainer.appendChild(card);
             });
@@ -470,7 +489,25 @@ const FeedVisitas = (() => {
         }
     }
 
+    function toggleResumo(btnElement, visitId) {
+        const container = document.getElementById('resumo-visita-' + visitId);
+        const icon = btnElement.querySelector('svg');
+        const textSpan = btnElement.querySelector('span');
+        if (container) {
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                if (textSpan) textSpan.textContent = 'Menos';
+                if (icon) icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>';
+            } else {
+                container.classList.add('hidden');
+                if (textSpan) textSpan.textContent = 'Mais';
+                if (icon) icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>';
+            }
+        }
+    }
+
     return {
+        toggleResumo,
         init,
         openLocationModal,
         closeLocationModal,
