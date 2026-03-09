@@ -1,7 +1,11 @@
 # Request
-I fixed the Feed View page logic. Originally, the Supabase query to fetch client names was failing because it referenced the wrong column (`cod_cliente` instead of `codigo_cliente` and `cnpj` instead of `cnpj_cpf`). I also adjusted the logic for rendering the horizontal photo carousel, because the `respostas.fotos` structure wasn't standardized and the URLs might be nested or direct values. I also omitted `foto` keys from the text summary.
+The user pointed out that although the client names were fixed, the photos and details from the surveys (`respostas` column) were not showing up. It turns out that the `respostas` column does not always contain a nested array for photos but instead has top-level keys like `foto_url` mixed with boolean/string answers like `tem_ilha` or `estado_gondola`.
 
-Please review `js/app/feed_view.js` and ensure the changes seem sound.
+I updated `js/app/feed_view.js` to handle:
+1. Identifying any key with "foto" dynamically (like `foto_url`) and rendering it as part of the photo carousel.
+2. Improved the text summary by properly formatting the other keys (capitalizing letters, removing underscores, ignoring empty values, and styling "Sim"/"Não" with color coding).
 
-# Files modified
+Please review the parsing changes to ensure they are solid.
+
+# Modified Files
 - `js/app/feed_view.js`
