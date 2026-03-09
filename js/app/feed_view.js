@@ -155,7 +155,7 @@ const FeedVisitas = (() => {
 
             data.forEach(visit => {
                 const card = document.createElement('div');
-                card.className = 'glass-card p-4 rounded-xl shadow-lg border border-slate-700/50 hover:border-slate-600 transition-colors animate-fade-in-up';
+                card.className = 'glass-card p-4 rounded-xl shadow-lg border border-slate-700/50 hover:border-slate-600 transition-colors animate-fade-in-up max-w-md mx-auto w-full';
 
                 // Try to resolve client info from fetched data_clients map, fallback to code
                 let clientName = 'Cliente Desconhecido';
@@ -269,17 +269,17 @@ const FeedVisitas = (() => {
                         }
 
                         // We can optionally add a "View location" pin badge if coordinates exist
-                        const locationBtnHtml = (visit.latitude && visit.longitude) ? `
+                        const locationBtnHtml = `
                             <button onclick="window.FeedVisitas.openLocationModal(${visit.id})" class="absolute top-2 right-2 bg-black/50 hover:bg-[#FF5E00] text-white p-1.5 rounded-full backdrop-blur-sm transition-colors border border-white/20 shadow-lg" title="Ver Localização">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 </svg>
                             </button>
-                        ` : '';
+                        `;
 
                         fotosHtml += `
-                            <div class="relative flex-none w-64 h-64 md:w-80 md:h-80 rounded-lg overflow-hidden snap-center bg-slate-800 border border-slate-700/50">
+                            <div class="relative flex-none w-full aspect-square rounded-lg overflow-hidden snap-center bg-slate-800 border border-slate-700/50">
                                 <img src="${url}" class="w-full h-full object-cover" loading="lazy" alt="Foto da Visita">
                                 ${badgeHtml}
                                 ${locationBtnHtml}

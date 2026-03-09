@@ -1,11 +1,9 @@
 # Request
-The user pointed out that although the client names were fixed, the photos and details from the surveys (`respostas` column) were not showing up. It turns out that the `respostas` column does not always contain a nested array for photos but instead has top-level keys like `foto_url` mixed with boolean/string answers like `tem_ilha` or `estado_gondola`.
+The user requested the post cards to have a unified layout similar to Instagram (card width matching the photo width) and requested the location icon/button to always be visible, even if the GPS coordinates are missing from the visit data.
 
-I updated `js/app/feed_view.js` to handle:
-1. Identifying any key with "foto" dynamically (like `foto_url`) and rendering it as part of the photo carousel.
-2. Improved the text summary by properly formatting the other keys (capitalizing letters, removing underscores, ignoring empty values, and styling "Sim"/"Não" with color coding).
+I updated `js/app/feed_view.js` by adding Tailwind classes `max-w-md mx-auto w-full` to the post card wrapper and changed the image container to `w-full aspect-square` so it naturally fills the post. I also removed the truthy condition that hid the location button if coordinates were null. If clicked without coordinates, the modal will gracefully show text indicating no coordinates.
 
-Please review the parsing changes to ensure they are solid.
+Please review these visual and layout fixes.
 
 # Modified Files
 - `js/app/feed_view.js`
