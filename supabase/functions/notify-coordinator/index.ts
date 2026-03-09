@@ -423,7 +423,7 @@ serve(async (req) => {
         answersRows = `
             <tr>
                 <td colspan="2" style="padding: 16px; color: #64748b; text-align: center; font-style: italic; background-color: #f8fafc;">
-                    Nenhuma resposta registrada nesta visita.
+                    ${isOffRoute ? "Visita Fora de Rota: Nenhum questionário foi exigido no momento do registro." : "Nenhuma resposta registrada nesta visita."}
                 </td>
             </tr>
         `;
@@ -512,8 +512,8 @@ serve(async (req) => {
         <div style="text-align: center; margin-bottom: 24px;">
             <p style="color: #475569; font-size: 14px; margin-bottom: 16px;">Clique abaixo para validar esta visita no painel:</p>
             <div>
-                <a href="${approveUrl}" style="display: inline-block; background-color: #22c55e; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px; margin-right: 12px;">Aprovar Pesquisa</a>
-                <a href="${rejectUrl}" style="display: inline-block; background-color: #dc2626; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px;">Rejeitar Pequisa</a>
+                <a href="${approveUrl}" style="display: block; width: 100%; max-width: 300px; margin: 0 auto 12px auto; box-sizing: border-box; background-color: #22c55e; color: #ffffff; padding: 14px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px;">Aprovar Pesquisa</a>
+                <a href="${rejectUrl}" style="display: block; width: 100%; max-width: 300px; margin: 0 auto; box-sizing: border-box; background-color: #dc2626; color: #ffffff; padding: 14px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px;">Rejeitar Pesquisa</a>
             </div>
         </div>
 
