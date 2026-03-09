@@ -89,7 +89,7 @@ const FeedVisitas = (() => {
             // Simple Query: visits within the month
             let query = window.supabaseClient
                 .from('visitas')
-                .select(`id, created_at, checkout_at, client_code, observacao, status, profiles:id_promotor(name)`)
+                .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, profiles:id_promotor(name)`)
                 .gte('created_at', start.toISOString())
                 .lte('created_at', end.toISOString())
                 .order('created_at', { ascending: false })
@@ -119,14 +119,14 @@ const FeedVisitas = (() => {
                     try {
                         const { data: clientsData, error: clientsError } = await window.supabaseClient
                             .from('data_clients')
-                            .select('codigo_cliente, nomecliente')
+                            .select('codigo_cliente, nomecliente, cnpj, endereco, latitude, longitude')
                             .in('codigo_cliente', uniqueClientCodes);
 
                         if (clientsError) {
                             console.error("Erro ao buscar nomes dos clientes:", clientsError);
                         } else if (clientsData) {
                             clientsData.forEach(c => {
-                                clientNamesMap.set(String(c.codigo_cliente).trim(), c.nomecliente);
+                                clientNamesMap.set(String(c.codigo_cliente).trim(), {nome: c.nomecliente, cnpj: c.cnpj, endereco: c.endereco, latitude: c.latitude, longitude: c.longitude});
                             });
                         }
                     } catch (err) {
@@ -157,12 +157,14 @@ const FeedVisitas = (() => {
                 const card = document.createElement('div');
                 card.className = 'glass-card p-4 rounded-xl shadow-lg border border-slate-700/50 hover:border-slate-600 transition-colors animate-fade-in-up';
 
-                // Try to resolve client name from fetched data_clients map, fallback to code
+                // Try to resolve client info from fetched data_clients map, fallback to code
                 let clientName = 'Cliente Desconhecido';
+                let clientInfo = null;
                 if (visit.client_code) {
                     const cleanCode = String(visit.client_code).trim();
                     if (clientNamesMap.has(cleanCode) && clientNamesMap.get(cleanCode)) {
-                        clientName = clientNamesMap.get(cleanCode);
+                        clientInfo = clientNamesMap.get(cleanCode);
+                        clientName = clientInfo.nome;
                     } else {
                         clientName = `Cód: ${visit.client_code}`;
                     }
@@ -191,6 +193,98 @@ const FeedVisitas = (() => {
                 }
 
                 card.innerHTML = `
+
+                // Extract answers and photos
+                let fotos = [];
+                let respostasObj = visit.respostas;
+                let observacoesTexto = visit.observacao || '';
+                
+                if (typeof respostasObj === 'string') {
+                    try { respostasObj = JSON.parse(respostasObj); } catch(e) {}
+                }
+
+                if (respostasObj && typeof respostasObj === 'object') {
+                    if (respostasObj.fotos && Array.isArray(respostasObj.fotos)) {
+                        fotos = respostasObj.fotos;
+                    }
+                }
+
+                // Building the horizontal carousel HTML
+                let fotosHtml = '';
+                if (fotos.length > 0) {
+                    fotosHtml += `<div class="mt-3 flex overflow-x-auto gap-3 pb-2 snap-x snap-mandatory" style="scrollbar-width: none;">`;
+                    fotos.forEach(foto => {
+                        const url = foto.url ? window.supabaseClient.storage.from('visitas-images').getPublicUrl(foto.url).data.publicUrl : '';
+                        if (!url) return;
+
+                        const tipo = (foto.tipo || '').toLowerCase();
+                        let badgeHtml = '';
+                        if (tipo === 'antes' || tipo === 'depois') {
+                            const badgeText = tipo === 'antes' ? 'ANTES' : 'DEPOIS';
+                            // Tag orange with 70% opacity: rgba(255, 94, 0, 0.7)
+                            badgeHtml = `
+                                <div class="absolute bottom-2 right-2 px-2 py-1 rounded text-[10px] font-bold text-white tracking-wider" 
+                                     style="background-color: rgba(255, 94, 0, 0.7); backdrop-filter: blur(4px);">
+                                    ${badgeText}
+                                </div>
+                            `;
+                        }
+
+                        // Bottom-left location icon
+                        const locationBtnHtml = clientInfo ? `
+                            <button onclick="window.FeedVisitas.openLocationModal(${visit.id})" class="absolute bottom-2 left-2 p-1.5 rounded-full bg-slate-900/60 hover:bg-slate-800 text-white backdrop-filter backdrop-blur-sm transition-colors" title="Ver Localização">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                            </button>
+                        ` : '';
+
+                        fotosHtml += `
+                            <div class="relative flex-none w-64 h-64 md:w-80 md:h-80 rounded-lg overflow-hidden snap-center bg-slate-800 border border-slate-700/50">
+                                <img src="${url}" class="w-full h-full object-cover" loading="lazy" alt="Foto da Visita">
+                                ${badgeHtml}
+                                ${locationBtnHtml}
+                            </div>
+                        `;
+                    });
+                    fotosHtml += `</div>`;
+                }
+
+                // Building answers summary (like Instagram captions)
+                let resumoRespostasHtml = '';
+                if (respostasObj && typeof respostasObj === 'object') {
+                    const chavesOcultas = ['fotos', 'is_off_route', 'observacoes'];
+                    let respostasFormatadas = [];
+                    for (const [key, value] of Object.entries(respostasObj)) {
+                        if (chavesOcultas.includes(key)) continue;
+                        
+                        let label = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+                        label = label.charAt(0).toUpperCase() + label.slice(1);
+                        
+                        let valStr = String(value);
+                        if (valStr === 'true') valStr = 'Sim';
+                        if (valStr === 'false') valStr = 'Não';
+
+                        respostasFormatadas.push(`<span class="text-slate-400 font-medium">${label}:</span> <span class="text-slate-200">${valStr}</span>`);
+                    }
+
+                    if (respostasFormatadas.length > 0) {
+                        resumoRespostasHtml = `
+                            <div class="mt-2 text-sm leading-relaxed border-t border-slate-700/50 pt-2">
+                                <p>${respostasFormatadas.join(' • ')}</p>
+                            </div>
+                        `;
+                    }
+                }
+
+                // Ensure data is cached for the modal
+                if (clientInfo && !window.FeedVisitas.clientCache) window.FeedVisitas.clientCache = {};
+                if (clientInfo) {
+                    window.FeedVisitas.clientCache[visit.id] = clientInfo;
+                }
+
+                card.innerHTML = `
                     <div class="flex justify-between items-start mb-2 gap-4">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 mb-1">
@@ -201,7 +295,9 @@ const FeedVisitas = (() => {
                         </div>
                         <span class="text-xs text-slate-400 bg-slate-800/80 px-2 py-1 rounded whitespace-nowrap border border-slate-700/50">${formattedDate}</span>
                     </div>
-                    ${visit.observacao ? `<div class="mt-3 text-sm text-slate-300 border-t border-slate-700/50 pt-3">${visit.observacao}</div>` : ''}
+                    ${fotosHtml}
+                    ${resumoRespostasHtml}
+                    ${observacoesTexto ? `<div class="mt-1 text-sm text-slate-300 pt-1 leading-relaxed"><span class="font-medium text-white">Obs:</span> ${observacoesTexto}</div>` : ''}
                 `;
                 cardsContainer.appendChild(card);
             });
@@ -215,8 +311,122 @@ const FeedVisitas = (() => {
         }
     }
 
+    function openLocationModal(visitId) {
+        if (!FeedVisitas.clientCache || !FeedVisitas.clientCache[visitId]) return;
+        
+        const clientInfo = FeedVisitas.clientCache[visitId];
+        
+        // Ensure modal exists in DOM
+        let modal = document.getElementById('feed-location-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'feed-location-modal';
+            modal.className = 'fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm';
+            
+            // Close when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeLocationModal();
+            });
+
+            document.body.appendChild(modal);
+        }
+
+        const nome = clientInfo.nome || 'N/A';
+        const cnpj = clientInfo.cnpj || 'N/A';
+        const endereco = clientInfo.endereco || 'N/A';
+        const lat = clientInfo.latitude;
+        const lng = clientInfo.longitude;
+
+        let mapHtml = '';
+        if (lat && lng) {
+            mapHtml = `<div id="feed-mini-map" class="w-full h-48 rounded-lg mt-4 bg-slate-800 border border-slate-700"></div>`;
+        } else {
+            mapHtml = `<div class="w-full p-4 rounded-lg mt-4 bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-400 text-sm">Sem coordenadas geográficas disponíveis.</div>`;
+        }
+
+        modal.innerHTML = `
+            <div class="bg-[#1A1E24] w-full max-w-md rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden animate-fade-in-up flex flex-col max-h-[90vh]">
+                <div class="px-5 py-4 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/20">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-[#FF5E00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <h3 class="text-white font-semibold text-lg">Detalhes do Cliente</h3>
+                    </div>
+                    <button onclick="window.FeedVisitas.closeLocationModal()" class="text-slate-400 hover:text-white transition-colors bg-slate-800/50 hover:bg-slate-700 p-1.5 rounded-full">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-5 overflow-y-auto" style="scrollbar-width: thin; scrollbar-color: #334155 transparent;">
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider mb-1">Nome</p>
+                            <p class="text-white text-sm font-medium">${nome}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider mb-1">CNPJ</p>
+                            <p class="text-white text-sm font-medium">${cnpj}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider mb-1">Endereço</p>
+                            <p class="text-slate-300 text-sm">${endereco}</p>
+                        </div>
+                    </div>
+                    ${mapHtml}
+                </div>
+            </div>
+        `;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        // Initialize Map if coords exist
+        if (lat && lng && window.L) {
+            // Need a slight delay for DOM to render the container before Leaflet can size it
+            setTimeout(() => {
+                const mapEl = document.getElementById('feed-mini-map');
+                if (mapEl) {
+                    const map = window.L.map('feed-mini-map', {
+                        center: [lat, lng],
+                        zoom: 15,
+                        zoomControl: false,
+                        attributionControl: false
+                    });
+                    
+                    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        maxZoom: 19
+                    }).addTo(map);
+
+                    const customIcon = window.L.divIcon({
+                        className: 'custom-pin',
+                        html: `<div class="w-4 h-4 bg-[#FF5E00] rounded-full border-2 border-white shadow-[0_0_10px_rgba(255,94,0,0.8)] animate-pulse"></div>`,
+                        iconSize: [16, 16],
+                        iconAnchor: [8, 8]
+                    });
+
+                    window.L.marker([lat, lng], { icon: customIcon }).addTo(map);
+                }
+            }, 100);
+        }
+    }
+
+    function closeLocationModal() {
+        const modal = document.getElementById('feed-location-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modal.innerHTML = ''; // clear map instance
+        }
+    }
+
     return {
-        init
+        init,
+        openLocationModal,
+        closeLocationModal,
+        clientCache: {}
     };
 })();
 
