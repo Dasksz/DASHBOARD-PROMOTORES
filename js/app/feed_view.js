@@ -111,6 +111,30 @@ const FeedVisitas = (() => {
 
             console.log("FeedVisitas: Dados recebidos:", data ? data.length : 0);
 
+            // Fetch client names from data_clients
+            const clientNamesMap = new Map();
+            if (data && data.length > 0) {
+                const uniqueClientCodes = [...new Set(data.map(v => v.client_code).filter(c => c))];
+                if (uniqueClientCodes.length > 0) {
+                    try {
+                        const { data: clientsData, error: clientsError } = await window.supabaseClient
+                            .from('data_clients')
+                            .select('codigo_cliente, nomecliente')
+                            .in('codigo_cliente', uniqueClientCodes);
+
+                        if (clientsError) {
+                            console.error("Erro ao buscar nomes dos clientes:", clientsError);
+                        } else if (clientsData) {
+                            clientsData.forEach(c => {
+                                clientNamesMap.set(String(c.codigo_cliente).trim(), c.nomecliente);
+                            });
+                        }
+                    } catch (err) {
+                        console.error("Exceção ao buscar nomes dos clientes:", err);
+                    }
+                }
+            }
+
             if (loadingIndicator) loadingIndicator.classList.add('hidden');
 
             if (!data || data.length === 0) {
@@ -133,13 +157,15 @@ const FeedVisitas = (() => {
                 const card = document.createElement('div');
                 card.className = 'glass-card p-4 rounded-xl shadow-lg border border-slate-700/50 hover:border-slate-600 transition-colors animate-fade-in-up';
 
-                // Try to resolve client name from memory, fallback to code
+                // Try to resolve client name from fetched data_clients map, fallback to code
                 let clientName = 'Cliente Desconhecido';
-                if (window.resolveDim && visit.client_code) {
-                    const clientInfo = window.resolveDim('clientes', visit.client_code);
-                    if (clientInfo && clientInfo.nome) clientName = clientInfo.nome;
-                } else if (visit.client_code) {
-                    clientName = `Cód: ${visit.client_code}`;
+                if (visit.client_code) {
+                    const cleanCode = String(visit.client_code).trim();
+                    if (clientNamesMap.has(cleanCode) && clientNamesMap.get(cleanCode)) {
+                        clientName = clientNamesMap.get(cleanCode);
+                    } else {
+                        clientName = `Cód: ${visit.client_code}`;
+                    }
                 }
 
                 let promotorName = visit.profiles ? visit.profiles.name : 'Promotor';
