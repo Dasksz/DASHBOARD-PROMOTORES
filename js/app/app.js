@@ -1,7 +1,7 @@
 (function() {
         const embeddedData = window.embeddedData;
 
-        // --- LOOKUP MAPS (New Architecture - Option A) ---
+        // --- LOOKUP MAPS ---
         const maps = {
             vendedores: new Map(),
             supervisores: new Map(),
