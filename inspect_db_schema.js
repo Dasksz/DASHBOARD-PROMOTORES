@@ -1,0 +1,21 @@
+const { createClient } = require('@supabase/supabase-js');
+
+const SUPABASE_URL = 'https://dldsocponbjthqxhmttj.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZHNvY3BvbmJqdGhxeGhtdHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzgzMzgsImV4cCI6MjA4NTAxNDMzOH0.IGxUEd977uIdhWvMzjDM8ygfISB_Frcf_2air8e3aOs';
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function inspect() {
+    const { data: latest, error: errLatest } = await supabase
+        .from('visitas')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+    console.log("Latest 10 visitas respostas:");
+    latest.forEach(v => {
+        console.log(`ID: ${v.id}, Promotor: ${v.id_promotor}, Client: ${v.client_code}, Respostas:`, JSON.stringify(v.respostas));
+    });
+
+}
+
+inspect();

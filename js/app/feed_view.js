@@ -73,11 +73,11 @@ const FeedVisitas = (() => {
                     contextDate = parsedDate;
                 }
             }
-            
+
             const bounds = getMonthBounds(contextDate);
             const start = bounds.start;
             const end = bounds.end;
-            
+
             // Format for display
             const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
             const monthName = monthNames[contextDate.getUTCMonth()];
@@ -119,14 +119,14 @@ const FeedVisitas = (() => {
                     try {
                         const { data: clientsData, error: clientsError } = await window.supabaseClient
                             .from('data_clients')
-                            .select('codigo_cliente, nomecliente, cnpj, endereco, latitude, longitude')
+                            .select('codigo_cliente, nomecliente, cnpj_cpf, endereco')
                             .in('codigo_cliente', uniqueClientCodes);
 
                         if (clientsError) {
                             console.error("Erro ao buscar nomes dos clientes:", clientsError);
                         } else if (clientsData) {
                             clientsData.forEach(c => {
-                                clientNamesMap.set(String(c.codigo_cliente).trim(), {nome: c.nomecliente, cnpj: c.cnpj, endereco: c.endereco, latitude: c.latitude, longitude: c.longitude});
+                                clientNamesMap.set(String(c.codigo_cliente).trim(), {nome: c.nomecliente, cnpj: c.cnpj_cpf, endereco: c.endereco });
                             });
                         }
                     } catch (err) {
@@ -163,7 +163,7 @@ const FeedVisitas = (() => {
                 if (visit.client_code) {
                     const cleanCode = String(visit.client_code).trim();
                     if (clientNamesMap.has(cleanCode) && clientNamesMap.get(cleanCode)) {
-                        clientInfo = clientNamesMap.get(cleanCode);
+                        clientInfo = { ...clientNamesMap.get(cleanCode), latitude: visit.latitude, longitude: visit.longitude };
                         clientName = clientInfo.nome;
                     } else {
                         clientName = `Cód: ${visit.client_code}`;
@@ -175,11 +175,11 @@ const FeedVisitas = (() => {
                 // Adjust date to BRT timezone manually
                 let visitDate = new Date(visit.created_at);
                 visitDate = new Date(visitDate.getTime() - (3 * 60 * 60 * 1000));
-                
-                const formattedDate = visitDate.getUTCDate().toString().padStart(2, '0') + '/' + 
-                                     (visitDate.getUTCMonth() + 1).toString().padStart(2, '0') + '/' + 
-                                     visitDate.getUTCFullYear() + ' ' + 
-                                     visitDate.getUTCHours().toString().padStart(2, '0') + ':' + 
+
+                const formattedDate = visitDate.getUTCDate().toString().padStart(2, '0') + '/' +
+                                     (visitDate.getUTCMonth() + 1).toString().padStart(2, '0') + '/' +
+                                     visitDate.getUTCFullYear() + ' ' +
+                                     visitDate.getUTCHours().toString().padStart(2, '0') + ':' +
                                      visitDate.getUTCMinutes().toString().padStart(2, '0');
 
                 // status badge
@@ -193,17 +193,57 @@ const FeedVisitas = (() => {
                 }
 
                 // Extract answers and photos
-                let fotos = [];
-                let respostasObj = visit.respostas;
-                let observacoesTexto = visit.observacao || '';
-                
-                if (typeof respostasObj === 'string') {
-                    try { respostasObj = JSON.parse(respostasObj); } catch(e) {}
-                }
 
-                if (respostasObj && typeof respostasObj === 'object') {
-                    if (respostasObj.fotos && Array.isArray(respostasObj.fotos)) {
-                        fotos = respostasObj.fotos;
+                let fotos = [];
+                let observacoesTexto = '';
+                let respostasObj = null;
+
+                if (visit.respostas) {
+                    try {
+                        respostasObj = typeof visit.respostas === 'string' ? JSON.parse(visit.respostas) : visit.respostas;
+                    } catch (e) {}
+
+                    if (respostasObj) {
+                        observacoesTexto = respostasObj.observacoes || visit.observacao || '';
+                    }
+
+                    // Handling photo array from answers
+                    if (respostasObj && typeof respostasObj === 'object') {
+                        if (respostasObj.fotos && Array.isArray(respostasObj.fotos)) {
+                            respostasObj.fotos.forEach(foto => {
+                                const urlStr = foto.url ? window.supabaseClient.storage.from('visitas-images').getPublicUrl(foto.url).data.publicUrl : '';
+                                if (urlStr) {
+                                    fotos.push({
+                                        url: urlStr,
+                                        tipo: foto.tipo || ''
+                                    });
+                                }
+                            });
+                        } else {
+                            // Find any keys containing 'foto' and push to array
+                            for (const [key, value] of Object.entries(respostasObj)) {
+                                if (key.toLowerCase().includes('foto') && value) {
+                                    // Sometimes value is the full url string
+                                    let url = '';
+                                    if (typeof value === 'string' && value.startsWith('http')) {
+                                        url = value;
+                                    } else if (typeof value === 'string') {
+                                        url = window.supabaseClient.storage.from('visitas-images').getPublicUrl(value).data.publicUrl;
+                                    }
+
+                                    if (url) {
+                                        let tipo = '';
+                                        if (key.toLowerCase().includes('antes')) tipo = 'antes';
+                                        if (key.toLowerCase().includes('depois')) tipo = 'depois';
+
+                                        fotos.push({
+                                            url: url,
+                                            tipo: tipo
+                                        });
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -212,7 +252,7 @@ const FeedVisitas = (() => {
                 if (fotos.length > 0) {
                     fotosHtml += `<div class="mt-3 flex overflow-x-auto gap-3 pb-2 snap-x snap-mandatory" style="scrollbar-width: none;">`;
                     fotos.forEach(foto => {
-                        const url = foto.url ? window.supabaseClient.storage.from('visitas-images').getPublicUrl(foto.url).data.publicUrl : '';
+                        const url = foto.url;
                         if (!url) return;
 
                         const tipo = (foto.tipo || '').toLowerCase();
@@ -221,16 +261,16 @@ const FeedVisitas = (() => {
                             const badgeText = tipo === 'antes' ? 'ANTES' : 'DEPOIS';
                             // Tag orange with 70% opacity: rgba(255, 94, 0, 0.7)
                             badgeHtml = `
-                                <div class="absolute bottom-2 right-2 px-2 py-1 rounded text-[10px] font-bold text-white tracking-wider" 
+                                <div class="absolute bottom-2 right-2 px-2 py-1 rounded text-[10px] font-bold text-white tracking-wider"
                                      style="background-color: rgba(255, 94, 0, 0.7); backdrop-filter: blur(4px);">
                                     ${badgeText}
                                 </div>
                             `;
                         }
 
-                        // Bottom-left location icon
-                        const locationBtnHtml = clientInfo ? `
-                            <button onclick="window.FeedVisitas.openLocationModal(${visit.id})" class="absolute bottom-2 left-2 p-1.5 rounded-full bg-slate-900/60 hover:bg-slate-800 text-white backdrop-filter backdrop-blur-sm transition-colors" title="Ver Localização">
+                        // We can optionally add a "View location" pin badge if coordinates exist
+                        const locationBtnHtml = (visit.latitude && visit.longitude) ? `
+                            <button onclick="window.FeedVisitas.openLocationModal(${visit.id})" class="absolute top-2 right-2 bg-black/50 hover:bg-[#FF5E00] text-white p-1.5 rounded-full backdrop-blur-sm transition-colors border border-white/20 shadow-lg" title="Ver Localização">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -255,22 +295,32 @@ const FeedVisitas = (() => {
                     const chavesOcultas = ['fotos', 'is_off_route', 'observacoes'];
                     let respostasFormatadas = [];
                     for (const [key, value] of Object.entries(respostasObj)) {
-                        if (chavesOcultas.includes(key)) continue;
-                        
-                        let label = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
-                        label = label.charAt(0).toUpperCase() + label.slice(1);
-                        
-                        let valStr = String(value);
-                        if (valStr === 'true') valStr = 'Sim';
-                        if (valStr === 'false') valStr = 'Não';
+                        // Ignorar chaves ocultas e fotos
+                        if (chavesOcultas.includes(key) || key.toLowerCase().includes('foto')) continue;
 
-                        respostasFormatadas.push(`<span class="text-slate-400 font-medium">${label}:</span> <span class="text-slate-200">${valStr}</span>`);
+                        // Ignore empty strings
+                        if (value === '' || value === null || value === undefined) continue;
+
+                        let label = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+                        // Capitalize each word for label
+                        label = label.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+
+                        let valStr = String(value);
+                        if (valStr.toLowerCase() === 'true' || valStr.toLowerCase() === 'sim') {
+                            valStr = '<span class="text-green-400">Sim</span>';
+                        } else if (valStr.toLowerCase() === 'false' || valStr.toLowerCase() === 'nao' || valStr.toLowerCase() === 'não') {
+                            valStr = '<span class="text-red-400">Não</span>';
+                        } else {
+                            valStr = `<span class="text-slate-200">${valStr}</span>`;
+                        }
+
+                        respostasFormatadas.push(`<div class="flex justify-between items-center py-1 border-b border-slate-700/30 last:border-0"><span class="text-slate-400 text-xs font-medium">${label}:</span> <span class="text-xs font-semibold">${valStr}</span></div>`);
                     }
 
                     if (respostasFormatadas.length > 0) {
                         resumoRespostasHtml = `
-                            <div class="mt-2 text-sm leading-relaxed border-t border-slate-700/50 pt-2">
-                                <p>${respostasFormatadas.join(' • ')}</p>
+                            <div class="mt-3 bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                                ${respostasFormatadas.join('')}
                             </div>
                         `;
                     }
@@ -311,16 +361,16 @@ const FeedVisitas = (() => {
 
     function openLocationModal(visitId) {
         if (!FeedVisitas.clientCache || !FeedVisitas.clientCache[visitId]) return;
-        
+
         const clientInfo = FeedVisitas.clientCache[visitId];
-        
+
         // Ensure modal exists in DOM
         let modal = document.getElementById('feed-location-modal');
         if (!modal) {
             modal = document.createElement('div');
             modal.id = 'feed-location-modal';
             modal.className = 'fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm';
-            
+
             // Close when clicking outside
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) closeLocationModal();
@@ -393,7 +443,7 @@ const FeedVisitas = (() => {
                         zoomControl: false,
                         attributionControl: false
                     });
-                    
+
                     window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                         maxZoom: 19
                     }).addTo(map);
