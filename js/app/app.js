@@ -14875,7 +14875,7 @@ const supervisorGroups = new Map();
                             viewState.weekly.dirty = false;
                         }
                         break;
-                    case 'feed':
+                    case 'feed': console.log('Renderizando FEED VIEW...');
                         showViewElement(document.getElementById('feed-view'));
                         if (window.FeedVisitas) {
                             window.FeedVisitas.init();
