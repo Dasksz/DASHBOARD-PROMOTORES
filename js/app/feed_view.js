@@ -295,22 +295,32 @@ const FeedVisitas = (() => {
                     const chavesOcultas = ['fotos', 'is_off_route', 'observacoes'];
                     let respostasFormatadas = [];
                     for (const [key, value] of Object.entries(respostasObj)) {
+                        // Ignorar chaves ocultas e fotos
                         if (chavesOcultas.includes(key) || key.toLowerCase().includes('foto')) continue;
                         
+                        // Ignore empty strings
+                        if (value === '' || value === null || value === undefined) continue;
+
                         let label = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
-                        label = label.charAt(0).toUpperCase() + label.slice(1);
+                        // Capitalize each word for label
+                        label = label.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
                         
                         let valStr = String(value);
-                        if (valStr === 'true') valStr = 'Sim';
-                        if (valStr === 'false') valStr = 'Não';
+                        if (valStr.toLowerCase() === 'true' || valStr.toLowerCase() === 'sim') {
+                            valStr = '<span class="text-green-400">Sim</span>';
+                        } else if (valStr.toLowerCase() === 'false' || valStr.toLowerCase() === 'nao' || valStr.toLowerCase() === 'não') {
+                            valStr = '<span class="text-red-400">Não</span>';
+                        } else {
+                            valStr = `<span class="text-slate-200">${valStr}</span>`;
+                        }
 
-                        respostasFormatadas.push(`<span class="text-slate-400 font-medium">${label}:</span> <span class="text-slate-200">${valStr}</span>`);
+                        respostasFormatadas.push(`<div class="flex justify-between items-center py-1 border-b border-slate-700/30 last:border-0"><span class="text-slate-400 text-xs font-medium">${label}:</span> <span class="text-xs font-semibold">${valStr}</span></div>`);
                     }
 
                     if (respostasFormatadas.length > 0) {
                         resumoRespostasHtml = `
-                            <div class="mt-2 text-sm leading-relaxed border-t border-slate-700/50 pt-2">
-                                <p>${respostasFormatadas.join(' • ')}</p>
+                            <div class="mt-3 bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+                                ${respostasFormatadas.join('')}
                             </div>
                         `;
                     }
