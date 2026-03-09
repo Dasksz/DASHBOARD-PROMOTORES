@@ -25925,25 +25925,21 @@ const supervisorGroups = new Map();
                 const isModoAntesDepois = window.visitaFotosState.modo === 'antes-depois';
 
                 if (isModoAntesDepois) {
-                    // Upload Antes
-                    for (let i = 0; i < window.visitaFotosState.fotos.antes.length; i++) {
-                        btn.innerHTML = `Enviando foto ANTES ${i+1}...`;
-                        const url = await uploadFile(window.visitaFotosState.fotos.antes[i], 'antes');
-                        if (url) fotosArray.push({ url, tipo: 'antes' });
-                    }
-                    // Upload Depois
-                    for (let i = 0; i < window.visitaFotosState.fotos.depois.length; i++) {
-                        btn.innerHTML = `Enviando foto DEPOIS ${i+1}...`;
-                        const url = await uploadFile(window.visitaFotosState.fotos.depois[i], 'depois');
-                        if (url) fotosArray.push({ url, tipo: 'depois' });
-                    }
+                    // Upload Antes/Depois in Parallel
+                    btn.innerHTML = `Enviando fotos (Antes/Depois)...`;
+                    const [antesUrls, depoisUrls] = await Promise.all([
+                        Promise.all((window.visitaFotosState.fotos.antes || []).map(file => uploadFile(file, 'antes'))),
+                        Promise.all((window.visitaFotosState.fotos.depois || []).map(file => uploadFile(file, 'depois')))
+                    ]);
+                    antesUrls.forEach(url => { if (url) fotosArray.push({ url, tipo: 'antes' }); });
+                    depoisUrls.forEach(url => { if (url) fotosArray.push({ url, tipo: 'depois' }); });
                 } else {
-                    // Upload Geral
-                    for (let i = 0; i < window.visitaFotosState.fotos.geral.length; i++) {
-                        btn.innerHTML = `Enviando foto GERAL ${i+1}...`;
-                        const url = await uploadFile(window.visitaFotosState.fotos.geral[i], 'geral');
-                        if (url) fotosArray.push({ url, tipo: 'geral' });
-                    }
+                    // Upload Geral in Parallel
+                    btn.innerHTML = `Enviando fotos GERAL...`;
+                    const geralUrls = await Promise.all(
+                        (window.visitaFotosState.fotos.geral || []).map(file => uploadFile(file, 'geral'))
+                    );
+                    geralUrls.forEach(url => { if (url) fotosArray.push({ url, tipo: 'geral' }); });
                 }
             }
 
