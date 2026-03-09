@@ -192,8 +192,6 @@ const FeedVisitas = (() => {
                     statusHtml = '<span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">Pendente</span>';
                 }
 
-                card.innerHTML = `
-
                 // Extract answers and photos
                 let fotos = [];
                 let respostasObj = visit.respostas;
