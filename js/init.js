@@ -1654,6 +1654,7 @@
                 if (profile && profile.status === 'aprovado') {
                     // Store user role globally
                     window.userRole = profile.role;
+                    window.userId = profile.id;
 
                     // Update Welcome Message
                     const welcomeEl = document.getElementById('welcome-header');
