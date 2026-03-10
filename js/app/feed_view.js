@@ -575,8 +575,18 @@ const FeedVisitas = (() => {
                     // Sees everything
                 } else if (isSup || isSeller) {
                     // Must belong to their wallet
-                    if (window.activeClientCodes && window.activeClientCodes.size > 0) {
-                        if (!window.activeClientCodes.has(visitClientCode)) {
+                    let allowedClientCodes = window.activeClientCodes;
+
+                    // Fallback to recalculating from wallet logic if not defined
+                    if (!allowedClientCodes && typeof window.getActiveClientsData === 'function' && typeof window.getHierarchyFilteredClients === 'function') {
+                        // First get active clients, then apply hierarchy (supervisor/wallet) filters
+                        const baseActive = window.getActiveClientsData();
+                        const activeFiltered = window.getHierarchyFilteredClients('main', baseActive);
+                        allowedClientCodes = new Set(activeFiltered.map(c => String(c['Código'] || c['codigo_cliente']).trim()));
+                    }
+
+                    if (allowedClientCodes && allowedClientCodes.size > 0) {
+                        if (!allowedClientCodes.has(visitClientCode)) {
                             return; // Skip: client not in wallet
                         }
                     } else {
