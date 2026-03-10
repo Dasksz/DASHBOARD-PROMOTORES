@@ -21772,18 +21772,33 @@ const supervisorGroups = new Map();
                  }
                  
              } else {
-                 // Try to find the entry in memory first to get ID (if available) or check existence
-                 const idx = embeddedData.clientPromoters.findIndex(cp => normalizeKey(cp.client_code) === clientCodeNorm);
-                 
-                 if (idx >= 0) {
-                     const entry = embeddedData.clientPromoters[idx];
-                     console.log(`[Wallet] Removing existing entry:`, entry);
+                 // Find all matching entries in memory to get IDs (if available) or check existence
+                 const matches = [];
+                 const idsToDelete = [];
+                 const codesToDelete = [];
 
-                     if (entry.id) {
-                         // Delete by ID is safest
-                         const { error } = await window.supabaseClient.from('data_client_promoters').delete().eq('id', entry.id);
+                 for (let i = 0; i < embeddedData.clientPromoters.length; i++) {
+                     const cp = embeddedData.clientPromoters[i];
+                     if (normalizeKey(cp.client_code) === clientCodeNorm) {
+                         matches.push({ entry: cp, idx: i });
+                         if (cp.id) {
+                             idsToDelete.push(cp.id);
+                         } else {
+                             codesToDelete.push(clientCodeNorm);
+                         }
+                     }
+                 }
+                 
+                 if (matches.length > 0) {
+                     console.log(`[Wallet] Removing existing entries (${matches.length}):`, matches.map(m => m.entry));
+
+                     if (idsToDelete.length > 0) {
+                         // Bulk Delete by ID is safest and fastest
+                         const { error } = await window.supabaseClient.from('data_client_promoters').delete().in('id', idsToDelete);
                          if(error) throw error;
-                     } else {
+                     }
+
+                     if (codesToDelete.length > 0) {
                          // Fallback: Delete by client_code. Try Normalized first (standard).
                          let { error } = await window.supabaseClient.from('data_client_promoters').delete().eq('client_code', clientCodeNorm);
                          
@@ -21795,8 +21810,11 @@ const supervisorGroups = new Map();
                          }
                          if (error) throw error;
                      }
-                     // Remove from memory
-                     embeddedData.clientPromoters.splice(idx, 1);
+
+                     // Remove from memory in reverse order to preserve indices
+                     matches.sort((a, b) => b.idx - a.idx).forEach(m => {
+                         embeddedData.clientPromoters.splice(m.idx, 1);
+                     });
                  } else {
                      console.warn(`[Wallet] Client ${clientCodeNorm} not found in memory map during remove. Performing blind delete.`);
                      // Blind delete
