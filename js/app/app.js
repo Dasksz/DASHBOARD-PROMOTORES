@@ -23303,7 +23303,8 @@ const supervisorGroups = new Map();
                 const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                if (!isAmericanas && rca1 === '') continue;
+                // FIX: Only filter orphans for Admins
+                if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
                 let keep = true;
                 if (hasSup || hasVend) {
                     const details = sellerDetailsMap.get(rca1);
@@ -24731,7 +24732,8 @@ const supervisorGroups = new Map();
                 const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                if (!isAmericanas && rca1 === '') continue;
+                // FIX: Only filter orphans for Admins
+                if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
                 let keep = true;
                 if (hasSup || hasVend) {
                     const details = sellerDetailsMap.get(rca1);
@@ -29408,7 +29410,8 @@ const supervisorGroups = new Map();
                 const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
-                if (!isAmericanas && rca1 === '') continue;
+                // FIX: Only filter orphans for Admins
+                if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
                 let keep = true;
                 if (hasSup || hasVend) {
                     const details = sellerDetailsMap.get(rca1);
