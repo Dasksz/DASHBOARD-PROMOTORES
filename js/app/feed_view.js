@@ -410,7 +410,7 @@ const FeedVisitas = (() => {
 
         let query = window.supabaseClient
             .from('visitas')
-            .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, id_promotor, profiles:id_promotor(name), favoritado_por`)
+            .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, id_promotor, profiles:id_promotor(name, role), favoritado_por`)
             .gte('created_at', currentStartBound.toISOString())
             .lte('created_at', currentEndBound.toISOString())
             .order('created_at', { ascending: false });
@@ -799,8 +799,8 @@ const FeedVisitas = (() => {
                             <span class="text-[11px] text-slate-500 font-medium uppercase tracking-wide">${formattedDate}</span>
                         </div>
 
-                        ${observacoesTexto && (isManager || isSeller || String(visit.id_promotor) === String(window.userId)) ? `<div class="text-sm text-slate-300 leading-relaxed mt-2"><span class="font-medium text-white">Obs:</span> ${observacoesTexto}</div>` : ''}
-                        ${(isManager || isSeller || String(visit.id_promotor) === String(window.userId)) ? resumoRespostasHtml : ''}
+                        ${observacoesTexto && (isManager || isSeller || String(visit.profiles?.role).toUpperCase() === String(window.userRole || '').toUpperCase()) ? `<div class="text-sm text-slate-300 leading-relaxed mt-2"><span class="font-medium text-white">Obs:</span> ${observacoesTexto}</div>` : ''}
+                        ${(isManager || isSeller || String(visit.profiles?.role).toUpperCase() === String(window.userRole || '').toUpperCase()) ? resumoRespostasHtml : ''}
                     </div>
                 `;
                 cardsContainer.appendChild(card);
