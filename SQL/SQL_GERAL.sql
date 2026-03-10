@@ -770,6 +770,7 @@ USING (
       role = 'adm'
       OR role IN (SELECT cod_coord FROM public.data_hierarchy)
       OR role IN (SELECT cod_cocoord FROM public.data_hierarchy)
+      OR role IN (SELECT cod_sup FROM public.data_hierarchy)
     )
   )
 );
