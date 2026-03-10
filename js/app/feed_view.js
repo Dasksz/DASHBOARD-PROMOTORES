@@ -571,38 +571,21 @@ const FeedVisitas = (() => {
 
                 // Filter 2: Role-based Visibility
                 const visitClientCode = String(visit.client_code || '').trim();
-                if (isAdmin || isCoord) {
+                if (isManager) { // Gestores (ADM, Coord, Sup)
                     // Sees everything
-                } else if (isSup || isSeller) {
+                } else if (isSeller) {
                     // Logica Explicita e Simplificada:
-                    // Verifica se o cliente da visita tem o vendedor correspondente, 
-                    // e se for supervisor, verifica se o vendedor pertence ao supervisor.
-                    
+                    // Verifica se o cliente da visita tem o vendedor correspondente
                     const clientInfo = clientNamesMap.get(visitClientCode);
                     if (!clientInfo) {
                         return; // Se não encontrou o cliente no banco, ignora
                     }
 
                     const visitRca1 = String(clientInfo.rca1 || '').trim().toUpperCase();
+                    const mySellerCode = String(window.userSellerCode || window.userRole || '').trim().toUpperCase();
                     
-                    if (isSeller) {
-                        const mySellerCode = String(window.userSellerCode || window.userRole || '').trim().toUpperCase();
-                        if (visitRca1 !== mySellerCode) {
-                            return; // O cliente não pertence a este vendedor
-                        }
-                    } else if (isSup) {
-                        const mySupCode = String(window.userSupervisorCode || window.userRole || '').trim().toUpperCase();
-                        
-                        // Encontra o supervisor deste vendedor na planilha de vendas (via sellerDetailsMap do app.js)
-                        let visitSupervisor = '';
-                        if (window.sellerDetailsMap && window.sellerDetailsMap.has(visitRca1)) {
-                            const details = window.sellerDetailsMap.get(visitRca1);
-                            visitSupervisor = String(details.supervisor || '').trim().toUpperCase();
-                        }
-                        
-                        if (visitSupervisor !== mySupCode) {
-                            return; // O vendedor deste cliente não pertence a este supervisor
-                        }
+                    if (visitRca1 !== mySellerCode) {
+                        return; // O cliente não pertence a este vendedor
                     }
                 } else {
                     // Promoter logic: own visits OR other visits with both 'antes' and 'depois'
