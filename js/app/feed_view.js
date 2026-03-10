@@ -729,10 +729,10 @@ const FeedVisitas = (() => {
                     window.FeedVisitas.clientCache[visit.id] = clientInfo;
                 }
 
-
+                
                 let dotsHtml = '';
                 if (fotos.length > 1) {
-                    const dotsArray = Array.from({ length: fotos.length }).map((_, i) =>
+                    const dotsArray = Array.from({ length: fotos.length }).map((_, i) => 
                         `<div class="w-1.5 h-1.5 rounded-full carousel-dot ${i === 0 ? 'bg-blue-500' : 'bg-slate-600'} transition-colors duration-300"></div>`
                     ).join('');
                     dotsHtml = `<div id="carousel-${visit.id}-dots" class="flex justify-center items-center gap-1.5 flex-1">${dotsArray}</div>`;
@@ -911,13 +911,13 @@ const FeedVisitas = (() => {
             const width = container.offsetWidth;
             const scrollLeft = container.scrollLeft;
             const currentIndex = Math.round(scrollLeft / width) + 1;
-
+            
             if (indicator) {
                 indicator.textContent = currentIndex + ' / ' + total;
                 // Show indicator briefly
                 indicator.classList.remove('opacity-0');
                 indicator.classList.add('opacity-100');
-
+                
                 clearTimeout(indicator.hideTimeout);
                 indicator.hideTimeout = setTimeout(() => {
                     indicator.classList.remove('opacity-100');
@@ -938,7 +938,6 @@ const FeedVisitas = (() => {
                 });
             }
         }
-    }
     }
 
     function toggleResumo(btnElement, visitId) {
@@ -1025,7 +1024,7 @@ const FeedVisitas = (() => {
                 imgEl.src = '';
             }
             document.body.style.overflow = '';
-
+            
             // Remove Escape key listener
             if (modal._escHandler) {
                 document.removeEventListener('keydown', modal._escHandler);
