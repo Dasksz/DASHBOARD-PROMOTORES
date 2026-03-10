@@ -292,6 +292,7 @@ BEGIN
     
     -- Ensure 'cod_cocoord' exists in 'visitas'
     ALTER TABLE public.visitas ADD COLUMN IF NOT EXISTS cod_cocoord text;
+    ALTER TABLE public.visitas ADD COLUMN IF NOT EXISTS favoritado_por uuid[] DEFAULT '{}';
 
     -- Ensure 'profiles' columns exist
     ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS name text;
@@ -723,7 +724,8 @@ CREATE TABLE IF NOT EXISTS public.visitas (
     respostas jsonb,
     observacao text,
     coordenador_email text,
-    cod_cocoord text -- Codigo do Co-Coordenador (Para facilitar envio de email)
+    cod_cocoord text, -- Codigo do Co-Coordenador (Para facilitar envio de email)
+    favoritado_por uuid[] DEFAULT '{}' -- IDs dos gestores que favoritaram
 );
 
 -- 7.1.1 Indexes (Performance Optimization)
@@ -756,6 +758,21 @@ USING (
 
 DROP POLICY IF EXISTS "Promotores Update" ON public.visitas;
 CREATE POLICY "Promotores Update" ON public.visitas FOR UPDATE TO authenticated USING ((select auth.uid()) = id_promotor);
+
+DROP POLICY IF EXISTS "Admin and Coords Update" ON public.visitas;
+CREATE POLICY "Admin and Coords Update" ON public.visitas
+FOR UPDATE TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid()
+    AND (
+      role = 'adm'
+      OR role IN (SELECT cod_coord FROM public.data_hierarchy)
+      OR role IN (SELECT cod_cocoord FROM public.data_hierarchy)
+    )
+  )
+);
 
 DROP POLICY IF EXISTS "Promotores Delete" ON public.visitas;
 CREATE POLICY "Promotores Delete" ON public.visitas FOR DELETE TO authenticated USING ((select auth.uid()) = id_promotor);
