@@ -457,12 +457,12 @@ const FeedVisitas = (() => {
             try {
                 const { data: clientsData } = await window.supabaseClient
                     .from('data_clients')
-                    .select('codigo_cliente, nomecliente, cnpj_cpf, endereco')
+                    .select('codigo_cliente, nomecliente, cnpj_cpf, endereco, rca1')
                     .in('codigo_cliente', uniqueClientCodes);
 
                 if (clientsData) {
                     clientsData.forEach(c => {
-                        clientNamesMap.set(String(c.codigo_cliente).trim(), {nome: c.nomecliente, cnpj: c.cnpj_cpf, endereco: c.endereco });
+                        clientNamesMap.set(String(c.codigo_cliente).trim(), {nome: c.nomecliente, cnpj: c.cnpj_cpf, endereco: c.endereco, rca1: c.rca1 });
                     });
                 }
 
@@ -574,26 +574,35 @@ const FeedVisitas = (() => {
                 if (isAdmin || isCoord) {
                     // Sees everything
                 } else if (isSup || isSeller) {
-                    // Must belong to their wallet
-                    let allowedClientCodes = window.activeClientCodes;
+                    // Logica Explicita e Simplificada:
+                    // Verifica se o cliente da visita tem o vendedor correspondente, 
+                    // e se for supervisor, verifica se o vendedor pertence ao supervisor.
                     
-                    // Fallback to recalculating from wallet logic if not defined
-                    if (!allowedClientCodes && typeof window.getActiveClientsData === 'function' && typeof window.getHierarchyFilteredClients === 'function') {
-                        // First get active clients, then apply hierarchy (supervisor/wallet) filters
-                        // Since init.js ALREADY filtered allClientsData to only include the user's wallet
-                        // for Supervisor and Seller roles, we can simply rely on the base data instead
-                        // of re-filtering. This avoids issues with ColumnarDataset extraction.
-                        const baseActive = window.getActiveClientsData();
-                        const activeFiltered = window.getHierarchyFilteredClients('main', baseActive);
-                        allowedClientCodes = new Set(activeFiltered.map(c => String(c['Código'] || c['codigo_cliente']).trim()));
+                    const clientInfo = clientNamesMap.get(visitClientCode);
+                    if (!clientInfo) {
+                        return; // Se não encontrou o cliente no banco, ignora
                     }
 
-                    if (allowedClientCodes && allowedClientCodes.size > 0) {
-                        if (!allowedClientCodes.has(visitClientCode)) {
-                            return; // Skip: client not in wallet
+                    const visitRca1 = String(clientInfo.rca1 || '').trim().toUpperCase();
+                    
+                    if (isSeller) {
+                        const mySellerCode = String(window.userSellerCode || window.userRole || '').trim().toUpperCase();
+                        if (visitRca1 !== mySellerCode) {
+                            return; // O cliente não pertence a este vendedor
                         }
-                    } else {
-                        return; // Wallet is empty, skip
+                    } else if (isSup) {
+                        const mySupCode = String(window.userSupervisorCode || window.userRole || '').trim().toUpperCase();
+                        
+                        // Encontra o supervisor deste vendedor na planilha de vendas (via sellerDetailsMap do app.js)
+                        let visitSupervisor = '';
+                        if (window.sellerDetailsMap && window.sellerDetailsMap.has(visitRca1)) {
+                            const details = window.sellerDetailsMap.get(visitRca1);
+                            visitSupervisor = String(details.supervisor || '').trim().toUpperCase();
+                        }
+                        
+                        if (visitSupervisor !== mySupCode) {
+                            return; // O vendedor deste cliente não pertence a este supervisor
+                        }
                     }
                 } else {
                     // Promoter logic: own visits OR other visits with both 'antes' and 'depois'
