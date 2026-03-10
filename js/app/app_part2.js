@@ -2806,8 +2806,9 @@ innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
         updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
 
         // Fix: Pre-filter Suppliers for Meta Realizado (Only PEPSICO)
-        const metaRealizadoSuppliersSource = [...allSalesData, ...allHistoryData].filter(s => {
-            const rowPasta = resolveSupplierPasta(s.OBSERVACAOFOR, s.FORNECEDOR);
+        metaRealizadoSuppliersSource = [...allSalesData, ...allHistoryData].filter(s => {
+            const fornecedorObj = window.maps.fornecedores.get(String(s.CODFOR).trim());
+            const rowPasta = window.resolveSupplierPasta(fornecedorObj?.pasta, fornecedorObj?.nome);
             return rowPasta === SUPPLIER_CONFIG.metaRealizado.requiredPasta;
         });
         selectedMetaRealizadoSuppliers = updateSupplierFilter(document.getElementById('meta-realizado-supplier-filter-dropdown'), document.getElementById('meta-realizado-supplier-filter-text'), selectedMetaRealizadoSuppliers, metaRealizadoSuppliersSource, 'metaRealizado');
