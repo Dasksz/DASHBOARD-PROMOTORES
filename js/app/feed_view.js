@@ -422,9 +422,13 @@ const FeedVisitas = (() => {
         query = query.range(from, to);
 
         const role = (window.userRole || '').trim().toLowerCase();
-        const isManager = role === 'adm' || role === 'supervisor' || role === 'coordenador' || role.includes('coord');
-        // We no longer restrict the query by id_promotor here, because we need to fetch visits
-        // from other promoters if they have 'antes' and 'depois' photos.
+        const isAdmin = role === 'adm';
+        const isCoord = role.includes('coord');
+        const isSup = window.userIsSupervisor || role.includes('sup') || role === 'supervisor';
+        const isSeller = window.userIsSeller || role.includes('vend');
+        const isPromoter = window.userIsPromoter || (!isAdmin && !isCoord && !isSup && !isSeller);
+
+        const isManager = isAdmin || isCoord || isSup; // Defines who can favorite and see all details
         // We will filter the results in memory below.
 
         const { data, error } = await query;
@@ -540,12 +544,28 @@ const FeedVisitas = (() => {
                     return; // Skip this visit
                 }
 
-                // Filter 2: If not manager, only show own visits OR other visits that have BOTH 'antes' and 'depois' photos
-                if (!isManager && String(visit.id_promotor) !== String(window.userId)) {
-                    const hasAntes = fotos.some(f => f.tipo === 'antes');
-                    const hasDepois = fotos.some(f => f.tipo === 'depois');
-                    if (!hasAntes || !hasDepois) {
-                        return; // Skip this visit
+
+                // Filter 2: Role-based Visibility
+                const visitClientCode = String(visit.client_code || '').trim();
+                if (isAdmin || isCoord) {
+                    // Sees everything
+                } else if (isSup || isSeller) {
+                    // Must belong to their wallet
+                    if (window.activeClientCodes && window.activeClientCodes.size > 0) {
+                        if (!window.activeClientCodes.has(visitClientCode)) {
+                            return; // Skip: client not in wallet
+                        }
+                    } else {
+                        return; // Wallet is empty, skip
+                    }
+                } else {
+                    // Promoter logic: own visits OR other visits with both 'antes' and 'depois'
+                    if (String(visit.id_promotor) !== String(window.userId)) {
+                        const hasAntes = fotos.some(f => f.tipo === 'antes');
+                        const hasDepois = fotos.some(f => f.tipo === 'depois');
+                        if (!hasAntes || !hasDepois) {
+                            return; // Skip this visit
+                        }
                     }
                 }
 
