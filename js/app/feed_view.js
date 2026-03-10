@@ -576,10 +576,13 @@ const FeedVisitas = (() => {
                 } else if (isSup || isSeller) {
                     // Must belong to their wallet
                     let allowedClientCodes = window.activeClientCodes;
-
+                    
                     // Fallback to recalculating from wallet logic if not defined
                     if (!allowedClientCodes && typeof window.getActiveClientsData === 'function' && typeof window.getHierarchyFilteredClients === 'function') {
                         // First get active clients, then apply hierarchy (supervisor/wallet) filters
+                        // Since init.js ALREADY filtered allClientsData to only include the user's wallet
+                        // for Supervisor and Seller roles, we can simply rely on the base data instead
+                        // of re-filtering. This avoids issues with ColumnarDataset extraction.
                         const baseActive = window.getActiveClientsData();
                         const activeFiltered = window.getHierarchyFilteredClients('main', baseActive);
                         allowedClientCodes = new Set(activeFiltered.map(c => String(c['Código'] || c['codigo_cliente']).trim()));
