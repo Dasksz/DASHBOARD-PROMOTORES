@@ -1288,6 +1288,7 @@
         // --- HIERARCHY FILTER SYSTEM ---
         const hierarchyState = {}; // Map<viewPrefix, { coords: Set, cocoords: Set, promotors: Set }>
 
+        window.getHierarchyFilteredClients = getHierarchyFilteredClients;
         function getHierarchyFilteredClients(viewPrefix, sourceClients = allClientsData) {
             const state = hierarchyState[viewPrefix];
             if (!state) return sourceClients;
@@ -2510,6 +2511,7 @@
         let cachedActiveClientsBase = null;
         let lastAllClientsData = null;
 
+        window.getActiveClientsData = getActiveClientsData;
         function getActiveClientsData() {
             try {
                 // Invalidate cache if source data reference changes
