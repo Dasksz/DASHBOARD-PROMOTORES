@@ -410,7 +410,7 @@ const FeedVisitas = (() => {
 
         let query = window.supabaseClient
             .from('visitas')
-            .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, id_promotor, profiles:id_promotor(name, role), favoritado_por`)
+            .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, id_promotor, profiles:id_promotor(name, role), favoritado_por, latitude, longitude`)
             .gte('created_at', currentStartBound.toISOString())
             .lte('created_at', currentEndBound.toISOString())
             .order('created_at', { ascending: false });
@@ -465,6 +465,25 @@ const FeedVisitas = (() => {
                         clientNamesMap.set(String(c.codigo_cliente).trim(), {nome: c.nomecliente, cnpj: c.cnpj_cpf, endereco: c.endereco });
                     });
                 }
+
+                // Fetch registered coordinates for these clients
+                const { data: coordsData, error: coordsErr } = await window.supabaseClient
+                    .from('data_client_coordinates')
+                    .select('client_code, lat, lng')
+                    .in('client_code', uniqueClientCodes);
+
+                if (coordsData && !coordsErr) {
+                    coordsData.forEach(coord => {
+                        const cleanCode = String(coord.client_code).trim();
+                        if (clientNamesMap.has(cleanCode)) {
+                            const existing = clientNamesMap.get(cleanCode);
+                            existing.registeredLat = coord.lat;
+                            existing.registeredLng = coord.lng;
+                            clientNamesMap.set(cleanCode, existing);
+                        }
+                    });
+                }
+
             } catch (err) {
                 console.error("Exceção ao buscar nomes dos clientes:", err);
             }
@@ -583,7 +602,14 @@ const FeedVisitas = (() => {
                 if (visit.client_code) {
                     const cleanCode = String(visit.client_code).trim();
                     if (clientNamesMap.has(cleanCode) && clientNamesMap.get(cleanCode)) {
-                        clientInfo = { ...clientNamesMap.get(cleanCode), latitude: visit.latitude, longitude: visit.longitude };
+                        const cached = clientNamesMap.get(cleanCode);
+                        clientInfo = {
+                            ...cached,
+                            latitude: visit.latitude,
+                            longitude: visit.longitude,
+                            registeredLat: cached.registeredLat,
+                            registeredLng: cached.registeredLng
+                        };
                         clientName = clientInfo.nome;
                     } else {
                         clientName = `Cód: ${visit.client_code}`;
@@ -834,10 +860,49 @@ const FeedVisitas = (() => {
         const endereco = clientInfo.endereco || 'N/A';
         const lat = clientInfo.latitude;
         const lng = clientInfo.longitude;
+        const regLat = clientInfo.registeredLat;
+        const regLng = clientInfo.registeredLng;
+
+        const hasVisitCoords = lat != null && lng != null;
+        const hasRegCoords = regLat != null && regLng != null;
 
         let mapHtml = '';
-        if (lat && lng) {
+        let legendHtml = '';
+
+        if (hasVisitCoords || hasRegCoords) {
             mapHtml = `<div id="feed-mini-map" class="w-full h-48 rounded-lg mt-4 bg-slate-800 border border-slate-700"></div>`;
+
+            if (hasVisitCoords && hasRegCoords) {
+                legendHtml = `
+                    <div class="mt-3 flex flex-col gap-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-[#FF5E00] shadow-[0_0_8px_rgba(255,94,0,0.8)]"></div>
+                            <span class="text-xs text-slate-300">Local da Visita</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
+                            <span class="text-xs text-slate-300">Local Cadastrado no Cliente</span>
+                        </div>
+                        <div id="feed-distance-info" class="text-xs text-slate-400 mt-1 font-medium hidden">
+                            Distância: <span id="feed-distance-val" class="text-white"></span>
+                        </div>
+                    </div>
+                `;
+            } else if (hasRegCoords) {
+                legendHtml = `
+                    <div class="mt-3 flex items-center gap-2 bg-slate-800/50 p-2 rounded border border-slate-700">
+                        <div class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
+                        <span class="text-xs text-slate-300">Apenas Local Cadastrado disponível</span>
+                    </div>
+                `;
+            } else if (hasVisitCoords) {
+                legendHtml = `
+                    <div class="mt-3 flex items-center gap-2 bg-slate-800/50 p-2 rounded border border-slate-700">
+                        <div class="w-3 h-3 rounded-full bg-[#FF5E00] shadow-[0_0_8px_rgba(255,94,0,0.8)]"></div>
+                        <span class="text-xs text-slate-300">Apenas Local da Visita disponível</span>
+                    </div>
+                `;
+            }
         } else {
             mapHtml = `<div class="w-full p-4 rounded-lg mt-4 bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-400 text-sm">Sem coordenadas geográficas disponíveis.</div>`;
         }
@@ -874,6 +939,7 @@ const FeedVisitas = (() => {
                         </div>
                     </div>
                     ${mapHtml}
+                    ${legendHtml}
                 </div>
             </div>
         `;
@@ -882,13 +948,16 @@ const FeedVisitas = (() => {
         modal.classList.add('flex');
 
         // Initialize Map if coords exist
-        if (lat && lng && window.L) {
+        if ((hasVisitCoords || hasRegCoords) && window.L) {
             // Need a slight delay for DOM to render the container before Leaflet can size it
             setTimeout(() => {
                 const mapEl = document.getElementById('feed-mini-map');
                 if (mapEl) {
+                    const centerLat = hasVisitCoords ? lat : regLat;
+                    const centerLng = hasVisitCoords ? lng : regLng;
+
                     const map = window.L.map('feed-mini-map', {
-                        center: [lat, lng],
+                        center: [centerLat, centerLng],
                         zoom: 15,
                         zoomControl: false,
                         attributionControl: false
@@ -898,14 +967,57 @@ const FeedVisitas = (() => {
                         maxZoom: 19
                     }).addTo(map);
 
-                    const customIcon = window.L.divIcon({
-                        className: 'custom-pin',
-                        html: `<div class="w-4 h-4 bg-[#FF5E00] rounded-full border-2 border-white shadow-[0_0_10px_rgba(255,94,0,0.8)] animate-pulse"></div>`,
-                        iconSize: [16, 16],
-                        iconAnchor: [8, 8]
-                    });
+                    const markers = [];
 
-                    window.L.marker([lat, lng], { icon: customIcon }).addTo(map);
+                    if (hasRegCoords) {
+                        const regIcon = window.L.divIcon({
+                            className: 'custom-pin-reg',
+                            html: `<div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>`,
+                            iconSize: [16, 16],
+                            iconAnchor: [8, 8]
+                        });
+                        markers.push(window.L.marker([regLat, regLng], { icon: regIcon }).addTo(map));
+                    }
+
+                    if (hasVisitCoords) {
+                        const visitIcon = window.L.divIcon({
+                            className: 'custom-pin-visit',
+                            html: `<div class="w-4 h-4 bg-[#FF5E00] rounded-full border-2 border-white shadow-[0_0_10px_rgba(255,94,0,0.8)] animate-pulse"></div>`,
+                            iconSize: [16, 16],
+                            iconAnchor: [8, 8]
+                        });
+                        markers.push(window.L.marker([lat, lng], { icon: visitIcon }).addTo(map));
+                    }
+
+                    if (markers.length > 1) {
+                        const group = new window.L.featureGroup(markers);
+                        map.fitBounds(group.getBounds(), { padding: [30, 30], maxZoom: 18 });
+
+                        // Calcular a distância
+                        const p1 = window.L.latLng(lat, lng);
+                        const p2 = window.L.latLng(regLat, regLng);
+                        const distanceInMeters = p1.distanceTo(p2);
+
+                        const distInfo = document.getElementById('feed-distance-info');
+                        const distVal = document.getElementById('feed-distance-val');
+
+                        if (distInfo && distVal) {
+                            distInfo.classList.remove('hidden');
+                            if (distanceInMeters < 1000) {
+                                distVal.textContent = Math.round(distanceInMeters) + ' m';
+                            } else {
+                                distVal.textContent = (distanceInMeters / 1000).toFixed(2).replace('.', ',') + ' km';
+                            }
+
+                            // Se a distância for muito grande, dar um destaque vermelho
+                            if (distanceInMeters > 500) {
+                                distVal.classList.add('text-red-400');
+                                distVal.classList.remove('text-white');
+                            }
+                        }
+                    } else if (markers.length === 1) {
+                        map.setView(markers[0].getLatLng(), 16);
+                    }
                 }
             }, 100);
         }
