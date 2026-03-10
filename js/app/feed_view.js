@@ -939,7 +939,6 @@ const FeedVisitas = (() => {
             }
         }
     }
-    }
 
     function toggleResumo(btnElement, visitId) {
 
