@@ -422,11 +422,16 @@ const FeedVisitas = (() => {
         query = query.range(from, to);
 
         const role = (window.userRole || '').trim().toLowerCase();
+        
+        // Strict mapping based on hierarchy
+        const isPromoter = window.userIsPromoter || 
+                           (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || 
+                           (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+        
         const isAdmin = role === 'adm';
-        const isCoord = role.includes('coord');
-        const isSup = window.userIsSupervisor || role.includes('sup') || role === 'supervisor';
-        const isSeller = window.userIsSeller || role.includes('vend');
-        const isPromoter = window.userIsPromoter || (!isAdmin && !isCoord && !isSup && !isSeller);
+        const isCoord = role.includes('coord') && !isPromoter;
+        const isSup = window.userIsSupervisor || ((role.includes('sup') || role === 'supervisor') && !isPromoter);
+        const isSeller = window.userIsSeller || (role.includes('vend') && !isPromoter);
 
         const isManager = isAdmin || isCoord || isSup; // Defines who can favorite and see all details
         // We will filter the results in memory below.
