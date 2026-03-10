@@ -1284,6 +1284,7 @@
         }
 
         let sellerDetailsMap = new Map();
+        window.sellerDetailsMap = sellerDetailsMap;
 
         // --- HIERARCHY FILTER SYSTEM ---
         const hierarchyState = {}; // Map<viewPrefix, { coords: Set, cocoords: Set, promotors: Set }>
