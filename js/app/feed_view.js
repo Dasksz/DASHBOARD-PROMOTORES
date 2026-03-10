@@ -401,9 +401,27 @@ const FeedVisitas = (() => {
                             </button>
                         `;
 
+
+                        let originalUrl = url;
+                        try {
+                            const u = new URL(url);
+                            u.searchParams.delete('width');
+                            u.searchParams.delete('height');
+                            u.searchParams.delete('quality');
+                            originalUrl = u.toString();
+                        } catch(e) {
+                            originalUrl = url.split('?')[0];
+                        }
+
                         fotosHtml += `
-                            <div class="relative flex-none min-w-full aspect-square overflow-hidden snap-center bg-slate-800 flex items-center justify-center text-slate-500 cursor-pointer" onclick="window.FeedVisitas.scrollCarousel('${carouselId}', 1)">
-                                <img src="${url}" class="w-full h-full object-cover absolute inset-0 z-10" loading="lazy" alt="Foto da Visita" onerror="this.onerror=null; this.parentElement.classList.add('image-error'); this.style.display='none'; this.nextElementSibling.classList.remove('hidden'); this.nextElementSibling.classList.add('flex');">
+                            <div class="relative flex-none min-w-full aspect-square overflow-hidden snap-center bg-slate-800 flex items-center justify-center text-slate-500 cursor-pointer group/img" onclick="window.FeedVisitas.scrollCarousel('${carouselId}', 1)">
+                                <img src="${url}" class="w-full h-full object-cover absolute inset-0 z-10 transition-transform duration-500 group-hover/img:scale-105" loading="lazy" alt="Foto da Visita" onerror="this.onerror=null; this.parentElement.classList.add('image-error'); this.style.display='none'; this.nextElementSibling.classList.remove('hidden'); this.nextElementSibling.classList.add('flex');">
+                                <div class="absolute inset-0 z-15 bg-black/0 group-hover/img:bg-black/10 transition-colors pointer-events-none"></div>
+
+                                <button onclick="window.FeedVisitas.openImageModal('${originalUrl}'); event.stopPropagation();" class="absolute bottom-2 right-2 z-20 bg-black/50 hover:bg-[#FF5E00] text-white p-2 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover/img:opacity-100 shadow-lg border border-white/20" title="Ver imagem original">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                                </button>
+
                                 <div class="hidden z-0 flex-col items-center justify-center text-xs text-slate-500 gap-2">
                                     <i class="fas fa-image text-2xl mb-1"></i>
                                     <span>Imagem indisponível</span>
@@ -660,6 +678,65 @@ const FeedVisitas = (() => {
         }
     }
 
+
+    function openImageModal(originalUrl) {
+        let modal = document.getElementById('feed-image-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'feed-image-modal';
+            modal.className = 'fixed inset-0 z-[150] hidden items-center justify-center bg-black/95 backdrop-blur-sm cursor-zoom-out touch-none';
+
+            modal.addEventListener('click', () => closeImageModal());
+
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'relative w-full h-full max-w-7xl mx-auto p-4 flex items-center justify-center';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'absolute top-4 right-4 z-[160] text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-2 transition-all cursor-pointer backdrop-blur-md shadow-xl border border-white/10';
+            closeBtn.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+            closeBtn.onclick = (e) => {
+                e.stopPropagation();
+                closeImageModal();
+            };
+            imgContainer.appendChild(closeBtn);
+
+            const imgEl = document.createElement('img');
+            imgEl.id = 'feed-modal-image';
+            imgEl.className = 'max-w-full max-h-[90vh] object-contain drop-shadow-2xl rounded pointer-events-auto cursor-default';
+
+            imgContainer.appendChild(imgEl);
+            modal.appendChild(imgContainer);
+
+            document.body.appendChild(modal);
+        }
+
+        const modalEl = document.getElementById('feed-image-modal');
+        const imgEl = document.getElementById('feed-modal-image');
+
+        if (imgEl) {
+            imgEl.src = '';
+            imgEl.src = originalUrl;
+        }
+
+        modalEl.classList.remove('hidden');
+        modalEl.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeImageModal() {
+        const modal = document.getElementById('feed-image-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            const imgEl = document.getElementById('feed-modal-image');
+            if (imgEl) {
+                imgEl.src = '';
+            }
+            document.body.style.overflow = '';
+        }
+    }
+
     return {
         scrollCarousel,
         updateCarouselIndicator,
@@ -667,6 +744,8 @@ const FeedVisitas = (() => {
         init,
         openLocationModal,
         closeLocationModal,
+        openImageModal,
+        closeImageModal,
         clientCache: {}
     };
 })();
