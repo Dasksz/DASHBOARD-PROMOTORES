@@ -794,8 +794,8 @@ const FeedVisitas = (() => {
                             <span class="text-[11px] text-slate-500 font-medium uppercase tracking-wide">${formattedDate}</span>
                         </div>
 
-                        ${observacoesTexto && (isManager || String(visit.id_promotor) === String(window.userId)) ? `<div class="text-sm text-slate-300 leading-relaxed mt-2"><span class="font-medium text-white">Obs:</span> ${observacoesTexto}</div>` : ''}
-                        ${resumoRespostasHtml}
+                        ${observacoesTexto && (isManager || isSeller || String(visit.id_promotor) === String(window.userId)) ? `<div class="text-sm text-slate-300 leading-relaxed mt-2"><span class="font-medium text-white">Obs:</span> ${observacoesTexto}</div>` : ''}
+                        ${(isManager || isSeller || String(visit.id_promotor) === String(window.userId)) ? resumoRespostasHtml : ''}
                     </div>
                 `;
                 cardsContainer.appendChild(card);
@@ -984,7 +984,7 @@ const FeedVisitas = (() => {
         if (!modal) {
             modal = document.createElement('div');
             modal.id = 'feed-image-modal';
-            modal.className = 'fixed inset-0 z-[150] hidden items-center justify-center bg-black/95 backdrop-blur-sm cursor-zoom-out touch-none';
+            modal.className = 'modal-overlay fixed inset-0 z-[150] hidden items-center justify-center bg-black/95 backdrop-blur-sm cursor-zoom-out touch-none';
 
             modal.addEventListener('click', () => closeImageModal());
 
@@ -992,6 +992,7 @@ const FeedVisitas = (() => {
             imgContainer.className = 'relative w-full h-full max-w-7xl mx-auto p-4 flex items-center justify-center';
 
             const closeBtn = document.createElement('button');
+            closeBtn.id = 'feed-modal-close-btn'; // Required for global ESC handler
             closeBtn.className = 'absolute top-4 right-4 z-[160] text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-2 transition-all cursor-pointer backdrop-blur-md shadow-xl border border-white/10';
             closeBtn.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
             closeBtn.onclick = (e) => {
@@ -1022,15 +1023,6 @@ const FeedVisitas = (() => {
         modalEl.classList.remove('hidden');
         modalEl.classList.add('flex');
         document.body.style.overflow = 'hidden';
-
-        // Add Escape key listener
-        const escHandler = function(e) {
-            if (e.key === 'Escape') {
-                closeImageModal();
-            }
-        };
-        document.addEventListener('keydown', escHandler);
-        modalEl._escHandler = escHandler;
     }
 
     function closeImageModal() {
@@ -1044,12 +1036,6 @@ const FeedVisitas = (() => {
                 imgEl.src = '';
             }
             document.body.style.overflow = '';
-            
-            // Remove Escape key listener
-            if (modal._escHandler) {
-                document.removeEventListener('keydown', modal._escHandler);
-                delete modal._escHandler;
-            }
         }
     }
 
