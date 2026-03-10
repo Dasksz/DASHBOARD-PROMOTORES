@@ -289,10 +289,9 @@ BEGIN
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_frequency text;
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_ref_date timestamp with time zone;
     ALTER TABLE public.data_client_promoters ADD COLUMN IF NOT EXISTS itinerary_days text;
-    
+
     -- Ensure 'cod_cocoord' exists in 'visitas'
     ALTER TABLE public.visitas ADD COLUMN IF NOT EXISTS cod_cocoord text;
-    ALTER TABLE public.visitas ADD COLUMN IF NOT EXISTS favoritado_por uuid[] DEFAULT '{}';
 
     -- Ensure 'profiles' columns exist
     ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS name text;
@@ -312,11 +311,11 @@ create or replace function public.is_admin () RETURNS boolean as $$
 BEGIN
   -- Service Role always admin
   IF (select auth.role()) = 'service_role' THEN RETURN true; END IF;
-  
+
   -- Check profiles table for 'adm' role
   RETURN EXISTS (
-    SELECT 1 FROM public.profiles 
-    WHERE id = (select auth.uid()) 
+    SELECT 1 FROM public.profiles
+    WHERE id = (select auth.uid())
     AND role = 'adm'
   );
 END;
@@ -330,8 +329,8 @@ BEGIN
   IF (select auth.role()) = 'service_role' THEN RETURN true; END IF;
 
   RETURN EXISTS (
-    SELECT 1 FROM public.profiles 
-    WHERE id = (select auth.uid()) 
+    SELECT 1 FROM public.profiles
+    WHERE id = (select auth.uid())
     AND status = 'aprovado'
   );
 END;
@@ -349,8 +348,8 @@ BEGIN
 
   -- Whitelist validation
   IF table_name NOT IN (
-    'data_detailed', 'data_history', 'data_clients', 'data_orders', 
-    'data_product_details', 'data_active_products', 'data_stock', 
+    'data_detailed', 'data_history', 'data_clients', 'data_orders',
+    'data_product_details', 'data_active_products', 'data_stock',
     'data_innovations', 'data_metadata', 'goals_distribution', 'data_hierarchy', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves',
     'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos'
   ) THEN
@@ -425,14 +424,14 @@ BEGIN
   -- Insert into profiles
   insert into public.profiles (id, email, status, role, name, phone)
   values (
-    new.id, 
-    new.email, 
-    'pendente', 
-    'user', 
-    v_name, 
+    new.id,
+    new.email,
+    'pendente',
+    'user',
+    v_name,
     v_phone
   );
-  
+
   return new;
 end;
 $$;
@@ -458,17 +457,17 @@ do $$
 DECLARE
     t text;
 BEGIN
-    FOR t IN 
-        SELECT table_name FROM information_schema.tables 
-        WHERE table_schema = 'public' 
+    FOR t IN
+        SELECT table_name FROM information_schema.tables
+        WHERE table_schema = 'public'
         AND (table_name LIKE 'data_%' OR table_name LIKE 'dim_%' OR table_name = 'goals_distribution' OR table_name = 'profiles')
     LOOP
         EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', t);
-        
+
         -- Revoke public permissions for security
         EXECUTE format('REVOKE ALL ON public.%I FROM anon;', t);
         EXECUTE format('REVOKE ALL ON public.%I FROM authenticated;', t);
-        
+
         -- Grant minimal permissions to authenticated (RLS will handle access)
         EXECUTE format('GRANT SELECT ON public.%I TO authenticated;', t);
         EXECUTE format('GRANT INSERT, UPDATE, DELETE ON public.%I TO authenticated;', t);
@@ -543,9 +542,9 @@ do $$
 DECLARE
     t text;
 BEGIN
-    FOR t IN 
-        SELECT table_name FROM information_schema.tables 
-        WHERE table_schema = 'public' 
+    FOR t IN
+        SELECT table_name FROM information_schema.tables
+        WHERE table_schema = 'public'
         AND table_name IN (
             'data_active_products',
             'data_clients',
@@ -583,7 +582,7 @@ BEGIN
         EXECUTE format('DROP POLICY IF EXISTS "Acesso leitura aprovados" ON public.%I;', t);
         EXECUTE format('DROP POLICY IF EXISTS "Admin Write Access" ON public.%I;', t);
         EXECUTE format('DROP POLICY IF EXISTS "Unified Read Access" ON public.%I;', t);
-        
+
         -- Create New Standardized Policies
         EXECUTE format('CREATE POLICY "Acesso Leitura Unificado" ON public.%I FOR SELECT TO authenticated USING (public.is_admin() OR public.is_approved());', t);
         EXECUTE format('CREATE POLICY "Acesso Escrita Admin (Insert)" ON public.%I FOR INSERT TO authenticated WITH CHECK (public.is_admin());', t);
@@ -724,8 +723,7 @@ CREATE TABLE IF NOT EXISTS public.visitas (
     respostas jsonb,
     observacao text,
     coordenador_email text,
-    cod_cocoord text, -- Codigo do Co-Coordenador (Para facilitar envio de email)
-    favoritado_por uuid[] DEFAULT '{}' -- IDs dos gestores que favoritaram
+    cod_cocoord text -- Codigo do Co-Coordenador (Para facilitar envio de email)
 );
 
 -- 7.1.1 Indexes (Performance Optimization)
@@ -749,8 +747,8 @@ USING (
     SELECT 1 FROM public.profiles
     WHERE id = auth.uid()
     AND (
-      role = 'adm' 
-      OR role IN (SELECT cod_coord FROM public.data_hierarchy) 
+      role = 'adm'
+      OR role IN (SELECT cod_coord FROM public.data_hierarchy)
       OR role IN (SELECT cod_cocoord FROM public.data_hierarchy)
     )
   )
@@ -758,21 +756,6 @@ USING (
 
 DROP POLICY IF EXISTS "Promotores Update" ON public.visitas;
 CREATE POLICY "Promotores Update" ON public.visitas FOR UPDATE TO authenticated USING ((select auth.uid()) = id_promotor);
-
-DROP POLICY IF EXISTS "Admin and Coords Update" ON public.visitas;
-CREATE POLICY "Admin and Coords Update" ON public.visitas
-FOR UPDATE TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid()
-    AND (
-      role = 'adm'
-      OR role IN (SELECT cod_coord FROM public.data_hierarchy)
-      OR role IN (SELECT cod_cocoord FROM public.data_hierarchy)
-    )
-  )
-);
 
 DROP POLICY IF EXISTS "Promotores Delete" ON public.visitas;
 CREATE POLICY "Promotores Delete" ON public.visitas FOR DELETE TO authenticated USING ((select auth.uid()) = id_promotor);
@@ -809,7 +792,7 @@ BEGIN
         WHERE UPPER(TRIM(cod_promotor)) = UPPER(TRIM(v_user_code))
         LIMIT 1;
       END IF;
-      
+
       -- Salvar na coluna para referência futura se descobrimos agora
       IF v_cocoord_code IS NOT NULL THEN
           NEW.cod_cocoord := v_cocoord_code;
@@ -857,7 +840,7 @@ VALUES ('visitas-images', 'visitas-images', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Security (RLS) for Storage Objects
--- Note: storage.objects usually has RLS enabled by default. 
+-- Note: storage.objects usually has RLS enabled by default.
 -- We skip ALTER TABLE to avoid permission errors (42501) if not owner.
 
 -- Allow authenticated uploads

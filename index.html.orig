@@ -71,12 +71,6 @@
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- Flatpickr -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js" defer></script>
     <link rel="stylesheet" href="css/styles.css">
     <style>
         .glass-card {
@@ -91,7 +85,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
             transition: all 0.3s ease;
         }
-        
+
         .input-field:focus {
             border-color: #FF5E00 !important;
             box-shadow: 0 0 0 2px rgba(255, 94, 0, 0.2);
@@ -450,7 +444,7 @@
         <button id="open-admin-btn" class="p-2 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-white/5" title="Admin Upload">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
         </button>
-        
+
         <!-- Mobile Menu Toggle -->
         <button id="mobile-menu-toggle" class="lg:hidden p-2 text-slate-300 hover:text-white">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -487,7 +481,7 @@
     <!-- MAIN DASHBOARD -->
     <div id="main-dashboard" class="animate-fade-in-up">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
-            
+
             <!-- Hero Section (3D Banner) -->
             <div id="banner-container" class="mb-8">
                 <div class="content-overlay">
@@ -614,7 +608,7 @@
                         <button id="clear-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg transition-colors border border-slate-600">Limpar Filtros</button>
                     </div>
                 </div>
-                
+
                 <!-- Secondary Filters Row -->
                 <div class="flex flex-wrap gap-4 items-end mt-4 pt-4 border-t border-slate-800/50">
                      <div class="relative flex-1 min-w-[200px]">
@@ -742,32 +736,14 @@
 
     <!-- OTHER VIEWS (Initially Hidden) -->
     <!-- Note: Keeping structures similar but updating headers/classes -->
-    
+
 
     <!-- FEED VIEW -->
     <div id="feed-view" class="hidden animate-fade-in-up">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
-            <header class="mb-8 border-b border-slate-800 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                    <h1 class="text-3xl font-bold text-white mb-1">Feed de Visitas</h1>
-                <p class="text-slate-400">Atividades recentes da equipe</p>
-                </div>
-                <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-                    <div class="relative w-full sm:w-auto">
-                        <input type="text" id="feed-date-filter" placeholder="Filtrar por data..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full pl-3 pr-10 py-2.5 cursor-pointer bg-slate-800/50 hover:bg-slate-800" readonly>
-                        <svg class="w-4 h-4 absolute right-3 top-3 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <button id="feed-favorites-btn" class="w-full sm:w-auto flex justify-center items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-yellow-400 font-medium rounded-lg border border-slate-700 transition-colors shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
-                        Favoritos
-                    </button>
-                    <button id="feed-clear-favorites-btn" class="hidden w-full sm:w-auto flex justify-center items-center gap-2 px-4 py-2.5 bg-brand-orange/10 hover:bg-brand-orange/20 text-brand-orange font-medium rounded-lg border border-brand-orange/30 transition-colors shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        Limpar Filtro
-                    </button>
-                </div>
+            <header class="mb-8 border-b border-slate-800 pb-4">
+                <h1 class="text-3xl font-bold text-white mb-1">Feed de Visitas</h1>
+                <p class="text-slate-400">Atividades recentes da equipe no mês atual</p>
             </header>
 
             <div id="feed-error-message" class="hidden bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl mb-6"></div>
@@ -796,7 +772,7 @@
     <!-- POSITIVACAO VIEW -->
     <div id="positivacao-view" class="hidden animate-fade-in-up">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
-            <header class="mb-8 border-b border-slate-800 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <header class="mb-8 border-b border-slate-800 pb-4">
                 <h1 class="text-3xl font-bold text-white mb-1">Positivação de Clientes</h1>
                 <p class="text-slate-400">Clientes com e sem venda no período</p>
             </header>
@@ -959,7 +935,7 @@
                     Alternar Mapa
                 </button>
             </header>
-            
+
             <div id="city-view-content">
                 <!-- Filters (Restyling minimal needed as classes are utility based, but ensure containers match) -->
                 <!-- Simplified filters block for brevity, ensuring ID matches -->
@@ -982,7 +958,7 @@
                             </div>
                             <div id="city-rede-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                         </div>
-                        
+
                         <!-- Supervisor (Seller Mode) -->
                         <div id="city-supervisor-filter-wrapper" class="relative hidden">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
@@ -1115,7 +1091,7 @@
 
     <!-- COMPARISON VIEW -->
     <div id="comparison-view" class="hidden container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl animate-fade-in-up">
-        <header class="mb-8 border-b border-slate-800 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4"><h1 class="text-3xl font-bold text-white">Comparativo Mensal</h1></header>
+        <header class="mb-8 border-b border-slate-800 pb-4"><h1 class="text-3xl font-bold text-white">Comparativo Mensal</h1></header>
         <!-- Retaining IDs for JS logic: comparison-rede-group-container, comparison-com-rede-btn, etc. -->
         <!-- Simplified block for structure -->
         <div class="filter-wrapper-sentinel">
@@ -1124,7 +1100,7 @@
                 <button data-fornecedor="PEPSICO" class="fornecedor-btn active px-6 py-2 rounded-lg transition-all">PEPSICO</button>
                 <button data-fornecedor="MULTIMARCAS" class="fornecedor-btn px-6 py-2 rounded-lg transition-all">MULTIMARCAS</button>
             </div>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                 <!-- Rede Filter -->
                 <div id="comparison-rede-filter-wrapper" class="relative z-20">
@@ -1248,7 +1224,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="flex justify-end gap-2 mt-6 border-t border-slate-700/50 pt-4">
                 <button id="comparison-tendency-toggle" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 px-4 rounded-lg transition-colors">Calcular Tendência</button>
                 <button id="comparison-holiday-picker-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2.5 px-4 rounded-lg transition-colors">Feriados</button>
@@ -1270,11 +1246,11 @@
             </div>
             <!-- Metrics toggles hidden in layout but needed for JS -->
             <div id="comparison-monthly-metric-container" class="hidden"><button id="toggle-monthly-fat-btn"></button><button id="toggle-monthly-clients-btn"></button></div>
-            
+
             <div id="weeklyComparisonChartContainer" class="relative h-96"></div>
             <div id="monthlyComparisonChartContainer" class="relative h-96 hidden"></div>
         </div>
-        
+
         <div class="glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
             <h2 class="text-lg font-bold text-white mb-4 text-center">Resumo Semanal</h2>
             <div class="overflow-x-auto custom-scrollbar">
@@ -2069,7 +2045,7 @@
                     <div id="meta-realizado-supplier-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
             </div>
-            
+
             <div class="flex flex-wrap gap-4 items-center justify-between mt-6">
                 <div id="meta-realizado-pasta-toggle-container" class="flex gap-2">
                     <!-- Buttons injected by JS (Pasta), ensure container is styled flex -->
@@ -2313,7 +2289,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
              <div class="lg:col-span-2 glass-panel p-4 rounded-xl border border-slate-800/50 shadow-lg">
                 <p class="text-xs text-slate-500 uppercase font-bold mb-2">Top Produto (Valor)</p>
@@ -2381,7 +2357,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Search Box -->
                 <div id="wallet-search-container" class="flex-[2] relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Adicionar Cliente (Busca Global)</label>
@@ -2431,10 +2407,10 @@
             </div>
         </div>
     </div>
-    
+
     <!-- STOCK VIEW -->
     <div id="stock-view" class="hidden container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl animate-fade-in-up">
-        <header class="mb-8 border-b border-slate-800 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <header class="mb-8 border-b border-slate-800 pb-4">
             <h1 class="text-3xl font-bold text-white">Estoque</h1>
             <p class="text-slate-400">Análise de disponibilidade e ruptura</p>
         </header>
@@ -2595,7 +2571,7 @@
 
     <!-- WEEKLY VIEW -->
     <div id="weekly-view" class="hidden container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl animate-fade-in-up">
-        <header class="mb-8 border-b border-slate-800 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <header class="mb-8 border-b border-slate-800 pb-4">
             <h1 class="text-3xl font-bold text-white">Análise Semanal</h1>
             <p class="text-slate-400">Acompanhamento tático de vendas</p>
         </header>
@@ -2717,7 +2693,7 @@
 
     <!-- CONSULTAS VIEW -->
     <div id="consultas-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
-        <header class="mb-8 border-b border-slate-800 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <header class="mb-8 border-b border-slate-800 pb-4">
             <h1 class="text-3xl font-bold text-white">Consultas</h1>
         </header>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -3080,7 +3056,7 @@
 
     <!-- HISTORY VIEW -->
     <div id="history-view" class="hidden container mx-auto p-4 max-w-7xl animate-fade-in-up">
-        <header class="mb-8 border-b border-slate-800 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <header class="mb-8 border-b border-slate-800 pb-4">
             <h1 class="text-3xl font-bold text-white">Histórico de Pedidos</h1>
             <p class="text-slate-400 text-sm mt-1">Selecione um período para visualizar os pedidos.</p>
         </header>
@@ -3532,7 +3508,7 @@
                         <!-- FOTOS DA VISITA (MULTIPLE UPLOAD) -->
             <div class="space-y-4 pt-4 border-t border-slate-800">
                 <h4 class="text-sm font-bold text-slate-400 uppercase">Fotos da Visita (Obrigatório 1 foto)</h4>
-                
+
                 <!-- Tipo de Foto Toggle -->
                 <div class="flex bg-slate-800 rounded-lg p-1 gap-1 border border-slate-700">
                     <button type="button" id="foto-tipo-geral" class="flex-1 py-2 text-sm font-bold text-white bg-[#FF5E00] rounded-md transition-all shadow-md">Geral (até 10)</button>
@@ -3584,7 +3560,7 @@
                         <div id="preview-depois" class="grid grid-cols-3 sm:grid-cols-4 gap-2 min-h-[4rem]"></div>
                     </div>
                 </div>
-                
+
                 <!-- Helper text for limits -->
                 <p class="text-xs text-slate-500 mt-2"><svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Tamanho máximo por foto: 5MB. As fotos são obrigatórias.</p>
             </div>
@@ -3921,10 +3897,10 @@
                 <button data-tab="bonus" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Bonificações</button>
                 <button data-tab="itinerary" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Roteirização</button>
             </div>
-            
+
             <!-- Content Area (Scrollable) -->
             <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
-                
+
                 <!-- Tab: General -->
                 <div id="wallet-tab-content-general" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
@@ -3945,12 +3921,12 @@
                             <p id="wallet-modal-cnpj" class="text-white font-medium text-sm">--</p>
                         </div>
                     </div>
-                    
+
                     <div class="p-3 glass-panel rounded-lg">
                         <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Razão Social</p>
                         <p id="wallet-modal-razao" class="text-white font-medium text-sm break-words">--</p>
                     </div>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="p-3 glass-panel rounded-lg">
                             <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Fantasia</p>
@@ -4143,7 +4119,7 @@
                 <h3 class="text-xl font-bold text-white leading-tight" id="product-performance-title">Nome do Produto</h3>
                 <p class="text-sm text-slate-400 font-mono mt-1" id="product-performance-code">Cód: 0000</p>
             </div>
-            
+
             <div class="space-y-4">
                 <!-- Stock Info -->
                 <div class="p-4 glass-panel rounded-xl border border-slate-700">
@@ -4175,7 +4151,7 @@
                 <!-- Sales Comparison -->
                 <div class="p-4 glass-panel rounded-xl border border-slate-700">
                     <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Vendas (<span id="product-performance-metric-label">Valor</span>)</p>
-                    
+
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <span class="text-sm text-slate-300">Mês Anterior</span>
@@ -4231,7 +4207,7 @@
                 <h3 class="text-lg font-bold text-white leading-tight" id="mix-mobile-modal-title">Cliente</h3>
                 <p class="text-sm text-slate-400 font-mono mt-1" id="mix-mobile-modal-subtitle">Cód: 0000</p>
             </div>
-            
+
             <div id="mix-mobile-modal-content" class="space-y-4">
                 <!-- Content injected by JS -->
             </div>
@@ -4278,29 +4254,6 @@
                         <div id="titulos-modal-status"></div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Favoritos do Feed -->
-    <div id="feed-favorites-modal" class="modal-overlay hidden z-[3500] fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div class="bg-modal-content w-full max-w-sm rounded-2xl shadow-2xl border border-slate-700 glass-panel overflow-hidden relative">
-            <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
-                    Seus Favoritos
-                </h3>
-                <button id="feed-favorites-close-btn" class="text-slate-400 hover:text-white transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="p-6 text-center">
-                <p class="text-4xl font-black text-white mb-2" id="feed-favorites-count">0</p>
-                <p class="text-sm text-slate-400 mb-6">Pesquisas favoritadas no período atual</p>
-                <button id="feed-favorites-view-btn" class="w-full bg-[#FF5E00] hover:bg-[#CC4A00] text-white font-bold py-3 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                    Visualizar Feed
-                </button>
             </div>
         </div>
     </div>

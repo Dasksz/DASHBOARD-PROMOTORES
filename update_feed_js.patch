@@ -1,0 +1,160 @@
+--- js/app/feed_view.js
++++ js/app/feed_view.js
+@@ -118,7 +118,82 @@
+         const end = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+         return { start, end };
+     }
+
+-    async function loadFeed() {
++    async function setupFlatpickr() {
++        try {
++            // Buscando datas extremas do BD
++            const [{ data: minData }, { data: maxData }] = await Promise.all([
++                window.supabaseClient.from('visitas').select('created_at').order('created_at', { ascending: true }).limit(1).maybeSingle(),
++                window.supabaseClient.from('visitas').select('created_at').order('created_at', { ascending: false }).limit(1).maybeSingle()
++            ]);
++
++            let minDate = minData ? new Date(minData.created_at) : new Date();
++            let maxDate = maxData ? new Date(maxData.created_at) : new Date();
++
++            // Instanciando Flatpickr
++            const input = document.getElementById('feed-date-filter');
++            if (input && window.flatpickr) {
++                flatpickrInstance = window.flatpickr(input, {
++                    mode: "range",
++                    minDate: minDate,
++                    maxDate: maxDate,
++                    dateFormat: "d/m/Y",
++                    locale: "pt",
++                    disableMobile: "true",
++                    onReady: function(selectedDates, dateStr, instance) {
++                        // Adicionar botão de Filtrar
++                        const btnContainer = document.createElement('div');
++                        btnContainer.className = "flex justify-end p-2 border-t border-slate-700 bg-slate-800 mt-2";
++                        btnContainer.innerHTML = `<button type="button" id="feed-flatpickr-filter-btn" class="bg-[#FF5E00] hover:bg-[#CC4A00] text-white font-bold py-1 px-4 rounded text-sm transition-colors">Filtrar</button>`;
++
++                        instance.calendarContainer.appendChild(btnContainer);
++
++                        const btn = document.getElementById('feed-flatpickr-filter-btn');
++                        btn.addEventListener('click', () => {
++                            if (instance.selectedDates.length === 2) {
++                                const start = instance.selectedDates[0];
++                                const end = instance.selectedDates[1];
++
++                                // Ajustar as horas para o período do dia todo (em UTC para bater com BD)
++                                currentStartBound = new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0));
++                                currentEndBound = new Date(Date.UTC(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999));
++
++                                instance.close();
++                                loadFeed(true);
++                            } else {
++                                window.showToast('warning', 'Selecione um período completo (Data Inicial e Final).');
++                            }
++                        });
++                    },
++                    onClose: function(selectedDates, dateStr, instance) {
++                        // Se fechar sem ter as duas datas, restaura o input caso precisasse,
++                        // ou pode deixar como esta, o click no botão "Filtrar" é o que engatilha.
++                    }
++                });
++            }
++
++            // Setando o período inicial no input (Mês Atual)
++            if (flatpickrInstance && currentStartBound && currentEndBound) {
++                // Ajusta datas UTC para local de volta pro flatpickr exibir correto
++                const localStart = new Date(currentStartBound.getTime() + currentStartBound.getTimezoneOffset() * 60000);
++                const localEnd = new Date(currentEndBound.getTime() + currentEndBound.getTimezoneOffset() * 60000);
++                flatpickrInstance.setDate([localStart, localEnd], false);
++            }
++
++        } catch(e) {
++            console.error("Erro ao instanciar Flatpickr:", e);
++        }
++
++        // Setup Favorites Modal Listeners
++        const favBtn = document.getElementById('feed-favorites-btn');
++        const favModal = document.getElementById('feed-favorites-modal');
++        const favCloseBtn = document.getElementById('feed-favorites-close-btn');
++        const favViewBtn = document.getElementById('feed-favorites-view-btn');
++
++        if (favBtn) favBtn.addEventListener('click', window.FeedVisitas.openFavoritesModal);
++        if (favCloseBtn) favCloseBtn.addEventListener('click', () => favModal.classList.add('hidden'));
++        if (favViewBtn) favViewBtn.addEventListener('click', window.FeedVisitas.applyFavoritesFilter);
++    }
++
++    async function loadFeed(skipDateCalc = false) {
+         if (isLoading) return;
+         isLoading = true;
+@@ -131,29 +206,35 @@
+         try {
+             console.log("FeedVisitas: Buscando dados iniciais...");
+
+-            // Determine current month context based on lastSaleDate
+-            let contextDate = new Date();
+-            if (typeof window.lastSaleDate !== 'undefined' && window.lastSaleDate) {
+-                // Ensure valid date string processing
+-                let cleanDateStr = window.lastSaleDate.replace(' ', 'T');
+-                if (!cleanDateStr.endsWith('Z') && !cleanDateStr.includes('+') && !cleanDateStr.includes('-')) {
+-                    cleanDateStr += 'Z';
+-                }
+-                const parsedDate = new Date(cleanDateStr);
+-                if (!isNaN(parsedDate)) {
+-                    contextDate = parsedDate;
+-                }
+-            }
+-
+-            const bounds = getMonthBounds(contextDate);
+-            currentStartBound = bounds.start;
+-            currentEndBound = bounds.end;
+-
+-            // Format for display
+-            const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+-            const monthName = monthNames[contextDate.getUTCMonth()];
+-            const year = contextDate.getUTCFullYear();
+-            if (periodInfo) {
+-                periodInfo.textContent = `Mês: ${monthName}/${year}`;
++            if (!skipDateCalc) {
++                // Determine current month context based on lastSaleDate
++                let contextDate = new Date();
++                if (typeof window.lastSaleDate !== 'undefined' && window.lastSaleDate) {
++                    // Ensure valid date string processing
++                    let cleanDateStr = window.lastSaleDate.replace(' ', 'T');
++                    if (!cleanDateStr.endsWith('Z') && !cleanDateStr.includes('+') && !cleanDateStr.includes('-')) {
++                        cleanDateStr += 'Z';
++                    }
++                    const parsedDate = new Date(cleanDateStr);
++                    if (!isNaN(parsedDate)) {
++                        contextDate = parsedDate;
++                    }
++                }
++
++                const bounds = getMonthBounds(contextDate);
++                currentStartBound = bounds.start;
++                currentEndBound = bounds.end;
++            }
++
++            // Format for display
++            if (periodInfo && currentStartBound && currentEndBound) {
++                const fd = (d) => d.getUTCDate().toString().padStart(2, '0') + '/' + (d.getUTCMonth() + 1).toString().padStart(2, '0');
++                periodInfo.textContent = `Período: ${fd(currentStartBound)} até ${fd(currentEndBound)}`;
++
++                if (showOnlyFavorites) {
++                     periodInfo.textContent += ` (Apenas Favoritos)`;
++                     periodInfo.classList.replace('text-brand-orange', 'text-yellow-400');
++                     periodInfo.classList.replace('bg-brand-orange/10', 'bg-yellow-400/10');
++                } else {
++                     periodInfo.classList.replace('text-yellow-400', 'text-brand-orange');
++                     periodInfo.classList.replace('bg-yellow-400/10', 'bg-brand-orange/10');
++                }
+             }
+
+             await fetchFeedData();
+@@ -168,7 +249,7 @@
+                                 </svg>
+                             </div>
+                         </div>
+-                        <p class="text-slate-300 font-medium">Nenhuma visita registrada no mês atual (${monthName}/${year}).</p>
++                        <p class="text-slate-300 font-medium">Nenhuma visita encontrada neste período.</p>
+                         <p class="text-slate-500 text-sm mt-2">Visitas registradas aparecerão aqui.</p>
+                     </div>`;
+             }
