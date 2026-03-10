@@ -20266,7 +20266,60 @@ const supervisorGroups = new Map();
 
     let selectedRackOptions = new Set();
 
-        function initCustomFileInput() {
+
+    function compressImage(file, maxWidth = 1920, maxHeight = 1080, quality = 0.8) {
+        return new Promise((resolve) => {
+            if (!file.type.startsWith('image/')) {
+                resolve(file);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round((height *= maxWidth / width));
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width = Math.round((width *= maxHeight / height));
+                            height = maxHeight;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            resolve(file);
+                            return;
+                        }
+                        const compressedFile = new File([blob], file.name, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+                        resolve(compressedFile);
+                    }, 'image/jpeg', quality);
+                };
+                img.onerror = () => resolve(file);
+            };
+            reader.onerror = () => resolve(file);
+        });
+    }
+
+    function initCustomFileInput() {
         const state = window.visitaFotosState;
         if (!state) return;
 
@@ -20342,20 +20395,36 @@ const supervisorGroups = new Map();
             if (type === 'antes') window.updateAntesPreview = updatePreview;
             if (type === 'depois') window.updateDepoisPreview = updatePreview;
 
-            input.onchange = (e) => {
+            input.onchange = async (e) => {
                 if (!e.target.files) return;
+
+                // Show a brief loading indication since compression is async
+                const originalLabel = count.textContent;
+                count.textContent = '(Comprimindo...)';
+
                 const files = Array.from(e.target.files);
                 let added = 0;
-                for (const file of files) {
+                for (const rawFile of files) {
                     if (state.fotos[type].length >= state.max[type]) break;
+
+                    let file = rawFile;
+                    if (file.type.startsWith('image/')) {
+                         file = await compressImage(file, 1920, 1920, 0.8);
+                    }
+
                     if (file.size > 5 * 1024 * 1024) {
-                        if (window.showToast) window.showToast('error', `A imagem ${file.name} excede o limite de 5MB.`);
+                        if (window.showToast) window.showToast('error', `A imagem ${file.name} ainda excede o limite de 5MB após compressão.`);
                         continue;
                     }
                     state.fotos[type].push(file);
                     added++;
                 }
-                if (added > 0) updatePreview();
+
+                if (added > 0) {
+                    updatePreview();
+                } else {
+                    count.textContent = originalLabel; // Restore if nothing added
+                }
                 input.value = '';
             };
 
