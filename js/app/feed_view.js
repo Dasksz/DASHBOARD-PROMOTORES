@@ -198,17 +198,17 @@ const FeedVisitas = (() => {
 
         let query = window.supabaseClient
             .from('visitas')
-            .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, profiles:id_promotor(name)`)
+            .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, id_promotor, profiles:id_promotor(name)`)
             .gte('created_at', currentStartBound.toISOString())
             .lte('created_at', currentEndBound.toISOString())
             .order('created_at', { ascending: false })
             .range(from, to);
 
         const role = (window.userRole || '').trim().toLowerCase();
-        const isRestricted = role === 'promotor' || role === 'vendedor' || window.userIsSeller || window.userIsPromoter;
-        if (isRestricted && window.userId) {
-            query = query.eq('id_promotor', window.userId);
-        }
+        const isManager = role === 'adm' || role === 'supervisor' || role === 'coordenador' || role.includes('coord');
+        // We no longer restrict the query by id_promotor here, because we need to fetch visits
+        // from other promoters if they have 'antes' and 'depois' photos.
+        // We will filter the results in memory below.
 
         const { data, error } = await query;
 
@@ -245,49 +245,11 @@ const FeedVisitas = (() => {
         }
 
         data.forEach(visit => {
-                const card = document.createElement('div');
-                card.className = 'glass-card rounded-xl shadow-lg border border-slate-700/50 hover:border-slate-600 transition-colors animate-fade-in-up max-w-xl mx-auto w-full overflow-hidden flex flex-col';
-
-                // Try to resolve client info from fetched data_clients map, fallback to code
-                let clientName = 'Cliente Desconhecido';
-                let clientInfo = null;
-                if (visit.client_code) {
-                    const cleanCode = String(visit.client_code).trim();
-                    if (clientNamesMap.has(cleanCode) && clientNamesMap.get(cleanCode)) {
-                        clientInfo = { ...clientNamesMap.get(cleanCode), latitude: visit.latitude, longitude: visit.longitude };
-                        clientName = clientInfo.nome;
-                    } else {
-                        clientName = `Cód: ${visit.client_code}`;
-                    }
-                }
-
-                let promotorName = visit.profiles ? visit.profiles.name : 'Promotor';
-                
-                // Adjust date to BRT timezone manually
-                let visitDate = new Date(visit.created_at);
-                visitDate = new Date(visitDate.getTime() - (3 * 60 * 60 * 1000));
-                
-                const formattedDate = visitDate.getUTCDate().toString().padStart(2, '0') + '/' + 
-                                     (visitDate.getUTCMonth() + 1).toString().padStart(2, '0') + '/' + 
-                                     visitDate.getUTCFullYear() + ' ' + 
-                                     visitDate.getUTCHours().toString().padStart(2, '0') + ':' + 
-                                     visitDate.getUTCMinutes().toString().padStart(2, '0');
-
-                // status badge
-                let statusHtml = '';
-                if (visit.status === 'APPROVED') {
-                    statusHtml = '<span class="px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Aprovada</span>';
-                } else if (visit.status === 'REJECTED') {
-                    statusHtml = '<span class="px-2 py-0.5 rounded text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">Rejeitada</span>';
-                } else {
-                    statusHtml = '<span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">Pendente</span>';
-                }
-
-                // Extract answers and photos
-
+                // Extract answers and photos before building the card to check if it should be displayed
                 let fotos = [];
                 let observacoesTexto = '';
                 let respostasObj = null;
+                let respostasCount = 0;
 
                 if (visit.respostas) {
                     try {
@@ -307,7 +269,6 @@ const FeedVisitas = (() => {
                                     if (foto.url.startsWith('http')) {
                                         urlStr = foto.url;
                                     } else {
-                                        // Usa o recurso de transformação de imagem do Supabase para reduzir resolução e qualidade, deixando mais leve
                                         const { data: urlData } = window.supabaseClient.storage.from('visitas-images').getPublicUrl(foto.url);
                                         urlStr = urlData.publicUrl + '?width=500&quality=60';
                                     }
@@ -320,15 +281,12 @@ const FeedVisitas = (() => {
                                 }
                             });
                         } else {
-                            // Find any keys containing 'foto' and push to array
                             for (const [key, value] of Object.entries(respostasObj)) {
                                 if (key.toLowerCase().includes('foto') && value) {
-                                    // Sometimes value is the full url string
                                     let url = '';
                                     if (typeof value === 'string' && value.startsWith('http')) {
                                         url = value;
                                     } else if (typeof value === 'string') {
-                                        // Usa o recurso de transformação de imagem do Supabase para reduzir resolução e qualidade, deixando mais leve
                                         const { data: urlData } = window.supabaseClient.storage.from('visitas-images').getPublicUrl(value);
                                         url = urlData.publicUrl + '?width=500&quality=60';
                                     }
@@ -343,11 +301,70 @@ const FeedVisitas = (() => {
                                             tipo: tipo
                                         });
                                     }
+                                } else {
+                                    const chavesOcultas = ['fotos', 'is_off_route', 'observacoes'];
+                                    if (!chavesOcultas.includes(key) && !key.toLowerCase().includes('foto') && value !== '' && value !== null && value !== undefined) {
+                                        respostasCount++;
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+                // Filter 1: Only show visits with photos or answers
+                if (fotos.length === 0 && respostasCount === 0) {
+                    return; // Skip this visit
+                }
+
+                // Filter 2: If not manager, only show own visits OR other visits that have BOTH 'antes' and 'depois' photos
+                if (!isManager && String(visit.id_promotor) !== String(window.userId)) {
+                    const hasAntes = fotos.some(f => f.tipo === 'antes');
+                    const hasDepois = fotos.some(f => f.tipo === 'depois');
+                    if (!hasAntes || !hasDepois) {
+                        return; // Skip this visit
+                    }
+                }
+
+                const card = document.createElement('div');
+                card.className = 'glass-card rounded-xl shadow-lg border border-slate-700/50 hover:border-slate-600 transition-colors animate-fade-in-up max-w-xl mx-auto w-full overflow-hidden flex flex-col';
+
+                // Try to resolve client info from fetched data_clients map, fallback to code
+                let clientName = 'Cliente Desconhecido';
+                let clientInfo = null;
+                if (visit.client_code) {
+                    const cleanCode = String(visit.client_code).trim();
+                    if (clientNamesMap.has(cleanCode) && clientNamesMap.get(cleanCode)) {
+                        clientInfo = { ...clientNamesMap.get(cleanCode), latitude: visit.latitude, longitude: visit.longitude };
+                        clientName = clientInfo.nome;
+                    } else {
+                        clientName = `Cód: ${visit.client_code}`;
+                    }
+                }
+
+                let promotorName = visit.profiles ? visit.profiles.name : 'Promotor';
+
+                // Adjust date to BRT timezone manually
+                let visitDate = new Date(visit.created_at);
+                visitDate = new Date(visitDate.getTime() - (3 * 60 * 60 * 1000));
+
+                const formattedDate = visitDate.getUTCDate().toString().padStart(2, '0') + '/' +
+                                     (visitDate.getUTCMonth() + 1).toString().padStart(2, '0') + '/' +
+                                     visitDate.getUTCFullYear() + ' ' +
+                                     visitDate.getUTCHours().toString().padStart(2, '0') + ':' +
+                                     visitDate.getUTCMinutes().toString().padStart(2, '0');
+
+                // status badge
+                let statusHtml = '';
+                if (visit.status === 'APPROVED') {
+                    statusHtml = '<span class="px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Aprovada</span>';
+                } else if (visit.status === 'REJECTED') {
+                    statusHtml = '<span class="px-2 py-0.5 rounded text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">Rejeitada</span>';
+                } else {
+                    statusHtml = '<span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">Pendente</span>';
+                }
+
+                // Answers and photos were already extracted above for filtering.
 
 
                 // Building the horizontal carousel HTML
@@ -484,7 +501,7 @@ const FeedVisitas = (() => {
                             <span class="text-xs text-slate-400">${formattedDate}</span>
                             ${statusHtml}
                         </div>
-                        ${observacoesTexto ? `<div class="text-sm text-slate-300 leading-relaxed"><span class="font-medium text-white">Obs:</span> ${observacoesTexto}</div>` : ''}
+                        ${observacoesTexto && (isManager || String(visit.id_promotor) === String(window.userId)) ? `<div class="text-sm text-slate-300 leading-relaxed"><span class="font-medium text-white">Obs:</span> ${observacoesTexto}</div>` : ''}
                         ${resumoRespostasHtml}
                     </div>
                 `;
