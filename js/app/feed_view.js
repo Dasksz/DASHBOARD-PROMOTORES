@@ -571,36 +571,6 @@ const FeedVisitas = (() => {
                     return; // Skip this visit
                 }
 
-
-                // Filter 2: Role-based Visibility
-                const visitClientCode = String(visit.client_code || '').trim();
-                if (isManager) { // Gestores (ADM, Coord, Sup)
-                    // Sees everything
-                } else if (isSeller) {
-                    // Logica Explicita e Simplificada:
-                    // Verifica se o cliente da visita tem o vendedor correspondente
-                    const clientInfo = clientNamesMap.get(visitClientCode);
-                    if (!clientInfo) {
-                        return; // Se não encontrou o cliente no banco, ignora
-                    }
-
-                    const visitRca1 = String(clientInfo.rca1 || '').trim().toUpperCase();
-                    const mySellerCode = String(window.userSellerCode || window.userRole || '').trim().toUpperCase();
-                    
-                    if (visitRca1 !== mySellerCode) {
-                        return; // O cliente não pertence a este vendedor
-                    }
-                } else {
-                    // Promoter logic: own visits OR other visits with both 'antes' and 'depois'
-                    if (String(visit.id_promotor) !== String(window.userId)) {
-                        const hasAntes = fotos.some(f => f.tipo === 'antes');
-                        const hasDepois = fotos.some(f => f.tipo === 'depois');
-                        if (!hasAntes || !hasDepois) {
-                            return; // Skip this visit
-                        }
-                    }
-                }
-
                 const card = document.createElement('div');
                 card.className = 'glass-card rounded-xl shadow-lg border border-slate-700/50 hover:border-slate-600 transition-colors animate-fade-in-up max-w-xl mx-auto w-full overflow-hidden flex flex-col';
 
