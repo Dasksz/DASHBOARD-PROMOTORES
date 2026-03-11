@@ -460,12 +460,12 @@ const FeedVisitas = (() => {
             try {
                 const { data: clientsData } = await window.supabaseClient
                     .from('data_clients')
-                    .select('codigo_cliente, nomecliente, cnpj_cpf, endereco, rca1')
+                    .select('codigo_cliente, nomecliente, cnpj_cpf, endereco, rca1, cidade')
                     .in('codigo_cliente', uniqueClientCodes);
 
                 if (clientsData) {
                     clientsData.forEach(c => {
-                        clientNamesMap.set(String(c.codigo_cliente).trim(), {nome: c.nomecliente, cnpj: c.cnpj_cpf, endereco: c.endereco, rca1: c.rca1 });
+                        clientNamesMap.set(String(c.codigo_cliente).trim(), {codigo: c.codigo_cliente, nome: c.nomecliente, cnpj: c.cnpj_cpf, endereco: c.endereco, rca1: c.rca1, cidade: c.cidade });
                     });
                 }
 
@@ -907,7 +907,10 @@ const FeedVisitas = (() => {
             document.body.appendChild(modal);
         }
 
-        const nome = clientInfo.nome || 'N/A';
+        const nomeRaw = clientInfo.nome || 'N/A';
+        const codigo = clientInfo.codigo ? String(clientInfo.codigo).trim() : null;
+        const nome = codigo ? `${codigo} - ${nomeRaw}` : nomeRaw;
+        const cidade = clientInfo.cidade ? String(clientInfo.cidade).toUpperCase() : '';
         const cnpj = clientInfo.cnpj || 'N/A';
         const endereco = clientInfo.endereco || 'N/A';
         const lat = clientInfo.latitude;
@@ -986,8 +989,14 @@ const FeedVisitas = (() => {
                             <p class="text-white text-sm font-medium">${cnpj}</p>
                         </div>
                         <div>
-                            <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider mb-1">Endereço</p>
-                            <p class="text-slate-300 text-sm">${endereco}</p>
+                            <div class="flex justify-between items-center mb-1">
+                                <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider">Endereço</p>
+                                ${cidade ? `<p class="text-xs text-slate-400 uppercase font-semibold tracking-wider">Cidade</p>` : ''}
+                            </div>
+                            <div class="flex justify-between items-start gap-4">
+                                <p class="text-slate-300 text-sm flex-1">${endereco}</p>
+                                ${cidade ? `<p class="text-slate-300 text-sm text-right max-w-[50%]">${cidade}</p>` : ''}
+                            </div>
                         </div>
                     </div>
                     ${mapHtml}
