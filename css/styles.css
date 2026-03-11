@@ -21,9 +21,8 @@
     }
 
     /* Base Styling */
-    html, body {
-        background-color: #050505; /* Fallback for elastic scroll */
-        overscroll-behavior-y: none; /* Disable elastic scroll */
+    body { 
+        background-color: var(--bg-main); 
         color: var(--text-primary); 
         font-family: 'Inter', sans-serif;
         background-image: 
