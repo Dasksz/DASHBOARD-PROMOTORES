@@ -20684,6 +20684,29 @@ const supervisorGroups = new Map();
                  if (!error) window.location.reload();
             });
         }
+
+        // Setup Logo Dropdown (Evolution)
+        const logoDropdownBtn = document.getElementById('logo-dropdown-btn');
+        const logoDropdownMenu = document.getElementById('logo-dropdown-menu');
+        const btnEvolutionLink = document.getElementById('btn-evolution-link');
+
+        if (logoDropdownBtn && logoDropdownMenu && btnEvolutionLink) {
+            logoDropdownBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                logoDropdownMenu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!logoDropdownBtn.contains(e.target) && !logoDropdownMenu.contains(e.target)) {
+                    logoDropdownMenu.classList.add('hidden');
+                }
+            });
+
+            btnEvolutionLink.addEventListener('click', () => {
+                window.open('https://dasksz.github.io/ANUAL-EVOLUTION/', '_blank');
+                logoDropdownMenu.classList.add('hidden');
+            });
+        }
         
         // Setup Wallet Controls
         const selectBtn = document.getElementById('wallet-promoter-select-btn');
