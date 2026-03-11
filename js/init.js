@@ -1656,12 +1656,13 @@
                     window.userRole = profile.role;
                     window.userId = profile.id;
 
+                    const fullName = profile.name || session.user.user_metadata.full_name || session.user.user_metadata.name || session.user.email;
+                    window.userFullName = fullName;
+
                     // Update Welcome Message
                     const welcomeEl = document.getElementById('welcome-header');
                     if (welcomeEl) {
-                        const fullName = session.user.user_metadata.full_name || session.user.user_metadata.name || session.user.email;
                         const firstName = (fullName || '').split(' ')[0];
-                        window.userFullName = fullName;
                         welcomeEl.textContent = `Olá, ${firstName}!`;
                     }
 
