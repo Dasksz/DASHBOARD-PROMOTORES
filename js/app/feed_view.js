@@ -594,7 +594,56 @@ const FeedVisitas = (() => {
                     }
                 }
 
+
                 let promotorName = visit.promotor_name || (visit.profiles ? visit.profiles.name : 'Promotor');
+
+                // --- NOVO: Lógica para buscar Vendedor, Supervisor e Co-coordenador ---
+                let nomeVendedor = '-';
+                let nomeSupervisor = '-';
+                let nomeCoCoordenador = '-';
+
+                try {
+                    if (clientInfo && clientInfo.rca1) {
+                        const rca = String(clientInfo.rca1).trim();
+
+                        // 1. Vendedor
+                        if (window.maps && window.maps.vendedores && window.maps.vendedores.has(rca)) {
+                            nomeVendedor = window.maps.vendedores.get(rca) || '-';
+                        }
+
+                        // 2. Hierarquia (Supervisor e Co-coordenador)
+                        if (window.embeddedData && window.embeddedData.hierarchy) {
+                            const hierarquia = window.embeddedData.hierarchy.find(h => String(h.cod_vendedor).trim() === rca);
+                            if (hierarquia) {
+                                if (hierarquia.cod_sup && window.maps && window.maps.supervisores && window.maps.supervisores.has(String(hierarquia.cod_sup).trim())) {
+                                    nomeSupervisor = window.maps.supervisores.get(String(hierarquia.cod_sup).trim());
+                                } else {
+                                    // Fallback: name from hierarchy row directly if maps not matched
+                                    nomeSupervisor = hierarquia.supervisor_name || hierarquia.cod_sup || '-';
+                                }
+
+                                nomeCoCoordenador = hierarquia.cocoord_name || hierarquia.cod_cocoord || '-';
+                            }
+                        }
+                    }
+
+                    // Pegar apenas o primeiro nome para não quebrar a linha
+                    const pVendedor = nomeVendedor !== '-' ? nomeVendedor.split(' ')[0] : '-';
+                    const pSupervisor = nomeSupervisor !== '-' ? nomeSupervisor.split(' ')[0] : '-';
+                    const pCoCoordenador = nomeCoCoordenador !== '-' ? nomeCoCoordenador.split(' ')[0] : '-';
+
+                    // Formatar string secundária
+                    var secondaryInfoHtml = `
+                        <div class="w-full flex items-center text-[10px] text-slate-400 font-medium tracking-wide truncate mt-0.5">
+                            Co-coord: ${pCoCoordenador} <span class="mx-1 text-slate-600">•</span> Sup: ${pSupervisor} <span class="mx-1 text-slate-600">•</span> Vend: ${pVendedor}
+                        </div>
+                    `;
+                } catch (e) {
+                    console.error('Erro ao resolver info secundaria do feed', e);
+                    var secondaryInfoHtml = '';
+                }
+                // ----------------------------------------------------------------------
+
 
                 // Adjust date to BRT timezone manually
                 let visitDate = new Date(visit.created_at);
@@ -773,6 +822,7 @@ const FeedVisitas = (() => {
                             <p class="text-sm font-bold text-white truncate max-w-[120px]" title="${promotorName}">${promotorName}</p>
                             <span class="text-xs text-[#FF5E00] font-medium truncate flex-1" title="${clientName}">${clientName}</span>
                         </div>
+                        ${secondaryInfoHtml}
                     </div>
                     ${fotosHtml}
                     <div class="px-4 pt-3 pb-4 flex flex-col gap-2">
@@ -848,7 +898,7 @@ const FeedVisitas = (() => {
         let legendHtml = '';
 
         if (hasVisitCoords || hasRegCoords) {
-            mapHtml = `<div id="feed-mini-map" class="w-full h-48 rounded-lg mt-4 bg-slate-800 border border-slate-700"></div>`;
+            mapHtml = `<div id="feed-mini-map" class="w-full h-48 rounded-lg mt-4 bg-slate-200 border border-slate-700"></div>`;
 
             if (hasVisitCoords && hasRegCoords) {
                 legendHtml = `
@@ -941,7 +991,7 @@ const FeedVisitas = (() => {
                         attributionControl: false
                     });
                     
-                    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                         maxZoom: 19
                     }).addTo(map);
 
