@@ -18240,6 +18240,8 @@ const supervisorGroups = new Map();
             console.log("Available Coords:", Array.from(optimizedData.coordMap.keys()));
         }
         resolveUserContext();
+        window.userHierarchyContext = userHierarchyContext;
+        window.optimizedData = optimizedData;
         applyHierarchyVisibilityRules();
 
         calculateHistoricalBests(); // <-- MOVIDA PARA CIMA
