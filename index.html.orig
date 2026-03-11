@@ -91,7 +91,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
             transition: all 0.3s ease;
         }
-        
+
         .input-field:focus {
             border-color: #FF5E00 !important;
             box-shadow: 0 0 0 2px rgba(255, 94, 0, 0.2);
@@ -400,10 +400,10 @@
 <nav id="top-navbar" class="glass-nav fixed top-0 w-full z-50 px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between hidden">
     <!-- Logo & Brand -->
     <div class="relative flex items-center h-full">
-        <div id="logo-dropdown-btn" class="flex items-center gap-4 h-full cursor-pointer outline-none">
+        <button id="logo-dropdown-btn" class="flex items-center gap-4 h-full rounded-lg hover:bg-white/5 transition-colors px-2 -ml-2 outline-none">
             <img src="imagens/logo.svg" alt="Prime Logo" class="h-8 w-auto" style="height: 2rem; width: auto;">
             <span class="hidden md:block text-lg font-bold text-white tracking-tight">PRIME <span class="text-slate-400 font-normal text-sm">| Distribuição</span></span>
-        </div>
+        </button>
 
         <!-- Logo Dropdown -->
         <div id="logo-dropdown-menu" class="hidden absolute top-14 left-0 w-48 glass-panel rounded-xl shadow-2xl py-1 z-50 animate-fade-in-down origin-top-left">
@@ -460,7 +460,7 @@
         <button id="open-admin-btn" class="p-2 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-white/5" title="Admin Upload">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
         </button>
-        
+
         <!-- Mobile Menu Toggle -->
         <button id="mobile-menu-toggle" class="lg:hidden p-2 text-slate-300 hover:text-white">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -497,7 +497,7 @@
     <!-- MAIN DASHBOARD -->
     <div id="main-dashboard" class="animate-fade-in-up">
         <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
-            
+
             <!-- Hero Section (3D Banner) -->
             <div id="banner-container" class="mb-8">
                 <div class="content-overlay">
@@ -624,7 +624,7 @@
                         <button id="clear-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg transition-colors border border-slate-600">Limpar Filtros</button>
                     </div>
                 </div>
-                
+
                 <!-- Secondary Filters Row -->
                 <div class="flex flex-wrap gap-4 items-end mt-4 pt-4 border-t border-slate-800/50">
                      <div class="relative flex-1 min-w-[200px]">
@@ -752,7 +752,7 @@
 
     <!-- OTHER VIEWS (Initially Hidden) -->
     <!-- Note: Keeping structures similar but updating headers/classes -->
-    
+
 
     <!-- FEED VIEW -->
     <div id="feed-view" class="hidden animate-fade-in-up">
@@ -969,7 +969,7 @@
                     Alternar Mapa
                 </button>
             </header>
-            
+
             <div id="city-view-content">
                 <!-- Filters (Restyling minimal needed as classes are utility based, but ensure containers match) -->
                 <!-- Simplified filters block for brevity, ensuring ID matches -->
@@ -992,7 +992,7 @@
                             </div>
                             <div id="city-rede-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                         </div>
-                        
+
                         <!-- Supervisor (Seller Mode) -->
                         <div id="city-supervisor-filter-wrapper" class="relative hidden">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
@@ -1134,7 +1134,7 @@
                 <button data-fornecedor="PEPSICO" class="fornecedor-btn active px-6 py-2 rounded-lg transition-all">PEPSICO</button>
                 <button data-fornecedor="MULTIMARCAS" class="fornecedor-btn px-6 py-2 rounded-lg transition-all">MULTIMARCAS</button>
             </div>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                 <!-- Rede Filter -->
                 <div id="comparison-rede-filter-wrapper" class="relative z-20">
@@ -1258,7 +1258,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="flex justify-end gap-2 mt-6 border-t border-slate-700/50 pt-4">
                 <button id="comparison-tendency-toggle" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 px-4 rounded-lg transition-colors">Calcular Tendência</button>
                 <button id="comparison-holiday-picker-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2.5 px-4 rounded-lg transition-colors">Feriados</button>
@@ -1280,11 +1280,11 @@
             </div>
             <!-- Metrics toggles hidden in layout but needed for JS -->
             <div id="comparison-monthly-metric-container" class="hidden"><button id="toggle-monthly-fat-btn"></button><button id="toggle-monthly-clients-btn"></button></div>
-            
+
             <div id="weeklyComparisonChartContainer" class="relative h-96"></div>
             <div id="monthlyComparisonChartContainer" class="relative h-96 hidden"></div>
         </div>
-        
+
         <div class="glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg mb-8">
             <h2 class="text-lg font-bold text-white mb-4 text-center">Resumo Semanal</h2>
             <div class="overflow-x-auto custom-scrollbar">
@@ -2079,7 +2079,7 @@
                     <div id="meta-realizado-supplier-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
             </div>
-            
+
             <div class="flex flex-wrap gap-4 items-center justify-between mt-6">
                 <div id="meta-realizado-pasta-toggle-container" class="flex gap-2">
                     <!-- Buttons injected by JS (Pasta), ensure container is styled flex -->
@@ -2323,7 +2323,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
              <div class="lg:col-span-2 glass-panel p-4 rounded-xl border border-slate-800/50 shadow-lg">
                 <p class="text-xs text-slate-500 uppercase font-bold mb-2">Top Produto (Valor)</p>
@@ -2391,7 +2391,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Search Box -->
                 <div id="wallet-search-container" class="flex-[2] relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Adicionar Cliente (Busca Global)</label>
@@ -2441,7 +2441,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- STOCK VIEW -->
     <div id="stock-view" class="hidden container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl animate-fade-in-up">
         <header class="mb-8 border-b border-slate-800 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -3542,7 +3542,7 @@
                         <!-- FOTOS DA VISITA (MULTIPLE UPLOAD) -->
             <div class="space-y-4 pt-4 border-t border-slate-800">
                 <h4 class="text-sm font-bold text-slate-400 uppercase">Fotos da Visita (Obrigatório 1 foto)</h4>
-                
+
                 <!-- Tipo de Foto Toggle -->
                 <div class="flex bg-slate-800 rounded-lg p-1 gap-1 border border-slate-700">
                     <button type="button" id="foto-tipo-geral" class="flex-1 py-2 text-sm font-bold text-white bg-[#FF5E00] rounded-md transition-all shadow-md">Geral (até 10)</button>
@@ -3594,7 +3594,7 @@
                         <div id="preview-depois" class="grid grid-cols-3 sm:grid-cols-4 gap-2 min-h-[4rem]"></div>
                     </div>
                 </div>
-                
+
                 <!-- Helper text for limits -->
                 <p class="text-xs text-slate-500 mt-2"><svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Tamanho máximo por foto: 5MB. As fotos são obrigatórias.</p>
             </div>
@@ -3931,10 +3931,10 @@
                 <button data-tab="bonus" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Bonificações</button>
                 <button data-tab="itinerary" class="wallet-tab-btn px-4 py-3 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent transition-colors whitespace-nowrap">Roteirização</button>
             </div>
-            
+
             <!-- Content Area (Scrollable) -->
             <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
-                
+
                 <!-- Tab: General -->
                 <div id="wallet-tab-content-general" class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
@@ -3955,12 +3955,12 @@
                             <p id="wallet-modal-cnpj" class="text-white font-medium text-sm">--</p>
                         </div>
                     </div>
-                    
+
                     <div class="p-3 glass-panel rounded-lg">
                         <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Razão Social</p>
                         <p id="wallet-modal-razao" class="text-white font-medium text-sm break-words">--</p>
                     </div>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="p-3 glass-panel rounded-lg">
                             <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Fantasia</p>
@@ -4153,7 +4153,7 @@
                 <h3 class="text-xl font-bold text-white leading-tight" id="product-performance-title">Nome do Produto</h3>
                 <p class="text-sm text-slate-400 font-mono mt-1" id="product-performance-code">Cód: 0000</p>
             </div>
-            
+
             <div class="space-y-4">
                 <!-- Stock Info -->
                 <div class="p-4 glass-panel rounded-xl border border-slate-700">
@@ -4185,7 +4185,7 @@
                 <!-- Sales Comparison -->
                 <div class="p-4 glass-panel rounded-xl border border-slate-700">
                     <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Vendas (<span id="product-performance-metric-label">Valor</span>)</p>
-                    
+
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <span class="text-sm text-slate-300">Mês Anterior</span>
@@ -4241,7 +4241,7 @@
                 <h3 class="text-lg font-bold text-white leading-tight" id="mix-mobile-modal-title">Cliente</h3>
                 <p class="text-sm text-slate-400 font-mono mt-1" id="mix-mobile-modal-subtitle">Cód: 0000</p>
             </div>
-            
+
             <div id="mix-mobile-modal-content" class="space-y-4">
                 <!-- Content injected by JS -->
             </div>
