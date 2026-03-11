@@ -25068,12 +25068,12 @@ const supervisorGroups = new Map();
                 `;
             } else {
                 // Growth or Drop
-                const varColor = d.variation >= 0 ? 'text-green-400' : 'text-red-400';
+                const varColorStyle = d.variation >= 0 ? 'color: #4ade80;' : 'color: #f87171;';
                 cols = `
                     ${nameCol}
                     <td class="py-1 text-right font-mono text-xs">${d.sales.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
                     <td class="py-1 text-right text-slate-500 font-mono text-xs">${d.avg.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
-                    <td class="py-1 text-right font-bold ${varColor} text-xs">${d.variation.toFixed(0)}%</td>
+                    <td class="py-1 text-right font-bold text-xs" style="${varColorStyle}">${d.variation.toFixed(0)}%</td>
                 `;
             }
 
