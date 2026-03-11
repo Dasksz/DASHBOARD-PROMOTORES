@@ -422,12 +422,12 @@ const FeedVisitas = (() => {
         query = query.range(from, to);
 
         const role = (window.userRole || '').trim().toLowerCase();
-        const hierarchyRole = typeof userHierarchyContext !== 'undefined' ? userHierarchyContext.role : '';
+        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
         
         // Strict mapping based on hierarchy
         const isPromoter = window.userIsPromoter || 
                            hierarchyRole === 'promotor' || 
-                           (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+                           (typeof window.optimizedData !== 'undefined' && window.window.optimizedData.promotorMap && window.window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
         
         const isAdmin = role === 'adm';
         // Check hierarchy role for coordinator and co-coordinator
