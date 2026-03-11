@@ -24999,8 +24999,8 @@ const supervisorGroups = new Map();
 
             if (stockQty > 0 && currentSales.qty === 0) status = 'lost';
             else if (currentSales.qty > 0 && avgHistory === 0) status = 'new';
-            else if (currentSales.qty > avgHistory * 1.1) status = 'growth'; 
-            else if (currentSales.qty < avgHistory * 0.9 && currentSales.qty > 0) status = 'drop'; 
+            else if (currentSales.qty > avgHistory) status = 'growth';
+            else if (currentSales.qty < avgHistory && currentSales.qty > 0) status = 'drop';
             
             if (status !== 'neutral' || stockQty > 0 || currentSales.qty > 0) {
                 result.push({
