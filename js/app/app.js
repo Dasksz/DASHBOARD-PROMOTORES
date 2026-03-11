@@ -18240,6 +18240,8 @@ const supervisorGroups = new Map();
             console.log("Available Coords:", Array.from(optimizedData.coordMap.keys()));
         }
         resolveUserContext();
+        window.userHierarchyContext = userHierarchyContext;
+        window.optimizedData = optimizedData;
         applyHierarchyVisibilityRules();
 
         calculateHistoricalBests(); // <-- MOVIDA PARA CIMA
@@ -20264,7 +20266,7 @@ const supervisorGroups = new Map();
     const RACK_OPTIONS = [
         "Mini Lego", "Lego 4C", "Lego 4C Smart", "4C Arramado", "5C", "6C",
         "7C - P", "7C - M", "7C - G", "8C", "Ilha Quadrada", "Giratório",
-        "Carrossel", "Rack de Amendoim", "Botadeiro", "Gaiola", "Rack Toddynho", "Rack FOODS", "Nenhum"
+        "Carrossel", "Rack de Amendoim", "Botadeiro", "Rack Toddynho", "Rack FOODS", "Nenhum"
     ];
 
     let selectedRackOptions = new Set();
@@ -24000,7 +24002,8 @@ const supervisorGroups = new Map();
                 client_code: clientCode, // Text
                 latitude,
                 longitude,
-                status: 'pendente'
+                status: 'pendente',
+                promotor_name: window.userFullName || window.userName || 'Promotor'
             };
 
             // Determine if Off Route (Logic: Is Roteiro Mode AND Date > Today)
