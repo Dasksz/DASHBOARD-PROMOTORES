@@ -503,13 +503,7 @@ drop policy IF exists "Profiles Unified Delete" on public.profiles;
 -- Select: Users see own, Admins see all
 create policy "Profiles Unified Select" on public.profiles for
 select
-  to authenticated using (
-    (
-      select
-        auth.uid ()
-    ) = id
-    or public.is_admin ()
-  );
+  to authenticated using (true);
 
 -- Update: Users update own, Admins update all
 create policy "Profiles Unified Update" on public.profiles
