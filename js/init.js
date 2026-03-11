@@ -1661,6 +1661,7 @@
                     if (welcomeEl) {
                         const fullName = session.user.user_metadata.full_name || session.user.user_metadata.name || session.user.email;
                         const firstName = (fullName || '').split(' ')[0];
+                        window.userFullName = fullName;
                         welcomeEl.textContent = `Olá, ${firstName}!`;
                     }
 

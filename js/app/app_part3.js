@@ -3988,7 +3988,8 @@
                 client_code: clientCode, // Text
                 latitude,
                 longitude,
-                status: 'pendente'
+                status: 'pendente',
+                promotor_name: window.userFullName || window.userName || 'Promotor'
             };
 
             // Determine if Off Route (Logic: Is Roteiro Mode AND Date > Today)
