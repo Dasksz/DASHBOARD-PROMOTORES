@@ -725,7 +725,8 @@ CREATE TABLE IF NOT EXISTS public.visitas (
     observacao text,
     coordenador_email text,
     cod_cocoord text, -- Codigo do Co-Coordenador (Para facilitar envio de email)
-    favoritado_por uuid[] DEFAULT '{}' -- IDs dos gestores que favoritaram
+    favoritado_por uuid[] DEFAULT '{}', -- IDs dos gestores que favoritaram
+    promotor_name text
 );
 
 -- 7.1.1 Indexes (Performance Optimization)
@@ -981,3 +982,11 @@ ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 -- DELETE FROM public.data_metadata WHERE key IN ('BREVO_API_KEY', 'BREVO_SENDER_EMAIL');
 
 */
+
+-- Adicionar coluna promotor_name se nao existir
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='visitas' AND column_name='promotor_name') THEN
+        ALTER TABLE public.visitas ADD COLUMN promotor_name text;
+    END IF;
+END $$;

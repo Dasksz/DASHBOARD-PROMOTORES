@@ -410,7 +410,7 @@ const FeedVisitas = (() => {
 
         let query = window.supabaseClient
             .from('visitas')
-            .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, id_promotor, profiles:id_promotor(name, role), favoritado_por, latitude, longitude`)
+            .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, id_promotor, profiles:id_promotor(name, role), favoritado_por, latitude, longitude, promotor_name`)
             .gte('created_at', currentStartBound.toISOString())
             .lte('created_at', currentEndBound.toISOString())
             .order('created_at', { ascending: false });
@@ -594,7 +594,7 @@ const FeedVisitas = (() => {
                     }
                 }
 
-                let promotorName = visit.profiles ? visit.profiles.name : 'Promotor';
+                let promotorName = visit.promotor_name || (visit.profiles ? visit.profiles.name : 'Promotor');
 
                 // Adjust date to BRT timezone manually
                 let visitDate = new Date(visit.created_at);
