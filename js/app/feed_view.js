@@ -427,7 +427,7 @@ const FeedVisitas = (() => {
         // Strict mapping based on hierarchy
         const isPromoter = window.userIsPromoter || 
                            hierarchyRole === 'promotor' || 
-                           (typeof window.optimizedData !== 'undefined' && window.window.optimizedData.promotorMap && window.window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+                           (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
         
         const isAdmin = role === 'adm';
         // Check hierarchy role for coordinator and co-coordinator
