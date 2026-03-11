@@ -738,23 +738,10 @@ DROP POLICY IF EXISTS "Promotores inserem suas visitas" ON public.visitas;
 CREATE POLICY "Promotores inserem suas visitas" ON public.visitas FOR INSERT TO authenticated WITH CHECK ((select auth.uid()) = id_promotor);
 
 DROP POLICY IF EXISTS "Promotores veem suas visitas" ON public.visitas;
+DROP POLICY IF EXISTS "Todos veem todas as visitas" ON public.visitas;
 DROP POLICY IF EXISTS "Promotores Select" ON public.visitas;
-CREATE POLICY "Promotores Select" ON public.visitas FOR SELECT TO authenticated USING ((select auth.uid()) = id_promotor);
+CREATE POLICY "Todos veem todas as visitas" ON public.visitas FOR SELECT TO authenticated USING (true);
 
-DROP POLICY IF EXISTS "Admin and Coords Select All" ON public.visitas;
-CREATE POLICY "Admin and Coords Select All" ON public.visitas
-FOR SELECT TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid()
-    AND (
-      role = 'adm' 
-      OR role IN (SELECT cod_coord FROM public.data_hierarchy) 
-      OR role IN (SELECT cod_cocoord FROM public.data_hierarchy)
-    )
-  )
-);
 
 DROP POLICY IF EXISTS "Promotores Update" ON public.visitas;
 CREATE POLICY "Promotores Update" ON public.visitas FOR UPDATE TO authenticated USING ((select auth.uid()) = id_promotor);
