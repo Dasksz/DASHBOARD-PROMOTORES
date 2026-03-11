@@ -611,18 +611,42 @@ const FeedVisitas = (() => {
                             nomeVendedor = window.maps.vendedores.get(rca) || '-';
                         }
 
-                        // 2. Hierarquia (Supervisor e Co-coordenador)
-                        if (window.embeddedData && window.embeddedData.hierarchy) {
-                            const hierarquia = window.embeddedData.hierarchy.find(h => String(h.cod_vendedor).trim() === rca);
-                            if (hierarquia) {
-                                if (hierarquia.cod_sup && window.maps && window.maps.supervisores && window.maps.supervisores.has(String(hierarquia.cod_sup).trim())) {
-                                    nomeSupervisor = window.maps.supervisores.get(String(hierarquia.cod_sup).trim());
-                                } else {
-                                    // Fallback: name from hierarchy row directly if maps not matched
-                                    nomeSupervisor = hierarquia.supervisor_name || hierarquia.cod_sup || '-';
+                        // 2. Supervisor (From sellerDetailsMap)
+                        // This map is built by scanning the latest sales in app.js
+                        if (window.sellerDetailsMap && window.sellerDetailsMap.has(rca)) {
+                            nomeSupervisor = window.sellerDetailsMap.get(rca).supervisor || '-';
+                        } else if (window.allSalesData) {
+                            // Fallback se o map não contiver (procura no allSalesData o codsupervisor mais recente)
+                            const sale = window.allSalesData.find(s => String(s.CODUSUR).trim() === rca);
+                            if (sale && sale.CODSUPERVISOR) {
+                                const codSup = String(sale.CODSUPERVISOR).trim();
+                                if (window.maps && window.maps.supervisores && window.maps.supervisores.has(codSup)) {
+                                    nomeSupervisor = window.maps.supervisores.get(codSup);
+                                } else if (window.embeddedData && window.embeddedData.dim_supervisores) {
+                                    const dimSup = window.embeddedData.dim_supervisores.find(s => String(s.codigo).trim() === codSup);
+                                    if (dimSup) nomeSupervisor = dimSup.nome;
                                 }
+                            }
+                        }
 
-                                nomeCoCoordenador = hierarquia.cocoord_name || hierarquia.cod_cocoord || '-';
+                        // 3. Co-coordenador (From hierarchy tied to the Promoter)
+                        if (window.embeddedData && window.embeddedData.hierarchy) {
+                            // Find the row for this promoter
+                            const promotorKey = String(visit.user_id).trim(); // Visit's author
+                            // Hierarchy uses cod_promotor or nome_promotor
+                            let hierarquiaRow = window.embeddedData.hierarchy.find(h =>
+                                String(h.cod_promotor).trim() === promotorKey ||
+                                (h.nome_promotor && promotorName && h.nome_promotor.trim().toUpperCase() === promotorName.trim().toUpperCase())
+                            );
+
+                            // Try another way if not found - client's assigned promoter
+                            if (!hierarquiaRow && clientInfo && clientInfo.promotor) {
+                                const codProm = String(clientInfo.promotor).trim();
+                                hierarquiaRow = window.embeddedData.hierarchy.find(h => String(h.cod_promotor).trim() === codProm);
+                            }
+
+                            if (hierarquiaRow) {
+                                nomeCoCoordenador = hierarquiaRow.nome_cocoord || hierarquiaRow.cod_cocoord || '-';
                             }
                         }
                     }
