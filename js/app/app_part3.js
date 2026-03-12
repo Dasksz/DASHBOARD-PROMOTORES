@@ -3809,7 +3809,10 @@
             .select('id, client_code, id_cliente, created_at, checkout_at, respostas')
             .gte('created_at', isoStart);
             
-        if (window.userRole !== 'adm') {
+        // Allow ADM, Co-Coordinator, and Coordinator to see all visits (limited by their base dataset later if needed)
+        // Only restrict to user's own visits if they are explicitly a 'promotor'
+        const isPromoterLevel = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor');
+        if (window.userRole !== 'adm' && isPromoterLevel) {
             query = query.eq('id_promotor', user.id);
         }
         
