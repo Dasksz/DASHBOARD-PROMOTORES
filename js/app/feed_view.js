@@ -604,50 +604,81 @@ const FeedVisitas = (() => {
                 let nomeCoCoordenador = '-';
                 
                 try {
+                    const clientCodeForLookup = visit.client_code ? String(visit.client_code).trim() : '';
+
+                    // 1. Vendedor (Manteve-se a lógica original baseada no RCA1 do cliente)
                     if (clientInfo && clientInfo.rca1) {
                         const rca = String(clientInfo.rca1).trim();
-                        
-                        // 1. Vendedor
                         if (window.maps && window.maps.vendedores && window.maps.vendedores.has(rca)) {
                             nomeVendedor = window.maps.vendedores.get(rca) || '-';
                         }
-                        
-                        // 2. Supervisor (From sellerDetailsMap)
-                        // This map is built by scanning the latest sales in app.js
-                        if (window.sellerDetailsMap && window.sellerDetailsMap.has(rca)) {
-                            nomeSupervisor = window.sellerDetailsMap.get(rca).supervisor || '-';
-                        } else if (window.allSalesData) {
-                            // Fallback se o map não contiver (procura no allSalesData o codsupervisor mais recente)
-                            const sale = window.allSalesData.find(s => String(s.CODUSUR).trim() === rca);
-                            if (sale && sale.CODSUPERVISOR) {
-                                const codSup = String(sale.CODSUPERVISOR).trim();
-                                if (window.maps && window.maps.supervisores && window.maps.supervisores.has(codSup)) {
-                                    nomeSupervisor = window.maps.supervisores.get(codSup);
-                                } else if (window.embeddedData && window.embeddedData.dim_supervisores) {
-                                    const dimSup = window.embeddedData.dim_supervisores.find(s => String(s.codigo).trim() === codSup);
-                                    if (dimSup) nomeSupervisor = dimSup.nome;
+                    }
+
+                    if (clientCodeForLookup) {
+                        // 2. Supervisor (Baseado na venda mais recente do cliente)
+                        let mostRecentSale = null;
+                        let maxDateValue = -Infinity;
+
+                        const parseSaleDate = (val) => {
+                            if (!val) return -Infinity;
+                            if (val instanceof Date) return val.getTime();
+                            if (typeof val === 'number') return val;
+                            const d = new Date(val);
+                            return isNaN(d.getTime()) ? -Infinity : d.getTime();
+                        };
+
+                        const checkSales = (salesArray) => {
+                            if (!salesArray) return;
+                            for (let i = 0; i < salesArray.length; i++) {
+                                const s = salesArray[i];
+                                if (String(s.CODCLI).trim() === clientCodeForLookup && s.CODSUPERVISOR) {
+                                    const dValue = parseSaleDate(s.DTPED);
+                                    if (dValue > maxDateValue) {
+                                        maxDateValue = dValue;
+                                        mostRecentSale = s;
+                                    }
                                 }
+                            }
+                        };
+
+                        checkSales(window.allSalesData);
+                        checkSales(window.allHistoryData);
+
+                        if (mostRecentSale && mostRecentSale.CODSUPERVISOR) {
+                            const codSup = String(mostRecentSale.CODSUPERVISOR).trim();
+                            if (window.maps && window.maps.supervisores && window.maps.supervisores.has(codSup)) {
+                                nomeSupervisor = window.maps.supervisores.get(codSup);
+                            } else if (window.embeddedData && window.embeddedData.dim_supervisores) {
+                                const dimSup = window.embeddedData.dim_supervisores.find(s => String(s.codigo).trim() === codSup);
+                                if (dimSup) nomeSupervisor = dimSup.nome;
                             }
                         }
                         
-                        // 3. Co-coordenador (From hierarchy tied to the Promoter)
-                        if (window.embeddedData && window.embeddedData.hierarchy) {
-                            // Find the row for this promoter
-                            const promotorKey = String(visit.user_id).trim(); // Visit's author
-                            // Hierarchy uses cod_promotor or nome_promotor
-                            let hierarquiaRow = window.embeddedData.hierarchy.find(h => 
-                                String(h.cod_promotor).trim() === promotorKey || 
-                                (h.nome_promotor && promotorName && h.nome_promotor.trim().toUpperCase() === promotorName.trim().toUpperCase())
-                            );
+                        // 3. Co-coordenador (Baseado na tabela data_client_promoters e data_hierarchy)
+                        if (window.embeddedData && window.embeddedData.clientPromoters && window.embeddedData.hierarchy) {
+                            const promoterRow = window.embeddedData.clientPromoters.find(p => String(p.client_code).trim() === clientCodeForLookup);
                             
-                            // Try another way if not found - client's assigned promoter
-                            if (!hierarquiaRow && clientInfo && clientInfo.promotor) {
-                                const codProm = String(clientInfo.promotor).trim();
-                                hierarquiaRow = window.embeddedData.hierarchy.find(h => String(h.cod_promotor).trim() === codProm);
-                            }
+                            if (promoterRow && promoterRow.promoter_code) {
+                                // Normaliza o promoter_code
+                                const normalizedPromoterCode = String(promoterRow.promoter_code)
+                                    .trim()
+                                    .toUpperCase()
+                                    .normalize('NFD')
+                                    .replace(/[\u0300-\u036f]/g, "");
 
-                            if (hierarquiaRow) {
-                                nomeCoCoordenador = hierarquiaRow.nome_cocoord || hierarquiaRow.cod_cocoord || '-';
+                                const hierarquiaRow = window.embeddedData.hierarchy.find(h => {
+                                    if (!h.cod_promotor) return false;
+                                    const hCod = String(h.cod_promotor)
+                                        .trim()
+                                        .toUpperCase()
+                                        .normalize('NFD')
+                                        .replace(/[\u0300-\u036f]/g, "");
+                                    return hCod === normalizedPromoterCode;
+                                });
+
+                                if (hierarquiaRow) {
+                                    nomeCoCoordenador = hierarquiaRow.nome_cocoord || hierarquiaRow.cod_cocoord || '-';
+                                }
                             }
                         }
                     }
