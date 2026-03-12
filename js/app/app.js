@@ -22213,21 +22213,15 @@ const supervisorGroups = new Map();
         // Only show if NOT a Promoter
         if (header && !window.userIsPromoter && !document.getElementById('roteiro-promoter-filter')) {
             const filterContainer = document.createElement('div');
-            filterContainer.className = 'hidden lg:block ml-auto mr-4'; // Desktop only
+            // Inserted below the header, visible on all screens
+            filterContainer.className = 'px-4 pb-3 border-b border-slate-800 flex justify-end';
             filterContainer.innerHTML = `
-                <select id="roteiro-promoter-filter" class="glass-panel-heavy border border-slate-700 text-white text-xs rounded-lg p-2 focus:ring-2 focus:ring-purple-500">
+                <select id="roteiro-promoter-filter" class="glass-panel-heavy border border-slate-700 text-white text-xs rounded-lg p-2 focus:ring-2 focus:ring-purple-500 w-full sm:w-auto">
                     <option value="">Todos os Promotores</option>
                 </select>
             `;
-            // Insert before the Month Title or Date? The header has Prev/Title/Next buttons.
-            // Let's replace the header layout slightly or append.
-            // Current header: Flex (Prev, Month, Next), Date Number.
-            // Let's inject after the buttons group.
-
-            const btnGroup = header.querySelector('div.flex');
-            if(btnGroup) {
-               btnGroup.parentNode.insertBefore(filterContainer, btnGroup.nextSibling);
-            }
+            // Insert after the header completely to avoid breaking flex layout
+            header.parentNode.insertBefore(filterContainer, header.nextSibling);
 
             // Populate
             const select = filterContainer.querySelector('select');
@@ -22673,15 +22667,15 @@ const supervisorGroups = new Map();
                 if (hasSurvey) surveyCount++;
 
                 // Status Tag Logic
-                let statusHtml = `<span class="px-2 py-1 glass-panel-heavy text-slate-400 text-xs font-bold rounded-full">Pendente</span>`;
+                let statusHtml = `<span class="px-2 py-1 glass-panel-heavy text-slate-400 text-[10px] sm:text-xs font-bold rounded-full whitespace-nowrap">Pendente</span>`;
                 let barColor = 'bg-slate-600';
 
                 if (hasVisit) {
                     if (todaysVisit.checkout_at) {
-                        statusHtml = `<span class="px-2 py-1 bg-green-900 text-green-300 text-xs font-bold rounded-full">Visitado</span>`;
+                        statusHtml = `<span class="px-2 py-1 bg-green-900 text-green-300 text-[10px] sm:text-xs font-bold rounded-full whitespace-nowrap">Visitado</span>`;
                         barColor = 'bg-green-500';
                     } else {
-                        statusHtml = `<span class="px-2 py-1 bg-orange-900 text-orange-300 text-xs font-bold rounded-full animate-pulse">Em Andamento</span>`;
+                        statusHtml = `<span class="px-2 py-1 bg-orange-900 text-orange-300 text-[10px] sm:text-xs font-bold rounded-full animate-pulse whitespace-nowrap">Em Andamento</span>`;
                         barColor = 'bg-orange-500';
                     }
                 }
@@ -22689,7 +22683,7 @@ const supervisorGroups = new Map();
                 const div = document.createElement('div');
                 div.className = 'p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors';
                 div.innerHTML = `
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 flex-1 min-w-0 pr-2">
                         <div class="w-2 h-10 ${barColor} rounded-full"></div>
                         <div>
                             <div class="text-sm font-bold text-white flex items-center gap-2">
@@ -22704,7 +22698,7 @@ const supervisorGroups = new Map();
                             <div class="text-xs text-slate-400 font-mono flex flex-wrap items-center gap-1">${cod} • ${c.cidade || ''} ${visitTimeStr ? '• <span class="text-slate-300">' + visitTimeStr + '</span>' : ''} ${(isForaDeRota && isToday) ? '<span class="ml-2 px-1.5 py-0.5 bg-orange-900/50 text-orange-400 border border-orange-500/30 rounded text-[10px] font-bold">Atendido fora de rota</span>' : ''}</div>
                         </div>
                     </div>
-                    <div>
+                    <div class="flex-shrink-0">
                         ${statusHtml}
                     </div>
                 `;
