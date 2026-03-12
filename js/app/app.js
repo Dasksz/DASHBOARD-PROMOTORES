@@ -20595,6 +20595,7 @@ const supervisorGroups = new Map();
         const userMenuDropdown = document.getElementById('user-menu-dropdown');
         const userMenuWalletBtn = document.getElementById('user-menu-wallet-btn');
         const userMenuLogoutBtn = document.getElementById('user-menu-logout-btn');
+        const userMenuRefreshCacheBtn = document.getElementById('user-menu-refresh-cache-btn');
         
         if (userMenuBtn) {
             // Update User Info in Menu
@@ -20690,6 +20691,26 @@ const supervisorGroups = new Map();
                 }
             });
             
+            if (role === 'ADM' && userMenuRefreshCacheBtn) {
+                userMenuRefreshCacheBtn.classList.remove('hidden');
+                userMenuRefreshCacheBtn.addEventListener('click', async () => {
+                    if(confirm('Isso forçará o recarregamento de todas as tabelas e imagens, demorando alguns minutos. Deseja continuar?')) {
+                        if (window.localforage) await window.localforage.clear();
+                        if (window.idb) {
+                            const db = await window.idb.openDB('PrimeDashboardDB_V2', 1);
+                            await db.clear('data_store');
+                        }
+                        // Force unregister service worker and clear all browser caches if possible
+                        if (typeof navigator.serviceWorker !== 'undefined') {
+                           navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                             for(let registration of registrations) { registration.unregister(); }
+                           });
+                        }
+                        window.location.reload(true);
+                    }
+                });
+            }
+
             userMenuWalletBtn.addEventListener('click', () => {
                 userMenuDropdown.classList.add('hidden');
                 navigateTo('wallet');
