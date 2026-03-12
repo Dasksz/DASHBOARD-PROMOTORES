@@ -24725,8 +24725,8 @@ const supervisorGroups = new Map();
                 const pastaSet = selectedStockPastas.length > 0 ? new Set(selectedStockPastas) : null;
 
                 const filteredProducts = products.filter(p => {
-                    if (supplierSet && !supplierSet.has(p.fornecedor)) return false;
-                    const pasta = (window.SUPPLIER_CODES.PEPSICO.includes(String(p.fornecedor))) ? 'PEPSICO' : 'MULTIMARCAS';
+                    if (supplierSet && !supplierSet.has(String(p.codfor).trim())) return false;
+                    const pasta = (window.SUPPLIER_CODES.PEPSICO.includes(String(p.codfor).trim())) ? 'PEPSICO' : 'MULTIMARCAS';
                     if (pastaSet && (!pasta || !pastaSet.has(pasta))) return false;
                     return true;
                 }).map(p => ({
