@@ -9542,12 +9542,12 @@ const supervisorGroups = new Map();
                         if (cityContainer) cityContainer.classList.remove('hidden');
                         if (sellerContainer) sellerContainer.classList.add('hidden');
                         if (toggleBtn) toggleBtn.textContent = `Ver ${targetLabel}`;
-                        if (chartTitle) chartTitle.textContent = `Top ${chartLimit} Cidades (Quantidade de Caixas)`;
+                        if (chartTitle) chartTitle.innerHTML = `<span>Top ${chartLimit} Cidades</span> <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-current opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
                     } else {
                         if (cityContainer) cityContainer.classList.add('hidden');
                         if (sellerContainer) sellerContainer.classList.remove('hidden');
                         if (toggleBtn) toggleBtn.textContent = 'Ver Cidades';
-                        if (chartTitle) chartTitle.textContent = `Ranking de ${targetLabel} (Quantidade de Caixas)`;
+                        if (chartTitle) chartTitle.innerHTML = `<span>Ranking de ${targetLabel}</span> <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-current opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
                     }
                 }
             }, () => currentRenderId !== coverageRenderId);
