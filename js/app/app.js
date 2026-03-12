@@ -24460,10 +24460,10 @@ const supervisorGroups = new Map();
             pastaToggleContainer.querySelectorAll('.stock-pasta-btn').forEach(btn => {
                 if (selectedStockPastas.includes(btn.dataset.pasta)) {
                     btn.classList.remove('text-slate-400', 'hover:bg-white/5');
-                    btn.classList.add('bg-teal-600', 'text-white', 'shadow-lg');
+                    btn.classList.add('bg-[#FF5E00]', 'text-white', 'font-bold', 'border-2', 'border-[#FF5E00]', 'shadow-lg');
                 } else {
                     btn.classList.add('text-slate-400', 'hover:bg-white/5');
-                    btn.classList.remove('bg-teal-600', 'text-white', 'shadow-lg');
+                    btn.classList.remove('bg-[#FF5E00]', 'text-white', 'font-bold', 'border-2', 'border-[#FF5E00]', 'shadow-lg');
                 }
             });
         }
@@ -24522,8 +24522,8 @@ const supervisorGroups = new Map();
                 pastaWrapper.innerHTML = `
                     <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 tracking-wider">Pasta</label>
                     <div class="bg-slate-900 p-1 rounded-lg flex shadow-inner border border-slate-700" id="stock-pasta-toggle-container">
-                        <button class="flex-1 py-1.5 px-2 text-[10px] md:text-xs font-bold rounded-md transition-all duration-200 ${currentPasta === 'PEPSICO' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'} stock-pasta-btn" data-pasta="PEPSICO">PEPSICO</button>
-                        <button class="flex-1 py-1.5 px-2 text-[10px] md:text-xs font-bold rounded-md transition-all duration-200 ${currentPasta === 'MULTIMARCAS' ? 'bg-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'} stock-pasta-btn" data-pasta="MULTIMARCAS">MULTIMARCAS</button>
+                        <button class="flex-1 py-1.5 px-2 text-[10px] md:text-xs font-bold rounded-md transition-all duration-200 ${currentPasta === 'PEPSICO' ? 'bg-[#FF5E00] text-white font-bold border-2 border-[#FF5E00] shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'} stock-pasta-btn" data-pasta="PEPSICO">PEPSICO</button>
+                        <button class="flex-1 py-1.5 px-2 text-[10px] md:text-xs font-bold rounded-md transition-all duration-200 ${currentPasta === 'MULTIMARCAS' ? 'bg-[#FF5E00] text-white font-bold border-2 border-[#FF5E00] shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'} stock-pasta-btn" data-pasta="MULTIMARCAS">MULTIMARCAS</button>
                     </div>
                 `;
 
@@ -24536,10 +24536,10 @@ const supervisorGroups = new Map();
                         pastaWrapper.querySelectorAll('.stock-pasta-btn').forEach(btn => {
                             if (btn.dataset.pasta === val) {
                                 btn.classList.remove('text-slate-400', 'hover:bg-white/5');
-                                btn.classList.add('bg-teal-600', 'text-white', 'shadow-lg');
+                                btn.classList.add('bg-[#FF5E00]', 'text-white', 'font-bold', 'border-2', 'border-[#FF5E00]', 'shadow-lg');
                             } else {
                                 btn.classList.add('text-slate-400', 'hover:bg-white/5');
-                                btn.classList.remove('bg-teal-600', 'text-white', 'shadow-lg');
+                                btn.classList.remove('bg-[#FF5E00]', 'text-white', 'font-bold', 'border-2', 'border-[#FF5E00]', 'shadow-lg');
                             }
                         });
 
