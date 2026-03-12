@@ -9126,7 +9126,10 @@ const supervisorGroups = new Map();
                 clientMap.set(buyerKey, (clientMap.get(buyerKey) || 0) + val);
 
                 // Box Quantity Map
-                boxesSoldCurrentMap.set(s.PRODUTO, (boxesSoldCurrentMap.get(s.PRODUTO) || 0) + s.QTVENDA_EMBALAGEM_MASTER);
+                const resolvedProd = window.resolveDim('produtos', s.PRODUTO);
+                const qtdeMaster = (resolvedProd && resolvedProd.qtde_master && resolvedProd.qtde_master > 0) ? resolvedProd.qtde_master : 1;
+                const boxesSold = (Number(s.QTVENDA) || 0) / qtdeMaster;
+                boxesSoldCurrentMap.set(s.PRODUTO, (boxesSoldCurrentMap.get(s.PRODUTO) || 0) + boxesSold);
 
                 // Trend Map
                 if (!trendSalesMap.has(s.PRODUTO)) trendSalesMap.set(s.PRODUTO, []);
@@ -9151,7 +9154,10 @@ const supervisorGroups = new Map();
                     clientMap.set(buyerKey, (clientMap.get(buyerKey) || 0) + val);
 
                     // Box Quantity Map (only if prev month)
-                    boxesSoldPreviousMap.set(s.PRODUTO, (boxesSoldPreviousMap.get(s.PRODUTO) || 0) + s.QTVENDA_EMBALAGEM_MASTER);
+                    const resolvedProdHistory = window.resolveDim('produtos', s.PRODUTO);
+                    const qtdeMasterHistory = (resolvedProdHistory && resolvedProdHistory.qtde_master && resolvedProdHistory.qtde_master > 0) ? resolvedProdHistory.qtde_master : 1;
+                    const boxesSoldHistory = (Number(s.QTVENDA) || 0) / qtdeMasterHistory;
+                    boxesSoldPreviousMap.set(s.PRODUTO, (boxesSoldPreviousMap.get(s.PRODUTO) || 0) + boxesSoldHistory);
                 }
 
                 // Trend Map (All history)
@@ -9253,7 +9259,9 @@ const supervisorGroups = new Map();
                 productAllSales.forEach(sale => {
                     const saleDate = parseDate(sale.DTPED);
                     if (saleDate && saleDate >= startDate && saleDate <= endDate) {
-                        totalQtySoldInRange += (sale.QTVENDA_EMBALAGEM_MASTER || 0);
+                        const resolvedProdSale = window.resolveDim('produtos', sale.PRODUTO);
+                        const qtdeMasterSale = (resolvedProdSale && resolvedProdSale.qtde_master && resolvedProdSale.qtde_master > 0) ? resolvedProdSale.qtde_master : 1;
+                        totalQtySoldInRange += ((Number(sale.QTVENDA) || 0) / qtdeMasterSale);
                     }
                 });
 
@@ -24899,9 +24907,12 @@ const supervisorGroups = new Map();
             }
 
             const pCode = s.PRODUTO;
+            const resolvedProd = window.resolveDim('produtos', pCode);
+            const qtdeMaster = (resolvedProd && resolvedProd.qtde_master && resolvedProd.qtde_master > 0) ? resolvedProd.qtde_master : 1;
+
             if (!salesMap.has(pCode)) salesMap.set(pCode, { qty: 0, val: 0 });
             const entry = salesMap.get(pCode);
-            entry.qty += (Number(s.QTVENDA) || 0);
+            entry.qty += ((Number(s.QTVENDA) || 0) / qtdeMaster);
             entry.val += (Number(s.VLVENDA) || 0);
         });
         
@@ -24916,8 +24927,11 @@ const supervisorGroups = new Map();
              }
 
              const pCode = h.PRODUTO;
+             const resolvedProd = window.resolveDim('produtos', pCode);
+             const qtdeMaster = (resolvedProd && resolvedProd.qtde_master && resolvedProd.qtde_master > 0) ? resolvedProd.qtde_master : 1;
+
              if (!historyMap.has(pCode)) historyMap.set(pCode, 0);
-             historyMap.set(pCode, historyMap.get(pCode) + (Number(h.QTVENDA) || 0));
+             historyMap.set(pCode, historyMap.get(pCode) + ((Number(h.QTVENDA) || 0) / qtdeMaster));
         });
         
         // Normalize History to Monthly Average (assuming 3 months history loaded)
@@ -24970,18 +24984,13 @@ const supervisorGroups = new Map();
                 if (!productSet.has(code)) return;
             }
             
-            let stockQty = 0;
             const s05 = embeddedData.stockMap05[code] || 0;
             const s08 = embeddedData.stockMap08[code] || 0;
             
-            let stockUnit = 0;
-            if (filialFilter === 'all') stockUnit = s05 + s08;
-            else if (filialFilter === '05') stockUnit = s05;
-            else if (filialFilter === '08') stockUnit = s08;
-
-            const resolvedProd = window.resolveDim('produtos', code);
-            const qtdeMaster = (resolvedProd && resolvedProd.qtde_master && resolvedProd.qtde_master > 0) ? resolvedProd.qtde_master : 1;
-            stockQty = stockUnit / qtdeMaster;
+            let stockQty = 0;
+            if (filialFilter === 'all') stockQty = s05 + s08;
+            else if (filialFilter === '05') stockQty = s05;
+            else if (filialFilter === '08') stockQty = s08;
             
             const currentSales = salesMap.get(code) || { qty: 0, val: 0 };
             const avgHistory = historyMap.get(code) || 0;
