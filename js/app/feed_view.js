@@ -276,6 +276,7 @@ const FeedVisitas = (() => {
                     dateFormat: "d/m/Y",
                     locale: "pt",
                     disableMobile: "true",
+                    closeOnSelect: false,
                     onReady: function(selectedDates, dateStr, instance) {
                         // Adicionar botão de Filtrar
                         const btnContainer = document.createElement('div');
