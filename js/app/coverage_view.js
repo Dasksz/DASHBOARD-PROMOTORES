@@ -322,6 +322,13 @@
                 });
 
                 // 1. Chart Data for Cities
+                const totalCaixas = Object.values(salesByCity).reduce((a, b) => a + b, 0);
+                const totalKpiEl = document.getElementById("coverage-chart-total-kpi");
+                if (totalKpiEl) {
+                    totalKpiEl.textContent = `Total Caixas: ${totalCaixas.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}`;
+                    totalKpiEl.classList.remove("hidden");
+                }
+
                 const sortedCities = Object.entries(salesByCity)
                     .sort(([,a], [,b]) => b - a)
                     .slice(0, 10);

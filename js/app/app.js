@@ -9464,6 +9464,13 @@ const supervisorGroups = new Map();
                 const isMobile = window.innerWidth < 768;
                 const chartLimit = isMobile ? 5 : 10;
 
+                const totalCaixas = Object.values(salesByCity).reduce((a, b) => a + b, 0);
+                const totalKpiEl = document.getElementById("coverage-chart-total-kpi");
+                if (totalKpiEl) {
+                    totalKpiEl.textContent = `Total Caixas: ${totalCaixas.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}`;
+                    totalKpiEl.classList.remove("hidden");
+                }
+
                 const sortedCities = Object.entries(salesByCity)
                     .sort(([,a], [,b]) => b - a)
                     .slice(0, chartLimit);
