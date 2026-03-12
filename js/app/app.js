@@ -9440,7 +9440,10 @@ const supervisorGroups = new Map();
 
                     const client = clientMapForKPIs.get(String(s.CODCLI));
                     const city = client ? (client.cidade || client['Nome da Cidade'] || 'N/A') : 'N/A';
-                    const qty = Number(s.QTVENDA_EMBALAGEM_MASTER) || 0;
+                    
+                    const resolvedProdChart = window.resolveDim('produtos', s.PRODUTO);
+                    const qtdeMasterChart = (resolvedProdChart && resolvedProdChart.qtde_master && resolvedProdChart.qtde_master > 0) ? resolvedProdChart.qtde_master : 1;
+                    const qty = (Number(s.QTVENDA) || 0) / qtdeMasterChart;
 
                     salesByCity[city] = (salesByCity[city] || 0) + qty;
 
