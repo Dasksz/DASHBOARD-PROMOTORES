@@ -9115,7 +9115,9 @@ const supervisorGroups = new Map();
             // The bottleneck is the nested Product * Client check loop later.
 
             sales.forEach(s => {
-                if (!isAlternativeMode(selectedCoverageTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                if (selectedCoverageTiposVenda && selectedCoverageTiposVenda.length > 0) {
+                    if (!selectedCoverageTiposVenda.includes(String(s.TIPOVENDA))) return;
+                }
                 const val = getValueForSale(s, selectedCoverageTiposVenda);
 
                 // Coverage Map (Inverted for Performance)
@@ -9141,7 +9143,9 @@ const supervisorGroups = new Map();
                 const d = parseDate(s.DTPED);
                 const isPrevMonth = d && d.getUTCMonth() === prevMonthIdx && d.getUTCFullYear() === prevMonthYear;
 
-                if (!isAlternativeMode(selectedCoverageTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                if (selectedCoverageTiposVenda && selectedCoverageTiposVenda.length > 0) {
+                    if (!selectedCoverageTiposVenda.includes(String(s.TIPOVENDA))) return;
+                }
                 const val = getValueForSale(s, selectedCoverageTiposVenda);
 
                 // Coverage Map (only if prev month)
@@ -9430,8 +9434,9 @@ const supervisorGroups = new Map();
                 const isPromotorFilterVisible = promotorWrapper && !promotorWrapper.classList.contains('hidden');
 
                 sales.forEach(s => {
-                    // FIX: Filter non-sales (e.g. transfers) to avoid inflated numbers
-                    if (!isAlternativeMode(selectedCoverageTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                    if (selectedCoverageTiposVenda && selectedCoverageTiposVenda.length > 0) {
+                        if (!selectedCoverageTiposVenda.includes(String(s.TIPOVENDA))) return;
+                    }
 
                     const client = clientMapForKPIs.get(String(s.CODCLI));
                     const city = client ? (client.cidade || client['Nome da Cidade'] || 'N/A') : 'N/A';
