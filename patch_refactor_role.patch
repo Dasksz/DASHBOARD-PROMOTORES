@@ -1,0 +1,74 @@
+--- js/app/feed_view.js
++++ js/app/feed_view.js
+@@ -21,6 +21,17 @@
+     let errorContainer;
+     let periodInfo;
+
++    function checkIsManager() {
++        const role = (window.userRole || '').trim().toLowerCase();
++        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
++        const isPromoter = window.userIsPromoter || hierarchyRole === 'promotor' || (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
++        const isAdmin = role === 'adm';
++        const isCoord = (hierarchyRole === 'coord' || hierarchyRole === 'cocoord') && !isPromoter;
++        const isSup = window.userIsSupervisor || hierarchyRole === 'supervisor' || role === 'supervisor';
++        const isManager = isAdmin || isCoord || isSup;
++        return { isManager, isAdmin, isCoord, isSup, isPromoter, role, hierarchyRole };
++    }
++
+     function init() {
+         console.log("Inicializando FeedVisitas Simples...");
+
+@@ -43,14 +54,8 @@
+         }
+
+         // Setup Favorites Buttons Visibility based on user role
+-        const role = (window.userRole || '').trim().toLowerCase();
+-        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
+-        const isPromoter = window.userIsPromoter || hierarchyRole === 'promotor' || (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+-        const isAdmin = role === 'adm';
+-        const isCoord = (hierarchyRole === 'coord' || hierarchyRole === 'cocoord') && !isPromoter;
+-        const isSup = window.userIsSupervisor || hierarchyRole === 'supervisor' || role === 'supervisor';
+-        const isManager = isAdmin || isCoord || isSup;
+-
++        const { isManager } = checkIsManager();
++
+         if (!isManager) {
+             document.getElementById('feed-favorites-btn')?.classList.add('hidden');
+             document.getElementById('feed-clear-favorites-btn')?.classList.add('hidden');
+@@ -179,14 +184,8 @@
+     function clearFavoritesFilter() {
+         showOnlyFavorites = false;
+
+-        const role = (window.userRole || '').trim().toLowerCase();
+-        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
+-        const isPromoter = window.userIsPromoter || hierarchyRole === 'promotor' || (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+-        const isAdmin = role === 'adm';
+-        const isCoord = (hierarchyRole === 'coord' || hierarchyRole === 'cocoord') && !isPromoter;
+-        const isSup = window.userIsSupervisor || hierarchyRole === 'supervisor' || role === 'supervisor';
+-        const isManager = isAdmin || isCoord || isSup;
+-
++        const { isManager } = checkIsManager();
++
+         document.getElementById('feed-clear-favorites-btn')?.classList.add('hidden');
+         if (isManager) {
+             document.getElementById('feed-favorites-btn')?.classList.remove('hidden');
+@@ -421,13 +420,9 @@
+         query = query.range(from, to);
+
+-        const role = (window.userRole || '').trim().toLowerCase();
+-        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
++        const { role, hierarchyRole, isPromoter, isAdmin, isCoord, isSup, isManager } = checkIsManager();
+
+-        // Strict mapping based on hierarchy
+-        const isPromoter = window.userIsPromoter ||
+-                           hierarchyRole === 'promotor' ||
+-                           (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+-
+-        const isAdmin = role === 'adm';
+-        const isCoord = (hierarchyRole === 'coord' || hierarchyRole === 'cocoord') && !isPromoter;
+         // Check global window vars initialized from dataset or hierarchy logic
+-        const isSup = window.userIsSupervisor || hierarchyRole === 'supervisor' || role === 'supervisor';
+         const isSeller = window.userIsSeller || hierarchyRole === 'vendedor' || hierarchyRole === 'seller';
+
+-        const isManager = isAdmin || isCoord || isSup; // Defines who can favorite and see all details
+         // We will filter the results in memory below.
