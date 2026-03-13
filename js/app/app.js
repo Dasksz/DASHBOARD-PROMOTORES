@@ -15449,9 +15449,13 @@ const supervisorGroups = new Map();
                 }
             };
 
-            const performUpsert = async (table, batch) => {
+            const performUpsert = async (table, batch, onConflictKey = null) => {
                 await retryOperation(async () => {
-                    const response = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
+                    let fetchUrl = `${supabaseUrl}/rest/v1/${table}`;
+                    if (onConflictKey) {
+                        fetchUrl += `?on_conflict=${onConflictKey}`;
+                    }
+                    const response = await fetch(fetchUrl, {
                         method: 'POST',
                         headers: {
                             'apikey': apiKeyHeader,
@@ -15573,6 +15577,21 @@ const supervisorGroups = new Map();
                         // Wait a bit to let DB breathe
                         await new Promise(r => setTimeout(r, 200));
                     }
+
+                    // Final verification to ensure table is empty
+                    try {
+                        const { count, error } = await window.supabaseClient
+                            .from(table)
+                            .select('*', { count: 'exact', head: true });
+                        if (error) {
+                            throw new Error(`Erro ao verificar contagem de ${table}: ${error.message}`);
+                        }
+                        if (count > 0) {
+                            throw new Error(`Falha crítica: A tabela ${table} não foi limpa com sucesso. Restam ${count} registros.`);
+                        }
+                    } catch(e) {
+                        throw new Error(`Erro fatal de limpeza em ${table}: ${e.message}`);
+                    }
                 }, 5, 2000); // Increased retries (5) and initial delay (2s)
             };
 
@@ -15597,7 +15616,7 @@ const supervisorGroups = new Map();
             };
 
             // --- Unified Parallel Uploader ---
-            const uploadBatchParallel = async (table, dataObj, isColumnar) => {
+            const uploadBatchParallel = async (table, dataObj, isColumnar, onConflictKey = null) => {
                 const totalRows = isColumnar ? dataObj.length : dataObj.length;
                 if (totalRows === 0) return;
 
@@ -15637,7 +15656,7 @@ const supervisorGroups = new Map();
                         }
                     }
 
-                    await performUpsert(table, batch);
+                    await performUpsert(table, batch, onConflictKey);
                     processedBatches++;
                     const progress = Math.round((processedBatches / totalBatches) * 100);
                     updateStatus(`Enviando ${table}: ${progress}%`, progress);
@@ -15687,7 +15706,7 @@ const supervisorGroups = new Map();
                 };
 
                 // Helper to perform conditional upload
-                const conditionalUpload = async (table, dataPart, hashKey, isCol, pk = 'id') => {
+                const conditionalUpload = async (table, dataPart, hashKey, isCol, pk = 'id', onConflictKey = null) => {
                     if (dataPart && (isCol ? dataPart.length > 0 : dataPart.length > 0)) {
                         // Check if table is empty (Force upload if empty)
                         let forceUpload = false;
@@ -15704,7 +15723,7 @@ const supervisorGroups = new Map();
                         // checkHash returns FALSE if match (skip), TRUE if mismatch (upload)
                         if (checkHash(hashKey, null) || forceUpload) {
                             await clearTable(table, pk);
-                            await uploadBatchParallel(table, dataPart, isCol);
+                            await uploadBatchParallel(table, dataPart, isCol, onConflictKey);
                         } else {
                             updateStatus(`Pulando ${table} (Dados idênticos)...`, 100);
                         }
@@ -15714,8 +15733,8 @@ const supervisorGroups = new Map();
                 const forbiddenDimCols = ['DESCRICAO', 'NOME', 'SUPERV', 'FORNECEDOR', 'OBSERVACAOFOR'];
                 await conditionalUpload('data_detailed', sanitizeColumnarForUpload(data.detailed, forbiddenDimCols), 'hash_detailed', true);
                 await conditionalUpload('data_history', sanitizeColumnarForUpload(data.history, forbiddenDimCols), 'hash_history', true);
-                await conditionalUpload('data_orders', data.byOrder, 'hash_orders', false);
-                await conditionalUpload('data_clients', data.clients, 'hash_clients', true);
+                await conditionalUpload('data_orders', data.byOrder, 'hash_orders', false, 'id', 'pedido');
+                await conditionalUpload('data_clients', data.clients, 'hash_clients', true, 'id', 'codigo_cliente');
                 await conditionalUpload('data_stock', data.stock, 'hash_stock', false);
                 await conditionalUpload('data_innovations', data.innovations, 'hash_innovations', false);
                 await conditionalUpload('data_product_details', data.product_details, 'hash_product_details', false, 'code');
