@@ -5006,6 +5006,7 @@
         // Enforce Menu Permissions
         if (window.userRole !== 'adm') {
             document.querySelectorAll('[data-target="goals"]').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('[data-target="cidades"]').forEach(el => el.classList.add('hidden'));
         }
 
         // Enforce Weekly View Permissions (Block for Promoters/Sellers)
