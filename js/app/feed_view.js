@@ -697,7 +697,7 @@ const FeedVisitas = (() => {
                     // Formatar string secundária
                     var secondaryInfoHtml = `
                         <div class="w-full flex items-center text-[10px] text-slate-400 font-medium tracking-wide truncate mt-0.5">
-                            Co-coord: ${pCoCoordenador} <span class="mx-1 text-slate-600">•</span> Sup: ${pSupervisor} <span class="mx-1 text-slate-600">•</span> Vend: ${pVendedor}
+                            COORDENADOR: ${pCoCoordenador} <span class="mx-1 text-slate-600">•</span> SUPERVISOR: ${pSupervisor} <span class="mx-1 text-slate-600">•</span> VENDEDOR: ${pVendedor}
                         </div>
                     `;
                 } catch (e) {
