@@ -3279,6 +3279,7 @@
         let coverageTrendFilter = 'all';
         let coverageTableDataForExport = [];
         let currentCoverageChartMode = 'city';
+        let currentCoverageMetricMode = 'boxes';
 
         const coverageTipoVendaFilterBtn = document.getElementById('coverage-tipo-venda-filter-btn');
         const coverageTipoVendaFilterText = document.getElementById('coverage-tipo-venda-filter-text');
@@ -9443,7 +9444,7 @@ const supervisorGroups = new Map();
                     
                     const resolvedProdChart = window.resolveDim('produtos', s.PRODUTO);
                     const qtdeMasterChart = (resolvedProdChart && resolvedProdChart.qtde_master && resolvedProdChart.qtde_master > 0) ? resolvedProdChart.qtde_master : 1;
-                    const qty = (Number(s.QTVENDA) || 0) / qtdeMasterChart;
+                    const qty = currentCoverageMetricMode === "boxes" ? ((Number(s.QTVENDA) || 0) / qtdeMasterChart) : (Number(s.VLRVENDA) || 0);
 
                     salesByCity[city] = (salesByCity[city] || 0) + qty;
 
@@ -9467,7 +9468,11 @@ const supervisorGroups = new Map();
                 const totalCaixas = Object.values(salesByCity).reduce((a, b) => a + b, 0);
                 const totalKpiEl = document.getElementById("coverage-chart-total-kpi");
                 if (totalKpiEl) {
-                    totalKpiEl.textContent = `Total Caixas: ${totalCaixas.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}`;
+                    if (currentCoverageMetricMode === 'boxes') {
+                        totalKpiEl.textContent = `Total Caixas: ${totalCaixas.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}`;
+                    } else {
+                        totalKpiEl.textContent = `Total Faturamento: ${totalCaixas.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`;
+                    }
                     totalKpiEl.classList.remove("hidden");
                 }
 
@@ -9489,7 +9494,7 @@ const supervisorGroups = new Map();
                             anchor: 'end',
                             color: '#cbd5e1',
                             font: { weight: 'bold', size: 14 },
-                            formatter: (value) => value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
+                            formatter: (value) => currentCoverageMetricMode === 'boxes' ? value.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
                         },
                         tooltip: {
                             callbacks: {
@@ -9499,7 +9504,7 @@ const supervisorGroups = new Map();
                                         label += ': ';
                                     }
                                     if (context.parsed.y !== null) {
-                                        label += context.parsed.y.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' caixas';
+                                        label += currentCoverageMetricMode === 'boxes' ? context.parsed.y.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' caixas' : context.parsed.y.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                                     }
                                     return label;
                                 }
@@ -9549,12 +9554,12 @@ const supervisorGroups = new Map();
                         if (cityContainer) cityContainer.classList.remove('hidden');
                         if (sellerContainer) sellerContainer.classList.add('hidden');
                         if (toggleBtn) toggleBtn.textContent = `Ver ${targetLabel}`;
-                        if (chartTitle) chartTitle.innerHTML = `<span>Top ${chartLimit} Cidades</span> <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-current opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
+                        if (chartTitle) chartTitle.innerHTML = `<span>Top ${chartLimit} Cidades${currentCoverageMetricMode === "revenue" ? " - Faturamento" : ""}</span> <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-current opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
                     } else {
                         if (cityContainer) cityContainer.classList.add('hidden');
                         if (sellerContainer) sellerContainer.classList.remove('hidden');
                         if (toggleBtn) toggleBtn.textContent = 'Ver Cidades';
-                        if (chartTitle) chartTitle.innerHTML = `<span>Ranking de ${targetLabel}</span> <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-current opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
+                        if (chartTitle) chartTitle.innerHTML = `<span>Ranking de ${targetLabel}${currentCoverageMetricMode === "revenue" ? " - Faturamento" : ""}</span> <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-current opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
                     }
                 }
             }, () => currentRenderId !== coverageRenderId);
@@ -17155,6 +17160,27 @@ const supervisorGroups = new Map();
                     exportToExcel({'Cobertura': coverageTableDataForExport}, 'Cobertura');
                 }
             );
+
+            const coverageMetricToggleBtn = document.getElementById('coverage-metric-toggle-btn');
+            const iconBoxes = document.getElementById('icon-boxes');
+            const iconRevenue = document.getElementById('icon-revenue');
+            if (coverageMetricToggleBtn) {
+                coverageMetricToggleBtn.addEventListener('click', () => {
+                    currentCoverageMetricMode = currentCoverageMetricMode === 'boxes' ? 'revenue' : 'boxes';
+                    if (currentCoverageMetricMode === 'boxes') {
+                        iconBoxes.classList.remove('hidden');
+                        iconBoxes.classList.add('text-white');
+                        iconRevenue.classList.add('hidden');
+                        iconRevenue.classList.remove('text-white');
+                    } else {
+                        iconRevenue.classList.remove('hidden');
+                        iconRevenue.classList.add('text-white');
+                        iconBoxes.classList.add('hidden');
+                        iconBoxes.classList.remove('text-white');
+                    }
+                    updateCoverageView();
+                });
+            }
 
             const coverageChartToggleBtn = document.getElementById('coverage-chart-toggle-btn');
             if (coverageChartToggleBtn) {

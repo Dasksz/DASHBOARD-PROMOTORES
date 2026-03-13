@@ -1841,6 +1841,27 @@ innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
                 }
             );
 
+            const coverageMetricToggleBtn = document.getElementById('coverage-metric-toggle-btn');
+            const iconBoxes = document.getElementById('icon-boxes');
+            const iconRevenue = document.getElementById('icon-revenue');
+            if (coverageMetricToggleBtn) {
+                coverageMetricToggleBtn.addEventListener('click', () => {
+                    currentCoverageMetricMode = currentCoverageMetricMode === 'boxes' ? 'revenue' : 'boxes';
+                    if (currentCoverageMetricMode === 'boxes') {
+                        iconBoxes.classList.remove('hidden');
+                        iconBoxes.classList.add('text-white');
+                        iconRevenue.classList.add('hidden');
+                        iconRevenue.classList.remove('text-white');
+                    } else {
+                        iconRevenue.classList.remove('hidden');
+                        iconRevenue.classList.add('text-white');
+                        iconBoxes.classList.add('hidden');
+                        iconBoxes.classList.remove('text-white');
+                    }
+                    updateCoverageView();
+                });
+            }
+
             const coverageChartToggleBtn = document.getElementById('coverage-chart-toggle-btn');
             if (coverageChartToggleBtn) {
                 coverageChartToggleBtn.addEventListener('click', () => {
