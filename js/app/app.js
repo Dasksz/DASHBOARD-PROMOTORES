@@ -20698,7 +20698,7 @@ const supervisorGroups = new Map();
                 }
             });
             
-            if (role === 'ADM' && userMenuRefreshCacheBtn) {
+            if (userMenuRefreshCacheBtn) {
                 userMenuRefreshCacheBtn.classList.remove('hidden');
                 userMenuRefreshCacheBtn.addEventListener('click', async () => {
                     if(confirm('Isso forçará o recarregamento de todas as tabelas e imagens, demorando alguns minutos. Deseja continuar?')) {
