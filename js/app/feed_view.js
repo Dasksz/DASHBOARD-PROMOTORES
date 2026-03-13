@@ -623,6 +623,11 @@ const FeedVisitas = (() => {
                             if (!val) return -Infinity;
                             if (val instanceof Date) return val.getTime();
                             if (typeof val === 'number') return val;
+                            // Se for uma string do Postgres (ex: '2024-03-06 16:52:00+00'), converte pro ISO correto para não dar erro
+                            if (typeof val === 'string') {
+                                // Normaliza timestamptz string (ex. substitui o espaco por T e +00 por Z)
+                                val = val.replace(' ', 'T').replace('+00', 'Z');
+                            }
                             const d = new Date(val);
                             return isNaN(d.getTime()) ? -Infinity : d.getTime();
                         };
@@ -631,16 +636,17 @@ const FeedVisitas = (() => {
                             if (!salesArray) return;
                             for (let i = 0; i < salesArray.length; i++) {
                                 const s = salesArray[i];
-                                const codCli = s.CODCLI || s.codcli;
-                                const codSup = s.CODSUPERVISOR || s.codsupervisor;
-                                const dtPed = s.DTPED || s.dtped;
+                                // Aceita maiúsculo ou minúsculo robustamente
+                                const codCli = s.CODCLI || s.codcli || s.cod_cli || s.COD_CLI;
+                                const codSup = s.CODSUPERVISOR || s.codsupervisor || s.cod_supervisor || s.COD_SUPERVISOR;
+                                const dtPed = s.DTPED || s.dtped || s.dt_ped || s.DT_PED;
                                 
                                 if (codCli && String(codCli).trim() === clientCodeForLookup && codSup) {
                                     const dValue = parseSaleDate(dtPed);
                                     if (dValue > maxDateValue) {
                                         maxDateValue = dValue;
                                         mostRecentSale = {
-                                            CODSUPERVISOR: codSup
+                                            CODSUPERVISOR: codSup // Aqui salva como foi extraido
                                         };
                                     }
                                 }
@@ -655,8 +661,15 @@ const FeedVisitas = (() => {
                             if (window.maps && window.maps.supervisores && window.maps.supervisores.has(codSup)) {
                                 nomeSupervisor = window.maps.supervisores.get(codSup);
                             } else if (window.embeddedData && window.embeddedData.dim_supervisores) {
-                                const dimSup = window.embeddedData.dim_supervisores.find(s => String(s.codigo).trim() === codSup);
-                                if (dimSup) nomeSupervisor = dimSup.nome;
+                                // Aceita chave 'codigo' ou 'CODIGO' ou 'codigo_supervisor'
+                                const dimSup = window.embeddedData.dim_supervisores.find(s => {
+                                    const c = s.codigo || s.CODIGO || s.codigo_supervisor || s.CODIGO_SUPERVISOR;
+                                    return c && String(c).trim() === codSup;
+                                });
+                                // Aceita chave 'nome' ou 'NOME'
+                                if (dimSup) {
+                                    nomeSupervisor = dimSup.nome || dimSup.NOME || dimSup.nome_supervisor || dimSup.NOME_SUPERVISOR || '-';
+                                }
                             }
                         }
                         
