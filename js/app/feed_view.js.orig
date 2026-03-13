@@ -13,23 +13,12 @@ const FeedVisitas = (() => {
     let showOnlyFavorites = false;
     let flatpickrInstance = null;
 
-    // DOM 
+    // DOM
     let container;
     let cardsContainer;
     let loadingIndicator;
     let errorContainer;
     let periodInfo;
-
-    function checkIsManager() {
-        const role = (window.userRole || '').trim().toLowerCase();
-        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
-        const isPromoter = window.userIsPromoter || hierarchyRole === 'promotor' || (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
-        const isAdmin = role === 'adm';
-        const isCoord = (hierarchyRole === 'coord' || hierarchyRole === 'cocoord') && !isPromoter;
-        const isSup = window.userIsSupervisor || hierarchyRole === 'supervisor' || role === 'supervisor';
-        const isManager = isAdmin || isCoord || isSup;
-        return { isManager, isAdmin, isCoord, isSup, isPromoter, role, hierarchyRole };
-    }
 
     function init() {
         console.log("Inicializando FeedVisitas Simples...");
@@ -55,7 +44,13 @@ const FeedVisitas = (() => {
         }
 
         // Setup Favorites Buttons Visibility based on user role
-        const { isManager } = checkIsManager();
+        const role = (window.userRole || '').trim().toLowerCase();
+        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
+        const isPromoter = window.userIsPromoter || hierarchyRole === 'promotor' || (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+        const isAdmin = role === 'adm';
+        const isCoord = (hierarchyRole === 'coord' || hierarchyRole === 'cocoord') && !isPromoter;
+        const isSup = window.userIsSupervisor || hierarchyRole === 'supervisor' || role === 'supervisor';
+        const isManager = isAdmin || isCoord || isSup;
 
         if (!isManager) {
             document.getElementById('feed-favorites-btn')?.classList.add('hidden');
@@ -187,7 +182,13 @@ const FeedVisitas = (() => {
     function clearFavoritesFilter() {
         showOnlyFavorites = false;
 
-        const { isManager } = checkIsManager();
+        const role = (window.userRole || '').trim().toLowerCase();
+        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
+        const isPromoter = window.userIsPromoter || hierarchyRole === 'promotor' || (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+        const isAdmin = role === 'adm';
+        const isCoord = (hierarchyRole === 'coord' || hierarchyRole === 'cocoord') && !isPromoter;
+        const isSup = window.userIsSupervisor || hierarchyRole === 'supervisor' || role === 'supervisor';
+        const isManager = isAdmin || isCoord || isSup;
 
         document.getElementById('feed-clear-favorites-btn')?.classList.add('hidden');
         if (isManager) {
@@ -386,7 +387,7 @@ const FeedVisitas = (() => {
                 currentStartBound = bounds.start;
                 currentEndBound = bounds.end;
             }
-            
+
             // Format for display
             if (periodInfo && currentStartBound && currentEndBound) {
                 const fd = (d) => d.getUTCDate().toString().padStart(2, '0') + '/' + (d.getUTCMonth() + 1).toString().padStart(2, '0');
@@ -515,7 +516,7 @@ const FeedVisitas = (() => {
                     try {
                         respostasObj = typeof visit.respostas === 'string' ? JSON.parse(visit.respostas) : visit.respostas;
                     } catch (e) {}
-                    
+
                     if (respostasObj) {
                         observacoesTexto = respostasObj.observacoes || visit.observacao || '';
                     }
@@ -556,12 +557,12 @@ const FeedVisitas = (() => {
                                             url += '?width=500&quality=60';
                                         }
                                     }
-                                    
+
                                     if (url) {
                                         let tipo = '';
                                         if (key.toLowerCase().includes('antes')) tipo = 'antes';
                                         if (key.toLowerCase().includes('depois')) tipo = 'depois';
-                                        
+
                                         fotos.push({
                                             url: url,
                                             tipo: tipo
@@ -606,14 +607,14 @@ const FeedVisitas = (() => {
                     }
                 }
 
-                
+
                 let promotorName = visit.promotor_name || (visit.profiles ? visit.profiles.name : 'Promotor');
 
                 // --- NOVO: Lógica para buscar Vendedor, Supervisor e Co-coordenador ---
                 let nomeVendedor = '-';
                 let nomeSupervisor = '-';
                 let nomeCoCoordenador = '-';
-                
+
                 try {
                     const clientCodeForLookup = visit.client_code ? String(visit.client_code).trim() : '';
 
@@ -624,7 +625,7 @@ const FeedVisitas = (() => {
                             nomeVendedor = window.maps.vendedores.get(rca) || '-';
                         }
                     }
-                    
+
                     if (clientCodeForLookup) {
                         // 2. Supervisor (Baseado na venda mais recente do cliente)
                         let mostRecentSale = null;
@@ -662,11 +663,11 @@ const FeedVisitas = (() => {
                             for (let i = 0; i < salesArray.length; i++) {
                                 const s = salesArray[i];
                                 if (!s) continue;
-                                
+
                                 const codCli = s.CODCLI !== undefined ? s.CODCLI : (s.codcli !== undefined ? s.codcli : (s.cod_cli !== undefined ? s.cod_cli : s.COD_CLI));
                                 const codSup = s.CODSUPERVISOR !== undefined ? s.CODSUPERVISOR : (s.codsupervisor !== undefined ? s.codsupervisor : (s.cod_supervisor !== undefined ? s.cod_supervisor : s.COD_SUPERVISOR));
                                 const dtPed = s.DTPED !== undefined ? s.DTPED : (s.dtped !== undefined ? s.dtped : (s.dt_ped !== undefined ? s.dt_ped : s.DT_PED));
-                                
+
                                 if (codCli !== undefined && codCli !== null && String(codCli).trim() === clientCodeForLookup && codSup !== undefined && codSup !== null && String(codSup).trim() !== '') {
                                     const dValue = parseSaleDate(dtPed);
                                     if (dValue > maxDateValue) {
@@ -687,7 +688,7 @@ const FeedVisitas = (() => {
                             // 1. Tentar mapeamento do window.maps
                             if (window.maps && window.maps.supervisores && window.maps.supervisores.has(codSup)) {
                                 nomeSupervisor = window.maps.supervisores.get(codSup);
-                            } 
+                            }
                             // 2. Tentar raw window.embeddedData.dim_supervisores (onde os dados estão disponíveis desde o init)
                             else if (window.embeddedData && window.embeddedData.dim_supervisores && Array.isArray(window.embeddedData.dim_supervisores)) {
                                 const dimSup = window.embeddedData.dim_supervisores.find(s => {
@@ -699,11 +700,11 @@ const FeedVisitas = (() => {
                                 }
                             }
                         }
-                        
+
                         // 3. Co-coordenador (Baseado na tabela data_client_promoters e data_hierarchy)
                         if (window.embeddedData && window.embeddedData.clientPromoters && window.embeddedData.hierarchy) {
                             const promoterRow = window.embeddedData.clientPromoters.find(p => String(p.client_code).trim() === clientCodeForLookup);
-                            
+
                             if (promoterRow && promoterRow.promoter_code) {
                                 // Normaliza o promoter_code
                                 const normalizedPromoterCode = String(promoterRow.promoter_code)
@@ -728,12 +729,12 @@ const FeedVisitas = (() => {
                             }
                         }
                     }
-                    
+
                     // Pegar apenas o primeiro nome para não quebrar a linha
                     const pVendedor = nomeVendedor !== '-' ? nomeVendedor.split(' ')[0] : '-';
                     const pSupervisor = nomeSupervisor !== '-' ? nomeSupervisor.split(' ')[0] : '-';
                     const pCoCoordenador = nomeCoCoordenador !== '-' ? nomeCoCoordenador.split(' ')[0] : '-';
-                    
+
                     // Formatar string secundária
                     var secondaryInfoHtml = `
                         <div class="w-full flex items-center text-[10px] text-slate-400 font-medium tracking-wide truncate mt-0.5">
@@ -868,14 +869,14 @@ const FeedVisitas = (() => {
                     for (const [key, value] of Object.entries(respostasObj)) {
                         // Ignorar chaves ocultas e fotos
                         if (chavesOcultas.includes(key) || key.toLowerCase().includes('foto')) continue;
-                        
+
                         // Ignore empty strings
                         if (value === '' || value === null || value === undefined) continue;
 
                         let label = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
                         // Capitalize each word for label
                         label = label.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-                        
+
                         let valStr = String(value);
                         if (valStr.toLowerCase() === 'true' || valStr.toLowerCase() === 'sim') {
                             valStr = '<span class="text-green-400">Sim</span>';
@@ -909,10 +910,10 @@ const FeedVisitas = (() => {
                     window.FeedVisitas.clientCache[visit.id] = clientInfo;
                 }
 
-                
+
                 let dotsHtml = '';
                 if (fotos.length > 1) {
-                    const dotsArray = Array.from({ length: fotos.length }).map((_, i) => 
+                    const dotsArray = Array.from({ length: fotos.length }).map((_, i) =>
                         `<div class="w-1.5 h-1.5 rounded-full carousel-dot ${i === 0 ? 'bg-blue-500' : 'bg-slate-600'} transition-colors duration-300"></div>`
                     ).join('');
                     dotsHtml = `<div id="carousel-${visit.id}-dots" class="flex justify-center items-center gap-1.5 flex-1">${dotsArray}</div>`;
@@ -967,16 +968,16 @@ const FeedVisitas = (() => {
 
     function openLocationModal(visitId) {
         if (!FeedVisitas.clientCache || !FeedVisitas.clientCache[visitId]) return;
-        
+
         const clientInfo = FeedVisitas.clientCache[visitId];
-        
+
         // Ensure modal exists in DOM
         let modal = document.getElementById('feed-location-modal');
         if (!modal) {
             modal = document.createElement('div');
             modal.id = 'feed-location-modal';
             modal.className = 'fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm';
-            
+
             // Close when clicking outside
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) closeLocationModal();
@@ -1101,7 +1102,7 @@ const FeedVisitas = (() => {
                         zoomControl: false,
                         attributionControl: false
                     });
-                    
+
                     window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                         maxZoom: 19
                     }).addTo(map);
@@ -1187,13 +1188,13 @@ const FeedVisitas = (() => {
             const width = container.offsetWidth;
             const scrollLeft = container.scrollLeft;
             const currentIndex = Math.round(scrollLeft / width) + 1;
-            
+
             if (indicator) {
                 indicator.textContent = currentIndex + ' / ' + total;
                 // Show indicator briefly
                 indicator.classList.remove('opacity-0');
                 indicator.classList.add('opacity-100');
-                
+
                 clearTimeout(indicator.hideTimeout);
                 indicator.hideTimeout = setTimeout(() => {
                     indicator.classList.remove('opacity-100');
