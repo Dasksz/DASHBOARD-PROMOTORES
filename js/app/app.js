@@ -8929,40 +8929,39 @@ const supervisorGroups = new Map();
             // Assumes sales have DTPED (timestamp or date string)
             // selectedCoverageDateRange = { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' }
             if (!isExcluded('date') && selectedCoverageDateRange.start && selectedCoverageDateRange.end) {
-                const start = parseDate(selectedCoverageDateRange.start).getTime();
-                const end = parseDate(selectedCoverageDateRange.end).getTime();
+                // Ensure the start date is 00:00:00.000 in UTC to align with database DTPED
+                const [startYear, startMonth, startDay] = selectedCoverageDateRange.start.split('-');
+                const start = Date.UTC(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay), 0, 0, 0, 0);
+
+                // Ensure the end date is 23:59:59.999 in UTC to include all sales on the last day
+                const [endYear, endMonth, endDay] = selectedCoverageDateRange.end.split('-');
+                const end = Date.UTC(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay), 23, 59, 59, 999);
 
                 // Filter Sales (Current)
                 sales = sales.filter(s => s.DTPED >= start && s.DTPED <= end);
 
                 // Calculate Proportional Previous Month Range
-                const prevStart = new Date(start);
-                prevStart.setMonth(prevStart.getMonth() - 1);
+                // Re-calculate strictly based on UTC
+                const [sYear, sMonth, sDay] = selectedCoverageDateRange.start.split('-').map(Number);
+                const [eYear, eMonth, eDay] = selectedCoverageDateRange.end.split('-').map(Number);
 
-                const prevEnd = new Date(end);
-                prevEnd.setMonth(prevEnd.getMonth() - 1);
+                let pStartYear = sYear;
+                let pStartMonth = sMonth - 1 - 1; // 0-indexed, minus 1 month
+                if (pStartMonth < 0) { pStartMonth += 12; pStartYear--; }
 
-                // Clamp end of month logic (auto-handled by setMonth but need to check if day overflowed)
-                // e.g. 31 March -> 31 Feb -> 3 March (JS Date behavior). We want last day of Feb.
-                // Fix: Check day.
-                const checkOverflow = (orig, target) => {
-                    if (orig.getDate() !== target.getDate()) {
-                        target.setDate(0); // Set to last day of previous month
-                    }
-                };
-                // Re-calculate strictly
-                const strictPrevStart = new Date(selectedCoverageDateRange.start);
-                const d1 = strictPrevStart.getDate();
-                strictPrevStart.setMonth(strictPrevStart.getMonth() - 1);
-                if (strictPrevStart.getDate() !== d1) strictPrevStart.setDate(0);
+                // Get days in prev month for start date clamping
+                const daysInPrevStartMonth = new Date(Date.UTC(pStartYear, pStartMonth + 1, 0)).getUTCDate();
+                const clampedStartDay = Math.min(sDay, daysInPrevStartMonth);
+                const pStart = Date.UTC(pStartYear, pStartMonth, clampedStartDay, 0, 0, 0, 0);
 
-                const strictPrevEnd = new Date(selectedCoverageDateRange.end);
-                const d2 = strictPrevEnd.getDate();
-                strictPrevEnd.setMonth(strictPrevEnd.getMonth() - 1);
-                if (strictPrevEnd.getDate() !== d2) strictPrevEnd.setDate(0);
+                let pEndYear = eYear;
+                let pEndMonth = eMonth - 1 - 1; // 0-indexed, minus 1 month
+                if (pEndMonth < 0) { pEndMonth += 12; pEndYear--; }
 
-                const pStart = strictPrevStart.getTime();
-                const pEnd = strictPrevEnd.getTime();
+                // Get days in prev month for end date clamping
+                const daysInPrevEndMonth = new Date(Date.UTC(pEndYear, pEndMonth + 1, 0)).getUTCDate();
+                const clampedEndDay = Math.min(eDay, daysInPrevEndMonth);
+                const pEnd = Date.UTC(pEndYear, pEndMonth, clampedEndDay, 23, 59, 59, 999);
 
                 history = history.filter(s => s.DTPED >= pStart && s.DTPED <= pEnd);
             }
