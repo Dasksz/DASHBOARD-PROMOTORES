@@ -613,7 +613,7 @@ const FeedVisitas = (() => {
                             nomeVendedor = window.maps.vendedores.get(rca) || '-';
                         }
                     }
-
+                    
                     if (clientCodeForLookup) {
                         // 2. Supervisor (Baseado na venda mais recente do cliente)
                         let mostRecentSale = null;
@@ -631,11 +631,17 @@ const FeedVisitas = (() => {
                             if (!salesArray) return;
                             for (let i = 0; i < salesArray.length; i++) {
                                 const s = salesArray[i];
-                                if (String(s.CODCLI).trim() === clientCodeForLookup && s.CODSUPERVISOR) {
-                                    const dValue = parseSaleDate(s.DTPED);
+                                const codCli = s.CODCLI || s.codcli;
+                                const codSup = s.CODSUPERVISOR || s.codsupervisor;
+                                const dtPed = s.DTPED || s.dtped;
+                                
+                                if (codCli && String(codCli).trim() === clientCodeForLookup && codSup) {
+                                    const dValue = parseSaleDate(dtPed);
                                     if (dValue > maxDateValue) {
                                         maxDateValue = dValue;
-                                        mostRecentSale = s;
+                                        mostRecentSale = {
+                                            CODSUPERVISOR: codSup
+                                        };
                                     }
                                 }
                             }
