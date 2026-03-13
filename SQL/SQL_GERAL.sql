@@ -170,6 +170,7 @@ create table if not exists public.profiles (
   role text default 'user',
   name text, -- Full Name
   phone text, -- Phone Number
+  avatar_url text, -- Profile Picture URL
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
@@ -297,6 +298,7 @@ BEGIN
     -- Ensure 'profiles' columns exist
     ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS name text;
     ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone text;
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url text;
 
     -- promotor column removed from data_clients in new schema
 END $$;
@@ -417,20 +419,23 @@ set
 DECLARE
   v_name text;
   v_phone text;
+  v_avatar_url text;
 BEGIN
   -- Extract metadata
   v_name := new.raw_user_meta_data ->> 'full_name';
   v_phone := new.raw_user_meta_data ->> 'phone';
+  v_avatar_url := COALESCE(new.raw_user_meta_data ->> 'avatar_url', new.raw_user_meta_data ->> 'picture');
 
   -- Insert into profiles
-  insert into public.profiles (id, email, status, role, name, phone)
+  insert into public.profiles (id, email, status, role, name, phone, avatar_url)
   values (
     new.id, 
     new.email, 
     'pendente', 
     'user', 
     v_name, 
-    v_phone
+    v_phone,
+    v_avatar_url
   );
   
   return new;

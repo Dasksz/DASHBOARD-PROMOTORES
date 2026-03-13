@@ -436,7 +436,7 @@ const FeedVisitas = (() => {
 
         let query = window.supabaseClient
             .from('visitas')
-            .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, id_promotor, profiles:id_promotor(name, role), favoritado_por, latitude, longitude, promotor_name`)
+            .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, id_promotor, profiles:id_promotor(name, role, avatar_url), favoritado_por, latitude, longitude, promotor_name`)
             .gte('created_at', currentStartBound.toISOString())
             .lte('created_at', currentEndBound.toISOString())
             .order('created_at', { ascending: false });
@@ -608,6 +608,24 @@ const FeedVisitas = (() => {
 
                 
                 let promotorName = visit.promotor_name || (visit.profiles ? visit.profiles.name : 'Promotor');
+                let avatarUrl = visit.profiles ? visit.profiles.avatar_url : null;
+                let avatarHtml = '';
+
+                if (avatarUrl) {
+                    avatarHtml = `<img src="${avatarUrl}" class="w-8 h-8 rounded-full object-cover border border-slate-700 mr-2 flex-shrink-0" alt="Avatar">`;
+                } else {
+                    const initials = promotorName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    // Generate a random background color based on name
+                    const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'];
+                    const colorIndex = promotorName.length % colors.length;
+                    const bgColor = colors[colorIndex];
+
+                    avatarHtml = `
+                        <div class="w-8 h-8 rounded-full ${bgColor} border border-slate-700 flex items-center justify-center text-white text-xs font-bold mr-2 flex-shrink-0">
+                            ${initials}
+                        </div>
+                    `;
+                }
 
                 // --- NOVO: Lógica para buscar Vendedor, Supervisor e Co-coordenador ---
                 let nomeVendedor = '-';
@@ -921,8 +939,11 @@ const FeedVisitas = (() => {
                 card.innerHTML = `
                     <div class="p-3 flex flex-col gap-1 border-b border-slate-700/50">
                         <div class="flex items-center gap-2 min-w-0">
-                            <p class="text-sm font-bold text-white truncate max-w-[120px]" title="${promotorName}">${promotorName}</p>
-                            <span class="text-xs text-[#FF5E00] font-medium truncate flex-1" title="${clientName}">${clientName}</span>
+                            ${avatarHtml}
+                            <div class="flex flex-col min-w-0 flex-1">
+                                <p class="text-sm font-bold text-white truncate w-full" title="${promotorName}">${promotorName}</p>
+                                <span class="text-xs text-[#FF5E00] font-medium truncate w-full" title="${clientName}">${clientName}</span>
+                            </div>
                         </div>
                         ${secondaryInfoHtml}
                     </div>
