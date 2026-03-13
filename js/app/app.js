@@ -11631,18 +11631,16 @@ const supervisorGroups = new Map();
                 }
             });
 
-            // Special Handling for Meta Realizado: Inject Virtual Categories
-            if (filterType === 'metaRealizado' || filterType === 'main' || filterType === 'comparison' || filterType === 'positivacao') {
-                if (suppliers.has(window.SUPPLIER_CODES.ELMA[0])) suppliers.set(window.SUPPLIER_CODES.ELMA[0], 'EXTRUSADOS');
-                if (suppliers.has(window.SUPPLIER_CODES.ELMA[1])) suppliers.set(window.SUPPLIER_CODES.ELMA[1], 'NÃO EXTRUSADOS');
-                if (suppliers.has(window.SUPPLIER_CODES.ELMA[2])) suppliers.set(window.SUPPLIER_CODES.ELMA[2], 'TORCIDA');
+            // Inject Virtual Categories for ALL filter types
+            if (suppliers.has(window.SUPPLIER_CODES.ELMA[0])) suppliers.set(window.SUPPLIER_CODES.ELMA[0], 'EXTRUSADOS');
+            if (suppliers.has(window.SUPPLIER_CODES.ELMA[1])) suppliers.set(window.SUPPLIER_CODES.ELMA[1], 'NÃO EXTRUSADOS');
+            if (suppliers.has(window.SUPPLIER_CODES.ELMA[2])) suppliers.set(window.SUPPLIER_CODES.ELMA[2], 'TORCIDA');
 
-                if (suppliers.has(window.SUPPLIER_CODES.FOODS[0])) {
-                    suppliers.delete(window.SUPPLIER_CODES.FOODS[0]);
-                    suppliers.set(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO, 'TODDYNHO');
-                    suppliers.set(window.SUPPLIER_CODES.VIRTUAL.TODDY, 'TODDY');
-                    suppliers.set(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO, 'QUAKER/KEROCOCO');
-                }
+            if (suppliers.has(window.SUPPLIER_CODES.FOODS[0])) {
+                suppliers.delete(window.SUPPLIER_CODES.FOODS[0]);
+                suppliers.set(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO, 'TODDYNHO');
+                suppliers.set(window.SUPPLIER_CODES.VIRTUAL.TODDY, 'TODDY');
+                suppliers.set(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO, 'QUAKER/KEROCOCO');
             }
 
             const sortedSuppliers = [...suppliers.entries()].sort((a, b) => a[1].localeCompare(b[1]));
@@ -11656,14 +11654,6 @@ const supervisorGroups = new Map();
                     const isChecked = selectedArray.includes(cod);
 
                     let displayName = name;
-                    // For all pages except 'Meta Vs. Realizado', prefix Code to Name
-                    // Request: Main (Visão Geral) should match Meta vs Realizado nomenclature (No Prefix, Split 1119)
-                    if (filterType !== 'metaRealizado' && filterType !== 'main' && filterType !== 'comparison' && filterType !== 'positivacao') {
-                        // Ensure we don't double prefix if name already starts with code (rare but possible in data)
-                        if (!name.startsWith(cod)) {
-                            displayName = `${cod} ${name}`;
-                        }
-                    }
 
                     htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${cod}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-xs">${displayName}</span></label>`);
                 }
