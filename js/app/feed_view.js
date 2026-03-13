@@ -622,7 +622,15 @@ const FeedVisitas = (() => {
                         const parseSaleDate = (val) => {
                             if (!val) return -Infinity;
                             if (val instanceof Date) return val.getTime();
-                            if (typeof val === 'number') return val;
+                            if (typeof val === 'number') {
+                                if (val < 1000000) {
+                                    // Excel serial date (e.g. 45300) -> Convert to ms timestamp
+                                    const ts = Math.round((val - 25569) * 86400 * 1000);
+                                    // Add timezone offset so it correctly aligns to UTC boundaries
+                                    return ts + new Date(ts).getTimezoneOffset() * 60000;
+                                }
+                                return val; // Already a timestamp
+                            }
                             // Se for uma string do Postgres (ex: '2024-03-06 16:52:00+00'), converte pro ISO correto para não dar erro
                             if (typeof val === 'string') {
                                 // Normaliza timestamptz string (ex. substitui o espaco por T e +00 por Z)
