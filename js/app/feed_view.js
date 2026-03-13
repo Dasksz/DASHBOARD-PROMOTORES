@@ -42,6 +42,20 @@ const FeedVisitas = (() => {
         if (!flatpickrInstance) {
             setupFlatpickr();
         }
+
+        // Setup Favorites Buttons Visibility based on user role
+        const role = (window.userRole || '').trim().toLowerCase();
+        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
+        const isPromoter = window.userIsPromoter || hierarchyRole === 'promotor' || (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+        const isAdmin = role === 'adm';
+        const isCoord = (hierarchyRole === 'coord' || hierarchyRole === 'cocoord') && !isPromoter;
+        const isSup = window.userIsSupervisor || hierarchyRole === 'supervisor' || role === 'supervisor';
+        const isManager = isAdmin || isCoord || isSup;
+
+        if (!isManager) {
+            document.getElementById('feed-favorites-btn')?.classList.add('hidden');
+            document.getElementById('feed-clear-favorites-btn')?.classList.add('hidden');
+        }
     }
 
     function resetFeed() {
@@ -154,8 +168,10 @@ const FeedVisitas = (() => {
         showOnlyFavorites = true;
         document.getElementById('feed-favorites-modal').classList.add('hidden');
 
-        document.getElementById('feed-clear-favorites-btn').classList.remove('hidden');
-        document.getElementById('feed-favorites-btn').classList.add('hidden');
+        document.getElementById('feed-clear-favorites-btn')?.classList.remove('hidden');
+        if (document.getElementById('feed-favorites-btn')) {
+            document.getElementById('feed-favorites-btn').classList.add('hidden');
+        }
 
         // Remove filters that might be blocking favorites from other promoters
         const isManager = true; // Always allow viewing favorites regardless of role
@@ -166,8 +182,18 @@ const FeedVisitas = (() => {
     function clearFavoritesFilter() {
         showOnlyFavorites = false;
 
-        document.getElementById('feed-clear-favorites-btn').classList.add('hidden');
-        document.getElementById('feed-favorites-btn').classList.remove('hidden');
+        const role = (window.userRole || '').trim().toLowerCase();
+        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
+        const isPromoter = window.userIsPromoter || hierarchyRole === 'promotor' || (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+        const isAdmin = role === 'adm';
+        const isCoord = (hierarchyRole === 'coord' || hierarchyRole === 'cocoord') && !isPromoter;
+        const isSup = window.userIsSupervisor || hierarchyRole === 'supervisor' || role === 'supervisor';
+        const isManager = isAdmin || isCoord || isSup;
+
+        document.getElementById('feed-clear-favorites-btn')?.classList.add('hidden');
+        if (isManager) {
+            document.getElementById('feed-favorites-btn')?.classList.remove('hidden');
+        }
 
         loadFeed(true);
     }
@@ -422,22 +448,8 @@ const FeedVisitas = (() => {
 
         query = query.range(from, to);
 
-        const role = (window.userRole || '').trim().toLowerCase();
-        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
-        
-        // Strict mapping based on hierarchy
-        const isPromoter = window.userIsPromoter || 
-                           hierarchyRole === 'promotor' || 
-                           (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
-        
-        const isAdmin = role === 'adm';
-        // Check hierarchy role for coordinator and co-coordinator
-        const isCoord = (hierarchyRole === 'coord' || hierarchyRole === 'cocoord') && !isPromoter;
-        // Check global window vars initialized from dataset or hierarchy logic
-        const isSup = window.userIsSupervisor || hierarchyRole === 'supervisor' || role === 'supervisor';
+        const { role, hierarchyRole, isPromoter, isAdmin, isCoord, isSup, isManager } = checkIsManager();
         const isSeller = window.userIsSeller || hierarchyRole === 'vendedor' || hierarchyRole === 'seller';
-
-        const isManager = isAdmin || isCoord || isSup; // Defines who can favorite and see all details
         // We will filter the results in memory below.
 
         const { data, error } = await query;
