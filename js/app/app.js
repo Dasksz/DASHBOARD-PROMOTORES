@@ -26942,6 +26942,7 @@ const supervisorGroups = new Map();
         // Enforce Menu Permissions
         if (window.userRole !== 'adm') {
             document.querySelectorAll('[data-target="goals"]').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('[data-target="cidades"]').forEach(el => el.classList.add('hidden'));
         }
 
         // Setup Admin View Toggle Button (Only for Admins)
