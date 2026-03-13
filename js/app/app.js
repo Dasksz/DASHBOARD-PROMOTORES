@@ -9444,7 +9444,7 @@ const supervisorGroups = new Map();
                     
                     const resolvedProdChart = window.resolveDim('produtos', s.PRODUTO);
                     const qtdeMasterChart = (resolvedProdChart && resolvedProdChart.qtde_master && resolvedProdChart.qtde_master > 0) ? resolvedProdChart.qtde_master : 1;
-                    const qty = currentCoverageMetricMode === "boxes" ? ((Number(s.QTVENDA) || 0) / qtdeMasterChart) : (Number(s.VLRVENDA) || 0);
+                    const qty = currentCoverageMetricMode === "boxes" ? ((Number(s.QTVENDA) || 0) / qtdeMasterChart) : getValueForSale(s, selectedCoverageTiposVenda);
 
                     salesByCity[city] = (salesByCity[city] || 0) + qty;
 
