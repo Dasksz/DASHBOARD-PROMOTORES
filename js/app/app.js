@@ -21216,8 +21216,16 @@ const supervisorGroups = new Map();
 
         // Merge Itinerary Data from embeddedData.clientPromoters (Memory Cache)
         // This ensures we show the latest Saved data even if data_clients table is stale
-        if (optimizedData.clientPromotersMap) {
+        if (embeddedData.clientPromotersMap) {
              // O(1) Lookup
+             const matches = embeddedData.clientPromotersMap.get(normalizeKey(clientCode));
+             if (matches && matches.length > 0) {
+                 const promoData = matches[0];
+                 client.itinerary_frequency = promoData.itinerary_frequency;
+                 client.itinerary_next_date = promoData.itinerary_ref_date;
+             }
+        } else if (optimizedData.clientPromotersMap) {
+             // O(1) Lookup (Old Map)
              const promoData = optimizedData.clientPromotersMap.get(normalizeKey(clientCode));
              if (promoData) {
                  client.itinerary_frequency = promoData.itinerary_frequency;
@@ -21718,7 +21726,10 @@ const supervisorGroups = new Map();
         const btnText = document.getElementById('wallet-modal-action-text');
         
         let currentOwner = null;
-        if (embeddedData.clientPromoters) {
+        if (embeddedData.clientPromotersMap) {
+            const matches = embeddedData.clientPromotersMap.get(normalizeKey(codeKey));
+            if (matches && matches.length > 0) currentOwner = matches[0].promoter_code;
+        } else if (embeddedData.clientPromoters) {
              const match = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === normalizeKey(codeKey));
              if (match) currentOwner = match.promoter_code;
         }
@@ -21865,6 +21876,7 @@ const supervisorGroups = new Map();
          try {
              // Safety check for embeddedData
              if (!embeddedData.clientPromoters) embeddedData.clientPromoters = [];
+             if (!embeddedData.clientPromotersMap) embeddedData.clientPromotersMap = new Map();
 
              if (action === 'upsert') {
                  // Use Normalized Key for DB Consistency
@@ -21872,9 +21884,18 @@ const supervisorGroups = new Map();
                     .upsert({ client_code: clientCodeNorm, promoter_code: promoter }, { onConflict: 'client_code' });
                  if(error) throw error;
                  
-                 const idx = embeddedData.clientPromoters.findIndex(cp => normalizeKey(cp.client_code) === clientCodeNorm);
-                 if(idx >= 0) embeddedData.clientPromoters[idx].promoter_code = promoter;
-                 else embeddedData.clientPromoters.push({ client_code: clientCodeNorm, promoter_code: promoter });
+                 const existingEntries = embeddedData.clientPromotersMap.get(clientCodeNorm) || [];
+                 if (existingEntries.length > 0) {
+                     // Update all existing entries for this client in memory
+                     existingEntries.forEach(entry => {
+                         entry.promoter_code = promoter;
+                     });
+                 } else {
+                     // Add new entry
+                     const newEntry = { client_code: clientCodeNorm, promoter_code: promoter };
+                     embeddedData.clientPromoters.push(newEntry);
+                     embeddedData.clientPromotersMap.set(clientCodeNorm, [newEntry]);
+                 }
                  
                  // Ensure client exists in local dataset (for display)
                  const dataset = allClientsData;
@@ -21948,24 +21969,13 @@ const supervisorGroups = new Map();
                  
              } else {
                  // Find all matching entries in memory to get IDs (if available) or check existence
-                 const matches = [];
-                 const idsToDelete = [];
-                 const codesToDelete = [];
-
-                 for (let i = 0; i < embeddedData.clientPromoters.length; i++) {
-                     const cp = embeddedData.clientPromoters[i];
-                     if (normalizeKey(cp.client_code) === clientCodeNorm) {
-                         matches.push({ entry: cp, idx: i });
-                         if (cp.id) {
-                             idsToDelete.push(cp.id);
-                         } else {
-                             codesToDelete.push(clientCodeNorm);
-                         }
-                     }
-                 }
+                 const entries = embeddedData.clientPromotersMap.get(clientCodeNorm) || [];
                  
-                 if (matches.length > 0) {
-                     console.log(`[Wallet] Removing existing entries (${matches.length}):`, matches.map(m => m.entry));
+                 if (entries.length > 0) {
+                     const idsToDelete = entries.map(e => e.id).filter(id => id);
+                     const codesToDelete = entries.length > idsToDelete.length ? [clientCodeNorm] : [];
+
+                     console.log(`[Wallet] Removing existing entries (${entries.length})`);
 
                      if (idsToDelete.length > 0) {
                          // Bulk Delete by ID is safest and fastest
@@ -21986,10 +21996,14 @@ const supervisorGroups = new Map();
                          if (error) throw error;
                      }
 
-                     // Remove from memory in reverse order to preserve indices
-                     matches.sort((a, b) => b.idx - a.idx).forEach(m => {
-                         embeddedData.clientPromoters.splice(m.idx, 1);
-                     });
+                     // Remove from memory
+                     // Use splice to preserve reference integrity
+                     for (let i = embeddedData.clientPromoters.length - 1; i >= 0; i--) {
+                         if (normalizeKey(embeddedData.clientPromoters[i].client_code) === clientCodeNorm) {
+                             embeddedData.clientPromoters.splice(i, 1);
+                         }
+                     }
+                     embeddedData.clientPromotersMap.delete(clientCodeNorm);
                  } else {
                      console.warn(`[Wallet] Client ${clientCodeNorm} not found in memory map during remove. Performing blind delete.`);
                      // Blind delete
@@ -22779,7 +22793,10 @@ const supervisorGroups = new Map();
             // upsert is safer. We need the promoter code.
             // Find current promoter in cache
             let currentPromoter = null;
-            if (embeddedData.clientPromoters) {
+            if (embeddedData.clientPromotersMap) {
+                const matches = embeddedData.clientPromotersMap.get(clientCodeNorm);
+                if (matches && matches.length > 0) currentPromoter = matches[0].promoter_code;
+            } else if (embeddedData.clientPromoters) {
                 const match = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === clientCodeNorm);
                 if (match) currentPromoter = match.promoter_code;
             }
@@ -22803,21 +22820,40 @@ const supervisorGroups = new Map();
             if (error) throw error;
 
             // 2. Update Local Cache (embeddedData.clientPromoters)
-            let entry = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === clientCodeNorm);
-            if (entry) {
-                entry.itinerary_frequency = frequency;
-                entry.itinerary_ref_date = nextDate;
-                entry.itinerary_days = days;
+            if (embeddedData.clientPromotersMap) {
+                const entries = embeddedData.clientPromotersMap.get(clientCodeNorm) || [];
+                if (entries.length > 0) {
+                    entries.forEach(entry => {
+                        entry.itinerary_frequency = frequency;
+                        entry.itinerary_ref_date = nextDate;
+                        entry.itinerary_days = days;
+                    });
+                } else {
+                    const newEntry = {
+                        client_code: clientCodeNorm,
+                        promoter_code: currentPromoter,
+                        itinerary_frequency: frequency,
+                        itinerary_ref_date: nextDate,
+                        itinerary_days: days
+                    };
+                    embeddedData.clientPromoters.push(newEntry);
+                    embeddedData.clientPromotersMap.set(clientCodeNorm, [newEntry]);
+                }
             } else {
-                embeddedData.clientPromoters.push({
-                    client_code: clientCodeNorm,
-                    promoter_code: currentPromoter,
-                    itinerary_frequency: frequency,
-                    itinerary_ref_date: nextDate,
-                    itinerary_days: days
-                });
-
-
+                let entry = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === clientCodeNorm);
+                if (entry) {
+                    entry.itinerary_frequency = frequency;
+                    entry.itinerary_ref_date = nextDate;
+                    entry.itinerary_days = days;
+                } else {
+                    embeddedData.clientPromoters.push({
+                        client_code: clientCodeNorm,
+                        promoter_code: currentPromoter,
+                        itinerary_frequency: frequency,
+                        itinerary_ref_date: nextDate,
+                        itinerary_days: days
+                    });
+                }
             }
 
             // 3. Update allClientsData (In-memory Columnar)

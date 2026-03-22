@@ -896,16 +896,25 @@
             // --- MERGE PROMOTERS INTO CLIENTS ---
             // Build Map of Promoter Codes and Itinerary Data
             const promoterMap = new Map();
+            const clientPromotersMap = new Map();
+
             if (clientPromoters && clientPromoters.length > 0) {
                 clientPromoters.forEach(p => {
                     if (p.client_code && p.promoter_code) {
-                        // Normalize key to match client data
-                        promoterMap.set(normalizeKey(p.client_code), {
+                        const normKey = normalizeKey(p.client_code);
+                        // promoterMap used for merging into clients (last one wins if dirty)
+                        promoterMap.set(normKey, {
                             code: String(p.promoter_code).trim(),
                             frequency: p.itinerary_frequency || '',
                             nextDate: p.itinerary_ref_date || '',
                             days: p.itinerary_days || ''
                         });
+
+                        // clientPromotersMap used for fast lookup of ALL entries (for deletes/updates)
+                        if (!clientPromotersMap.has(normKey)) {
+                            clientPromotersMap.set(normKey, []);
+                        }
+                        clientPromotersMap.get(normKey).push(p);
                     }
                 });
             }
@@ -1270,6 +1279,7 @@
                 metadata: metadata,
                 hierarchy: hierarchy,
                 clientPromoters: clientPromoters,
+                clientPromotersMap: clientPromotersMap,
                 clientCoordinates: clientCoordinates,
                 titulos: titulos,
                 nota_perfeita: nota_perfeita,

@@ -719,8 +719,14 @@ const FeedVisitas = (() => {
                         }
                         
                         // 3. Co-coordenador (Baseado na tabela data_client_promoters e data_hierarchy)
-                        if (window.embeddedData && window.embeddedData.clientPromoters && window.embeddedData.hierarchy) {
-                            const promoterRow = window.embeddedData.clientPromoters.find(p => String(p.client_code).trim() === clientCodeForLookup);
+                        if (window.embeddedData && (window.embeddedData.clientPromotersMap || window.embeddedData.clientPromoters) && window.embeddedData.hierarchy) {
+                            let promoterRow = null;
+                            if (window.embeddedData.clientPromotersMap) {
+                                const matches = window.embeddedData.clientPromotersMap.get(normalizeKey(clientCodeForLookup));
+                                if (matches && matches.length > 0) promoterRow = matches[0];
+                            } else {
+                                promoterRow = window.embeddedData.clientPromoters.find(p => String(p.client_code).trim() === clientCodeForLookup);
+                            }
                             
                             if (promoterRow && promoterRow.promoter_code) {
                                 // Normaliza o promoter_code
