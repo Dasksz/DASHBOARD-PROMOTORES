@@ -947,8 +947,12 @@
                       } else if (window.userIsSupervisor) {
                           // Try to find supervisor name in Sales Data
                           let foundName = null;
-                          const source = allSalesData;
-                          if (source) {
+                          if (typeof supervisorDetailsMap !== 'undefined' && supervisorDetailsMap.has(role)) {
+                              const d = supervisorDetailsMap.get(role);
+                              if (d && d.name) foundName = d.name;
+                          }
+                          if (!foundName && typeof allSalesData !== 'undefined' && allSalesData) {
+                              const source = allSalesData;
                               if (source instanceof ColumnarDataset) {
                                   const raw = source._data || source.values;
                                   if (raw) {
