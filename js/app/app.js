@@ -21538,7 +21538,8 @@ const supervisorGroups = new Map();
         const metrics = {
             salesByMonth: new Map(), // Map<YYYY-MM, value>
             lossesByMonth: new Map(), // Map<YYYY-MM, { value, items: [] }>
-            bonusByMonth: new Map() // Map<YYYY-MM, { value, items: [] }>
+            bonusByMonth: new Map(), // Map<YYYY-MM, { value, items: [] }>
+            ordersByMonth: new Map() // Map<YYYY-MM, Map<PEDIDO, {date, totalValue, products: Set}>>
         };
         
         const normalizeItem = (s) => ({
@@ -21548,6 +21549,7 @@ const supervisorGroups = new Map();
             type: String(s.TIPOVENDA),
             prod: s.PRODUTO,
             desc: (function() { const p = window.resolveDim('produtos', s.PRODUTO); return (typeof p === 'object' ? p.descricao : p) || s.DESCRICAO; })(),
+            pedido: s.PEDIDO,
             qty: Number(s.QTVENDA) || 0
         });
 
@@ -21559,6 +21561,22 @@ const supervisorGroups = new Map();
             
             const monthKey = `${item.d.getUTCFullYear()}-${String(item.d.getUTCMonth()+1).padStart(2,'0')}`;
             
+            // Track Orders
+            if (item.pedido) {
+                let monthOrders = metrics.ordersByMonth.get(monthKey);
+                if (!monthOrders) {
+                    monthOrders = new Map();
+                    metrics.ordersByMonth.set(monthKey, monthOrders);
+                }
+                let orderData = monthOrders.get(item.pedido);
+                if (!orderData) {
+                    orderData = { date: item.d, totalValue: 0, products: new Set() };
+                    monthOrders.set(item.pedido, orderData);
+                }
+                if (item.val > 0) orderData.totalValue += item.val;
+                if (item.prod) orderData.products.add(item.prod);
+            }
+
             // General Sales (Type 1, 9, etc - usually non-bonus or specific types? Just sum VLVENDA for Total Purchase)
             if (item.val > 0) {
                 metrics.salesByMonth.set(monthKey, (metrics.salesByMonth.get(monthKey) || 0) + item.val);
@@ -21608,19 +21626,90 @@ const supervisorGroups = new Map();
         salesBody.innerHTML = '';
         const sortedMonths = Array.from(metrics.salesByMonth.keys()).sort().reverse().slice(0, 6); // Last 6 months (as requested)
         if (sortedMonths.length === 0) {
-            salesBody.innerHTML = '<tr><td colspan="2" class="px-4 py-3 text-center text-slate-500">Sem histórico recente</td></tr>';
+            salesBody.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-slate-500">Sem histórico recente</td></tr>';
         } else {
             sortedMonths.forEach(m => {
-                const val = metrics.salesByMonth.get(m);
+                const val = metrics.salesByMonth.get(m) || 0;
+                const lossesObj = metrics.lossesByMonth.get(m);
+                const bonusObj = metrics.bonusByMonth.get(m);
+
+                const lossesVal = lossesObj ? lossesObj.value : 0;
+                const bonusVal = bonusObj ? bonusObj.value : 0;
+
+                const pPerc = val > 0 ? ((lossesVal / val) * 100).toFixed(1) + '%' : '0%';
+                const bPerc = val > 0 ? ((bonusVal / val) * 100).toFixed(1) + '%' : '0%';
+
                 const [y, mo] = m.split('-');
                 const monthName = new Date(y, mo-1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
                 
-                salesBody.innerHTML += `
-                    <tr>
-                        <td class="px-4 py-2 capitalize text-slate-300">${monthName}</td>
-                        <td class="px-4 py-2 text-right font-mono font-bold text-white">${val.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
-                    </tr>
+                const tr = document.createElement('tr');
+                tr.className = "cursor-pointer hover:bg-slate-800/50 transition-colors border-b border-slate-800/50 last:border-0";
+
+                tr.innerHTML = `
+                    <td class="px-4 py-2 capitalize text-slate-300 w-1/3">
+                        <div class="flex items-center gap-1">
+                            <svg class="w-3 h-3 text-slate-500 transition-transform duration-200 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            ${monthName}
+                        </div>
+                    </td>
+                    <td class="px-2 py-2 text-right font-mono font-bold text-white">${val.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+                    <td class="px-2 py-2 text-center text-[10px] font-mono font-bold text-red-400">${pPerc}</td>
+                    <td class="px-2 py-2 text-center text-[10px] font-mono font-bold text-blue-400">${bPerc}</td>
                 `;
+
+                // Build Sub-row for Orders
+                const ordersRow = document.createElement('tr');
+                ordersRow.className = "hidden bg-slate-900/30";
+                const ordersCell = document.createElement('td');
+                ordersCell.colSpan = 4;
+                ordersCell.className = "p-0";
+
+                const monthOrders = metrics.ordersByMonth.get(m);
+                if (monthOrders && monthOrders.size > 0) {
+                    let ordersHtml = `<div class="py-2 px-4 border-t border-slate-800/50 space-y-2">`;
+                    // Sort orders by date descending
+                    const sortedOrders = Array.from(monthOrders.entries()).sort((a,b) => b[1].date - a[1].date);
+
+                    sortedOrders.forEach(([pedidoId, orderData]) => {
+                        const dateStr = orderData.date.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
+                        const totalStr = orderData.totalValue.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+                        const mixCount = orderData.products.size;
+
+                        ordersHtml += `
+                            <div class="flex items-center justify-between text-xs p-2 rounded bg-slate-800/40 border border-slate-700/50">
+                                <div class="flex flex-col">
+                                    <span class="text-blue-400 font-mono font-bold cursor-pointer hover:underline" onclick="event.stopPropagation(); window.openModal('${pedidoId}');">#${pedidoId}</span>
+                                    <span class="text-slate-400">${dateStr}</span>
+                                </div>
+                                <div class="flex flex-col items-end">
+                                    <span class="text-white font-mono font-bold">${totalStr}</span>
+                                    <span class="text-[10px] text-teal-400 font-bold">Mix: ${mixCount}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    ordersHtml += `</div>`;
+                    ordersCell.innerHTML = ordersHtml;
+                } else {
+                    ordersCell.innerHTML = `<div class="py-2 px-4 text-xs text-center text-slate-500 border-t border-slate-800/50">Nenhum pedido encontrado.</div>`;
+                }
+
+                ordersRow.appendChild(ordersCell);
+
+                tr.onclick = () => {
+                    const isHidden = ordersRow.classList.contains('hidden');
+                    if (isHidden) {
+                        ordersRow.classList.remove('hidden');
+                        tr.querySelector('svg').classList.add('rotate-90');
+                    } else {
+                        ordersRow.classList.add('hidden');
+                        tr.querySelector('svg').classList.remove('rotate-90');
+                    }
+                };
+
+                salesBody.appendChild(tr);
+                salesBody.appendChild(ordersRow);
             });
         }
 
