@@ -21231,13 +21231,6 @@ const supervisorGroups = new Map();
                  client.itinerary_frequency = promoData.itinerary_frequency;
                  client.itinerary_next_date = promoData.itinerary_ref_date;
              }
-        } else if (embeddedData.clientPromoters) {
-             // Fallback if Map not ready (unlikely)
-             const promoData = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === normalizeKey(clientCode));
-             if (promoData) {
-                 client.itinerary_frequency = promoData.itinerary_frequency;
-                 client.itinerary_next_date = promoData.itinerary_ref_date;
-             }
         }
         
         const modal = document.getElementById('wallet-client-modal');
@@ -21729,9 +21722,6 @@ const supervisorGroups = new Map();
         if (embeddedData.clientPromotersMap) {
             const matches = embeddedData.clientPromotersMap.get(normalizeKey(codeKey));
             if (matches && matches.length > 0) currentOwner = matches[0].promoter_code;
-        } else if (embeddedData.clientPromoters) {
-             const match = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === normalizeKey(codeKey));
-             if (match) currentOwner = match.promoter_code;
         }
         
         const myPromoter = walletState.selectedPromoter;
@@ -22796,9 +22786,6 @@ const supervisorGroups = new Map();
             if (embeddedData.clientPromotersMap) {
                 const matches = embeddedData.clientPromotersMap.get(clientCodeNorm);
                 if (matches && matches.length > 0) currentPromoter = matches[0].promoter_code;
-            } else if (embeddedData.clientPromoters) {
-                const match = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === clientCodeNorm);
-                if (match) currentPromoter = match.promoter_code;
             }
             
             // If no promoter assigned, we can't save itinerary comfortably in that table? 
@@ -22838,21 +22825,6 @@ const supervisorGroups = new Map();
                     };
                     embeddedData.clientPromoters.push(newEntry);
                     embeddedData.clientPromotersMap.set(clientCodeNorm, [newEntry]);
-                }
-            } else {
-                let entry = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === clientCodeNorm);
-                if (entry) {
-                    entry.itinerary_frequency = frequency;
-                    entry.itinerary_ref_date = nextDate;
-                    entry.itinerary_days = days;
-                } else {
-                    embeddedData.clientPromoters.push({
-                        client_code: clientCodeNorm,
-                        promoter_code: currentPromoter,
-                        itinerary_frequency: frequency,
-                        itinerary_ref_date: nextDate,
-                        itinerary_days: days
-                    });
                 }
             }
 
