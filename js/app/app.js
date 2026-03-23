@@ -15599,14 +15599,15 @@ const supervisorGroups = new Map();
 
                     // Final verification to ensure table is empty
                     try {
-                        const { count, error } = await window.supabaseClient
+                        const { data, error } = await window.supabaseClient
                             .from(table)
-                            .select('*', { count: 'exact', head: true });
+                            .select('id')
+                            .limit(1);
                         if (error) {
                             throw new Error(`Erro ao verificar contagem de ${table}: ${error.message}`);
                         }
-                        if (count > 0) {
-                            throw new Error(`Falha crítica: A tabela ${table} não foi limpa com sucesso. Restam ${count} registros.`);
+                        if (data && data.length > 0) {
+                            throw new Error(`Falha crítica: A tabela ${table} não foi limpa com sucesso. Ainda existem registros.`);
                         }
                     } catch(e) {
                         throw new Error(`Erro fatal de limpeza em ${table}: ${e.message}`);
@@ -15730,10 +15731,11 @@ const supervisorGroups = new Map();
                         // Check if table is empty (Force upload if empty)
                         let forceUpload = false;
                         try {
-                             const { count, error } = await window.supabaseClient
+                             const { data, error } = await window.supabaseClient
                                 .from(table)
-                                .select('*', { count: 'exact', head: true });
-                             if (!error && count === 0) {
+                                .select('id')
+                                .limit(1);
+                             if (!error && data && data.length === 0) {
                                  forceUpload = true;
                                  console.log(`[Upload] Table ${table} is empty. Forcing upload.`);
                              }
@@ -15751,7 +15753,7 @@ const supervisorGroups = new Map();
 
                 const forbiddenDimCols = ['DESCRICAO', 'NOME', 'SUPERV', 'FORNECEDOR', 'OBSERVACAOFOR'];
                 await conditionalUpload('data_detailed', sanitizeColumnarForUpload(data.detailed, forbiddenDimCols), 'hash_detailed', true);
-                await conditionalUpload('data_history', sanitizeColumnarForUpload(data.history, forbiddenDimCols), 'hash_history', true);
+                await conditionalUpload('data_history', sanitizeColumnarForUpload(data.history, forbiddenDimCols), 'hash_history', true, 'id', 'id');
                 await conditionalUpload('data_orders', data.byOrder, 'hash_orders', false, 'id', 'pedido');
                 await conditionalUpload('data_clients', data.clients, 'hash_clients', true, 'id', 'codigo_cliente');
                 await conditionalUpload('data_stock', data.stock, 'hash_stock', false);
