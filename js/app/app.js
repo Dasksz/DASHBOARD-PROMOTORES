@@ -1285,6 +1285,8 @@
 
         let sellerDetailsMap = new Map();
         window.sellerDetailsMap = sellerDetailsMap;
+        let supervisorDetailsMap = new Map();
+        window.supervisorDetailsMap = supervisorDetailsMap;
 
         // --- HIERARCHY FILTER SYSTEM ---
         const hierarchyState = {}; // Map<viewPrefix, { coords: Set, cocoords: Set, promotors: Set }>
@@ -1944,6 +1946,7 @@
 
         function initializeOptimizedDataStructures() {
             sellerDetailsMap = new Map();
+            supervisorDetailsMap = new Map();
             const sellerLastSaleDateMap = new Map(); // Track latest date per seller
             const clientToCurrentSellerMap = new Map();
             let americanasCodCli = null;
@@ -1972,6 +1975,17 @@
                             sellerLastSaleDateMap.set(key, ts);
                             const supervisorName = window.resolveDim('supervisores', s.CODSUPERVISOR);
                             sellerDetailsMap.set(key, { name: nomeVendedor, supervisor: supervisorName });
+
+                            // Cache supervisor from raw SUPERV data
+                            const codSup = String(s.CODSUPERVISOR || '').trim().toUpperCase();
+                            const rawSupervName = s.SUPERV; // Might not exist on all datasets
+                            if (codSup) {
+                                // Prefer raw name from data, fallback to resolved dimension
+                                const nameToCache = rawSupervName || (supervisorName !== 'N/A' ? supervisorName : null);
+                                if (nameToCache && !supervisorDetailsMap.has(codSup)) {
+                                    supervisorDetailsMap.set(codSup, { name: nameToCache });
+                                }
+                            }
                         }
                     }
                 }
@@ -20695,8 +20709,12 @@ const supervisorGroups = new Map();
                       } else if (window.userIsSupervisor) {
                           // Try to find supervisor name in Sales Data
                           let foundName = null;
-                          const source = allSalesData;
-                          if (source) {
+                          if (typeof supervisorDetailsMap !== 'undefined' && supervisorDetailsMap.has(role)) {
+                              const d = supervisorDetailsMap.get(role);
+                              if (d && d.name) foundName = d.name;
+                          }
+                          if (!foundName && typeof allSalesData !== 'undefined' && allSalesData) {
+                              const source = allSalesData;
                               if (source instanceof ColumnarDataset) {
                                   const raw = source._data || source.values;
                                   if (raw) {
