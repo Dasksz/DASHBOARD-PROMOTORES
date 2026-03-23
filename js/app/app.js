@@ -15609,7 +15609,7 @@ const supervisorGroups = new Map();
                     try {
                         const { data, error } = await window.supabaseClient
                             .from(table)
-                            .select('id')
+                            .select(pkColumn)
                             .limit(1);
                         if (error) {
                             throw new Error(`Erro ao verificar contagem de ${table}: ${error.message}`);
@@ -15741,7 +15741,7 @@ const supervisorGroups = new Map();
                         try {
                              const { data, error } = await window.supabaseClient
                                 .from(table)
-                                .select('id')
+                                .select(pk)
                                 .limit(1);
                              if (!error && data && data.length === 0) {
                                  forceUpload = true;
