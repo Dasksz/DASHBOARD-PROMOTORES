@@ -1964,6 +1964,16 @@
                     // Resolve Names via Lookups
                     const nomeVendedor = window.resolveDim('vendedores', codUsur);
 
+                    // Semper cache raw names from data for wallet fallback lookups
+                    const rawUsurKey = String(codUsur || '').trim().toUpperCase();
+                    if (rawUsurKey && s.NOME && !sellerDetailsMap.has(rawUsurKey)) {
+                         sellerDetailsMap.set(rawUsurKey, { name: s.NOME, supervisor: s.SUPERV || null });
+                    }
+                    const rawSupKey = String(s.CODSUPERVISOR || '').trim().toUpperCase();
+                    if (rawSupKey && s.SUPERV && !supervisorDetailsMap.has(rawSupKey)) {
+                         supervisorDetailsMap.set(rawSupKey, { name: s.SUPERV });
+                    }
+
                     // Ignorar 'INATIVOS' e 'AMERICANAS' para evitar poluição do mapa de supervisores com lógica de fallback
                     if (codUsur && nomeVendedor !== 'INATIVOS' && nomeVendedor !== 'AMERICANAS') {
                         const dt = parseDate(s.DTPED);
@@ -1971,9 +1981,10 @@
                         const key = String(codUsur).trim(); // Force String Key
                         const lastTs = sellerLastSaleDateMap.get(key) || 0;
 
-                        if (ts >= lastTs || !sellerDetailsMap.has(key)) {
+                        if (ts >= lastTs || (!sellerDetailsMap.has(key) || sellerDetailsMap.get(key).name === s.NOME)) { // avoid overwriting actual dimension data if possible, but keep fallback
                             sellerLastSaleDateMap.set(key, ts);
                             const supervisorName = window.resolveDim('supervisores', s.CODSUPERVISOR);
+                            // Override with dimension name if it's better
                             sellerDetailsMap.set(key, { name: nomeVendedor, supervisor: supervisorName });
 
                             // Cache supervisor from raw SUPERV data
@@ -1982,7 +1993,7 @@
                             if (codSup) {
                                 // Prefer raw name from data, fallback to resolved dimension
                                 const nameToCache = rawSupervName || (supervisorName !== 'N/A' ? supervisorName : null);
-                                if (nameToCache && !supervisorDetailsMap.has(codSup)) {
+                                if (nameToCache) {
                                     supervisorDetailsMap.set(codSup, { name: nameToCache });
                                 }
                             }
@@ -20684,55 +20695,12 @@ const supervisorGroups = new Map();
                               const d = sellerDetailsMap.get(role);
                               if (d && d.name) foundName = d.name;
                           }
-                          if (!foundName && typeof allSalesData !== 'undefined' && allSalesData) {
-                              const source = allSalesData;
-                              if (source instanceof ColumnarDataset) {
-                                  const raw = source._data || source.values;
-                                  if (raw) {
-                                      const codes = raw['CODUSUR'];
-                                      const names = raw['NOME'];
-                                      if (codes && names) {
-                                          for(let i=0; i<source.length; i++) {
-                                              if (String(codes[i]||'').trim().toUpperCase() === role) {
-                                                  foundName = names[i];
-                                                  break;
-                                              }
-                                          }
-                                      }
-                                  }
-                              } else {
-                                  const row = source.find(x => String(x.CODUSUR||'').trim().toUpperCase() === role);
-                                  if (row) foundName = row.NOME;
-                              }
-                          }
                           if (foundName) nameEl.textContent = formatName(foundName);
                       } else if (window.userIsSupervisor) {
-                          // Try to find supervisor name in Sales Data
                           let foundName = null;
                           if (typeof supervisorDetailsMap !== 'undefined' && supervisorDetailsMap.has(role)) {
                               const d = supervisorDetailsMap.get(role);
                               if (d && d.name) foundName = d.name;
-                          }
-                          if (!foundName && typeof allSalesData !== 'undefined' && allSalesData) {
-                              const source = allSalesData;
-                              if (source instanceof ColumnarDataset) {
-                                  const raw = source._data || source.values;
-                                  if (raw) {
-                                      const codes = raw['CODSUPERVISOR'];
-                                      const names = raw['SUPERV'];
-                                      if (codes && names) {
-                                          for(let i=0; i<source.length; i++) {
-                                              if (String(codes[i]||'').trim().toUpperCase() === role) {
-                                                  foundName = names[i];
-                                                  break;
-                                              }
-                                          }
-                                      }
-                                  }
-                              } else {
-                                  const row = source.find(x => String(x.CODSUPERVISOR||'').trim().toUpperCase() === role);
-                                  if (row) foundName = row.SUPERV;
-                              }
                           }
                           if (foundName) nameEl.textContent = formatName(foundName);
                       }
