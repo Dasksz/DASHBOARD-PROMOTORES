@@ -10945,6 +10945,126 @@ const supervisorGroups = new Map();
 
                 renderCategoryRadarChart(radarData);
 
+                // --- Metas Radar Chart Logic ---
+                // Faturamento, Tonelada, Positivação from Performance
+                // Mix Salty and Mix Foods from getMixFilteredData
+
+                let metasData = [];
+                let hasMetas = false;
+
+                // Fetch basic performance from current dashboard logic
+                // The current performance is calculated above as globalPerformancePct
+                const globalRealizadoVal = document.getElementById('global-realizado').textContent.replace('R$ ', '').replace(/\./g, '').replace(',', '.');
+                const globalMetaVal = document.getElementById('global-meta').textContent.replace('R$ ', '').replace(/\./g, '').replace(',', '.');
+
+                const currentFatRealizado = parseFloat(globalRealizadoVal) || 0;
+                const currentFatMeta = parseFloat(globalMetaVal) || 0;
+                const fatAtingimento = currentFatMeta > 0 ? (currentFatRealizado / currentFatMeta) * 100 : 0;
+
+                // Volume and Positivation - try getting from KPIs or global goals
+                let tonRealizado = parseFloat((document.getElementById('kg-elma-value')?.textContent || '0').replace(/\./g, '').replace(',', '.')) +
+                                   parseFloat((document.getElementById('kg-foods-value')?.textContent || '0').replace(/\./g, '').replace(',', '.'));
+                let tonMeta = 0;
+                let positRealizado = 0;
+                let positMeta = 0;
+
+                // Try from goals
+                if (window.globalGoalsMetrics && window.globalGoalsMetrics.targets) {
+                     tonMeta = window.globalGoalsMetrics.targets.vol || 0;
+                     positMeta = window.globalGoalsMetrics.targets.posit || 0;
+
+                     // Get posit realizado from base client count and active buyers
+                     positRealizado = parseInt(document.getElementById('tot-positivados-value')?.textContent || '0', 10);
+                }
+
+                const tonAtingimento = tonMeta > 0 ? (tonRealizado / tonMeta) * 100 : 0;
+                const positAtingimento = positMeta > 0 ? (positRealizado / positMeta) * 100 : 0;
+
+                if (currentFatMeta > 0 || tonMeta > 0 || positMeta > 0) hasMetas = true;
+
+                metasData.push({ category: "Faturamento", value: Math.min(100, Math.round(fatAtingimento)), rawValue: fatAtingimento });
+                metasData.push({ category: "Tonelada", value: Math.min(100, Math.round(tonAtingimento)), rawValue: tonAtingimento });
+                metasData.push({ category: "Positivação", value: Math.min(100, Math.round(positAtingimento)), rawValue: positAtingimento });
+
+                // Mix Salty and Mix Foods Logic
+                // Only show if elma or foods or geral selected
+                const supplierDesc = currentDashboardSupplier === 'PEPSICO_ALL' ? 'PEPSICO_ALL' : (currentDashboardSupplier === 'ELMA_ALL' ? 'ELMA_ALL' : (currentDashboardSupplier === 'FOODS_ALL' ? 'FOODS_ALL' : ''));
+                const supplierText = document.getElementById('selected-supplier').textContent.toLowerCase();
+
+                if (supplierDesc === 'PEPSICO_ALL' || supplierDesc === 'ELMA_ALL' || supplierDesc === 'FOODS_ALL' || supplierText.includes('elma') || supplierText.includes('foods')) {
+                     // Need to get mix targets from window.goalsData or loaded goals
+                     let mixSaltyMeta = 0;
+                     let mixFoodsMeta = 0;
+
+                     // Assuming the system stores mix goals in global goals metrics or window
+                     // Let's use a fallback or try fetching from goals_data (if populated)
+
+                     if (window.goalsData && window.goalsData.mixSalty) mixSaltyMeta = window.goalsData.mixSalty;
+                     if (window.goalsData && window.goalsData.mixFoods) mixFoodsMeta = window.goalsData.mixFoods;
+
+                     // Calculate current Mix using getMixFilteredData logic but manually scoped to filtered data
+                     let positivadosSaltyCount = 0;
+                     let positivadosFoodsCount = 0;
+
+                     const clientProductNetValues = new Map();
+                     filteredSalesData.forEach(s => {
+                         if (!s.CODCLI || !s.PRODUTO) return;
+                         if (!clientProductNetValues.has(s.CODCLI)) clientProductNetValues.set(s.CODCLI, new Map());
+                         const clientMap = clientProductNetValues.get(s.CODCLI);
+                         const currentVal = clientMap.get(s.PRODUTO) || 0;
+                         const val = parseFloat(s.VLVENDATOT) || parseFloat(s.vlvendatot) || 0;
+                         clientMap.set(s.PRODUTO, currentVal + val);
+                     });
+
+                     clientProductNetValues.forEach((productsMap) => {
+                         const positivatedCats = new Set();
+                         productsMap.forEach((netValue, prodCode) => {
+                             if (netValue >= 1) {
+                                 const resolved = window.resolveDim('produtos', prodCode);
+                                 const desc = (resolved.descricao || '').toUpperCase();
+                                 if (typeof window.MIX_SALTY_CATEGORIES !== 'undefined') window.MIX_SALTY_CATEGORIES.forEach(cat => { if (desc.includes(cat)) positivatedCats.add(cat); });
+                                 if (typeof window.MIX_FOODS_CATEGORIES !== 'undefined') window.MIX_FOODS_CATEGORIES.forEach(cat => { if (desc.includes(cat)) positivatedCats.add(cat); });
+                             }
+                         });
+
+                         let hasSalty = true;
+                         let hasFoods = true;
+
+                         if (typeof window.MIX_SALTY_CATEGORIES !== 'undefined' && window.MIX_SALTY_CATEGORIES.length > 0) {
+                             hasSalty = window.MIX_SALTY_CATEGORIES.every(b => positivatedCats.has(b));
+                         } else hasSalty = false;
+
+                         if (typeof window.MIX_FOODS_CATEGORIES !== 'undefined' && window.MIX_FOODS_CATEGORIES.length > 0) {
+                             hasFoods = window.MIX_FOODS_CATEGORIES.every(b => positivatedCats.has(b));
+                         } else hasFoods = false;
+
+                         if (hasSalty) positivadosSaltyCount++;
+                         if (hasFoods) positivadosFoodsCount++;
+                     });
+
+                     // Set atingimento depending on goal or fallback to 0%
+                     const saltyAtingimento = mixSaltyMeta > 0 ? (positivadosSaltyCount / mixSaltyMeta) * 100 : 0;
+                     const foodsAtingimento = mixFoodsMeta > 0 ? (positivadosFoodsCount / mixFoodsMeta) * 100 : 0;
+
+                     if (supplierDesc === 'PEPSICO_ALL' || supplierDesc === 'ELMA_ALL' || supplierText.includes('elma')) {
+                         metasData.push({ category: "Mix Salty", value: Math.min(100, Math.round(saltyAtingimento)), rawValue: saltyAtingimento });
+                     }
+                     if (supplierDesc === 'PEPSICO_ALL' || supplierDesc === 'FOODS_ALL' || supplierText.includes('foods')) {
+                         metasData.push({ category: "Mix Foods", value: Math.min(100, Math.round(foodsAtingimento)), rawValue: foodsAtingimento });
+                     }
+                }
+
+                const metasPanel = document.getElementById('metasPorFornecedorPanel');
+                if (hasMetas) {
+                    if (metasPanel) metasPanel.classList.remove('hidden');
+                    if (typeof renderMetasRadarChart === 'function') {
+                        renderMetasRadarChart(metasData);
+                    }
+                } else {
+                    if (metasPanel) metasPanel.classList.add('hidden');
+                }
+
+
                 // Variation Table Logic
                 const variationData = calculateProductVariation(filteredSalesData, filteredHistoryData);
                 renderTopProductsVariationTable(variationData);
@@ -26935,6 +27055,154 @@ const supervisorGroups = new Map();
         // Animation
         series1.appear(1000);
         series2.appear(1000);
+        chart.appear(1000, 100);
+    }
+
+    function renderMetasRadarChart(data) {
+        // Dispose existing root if present
+        if (window.am5 && window.am5.registry && window.am5.registry.rootElements) {
+             for (let i = window.am5.registry.rootElements.length - 1; i >= 0; i--) {
+                 const r = window.am5.registry.rootElements[i];
+                 if (r.dom && r.dom.id === "metasPorFornecedorChartContainer") {
+                     r.dispose();
+                 }
+             }
+        }
+
+        const container = document.getElementById('metasPorFornecedorChartContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!window.am5 || !window.am5radar) {
+            console.error("amCharts 5 Radar not loaded");
+            return;
+        }
+
+        const am5 = window.am5;
+        const am5xy = window.am5xy;
+        const am5radar = window.am5radar;
+        const am5themes_Animated = window.am5themes_Animated;
+
+        const root = am5.Root.new("metasPorFornecedorChartContainer");
+
+        if (root._logo) {
+            root._logo.dispose();
+        }
+
+        root.setThemes([
+            am5themes_Animated.new(root),
+            window.am5themes_Dark ? window.am5themes_Dark.new(root) : am5themes_Animated.new(root)
+        ]);
+
+        // Create chart
+        const chart = root.container.children.push(am5radar.RadarChart.new(root, {
+            panX: false,
+            panY: false,
+            wheelX: "none",
+            wheelY: "none",
+            innerRadius: am5.percent(20),
+            startAngle: -90,
+            endAngle: 180
+        }));
+
+        // Cursor
+        const cursor = chart.set("cursor", am5radar.RadarCursor.new(root, {
+            behavior: "none"
+        }));
+        cursor.lineY.set("visible", false);
+
+        // Category axis
+        const xRenderer = am5radar.AxisRendererCircular.new(root, {
+            //minGridDistance: 10
+        });
+        xRenderer.labels.template.setAll({
+            textType: "radial",
+            radius: 10,
+            paddingTop: 0,
+            paddingBottom: 0,
+            centerY: am5.p50,
+            fontSize: 10,
+            fontWeight: "bold"
+        });
+        xRenderer.grid.template.setAll({
+            location: 0.5,
+            strokeDasharray: [2, 2]
+        });
+
+        const xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+            maxDeviation: 0,
+            categoryField: "category",
+            renderer: xRenderer,
+            tooltip: am5.Tooltip.new(root, {})
+        }));
+
+        // Value axis (always 0 to 100)
+        const yRenderer = am5radar.AxisRendererRadial.new(root, {
+            minGridDistance: 20
+        });
+        yRenderer.labels.template.setAll({
+            centerX: am5.p100,
+            fontWeight: "500",
+            fontSize: 12,
+            fill: am5.color(0xffffff),
+            templateField: "columnSettings"
+        });
+
+        const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+            renderer: yRenderer,
+            min: 0,
+            max: 100,
+            strictMinMax: true
+        }));
+
+        yAxis.get("renderer").labels.template.adapters.add("text", function(text, target) {
+            return text + "%";
+        });
+
+        // Series
+        const series = chart.series.push(am5radar.RadarColumnSeries.new(root, {
+            xAxis: xAxis,
+            yAxis: yAxis,
+            valueYField: "value",
+            categoryXField: "category"
+        }));
+
+        series.columns.template.setAll({
+            tooltipText: "{category}: {value}%",
+            templateField: "columnSettings",
+            strokeOpacity: 0,
+            width: am5.p100
+        });
+
+        // Set colors matching original
+        data.forEach(item => {
+            if (item.category === 'Faturamento') {
+                item.columnSettings = { fill: am5.color(0x3b82f6) }; // blue-500
+            } else if (item.category === 'Tonelada') {
+                item.columnSettings = { fill: am5.color(0x8b5cf6) }; // violet-500
+            } else if (item.category === 'Positivação') {
+                item.columnSettings = { fill: am5.color(0x10b981) }; // emerald-500
+            } else if (item.category === 'Mix Salty') {
+                item.columnSettings = { fill: am5.color(0xf59e0b) }; // amber-500
+            } else if (item.category === 'Mix Foods') {
+                item.columnSettings = { fill: am5.color(0xef4444) }; // red-500
+            } else {
+                 item.columnSettings = { fill: am5.color(0x64748b) }; // slate
+            }
+        });
+
+        xAxis.data.setAll(data);
+        series.data.setAll(data);
+
+        // Colorize labels
+        xRenderer.labels.template.adapters.add("fill", function (fill, target) {
+            if (target.dataItem && target.dataItem.dataContext) {
+                return target.dataItem.dataContext.columnSettings.fill;
+            }
+            return fill;
+        });
+
+        series.appear(1000);
         chart.appear(1000, 100);
     }
 
