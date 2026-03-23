@@ -1691,7 +1691,7 @@
             salesByMonth: new Map(), // Map<YYYY-MM, value>
             lossesByMonth: new Map(), // Map<YYYY-MM, { value, items: [] }>
             bonusByMonth: new Map(), // Map<YYYY-MM, { value, items: [] }>
-            ordersByMonth: new Map() // Map<YYYY-MM, Map<PEDIDO, {date, totalValue, products: Set}>>
+            ordersByMonth: new Map() // Map<YYYY-MM, Map<PEDIDO, {date, totalValue, products: Set, types: Set}>>
         };
 
         const normalizeItem = (s) => ({
@@ -1722,10 +1722,15 @@
                 }
                 let orderData = monthOrders.get(item.pedido);
                 if (!orderData) {
-                    orderData = { date: item.d, totalValue: 0, products: new Set() };
+                    orderData = { date: item.d, totalValue: 0, products: new Set(), types: new Set() };
                     monthOrders.set(item.pedido, orderData);
                 }
-                if (item.val > 0) orderData.totalValue += item.val;
+
+                // For Perdas (5) and Bonificacoes (11), use item.bon or fallback to item.val
+                const itemTotal = (item.type === '5' || item.type === '11') ? (item.bon || item.val) : item.val;
+                if (itemTotal > 0) orderData.totalValue += itemTotal;
+
+                if (item.type) orderData.types.add(item.type);
                 if (item.prod) orderData.products.add(item.prod);
             }
 
@@ -1827,10 +1832,21 @@
                         const totalStr = orderData.totalValue.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
                         const mixCount = orderData.products.size;
 
+                        // Extract type info if available
+                        let typeLabels = '';
+                        if (orderData.types && orderData.types.size > 0) {
+                            const typesArr = Array.from(orderData.types).filter(t => t);
+                            if (typesArr.length > 0) {
+                                typeLabels = '<span class="text-[10px] text-slate-500 ml-2 font-normal">(Tipo ' + typesArr.join(', ') + ')</span>';
+                            }
+                        }
+
                         ordersHtml += `
                             <div class="flex items-center justify-between text-xs p-2 rounded bg-slate-800/40 border border-slate-700/50">
                                 <div class="flex flex-col">
-                                    <span class="text-blue-400 font-mono font-bold cursor-pointer hover:underline" onclick="event.stopPropagation(); window.openModal('${pedidoId}');">#${pedidoId}</span>
+                                    <div>
+                                        <span class="text-blue-400 font-mono font-bold cursor-pointer hover:underline" onclick="event.stopPropagation(); window.openModal('${pedidoId}');">#${pedidoId}</span>${typeLabels}
+                                    </div>
                                     <span class="text-slate-400">${dateStr}</span>
                                 </div>
                                 <div class="flex flex-col items-end">
