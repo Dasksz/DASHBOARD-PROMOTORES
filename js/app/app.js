@@ -22791,14 +22791,21 @@ const supervisorGroups = new Map();
             // 1. Update Supabase (data_client_promoters)
             // Note: We update existing record. If it doesn't exist, we should theoretically insert, but user should be assigned first.
             // upsert is safer. We need the promoter code.
-            // Find current promoter in cache
+            // Find current promoter in cache and save entry reference
             let currentPromoter = null;
+            let cachedEntries = null;
             if (embeddedData.clientPromotersMap) {
                 const matches = embeddedData.clientPromotersMap.get(clientCodeNorm);
-                if (matches && matches.length > 0) currentPromoter = matches[0].promoter_code;
+                if (matches && matches.length > 0) {
+                    currentPromoter = matches[0].promoter_code;
+                    cachedEntries = matches;
+                }
             } else if (embeddedData.clientPromoters) {
                 const match = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === clientCodeNorm);
-                if (match) currentPromoter = match.promoter_code;
+                if (match) {
+                    currentPromoter = match.promoter_code;
+                    cachedEntries = [match];
+                }
             }
             
             // If no promoter assigned, we can't save itinerary comfortably in that table? 
@@ -22820,39 +22827,23 @@ const supervisorGroups = new Map();
             if (error) throw error;
 
             // 2. Update Local Cache (embeddedData.clientPromoters)
-            if (embeddedData.clientPromotersMap) {
-                const entries = embeddedData.clientPromotersMap.get(clientCodeNorm) || [];
-                if (entries.length > 0) {
-                    entries.forEach(entry => {
-                        entry.itinerary_frequency = frequency;
-                        entry.itinerary_ref_date = nextDate;
-                        entry.itinerary_days = days;
-                    });
-                } else {
-                    const newEntry = {
-                        client_code: clientCodeNorm,
-                        promoter_code: currentPromoter,
-                        itinerary_frequency: frequency,
-                        itinerary_ref_date: nextDate,
-                        itinerary_days: days
-                    };
-                    embeddedData.clientPromoters.push(newEntry);
-                    embeddedData.clientPromotersMap.set(clientCodeNorm, [newEntry]);
-                }
-            } else {
-                let entry = embeddedData.clientPromoters.find(cp => normalizeKey(cp.client_code) === clientCodeNorm);
-                if (entry) {
+            if (cachedEntries && cachedEntries.length > 0) {
+                cachedEntries.forEach(entry => {
                     entry.itinerary_frequency = frequency;
                     entry.itinerary_ref_date = nextDate;
                     entry.itinerary_days = days;
-                } else {
-                    embeddedData.clientPromoters.push({
-                        client_code: clientCodeNorm,
-                        promoter_code: currentPromoter,
-                        itinerary_frequency: frequency,
-                        itinerary_ref_date: nextDate,
-                        itinerary_days: days
-                    });
+                });
+            } else {
+                const newEntry = {
+                    client_code: clientCodeNorm,
+                    promoter_code: currentPromoter,
+                    itinerary_frequency: frequency,
+                    itinerary_ref_date: nextDate,
+                    itinerary_days: days
+                };
+                embeddedData.clientPromoters.push(newEntry);
+                if (embeddedData.clientPromotersMap) {
+                    embeddedData.clientPromotersMap.set(clientCodeNorm, [newEntry]);
                 }
             }
 
