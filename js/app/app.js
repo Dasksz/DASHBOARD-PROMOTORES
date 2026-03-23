@@ -8952,7 +8952,11 @@ const supervisorGroups = new Map();
                 const end = Date.UTC(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay), 23, 59, 59, 999);
 
                 // Filter Sales (Current)
-                sales = sales.filter(s => s.DTPED >= start && s.DTPED <= end);
+                sales = sales.filter(s => {
+                    let d = s.DTPED;
+                    if (typeof d !== 'number') d = parseDate(d)?.getTime() || 0;
+                    return d >= start && d <= end;
+                });
 
                 // Calculate Proportional Previous Month Range
                 // Re-calculate strictly based on UTC
@@ -8977,7 +8981,11 @@ const supervisorGroups = new Map();
                 const clampedEndDay = Math.min(eDay, daysInPrevEndMonth);
                 const pEnd = Date.UTC(pEndYear, pEndMonth, clampedEndDay, 23, 59, 59, 999);
 
-                history = history.filter(s => s.DTPED >= pStart && s.DTPED <= pEnd);
+                history = history.filter(s => {
+                    let d = s.DTPED;
+                    if (typeof d !== 'number') d = parseDate(d)?.getTime() || 0;
+                    return d >= pStart && d <= pEnd;
+                });
             }
 
             // Price Filter (Min/Max Unit Price)
