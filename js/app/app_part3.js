@@ -1691,7 +1691,7 @@
             salesByMonth: new Map(), // Map<YYYY-MM, value>
             lossesByMonth: new Map(), // Map<YYYY-MM, { value, items: [] }>
             bonusByMonth: new Map(), // Map<YYYY-MM, { value, items: [] }>
-            ordersByMonth: new Map() // Map<YYYY-MM, Map<PEDIDO, {date, totalValue, products: Set}>>
+            ordersByMonth: new Map() // Map<YYYY-MM, Map<PEDIDO, {date, totalValue, products: Set, types: Set}>>
         };
 
         const normalizeItem = (s) => ({
@@ -1722,10 +1722,15 @@
                 }
                 let orderData = monthOrders.get(item.pedido);
                 if (!orderData) {
-                    orderData = { date: item.d, totalValue: 0, products: new Set() };
+                    orderData = { date: item.d, totalValue: 0, products: new Set(), types: new Set() };
                     monthOrders.set(item.pedido, orderData);
                 }
-                if (item.val > 0) orderData.totalValue += item.val;
+                
+                // For Perdas (5) and Bonificacoes (11), use item.bon or fallback to item.val
+                const itemTotal = (item.type === '5' || item.type === '11') ? (item.bon || item.val) : item.val;
+                if (itemTotal > 0) orderData.totalValue += itemTotal;
+                
+                if (item.type) orderData.types.add(item.type);
                 if (item.prod) orderData.products.add(item.prod);
             }
 
@@ -1784,19 +1789,19 @@
                 const val = metrics.salesByMonth.get(m) || 0;
                 const lossesObj = metrics.lossesByMonth.get(m);
                 const bonusObj = metrics.bonusByMonth.get(m);
-
+                
                 const lossesVal = lossesObj ? lossesObj.value : 0;
                 const bonusVal = bonusObj ? bonusObj.value : 0;
-
+                
                 const pPerc = val > 0 ? ((lossesVal / val) * 100).toFixed(1) + '%' : '0%';
                 const bPerc = val > 0 ? ((bonusVal / val) * 100).toFixed(1) + '%' : '0%';
-
+                
                 const [y, mo] = m.split('-');
                 const monthName = new Date(y, mo-1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-
+                
                 const tr = document.createElement('tr');
                 tr.className = "cursor-pointer hover:bg-slate-800/50 transition-colors border-b border-slate-800/50 last:border-0";
-
+                
                 tr.innerHTML = `
                     <td class="px-4 py-2 capitalize text-slate-300 w-1/3">
                         <div class="flex items-center gap-1">
@@ -1808,29 +1813,40 @@
                     <td class="px-2 py-2 text-center text-[10px] font-mono font-bold text-red-400">${pPerc}</td>
                     <td class="px-2 py-2 text-center text-[10px] font-mono font-bold text-blue-400">${bPerc}</td>
                 `;
-
+                
                 // Build Sub-row for Orders
                 const ordersRow = document.createElement('tr');
                 ordersRow.className = "hidden bg-slate-900/30";
                 const ordersCell = document.createElement('td');
                 ordersCell.colSpan = 4;
                 ordersCell.className = "p-0";
-
+                
                 const monthOrders = metrics.ordersByMonth.get(m);
                 if (monthOrders && monthOrders.size > 0) {
                     let ordersHtml = `<div class="py-2 px-4 border-t border-slate-800/50 space-y-2">`;
                     // Sort orders by date descending
                     const sortedOrders = Array.from(monthOrders.entries()).sort((a,b) => b[1].date - a[1].date);
-
+                    
                     sortedOrders.forEach(([pedidoId, orderData]) => {
                         const dateStr = orderData.date.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
                         const totalStr = orderData.totalValue.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
                         const mixCount = orderData.products.size;
-
+                        
+                        // Extract type info if available
+                        let typeLabels = '';
+                        if (orderData.types && orderData.types.size > 0) {
+                            const typesArr = Array.from(orderData.types).filter(t => t);
+                            if (typesArr.length > 0) {
+                                typeLabels = '<span class="text-[10px] text-slate-500 ml-2 font-normal">(Tipo ' + typesArr.join(', ') + ')</span>';
+                            }
+                        }
+                        
                         ordersHtml += `
                             <div class="flex items-center justify-between text-xs p-2 rounded bg-slate-800/40 border border-slate-700/50">
                                 <div class="flex flex-col">
-                                    <span class="text-blue-400 font-mono font-bold cursor-pointer hover:underline" onclick="event.stopPropagation(); window.openModal('${pedidoId}');">#${pedidoId}</span>
+                                    <div>
+                                        <span class="text-blue-400 font-mono font-bold cursor-pointer hover:underline" onclick="event.stopPropagation(); window.openModal('${pedidoId}');">#${pedidoId}</span>${typeLabels}
+                                    </div>
                                     <span class="text-slate-400">${dateStr}</span>
                                 </div>
                                 <div class="flex flex-col items-end">
@@ -1840,15 +1856,15 @@
                             </div>
                         `;
                     });
-
+                    
                     ordersHtml += `</div>`;
                     ordersCell.innerHTML = ordersHtml;
                 } else {
                     ordersCell.innerHTML = `<div class="py-2 px-4 text-xs text-center text-slate-500 border-t border-slate-800/50">Nenhum pedido encontrado.</div>`;
                 }
-
+                
                 ordersRow.appendChild(ordersCell);
-
+                
                 tr.onclick = () => {
                     const isHidden = ordersRow.classList.contains('hidden');
                     if (isHidden) {
@@ -1859,7 +1875,7 @@
                         tr.querySelector('svg').classList.remove('rotate-90');
                     }
                 };
-
+                
                 salesBody.appendChild(tr);
                 salesBody.appendChild(ordersRow);
             });
