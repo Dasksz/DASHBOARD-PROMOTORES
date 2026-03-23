@@ -14713,7 +14713,7 @@ const supervisorGroups = new Map();
                     DTPED: first.DTPED,
                     DTSAIDA: first.DTSAIDA,
                     CIDADE: first.CIDADE || 'N/A', // City might need lookup if not in sales
-                    VLVENDA: itemsDoPedido.reduce((acc, i) => acc + (Number(i.VLVENDA)||0), 0)
+                    VLVENDA: itemsDoPedido.reduce((acc, i) => acc + (Number((String(i.TIPOVENDA) === '5' || String(i.TIPOVENDA) === '11') ? (i.VLBONIFIC || i.VLVENDA) : i.VLVENDA)||0), 0)
                 };
             }
 
@@ -14736,12 +14736,14 @@ const supervisorGroups = new Map();
                 // If constructed from items, we set it above.
             }
 
-            modalPedidoId.textContent = pedidoId;
+            modalPedidoId.textContent = pedidoId + (itemsDoPedido.length > 0 && itemsDoPedido[0].TIPOVENDA ? ' (Tipo ' + itemsDoPedido[0].TIPOVENDA + ')' : '');
             modalHeaderInfo.innerHTML = `<div><p class="font-bold">Cód. Cliente:</p><p>${window.escapeHtml(orderInfo.CODCLI || 'N/A')}</p></div><div><p class="font-bold">Cliente:</p><p>${window.escapeHtml(orderInfo.CLIENTE_NOME || orderInfo.CLIENTE || 'N/A')}</p></div><div><p class="font-bold">Vendedor:</p><p>${window.escapeHtml(orderInfo.NOME || orderInfo.VENDEDOR || 'N/A')}</p></div><div><p class="font-bold">Data Pedido:</p><p>${formatDate(orderInfo.DTPED)}</p></div><div><p class="font-bold">Data Faturamento:</p><p>${formatDate(orderInfo.DTSAIDA)}</p></div><div><p class="font-bold">Cidade:</p><p>${window.escapeHtml(orderInfo.CIDADE || 'N/A')}</p></div>`;
 
             modalTableBody.innerHTML = itemsDoPedido.map(item => {
-                const unitPrice = (item.QTVENDA > 0) ? (item.VLVENDA / item.QTVENDA) : 0;
-                const subTotal = Number(item.VLVENDA) || 0;
+                const isLossOrBonus = String(item.TIPOVENDA) === '5' || String(item.TIPOVENDA) === '11';
+                const itemVal = isLossOrBonus ? (Number(item.VLBONIFIC) || Number(item.VLVENDA)) : Number(item.VLVENDA);
+                const subTotal = itemVal || 0;
+                const unitPrice = (item.QTVENDA > 0) ? (subTotal / item.QTVENDA) : 0;
                 const weight = Number(item.TOTPESOLIQ) || 0;
 
                 const unitPriceStr = unitPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -14800,7 +14802,9 @@ const supervisorGroups = new Map();
                 </tr>`;
             }).join('');
 
-            modalFooterTotal.innerHTML = `<p class="text-lg font-bold text-teal-400">Mix de Produtos: ${itemsDoPedido.length}</p><p class="text-lg font-bold text-emerald-400">Total do Pedido: ${orderInfo.VLVENDA.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>`;
+            const calculatedTotal = itemsDoPedido.reduce((acc, i) => acc + (Number((String(i.TIPOVENDA) === '5' || String(i.TIPOVENDA) === '11') ? (i.VLBONIFIC || i.VLVENDA) : i.VLVENDA)||0), 0);
+            const displayTotal = calculatedTotal > 0 ? calculatedTotal : (Number(orderInfo.VLVENDA) || 0);
+            modalFooterTotal.innerHTML = `<p class="text-lg font-bold text-teal-400">Mix de Produtos: ${itemsDoPedido.length}</p><p class="text-lg font-bold text-emerald-400">Total do Pedido: ${displayTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>`;
             modal.classList.remove('hidden');
         }
 
