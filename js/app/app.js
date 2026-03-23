@@ -12690,7 +12690,7 @@ const supervisorGroups = new Map();
 
         function updateProductFilter(dropdown, filterText, selectedArray, dataSource, filterType = 'comparison', skipRender = false) {
             if (!dropdown) return selectedArray;
-            const forbidden = ['PRODUTO', 'DESCRICAO', 'CODIGO', 'CÓDIGO', 'DESCRIÇÃO'];
+            const forbidden = new Set(['PRODUTO', 'DESCRICAO', 'CODIGO', 'CÓDIGO', 'DESCRIÇÃO']);
             // FIX: Support type="search" which is used in HTML
             const searchInput = dropdown.querySelector('input[type="text"], input[type="search"]');
             const listContainer = dropdown.querySelector('div[id$="-list"]');
@@ -12703,7 +12703,7 @@ const supervisorGroups = new Map();
             });
 
             let products = Array.from(uniqueCodes)
-                .filter(code => code && !forbidden.includes(code.toUpperCase()))
+                .filter(code => code && !forbidden.has(code.toUpperCase()))
                 .map(code => {
                     const resolved = window.resolveDim('produtos', code);
                     return [code, resolved.descricao || code];
