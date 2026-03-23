@@ -922,55 +922,12 @@
                               const d = sellerDetailsMap.get(role);
                               if (d && d.name) foundName = d.name;
                           }
-                          if (!foundName && typeof allSalesData !== 'undefined' && allSalesData) {
-                              const source = allSalesData;
-                              if (source instanceof ColumnarDataset) {
-                                  const raw = source._data || source.values;
-                                  if (raw) {
-                                      const codes = raw['CODUSUR'];
-                                      const names = raw['NOME'];
-                                      if (codes && names) {
-                                          for(let i=0; i<source.length; i++) {
-                                              if (String(codes[i]||'').trim().toUpperCase() === role) {
-                                                  foundName = names[i];
-                                                  break;
-                                              }
-                                          }
-                                      }
-                                  }
-                              } else {
-                                  const row = source.find(x => String(x.CODUSUR||'').trim().toUpperCase() === role);
-                                  if (row) foundName = row.NOME;
-                              }
-                          }
                           if (foundName) nameEl.textContent = formatName(foundName);
                       } else if (window.userIsSupervisor) {
-                          // Try to find supervisor name in Sales Data
                           let foundName = null;
                           if (typeof supervisorDetailsMap !== 'undefined' && supervisorDetailsMap.has(role)) {
                               const d = supervisorDetailsMap.get(role);
                               if (d && d.name) foundName = d.name;
-                          }
-                          if (!foundName && typeof allSalesData !== 'undefined' && allSalesData) {
-                              const source = allSalesData;
-                              if (source instanceof ColumnarDataset) {
-                                  const raw = source._data || source.values;
-                                  if (raw) {
-                                      const codes = raw['CODSUPERVISOR'];
-                                      const names = raw['SUPERV'];
-                                      if (codes && names) {
-                                          for(let i=0; i<source.length; i++) {
-                                              if (String(codes[i]||'').trim().toUpperCase() === role) {
-                                                  foundName = names[i];
-                                                  break;
-                                              }
-                                          }
-                                      }
-                                  }
-                              } else {
-                                  const row = source.find(x => String(x.CODSUPERVISOR||'').trim().toUpperCase() === role);
-                                  if (row) foundName = row.SUPERV;
-                              }
                           }
                           if (foundName) nameEl.textContent = formatName(foundName);
                       }
