@@ -9746,6 +9746,7 @@ const supervisorGroups = new Map();
 
             const totalRelevantClients = clientBaseForPositivacao.length;
             summary.positivacaoPercent = totalRelevantClients > 0 ? (summary.positivacaoCount / totalRelevantClients) * 100 : 0;
+            summary.totalRelevantClients = totalRelevantClients;
             // O cálculo do SKU/PDV agora usa a nova contagem de SKUs e a nova contagem de positivação
             summary.skuPdv = summary.positivacaoCount > 0 ? totalSkus / summary.positivacaoCount : 0;
             // --- FIM DA MODIFICAÇÃO ---
@@ -10573,7 +10574,7 @@ const supervisorGroups = new Map();
             totalPesoEl.textContent = `${(summary.totalPeso / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
             kpiSkuPdVEl.textContent = summary.skuPdv.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             kpiPositivacaoEl.textContent = `${summary.positivacaoPercent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
-            kpiPositivacaoPercentEl.textContent = `${summary.positivacaoCount.toLocaleString('pt-BR')} PDVs`;
+            kpiPositivacaoPercentEl.textContent = `${summary.positivacaoCount.toLocaleString('pt-BR')} de ${summary.totalRelevantClients.toLocaleString('pt-BR')} PDVs`;
 
 
 
