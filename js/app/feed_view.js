@@ -147,7 +147,7 @@ const FeedVisitas = (() => {
         try {
             const { count, error } = await window.supabaseClient
                 .from('visitas')
-                .select('*', { count: 'exact', head: true })
+                .select('id', { count: 'estimated', head: true })
                 .filter('favoritado_por', 'cs', `{${window.userId}}`)
                 .gte('created_at', currentStartBound.toISOString())
                 .lte('created_at', currentEndBound.toISOString());
