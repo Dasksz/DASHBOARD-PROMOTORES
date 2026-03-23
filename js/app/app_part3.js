@@ -2100,13 +2100,26 @@
                          if (col.includes(clientCodeNorm)) exists = true;
                          // Fallback: search with normalize
                          else {
-                             for(let i=0; i<col.length; i++) {
-                                 if(normalizeKey(col[i]) === clientCodeNorm) { exists=true; break; }
+                             // Optimize: Cache normalized keys to avoid repeated O(N) normalizeKey calls
+                             if (!dataset._normalizedCodeCache) {
+                                 dataset._normalizedCodeCache = new Set();
+                                 for(let i=0; i<col.length; i++) {
+                                     dataset._normalizedCodeCache.add(normalizeKey(col[i]));
+                                 }
                              }
+                             if (dataset._normalizedCodeCache.has(clientCodeNorm)) exists = true;
                          }
                      }
                  } else {
-                     if (dataset.find(c => normalizeKey(c['Código'] || c['codigo_cliente']) === clientCodeNorm)) exists = true;
+                     // Optimize: Cache normalized keys for standard array dataset
+                     if (!dataset._normalizedCodeCache) {
+                         dataset._normalizedCodeCache = new Set();
+                         for(let i=0; i<dataset.length; i++) {
+                             const c = dataset[i];
+                             dataset._normalizedCodeCache.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+                         }
+                     }
+                     if (dataset._normalizedCodeCache.has(clientCodeNorm)) exists = true;
                  }
 
                  if (!exists) {
@@ -2147,8 +2160,16 @@
                              if (embeddedData.clients && typeof embeddedData.clients.length === 'number' && !Array.isArray(embeddedData.clients)) {
                                  embeddedData.clients.length++;
                              }
+                             // Update local cache if it exists
+                             if (dataset._normalizedCodeCache) {
+                                 dataset._normalizedCodeCache.add(clientCodeNorm);
+                             }
                          } else {
                              dataset.push(mapped);
+                             // Update local cache if it exists
+                             if (dataset._normalizedCodeCache) {
+                                 dataset._normalizedCodeCache.add(clientCodeNorm);
+                             }
                          }
                      }
                  }
