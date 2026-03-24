@@ -522,6 +522,39 @@ const FeedVisitas = (() => {
 
                     // Handling photo array from answers
                     if (respostasObj && typeof respostasObj === 'object') {
+                        // Iterate over all answers to extract photos from 'foto' fields AND count actual answers
+                        for (const [key, value] of Object.entries(respostasObj)) {
+                            if (key.toLowerCase().includes('foto') && value && !Array.isArray(value)) {
+                                let url = '';
+                                if (typeof value === 'string' && value.startsWith('http')) {
+                                    url = value;
+                                } else if (typeof value === 'string') {
+                                    const { data: urlData } = window.supabaseClient.storage.from('visitas-images').getPublicUrl(value);
+                                    url = urlData.publicUrl;
+                                    if (!showOnlyFavorites) {
+                                        url += '?width=500&quality=60';
+                                    }
+                                }
+
+                                if (url) {
+                                    let tipo = '';
+                                    if (key.toLowerCase().includes('antes')) tipo = 'antes';
+                                    if (key.toLowerCase().includes('depois')) tipo = 'depois';
+
+                                    fotos.push({
+                                        url: url,
+                                        tipo: tipo
+                                    });
+                                }
+                            } else {
+                                const chavesOcultas = ['fotos', 'is_off_route', 'observacoes'];
+                                if (!chavesOcultas.includes(key) && !key.toLowerCase().includes('foto') && value !== '' && value !== null && value !== undefined) {
+                                    respostasCount++;
+                                }
+                            }
+                        }
+
+                        // Also specifically extract photos from 'fotos' array if it exists
                         if (respostasObj.fotos && Array.isArray(respostasObj.fotos)) {
                             respostasObj.fotos.forEach(foto => {
                                 let urlStr = '';
@@ -543,37 +576,6 @@ const FeedVisitas = (() => {
                                     });
                                 }
                             });
-                        } else {
-                            for (const [key, value] of Object.entries(respostasObj)) {
-                                if (key.toLowerCase().includes('foto') && value) {
-                                    let url = '';
-                                    if (typeof value === 'string' && value.startsWith('http')) {
-                                        url = value;
-                                    } else if (typeof value === 'string') {
-                                        const { data: urlData } = window.supabaseClient.storage.from('visitas-images').getPublicUrl(value);
-                                        url = urlData.publicUrl;
-                                        if (!showOnlyFavorites) {
-                                            url += '?width=500&quality=60';
-                                        }
-                                    }
-                                    
-                                    if (url) {
-                                        let tipo = '';
-                                        if (key.toLowerCase().includes('antes')) tipo = 'antes';
-                                        if (key.toLowerCase().includes('depois')) tipo = 'depois';
-                                        
-                                        fotos.push({
-                                            url: url,
-                                            tipo: tipo
-                                        });
-                                    }
-                                } else {
-                                    const chavesOcultas = ['fotos', 'is_off_route', 'observacoes'];
-                                    if (!chavesOcultas.includes(key) && !key.toLowerCase().includes('foto') && value !== '' && value !== null && value !== undefined) {
-                                        respostasCount++;
-                                    }
-                                }
-                            }
                         }
                     }
                 }
