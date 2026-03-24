@@ -108,12 +108,13 @@ serve(async (req) => {
 
     console.log(`Validation Check: OffRoute=${isOffRoute}, HasSurvey=${hasSurvey} (${surveyKeys.length} keys)`);
 
-    if (!isOffRoute && !hasSurvey) {
+    // Validation removed: allow empty surveys for check-in/check-out notifications
+    /* if (!isOffRoute && !hasSurvey) {
        console.log('Skipping: In-Route visit without survey answers.');
        return new Response(JSON.stringify({ message: 'Skipped: No survey for in-route visit' }), {
          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
        })
-    }
+    } */
 
     // Initialize Supabase Client with Service Role Key to bypass RLS
     const supabase = createClient(
@@ -429,6 +430,41 @@ serve(async (req) => {
         `;
     }
 
+
+    let surveySection = '';
+    let actionsSection = '';
+
+    if (hasSurvey) {
+        surveySection = `
+        <!-- Survey Table -->
+        <h4 style="color: #0f172a; font-size: 16px; font-weight: 700; margin-bottom: 12px;">Respostas da Pesquisa:</h4>
+        <div style="border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; margin-bottom: 30px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <thead style="background-color: #f1f5f9;">
+                    <tr>
+                        <th style="text-align: left; padding: 12px 16px; color: #0f172a; font-weight: 700; border-bottom: 1px solid #e2e8f0;">Pergunta</th>
+                        <th style="text-align: left; padding: 12px 16px; color: #0f172a; font-weight: 700; border-bottom: 1px solid #e2e8f0;">Resposta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${answersRows}
+                </tbody>
+            </table>
+        </div>
+        `;
+
+        actionsSection = `
+        <!-- Actions -->
+        <div style="text-align: center; margin-bottom: 24px;">
+            <p style="color: #475569; font-size: 14px; margin-bottom: 16px;">Clique abaixo para validar esta visita no painel:</p>
+            <div>
+                <a href="${approveUrl}" style="display: block; width: 100%; max-width: 300px; margin: 0 auto 12px auto; box-sizing: border-box; background-color: #22c55e; color: #ffffff; padding: 14px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px;">Aprovar Pesquisa</a>
+                <a href="${rejectUrl}" style="display: block; width: 100%; max-width: 300px; margin: 0 auto; box-sizing: border-box; background-color: #dc2626; color: #ffffff; padding: 14px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px;">Rejeitar Pesquisa</a>
+            </div>
+        </div>
+        `;
+    }
+
     const htmlContent = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
         
@@ -456,7 +492,7 @@ serve(async (req) => {
 
         <!-- Title -->
         <h3 style="color: #0f172a; font-size: 18px; font-weight: 700; margin-bottom: 12px;">Relatório de Visita</h3>
-        <p style="color: #475569; font-size: 14px; margin-bottom: 20px;">Uma nova visita foi finalizada e precisa da sua validação.</p>
+        <p style="color: #475569; font-size: 14px; margin-bottom: 20px;">Uma nova visita foi finalizada ${hasSurvey ? 'e precisa da sua validação.' : 'somente com Check-in e Check-out.'}</p>
 
         <!-- Summary Card -->
         <div style="background-color: #f8fafc; border-left: 4px solid #2563eb; border-radius: 4px; padding: 20px; margin-bottom: 24px;">
@@ -484,21 +520,7 @@ serve(async (req) => {
             </table>
         </div>
 
-        <!-- Survey Table -->
-        <h4 style="color: #0f172a; font-size: 16px; font-weight: 700; margin-bottom: 12px;">Respostas da Pesquisa:</h4>
-        <div style="border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; margin-bottom: 30px;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                <thead style="background-color: #f1f5f9;">
-                    <tr>
-                        <th style="text-align: left; padding: 12px 16px; color: #0f172a; font-weight: 700; border-bottom: 1px solid #e2e8f0;">Pergunta</th>
-                        <th style="text-align: left; padding: 12px 16px; color: #0f172a; font-weight: 700; border-bottom: 1px solid #e2e8f0;">Resposta</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${answersRows}
-                </tbody>
-            </table>
-        </div>
+        ${surveySection}
 
         <!-- Observações Extra -->
         ${record.observacao ? `
@@ -508,14 +530,7 @@ serve(async (req) => {
         </div>
         ` : ''}
 
-        <!-- Actions -->
-        <div style="text-align: center; margin-bottom: 24px;">
-            <p style="color: #475569; font-size: 14px; margin-bottom: 16px;">Clique abaixo para validar esta visita no painel:</p>
-            <div>
-                <a href="${approveUrl}" style="display: block; width: 100%; max-width: 300px; margin: 0 auto 12px auto; box-sizing: border-box; background-color: #22c55e; color: #ffffff; padding: 14px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px;">Aprovar Pesquisa</a>
-                <a href="${rejectUrl}" style="display: block; width: 100%; max-width: 300px; margin: 0 auto; box-sizing: border-box; background-color: #dc2626; color: #ffffff; padding: 14px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px;">Rejeitar Pesquisa</a>
-            </div>
-        </div>
+        ${actionsSection}
 
         <!-- Footer -->
         <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
@@ -523,6 +538,7 @@ serve(async (req) => {
         </p>
       </div>
     `
+
 
     // 7. Send Email via Provider
     if (USE_BREVO) {

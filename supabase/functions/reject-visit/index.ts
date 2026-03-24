@@ -24,7 +24,7 @@ serve(async (req) => {
 
   const { error } = await supabase
     .from("visitas")
-    .update({ status: "rejeitado" })
+    .delete()
     .eq("id", id);
 
   if (error) return new Response("Erro: " + error.message, { status: 500 });
