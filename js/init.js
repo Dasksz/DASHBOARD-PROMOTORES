@@ -372,6 +372,7 @@
                 checkTable('dim_supervisores', 'hash_dim_supervisores', 'dim_supervisores');
                 checkTable('dim_fornecedores', 'hash_dim_fornecedores', 'dim_fornecedores');
                 checkTable('dim_produtos', 'hash_dim_produtos', 'dim_produtos');
+                checkTable('config_city_branches', 'hash_config_city_branches', 'config_city_branches');
 
                 // If nothing to fetch, use cache completely
                 if (tablesToFetch.size === 0) {
@@ -385,7 +386,7 @@
             } else if (!cachedData) {
                 // Full Fetch required
                 console.log("Cache vazio. Baixando tudo...");
-                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos'].forEach(t => tablesToFetch.add(t));
+                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos', 'config_city_branches'].forEach(t => tablesToFetch.add(t));
             }
 
             if (useCache) {
@@ -724,7 +725,7 @@
             };
 
             let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientPromoters, titulos, nota_perfeita, relacao_rota_involves;
-            let dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos;
+            let dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches;
             let clientCoordinates;
 
             // Updated colsDetailed to exclude text columns (nome, superv, descricao, fornecedor, observacaofor)
@@ -754,6 +755,7 @@
                 dim_supervisores = cachedData.dim_supervisores;
                 dim_fornecedores = cachedData.dim_fornecedores;
                 dim_produtos = cachedData.dim_produtos;
+                config_city_branches = cachedData.config_city_branches;
 
                 // Background updates for coordinates/promoters can happen here if needed,
                 // but usually conditional logic handles it if metadata hashes change.
@@ -849,7 +851,8 @@
                     getOrFetch('dim_vendedores', null, null, 'object', 'codigo', null, 'dim_vendedores', 'Baixando vendedores...'),
                     getOrFetch('dim_supervisores', null, null, 'object', 'codigo', null, 'dim_supervisores', 'Baixando supervisores...'),
                     getOrFetch('dim_fornecedores', null, null, 'object', 'codigo', null, 'dim_fornecedores', 'Baixando fornecedores...'),
-                    getOrFetch('dim_produtos', null, null, 'object', 'codigo', null, 'dim_produtos', 'Baixando produtos...')
+                    getOrFetch('dim_produtos', null, null, 'object', 'codigo', null, 'dim_produtos', 'Baixando produtos...'),
+                    getOrFetch('config_city_branches', null, null, 'object', 'id', null, 'config_city_branches', 'Baixando filiais...')
                 ]);
 
                 detailed = detailedUpper;
@@ -871,6 +874,7 @@
                 dim_supervisores = dimSupervisoresFetched;
                 dim_fornecedores = dimFornecedoresFetched;
                 dim_produtos = dimProdutosFetched;
+                config_city_branches = configCityBranchesFetched;
 
                 // Update Cache with Merged Data
                 if (!isPromoter) {
@@ -1288,6 +1292,7 @@
                 dim_supervisores: dim_supervisores,
                 dim_fornecedores: dim_fornecedores,
                 dim_produtos: dim_produtos,
+                config_city_branches: config_city_branches,
                 passedWorkingDaysCurrentMonth: 1,
                 isColumnar: true
             };
