@@ -102,13 +102,42 @@ const FeedVisitas = (() => {
         const cityInput = document.getElementById('feed-city-filter');
         
         if(clientInput) {
-            clientInput.addEventListener('input', (e) => { feedCurrentClientFilter = e.target.value.toLowerCase(); checkClearBtn(); delayedLoadFeed(); });
+            clientInput.addEventListener('input', (e) => { feedCurrentClientFilter = e.target.value.toLowerCase(); checkClearBtn(); updateClientSuggestions(); });
         }
         if(cityInput) {
-            cityInput.addEventListener('input', (e) => { feedCurrentCityFilter = e.target.value.toLowerCase(); checkClearBtn(); delayedLoadFeed(); });
+            cityInput.addEventListener('input', (e) => { feedCurrentCityFilter = e.target.value.toLowerCase(); checkClearBtn(); updateCitySuggestions(); });
         }
 
         // Setup radio filial
+        if(clientInput) {
+            clientInput.addEventListener('keydown', (e) => {
+                if(e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('feed-client-suggestions').classList.add('hidden');
+                    loadFeed(true);
+                }
+            });
+        }
+        if(cityInput) {
+            cityInput.addEventListener('keydown', (e) => {
+                if(e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('feed-city-suggestions').classList.add('hidden');
+                    loadFeed(true);
+                }
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            const clientSugg = document.getElementById('feed-client-suggestions');
+            const citySugg = document.getElementById('feed-city-suggestions');
+            if (clientSugg && !clientSugg.contains(e.target) && e.target !== clientInput) {
+                clientSugg.classList.add('hidden');
+            }
+            if (citySugg && !citySugg.contains(e.target) && e.target !== cityInput) {
+                citySugg.classList.add('hidden');
+            }
+        });
         const filialRadios = document.querySelectorAll('input[name="feed-filial"]');
         filialRadios.forEach(r => {
             r.addEventListener('change', (e) => {
@@ -150,12 +179,125 @@ const FeedVisitas = (() => {
         });
     }
 
-    let loadFeedTimeout;
-    function delayedLoadFeed() {
-        clearTimeout(loadFeedTimeout);
-        loadFeedTimeout = setTimeout(() => {
-            loadFeed(true);
-        }, 500);
+
+    function updateClientSuggestions() {
+        const suggContainer = document.getElementById('feed-client-suggestions');
+        if (!suggContainer) return;
+
+        if (!feedCurrentClientFilter || feedCurrentClientFilter.length < 2) {
+            suggContainer.classList.add('hidden');
+            return;
+        }
+
+        const searchTerm = feedCurrentClientFilter.toLowerCase();
+        const suggestions = new Map();
+
+        if (feedAllPosts && feedAllPosts.length > 0) {
+            feedAllPosts.forEach(post => {
+                if (post.client_code && window.FeedVisitas.clientNamesMap && window.FeedVisitas.clientNamesMap.has(String(post.client_code).trim())) {
+                    const cInfo = window.FeedVisitas.clientNamesMap.get(String(post.client_code).trim());
+                    const code = String(cInfo.codigo).toLowerCase();
+                    const name = String(cInfo.nome).toLowerCase();
+                    const cnpj = String(cInfo.cnpj || '').toLowerCase();
+
+                    if (code.includes(searchTerm) || name.includes(searchTerm) || cnpj.includes(searchTerm)) {
+                        suggestions.set(cInfo.codigo, cInfo);
+                    }
+                }
+            });
+        }
+
+        if (suggestions.size === 0) {
+            suggContainer.classList.add('hidden');
+            return;
+        }
+
+        let html = '';
+        const limit = 10;
+        let count = 0;
+        for (const [code, cInfo] of suggestions.entries()) {
+            if (count >= limit) break;
+
+            const displayName = `${cInfo.codigo} - ${cInfo.nome}`;
+
+            html += `<div class="p-3 hover:bg-slate-700 cursor-pointer text-sm text-white border-b border-slate-700/50 last:border-0"
+                        onclick="window.FeedVisitas.selectClientSuggestion('${window.escapeHtml(String(cInfo.codigo))}', '${window.escapeHtml(displayName)}')">
+                        ${window.escapeHtml(displayName)}
+                     </div>`;
+            count++;
+        }
+
+        suggContainer.innerHTML = html;
+        suggContainer.classList.remove('hidden');
+    }
+
+    function selectClientSuggestion(code, displayName) {
+        const clientInput = document.getElementById('feed-client-filter');
+        if (clientInput) clientInput.value = displayName;
+        feedCurrentClientFilter = code.toLowerCase();
+        document.getElementById('feed-client-suggestions').classList.add('hidden');
+        checkClearBtn();
+        loadFeed(true);
+    }
+
+    function updateCitySuggestions() {
+        const suggContainer = document.getElementById('feed-city-suggestions');
+        if (!suggContainer) return;
+
+        if (!feedCurrentCityFilter || feedCurrentCityFilter.length < 2) {
+            suggContainer.classList.add('hidden');
+            return;
+        }
+
+        const searchTerm = feedCurrentCityFilter.toLowerCase();
+        const suggestions = new Set();
+
+        if (feedAllPosts && feedAllPosts.length > 0) {
+            feedAllPosts.forEach(post => {
+                let city = '';
+                if (post.client_code && window.FeedVisitas.clientNamesMap && window.FeedVisitas.clientNamesMap.has(String(post.client_code).trim())) {
+                    const cInfo = window.FeedVisitas.clientNamesMap.get(String(post.client_code).trim());
+                    if (cInfo.cidade) city = String(cInfo.cidade);
+                } else if (post.respostas && post.respostas.client_city) {
+                    city = String(post.respostas.client_city);
+                }
+
+                if (city && city.toLowerCase().includes(searchTerm)) {
+                    suggestions.add(city.toUpperCase());
+                }
+            });
+        }
+
+        if (suggestions.size === 0) {
+            suggContainer.classList.add('hidden');
+            return;
+        }
+
+        let html = '';
+        const limit = 10;
+        let count = 0;
+        const sortedCities = Array.from(suggestions).sort();
+
+        for (const city of sortedCities) {
+            if (count >= limit) break;
+            html += `<div class="p-3 hover:bg-slate-700 cursor-pointer text-sm text-white border-b border-slate-700/50 last:border-0"
+                        onclick="window.FeedVisitas.selectCitySuggestion('${window.escapeHtml(city)}')">
+                        ${window.escapeHtml(city)}
+                     </div>`;
+            count++;
+        }
+
+        suggContainer.innerHTML = html;
+        suggContainer.classList.remove('hidden');
+    }
+
+    function selectCitySuggestion(city) {
+        const cityInput = document.getElementById('feed-city-filter');
+        if (cityInput) cityInput.value = city;
+        feedCurrentCityFilter = city.toLowerCase();
+        document.getElementById('feed-city-suggestions').classList.add('hidden');
+        checkClearBtn();
+        loadFeed(true);
     }
 
     function checkClearBtn() {
@@ -610,7 +752,9 @@ const FeedVisitas = (() => {
         }
 
         // Fetch client names from data_clients
-        const clientNamesMap = new Map();
+        window.FeedVisitas.clientNamesMap = window.FeedVisitas.clientNamesMap || new Map();
+        window.FeedVisitas.clientNamesMap.clear();
+        const clientNamesMap = window.FeedVisitas.clientNamesMap;
         const uniqueClientCodes = [...new Set(data.map(v => v.client_code).filter(c => c))];
         if (uniqueClientCodes.length > 0) {
             try {
@@ -1546,7 +1690,10 @@ const FeedVisitas = (() => {
         openImageModal,
         closeImageModal,
         clientCache: {},
-        setPromotorFilter
+        clientNamesMap: window.FeedVisitas ? window.FeedVisitas.clientNamesMap : new Map(),
+        setPromotorFilter,
+        selectClientSuggestion,
+        selectCitySuggestion
     };
 })();
 
