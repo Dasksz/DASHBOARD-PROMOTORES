@@ -74,7 +74,7 @@ const FeedVisitas = (() => {
         }
     }
 
-
+    
     function setupFiltersUI() {
         const toggleBtn = document.getElementById('feed-toggle-filters-btn');
         const panel = document.getElementById('feed-filters-panel');
@@ -102,7 +102,7 @@ const FeedVisitas = (() => {
 
         const clientInput = document.getElementById('feed-client-filter');
         const cityInput = document.getElementById('feed-city-filter');
-
+        
         if(clientInput) {
             clientInput.addEventListener('input', (e) => { feedCurrentClientFilter = e.target.value.toLowerCase(); checkClearBtn(); delayedLoadFeed(); });
         }
@@ -131,7 +131,7 @@ const FeedVisitas = (() => {
                 document.getElementById('feed-promotor-filter-dropdown').classList.add('hidden');
             };
         }
-
+        
         // Setup drop promotor toggle
         const promBtn = document.getElementById('feed-promotor-filter-btn');
         if(promBtn) {
@@ -188,7 +188,7 @@ const FeedVisitas = (() => {
         // Promotores from hierarchy or dataset
         const drop = document.getElementById('feed-promotor-filter-dropdown');
         if(!drop) return;
-
+        
         let promotores = [];
         if(window.embeddedData && window.embeddedData.hierarchy) {
             promotores = [...new Set(window.embeddedData.hierarchy.map(h => h.nome_promotor).filter(n => n))].sort();
@@ -735,7 +735,7 @@ const FeedVisitas = (() => {
                 card.className = 'glass-card rounded-xl shadow-lg border border-slate-700/50 hover:border-slate-600 transition-colors animate-fade-in-up max-w-xl mx-auto w-full overflow-hidden flex flex-col';
 
                 // Try to resolve client info from fetched data_clients map, fallback to code
-
+                
                 // Try to resolve client info from fetched data_clients map, fallback to code
                 let clientName = 'Cliente Desconhecido';
                 let clientInfo = null;
