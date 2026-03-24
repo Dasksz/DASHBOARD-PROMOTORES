@@ -20705,7 +20705,7 @@ const supervisorGroups = new Map();
 
                     let file = rawFile;
                     if (file.type.startsWith('image/')) {
-                         file = await compressImage(file, 1920, 1920, 0.8);
+                         file = await compressImage(file, 1280, 1280, 0.7);
                     }
 
                     if (file.size > 5 * 1024 * 1024) {
@@ -24189,7 +24189,7 @@ const supervisorGroups = new Map();
                      price = parseFloat(priceVal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 }
 
-                const imageUrl = `${STORAGE_PRODUTOS_URL}${code}.jpg`;
+                const imageUrl = `${STORAGE_PRODUTOS_URL}${code}.jpg?width=400&quality=60`;
 
                 const item = document.createElement('div');
                 // Dark Theme Styling
