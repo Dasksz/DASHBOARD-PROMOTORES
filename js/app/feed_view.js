@@ -757,7 +757,7 @@ const FeedVisitas = (() => {
                     // Formatar string secundária
                     var secondaryInfoHtml = `
                         <div class="w-full flex items-center text-[10px] text-slate-400 font-medium tracking-wide truncate mt-0.5">
-                            Coord.: ${pCoCoordenador} <span class="mx-1 text-slate-600">•</span> Sup.: ${pSupervisor} <span class="mx-1 text-slate-600">•</span> Vend.: ${pVendedor}
+                            Coord.: ${window.escapeHtml(pCoCoordenador)} <span class="mx-1 text-slate-600">•</span> Sup.: ${window.escapeHtml(pSupervisor)} <span class="mx-1 text-slate-600">•</span> Vend.: ${window.escapeHtml(pVendedor)}
                         </div>
                     `;
                 } catch (e) {
@@ -896,7 +896,7 @@ const FeedVisitas = (() => {
                         // Capitalize each word for label
                         label = label.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
                         
-                        let valStr = String(value);
+                        let valStr = window.escapeHtml(String(value));
                         if (valStr.toLowerCase() === 'true' || valStr.toLowerCase() === 'sim') {
                             valStr = '<span class="text-green-400">Sim</span>';
                         } else if (valStr.toLowerCase() === 'false' || valStr.toLowerCase() === 'nao' || valStr.toLowerCase() === 'não') {
@@ -905,7 +905,7 @@ const FeedVisitas = (() => {
                             valStr = `<span class="text-slate-200">${valStr}</span>`;
                         }
 
-                        respostasFormatadas.push(`<div class="flex justify-between items-center py-1 border-b border-slate-700/30 last:border-0"><span class="text-slate-400 text-xs font-medium">${label}:</span> <span class="text-xs font-semibold">${valStr}</span></div>`);
+                        respostasFormatadas.push(`<div class="flex justify-between items-center py-1 border-b border-slate-700/30 last:border-0"><span class="text-slate-400 text-xs font-medium">${window.escapeHtml(label)}:</span> <span class="text-xs font-semibold">${valStr}</span></div>`);
                     }
 
                     if (respostasFormatadas.length > 0) {
@@ -943,8 +943,8 @@ const FeedVisitas = (() => {
                         <div class="flex items-center gap-2 min-w-0">
                             ${avatarHtml}
                             <div class="flex flex-col min-w-0 flex-1">
-                                <p class="text-sm font-bold text-white truncate w-full" title="${promotorName}">${promotorName}</p>
-                                <span class="text-xs text-[#FF5E00] font-medium truncate w-full" title="${clientName}">${clientName}</span>
+                                <p class="text-sm font-bold text-white truncate w-full" title="${window.escapeHtml(promotorName)}">${window.escapeHtml(promotorName)}</p>
+                                <span class="text-xs text-[#FF5E00] font-medium truncate w-full" title="${window.escapeHtml(clientName)}">${window.escapeHtml(clientName)}</span>
                             </div>
                         </div>
                         ${secondaryInfoHtml}
@@ -978,7 +978,7 @@ const FeedVisitas = (() => {
                             <span class="text-[11px] text-slate-500 font-medium uppercase tracking-wide">${formattedDate}</span>
                         </div>
 
-                        ${observacoesTexto && (isManager || isSeller || String(visit.profiles?.role).toUpperCase() === String(window.userRole || '').toUpperCase()) ? `<div class="text-sm text-slate-300 leading-relaxed mt-2"><span class="font-medium text-white">Obs:</span> ${observacoesTexto}</div>` : ''}
+                        ${observacoesTexto && (isManager || isSeller || String(visit.profiles?.role).toUpperCase() === String(window.userRole || '').toUpperCase()) ? `<div class="text-sm text-slate-300 leading-relaxed mt-2"><span class="font-medium text-white">Obs:</span> ${window.escapeHtml(observacoesTexto)}</div>` : ''}
                         ${(isManager || isSeller || String(visit.profiles?.role).toUpperCase() === String(window.userRole || '').toUpperCase()) ? resumoRespostasHtml : ''}
                     </div>
                 `;
@@ -1083,11 +1083,11 @@ const FeedVisitas = (() => {
                     <div class="space-y-3">
                         <div>
                             <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider mb-1">Nome</p>
-                            <p class="text-white text-sm font-medium">${nome}</p>
+                            <p class="text-white text-sm font-medium">${window.escapeHtml(nome)}</p>
                         </div>
                         <div>
                             <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider mb-1">CNPJ</p>
-                            <p class="text-white text-sm font-medium">${cnpj}</p>
+                            <p class="text-white text-sm font-medium">${window.escapeHtml(cnpj)}</p>
                         </div>
                         <div>
                             <div class="flex justify-between items-center mb-1">
@@ -1095,8 +1095,8 @@ const FeedVisitas = (() => {
                                 ${cidade ? `<p class="text-xs text-slate-400 uppercase font-semibold tracking-wider">Cidade</p>` : ''}
                             </div>
                             <div class="flex justify-between items-start gap-4">
-                                <p class="text-slate-300 text-sm flex-1">${endereco}</p>
-                                ${cidade ? `<p class="text-slate-300 text-sm text-right max-w-[50%]">${cidade}</p>` : ''}
+                                <p class="text-slate-300 text-sm flex-1">${window.escapeHtml(endereco)}</p>
+                                ${cidade ? `<p class="text-slate-300 text-sm text-right max-w-[50%]">${window.escapeHtml(cidade)}</p>` : ''}
                             </div>
                         </div>
                     </div>
