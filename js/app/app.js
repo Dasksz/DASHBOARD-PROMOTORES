@@ -69,6 +69,7 @@
 
         let debouncedUpdateMetaRealizado;
         let metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [] };
+        window.lastSaleDate = null;
         let lastSaleDate = null;
 
         // --- HELPER: Alternative Sales Type Logic ---
@@ -619,6 +620,7 @@
             lastSaleDate = maxDateTs > 0 ? new Date(maxDateTs) : new Date();
         }
         lastSaleDate.setUTCHours(0,0,0,0);
+        window.lastSaleDate = lastSaleDate.toISOString();
         let maxWorkingDaysStock = 0;
         let sortedWorkingDays = [];
         let customWorkingDaysStock = 0;
