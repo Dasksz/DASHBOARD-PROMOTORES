@@ -11,8 +11,6 @@ const FeedVisitas = (() => {
 
     // Navigation State
     let showOnlyFavorites = false;
-        feedCurrentClientFilter = ''; feedCurrentCityFilter = ''; feedCurrentFilialFilter = 'all'; feedCurrentPromotorFilter = '';
-        updateFiltersUI();
     let flatpickrInstance = null;
 
     // State Filtros
