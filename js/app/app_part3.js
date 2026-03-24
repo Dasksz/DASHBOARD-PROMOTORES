@@ -4394,6 +4394,35 @@
     if (formVisita) {
         formVisita.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // Validação de fotos obrigatórias
+            let isValidFotos = false;
+
+            if (window.visitaFotosState) {
+                const isModoAntesDepois = window.visitaFotosState.modo === 'antes-depois';
+                if (isModoAntesDepois) {
+                    const hasAntes = window.visitaFotosState.fotos.antes && window.visitaFotosState.fotos.antes.length > 0;
+                    const hasDepois = window.visitaFotosState.fotos.depois && window.visitaFotosState.fotos.depois.length > 0;
+                    if (hasAntes && hasDepois) {
+                        isValidFotos = true;
+                    }
+                } else {
+                    const hasGeral = window.visitaFotosState.fotos.geral && window.visitaFotosState.fotos.geral.length > 0;
+                    if (hasGeral) {
+                        isValidFotos = true;
+                    }
+                }
+            }
+
+            if (!isValidFotos) {
+                if (window.showToast) {
+                    window.showToast('error', 'É obrigatório adicionar pelo menos uma foto para enviar a pesquisa');
+                } else {
+                    alert('É obrigatório adicionar pelo menos uma foto para enviar a pesquisa');
+                }
+                return; // Interrompe o envio e mantém o modal aberto
+            }
+
             const btn = e.target.querySelector('button[type="submit"]');
             const oldHtml = btn.innerHTML;
             btn.disabled = true; btn.innerHTML = 'Salvando...';
