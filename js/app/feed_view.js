@@ -18,6 +18,7 @@ const FeedVisitas = (() => {
     let feedCurrentCityFilter = '';
     let feedCurrentFilialFilter = 'all';
     let feedCurrentPromotorFilter = '';
+    let feedAllPosts = [];
 
 
     // DOM 
@@ -353,6 +354,7 @@ const FeedVisitas = (() => {
         currentPage = 0;
         hasMore = true;
         if (cardsContainer) cardsContainer.innerHTML = '';
+        feedAllPosts = [];
         if (observer) {
             observer.disconnect();
             observer = null;
@@ -750,6 +752,9 @@ const FeedVisitas = (() => {
         if (!data || data.length === 0) {
             return;
         }
+
+        // Add to global post cache for autocomplete filters
+        feedAllPosts = feedAllPosts.concat(data);
 
         // Fetch client names from data_clients
         window.FeedVisitas.clientNamesMap = window.FeedVisitas.clientNamesMap || new Map();
