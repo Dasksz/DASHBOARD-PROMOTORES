@@ -10989,12 +10989,12 @@ const supervisorGroups = new Map();
             return selectedArray;
         }
 
+        const forbiddenRedes = new Set(['RAMO', 'RAMO DE ATIVIDADE', 'RAMO_ATIVIDADE', 'DESCRICAO', 'ATIVIDADE']);
         function updateRedeFilter(dropdown, buttonTextElement, selectedArray, dataSource, baseText = 'C/Rede') {
             if (!dropdown || !buttonTextElement) return selectedArray;
-            const forbidden = ['RAMO', 'RAMO DE ATIVIDADE', 'RAMO_ATIVIDADE', 'DESCRICAO', 'ATIVIDADE'];
             const redesToShow = [...dataSource.reduce((acc, item) => {
                 const r = item.ramo;
-                if (r && r !== 'N/A' && !forbidden.includes(r.toUpperCase())) acc.add(r);
+                if (r && r !== 'N/A' && !forbiddenRedes.has(r.toUpperCase())) acc.add(r);
                 return acc;
             }, new Set())].sort();
             const validSelected = selectedArray.filter(rede => redesToShow.includes(rede));
