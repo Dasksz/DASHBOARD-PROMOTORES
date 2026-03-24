@@ -824,9 +824,7 @@ const FeedVisitas = (() => {
                                 } else if (typeof value === 'string') {
                                     const { data: urlData } = window.supabaseClient.storage.from('visitas-images').getPublicUrl(value);
                                     url = urlData.publicUrl;
-                                    if (!showOnlyFavorites) {
-                                        url += '?width=500&quality=60';
-                                    }
+                                    url += '?width=600&quality=70';
                                 }
 
                                 if (url) {
@@ -857,9 +855,7 @@ const FeedVisitas = (() => {
                                     } else {
                                         const { data: urlData } = window.supabaseClient.storage.from('visitas-images').getPublicUrl(foto.url);
                                         urlStr = urlData.publicUrl;
-                                        if (!showOnlyFavorites) {
-                                            urlStr += '?width=500&quality=60';
-                                        }
+                                        urlStr += '?width=600&quality=70';
                                     }
                                 }
                                 if (urlStr) {
