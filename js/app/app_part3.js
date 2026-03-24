@@ -1041,7 +1041,7 @@
                  const pName = h.nome_promotor || pRaw;
 
                  if (role === 'ADM' || c === role || cc === role) {
-                     if (role !== 'ADM') isManager = true;
+                     isManager = true;
                      if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
                  } else if (p === role) {
                      if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
@@ -1997,10 +1997,9 @@
         const h = embeddedData.hierarchy || [];
         const me = h.find(x =>
             (x.cod_coord && x.cod_coord.trim().toUpperCase() === role) ||
-            (x.cod_cocoord && x.cod_cocoord.trim().toUpperCase() === role) ||
-            (window.userRole === 'adm') // Fix logic
+            (x.cod_cocoord && x.cod_cocoord.trim().toUpperCase() === role)
         );
-        if (me || role === 'ADM') isPromoterOnly = false;
+        if (me || role === 'ADM' || window.userRole === 'adm') isPromoterOnly = false;
 
         if (!myPromoter) {
             // UX Improvement: If Admin/Manager, show disabled button with hint instead of hiding
