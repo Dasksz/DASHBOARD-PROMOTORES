@@ -11,7 +11,16 @@ const FeedVisitas = (() => {
 
     // Navigation State
     let showOnlyFavorites = false;
+        feedCurrentClientFilter = ''; feedCurrentCityFilter = ''; feedCurrentFilialFilter = 'all'; feedCurrentPromotorFilter = '';
+        updateFiltersUI();
     let flatpickrInstance = null;
+
+    // State Filtros
+    let feedCurrentClientFilter = '';
+    let feedCurrentCityFilter = '';
+    let feedCurrentFilialFilter = 'all';
+    let feedCurrentPromotorFilter = '';
+
 
     // DOM 
     let container;
@@ -53,6 +62,8 @@ const FeedVisitas = (() => {
         if (!flatpickrInstance) {
             setupFlatpickr();
         }
+
+        setupFiltersUI();
         
         // Setup Favorites Buttons Visibility based on user role
         const { isManager } = checkIsManager();
@@ -61,6 +72,141 @@ const FeedVisitas = (() => {
             document.getElementById('feed-favorites-btn')?.classList.add('hidden');
             document.getElementById('feed-clear-favorites-btn')?.classList.add('hidden');
         }
+    }
+
+
+    function setupFiltersUI() {
+        const toggleBtn = document.getElementById('feed-toggle-filters-btn');
+        const panel = document.getElementById('feed-filters-panel');
+        const clearBtn = document.getElementById('feed-clear-all-filters-btn');
+
+        if (toggleBtn && panel) {
+            toggleBtn.onclick = () => {
+                panel.classList.toggle('hidden');
+                if (!panel.classList.contains('hidden')) {
+                    populateFiltersDropdowns();
+                }
+            };
+        }
+
+        if (clearBtn) {
+            clearBtn.onclick = () => {
+                feedCurrentClientFilter = '';
+                feedCurrentCityFilter = '';
+                feedCurrentFilialFilter = 'all';
+                feedCurrentPromotorFilter = '';
+                updateFiltersUI();
+                loadFeed(true);
+            };
+        }
+
+        const clientInput = document.getElementById('feed-client-filter');
+        const cityInput = document.getElementById('feed-city-filter');
+
+        if(clientInput) {
+            clientInput.addEventListener('input', (e) => { feedCurrentClientFilter = e.target.value.toLowerCase(); checkClearBtn(); delayedLoadFeed(); });
+        }
+        if(cityInput) {
+            cityInput.addEventListener('input', (e) => { feedCurrentCityFilter = e.target.value.toLowerCase(); checkClearBtn(); delayedLoadFeed(); });
+        }
+
+        // Setup radio filial
+        const filialRadios = document.querySelectorAll('input[name="feed-filial"]');
+        filialRadios.forEach(r => {
+            r.addEventListener('change', (e) => {
+                feedCurrentFilialFilter = e.target.value;
+                document.getElementById('feed-filial-filter-text').textContent = e.target.parentElement.textContent.trim();
+                document.getElementById('feed-filial-filter-dropdown').classList.add('hidden');
+                checkClearBtn();
+                loadFeed(true);
+            });
+        });
+
+        // Setup drop filial toggle
+        const filialBtn = document.getElementById('feed-filial-filter-btn');
+        if(filialBtn) {
+            filialBtn.onclick = (e) => {
+                e.stopPropagation();
+                document.getElementById('feed-filial-filter-dropdown').classList.toggle('hidden');
+                document.getElementById('feed-promotor-filter-dropdown').classList.add('hidden');
+            };
+        }
+
+        // Setup drop promotor toggle
+        const promBtn = document.getElementById('feed-promotor-filter-btn');
+        if(promBtn) {
+            promBtn.onclick = (e) => {
+                e.stopPropagation();
+                document.getElementById('feed-promotor-filter-dropdown').classList.toggle('hidden');
+                document.getElementById('feed-filial-filter-dropdown').classList.add('hidden');
+            };
+        }
+
+        document.addEventListener('click', (e) => {
+            if(!e.target.closest('#feed-filial-filter-dropdown') && !e.target.closest('#feed-filial-filter-btn')) {
+                document.getElementById('feed-filial-filter-dropdown')?.classList.add('hidden');
+            }
+            if(!e.target.closest('#feed-promotor-filter-dropdown') && !e.target.closest('#feed-promotor-filter-btn')) {
+                document.getElementById('feed-promotor-filter-dropdown')?.classList.add('hidden');
+            }
+        });
+    }
+
+    let loadFeedTimeout;
+    function delayedLoadFeed() {
+        clearTimeout(loadFeedTimeout);
+        loadFeedTimeout = setTimeout(() => {
+            loadFeed(true);
+        }, 500);
+    }
+
+    function checkClearBtn() {
+        const btn = document.getElementById('feed-clear-all-filters-btn');
+        if(btn) {
+            if(feedCurrentClientFilter || feedCurrentCityFilter || feedCurrentFilialFilter !== 'all' || feedCurrentPromotorFilter) {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+    }
+
+    function updateFiltersUI() {
+        const clientInput = document.getElementById('feed-client-filter');
+        const cityInput = document.getElementById('feed-city-filter');
+        if(clientInput) clientInput.value = feedCurrentClientFilter;
+        if(cityInput) cityInput.value = feedCurrentCityFilter;
+
+        document.getElementById('feed-filial-filter-text').textContent = 'Todas (05 + 08)';
+        document.querySelectorAll('input[name="feed-filial"]').forEach(r => r.checked = (r.value === 'all'));
+
+        document.getElementById('feed-promotor-filter-text').textContent = 'Todos';
+        checkClearBtn();
+    }
+
+    function populateFiltersDropdowns() {
+        // Promotores from hierarchy or dataset
+        const drop = document.getElementById('feed-promotor-filter-dropdown');
+        if(!drop) return;
+
+        let promotores = [];
+        if(window.embeddedData && window.embeddedData.hierarchy) {
+            promotores = [...new Set(window.embeddedData.hierarchy.map(h => h.nome_promotor).filter(n => n))].sort();
+        }
+
+        let html = `<div class="p-2 hover:bg-slate-700 cursor-pointer rounded text-sm text-slate-300" onclick="window.FeedVisitas.setPromotorFilter('')">Todos</div>`;
+        promotores.forEach(p => {
+            html += `<div class="p-2 hover:bg-slate-700 cursor-pointer rounded text-sm text-slate-300" onclick="window.FeedVisitas.setPromotorFilter('${p}')">${window.escapeHtml(p)}</div>`;
+        });
+        drop.innerHTML = html;
+    }
+
+    function setPromotorFilter(val) {
+        feedCurrentPromotorFilter = val;
+        document.getElementById('feed-promotor-filter-text').textContent = val ? window.escapeHtml(val) : 'Todos';
+        document.getElementById('feed-promotor-filter-dropdown').classList.add('hidden');
+        checkClearBtn();
+        loadFeed(true);
     }
 
     function resetFeed() {
@@ -589,8 +735,12 @@ const FeedVisitas = (() => {
                 card.className = 'glass-card rounded-xl shadow-lg border border-slate-700/50 hover:border-slate-600 transition-colors animate-fade-in-up max-w-xl mx-auto w-full overflow-hidden flex flex-col';
 
                 // Try to resolve client info from fetched data_clients map, fallback to code
+
+                // Try to resolve client info from fetched data_clients map, fallback to code
                 let clientName = 'Cliente Desconhecido';
                 let clientInfo = null;
+                let clientCity = '';
+                let clientCnpj = '';
                 if (visit.client_code) {
                     const cleanCode = String(visit.client_code).trim();
                     if (clientNamesMap.has(cleanCode) && clientNamesMap.get(cleanCode)) {
@@ -603,13 +753,40 @@ const FeedVisitas = (() => {
                             registeredLng: cached.registeredLng
                         };
                         clientName = clientInfo.nome;
+                        clientCity = clientInfo.cidade || '';
+                        clientCnpj = clientInfo.cnpj || '';
                     } else {
                         clientName = `Cód: ${visit.client_code}`;
                     }
                 }
 
-                
                 let promotorName = visit.promotor_name || (visit.profiles ? visit.profiles.name : 'Promotor');
+
+                // --- FEED FILTERS ---
+                if (feedCurrentClientFilter) {
+                    const searchStr = `${clientName} ${visit.client_code} ${clientCnpj}`.toLowerCase();
+                    if (!searchStr.includes(feedCurrentClientFilter)) return;
+                }
+
+                if (feedCurrentCityFilter) {
+                    if (!clientCity.toLowerCase().includes(feedCurrentCityFilter)) return;
+                }
+
+                if (feedCurrentPromotorFilter) {
+                    if (promotorName !== feedCurrentPromotorFilter) return;
+                }
+
+                if (feedCurrentFilialFilter !== 'all') {
+                    // Try to discover Filial from City using config_city_branches
+                    let foundFilial = '';
+                    if (clientCity && window.embeddedData && window.embeddedData.config_city_branches) {
+                        const cityNorm = clientCity.trim().toUpperCase();
+                        const configRow = window.embeddedData.config_city_branches.find(r => (r.cidade || '').trim().toUpperCase() === cityNorm);
+                        if (configRow) foundFilial = configRow.filial;
+                    }
+                    if (foundFilial !== feedCurrentFilialFilter) return;
+                }
+
                 let avatarUrl = visit.profiles ? visit.profiles.avatar_url : null;
                 let avatarHtml = '';
 
@@ -1333,7 +1510,8 @@ const FeedVisitas = (() => {
         closeLocationModal,
         openImageModal,
         closeImageModal,
-        clientCache: {}
+        clientCache: {},
+        setPromotorFilter
     };
 })();
 
