@@ -854,30 +854,67 @@ const FeedVisitas = (() => {
                             return isNaN(d.getTime()) ? -Infinity : d.getTime();
                         };
 
-                        const checkSales = (salesArray) => {
-                            if (!salesArray || !Array.isArray(salesArray)) return;
-                            for (let i = 0; i < salesArray.length; i++) {
-                                const s = salesArray[i];
-                                if (!s) continue;
-                                
-                                const codCli = s.CODCLI !== undefined ? s.CODCLI : (s.codcli !== undefined ? s.codcli : (s.cod_cli !== undefined ? s.cod_cli : s.COD_CLI));
-                                const codSup = s.CODSUPERVISOR !== undefined ? s.CODSUPERVISOR : (s.codsupervisor !== undefined ? s.codsupervisor : (s.cod_supervisor !== undefined ? s.cod_supervisor : s.COD_SUPERVISOR));
-                                const dtPed = s.DTPED !== undefined ? s.DTPED : (s.dtped !== undefined ? s.dtped : (s.dt_ped !== undefined ? s.dt_ped : s.DT_PED));
-                                
-                                if (codCli !== undefined && codCli !== null && String(codCli).trim() === clientCodeForLookup && codSup !== undefined && codSup !== null && String(codSup).trim() !== '') {
-                                    const dValue = parseSaleDate(dtPed);
-                                    if (dValue > maxDateValue) {
-                                        maxDateValue = dValue;
-                                        mostRecentSale = {
-                                            CODSUPERVISOR: codSup
-                                        };
+                        const checkSales = (salesData) => {
+                            if (!salesData) return;
+
+                            // Tratar formato colunar (window.embeddedData.isColumnar === true)
+                            if (window.embeddedData && window.embeddedData.isColumnar && Array.isArray(salesData) && salesData.length > 0 && Array.isArray(salesData[0])) {
+                                // Encontrar os índices das colunas relevantes
+                                const headers = salesData.map(col => String(col[0] || '').toUpperCase());
+                                const codCliIdx = headers.findIndex(h => h === 'CODCLI' || h === 'COD_CLI');
+                                const codSupIdx = headers.findIndex(h => h === 'CODSUPERVISOR' || h === 'COD_SUPERVISOR');
+                                const dtPedIdx = headers.findIndex(h => h === 'DTPED' || h === 'DT_PED');
+
+                                if (codCliIdx !== -1 && codSupIdx !== -1 && dtPedIdx !== -1) {
+                                    const codCliArr = salesData[codCliIdx];
+                                    const codSupArr = salesData[codSupIdx];
+                                    const dtPedArr = salesData[dtPedIdx];
+
+                                    const len = codCliArr.length;
+                                    for (let i = 1; i < len; i++) {
+                                        const codCli = codCliArr[i];
+                                        if (codCli !== undefined && codCli !== null && String(codCli).trim() === clientCodeForLookup) {
+                                            const codSup = codSupArr[i];
+                                            if (codSup !== undefined && codSup !== null && String(codSup).trim() !== '') {
+                                                const dtPed = dtPedArr[i];
+                                                const dValue = parseSaleDate(dtPed);
+                                                if (dValue > maxDateValue) {
+                                                    maxDateValue = dValue;
+                                                    mostRecentSale = {
+                                                        CODSUPERVISOR: codSup
+                                                    };
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if (Array.isArray(salesData)) {
+                                // Formato array de objetos padrão
+                                for (let i = 0; i < salesData.length; i++) {
+                                    const s = salesData[i];
+                                    if (!s) continue;
+
+                                    const codCli = s.CODCLI !== undefined ? s.CODCLI : (s.codcli !== undefined ? s.codcli : (s.cod_cli !== undefined ? s.cod_cli : s.COD_CLI));
+                                    const codSup = s.CODSUPERVISOR !== undefined ? s.CODSUPERVISOR : (s.codsupervisor !== undefined ? s.codsupervisor : (s.cod_supervisor !== undefined ? s.cod_supervisor : s.COD_SUPERVISOR));
+                                    const dtPed = s.DTPED !== undefined ? s.DTPED : (s.dtped !== undefined ? s.dtped : (s.dt_ped !== undefined ? s.dt_ped : s.DT_PED));
+
+                                    if (codCli !== undefined && codCli !== null && String(codCli).trim() === clientCodeForLookup && codSup !== undefined && codSup !== null && String(codSup).trim() !== '') {
+                                        const dValue = parseSaleDate(dtPed);
+                                        if (dValue > maxDateValue) {
+                                            maxDateValue = dValue;
+                                            mostRecentSale = {
+                                                CODSUPERVISOR: codSup
+                                            };
+                                        }
                                     }
                                 }
                             }
                         };
 
-                        checkSales(window.allSalesData);
-                        checkSales(window.allHistoryData);
+                        if (window.embeddedData) {
+                            checkSales(window.embeddedData.detailed);
+                            checkSales(window.embeddedData.history);
+                        }
 
                         if (mostRecentSale && mostRecentSale.CODSUPERVISOR) {
                             const codSup = String(mostRecentSale.CODSUPERVISOR).trim();
