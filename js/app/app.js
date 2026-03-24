@@ -20367,7 +20367,8 @@ const supervisorGroups = new Map();
     const RACK_OPTIONS = [
         "Mini Lego", "Lego 4C", "Lego 4C Smart", "4C Arramado", "5C", "6C",
         "7C - P", "7C - M", "7C - G", "8C", "Ilha Quadrada", "Giratório",
-        "Carrossel", "Rack de Amendoim","Gaiola", "Botadeiro", "Rack Toddynho", "Rack FOODS", "Nenhum"
+        "Carrossel", "Rack de Amendoim", "Gaiola", "Botadeiro", "Rack Toddynho", "Checkout Torre",
+        "Checkout Torre Dupla", "Rack Ultra 4C", "Checkout Ultra", "Ciranda Torcida", "Rack Toddynho", "Modular Torcida", "Nenhum"
     ];
 
     let selectedRackOptions = new Set();
