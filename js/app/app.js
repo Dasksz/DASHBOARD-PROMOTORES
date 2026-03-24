@@ -10952,13 +10952,13 @@ const supervisorGroups = new Map();
         }
 
 
+        const forbiddenTiposVenda = new Set(['TIPOVENDA', 'TIPO VENDA', 'TIPO', 'CODUSUR', 'CODCLI', 'SUPERV', 'NOME']);
         function updateTipoVendaFilter(dropdown, filterText, selectedArray, dataSource, skipRender = false) {
             if (!dropdown || !filterText) return selectedArray;
             // Collect unique types from data source
-            const forbidden = ['TIPOVENDA', 'TIPO VENDA', 'TIPO', 'CODUSUR', 'CODCLI', 'SUPERV', 'NOME'];
             const uniqueTypes = dataSource.reduce((acc, item) => {
                 const t = item.TIPOVENDA;
-                if (t && !forbidden.includes(t.toUpperCase())) acc.add(t);
+                if (t && !forbiddenTiposVenda.has(t.toUpperCase())) acc.add(t);
                 return acc;
             }, new Set());
 
@@ -10989,12 +10989,12 @@ const supervisorGroups = new Map();
             return selectedArray;
         }
 
+        const forbiddenRedes = new Set(['RAMO', 'RAMO DE ATIVIDADE', 'RAMO_ATIVIDADE', 'DESCRICAO', 'ATIVIDADE']);
         function updateRedeFilter(dropdown, buttonTextElement, selectedArray, dataSource, baseText = 'C/Rede') {
             if (!dropdown || !buttonTextElement) return selectedArray;
-            const forbidden = ['RAMO', 'RAMO DE ATIVIDADE', 'RAMO_ATIVIDADE', 'DESCRICAO', 'ATIVIDADE'];
             const redesToShow = [...dataSource.reduce((acc, item) => {
                 const r = item.ramo;
-                if (r && r !== 'N/A' && !forbidden.includes(r.toUpperCase())) acc.add(r);
+                if (r && r !== 'N/A' && !forbiddenRedes.has(r.toUpperCase())) acc.add(r);
                 return acc;
             }, new Set())].sort();
             const validSelected = selectedArray.filter(rede => redesToShow.includes(rede));
@@ -11653,13 +11653,13 @@ const supervisorGroups = new Map();
         }
 
 
+        const forbiddenSuppliers = new Set(['CODFOR', 'FORNECEDOR', 'COD FOR', 'NOME DO FORNECEDOR', 'FORNECEDOR_NOME']);
         function updateSupplierFilter(dropdown, filterText, selectedArray, dataSource, filterType = 'comparison', skipRender = false) {
             if (!dropdown || !filterText) return selectedArray;
-            const forbidden = ['CODFOR', 'FORNECEDOR', 'COD FOR', 'NOME DO FORNECEDOR', 'FORNECEDOR_NOME'];
             const suppliers = new Map();
             dataSource.forEach(s => {
                 const codFor = s.CODFOR;
-                if (codFor && !forbidden.includes(String(codFor).toUpperCase())) {
+                if (codFor && !forbiddenSuppliers.has(String(codFor).toUpperCase())) {
                     // Resolve name from dimension instead of relying on s.FORNECEDOR (which is removed)
                     const name = window.resolveDim('fornecedores', codFor);
                     if (name && name !== 'N/A') {
