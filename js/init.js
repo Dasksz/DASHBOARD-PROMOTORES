@@ -832,7 +832,7 @@
                     });
                 };
 
-                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, titulosFetched, notaPerfeitaFetched, relacaoRotaInvolvesFetched, dimVendedoresFetched, dimSupervisoresFetched, dimFornecedoresFetched, dimProdutosFetched] = await Promise.all([
+                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, titulosFetched, notaPerfeitaFetched, relacaoRotaInvolvesFetched, dimVendedoresFetched, dimSupervisoresFetched, dimFornecedoresFetched, dimProdutosFetched, configCityBranchesFetched] = await Promise.all([
                     getOrFetch('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter, 'detailed', 'Sincronizando vendas...'),
                     getOrFetch('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter, 'history', 'Carregando histórico...'),
                     getOrFetch('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter, 'clients', 'Baixando base de clientes...'),
