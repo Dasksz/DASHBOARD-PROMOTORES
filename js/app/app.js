@@ -27071,8 +27071,8 @@ const supervisorGroups = new Map();
             panY: false,
             wheelX: "none",
             wheelY: "none",
-            innerRadius: am5.percent(30),
-            radius: am5.percent(85) // Make it fill the space better
+            innerRadius: am5.percent(20),
+            radius: am5.percent(100) // Make it fill the space better
         }));
 
         const xRenderer = am5radar.AxisRendererCircular.new(root, {

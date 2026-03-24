@@ -5057,7 +5057,7 @@
             panY: false,
             wheelX: "none",
             wheelY: "none",
-            innerRadius: am5.percent(30),
+            innerRadius: am5.percent(20),
             radius: am5.percent(85)
         }));
 
