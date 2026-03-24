@@ -277,11 +277,11 @@
                 console.warn("Failed to fetch hierarchy for role check:", e);
             }
 
-            if (isPromoter) {
-                // If Promoter, force refresh to ensure fresh client data
-                console.log("[Init] Promoter role detected. Bypassing global cache.");
-                useCache = false;
-            }
+            // if (isPromoter) {
+//     // Removed forced bypass of cache. Promoters will use cache based on metadata hash like everyone else.
+//     // console.log("[Init] Promoter role detected. Bypassing global cache.");
+//     // useCache = false;
+// }
 
             // Identify and store Co-Coordinator Code for this user
             if (hierarchy && window.userRole) {
@@ -574,7 +574,8 @@
                 // Config
                 // Keyset Pagination for reliability
                 // Adjusted to 20000 to match Supabase API default limit and ensure pagination loop triggers correctly
-                const pageSize = 20000;
+                // Adjusted to 10000 to balance Supabase limits and timeout issues on large CSV pulls
+                const pageSize = 10000;
 
                 let result = format === 'columnar' ? { columns: [], values: {}, length: 0 } : [];
                 let hasMore = true;
@@ -803,7 +804,7 @@
 
                 // Helper to decide source (Cache vs Fetch)
                 const getOrFetch = (tableName, cols, type, format, pk, filter, cacheKey, loadingLabel) => {
-                    if (tablesToFetch.has(tableName) || isPromoter) {
+                    if (tablesToFetch.has(tableName)) { // Removed || isPromoter so it respects hashes
                         // console.log(`[Fetch] Fetching ${tableName}...`);
                         if (loadingLabel) addLoadingLabel(loadingLabel);
                         return fetchAll(tableName, cols, type, format, pk, filter).then(res => {
@@ -877,12 +878,10 @@
                 config_city_branches = configCityBranchesFetched;
 
                 // Update Cache with Merged Data
-                if (!isPromoter) {
-                    const dataToCache = {
+                const dataToCache = {
                         detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos
                     };
                     saveToCache('dashboardData', dataToCache).then(() => console.log('Dados atualizados salvos no cache.'));
-                }
             }
 
             // Clear loading states (optional, but good practice)
