@@ -5136,11 +5136,11 @@
             clustered: false,
             valueXField: "value",
             categoryYField: "category",
-            tooltipText: "{category}\nAtingimento: {valueX.formatNumber('#.#')}%",
-            templateField: "columnSettings"
+            tooltipText: "{category}\nRealizado: {realizedLabel} / Meta: {goalLabel}\nAtingimento: {valueX.formatNumber('#.#')}%"
         }));
 
         series2.columns.template.setAll({
+            templateField: "columnSettings",
             width: am5.p100,
             strokeOpacity: 0,
             cornerRadius: 20
