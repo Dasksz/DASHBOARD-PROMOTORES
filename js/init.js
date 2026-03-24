@@ -1626,7 +1626,7 @@
         let isCheckingProfile = false;
         let isAppReady = false;
 
-        async function verifyUserProfile(session) {
+        async function verifyUserProfile(session, attempt = 1) {
             if (window.isDataLoaded) {
                 const telaLoading = document.getElementById('tela-loading');
                 const telaLogin = document.getElementById('tela-login');
@@ -1710,17 +1710,34 @@
             } catch (err) {
                 console.error("Error checking profile:", err);
 
+                // Auto-retry network errors up to 3 times
+                const isNetworkError = err.message && (err.message.includes('Failed to fetch') || err.message.includes('Load failed') || err.message.includes('Tempo limite de conexão'));
+                if (isNetworkError && attempt < 3 && !isAppReady) {
+                    console.warn(`Network error detected. Retrying profile check (Attempt ${attempt + 1}/3) in 2s...`);
+                    setTimeout(() => {
+                        isCheckingProfile = false;
+                        verifyUserProfile(session, attempt + 1);
+                    }, 2000);
+                    return;
+                }
+
                 // If App is Ready (Silent Check), suppress error screen.
                 if (isAppReady) {
                     console.warn("Background profile check failed. Keeping session active.");
                     // Optionally show a toast here in future.
                 } else {
+                    // Update user-friendly message for network errors after retries exhausted
+                    let displayMessage = err.message || 'Não foi possível verificar suas credenciais.';
+                    if (isNetworkError && attempt >= 3) {
+                        displayMessage = 'Sua conexão não foi estabelecida com o servidor. Verifique sua internet, tente alternar entre Wi-Fi/4G, ou desative bloqueadores de anúncios (AdBlock) caso existam.';
+                    }
+
                     // Initial Load Failed - Show Error Screen
                     const card = document.getElementById('loading-card-content');
                     if (card) {
                         card.innerHTML = `
                             <h2 style="margin-top: 0; font-size: 1.5rem; font-weight: 600; color: #fc8181;">Erro de Conexão</h2>
-                            <p style="color: #a0aec0; margin-bottom: 1.5rem;">${err.message || 'Não foi possível verificar suas credenciais.'}</p>
+                            <p style="color: #a0aec0; margin-bottom: 1.5rem;">${displayMessage}</p>
                             <button id="retry-connection-btn" class="gatekeeper-btn" style="background-color: #2d3748; border-color: #4a5568;">
                                 Tentar Novamente
                             </button>
@@ -1731,11 +1748,11 @@
                         if(retryBtn) {
                             retryBtn.addEventListener('click', () => {
                                 isCheckingProfile = false; // Reset flag to allow retry
-                                verifyUserProfile(session);
+                                verifyUserProfile(session, 1);
                             });
                         }
                     } else {
-                        window.showToast('error', "Erro de conexão: " + err.message);
+                        window.showToast('error', "Erro de conexão: " + displayMessage);
                         telaLoading.classList.add('hidden');
                         telaPendente.classList.remove('hidden');
                     }
