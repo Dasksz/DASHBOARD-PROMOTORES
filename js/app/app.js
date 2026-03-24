@@ -20705,7 +20705,7 @@ const supervisorGroups = new Map();
 
                     let file = rawFile;
                     if (file.type.startsWith('image/')) {
-                         file = await compressImage(file, 1280, 1280, 0.7);
+                         file = await compressImage(file, 1920, 1920, 0.8);
                     }
 
                     if (file.size > 5 * 1024 * 1024) {
@@ -24189,7 +24189,7 @@ const supervisorGroups = new Map();
                      price = parseFloat(priceVal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 }
 
-                const imageUrl = `${STORAGE_PRODUTOS_URL}${code}.jpg?width=400&quality=60`;
+                const imageUrl = `${STORAGE_PRODUTOS_URL}${code}.jpg`;
 
                 const item = document.createElement('div');
                 // Dark Theme Styling
@@ -27071,8 +27071,8 @@ const supervisorGroups = new Map();
             panY: false,
             wheelX: "none",
             wheelY: "none",
-            innerRadius: am5.percent(30),
-            radius: am5.percent(85) // Make it fill the space better
+            innerRadius: am5.percent(20),
+            radius: am5.percent(100) // Make it fill the space better
         }));
 
         const xRenderer = am5radar.AxisRendererCircular.new(root, {
