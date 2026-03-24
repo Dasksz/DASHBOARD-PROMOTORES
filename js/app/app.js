@@ -10948,9 +10948,53 @@ const supervisorGroups = new Map();
                 renderCategoryRadarChart(radarData);
 
                 // --- NEW METAS CHART LOGIC ---
+                // Calculate goalClients based on the current filters
+                let goalClients = getHierarchyFilteredClients('main', allClientsData);
+                if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller' && selectedSupervisors.size > 0) {
+                    goalClients = goalClients.filter(c => {
+                        const rca = String(c.rca1 || '').trim();
+                        const details = sellerDetailsMap.get(rca);
+                        return details && selectedSupervisors.has(details.supervisor);
+                    });
+                }
+                if (selectedVendedores.size > 0) {
+                    goalClients = goalClients.filter(c => selectedVendedores.has(String(c.rca1 || '').trim()));
+                }
+                if (clientCodesInRede) {
+                     goalClients = goalClients.filter(c => clientCodesInRede.has(c['Código']));
+                }
+                if (codcli) {
+                     const searchKey = normalizeKey(codcli);
+                     goalClients = goalClients.filter(c => normalizeKey(String(c['Código'] || c['codigo_cliente'])) === searchKey);
+                }
+
+                const activeGoalKeys = new Set();
+                const mapSupplierToKey = (s) => {
+                    const sup = String(s).toUpperCase();
+                    if (sup === 'PEPSICO') return ['PEPSICO_ALL'];
+                    if (sup === 'ELMA CHIPS' || sup === 'ELMA') return ['ELMA_ALL'];
+                    if (sup === 'FOODS') return ['FOODS_ALL'];
+                    if (sup === 'EXTRUSADOS') return [window.SUPPLIER_CODES.ELMA[0]];
+                    if (sup === 'NÃO EXTRUSADOS' || sup === 'NAO EXTRUSADOS') return [window.SUPPLIER_CODES.ELMA[1]];
+                    if (sup === 'TORCIDA') return [window.SUPPLIER_CODES.ELMA[2]];
+                    if (sup === 'TODDYNHO') return [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO];
+                    if (sup === 'TODDY') return [window.SUPPLIER_CODES.VIRTUAL.TODDY];
+                    if (sup === 'QUAKER' || sup === 'KEROCOCO' || sup.includes('QUAKER')) return [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO];
+                    if (window.globalGoalsMetrics && window.globalGoalsMetrics[sup]) return [sup];
+                    if (window.SUPPLIER_CODES.ALL_GOALS.includes(sup)) return [sup];
+                    if (sup === window.SUPPLIER_CODES.FOODS[0]) return ['FOODS_ALL'];
+                    return [];
+                };
+                if (selectedMainSuppliers && selectedMainSuppliers.length > 0) {
+                    selectedMainSuppliers.forEach(s => mapSupplierToKey(s).forEach(k => activeGoalKeys.add(k)));
+                } else if (currentFornecedor) {
+                    mapSupplierToKey(currentFornecedor).forEach(k => activeGoalKeys.add(k));
+                }
+                if (activeGoalKeys.size === 0) activeGoalKeys.add('PEPSICO_ALL');
+
                 // We need to calculate Realized vs Meta for Faturamento, Volume, Positivation, Mix Salty, Mix Foods
                 // based on the visible goalClients
-
+                
                 const metasRadarData = [];
                 const mColors = [
                     0x3b82f6, // Faturamento - Blue
@@ -10980,7 +11024,7 @@ const supervisorGroups = new Map();
                                     posGoal += (cGoals.get(key).pos || 0);
                                 }
                             });
-
+                            
                             // Mix Goals (always aggregate these specific keys if they apply to the filter)
                             if (activeGoalKeys.has('PEPSICO_ALL') || activeGoalKeys.has('ELMA_ALL')) {
                                 if (cGoals.has('mix_salty')) {
@@ -11016,7 +11060,7 @@ const supervisorGroups = new Map();
                 if (filteredSalesData) {
                     for(let i=0; i<filteredSalesData.length; i++) {
                         const s = (filteredSalesData instanceof ColumnarDataset) ? filteredSalesData.get(i) : filteredSalesData[i];
-
+                        
                         // Faturamento and Volume based on active filters (which are inherently applied to filteredSalesData)
                         fatRealized += (Number(s.VLVENDA) || 0);
                         volRealized += (Number(s.TOTPESOLIQ) || 0);
@@ -11027,7 +11071,7 @@ const supervisorGroups = new Map();
                              dashboardClientsMap.set(codCli, new Map());
                         }
                         const cMap = dashboardClientsMap.get(codCli);
-
+                        
                         const produto = String(s.PRODUTO);
                         if (!cMap.has(produto)) {
                             const pObj = window.resolveDim('produtos', produto);
@@ -11043,7 +11087,7 @@ const supervisorGroups = new Map();
                 dashboardClientsMap.forEach((prods, cli) => {
                     const boughtCatsSalty = new Set();
                     const boughtCatsFoods = new Set();
-
+                    
                     prods.forEach(pData => {
                         if (pData.val >= 1) { // Same threshold used in Comparison view
                             const desc = norm(pData.desc);
@@ -11064,7 +11108,7 @@ const supervisorGroups = new Map();
                      } else if (realized > 0) {
                          pct = 100;
                      }
-
+                     
                      metasRadarData.push({
                          category: label,
                          value: pct,
@@ -27010,9 +27054,9 @@ const supervisorGroups = new Map();
         const am5xy = window.am5xy;
         const am5radar = window.am5radar;
         const am5themes_Animated = window.am5themes_Animated;
-
+        
         const root = am5.Root.new("metasChartContainer");
-
+        
         if (root._logo) {
             root._logo.dispose();
         }
@@ -27035,7 +27079,7 @@ const supervisorGroups = new Map();
             strokeOpacity: 0.1,
             minGridDistance: 30
         });
-
+        
         xRenderer.labels.template.setAll({
             textType: "radial",
             radius: 10,

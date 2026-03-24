@@ -5040,9 +5040,9 @@
         const am5xy = window.am5xy;
         const am5radar = window.am5radar;
         const am5themes_Animated = window.am5themes_Animated;
-
+        
         const root = am5.Root.new("metasChartContainer");
-
+        
         if (root._logo) {
             root._logo.dispose();
         }
@@ -5065,7 +5065,7 @@
             strokeOpacity: 0.1,
             minGridDistance: 30
         });
-
+        
         xRenderer.labels.template.setAll({
             textType: "radial",
             radius: 10,
