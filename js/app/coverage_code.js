@@ -1185,6 +1185,21 @@
             } else if (mainRedeGroupFilter === 'sem_rede') {
                 clientBaseForCoverage = clientBaseForCoverage.filter(c => !c.ramo || c.ramo === 'N/A');
             }
+
+            // --- APPLY HIERARCHY AND SELLER/SUPERVISOR FILTERS TO BASE ---
+            clientBaseForCoverage = getHierarchyFilteredClients('main', clientBaseForCoverage);
+
+            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller' && selectedSupervisors.size > 0) {
+                clientBaseForCoverage = clientBaseForCoverage.filter(c => {
+                    const rca = String(c.rca1 || '').trim();
+                    const details = sellerDetailsMap.get(rca);
+                    return details && selectedSupervisors.has(details.supervisor);
+                });
+            }
+
+            if (selectedVendedores.size > 0) {
+                clientBaseForCoverage = clientBaseForCoverage.filter(c => selectedVendedores.has(String(c.rca1 || '').trim()));
+            }
             const clientCodesInRede = new Set(clientBaseForCoverage.map(c => c['Código']));
 
             const intersectSets = (sets) => {
