@@ -21508,6 +21508,15 @@ const supervisorGroups = new Map();
              if (cleanTerm.length > 0 && cleanTerm !== term) {
                  orClause += `,cnpj_cpf.ilike.%${cleanTerm}%,codigo_cliente.ilike.%${cleanTerm}%`;
              }
+
+             // If the clean term looks like a raw CPF/CNPJ, format it to match DB strings that are masked
+             if (/^\d{11}$/.test(cleanTerm)) {
+                 const formattedCpf = cleanTerm.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4");
+                 orClause += `,cnpj_cpf.ilike.%${formattedCpf}%`;
+             } else if (/^\d{14}$/.test(cleanTerm)) {
+                 const formattedCnpj = cleanTerm.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+                 orClause += `,cnpj_cpf.ilike.%${formattedCnpj}%`;
+             }
              
              dbQuery = dbQuery.or(orClause);
         });
