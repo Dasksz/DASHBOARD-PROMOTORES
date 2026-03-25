@@ -797,6 +797,9 @@ const FeedVisitas = (() => {
             }
         }
 
+        // Optimization: Use a DocumentFragment to minimize DOM reflows and repaints during sequential card insertions
+        const fragment = document.createDocumentFragment();
+
         data.forEach(visit => {
                 // Extract answers and photos before building the card to check if it should be displayed
                 let fotos = [];
@@ -1343,8 +1346,12 @@ const FeedVisitas = (() => {
                         ${(isManager || isSeller || String(visit.profiles?.role).toUpperCase() === String(window.userRole || '').toUpperCase()) ? resumoRespostasHtml : ''}
                     </div>
                 `;
-                cardsContainer.appendChild(card);
+                fragment.appendChild(card);
         });
+
+        if (cardsContainer) {
+            cardsContainer.appendChild(fragment);
+        }
 
         setupObserver();
     }
