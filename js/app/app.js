@@ -10831,9 +10831,8 @@ const supervisorGroups = new Map();
                     [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]: 0, [window.SUPPLIER_CODES.VIRTUAL.TODDY]: 0, [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: 0
                 };
 
-                const visibleClientsForGoals = getHierarchyFilteredClients('main', allClientsData);
                 if (window.globalClientGoals) {
-                    visibleClientsForGoals.forEach(c => {
+                    goalClients.forEach(c => {
                         const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
                         const clientGoals = window.globalClientGoals.get(codCli);
                         if (clientGoals) {
