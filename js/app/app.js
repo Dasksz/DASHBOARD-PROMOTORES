@@ -6714,7 +6714,7 @@
                 globalTotalAvgFat = globalGoalsTotalsCache[cacheKey].fat;
                 globalTotalAvgVol = globalGoalsTotalsCache[cacheKey].vol;
             } else {
-                const allActiveClients = allClientsData.filter(c => {
+                const allActiveClients = (window.allClientsData || allClientsData).filter(c => {
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
                     if (isAmericanas) return true;
@@ -11010,31 +11010,129 @@ const supervisorGroups = new Map();
                 let mixSaltyRealized = 0, mixSaltyGoal = 0;
                 let mixFoodsRealized = 0, mixFoodsGoal = 0;
 
-                // 1. Accumulate Goals from window.globalClientGoals based on goalClients
+                // 1. Accumulate Goals from window.globalClientGoals based on goalClients (Fat and Vol only)
                 if (window.globalClientGoals && goalClients) {
                     goalClients.forEach(c => {
                         const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
                         const cGoals = window.globalClientGoals.get(codCli);
                         if (cGoals) {
-                            // Sum up Faturamento & Volume based on activeGoalKeys
                             activeGoalKeys.forEach(key => {
                                 if (cGoals.has(key)) {
                                     fatGoal += (cGoals.get(key).fat || 0);
                                     volGoal += (cGoals.get(key).vol || 0);
-                                    posGoal += (cGoals.get(key).pos || 0);
+                                    // Removed posGoal accumulation from here, as it will be calculated proportionally below.
                                 }
                             });
-                            
-                            // Mix Goals (always aggregate these specific keys if they apply to the filter)
-                            if (activeGoalKeys.has('PEPSICO_ALL') || activeGoalKeys.has('ELMA_ALL')) {
-                                if (cGoals.has('mix_salty')) {
-                                    mixSaltyGoal += (cGoals.get('mix_salty').mix || 0);
-                                }
+                        }
+                    });
+                }
+
+                // 1.5 Calculate Mix and Positivação Goals PROPORTIONALLY
+                // For promotores (and other filtered views), the goal is a percentage of the vendor's total goal,
+                // proportional to the number of clients from that vendor currently visible vs the vendor's total active base.
+                if (goalClients && goalClients.length > 0) {
+                    const vendorVisibleCount = new Map(); // vendorCode -> count
+                    goalClients.forEach(c => {
+                        const rca = String(c.rca1 || '').trim();
+                        if (rca) {
+                            vendorVisibleCount.set(rca, (vendorVisibleCount.get(rca) || 0) + 1);
+                        }
+                    });
+
+                    // Get all active clients to calculate the total base per vendor
+                    const allActiveClients = allClientsData.filter(c => {
+                        const rca1 = String(c.rca1 || '').trim();
+                        const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                        if (isAmericanas) return true;
+                        if (window.userRole === 'adm' && rca1 === '53') return false; // Hide orphan balcao from admin if needed, wait, let's just use standard active logic
+                        if (rca1 === '') return false;
+                        return true;
+                    });
+
+                    const vendorTotalCount = new Map(); // vendorCode -> count
+                    allActiveClients.forEach(c => {
+                        const rca = String(c.rca1 || '').trim();
+                        if (rca) {
+                            vendorTotalCount.set(rca, (vendorTotalCount.get(rca) || 0) + 1);
+                        }
+                    });
+
+                    // Iterate over visible vendors and calculate their proportional contribution to the goal
+                    vendorVisibleCount.forEach((visibleCount, rcaCode) => {
+                        const totalCount = vendorTotalCount.get(rcaCode) || visibleCount;
+                        const ratio = totalCount > 0 ? (visibleCount / totalCount) : 0;
+                        const vendorName = (window.sellerDetailsMap && window.sellerDetailsMap.has(rcaCode))
+                                            ? window.sellerDetailsMap.get(rcaCode).name
+                                            : rcaCode;
+
+                        // Get manual targets if they exist
+                        const targets = (window.goalsSellerTargets && window.goalsSellerTargets.has(vendorName))
+                                        ? window.goalsSellerTargets.get(vendorName)
+                                        : {};
+
+                        // Mix Salty Proportional Goal
+                        if (activeGoalKeys.has('PEPSICO_ALL') || activeGoalKeys.has('ELMA_ALL')) {
+                            // Defaults based on logic from calculateGoalsMetrics (50% of Elma base for Salty, 30% for Foods)
+                            const elmaPosBase = window.sellerDetailsMap?.get(rcaCode)?.elmaPos || 0;
+                            const defaultSalty = Math.round(elmaPosBase * 0.50);
+                            let vendorMixSaltyGoal = targets['mix_salty'] !== undefined ? targets['mix_salty'] : defaultSalty;
+                            mixSaltyGoal += vendorMixSaltyGoal * ratio;
+                        }
+
+                        // Mix Foods Proportional Goal
+                        if (activeGoalKeys.has('PEPSICO_ALL') || activeGoalKeys.has('FOODS_ALL')) {
+                            const elmaPosBase = window.sellerDetailsMap?.get(rcaCode)?.elmaPos || 0;
+                            const defaultFoods = Math.round(elmaPosBase * 0.30);
+                            let vendorMixFoodsGoal = targets['mix_foods'] !== undefined ? targets['mix_foods'] : defaultFoods;
+                            mixFoodsGoal += vendorMixFoodsGoal * ratio;
+                        }
+
+                        // Positivação Proportional Goal
+                        if (activeGoalKeys.has('PEPSICO_ALL')) {
+                            // Special rule: "Numa visão geral pepsico a meta de positivação do promotor deve ser toda a base cadastrada para ele"
+                            posGoal += visibleCount;
+                        } else {
+                            // Determine which Pos target to use based on active filter
+                            let posTargetKey = null;
+                            const suppliersSet = new Set(selectedMainSuppliers);
+                            if (suppliersSet.size === 1) {
+                                const sup = [...suppliersSet][0];
+                                posTargetKey = sup; // e.g., '1013', '1014', etc.
+                            } else if (activeGoalKeys.has('ELMA_ALL')) {
+                                posTargetKey = 'total_elma';
+                            } else if (activeGoalKeys.has('FOODS_ALL')) {
+                                posTargetKey = 'total_foods';
                             }
-                            if (activeGoalKeys.has('PEPSICO_ALL') || activeGoalKeys.has('FOODS_ALL')) {
-                                if (cGoals.has('mix_foods')) {
-                                    mixFoodsGoal += (cGoals.get('mix_foods').mix || 0);
-                                }
+                            
+                            let vendorPosGoal = 0;
+                            if (posTargetKey && targets[posTargetKey] !== undefined) {
+                                vendorPosGoal = targets[posTargetKey];
+                            } else if (posTargetKey && targets[posTargetKey.toUpperCase()] !== undefined) {
+                                vendorPosGoal = targets[posTargetKey.toUpperCase()];
+                            }
+
+                            // Let's use globalClientGoals for the default posGoal if no target is found
+                            // because globalClientGoals already has the sum of pos per client!
+                            if (vendorPosGoal === 0) {
+                                // Calculate how much Pos goal is contributed by this vendor's clients in goalClients
+                                let defaultPosForVendor = 0;
+                                goalClients.forEach(c => {
+                                    if (String(c.rca1 || '').trim() === rcaCode) {
+                                        const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
+                                        const cGoals = window.globalClientGoals.get(codCli);
+                                        if (cGoals) {
+                                            activeGoalKeys.forEach(key => {
+                                                if (cGoals.has(key)) {
+                                                    defaultPosForVendor += (cGoals.get(key).pos || 0);
+                                                }
+                                            });
+                                        }
+                                    }
+                                });
+                                // Don't multiply by ratio here, because defaultPosForVendor is ALREADY based only on goalClients (visible)
+                                posGoal += defaultPosForVendor;
+                            } else {
+                                posGoal += vendorPosGoal * ratio;
                             }
                         }
                     });
@@ -11043,11 +11141,8 @@ const supervisorGroups = new Map();
                 // Default POS Goal is 100% of visible clients if no specific goal is set
                 // But only for the specific active filter (if Pepsico, base is everyone; if Elma, base is active Elma clients)
                 // We use goalClients.length if posGoal is 0 or missing, but wait, the logic for Positivacao goal is better left to explicit goals.
-                // If posGoal is 0, we'll try to fallback to the natural client count.
-                if (posGoal === 0 && goalClients && goalClients.length > 0) {
-                     // For 'PEPSICO_ALL' or similar, we might just assume 100% of goalClients is the target
-                     posGoal = goalClients.length;
-                }
+                // Removemos o fallback antigo. O cálculo agora será proporcional baseado nos vendedores.
+
 
                 // 2. Accumulate Realized values
                 const pepsicoCodfors = new Set([window.SUPPLIER_CODES.ELMA[0], window.SUPPLIER_CODES.ELMA[1], window.SUPPLIER_CODES.ELMA[2]]);
@@ -11064,6 +11159,9 @@ const supervisorGroups = new Map();
                         // Faturamento and Volume based on active filters (which are inherently applied to filteredSalesData)
                         fatRealized += (Number(s.VLVENDA) || 0);
                         volRealized += (Number(s.TOTPESOLIQ) || 0);
+
+                        // Filter TIPOVENDA para Mix e Positivação (Analise de Mix usa apenas 1 e 9)
+                        if (String(s.TIPOVENDA) !== '1' && String(s.TIPOVENDA) !== '9') continue;
 
                         // Track by Client for Positivation and Mix
                         const codCli = normalizeKey(s.CODCLI);
@@ -11109,13 +11207,25 @@ const supervisorGroups = new Map();
                          pct = 100;
                      }
                      
+                     let realizedStr, goalStr;
+                     if (label === 'Volume (Ton)') {
+                         realizedStr = realized.toLocaleString('pt-BR', {minimumFractionDigits: 3, maximumFractionDigits: 3}) + ' Ton';
+                         goalStr = goal.toLocaleString('pt-BR', {minimumFractionDigits: 3, maximumFractionDigits: 3}) + ' Ton';
+                     } else if (label === 'Positivação' || label.includes('Mix')) {
+                         realizedStr = Math.floor(realized).toString();
+                         goalStr = Math.floor(goal).toString();
+                     } else {
+                         realizedStr = 'R$ ' + realized.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                         goalStr = 'R$ ' + goal.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                     }
+
                      metasRadarData.push({
                          category: label,
                          value: pct,
                          full: 100,
                          columnSettings: { fill: window.am5.color(mColors[idx]) },
-                         realizedLabel: label === 'Positivação' || label.includes('Mix') ? Math.floor(realized).toString() : 'R$ ' + realized.toLocaleString('pt-BR', {minimumFractionDigits: 2}),
-                         goalLabel: label === 'Positivação' || label.includes('Mix') ? Math.floor(goal).toString() : 'R$ ' + goal.toLocaleString('pt-BR', {minimumFractionDigits: 2})
+                         realizedLabel: realizedStr,
+                         goalLabel: goalStr
                      });
                 };
 
