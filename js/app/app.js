@@ -10831,9 +10831,27 @@ const supervisorGroups = new Map();
                     [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO]: 0, [window.SUPPLIER_CODES.VIRTUAL.TODDY]: 0, [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: 0
                 };
 
-                const visibleClientsForGoals = getHierarchyFilteredClients('main', allClientsData);
+                let radarGoalClients = getHierarchyFilteredClients('main', allClientsData);
+                if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller' && selectedSupervisors.size > 0) {
+                    radarGoalClients = radarGoalClients.filter(c => {
+                        const rca = String(c.rca1 || '').trim();
+                        const details = sellerDetailsMap.get(rca);
+                        return details && selectedSupervisors.has(details.supervisor);
+                    });
+                }
+                if (selectedVendedores.size > 0) {
+                    radarGoalClients = radarGoalClients.filter(c => selectedVendedores.has(String(c.rca1 || '').trim()));
+                }
+                if (clientCodesInRede) {
+                     radarGoalClients = radarGoalClients.filter(c => clientCodesInRede.has(c['Código']));
+                }
+                if (codcli) {
+                     const searchKey = normalizeKey(codcli);
+                     radarGoalClients = radarGoalClients.filter(c => normalizeKey(String(c['Código'] || c['codigo_cliente'])) === searchKey);
+                }
+
                 if (window.globalClientGoals) {
-                    visibleClientsForGoals.forEach(c => {
+                    radarGoalClients.forEach(c => {
                         const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
                         const clientGoals = window.globalClientGoals.get(codCli);
                         if (clientGoals) {
@@ -21507,15 +21525,6 @@ const supervisorGroups = new Map();
              // Add clean variations if they differ (mostly for CNPJ/Codes)
              if (cleanTerm.length > 0 && cleanTerm !== term) {
                  orClause += `,cnpj_cpf.ilike.%${cleanTerm}%,codigo_cliente.ilike.%${cleanTerm}%`;
-             }
-
-             // If the clean term looks like a raw CPF/CNPJ, format it to match DB strings that are masked
-             if (/^\d{11}$/.test(cleanTerm)) {
-                 const formattedCpf = cleanTerm.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4");
-                 orClause += `,cnpj_cpf.ilike.%${formattedCpf}%`;
-             } else if (/^\d{14}$/.test(cleanTerm)) {
-                 const formattedCnpj = cleanTerm.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
-                 orClause += `,cnpj_cpf.ilike.%${formattedCnpj}%`;
              }
              
              dbQuery = dbQuery.or(orClause);
