@@ -5058,51 +5058,41 @@
             wheelX: "none",
             wheelY: "none",
             innerRadius: am5.percent(20),
-            radius: am5.percent(85)
+            startAngle: -90,
+            endAngle: 180
         }));
 
-        const xRenderer = am5radar.AxisRendererCircular.new(root, {
-            strokeOpacity: 0.1,
-            minGridDistance: 30
-        });
-        
-        xRenderer.labels.template.setAll({
-            textType: "radial",
-            radius: 10,
-            paddingTop: 0,
-            paddingBottom: 0,
-            centerY: am5.p50,
-            fontSize: 12,
-            fill: am5.color(0x94a3b8)
-        });
+        // Cursor
+        const cursor = chart.set("cursor", am5radar.RadarCursor.new(root, {
+            behavior: "none"
+        }));
+        cursor.lineY.set("visible", false);
 
-        xRenderer.grid.template.setAll({
-            forceHidden: true
-        });
+        const xRenderer = am5radar.AxisRendererCircular.new(root, {});
+        xRenderer.labels.template.setAll({ radius: 10 });
+        xRenderer.grid.template.setAll({ forceHidden: true });
 
         const xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
             renderer: xRenderer,
             min: 0,
             max: 100,
-            strictMinMax: true,
-            numberFormat: "#'%'",
+            strictMinMax: false,
+            numberFormat: "#\'%\'",
             tooltip: am5.Tooltip.new(root, {})
         }));
 
         const yRenderer = am5radar.AxisRendererRadial.new(root, {
-            minGridDistance: 20
+            minGridDistance: 10
         });
-
         yRenderer.labels.template.setAll({
             centerX: am5.p100,
             fontWeight: "500",
-            fontSize: 12,
-            fill: am5.color(0xf8fafc)
+            fontSize: 11,
+            templateField: "columnSettings",
+            oversizedBehavior: "truncate",
+            maxWidth: 140
         });
-
-        yRenderer.grid.template.setAll({
-            forceHidden: true
-        });
+        yRenderer.grid.template.setAll({ forceHidden: true });
 
         const yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
             categoryField: "category",
@@ -5123,7 +5113,7 @@
 
         series1.columns.template.setAll({
             width: am5.p100,
-            fillOpacity: 0.1,
+            fillOpacity: 0.08,
             strokeOpacity: 0,
             cornerRadius: 20
         });
