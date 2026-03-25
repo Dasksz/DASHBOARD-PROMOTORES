@@ -10376,7 +10376,22 @@ const supervisorGroups = new Map();
             const posicao = posicaoFilter.value;
             const codcli = codcliFilter.value.trim();
 
-            let clientBaseForCoverage = allClientsData.filter(c => {
+            // --- OPTIMIZATION: Compute Hierarchy and Seller Filters Once ---
+            let baseFilteredHierarchyClients = getHierarchyFilteredClients('main');
+            
+            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller' && selectedSupervisors.size > 0) {
+                baseFilteredHierarchyClients = baseFilteredHierarchyClients.filter(c => {
+                    const rca = String(c.rca1 || '').trim();
+                    const details = sellerDetailsMap.get(rca);
+                    return details && selectedSupervisors.has(details.supervisor);
+                });
+            }
+            if (selectedVendedores.size > 0) {
+                baseFilteredHierarchyClients = baseFilteredHierarchyClients.filter(c => selectedVendedores.has(String(c.rca1 || '').trim()));
+            }
+            // --------------------------------------------------------------
+
+            let clientBaseForCoverage = baseFilteredHierarchyClients.filter(c => {
                 const rca1 = String(c.rca1 || '').trim();
 
                 const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
@@ -10402,20 +10417,7 @@ const supervisorGroups = new Map();
                 clientBaseForCoverage = clientBaseForCoverage.filter(c => !c.ramo || c.ramo === 'N/A');
             }
 
-            // --- APPLY HIERARCHY AND SELLER/SUPERVISOR FILTERS TO BASE ---
-            clientBaseForCoverage = getHierarchyFilteredClients('main', clientBaseForCoverage);
-
-            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller' && selectedSupervisors.size > 0) {
-                clientBaseForCoverage = clientBaseForCoverage.filter(c => {
-                    const rca = String(c.rca1 || '').trim();
-                    const details = sellerDetailsMap.get(rca);
-                    return details && selectedSupervisors.has(details.supervisor);
-                });
-            }
-
-            if (selectedVendedores.size > 0) {
-                clientBaseForCoverage = clientBaseForCoverage.filter(c => selectedVendedores.has(String(c.rca1 || '').trim()));
-            }
+            // Filters for Hierarchy, Seller, and Supervisor are now pre-computed in baseFilteredHierarchyClients
             const clientCodesInRede = new Set(clientBaseForCoverage.map(c => c['Código']));
 
             const intersectSets = (sets) => {
@@ -10453,24 +10455,8 @@ const supervisorGroups = new Map();
                     }
                 }
 
-                // Hierarchy Filter & Vendedor Filter
-                let hierarchyClients = getHierarchyFilteredClients('main');
-                
-                // Apply Supervisor Filter if active (Only in Seller Mode)
-                if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller' && selectedSupervisors.size > 0) {
-                    hierarchyClients = hierarchyClients.filter(c => {
-                        const rca = String(c.rca1 || '').trim();
-                        const details = sellerDetailsMap.get(rca);
-                        return details && selectedSupervisors.has(details.supervisor);
-                    });
-
-
-                }
-
-                // Apply Seller Filter if active
-                if (selectedVendedores.size > 0) {
-                    hierarchyClients = hierarchyClients.filter(c => selectedVendedores.has(String(c.rca1 || '').trim()));
-                }
+                // Hierarchy, Supervisor, and Seller Filters are pre-computed in baseFilteredHierarchyClients
+                let hierarchyClients = baseFilteredHierarchyClients;
 
                 if (hierarchyClients.length < allClientsData.length) {
                     hasFilter = true;
@@ -10566,7 +10552,7 @@ const supervisorGroups = new Map();
             const filteredSalesData = getFilteredIds(optimizedData.indices.current, optimizedData.salesById);
             const filteredHistoryData = getFilteredIds(optimizedData.indices.history, optimizedData.historyById);
 
-            const hierarchyClientsForTable = getHierarchyFilteredClients('main');
+            const hierarchyClientsForTable = baseFilteredHierarchyClients;
             const hierarchyClientCodes = new Set(hierarchyClientsForTable.map(c => String(c['Código'] || c['codigo_cliente'])));
             const isHierarchyFiltered = hierarchyClientsForTable.length < allClientsData.length;
 
