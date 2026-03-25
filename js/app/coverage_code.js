@@ -341,7 +341,7 @@
 
                     return `
                         <tr class="hover:bg-slate-700/50">
-                            <td data-label="Produto" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[120px] md:max-w-xs" title="${item.descricao}">${item.descricao}</td>
+                            <td data-label="Produto" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[120px] md:max-w-xs" title="${window.escapeHtml(item.descricao)}">${window.escapeHtml(item.descricao)}</td>
                             <td data-label="Estoque" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.stockQty.toLocaleString('pt-BR')}</td>
                             <td data-label="Vol Ant (Cx)" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.boxesSoldPreviousMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
                             <td data-label="Vol Atual (Cx)" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right">${item.boxesSoldCurrentMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
