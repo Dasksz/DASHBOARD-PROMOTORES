@@ -29,7 +29,7 @@ serve(async (req) => {
 
   if (error) return new Response("Erro: " + error.message, { status: 500 });
 
-  const redirectUrl = "https://dasksz.github.io/DASHBOARD-PROMOTORES/reject-visit.html";
+  const redirectUrl = "https://dasksz.github.io/DASHBOARD-PROMOTORES/supabase/reject-visit.html";
 
   return new Response(null, {
     status: 303,
