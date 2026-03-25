@@ -27139,15 +27139,15 @@ const supervisorGroups = new Map();
             yAxis: yAxis,
             clustered: false,
             valueXField: "value",
-            categoryYField: "category",
-            tooltipText: "{category}\nRealizado: {realizedLabel} / Meta: {goalLabel}\nAtingimento: {valueX.formatNumber('#.#')}%"
+            categoryYField: "category"
         }));
 
         series2.columns.template.setAll({
             templateField: "columnSettings",
             width: am5.p100,
             strokeOpacity: 0,
-            cornerRadius: 20
+            cornerRadius: 20,
+            tooltipText: "{category}\nRealizado: {realizedLabel} / Meta: {goalLabel}\nAtingimento: {valueX.formatNumber('#.#')}%"
         });
 
         series2.data.setAll(data);
