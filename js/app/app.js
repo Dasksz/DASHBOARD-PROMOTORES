@@ -11088,52 +11088,71 @@ const supervisorGroups = new Map();
                         }
 
                         // Positivação Proportional Goal
-                        if (activeGoalKeys.has('PEPSICO_ALL')) {
-                            // Special rule: "Numa visão geral pepsico a meta de positivação do promotor deve ser toda a base cadastrada para ele"
-                            posGoal += visibleCount;
-                        } else {
-                            // Determine which Pos target to use based on active filter
-                            let posTargetKey = null;
-                            const suppliersSet = new Set(selectedMainSuppliers);
-                            if (suppliersSet.size === 1) {
-                                const sup = [...suppliersSet][0];
-                                posTargetKey = sup; // e.g., '1013', '1014', etc.
-                            } else if (activeGoalKeys.has('ELMA_ALL')) {
-                                posTargetKey = 'total_elma';
-                            } else if (activeGoalKeys.has('FOODS_ALL')) {
-                                posTargetKey = 'total_foods';
-                            }
-                            
-                            let vendorPosGoal = 0;
-                            if (posTargetKey && targets[posTargetKey] !== undefined) {
-                                vendorPosGoal = targets[posTargetKey];
-                            } else if (posTargetKey && targets[posTargetKey.toUpperCase()] !== undefined) {
-                                vendorPosGoal = targets[posTargetKey.toUpperCase()];
-                            }
+                        let overrideKey = null;
+                        const elmaKeys = window.SUPPLIER_CODES.ELMA;
+                        const foodsKeys = window.SUPPLIER_CODES.VIRTUAL_LIST;
+                        const goalKeysArr = Array.from(activeGoalKeys);
+                        const allElmaSelected = elmaKeys.every(k => goalKeysArr.includes(k));
+                        const allFoodsSelected = foodsKeys.every(k => goalKeysArr.includes(k));
+                        const suppliersSet = new Set(selectedMainSuppliers);
 
-                            // Let's use globalClientGoals for the default posGoal if no target is found
-                            // because globalClientGoals already has the sum of pos per client!
-                            if (vendorPosGoal === 0) {
-                                // Calculate how much Pos goal is contributed by this vendor's clients in goalClients
-                                let defaultPosForVendor = 0;
-                                goalClients.forEach(c => {
-                                    if (String(c.rca1 || '').trim() === rcaCode) {
-                                        const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
-                                        const cGoals = window.globalClientGoals.get(codCli);
-                                        if (cGoals) {
-                                            activeGoalKeys.forEach(key => {
-                                                if (cGoals.has(key)) {
-                                                    defaultPosForVendor += (cGoals.get(key).pos || 0);
-                                                }
-                                            });
-                                        }
-                                    }
-                                });
-                                // Don't multiply by ratio here, because defaultPosForVendor is ALREADY based only on goalClients (visible)
-                                posGoal += defaultPosForVendor;
-                            } else {
-                                posGoal += vendorPosGoal * ratio;
+                        if (suppliersSet.size === 0) {
+                            if (activeGoalKeys.has('PEPSICO_ALL')) {
+                                overrideKey = targets['pepsico_all'] !== undefined ? 'pepsico_all' : 'GERAL';
+                            } else if (activeGoalKeys.has('ELMA_ALL')) {
+                                overrideKey = 'total_elma';
+                            } else if (activeGoalKeys.has('FOODS_ALL')) {
+                                overrideKey = 'total_foods';
                             }
+                        } else if (suppliersSet.size === 1) {
+                            const sup = [...suppliersSet][0];
+                            if (sup === window.SUPPLIER_CODES.VIRTUAL.TODDYNHO) overrideKey = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
+                            else if (sup === window.SUPPLIER_CODES.VIRTUAL.TODDY) overrideKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                            else if (sup === '1119_QUAKER' || sup === window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO) overrideKey = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
+                            else if (sup === window.SUPPLIER_CODES.FOODS[0]) {
+                                 if (allFoodsSelected) overrideKey = 'total_foods';
+                                 else overrideKey = sup;
+                            }
+                            else overrideKey = sup;
+                        } else {
+                            // Multiple suppliers selected - Only use aggregate if it matches the selection
+                            if (activeGoalKeys.has('ELMA_ALL') && allElmaSelected) {
+                                overrideKey = 'total_elma';
+                            } else if (activeGoalKeys.has('FOODS_ALL') && allFoodsSelected) {
+                                overrideKey = 'total_foods';
+                            } else if (activeGoalKeys.has('PEPSICO_ALL') && allElmaSelected && allFoodsSelected) {
+                                overrideKey = targets['pepsico_all'] !== undefined ? 'pepsico_all' : 'GERAL';
+                            }
+                        }
+
+                        let vendorPosGoal = 0;
+                        if (overrideKey && targets[overrideKey] !== undefined) {
+                            vendorPosGoal = targets[overrideKey];
+                        } else if (overrideKey && targets[overrideKey.toUpperCase()] !== undefined) {
+                            vendorPosGoal = targets[overrideKey.toUpperCase()];
+                        }
+
+                        if (vendorPosGoal === 0) {
+                            // Fallback to sum of individual clients
+                            let defaultPosForVendor = 0;
+                            goalClients.forEach(c => {
+                                if (String(c.rca1 || '').trim() === rcaCode) {
+                                    const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
+                                    const cGoals = window.globalClientGoals.get(codCli);
+                                    if (cGoals) {
+                                        activeGoalKeys.forEach(key => {
+                                            if (cGoals.has(key)) {
+                                                defaultPosForVendor += (cGoals.get(key).pos || 0);
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                            // Don't multiply by ratio here, because defaultPosForVendor is ALREADY based only on goalClients (visible)
+                            posGoal += defaultPosForVendor;
+                        } else {
+                            // Apply proportion (e.g. 10 visible clients / 100 total base = 0.1 ratio)
+                            posGoal += vendorPosGoal * ratio;
                         }
                     });
                 }
