@@ -337,7 +337,7 @@ const FeedVisitas = (() => {
 
         let html = `<div class="p-2 hover:bg-slate-700 cursor-pointer rounded text-sm text-slate-300" onclick="window.FeedVisitas.setPromotorFilter('')">Todos</div>`;
         promotores.forEach(p => {
-            html += `<div class="p-2 hover:bg-slate-700 cursor-pointer rounded text-sm text-slate-300" onclick="window.FeedVisitas.setPromotorFilter('${p}')">${window.escapeHtml(p)}</div>`;
+            html += `<div class="p-2 hover:bg-slate-700 cursor-pointer rounded text-sm text-slate-300" onclick="window.FeedVisitas.setPromotorFilter('${p.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;")}')">${window.escapeHtml(p)}</div>`;
         });
         drop.innerHTML = html;
     }
