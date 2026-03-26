@@ -2828,6 +2828,8 @@
         let monthlyAmChartRoot = null;
         let innovationsAmChartRoot = null;
         let currentProductMetric = 'faturamento';
+        let currentFilteredSalesData = [];
+        let currentFilteredHistoryData = [];
         let currentFornecedor = '';
         let currentComparisonFornecedor = 'PEPSICO';
         let useTendencyComparison = false;
@@ -11283,6 +11285,8 @@ const supervisorGroups = new Map();
                 renderMetasRadarChart(metasRadarData);
 
                 // Variation Table Logic
+                currentFilteredSalesData = filteredSalesData;
+                currentFilteredHistoryData = filteredHistoryData;
                 const variationData = calculateProductVariation(filteredSalesData, filteredHistoryData);
                 renderTopProductsVariationTable(variationData);
             }
@@ -17429,8 +17433,8 @@ const supervisorGroups = new Map();
 
             if (modalCloseBtn) modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
             if (clientModalCloseBtn) clientModalCloseBtn.addEventListener('click', () => clientModal.classList.add('hidden'));
-            if (faturamentoBtn) faturamentoBtn.addEventListener('click', () => { currentProductMetric = 'faturamento'; faturamentoBtn.classList.add('active'); pesoBtn.classList.remove('active'); updateDashboard(); });
-            if (pesoBtn) pesoBtn.addEventListener('click', () => { currentProductMetric = 'peso'; pesoBtn.classList.add('active'); faturamentoBtn.classList.remove('active'); updateDashboard(); });
+            if (faturamentoBtn) faturamentoBtn.addEventListener('click', () => { currentProductMetric = 'faturamento'; faturamentoBtn.classList.add('active'); pesoBtn.classList.remove('active'); const variationData = calculateProductVariation(currentFilteredSalesData, currentFilteredHistoryData); renderTopProductsVariationTable(variationData); });
+            if (pesoBtn) pesoBtn.addEventListener('click', () => { currentProductMetric = 'peso'; pesoBtn.classList.add('active'); faturamentoBtn.classList.remove('active'); const variationData = calculateProductVariation(currentFilteredSalesData, currentFilteredHistoryData); renderTopProductsVariationTable(variationData); });
 
             // --- Innovations View Filters ---
             const updateInnovations = () => {
