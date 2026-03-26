@@ -3661,6 +3661,12 @@ innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
                         if (targets[category] !== undefined) {
                             return targets[category];
                         }
+                        if (targets[category.toUpperCase()] !== undefined) {
+                            return targets[category.toUpperCase()];
+                        }
+                        if (targets[category.toLowerCase()] !== undefined) {
+                            return targets[category.toLowerCase()];
+                        }
                         // Explicitly return 0 if category is missing (User intended 0 or skipped it)
                         return 0;
                     } else {
