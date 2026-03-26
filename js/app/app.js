@@ -3416,7 +3416,7 @@
 
         // --- MIX VIEW LOGIC ---
         const MIX_SALTY_CATEGORIES = ['CHEETOS', 'DORITOS', 'FANDANGOS', 'RUFFLES', 'TORCIDA'];
-        const MIX_FOODS_CATEGORIES = ['TODDYNHO', 'TODDY', 'QUAKER', 'KEROCOCO'];
+        const MIX_FOODS_CATEGORIES = ['TODDYNHO', 'TODDY ', 'QUAKER', 'KEROCOCO'];
 
         function getMixFilteredData(options = {}) {
             const { excludeFilter = null } = options;
