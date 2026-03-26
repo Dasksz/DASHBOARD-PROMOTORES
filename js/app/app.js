@@ -12085,7 +12085,7 @@ const supervisorGroups = new Map();
             }).filter(c => c && c !== 'N/A' && !forbidden.includes(c.toUpperCase())))].sort();
             const filteredCities = inputValue ? allAvailableCities.filter(c => c.toLowerCase().includes(inputValue)) : allAvailableCities;
             if (filteredCities.length > 0 && document.activeElement === comparisonCityFilter) {
-                comparisonCitySuggestions.innerHTML = filteredCities.map(c => `<div class="p-2 hover:bg-slate-600 cursor-pointer">${c}</div>`).join('');
+                comparisonCitySuggestions.innerHTML = filteredCities.map(c => `<div class="p-2 hover:bg-slate-600 cursor-pointer">${window.escapeHtml(c)}</div>`).join('');
                 comparisonCitySuggestions.classList.remove('hidden');
             } else {
                 comparisonCitySuggestions.classList.add('hidden');
@@ -25165,7 +25165,7 @@ const supervisorGroups = new Map();
                     const matches = Array.from(cities).filter(c => c.toLowerCase().includes(val)).sort().slice(0, 10);
 
                     stockCitySuggestions.innerHTML = matches.map(c =>
-                        `<div class="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300">${c}</div>`
+                        `<div class="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300">${window.escapeHtml(c)}</div>`
                     ).join('');
                     stockCitySuggestions.classList.remove('hidden');
                 });
