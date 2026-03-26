@@ -313,7 +313,7 @@
 <!-- Admin Uploader Modal -->
 <div id="admin-uploader-modal" class="modal-overlay hidden">
         <div class="bg-modal-content rounded-2xl shadow-2xl max-w-lg w-full m-4 border border-slate-700 relative text-center p-8 backdrop-blur-md glass-panel/90 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <button id="admin-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+            <button id="admin-modal-close-btn" aria-label="Fechar" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
 
@@ -493,7 +493,7 @@
     </div>
 
     <!-- Floating Filters Button (Initially Hidden) -->
-    <button id="floating-filters-toggle" class="hidden">
+    <button id="floating-filters-toggle" aria-label="Alternar Filtros" class="hidden">
         <span class="text-lg leading-none mb-0.5">+</span>
         <span>Filtros</span>
     </button>
@@ -3418,7 +3418,7 @@
                     <input type="search" id="produtos-search" name="product_filter_query" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly');" spellcheck="false" placeholder="Pesquisar..." class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-40 sm:w-64 pl-3 p-2.5">
                 </div>
                 <div class="relative">
-                    <button id="produtos-options-btn" class="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-700 transition-colors">
+                    <button id="produtos-options-btn" aria-label="Opções de Produtos" class="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-700 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
                     </button>
                     <div id="produtos-options-dropdown" class="hidden absolute right-0 mt-2 w-48 glass-panel rounded-xl shadow-2xl py-1 z-50 animate-fade-in-down origin-top-right border border-slate-700">
@@ -3699,7 +3699,7 @@
                 <div class="w-12 h-12 rounded-2xl bg-[#FF5E00]/20 flex items-center justify-center text-blue-400 shadow-inner ring-1 ring-white/5">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 </div>
-                <button class="bg-glass p-2 rounded-full text-slate-400 hover:text-white transition-colors hover:bg-white/5" onclick="document.getElementById('modal-acoes-visita').classList.add('hidden')">
+                <button aria-label="Fechar" class="bg-glass p-2 rounded-full text-slate-400 hover:text-white transition-colors hover:bg-white/5" onclick="document.getElementById('modal-acoes-visita').classList.add('hidden')">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -3778,7 +3778,7 @@
     <div class="bg-modal-content max-w-md w-full m-4 p-0 rounded-2xl shadow-2xl border border-slate-700 glass-panel overflow-hidden relative">
         <div class="p-4 border-b border-slate-800 bg-glass flex justify-between items-center">
             <h3 class="text-lg font-bold text-white">Atualizar Posição</h3>
-            <button class="text-slate-400 hover:text-white" onclick="closeGeoModal()">
+            <button aria-label="Fechar" class="text-slate-400 hover:text-white" onclick="closeGeoModal()">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
@@ -3803,7 +3803,7 @@
     <!-- Order Details (Refactored for Valid HTML) -->
     <div id="order-details-modal" class="modal-overlay hidden z-[9999]">
         <div class="bg-modal-content w-full max-w-4xl m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 glass-panel max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <button id="modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+            <button id="modal-close-btn" aria-label="Fechar" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <div class="mb-6">
@@ -3833,14 +3833,14 @@
     <!-- Client Details (Refactored for UI) -->
     <div id="client-details-modal" class="modal-overlay hidden">
         <div class="bg-modal-content w-full max-w-2xl m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 glass-panel">
-            <button id="client-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+            <button id="client-modal-close-btn" aria-label="Fechar" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <div id="client-modal-content"></div>
         </div>
     </div>
     <!-- Holidays -->
-    <div id="holiday-modal" class="modal-overlay hidden"><div class="bg-modal-content"><button id="holiday-modal-close-btn"></button><div id="calendar-container"></div><button id="holiday-modal-done-btn"></button></div></div>
+    <div id="holiday-modal" class="modal-overlay hidden"><div class="bg-modal-content"><button id="holiday-modal-close-btn" aria-label="Fechar"></button><div id="calendar-container"></div><button id="holiday-modal-done-btn"></button></div></div>
     <!-- Confirmation -->
     <div id="confirmation-modal" class="modal-overlay hidden"><div class="bg-modal-content"><p id="confirmation-message"></p><button id="confirmation-cancel-btn"></button><button id="confirmation-confirm-btn"></button></div></div>
     <!-- Admin Password Modal -->
@@ -3861,7 +3861,7 @@
                             <div class="glass-panel rounded-lg shadow-2xl max-w-6xl w-full m-4 text-slate-300 border border-slate-700 flex flex-col max-h-[90vh]">
                                 <div class="p-4 border-b border-slate-700 flex justify-between items-center">
                                     <h2 class="text-lg font-bold text-white">Importar / Analisar Planilha de Metas</h2>
-                                    <button id="import-goals-close-btn" class="text-slate-400 hover:text-white text-3xl">&times;</button>
+                                    <button id="import-goals-close-btn" aria-label="Fechar" class="text-slate-400 hover:text-white text-3xl">&times;</button>
                                 </div>
                                 <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
                                     <div id="import-drop-zone" class="border-2 border-dashed border-slate-600 rounded-lg p-8 mb-6 flex flex-col items-center justify-center transition-colors hover:border-teal-500 hover:bg-white/5/30 cursor-pointer">
@@ -3972,7 +3972,7 @@
                     <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     Diagnóstico do Sistema
                 </h3>
-                <button id="diagnosis-close-btn" class="text-slate-400 hover:text-white transition-colors">
+                <button id="diagnosis-close-btn" aria-label="Fechar" class="text-slate-400 hover:text-white transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -3997,7 +3997,7 @@
                     <h3 id="wallet-modal-title" class="text-xl font-bold text-white mb-1">Detalhes do Cliente</h3>
                     <p id="wallet-modal-subtitle" class="text-sm text-slate-400">Visão completa e gestão.</p>
                 </div>
-                <button id="wallet-modal-close-btn" class="text-slate-400 hover:text-white transition-colors">
+                <button id="wallet-modal-close-btn" aria-label="Fechar" class="text-slate-400 hover:text-white transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -4205,7 +4205,7 @@
     <!-- Image View Modal -->
     <div id="image-modal" class="modal-overlay hidden z-[3500] fixed inset-0 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
         <div class="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center justify-center">
-            <button id="image-modal-close-btn" class="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors p-2 bg-black/50 rounded-full">
+            <button id="image-modal-close-btn" aria-label="Fechar" class="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors p-2 bg-black/50 rounded-full">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
 
@@ -4226,7 +4226,7 @@
     <!-- Product Performance Modal -->
     <div id="product-performance-modal" class="modal-overlay hidden z-[3200]">
         <div class="bg-modal-content w-full max-w-md m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 glass-panel">
-            <button id="product-performance-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+            <button id="product-performance-modal-close-btn" aria-label="Fechar" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <div class="mb-6">
@@ -4314,7 +4314,7 @@
     <!-- Mobile Mix Details Modal -->
     <div id="mix-mobile-modal" class="modal-overlay hidden z-[3000]">
         <div class="bg-modal-content w-full max-w-sm m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 glass-panel max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <button id="mix-mobile-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+            <button id="mix-mobile-modal-close-btn" aria-label="Fechar" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <div class="mb-6">
@@ -4331,7 +4331,7 @@
     <!-- Mobile Titulos Details Modal -->
     <div id="titulos-mobile-modal" class="modal-overlay hidden z-[3000]">
         <div class="bg-modal-content w-full max-w-sm m-4 p-6 relative rounded-2xl shadow-2xl border border-slate-700 glass-panel max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <button id="titulos-mobile-modal-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+            <button id="titulos-mobile-modal-close-btn" aria-label="Fechar" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <div class="mb-6">
@@ -4380,7 +4380,7 @@
                     <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
                     Seus Favoritos
                 </h3>
-                <button id="feed-favorites-close-btn" class="text-slate-400 hover:text-white transition-colors">
+                <button id="feed-favorites-close-btn" aria-label="Fechar" class="text-slate-400 hover:text-white transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -4399,7 +4399,7 @@
     <!-- Legends Modal -->
     <div id="produtos-legends-modal" class="modal-overlay hidden z-[3000]">
         <div class="bg-modal-content max-w-sm w-full m-4 p-6 rounded-2xl shadow-2xl border border-slate-700 glass-panel relative">
-            <button id="produtos-legends-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+            <button id="produtos-legends-close-btn" aria-label="Fechar" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <h3 class="text-xl font-bold text-white mb-6">Legendas</h3>
@@ -4453,7 +4453,7 @@
                     <h3 id="meta-realizado-modal-title" class="text-xl font-bold text-white leading-tight">Nome do Cliente</h3>
                     <p id="meta-realizado-modal-subtitle" class="text-sm text-slate-400 mt-1">Detalhes Adicionais</p>
                 </div>
-                <button id="meta-realizado-modal-close-btn" class="text-slate-400 hover:text-white transition-colors p-1 rounded-full hover:bg-slate-800">
+                <button id="meta-realizado-modal-close-btn" aria-label="Fechar" class="text-slate-400 hover:text-white transition-colors p-1 rounded-full hover:bg-slate-800">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -4528,7 +4528,7 @@
             <span>EXCEL</span>
         </button>
     </div>
-    <button class="fab-btn">
+    <button class="fab-btn" aria-label="Abrir menu de exportação">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
     </button>
 </div>
@@ -4543,7 +4543,7 @@
             <span>EXCEL</span>
         </button>
     </div>
-    <button class="fab-btn">
+    <button class="fab-btn" aria-label="Abrir menu de exportação">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
     </button>
 </div>
@@ -4558,7 +4558,7 @@
             <span>EXCEL</span>
         </button>
     </div>
-    <button class="fab-btn">
+    <button class="fab-btn" aria-label="Abrir menu de exportação">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
     </button>
 </div>
@@ -4573,7 +4573,7 @@
             <span>EXCEL</span>
         </button>
     </div>
-    <button class="fab-btn">
+    <button class="fab-btn" aria-label="Abrir menu de exportação">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
     </button>
 </div>
@@ -4589,7 +4589,7 @@
             <span>EXCEL</span>
         </button>
     </div>
-    <button class="fab-btn">
+    <button class="fab-btn" aria-label="Abrir menu de exportação">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
     </button>
 </div>
