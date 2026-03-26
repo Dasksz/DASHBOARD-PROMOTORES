@@ -164,7 +164,7 @@
         function sanitizeData(data) {
             if (!data) return [];
             // Updated forbidden list to exclude removed columns
-            const forbidden = ['SUPERV', 'CODUSUR', 'CODSUPERVISOR', 'CODCLI', 'PRODUTO', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX'];
+            const forbiddenSet = new Set(['SUPERV', 'CODUSUR', 'CODSUPERVISOR', 'CODCLI', 'PRODUTO', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX']);
 
             // Since text columns are gone, we can't easily filter garbage by text content like "NOME" or "SUPERVISOR".
             // We rely on ID validation or presence.
@@ -174,7 +174,7 @@
                 return data.filter(item => {
                     const codUsur = String(item.CODUSUR || '').trim().toUpperCase();
                     // Basic check: CODUSUR shouldn't be a header name if mixed in
-                    if (forbidden.includes(codUsur)) return false;
+                    if (forbiddenSet.has(codUsur)) return false;
                     return true;
                 });
 
@@ -197,7 +197,7 @@
                 for (let i = 0; i < len; i++) {
                      const codUsur = String(codUsurCol[i] || '').trim().toUpperCase();
 
-                     if (forbidden.includes(codUsur)) {
+                     if (forbiddenSet.has(codUsur)) {
                          continue; // Skip (Garbage)
                      }
                      keepIndices.push(i);
@@ -291,9 +291,16 @@
 
         const clientsWithSalesThisMonth = new Set();
         // Populate set
-        for(let i=0; i<allSalesData.length; i++) {
-            const s = allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i];
-            clientsWithSalesThisMonth.add(s.CODCLI);
+        if (allSalesData instanceof ColumnarDataset) {
+            const codCliCol = allSalesData._data['CODCLI'] || allSalesData._data['codcli'] || [];
+            for (let i = 0; i < allSalesData.length; i++) {
+                clientsWithSalesThisMonth.add(codCliCol[i]);
+            }
+        } else {
+            for(let i=0; i<allSalesData.length; i++) {
+                const s = allSalesData[i];
+                clientsWithSalesThisMonth.add(s.CODCLI);
+            }
         }
 
         // Helper to ensure .get() exists
@@ -604,18 +611,34 @@
 
         // Optimized lastSaleDate calculation to avoid mapping huge array
         let maxDateTs = 0;
-        for(let i=0; i<allSalesData.length; i++) {
-            const s = allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i];
-            let ts = 0;
-            if (typeof s.DTPED === 'number' && s.DTPED > 1000000) {
-                 ts = s.DTPED;
-            } else {
-                 const d = parseDate(s.DTPED);
-                 if(d && !isNaN(d)) ts = d.getTime();
+        if (allSalesData instanceof ColumnarDataset) {
+            const dtPedCol = allSalesData._data['DTPED'] || allSalesData._data['dtped'] || [];
+            for (let i = 0; i < allSalesData.length; i++) {
+                let ts = 0;
+                const dtPed = dtPedCol[i];
+                if (typeof dtPed === 'number' && dtPed > 1000000) {
+                     ts = dtPed;
+                } else {
+                     const d = parseDate(dtPed);
+                     if (d && !isNaN(d)) ts = d.getTime();
+                }
+                if (ts > maxDateTs) maxDateTs = ts;
             }
+        } else {
+            for(let i=0; i<allSalesData.length; i++) {
+                const s = allSalesData[i];
+                let ts = 0;
+                if (typeof s.DTPED === 'number' && s.DTPED > 1000000) {
+                     ts = s.DTPED;
+                } else {
+                     const d = parseDate(s.DTPED);
+                     if(d && !isNaN(d)) ts = d.getTime();
+                }
 
-            if(ts > maxDateTs) maxDateTs = ts;
+                if(ts > maxDateTs) maxDateTs = ts;
+            }
         }
+
         if (!lastSaleDate) {
             lastSaleDate = maxDateTs > 0 ? new Date(maxDateTs) : new Date();
         }
