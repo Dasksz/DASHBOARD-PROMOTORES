@@ -1746,8 +1746,8 @@
 
             if (modalCloseBtn) modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
             if (clientModalCloseBtn) clientModalCloseBtn.addEventListener('click', () => clientModal.classList.add('hidden'));
-            if (faturamentoBtn) faturamentoBtn.addEventListener('click', () => { currentProductMetric = 'faturamento'; faturamentoBtn.classList.add('active'); pesoBtn.classList.remove('active'); updateDashboard(); });
-            if (pesoBtn) pesoBtn.addEventListener('click', () => { currentProductMetric = 'peso'; pesoBtn.classList.add('active'); faturamentoBtn.classList.remove('active'); updateDashboard(); });
+            if (faturamentoBtn) faturamentoBtn.addEventListener('click', () => { currentProductMetric = 'faturamento'; faturamentoBtn.classList.add('active'); pesoBtn.classList.remove('active'); const variationData = calculateProductVariation(currentFilteredSalesData, currentFilteredHistoryData); renderTopProductsVariationTable(variationData); });
+            if (pesoBtn) pesoBtn.addEventListener('click', () => { currentProductMetric = 'peso'; pesoBtn.classList.add('active'); faturamentoBtn.classList.remove('active'); const variationData = calculateProductVariation(currentFilteredSalesData, currentFilteredHistoryData); renderTopProductsVariationTable(variationData); });
 
             // --- Innovations View Filters ---
             const updateInnovations = () => {
