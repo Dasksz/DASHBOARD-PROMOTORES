@@ -11210,7 +11210,7 @@ const supervisorGroups = new Map();
                 // 2. Accumulate Realized values
                 const pepsicoCodfors = new Set([window.SUPPLIER_CODES.ELMA[0], window.SUPPLIER_CODES.ELMA[1], window.SUPPLIER_CODES.ELMA[2]]);
                 const saltyCategories = ['CHEETOS', 'DORITOS', 'FANDANGOS', 'RUFFLES', 'TORCIDA'];
-                const foodsCategories = ['TODDYNHO', 'TODDY', 'QUAKER', 'KEROCOCO'];
+                const foodsCategories = ['TODDYNHO', 'TODDY ', 'QUAKER', 'KEROCOCO'];
                 const norm = (s) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase() : '';
 
                 const dashboardClientsMap = new Map();
@@ -12322,7 +12322,7 @@ const supervisorGroups = new Map();
 
             const pepsicoCodfors = new Set([window.SUPPLIER_CODES.ELMA[0], window.SUPPLIER_CODES.ELMA[1], window.SUPPLIER_CODES.ELMA[2]]);
             const saltyCategories = ['CHEETOS', 'DORITOS', 'FANDANGOS', 'RUFFLES', 'TORCIDA'];
-            const foodsCategories = ['TODDYNHO', 'TODDY', 'QUAKER', 'KEROCOCO'];
+            const foodsCategories = ['TODDYNHO', 'TODDY ', 'QUAKER', 'KEROCOCO'];
 
             // Helper to normalize strings
             const norm = (s) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase() : '';
@@ -12337,7 +12337,7 @@ const supervisorGroups = new Map();
                 // Note: Metas logic separates them. Here we just want to know if it belongs to "Foods Group".
                 // If it contains NONE of the keywords, it is excluded from "Foods" metrics.
                 if (d.includes('TODDYNHO')) return true;
-                if (d.includes('TODDY')) return true; // Note the space
+                if (d.includes('TODDY ')) return true; // Note the space
                 if (d.includes('QUAKER')) return true;
                 if (d.includes('KEROCOCO')) return true;
 
@@ -13225,7 +13225,7 @@ const supervisorGroups = new Map();
             const hasOverlap = firstWeekStart < firstOfMonth;
             const pepsicoCodfors = new Set([window.SUPPLIER_CODES.ELMA[0], window.SUPPLIER_CODES.ELMA[1], window.SUPPLIER_CODES.ELMA[2]]);
             const saltyCategories = ['CHEETOS', 'DORITOS', 'FANDANGOS', 'RUFFLES', 'TORCIDA'];
-            const foodsCategories = ['TODDYNHO', 'TODDY', 'QUAKER', 'KEROCOCO'];
+            const foodsCategories = ['TODDYNHO', 'TODDY ', 'QUAKER', 'KEROCOCO'];
             const norm = (s) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase() : '';
 
             // Temp structures for Current processing
