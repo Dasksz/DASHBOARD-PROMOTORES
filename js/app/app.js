@@ -23016,8 +23016,22 @@ const supervisorGroups = new Map();
 
                 // 2. Promoter Filter (Desktop Admin/Coord)
                 if (selectedPromoter) {
+                    let hasMatch = false;
                     const pCode = String(c.PROMOTOR || c.promotor_code || '').trim();
-                    if (pCode !== selectedPromoter) continue;
+                    if (pCode === selectedPromoter) {
+                        hasMatch = true;
+                    } else if (window.embeddedData && window.embeddedData.clientPromotersMap) {
+                        const matches = window.embeddedData.clientPromotersMap.get(c_cod);
+                        if (matches && matches.some(m => String(m.id_promotor || '').trim() === selectedPromoter)) {
+                            hasMatch = true;
+                        }
+                    } else if (typeof optimizedData !== 'undefined' && optimizedData.clientPromotersMap) {
+                         const matches = optimizedData.clientPromotersMap.get(c_cod);
+                         if (matches && matches.some(m => String(m.id_promotor || '').trim() === selectedPromoter)) {
+                             hasMatch = true;
+                         }
+                    }
+                    if (!hasMatch) continue;
                 }
 
                 // 3. Search Term Filter (If active)
