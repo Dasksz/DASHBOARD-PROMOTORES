@@ -26698,10 +26698,22 @@ const supervisorGroups = new Map();
             btn.innerHTML = 'Salvando dados...';
 
             try {
+                // Fetch existing respostas to preserve 'is_off_route' and other metadata
+                const { data: existingVisit } = await window.supabaseClient
+                    .from('visitas')
+                    .select('respostas')
+                    .eq('id', visitId)
+                    .single();
+
+                let finalRespostas = respostas;
+                if (existingVisit && existingVisit.respostas && typeof existingVisit.respostas === 'object') {
+                    finalRespostas = { ...existingVisit.respostas, ...respostas };
+                }
+
                 const { error } = await window.supabaseClient
                     .from('visitas')
                     .update({
-                        respostas: respostas,
+                        respostas: finalRespostas,
                         observacao: obs
                     })
                     .eq('id', visitId);
@@ -26715,7 +26727,7 @@ const supervisorGroups = new Map();
                     if (visits) {
                         const visit = visits.find(v => v.id === visitId);
                         if (visit) {
-                            visit.respostas = respostas;
+                            visit.respostas = finalRespostas;
                         }
                     }
                 }

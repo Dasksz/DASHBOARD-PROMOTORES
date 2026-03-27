@@ -3,7 +3,7 @@ const FeedVisitas = (() => {
     let isLoadingMore = false;
     let hasMore = true;
     let currentPage = 0;
-    const PAGE_SIZE = 10;
+    const PAGE_SIZE = 30;
     let observer = null;
     let currentStartBound = null;
     let currentEndBound = null;
@@ -438,7 +438,11 @@ const FeedVisitas = (() => {
                 .select('id', { count: 'estimated', head: true })
                 .filter('favoritado_por', 'cs', `{${window.userId}}`)
                 .gte('created_at', currentStartBound.toISOString())
-                .lte('created_at', currentEndBound.toISOString());
+                .lte('created_at', currentEndBound.toISOString())
+                .not('respostas', 'is', null)
+                .neq('respostas', '""')
+                .neq('respostas', '{}')
+                .neq('respostas', '[]');
 
             if (error) throw error;
 
@@ -727,6 +731,10 @@ const FeedVisitas = (() => {
             .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, id_promotor, profiles:id_promotor(name, role, avatar_url), favoritado_por, latitude, longitude, promotor_name`)
             .gte('created_at', currentStartBound.toISOString())
             .lte('created_at', currentEndBound.toISOString())
+            .not('respostas', 'is', null)
+            .neq('respostas', '""')
+            .neq('respostas', '{}')
+            .neq('respostas', '[]')
             .order('created_at', { ascending: false });
 
         if (showOnlyFavorites && window.userId) {
@@ -872,7 +880,10 @@ const FeedVisitas = (() => {
                     }
                 }
 
-                // Filter 1: Only show visits with photos or answers
+                // Filter 1: Only show visits with photos or valid answers
+                // The database query already filters out empty/null respostas,
+                // but this check handles edge cases like '{"is_off_route": true}'
+                // where the DB sends the object but the UI should ignore it.
                 if (fotos.length === 0 && respostasCount === 0) {
                     return; // Skip this visit
                 }
