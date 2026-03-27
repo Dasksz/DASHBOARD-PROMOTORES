@@ -57,8 +57,9 @@
             // (e.g. 50k sales ~ 50ms). Splitting this would require complex state management.
             // The bottleneck is the nested Product * Client check loop later.
 
+            const _isAltMode_1 = isAlternativeMode(selectedCoverageTiposVenda);
             sales.forEach(s => {
-                if (!isAlternativeMode(selectedCoverageTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                if (!_isAltMode_1 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
                 const val = getValueForSale(s, selectedCoverageTiposVenda);
 
                 // Coverage Map (Inverted for Performance)
@@ -77,11 +78,12 @@
             });
 
             // Process History Sales (O(N))
+            const _isAltModeHist_1 = isAlternativeMode(selectedCoverageTiposVenda);
             history.forEach(s => {
                 const d = parseDate(s.DTPED);
                 const isPrevMonth = d && d.getUTCMonth() === prevMonthIdx && d.getUTCFullYear() === prevMonthYear;
 
-                if (!isAlternativeMode(selectedCoverageTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                if (!_isAltModeHist_1 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
                 const val = getValueForSale(s, selectedCoverageTiposVenda);
 
                 // Coverage Map (only if prev month)
@@ -307,9 +309,10 @@
                 const salesByCity = {};
                 const salesBySeller = {};
 
+                const _isAltMode_2 = isAlternativeMode(selectedCoverageTiposVenda);
                 sales.forEach(s => {
                     // FIX: Filter non-sales (e.g. transfers) to avoid inflated numbers
-                    if (!isAlternativeMode(selectedCoverageTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                    if (!_isAltMode_2 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
 
                     const client = clientMapForKPIs.get(String(s.CODCLI));
                     const city = client ? (client.cidade || client['Nome da Cidade'] || 'N/A') : 'N/A';
@@ -432,8 +435,9 @@
             // Agrega valor total por cliente para verificar threshold >= 1
             const clientTotalSales = new Map();
 
+            const _isAltMode_3 = isAlternativeMode(selectedTiposVenda);
             data.forEach(sale => {
-                if (!isAlternativeMode(selectedTiposVenda) && sale.TIPOVENDA !== '1' && sale.TIPOVENDA !== '9') return;
+                if (!_isAltMode_3 && sale.TIPOVENDA !== '1' && sale.TIPOVENDA !== '9') return;
                 if (sale.CODCLI) {
                     const currentVal = clientTotalSales.get(sale.CODCLI) || 0;
                     // Considera apenas VLVENDA para consistência com o KPI "Clientes Atendidos" do Comparativo

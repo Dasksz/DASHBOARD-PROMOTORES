@@ -3589,9 +3589,10 @@
             const clientProductOrders = new Map(); // Map<CODCLI, Map<PRODUTO, Set<PEDIDO>>>
             const clientProductDesc = new Map(); // Map<PRODUTO, Descricao> (Cache)
 
+            const _isAltMode_1 = isAlternativeMode(selectedMixTiposVenda);
             sales.forEach(s => {
                 if (!s.CODCLI || !s.PRODUTO) return;
-                if (!isAlternativeMode(selectedMixTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                if (!_isAltMode_1 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
 
                 if (!clientProductNetValues.has(s.CODCLI)) {
                     clientProductNetValues.set(s.CODCLI, new Map());
@@ -9663,8 +9664,9 @@ const supervisorGroups = new Map();
             // Agrega valor total por cliente para verificar threshold >= 1
             const clientTotalSales = new Map();
 
+            const _isAltMode_2 = isAlternativeMode(selectedTiposVenda);
             data.forEach(sale => {
-                if (!isAlternativeMode(selectedTiposVenda) && sale.TIPOVENDA !== '1' && sale.TIPOVENDA !== '9') return;
+                if (!_isAltMode_2 && sale.TIPOVENDA !== '1' && sale.TIPOVENDA !== '9') return;
                 if (sale.CODCLI) {
                     const currentVal = clientTotalSales.get(sale.CODCLI) || 0;
                     // Considera apenas VLVENDA para consistência com o KPI "Clientes Atendidos" do Comparativo
@@ -9700,8 +9702,9 @@ const supervisorGroups = new Map();
                 totalSkus += skus.size;
             });
 
+            const _isAltMode_3 = isAlternativeMode(selectedTiposVenda);
             data.forEach(item => {
-                if (!isAlternativeMode(selectedTiposVenda) && item.TIPOVENDA !== '1' && item.TIPOVENDA !== '9') return;
+                if (!_isAltMode_3 && item.TIPOVENDA !== '1' && item.TIPOVENDA !== '9') return;
                 const vlVenda = getValueForSale(item, selectedTiposVenda);
                 const totPesoLiq = Number(item.TOTPESOLIQ) || 0;
 
@@ -9979,8 +9982,9 @@ const supervisorGroups = new Map();
             };
 
             // Aggregate Current Data (Already filtered)
+            const _isAltMode_4 = isAlternativeMode(selectedTiposVenda);
             currentData.forEach(item => {
-                if (!isAlternativeMode(selectedTiposVenda) && item.TIPOVENDA !== '1' && item.TIPOVENDA !== '9') return;
+                if (!_isAltMode_4 && item.TIPOVENDA !== '1' && item.TIPOVENDA !== '9') return;
 
                 const code = String(item.PRODUTO);
                 const val = getValueForSale(item, selectedTiposVenda);
@@ -10013,8 +10017,9 @@ const supervisorGroups = new Map();
             });
 
             // Aggregate History Data (Filtered to Previous Month AND Cutoff Day)
+            const _isAltMode_5 = isAlternativeMode(selectedTiposVenda);
             historyData.forEach(item => {
-                if (!isAlternativeMode(selectedTiposVenda) && item.TIPOVENDA !== '1' && item.TIPOVENDA !== '9') return;
+                if (!_isAltMode_5 && item.TIPOVENDA !== '1' && item.TIPOVENDA !== '9') return;
 
                 const d = parseDate(item.DTPED);
                 if (!d) return;
@@ -11795,10 +11800,11 @@ const supervisorGroups = new Map();
             // Pre-aggregate "Sales This Month" for Status Classification
             const clientTotalsThisMonth = new Map();
             // Sync Pre-aggregation (O(N) is fast)
+            const _isAltMode_6 = isAlternativeMode(selectedCityTiposVenda);
             for(let i=0; i<allSalesData.length; i++) {
                 const s = (allSalesData instanceof ColumnarDataset) ? allSalesData.get(i) : allSalesData[i];
                 if (selectedTiposVendaSet.size > 0 && !selectedTiposVendaSet.has(s.TIPOVENDA)) continue;
-                if (!isAlternativeMode(selectedCityTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') continue;
+                if (!_isAltMode_6 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') continue;
 
                 const d = parseDate(s.DTPED);
                 if (d && d.getUTCFullYear() === currentYear && d.getUTCMonth() === currentMonth) {
@@ -11810,10 +11816,11 @@ const supervisorGroups = new Map();
             const detailedDataByClient = new Map(); // Map<CODCLI, { total, pepsico, multimarcas, maxDate }>
 
             // Pre-aggregate Sales Data for Analysis (Sync)
+            const _isAltMode_7 = isAlternativeMode(selectedCityTiposVenda);
             salesForAnalysis.forEach(s => {
                 const d = parseDate(s.DTPED);
                 if (d) {
-                    if (!isAlternativeMode(selectedCityTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                    if (!_isAltMode_7 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
                     if (!detailedDataByClient.has(s.CODCLI)) {
                         detailedDataByClient.set(s.CODCLI, { total: 0, pepsico: 0, multimarcas: 0, maxDate: 0 });
                     }
@@ -13244,8 +13251,9 @@ const supervisorGroups = new Map();
             // --- Async Pipeline ---
 
             // 1. Process Current Sales
+            const _isAltMode_8 = isAlternativeMode(selectedComparisonTiposVenda);
             runAsyncChunked(currentSales, (s) => {
-                if (!isAlternativeMode(selectedComparisonTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                if (!_isAltMode_8 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
                 const val = getValueForSale(s, selectedComparisonTiposVenda);
 
                 metrics.current.fat += val;
@@ -13322,8 +13330,9 @@ const supervisorGroups = new Map();
                 if (currentRenderId !== comparisonRenderId) return;
 
                 // 2. Process History Sales
+                const _isAltMode_9 = isAlternativeMode(selectedComparisonTiposVenda);
                 runAsyncChunked(historySales, (s) => {
-                    if (!isAlternativeMode(selectedComparisonTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                    if (!_isAltMode_9 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
                     const val = getValueForSale(s, selectedComparisonTiposVenda);
 
                     metrics.history.fat += val;
@@ -13584,8 +13593,9 @@ const supervisorGroups = new Map();
                         }
 
                         const currentSalesByDay = new Array(daysInMonth + 1).fill(0);
+                        const _isAltMode_10 = isAlternativeMode(selectedComparisonTiposVenda);
                         currentSales.forEach(s => {
-                            if (!isAlternativeMode(selectedComparisonTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                            if (!_isAltMode_10 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
                             const d = parseDate(s.DTPED);
                             if (d && d.getUTCMonth() === currentMonth && d.getUTCFullYear() === currentYear) {
                                 currentSalesByDay[d.getUTCDate()] += getValueForSale(s, selectedComparisonTiposVenda);
@@ -13612,8 +13622,9 @@ const supervisorGroups = new Map();
 
                         // Scan History
                         const historySalesByMonthDay = new Map(); // "YYYY-MM-DD" -> Value
+                        const _isAltMode_11 = isAlternativeMode(selectedComparisonTiposVenda);
                         historySales.forEach(s => {
-                            if (!isAlternativeMode(selectedComparisonTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                            if (!_isAltMode_11 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
                             const d = parseDate(s.DTPED);
                             if (d) {
                                 const key = d.toISOString().split('T')[0];
@@ -27483,8 +27494,9 @@ const supervisorGroups = new Map();
             let currentQty = 0;
             const currentClients = new Set();
 
+            const _isAltMode_12 = isAlternativeMode(selectedTiposVenda);
             currentItems.forEach(s => {
-                if (!isAlternativeMode(selectedTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                if (!_isAltMode_12 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
                 currentVal += getValueForSale(s, selectedTiposVenda);
                 currentQty += Number(s.QTVENDA) || 0;
                 if (s.CODCLI) currentClients.add(s.CODCLI);
@@ -27524,8 +27536,9 @@ const supervisorGroups = new Map();
             let prevQty = 0;
             const prevClients = new Set();
 
+            const _isAltMode_13 = isAlternativeMode(selectedTiposVenda);
             historyItems.forEach(s => {
-                if (!isAlternativeMode(selectedTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                if (!_isAltMode_13 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
                 const d = parseDate(s.DTPED);
                 if (d && d.getUTCMonth() === prevMonthIndex && d.getUTCFullYear() === prevMonthYear) {
                     if (d.getUTCDate() > cutoffDayPrev) return;
