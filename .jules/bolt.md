@@ -5,3 +5,7 @@
 ## 2026-03-25 - [Optimize DOM Insertion in Feed View]
 **Learning:** Sequential DOM insertions in high-frequency rendering loops (like building feed cards) cause significant browser repaints.
 **Action:** Use `DocumentFragment` to batch DOM insertions when rendering multiple elements (e.g. in `js/app/feed_view.js`) to achieve O(1) DOM reflow instead of O(N).
+
+## 2026-03-27 - [Hoist Loop Checks to Variables]
+**Learning:** Checking hardcoded boolean properties or running simple lookup functions like `isAlternativeMode` inside hot paths (`forEach`, `.map`) on 50k+ arrays introduces severe CPU bottlenecking and delays rendering significantly.
+**Action:** Extract the conditional function evaluation to a constant variable *before* the loop block, converting $O(N)$ repeated execution checks to $O(1)$. This prevents redundant `.includes()` or string checks inside iterations when the underlying source parameters do not mutate.

@@ -20,9 +20,10 @@
             const clientProductNetValues = new Map(); // Map<CODCLI, Map<PRODUTO, NetValue>>
             const clientProductDesc = new Map(); // Map<PRODUTO, Descricao> (Cache)
 
+            const _isAltMode_1 = isAlternativeMode(selectedMixTiposVenda);
             sales.forEach(s => {
                 if (!s.CODCLI || !s.PRODUTO) return;
-                if (!isAlternativeMode(selectedMixTiposVenda) && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
+                if (!_isAltMode_1 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
 
                 if (!clientProductNetValues.has(s.CODCLI)) {
                     clientProductNetValues.set(s.CODCLI, new Map());
