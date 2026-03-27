@@ -43,14 +43,16 @@
         toast.innerHTML = `
             <div class="toast-icon">${variant.icon}</div>
             <div class="flex-1 min-w-0">
-                <h4 class="toast-title">${finalTitle}</h4>
-                <p class="toast-message">${message}</p>
+                <h4 class="toast-title"></h4>
+                <p class="toast-message"></p>
             </div>
             <button class="toast-close-btn" onclick="this.parentElement.remove()">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             ${type !== 'error' ? '<div class="toast-progress"></div>' : ''}
         `;
+        toast.querySelector('.toast-title').textContent = finalTitle;
+        toast.querySelector('.toast-message').textContent = message;
 
         container.appendChild(toast);
 
