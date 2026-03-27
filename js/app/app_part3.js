@@ -2780,17 +2780,19 @@
                 // 2. Promoter Filter (Desktop Admin/Coord)
                 if (selectedPromoter) {
                     let hasMatch = false;
-                    const pCode = String(c.PROMOTOR || c.promotor_code || '').trim();
-                    if (pCode === selectedPromoter) {
+                    const selPromNorm = String(selectedPromoter).trim().toUpperCase();
+                    const pCode = String(c.PROMOTOR || c.promotor_code || '').trim().toUpperCase();
+
+                    if (pCode === selPromNorm) {
                         hasMatch = true;
                     } else if (window.embeddedData && window.embeddedData.clientPromotersMap) {
                         const matches = window.embeddedData.clientPromotersMap.get(c_cod);
-                        if (matches && matches.some(m => String(m.id_promotor || '').trim() === selectedPromoter)) {
+                        if (matches && matches.some(m => String(m.promoter_code || m.id_promotor || '').trim().toUpperCase() === selPromNorm)) {
                             hasMatch = true;
                         }
                     } else if (typeof optimizedData !== 'undefined' && optimizedData.clientPromotersMap) {
                          const matches = optimizedData.clientPromotersMap.get(c_cod);
-                         if (matches && matches.some(m => String(m.id_promotor || '').trim() === selectedPromoter)) {
+                         if (matches && matches.some(m => String(m.promoter_code || m.id_promotor || '').trim().toUpperCase() === selPromNorm)) {
                              hasMatch = true;
                          }
                     }
