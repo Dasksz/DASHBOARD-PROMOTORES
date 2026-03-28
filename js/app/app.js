@@ -12033,16 +12033,44 @@ const supervisorGroups = new Map();
         function updateSupplierFilter(dropdown, filterText, selectedArray, dataSource, filterType = 'comparison', skipRender = false) {
             if (!dropdown || !filterText) return selectedArray;
             const suppliers = new Map();
-            dataSource.forEach(s => {
-                const codFor = s.CODFOR;
-                if (codFor && !forbiddenSuppliers.has(String(codFor).toUpperCase())) {
-                    // Resolve name from dimension instead of relying on s.FORNECEDOR (which is removed)
-                    const name = window.resolveDim('fornecedores', codFor);
-                    if (name && name !== 'N/A') {
-                        suppliers.set(codFor, name);
+            // OPTIMIZATION: Use traditional for-loop instead of forEach. Avoid .get(i) proxy overhead inside loop for ColumnarDataset.
+            const len = dataSource.length;
+            const isCol = typeof ColumnarDataset !== 'undefined' && dataSource instanceof ColumnarDataset;
+
+            if (isCol && dataSource._data['CODFOR']) {
+                const codForCol = dataSource._data['CODFOR'];
+                for (let i = 0; i < len; i++) {
+                    const codFor = codForCol[i];
+                    if (codFor && !forbiddenSuppliers.has(String(codFor).toUpperCase())) {
+                        const name = window.resolveDim('fornecedores', codFor);
+                        if (name && name !== 'N/A') {
+                            suppliers.set(codFor, name);
+                        }
                     }
                 }
-            });
+            } else if (isCol) {
+                for (let i = 0; i < len; i++) {
+                    const s = dataSource.get(i);
+                    const codFor = s ? s.CODFOR : null;
+                    if (codFor && !forbiddenSuppliers.has(String(codFor).toUpperCase())) {
+                        const name = window.resolveDim('fornecedores', codFor);
+                        if (name && name !== 'N/A') {
+                            suppliers.set(codFor, name);
+                        }
+                    }
+                }
+            } else {
+                for (let i = 0; i < len; i++) {
+                    const s = dataSource[i];
+                    const codFor = s ? s.CODFOR : null;
+                    if (codFor && !forbiddenSuppliers.has(String(codFor).toUpperCase())) {
+                        const name = window.resolveDim('fornecedores', codFor);
+                        if (name && name !== 'N/A') {
+                            suppliers.set(codFor, name);
+                        }
+                    }
+                }
+            }
 
             // Inject Virtual Categories for ALL filter types
             if (suppliers.has(window.SUPPLIER_CODES.ELMA[0])) suppliers.set(window.SUPPLIER_CODES.ELMA[0], 'EXTRUSADOS');
@@ -13074,9 +13102,26 @@ const supervisorGroups = new Map();
 
             // Extract unique codes first
             const uniqueCodes = new Set();
-            dataSource.forEach(s => {
-                if (s.PRODUTO) uniqueCodes.add(String(s.PRODUTO).trim());
-            });
+            // OPTIMIZATION: Use traditional for-loop instead of forEach. Avoid .get(i) proxy overhead inside loop for ColumnarDataset.
+            const len = dataSource.length;
+            const isCol = typeof ColumnarDataset !== 'undefined' && dataSource instanceof ColumnarDataset;
+            if (isCol && dataSource._data['PRODUTO']) {
+                const prodCol = dataSource._data['PRODUTO'];
+                for (let i = 0; i < len; i++) {
+                    const p = prodCol[i];
+                    if (p) uniqueCodes.add(String(p).trim());
+                }
+            } else if (isCol) {
+                for (let i = 0; i < len; i++) {
+                    const s = dataSource.get(i);
+                    if (s && s.PRODUTO) uniqueCodes.add(String(s.PRODUTO).trim());
+                }
+            } else {
+                for (let i = 0; i < len; i++) {
+                    const s = dataSource[i];
+                    if (s && s.PRODUTO) uniqueCodes.add(String(s.PRODUTO).trim());
+                }
+            }
 
             let products = Array.from(uniqueCodes)
                 .filter(code => code && !forbidden.has(code.toUpperCase()))
