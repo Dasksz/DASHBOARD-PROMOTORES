@@ -1604,8 +1604,7 @@
                     options: {
                         data: {
                             full_name: name,
-                            phone: phone,
-                            password: password // Security Warning: User requested plain text password storage
+                            phone: phone
                         }
                     }
                 });
