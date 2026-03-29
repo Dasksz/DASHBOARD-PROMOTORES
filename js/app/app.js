@@ -9179,9 +9179,13 @@ const supervisorGroups = new Map();
             // (e.g. 50k sales ~ 50ms). Splitting this would require complex state management.
             // The bottleneck is the nested Product * Client check loop later.
 
+            // OTIMIZAÇÃO: Set lookup O(1) inside loop
+            const hasCoverageTiposVenda = selectedCoverageTiposVenda && selectedCoverageTiposVenda.length > 0;
+            const selectedCoverageTiposVendaSet = new Set(selectedCoverageTiposVenda || []);
+
             sales.forEach(s => {
-                if (selectedCoverageTiposVenda && selectedCoverageTiposVenda.length > 0) {
-                    if (!selectedCoverageTiposVenda.includes(String(s.TIPOVENDA))) return;
+                if (hasCoverageTiposVenda) {
+                    if (!selectedCoverageTiposVendaSet.has(String(s.TIPOVENDA))) return;
                 }
                 const val = getValueForSale(s, selectedCoverageTiposVenda);
 
@@ -9208,8 +9212,8 @@ const supervisorGroups = new Map();
                 const d = parseDate(s.DTPED);
                 const isPrevMonth = d && d.getUTCMonth() === prevMonthIdx && d.getUTCFullYear() === prevMonthYear;
 
-                if (selectedCoverageTiposVenda && selectedCoverageTiposVenda.length > 0) {
-                    if (!selectedCoverageTiposVenda.includes(String(s.TIPOVENDA))) return;
+                if (hasCoverageTiposVenda) {
+                    if (!selectedCoverageTiposVendaSet.has(String(s.TIPOVENDA))) return;
                 }
                 const val = getValueForSale(s, selectedCoverageTiposVenda);
 
@@ -10586,6 +10590,12 @@ const supervisorGroups = new Map();
             const hierarchyClientCodes = new Set(hierarchyClientsForTable.map(c => String(c['Código'] || c['codigo_cliente'])));
             const isHierarchyFiltered = hierarchyClientsForTable.length < allClientsData.length;
 
+            // OTIMIZAÇÃO: Set lookup O(1) inside aggregatedOrders filter loop
+            const hasSelectedTiposVenda = selectedTiposVenda.length > 0;
+            const selectedTiposVendaSet = hasSelectedTiposVenda ? new Set(selectedTiposVenda) : null;
+            const hasSelectedMainSuppliers = selectedMainSuppliers.length > 0;
+            const selectedMainSuppliersSet = hasSelectedMainSuppliers ? new Set(selectedMainSuppliers) : null;
+
             const filteredTableData = aggregatedOrders.filter(order => {
                 let matches = true;
                 if (mainRedeGroupFilter) {
@@ -10596,9 +10606,9 @@ const supervisorGroups = new Map();
                     if (isHierarchyFiltered) matches = matches && hierarchyClientCodes.has(order.CODCLI);
                 }
                 // Robust filtering with existence checks
-                if (selectedTiposVenda.length > 0) matches = matches && order.TIPOVENDA && selectedTiposVenda.includes(order.TIPOVENDA);
+                if (hasSelectedTiposVenda) matches = matches && order.TIPOVENDA && selectedTiposVendaSet.has(order.TIPOVENDA);
                 if (currentFornecedor) matches = matches && order.FORNECEDORES_LIST && order.FORNECEDORES_LIST.includes(currentFornecedor);
-                if (selectedMainSuppliers.length > 0) matches = matches && order.CODFORS_LIST && order.CODFORS_LIST.some(c => selectedMainSuppliers.includes(c));
+                if (hasSelectedMainSuppliers) matches = matches && order.CODFORS_LIST && order.CODFORS_LIST.some(c => selectedMainSuppliersSet.has(c));
                 if (posicao) matches = matches && order.POSICAO === posicao;
                 return matches;
             });
@@ -24058,6 +24068,9 @@ const supervisorGroups = new Map();
         const state = hierarchyState['history'];
         const hasHierarchyFilters = state && (state.coords.size > 0 || state.cocoords.size > 0 || state.promotors.size > 0);
         const isAdmin = window.userRole === 'adm';
+        // OTIMIZAÇÃO: Set lookup O(1) inside loop
+        const hasSelectedHistoryTiposVenda = selectedHistoryTiposVenda.length > 0;
+        const selectedHistoryTiposVendaSet = new Set(selectedHistoryTiposVenda);
         const enforceHierarchy = !isAdmin || hasHierarchyFilters;
 
         const effectiveCoords = new Set(state ? state.coords : []);
@@ -24112,8 +24125,8 @@ const supervisorGroups = new Map();
                     }
 
                     // Tipo Venda Filter
-                    if (selectedHistoryTiposVenda.length > 0) {
-                        if (!selectedHistoryTiposVenda.includes(String(s.TIPOVENDA))) continue;
+                    if (hasSelectedHistoryTiposVenda) {
+                        if (!selectedHistoryTiposVendaSet.has(String(s.TIPOVENDA))) continue;
                     }
 
                     // 3. Client Check
