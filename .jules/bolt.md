@@ -9,3 +9,6 @@
 ## 2026-03-27 - [Hoist Loop Checks to Variables]
 **Learning:** Checking hardcoded boolean properties or running simple lookup functions like `isAlternativeMode` inside hot paths (`forEach`, `.map`) on 50k+ arrays introduces severe CPU bottlenecking and delays rendering significantly.
 **Action:** Extract the conditional function evaluation to a constant variable *before* the loop block, converting $O(N)$ repeated execution checks to $O(1)$. This prevents redundant `.includes()` or string checks inside iterations when the underlying source parameters do not mutate.
+## 2026-03-30 - [Optimize Nested Lookups with Set and Early Returns]
+**Learning:** Inside high-frequency event handlers like map/reduce or UI rendering based on large arrays, chaining `.map().filter().sort()` forces full dataset iteration. Using an early-exit loop combined with a `Set` and `DocumentFragment` achieves O(1) rendering time.
+**Action:** Convert functional array operations on large datasets to vanilla `for` loops with early `break` conditions, especially when searching or accumulating DOM nodes.
