@@ -14368,11 +14368,13 @@ const supervisorGroups = new Map();
                 const countPrev3 = previous3Union.size;
 
                 const covCurr = activeClientsCount > 0 ? (countCurr / activeClientsCount) * 100 : 0;
-                const covPrev = activeClientsCount > 0 ? (countPrev / activeClientsCount) * 100 : 0;
-                const covPrev2 = activeClientsCount > 0 ? (countPrev2 / activeClientsCount) * 100 : 0;
-                const covPrev3 = activeClientsCount > 0 ? (countPrev3 / activeClientsCount) * 100 : 0;
+                const covPrev = positivadosPreviousCount > 0 ? (countPrev / positivadosPreviousCount) * 100 : 0;
+                const covPrev2 = positivadosPrevious2Count > 0 ? (countPrev2 / positivadosPrevious2Count) * 100 : 0;
+                const covPrev3 = positivadosPrevious3Count > 0 ? (countPrev3 / positivadosPrevious3Count) * 100 : 0;
 
                 const avgQuarterlyCount = (countPrev + countPrev2 + countPrev3) / 3;
+                const totalQuarterlyBase = positivadosPreviousCount + positivadosPrevious2Count + positivadosPrevious3Count;
+                const avgQuarterlyCoverage = totalQuarterlyBase > 0 ? ((countPrev + countPrev2 + countPrev3) / totalQuarterlyBase) * 100 : 0;
 
                 const varPct = covPrev > 0 ? ((covCurr - covPrev) / covPrev) * 100 : (covCurr > 0 ? Infinity : 0);
 
@@ -14384,7 +14386,10 @@ const supervisorGroups = new Map();
                     variation: varPct,
                     clientsCount: countCurr,
                     clientsPreviousCount: countPrev,
-                    avgQuarterlyCount: avgQuarterlyCount
+                    clientsPrevious2Count: countPrev2,
+                    clientsPrevious3Count: countPrev3,
+                    avgQuarterlyCount: avgQuarterlyCount,
+                    avgQuarterlyCoverage: avgQuarterlyCoverage
                 };
             }
 
@@ -14402,10 +14407,23 @@ const supervisorGroups = new Map();
             mapsCurrent.bonusMap.forEach((_, codCli) => { const c = String(codCli).trim(); if (activeClientCodes.has(c)) positivadosCurrentSet.add(c); });
             const positivadosCurrentCount = positivadosCurrentSet.size;
 
-            const positivadosPreviousSet = new Set();
-            mapsPrevious.mainMap.forEach((_, codCli) => { positivadosPreviousSet.add(String(codCli).trim()); });
-            mapsPrevious.bonusMap.forEach((_, codCli) => { positivadosPreviousSet.add(String(codCli).trim()); });
+            // Para os meses anteriores, consideramos os clientes filtrados também
+            // (que compraram qualquer coisa no respectivo mês anterior)
+            const getActiveSetFromMap = (mapObj) => {
+                const s = new Set();
+                mapObj.mainMap.forEach((_, codCli) => s.add(String(codCli).trim()));
+                mapObj.bonusMap.forEach((_, codCli) => s.add(String(codCli).trim()));
+                return s;
+            };
+
+            const positivadosPreviousSet = getActiveSetFromMap(mapsPrevious);
             const positivadosPreviousCount = positivadosPreviousSet.size;
+
+            const positivadosPrevious2Set = getActiveSetFromMap(mapsPrevious2);
+            const positivadosPrevious2Count = positivadosPrevious2Set.size;
+
+            const positivadosPrevious3Set = getActiveSetFromMap(mapsPrevious3);
+            const positivadosPrevious3Count = positivadosPrevious3Set.size;
 
             const selectionCoveredCountCurrent = clientsWhoGotAnyVisibleProductCurrent.size;
             // Percentual is Selection / Total Active Clients
@@ -14459,11 +14477,12 @@ const supervisorGroups = new Map();
                     const clientsPreviousCount = pRes ? pRes.previous.size : 0;
 
                     const coverageCurrent = activeClientsCount > 0 ? (clientsCurrentCount / activeClientsCount) * 100 : 0;
-                    const coveragePrevious = activeClientsCount > 0 ? (clientsPreviousCount / activeClientsCount) * 100 : 0;
+                    const coveragePrevious = positivadosPreviousCount > 0 ? (clientsPreviousCount / positivadosPreviousCount) * 100 : 0;
                     const clientsPrevious2Count = pRes ? pRes.previous2.size : 0;
                     const clientsPrevious3Count = pRes ? pRes.previous3.size : 0;
                     const avgQuarterlyCount = (clientsPreviousCount + clientsPrevious2Count + clientsPrevious3Count) / 3;
-                    const avgQuarterlyCoverage = activeClientsCount > 0 ? (avgQuarterlyCount / activeClientsCount) * 100 : 0;
+                    const totalQuarterlyBase = positivadosPreviousCount + positivadosPrevious2Count + positivadosPrevious3Count;
+                    const avgQuarterlyCoverage = totalQuarterlyBase > 0 ? ((clientsPreviousCount + clientsPrevious2Count + clientsPrevious3Count) / totalQuarterlyBase) * 100 : 0;
 
                     const variation = coveragePrevious > 0 ? ((coverageCurrent - coveragePrevious) / coveragePrevious) * 100 : (coverageCurrent > 0 ? Infinity : 0);
 
@@ -14559,13 +14578,13 @@ const supervisorGroups = new Map();
                         <td class="px-2 py-3 text-xs text-slate-400 text-left italic hidden md:table-cell">${catGroup.items.length} Produtos</td>
                         <td class="px-2 py-3 text-sm text-center font-mono font-bold text-blue-400 hidden md:table-cell">${catGroup.stock.toLocaleString('pt-BR')}</td>
                         <td class="px-2 py-3 text-xs text-center hidden md:table-cell">
-                            <div class="tooltip">${((activeClientsCount > 0 ? catGroup.metrics.avgQuarterlyCount / activeClientsCount : 0) * 100).toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.avgQuarterlyCount.toFixed(1)} PDVs</span></div>
+                            <div class="tooltip">${catGroup.metrics.avgQuarterlyCount.toFixed(1)}<span class="tooltip-text">${catGroup.metrics.avgQuarterlyCoverage.toFixed(2)}%</span></div>
                         </td>
                         <td class="px-2 py-3 text-xs text-center hidden md:table-cell">
-                            <div class="tooltip">${catGroup.metrics.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.clientsPreviousCount} PDVs</span></div>
+                            <div class="tooltip">${catGroup.metrics.clientsPreviousCount}<span class="tooltip-text">${catGroup.metrics.coveragePrevious.toFixed(2)}%</span></div>
                         </td>
                         <td class="px-2 py-3 text-xs text-center hidden md:table-cell">
-                            <div class="tooltip font-bold text-white">${catGroup.metrics.coverageCurrent.toFixed(2)}%<span class="tooltip-text">${catGroup.metrics.clientsCount} PDVs</span></div>
+                            <div class="tooltip font-bold text-white">${catGroup.metrics.clientsCount}<span class="tooltip-text">${catGroup.metrics.coverageCurrent.toFixed(2)}%</span></div>
                         </td>
                         <td class="px-2 py-3 text-xs text-center font-bold hidden md:table-cell">${variationContent}</td>
                     </tr>
@@ -14617,13 +14636,13 @@ const supervisorGroups = new Map();
                         </td>
                         <td class="hidden md:table-cell px-2 py-2 text-xs md:text-sm text-center font-mono text-slate-400">${item.stock.toLocaleString('pt-BR')}</td>
                         <td class="hidden md:table-cell px-2 py-2 text-[10px] md:text-xs text-center text-slate-500">
-                            <div class="tooltip">${item.avgQuarterlyCoverage.toFixed(2)}%<span class="tooltip-text">${item.avgQuarterlyCount.toFixed(1)} PDVs</span></div>
+                            <div class="tooltip">${item.avgQuarterlyCount.toFixed(1)}<span class="tooltip-text">${item.avgQuarterlyCoverage.toFixed(2)}%</span></div>
                         </td>
                         <td class="hidden md:table-cell px-2 py-2 text-[10px] md:text-xs text-center text-slate-500">
-                            <div class="tooltip">${item.coveragePrevious.toFixed(2)}%<span class="tooltip-text">${item.clientsPreviousCount} PDVs</span></div>
+                            <div class="tooltip">${item.clientsPreviousCount}<span class="tooltip-text">${item.coveragePrevious.toFixed(2)}%</span></div>
                         </td>
                         <td class="hidden md:table-cell px-2 py-2 text-[10px] md:text-xs text-center text-slate-300">
-                            <div class="tooltip">${item.coverageCurrent.toFixed(2)}%<span class="tooltip-text">${item.clientsCurrentCount} PDVs</span></div>
+                            <div class="tooltip">${item.clientsCurrentCount}<span class="tooltip-text">${item.coverageCurrent.toFixed(2)}%</span></div>
                         </td>
                         <td class="hidden md:table-cell px-2 py-2 text-[10px] md:text-xs text-center">${prodVarContent}</td>
                     </tr>
@@ -14665,12 +14684,17 @@ const supervisorGroups = new Map();
             const chartDataPrevious2 = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious2);
             const chartDataPrevious3 = chartLabels.map(cat => categoryAnalysis[cat].coveragePrevious3);
 
+            const clientsDataCurrent = chartLabels.map(cat => categoryAnalysis[cat].clientsCount);
+            const clientsDataPrevious = chartLabels.map(cat => categoryAnalysis[cat].clientsPreviousCount);
+            const clientsDataPrevious2 = chartLabels.map(cat => categoryAnalysis[cat].clientsPrevious2Count);
+            const clientsDataPrevious3 = chartLabels.map(cat => categoryAnalysis[cat].clientsPrevious3Count);
+
             if (chartLabels.length > 0) {
                 createChart('innovations-month-chart', 'bar', chartLabels, [
-                    { label: labelT3, data: chartDataPrevious3, backgroundColor: '#a855f7' }, // Purple
-                    { label: labelT2, data: chartDataPrevious2, backgroundColor: '#3b82f6' }, // Blue
-                    { label: labelT1, data: chartDataPrevious, backgroundColor: '#eab308' }, // Dark Mustard
-                    { label: labelT, data: chartDataCurrent, backgroundColor: '#06b6d4' }   // Cyan
+                    { label: labelT3, data: chartDataPrevious3, clientsData: clientsDataPrevious3, backgroundColor: '#a855f7' }, // Purple
+                    { label: labelT2, data: chartDataPrevious2, clientsData: clientsDataPrevious2, backgroundColor: '#3b82f6' }, // Blue
+                    { label: labelT1, data: chartDataPrevious, clientsData: clientsDataPrevious, backgroundColor: '#eab308' }, // Dark Mustard
+                    { label: labelT, data: chartDataCurrent, clientsData: clientsDataCurrent, backgroundColor: '#06b6d4' }   // Cyan
                 ], {
                     plugins: {
                         legend: { display: true, position: 'top' },
@@ -14687,7 +14711,8 @@ const supervisorGroups = new Map();
                                 label: function(context) {
                                     let label = context.dataset.label || '';
                                     if (label) label += ': ';
-                                    if (context.parsed.y !== null) label += context.parsed.y.toFixed(2) + '%';
+                                    const qty = context.dataset.clientsData ? context.dataset.clientsData[context.dataIndex] : 0;
+                                    if (context.parsed.y !== null) label += context.parsed.y.toFixed(2) + '% (' + qty + ' PDVs)';
                                     return label;
                                 }
                             }
