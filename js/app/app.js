@@ -12238,9 +12238,9 @@ const supervisorGroups = new Map();
                 else if (kpi.title.includes('SKU') || kpi.title.includes('Mix')) glowClass = 'kpi-glow-yellow';
 
                 return `<div class="kpi-card p-4 rounded-lg text-center kpi-glow-base ${glowClass} transition transform hover:-translate-y-1 duration-200">
-                            <p class="text-slate-300 text-sm">${kpi.title}</p>
-                            <p class="text-2xl font-bold text-white my-2">${displayValue}</p>
-                            <p class="text-sm ${colorClass}">${variation.toFixed(2)}% vs Média do Trimestre</p>
+                            <p class="text-slate-300 text-sm">${window.escapeHtml(kpi.title)}</p>
+                            <p class="text-2xl font-bold text-white my-2">${window.escapeHtml(String(displayValue))}</p>
+                            <p class="text-sm ${colorClass}">${window.escapeHtml(String(variation.toFixed(2)))}% vs Média do Trimestre</p>
                             <p class="text-xs text-slate-300">Média Trim.: ${formatValue(kpi.history, kpi.format)}</p>
                         </div>`;
             }).join('');
@@ -13205,8 +13205,8 @@ const supervisorGroups = new Map();
                     const isChecked = selectedSet.has(code);
                     htmlParts.push(`
                         <label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer">
-                            <input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${code}" ${isChecked ? 'checked' : ''}>
-                            <span class="ml-2 text-xs">(${code}) ${name}</span>
+                            <input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${window.escapeHtml(String(code))}" ${isChecked ? 'checked' : ''}>
+                            <span class="ml-2 text-xs">(${window.escapeHtml(String(code))}) ${window.escapeHtml(name)}</span>
                         </label>`);
                 }
                 listContainer.innerHTML = htmlParts.join('');
@@ -13920,7 +13920,7 @@ const supervisorGroups = new Map();
 
                     // Supervisor Table
                     const supervisorTableBody = document.getElementById('supervisorComparisonTableBody');
-                    const supRows = Object.entries(m.charts.supervisorData).map(([sup, data]) => { const variation = data.history > 0 ? ((data.current - data.history) / data.history) * 100 : (data.current > 0 ? 100 : 0); const colorClass = variation > 0 ? 'text-green-400' : variation < 0 ? 'text-red-400' : 'text-slate-400'; return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm truncate max-w-[100px]">${sup}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm ${colorClass}">${variation.toFixed(2)}%</td></tr>`; }).join('');
+                    const supRows = Object.entries(m.charts.supervisorData).map(([sup, data]) => { const variation = data.history > 0 ? ((data.current - data.history) / data.history) * 100 : (data.current > 0 ? 100 : 0); const colorClass = variation > 0 ? 'text-green-400' : variation < 0 ? 'text-red-400' : 'text-slate-400'; return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm truncate max-w-[100px]">${sup}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm ${colorClass}">${window.escapeHtml(String(variation.toFixed(2)))}%</td></tr>`; }).join('');
                     supervisorTableBody.innerHTML = supRows;
                 }, () => currentRenderId !== comparisonRenderId); // Cancel check
             }, () => currentRenderId !== comparisonRenderId); // Cancel check
@@ -14655,7 +14655,7 @@ const supervisorGroups = new Map();
             const innovationsByClientTableBody = document.getElementById('innovations-by-client-table-body');
             const innovationsByClientLegend = document.getElementById('innovations-by-client-legend');
 
-            categoryLegendForExport = chartLabels.map((name, index) => `${index + 1} - ${name}`);
+            categoryLegendForExport = chartLabels.map((name, index) => `${index + 1} - ${window.escapeHtml(name)}`);
             if (innovationsByClientLegend) innovationsByClientLegend.innerHTML = `<strong>Legenda:</strong> ${categoryLegendForExport.join('; ')}`;
 
             let tableHeadHTML = `
@@ -16373,10 +16373,10 @@ const supervisorGroups = new Map();
                     div.innerHTML = `
                         <div>
                             <div class="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">
-                                <span class="font-mono text-slate-400 mr-2">${code}</span>
-                                ${name}
+                                <span class="font-mono text-slate-400 mr-2">${window.escapeHtml(String(code))}</span>
+                                ${window.escapeHtml(name)}
                             </div>
-                            <div class="text-xs text-slate-500">${city} • ${doc}</div>
+                            <div class="text-xs text-slate-500">${window.escapeHtml(city)} • ${window.escapeHtml(doc)}</div>
                         </div>
                          <div class="p-2 glass-panel-heavy rounded-full group-hover:bg-[#FF5E00] transition-colors text-slate-400 group-hover:text-white">
                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -19431,9 +19431,9 @@ const supervisorGroups = new Map();
                     if (u.type === 'pos') displayCategory += '_POS';
 
                     row.innerHTML = `
-                        <td class="px-4 py-2 text-xs text-slate-300">${sellerCode}</td>
-                        <td class="px-4 py-2 text-xs text-slate-400">${u.seller}</td>
-                        <td class="px-4 py-2 text-xs text-blue-300">${displayCategory}</td>
+                        <td class="px-4 py-2 text-xs text-slate-300">${window.escapeHtml(sellerCode)}</td>
+                        <td class="px-4 py-2 text-xs text-slate-400">${window.escapeHtml(u.seller)}</td>
+                        <td class="px-4 py-2 text-xs text-blue-300">${window.escapeHtml(displayCategory)}</td>
                         <td class="px-4 py-2 text-xs text-slate-400 font-mono text-right">${currentValStr}</td>
                         <td class="px-4 py-2 text-xs text-white font-bold font-mono text-right">${newValStr}</td>
                         <td class="px-4 py-2 text-xs font-mono text-right" style="color: ${diffColor}; font-weight: ${diffWeight};">${diff > 0 ? '+' : ''}${diffStr}</td>
@@ -21534,14 +21534,14 @@ const supervisorGroups = new Map();
 
                      const tr = document.createElement('tr');
                      tr.className = 'hover:bg-glass transition-colors border-b border-white/10/50 cursor-pointer';
-                     tr.setAttribute('onclick', `openWalletClientModal('${code}')`);
+                     tr.setAttribute('onclick', `openWalletClientModal('${window.escapeHtml(String(code))}')`);
 
                      // Mobile Layout (Single Cell)
                      const mobileCell = `
                         <td class="md:hidden mobile-card-header p-4 border-b border-white/10" colspan="3">
                             <div class="flex flex-col text-left items-start">
                                 <div class="text-sm font-bold text-white mb-1 text-left">
-                                    ${code} - ${rowFantasia || 'N/A'}
+                                    ${window.escapeHtml(String(code))} - ${rowFantasia || 'N/A'}
                                 </div>
                                 <div class="text-xs text-slate-500 font-medium uppercase text-left">
                                     ${rowCnpj || ''} ${rowRazao || ''}
@@ -21552,7 +21552,7 @@ const supervisorGroups = new Map();
 
                      // Desktop Layout (Columns)
                      const desktopCells = `
-                        <td data-label="Código" class="hidden md:table-cell px-6 py-4 font-mono text-xs text-slate-400 w-32 border-b border-white/10">${code}</td>
+                        <td data-label="Código" class="hidden md:table-cell px-6 py-4 font-mono text-xs text-slate-400 w-32 border-b border-white/10">${window.escapeHtml(String(code))}</td>
                         <td data-label="Cliente" class="hidden md:table-cell px-6 py-4 border-b border-white/10">
                             <div class="text-sm font-bold text-white truncate">${rowFantasia || 'N/A'}</div>
                             <div class="text-xs text-slate-500 truncate">${rowRazao || ''}</div>
@@ -22304,7 +22304,7 @@ const supervisorGroups = new Map();
                 let ownerName = '';
                 if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) {
                     const name = optimizedData.promotorMap.get(String(currentOwner).trim().toUpperCase());
-                    if (name) ownerName = ` - ${name}`;
+                    if (name) ownerName = ` - ${window.escapeHtml(name)}`;
                 }
                 statusMsg.textContent = `Pertence a: ${currentOwner}${ownerName}`;
             } else {
@@ -22339,7 +22339,7 @@ const supervisorGroups = new Map();
                  let ownerName = '';
                  if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) {
                      const name = optimizedData.promotorMap.get(String(currentOwner).trim().toUpperCase());
-                     if (name) ownerName = ` - ${name}`;
+                     if (name) ownerName = ` - ${window.escapeHtml(name)}`;
                  }
                  statusMsg.textContent = `Pertence a: ${currentOwner}${ownerName}. Transferir?`;
                  
@@ -23699,7 +23699,7 @@ const supervisorGroups = new Map();
                     div.appendChild(leftDiv);
 
                     div.onclick = () => {
-                        searchInput.value = `${code} - ${name}`; // Visual feedback
+                        searchInput.value = `${window.escapeHtml(String(code))} - ${window.escapeHtml(name)}`; // Visual feedback
                         handleRoteiroSearch(code); // Trigger search logic
                         suggestionsEl.classList.add('hidden');
                     };
@@ -24443,7 +24443,7 @@ const supervisorGroups = new Map();
                      price = parseFloat(priceVal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 }
 
-                const imageUrl = `${STORAGE_PRODUTOS_URL}${code}.jpg`;
+                const imageUrl = `${STORAGE_PRODUTOS_URL}${window.escapeHtml(String(code))}.jpg`;
 
                 const item = document.createElement('div');
                 // Dark Theme Styling
@@ -24472,7 +24472,7 @@ const supervisorGroups = new Map();
                         </div>
                         <div class="flex gap-2 mt-3">
                             <button onclick="window.handleProductAction('promo', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-lime-400 rounded hover:bg-slate-600 border border-slate-600" title="Detalhes Comerciais"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg></button>
-                            <button class="p-1.5 bg-slate-700 text-red-400 rounded hover:bg-slate-600 border border-slate-600" title="Visualizar Imagem" onclick="window.openImageModal('${imageUrl}', '${window.escapeHtml(desc)} - ${code}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
+                            <button class="p-1.5 bg-slate-700 text-red-400 rounded hover:bg-slate-600 border border-slate-600" title="Visualizar Imagem" onclick="window.openImageModal('${imageUrl}', '${window.escapeHtml(desc)} - ${window.escapeHtml(String(code))}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
                             <button onclick="window.handleProductAction('stock', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-blue-400 rounded hover:bg-slate-600 border border-slate-600" title="Estoque"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg></button>
                             <button onclick="window.handleProductAction('expand', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-purple-400 rounded hover:bg-slate-600 border border-slate-600 ml-auto" title="Expandir"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg></button>
                         </div>
@@ -27559,7 +27559,7 @@ const supervisorGroups = new Map();
         } else if (action === 'stock') {
             const s05 = (stockData05 && stockData05.get(code)) || 0;
             const s08 = (stockData08 && stockData08.get(code)) || 0;
-            window.showToast('info', `Filial 05: ${s05} cx | Filial 08: ${s08} cx`, `Estoque: ${code}`);
+            window.showToast('info', `Filial 05: ${s05} cx | Filial 08: ${s08} cx`, `Estoque: ${window.escapeHtml(String(code))}`);
         } else if (action === 'expand') {
             const codeString = String(code);
             const currentItems = optimizedData.salesByProduct.current.get(codeString) || [];

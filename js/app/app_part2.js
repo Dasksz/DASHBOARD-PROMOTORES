@@ -792,10 +792,10 @@
                     div.innerHTML = `
                         <div>
                             <div class="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">
-                                <span class="font-mono text-slate-400 mr-2">${code}</span>
-                                ${name}
+                                <span class="font-mono text-slate-400 mr-2">${window.escapeHtml(String(code))}</span>
+                                ${window.escapeHtml(name)}
                             </div>
-                            <div class="text-xs text-slate-500">${city} • ${doc}</div>
+                            <div class="text-xs text-slate-500">${window.escapeHtml(city)} • ${window.escapeHtml(doc)}</div>
                         </div>
                          <div class="p-2 glass-panel-heavy rounded-full group-hover:bg-[#FF5E00] transition-colors text-slate-400 group-hover:text-white">
                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -1067,7 +1067,7 @@
                             if (data.reativatedProducts && data.reativatedProducts.length > 0) {
                                 const uniqueCodes = [...new Set(data.reativatedProducts)];
                                 let msg = "Produtos inseridos não cadastrados na planilha de cadastro de produtos:\n\n";
-                                uniqueCodes.forEach(code => msg += `${code}\n`);
+                                uniqueCodes.forEach(code => msg += `${window.escapeHtml(String(code))}\n`);
 
                                 // Show Persistent Toast (Warning with long duration or until close)
                                 // Standard toast logic might auto-close. We use a custom alert or modification.
@@ -3445,9 +3445,9 @@ innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
                     if (u.type === 'pos') displayCategory += '_POS';
 
                     row.innerHTML = `
-                        <td class="px-4 py-2 text-xs text-slate-300">${sellerCode}</td>
-                        <td class="px-4 py-2 text-xs text-slate-400">${u.seller}</td>
-                        <td class="px-4 py-2 text-xs text-blue-300">${displayCategory}</td>
+                        <td class="px-4 py-2 text-xs text-slate-300">${window.escapeHtml(sellerCode)}</td>
+                        <td class="px-4 py-2 text-xs text-slate-400">${window.escapeHtml(u.seller)}</td>
+                        <td class="px-4 py-2 text-xs text-blue-300">${window.escapeHtml(displayCategory)}</td>
                         <td class="px-4 py-2 text-xs text-slate-400 font-mono text-right">${currentValStr}</td>
                         <td class="px-4 py-2 text-xs text-white font-bold font-mono text-right">${newValStr}</td>
                         <td class="px-4 py-2 text-xs font-mono text-right" style="color: ${diffColor}; font-weight: ${diffWeight};">${diff > 0 ? '+' : ''}${diffStr}</td>
