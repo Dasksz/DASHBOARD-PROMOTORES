@@ -12084,20 +12084,54 @@ const supervisorGroups = new Map();
         }
 
         function updateComparisonCitySuggestions(dataSource) {
-            const forbidden = ['CIDADE', 'MUNICIPIO', 'CIDADE_CLIENTE', 'NOME DA CIDADE', 'CITY'];
+            const forbidden = new Set(['CIDADE', 'MUNICIPIO', 'CIDADE_CLIENTE', 'NOME DA CIDADE', 'CITY']);
             const inputValue = comparisonCityFilter.value.toLowerCase();
-            // Optimized Lookup
-            const allAvailableCities = [...new Set(dataSource.map(item => {
-                if (item.CIDADE) return item.CIDADE;
-                if (item.CODCLI) {
+
+            if (!inputValue && document.activeElement !== comparisonCityFilter) {
+                comparisonCitySuggestions.classList.add('hidden');
+                return;
+            }
+
+            const uniqueCities = new Set();
+            let count = 0;
+            const LIMIT = 50;
+
+            // Collect up to LIMIT matching cities
+            for (let i = 0; i < dataSource.length; i++) {
+                if (count >= LIMIT) break;
+
+                const item = typeof dataSource.get === 'function' ? dataSource.get(i) : dataSource[i];
+                let city = 'N/A';
+
+                if (item.CIDADE) city = item.CIDADE;
+                else if (item.cidade || item.CIDADE) city = item.cidade || item.CIDADE;
+                else if (item.CODCLI) {
                     const c = clientMapForKPIs.get(String(item.CODCLI));
-                    if (c) return c.cidade || c['Nome da Cidade'];
+                    if (c) city = c.cidade || c.CIDADE || c['Nome da Cidade'];
                 }
-                return 'N/A';
-            }).filter(c => c && c !== 'N/A' && !forbidden.includes(c.toUpperCase())))].sort();
-            const filteredCities = inputValue ? allAvailableCities.filter(c => c.toLowerCase().includes(inputValue)) : allAvailableCities;
-            if (filteredCities.length > 0 && document.activeElement === comparisonCityFilter) {
-                comparisonCitySuggestions.innerHTML = filteredCities.map(c => `<div class="p-2 hover:bg-slate-600 cursor-pointer">${window.escapeHtml(c)}</div>`).join('');
+
+                if (city && city !== 'N/A' && !forbidden.has(city.toUpperCase()) && (!inputValue || city.toLowerCase().includes(inputValue))) {
+                    if (!uniqueCities.has(city)) {
+                        uniqueCities.add(city);
+                        count++;
+                    }
+                }
+            }
+
+            if (count > 0 && document.activeElement === comparisonCityFilter) {
+                // Sort the collected cities to preserve original functionality
+                const sortedCities = Array.from(uniqueCities).sort();
+
+                const suggestionsFragment = document.createDocumentFragment();
+                for (let i = 0; i < sortedCities.length; i++) {
+                    const div = document.createElement('div');
+                    div.className = 'p-2 hover:bg-slate-600 cursor-pointer';
+                    div.textContent = sortedCities[i];
+                    suggestionsFragment.appendChild(div);
+                }
+
+                comparisonCitySuggestions.innerHTML = '';
+                comparisonCitySuggestions.appendChild(suggestionsFragment);
                 comparisonCitySuggestions.classList.remove('hidden');
             } else {
                 comparisonCitySuggestions.classList.add('hidden');
