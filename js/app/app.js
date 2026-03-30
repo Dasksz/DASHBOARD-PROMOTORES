@@ -3353,6 +3353,7 @@
             // Updated to track cumulative values: Map<CODCLI, Map<PRODUTO, { rcas: Set<CODUSUR>, val: number }>>
             const mainMapRaw = new Map();
             const bonusMapRaw = new Map();
+            const clientTotalMap = new Map(); // Track overall total sales per client to properly filter out positive clients (<1)
             const mainSet = new Set(mainTypes.map(String));
             const bonusSet = new Set(bonusTypes.map(String));
 
@@ -3367,6 +3368,9 @@
                 const prod = String(sale.PRODUTO).trim();
                 const rca = String(sale.CODUSUR).trim();
                 const val = Number(sale.VLVENDA) || 0; // Use VLVENDA to check the >= 1 rule
+
+                // Track total per client across selected tipos de venda
+                clientTotalMap.set(codCli, (clientTotalMap.get(codCli) || 0) + val);
 
                 if (isMain) {
                     if (!mainMapRaw.has(codCli)) mainMapRaw.set(codCli, new Map());
@@ -3387,10 +3391,13 @@
                 }
             });
 
-            // Filter maps to only keep entries with val >= 1
+            // Filter maps to only keep entries with val >= 1 AND overall client total >= 1
             const filterMap = (rawMap) => {
                 const filteredMap = new Map();
                 rawMap.forEach((clientMap, codCli) => {
+                    // Ignore clients with overall total < 1 (e.g., matching negative returns)
+                    if ((clientTotalMap.get(codCli) || 0) < 1) return;
+
                     const filteredClientMap = new Map();
                     clientMap.forEach((entry, prod) => {
                         if (entry.val >= 1) {
