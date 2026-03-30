@@ -15205,6 +15205,22 @@ const supervisorGroups = new Map();
                 // If constructed from items, we set it above.
             }
 
+
+            // Ensure CIDADE and DTSAIDA are resolved if missing
+            if (orderInfo) {
+                 if (!orderInfo.CIDADE || orderInfo.CIDADE === 'N/A') {
+                      const clientObj = clientMapForKPIs.get(String(orderInfo.CODCLI));
+                      if (clientObj) {
+                           const c = typeof clientObj === 'object' ? clientObj : allClientsData.get(clientObj);
+                           orderInfo.CIDADE = c.cidade || c.CIDADE || 'N/A';
+                      }
+                 }
+                 if (!orderInfo.DTSAIDA && itemsDoPedido.length > 0) {
+                      const firstItem = itemsDoPedido[0];
+                      orderInfo.DTSAIDA = firstItem.DTSAIDA || firstItem.dtsaida || orderInfo.DTPED;
+                 }
+            }
+
             modalPedidoId.textContent = pedidoId + (itemsDoPedido.length > 0 && itemsDoPedido[0].TIPOVENDA ? ' (Tipo ' + itemsDoPedido[0].TIPOVENDA + ')' : '');
             modalHeaderInfo.innerHTML = `<div><p class="font-bold">Cód. Cliente:</p><p>${window.escapeHtml(orderInfo.CODCLI || 'N/A')}</p></div><div><p class="font-bold">Cliente:</p><p>${window.escapeHtml(orderInfo.CLIENTE_NOME || orderInfo.CLIENTE || 'N/A')}</p></div><div><p class="font-bold">Vendedor:</p><p>${window.escapeHtml(orderInfo.NOME || orderInfo.VENDEDOR || 'N/A')}</p></div><div><p class="font-bold">Data Pedido:</p><p>${formatDate(orderInfo.DTPED)}</p></div><div><p class="font-bold">Data Faturamento:</p><p>${formatDate(orderInfo.DTSAIDA)}</p></div><div><p class="font-bold">Cidade:</p><p>${window.escapeHtml(orderInfo.CIDADE || 'N/A')}</p></div>`;
 
@@ -15239,7 +15255,7 @@ const supervisorGroups = new Map();
                 return `
                 <tr class="hover:bg-slate-700">
                     <!-- Desktop Layout (Hidden on Mobile) -->
-                    <td class="hidden md:table-cell px-4 py-2">(${window.escapeHtml(item.PRODUTO)}) ${window.escapeHtml(item.DESCRICAO)}</td>
+                    <td class="hidden md:table-cell px-4 py-2">(${window.escapeHtml(item.PRODUTO)}) ${window.escapeHtml(fullProductName)}</td>
                     <td class="hidden md:table-cell px-4 py-2 text-right">${qtyStr}</td>
                     <td class="hidden md:table-cell px-4 py-2 text-right">${unitPriceStr}</td>
                     <td class="hidden md:table-cell px-4 py-2 text-right">${weightStr}</td>
