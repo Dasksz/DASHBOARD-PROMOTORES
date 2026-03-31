@@ -398,7 +398,12 @@
 
             let fileNameParam = 'geral';
             if (hierarchyState['mix'] && hierarchyState['mix'].promotors.size === 1) {
-            } else if (city) {
+                const pCode = hierarchyState['mix'].promotors.values().next().value;
+                fileNameParam = (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) ? (optimizedData.promotorMap.get(pCode) || pCode) : pCode;
+            } else if (typeof selectedMixVendedores !== 'undefined' && selectedMixVendedores.size === 1) {
+                const sName = selectedMixVendedores.values().next().value;
+                fileNameParam = sName !== 'Todos' ? sName : 'geral';
+            } else if (typeof city !== 'undefined' && city) {
                 fileNameParam = city;
             }
             const safeFileNameParam = fileNameParam.replace(/[^a-z0-9]/gi, '_').toLowerCase();

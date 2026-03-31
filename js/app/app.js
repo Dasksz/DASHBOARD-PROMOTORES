@@ -4033,7 +4033,12 @@
 
             let fileNameParam = 'geral';
             if (hierarchyState['mix'] && hierarchyState['mix'].promotors.size === 1) {
-            } else if (city) {
+                const pCode = hierarchyState['mix'].promotors.values().next().value;
+                fileNameParam = (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) ? (optimizedData.promotorMap.get(pCode) || pCode) : pCode;
+            } else if (typeof selectedMixVendedores !== 'undefined' && selectedMixVendedores.size === 1) {
+                const sName = selectedMixVendedores.values().next().value;
+                fileNameParam = sName !== 'Todos' ? sName : 'geral';
+            } else if (typeof city !== 'undefined' && city) {
                 fileNameParam = city;
             }
             const safeFileNameParam = fileNameParam.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -7207,10 +7212,17 @@
             });
 
             let nameParam = '';
-            // Simplified name param for now
+            if (hierarchyState['goals-gv'] && hierarchyState['goals-gv'].promotors.size === 1) {
+                const pCode = hierarchyState['goals-gv'].promotors.values().next().value;
+                nameParam = '_' + ((typeof optimizedData !== 'undefined' && optimizedData.promotorMap) ? (optimizedData.promotorMap.get(pCode) || pCode) : pCode);
+            } else if (typeof selectedGoalsGvVendedores !== 'undefined' && selectedGoalsGvVendedores.size === 1) {
+                const sName = selectedGoalsGvVendedores.values().next().value;
+                nameParam = sName !== 'Todos' ? '_' + sName : '';
+            }
 
             const safeFileNameParam = currentGoalsSupplier.replace(/[^a-z0-9]/gi, '_').toUpperCase();
-            doc.save(`Metas_GV_${safeFileNameParam}${nameParam}.pdf`);
+            const safeNameParam = nameParam.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
+            doc.save(`Metas_GV_${safeFileNameParam}${safeNameParam}.pdf`);
         }
 
         function exportGoalsCurrentTabXLSX() {
@@ -15033,7 +15045,12 @@ const supervisorGroups = new Map();
 
             let fileNameParam = 'geral';
             if (hierarchyState['innovations-month'] && hierarchyState['innovations-month'].promotors.size === 1) {
-            } else if (cidade) {
+                const pCode = hierarchyState['innovations-month'].promotors.values().next().value;
+                fileNameParam = (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) ? (optimizedData.promotorMap.get(pCode) || pCode) : pCode;
+            } else if (typeof selectedInnovationsMonthVendedores !== 'undefined' && selectedInnovationsMonthVendedores.size === 1) {
+                const sName = selectedInnovationsMonthVendedores.values().next().value;
+                fileNameParam = sName !== 'Todos' ? sName : 'geral';
+            } else if (typeof cidade !== 'undefined' && cidade) {
                 fileNameParam = cidade;
             }
             const safeFileNameParam = fileNameParam.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -15156,7 +15173,12 @@ const supervisorGroups = new Map();
 
             let fileNameParam = 'geral';
             if (hierarchyState['coverage'] && hierarchyState['coverage'].promotors.size === 1) {
-            } else if (cidade) {
+                const pCode = hierarchyState['coverage'].promotors.values().next().value;
+                fileNameParam = (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) ? (optimizedData.promotorMap.get(pCode) || pCode) : pCode;
+            } else if (typeof selectedCoverageVendedores !== 'undefined' && selectedCoverageVendedores.size === 1) {
+                const sName = selectedCoverageVendedores.values().next().value;
+                fileNameParam = sName !== 'Todos' ? sName : 'geral';
+            } else if (typeof cidade !== 'undefined' && cidade) {
                 fileNameParam = cidade;
             }
             const safeFileNameParam = fileNameParam.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -15433,8 +15455,16 @@ const supervisorGroups = new Map();
             for(let i = 1; i <= pageCount; i++) { doc.setPage(i); doc.setFontSize(9); doc.setTextColor(10); doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' }); }
 
             let fileNameParam = 'geral';
-            if (hierarchyState['city'] && hierarchyState['city'].promotors.size === 1) {
-            } else if (city) {
+            if (hierarchyState['positivacao'] && hierarchyState['positivacao'].promotors.size === 1) {
+                const pCode = hierarchyState['positivacao'].promotors.values().next().value;
+                fileNameParam = (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) ? (optimizedData.promotorMap.get(pCode) || pCode) : pCode;
+            } else if (typeof selectedPositivacaoVendedores !== 'undefined' && selectedPositivacaoVendedores.size === 1) {
+                const sName = selectedPositivacaoVendedores.values().next().value;
+                fileNameParam = sName !== 'Todos' ? sName : 'geral';
+            } else if (hierarchyState['city'] && hierarchyState['city'].promotors.size === 1) {
+                const pCode = hierarchyState['city'].promotors.values().next().value;
+                fileNameParam = (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) ? (optimizedData.promotorMap.get(pCode) || pCode) : pCode;
+            } else if (typeof city !== 'undefined' && city) {
                 fileNameParam = city;
             }
             const safeFileNameParam = fileNameParam.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -20454,6 +20484,11 @@ const supervisorGroups = new Map();
 
             let fileNameParam = 'geral';
             if (hierarchyState['meta-realizado'] && hierarchyState['meta-realizado'].promotors.size === 1) {
+                const pCode = hierarchyState['meta-realizado'].promotors.values().next().value;
+                fileNameParam = (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) ? (optimizedData.promotorMap.get(pCode) || pCode) : pCode;
+            } else if (typeof selectedMetaRealizadoVendedores !== 'undefined' && selectedMetaRealizadoVendedores.size === 1) {
+                const sName = selectedMetaRealizadoVendedores.values().next().value;
+                fileNameParam = sName !== 'Todos' ? sName : 'geral';
             }
             const safeFileNameParam = fileNameParam.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             doc.save(`meta_vs_realizado_${safeFileNameParam}_${new Date().toISOString().slice(0,10)}.pdf`);
