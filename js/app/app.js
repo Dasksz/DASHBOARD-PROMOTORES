@@ -1399,6 +1399,7 @@
                 if (optimizedData.coordMap.has(val)) name = optimizedData.coordMap.get(val);
                 else if (optimizedData.cocoordMap.has(val)) name = optimizedData.cocoordMap.get(val);
                 else if (optimizedData.promotorMap.has(val)) name = optimizedData.promotorMap.get(val);
+                else if (window.sellerDetailsMap && window.sellerDetailsMap.has(val)) name = window.sellerDetailsMap.get(val).name;
                 
                 element.textContent = name;
             } else {
