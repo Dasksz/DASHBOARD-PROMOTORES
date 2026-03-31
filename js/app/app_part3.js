@@ -165,6 +165,11 @@
 
             let fileNameParam = 'geral';
             if (hierarchyState['meta-realizado'] && hierarchyState['meta-realizado'].promotors.size === 1) {
+                const pCode = hierarchyState['meta-realizado'].promotors.values().next().value;
+                fileNameParam = (typeof optimizedData !== 'undefined' && optimizedData.promotorMap) ? (optimizedData.promotorMap.get(pCode) || pCode) : pCode;
+            } else if (typeof selectedMetaRealizadoVendedores !== 'undefined' && selectedMetaRealizadoVendedores.size === 1) {
+                const sName = selectedMetaRealizadoVendedores.values().next().value;
+                fileNameParam = sName !== 'Todos' ? sName : 'geral';
             }
             const safeFileNameParam = fileNameParam.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             doc.save(`meta_vs_realizado_${safeFileNameParam}_${new Date().toISOString().slice(0,10)}.pdf`);
