@@ -12,3 +12,6 @@
 ## 2026-03-30 - [Optimize Nested Lookups with Set and Early Returns]
 **Learning:** Inside high-frequency event handlers like map/reduce or UI rendering based on large arrays, chaining `.map().filter().sort()` forces full dataset iteration. Using an early-exit loop combined with a `Set` and `DocumentFragment` achieves O(1) rendering time.
 **Action:** Convert functional array operations on large datasets to vanilla `for` loops with early `break` conditions, especially when searching or accumulating DOM nodes.
+## 2024-03-31 - [Lazy Property Initialization in Hot Paths]
+**Learning:** Redundant string checks like `(c.razaoSocial || '').toUpperCase().includes('AMERICANAS')` inside large `Array.prototype.filter()` loops block the main thread.
+**Action:** To optimize iteration over large datasets (like `allClientsData`) in vanilla JavaScript without breaking objects that skip the initialization step, use a safe lazy initialization pattern to cache the boolean result directly on the object (e.g., `c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = ...)`).
