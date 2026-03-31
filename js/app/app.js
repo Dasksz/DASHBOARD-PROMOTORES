@@ -29961,10 +29961,16 @@ const supervisorGroups = new Map();
 
             // KPIs
             const totalCount = filteredTitulos.length;
-            const uniqueClientsCritical = new Set(filteredTitulos.filter(t => t.isCritical).map(t => t.codCli)).size;
-
-            // Calculate Total Critical Debt
-            const criticalDebt = filteredTitulos.reduce((acc, t) => t.isCritical ? acc + t.valReceber : acc, 0);
+            let criticalDebt = 0;
+            const uniqueClientsCriticalSet = new Set();
+            for (let j = 0; j < totalCount; j++) {
+                const t = filteredTitulos[j];
+                if (t.isCritical) {
+                    criticalDebt += t.valReceber;
+                    uniqueClientsCriticalSet.add(t.codCli);
+                }
+            }
+            const uniqueClientsCritical = uniqueClientsCriticalSet.size;
 
             renderTitulosKPIs(totalReceber, criticalDebt, uniqueClientsCritical, totalCount);
             renderTitulosTable();
@@ -31222,10 +31228,16 @@ const supervisorGroups = new Map();
 
             // KPIs
             const totalCount = filteredTitulos.length;
-            const uniqueClientsCritical = new Set(filteredTitulos.filter(t => t.isCritical).map(t => t.codCli)).size;
-
-            // Calculate Total Critical Debt
-            const criticalDebt = filteredTitulos.reduce((acc, t) => t.isCritical ? acc + t.valReceber : acc, 0);
+            let criticalDebt = 0;
+            const uniqueClientsCriticalSet = new Set();
+            for (let j = 0; j < totalCount; j++) {
+                const t = filteredTitulos[j];
+                if (t.isCritical) {
+                    criticalDebt += t.valReceber;
+                    uniqueClientsCriticalSet.add(t.codCli);
+                }
+            }
+            const uniqueClientsCritical = uniqueClientsCriticalSet.size;
 
             renderTitulosKPIs(totalReceber, criticalDebt, uniqueClientsCritical, totalCount);
             renderTitulosTable();
