@@ -14341,7 +14341,31 @@ const supervisorGroups = new Map();
 
             } else {
                 // Top Category Logic
-                for (const cat in categoryResults) {
+                // Positivados calculation (Denominator)
+            const positivadosCurrentSet = new Set();
+            mapsCurrent.mainMap.forEach((_, codCli) => { const c = String(codCli).trim(); if (activeClientCodes.has(c)) positivadosCurrentSet.add(c); });
+            mapsCurrent.bonusMap.forEach((_, codCli) => { const c = String(codCli).trim(); if (activeClientCodes.has(c)) positivadosCurrentSet.add(c); });
+            const positivadosCurrentCount = positivadosCurrentSet.size;
+
+            // Para os meses anteriores, consideramos os clientes filtrados também
+            // (que compraram qualquer coisa no respectivo mês anterior)
+            const getActiveSetFromMap = (mapObj) => {
+                const s = new Set();
+                mapObj.mainMap.forEach((_, codCli) => s.add(String(codCli).trim()));
+                mapObj.bonusMap.forEach((_, codCli) => s.add(String(codCli).trim()));
+                return s;
+            };
+
+            const positivadosPreviousSet = getActiveSetFromMap(mapsPrevious);
+            const positivadosPreviousCount = positivadosPreviousSet.size;
+
+            const positivadosPrevious2Set = getActiveSetFromMap(mapsPrevious2);
+            const positivadosPrevious2Count = positivadosPrevious2Set.size;
+
+            const positivadosPrevious3Set = getActiveSetFromMap(mapsPrevious3);
+            const positivadosPrevious3Count = positivadosPrevious3Set.size;
+
+            for (const cat in categoryResults) {
                     const unionSet = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
                     const count = unionSet.size;
                     const coverage = activeClientsCount > 0 ? (count / activeClientsCount) * 100 : 0;
@@ -14412,29 +14436,7 @@ const supervisorGroups = new Map();
             // "Innovations Month Selection Coverage" -> Sales
             // "Innovations Month Bonus Coverage" -> Bonus
 
-            // Positivados calculation (Denominator)
-            const positivadosCurrentSet = new Set();
-            mapsCurrent.mainMap.forEach((_, codCli) => { const c = String(codCli).trim(); if (activeClientCodes.has(c)) positivadosCurrentSet.add(c); });
-            mapsCurrent.bonusMap.forEach((_, codCli) => { const c = String(codCli).trim(); if (activeClientCodes.has(c)) positivadosCurrentSet.add(c); });
-            const positivadosCurrentCount = positivadosCurrentSet.size;
 
-            // Para os meses anteriores, consideramos os clientes filtrados também
-            // (que compraram qualquer coisa no respectivo mês anterior)
-            const getActiveSetFromMap = (mapObj) => {
-                const s = new Set();
-                mapObj.mainMap.forEach((_, codCli) => s.add(String(codCli).trim()));
-                mapObj.bonusMap.forEach((_, codCli) => s.add(String(codCli).trim()));
-                return s;
-            };
-
-            const positivadosPreviousSet = getActiveSetFromMap(mapsPrevious);
-            const positivadosPreviousCount = positivadosPreviousSet.size;
-
-            const positivadosPrevious2Set = getActiveSetFromMap(mapsPrevious2);
-            const positivadosPrevious2Count = positivadosPrevious2Set.size;
-
-            const positivadosPrevious3Set = getActiveSetFromMap(mapsPrevious3);
-            const positivadosPrevious3Count = positivadosPrevious3Set.size;
 
             const selectionCoveredCountCurrent = clientsWhoGotAnyVisibleProductCurrent.size;
             // Percentual is Selection / Total Active Clients
