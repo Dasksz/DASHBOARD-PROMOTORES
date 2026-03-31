@@ -2182,8 +2182,9 @@
                 client.rca1 = rca1;
 
                 const razaoSocial = client.razaoSocial || client.RAZAOSOCIAL || client.Cliente || ''; // Fallback
+                client.isAmericanas = razaoSocial.toUpperCase().includes('AMERICANAS');
 
-                if (razaoSocial.toUpperCase().includes('AMERICANAS')) {
+                if (client.isAmericanas) {
                     client.rca1 = '1001';
                     client.rcas = ['1001'];
                     americanasCodCli = codCli;
@@ -2223,7 +2224,7 @@
 
                 // Calculate isActive status for search optimization
                 // Logic: Americanas OR (Not Balcão AND Not Inactive) OR Has Sales
-                const isAmericanas = (client.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = client.isAmericanas !== undefined ? client.isAmericanas : (client.isAmericanas = (client.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 const rca1Val = String(client.rca1 || '').trim();
                 const isActive = true;
 
@@ -2604,10 +2605,7 @@
                             razao = item.razaoSocial || item.Cliente;
                         }
 
-                        let isAmericanas = false;
-                        if (razao && typeof razao === 'string' && razao.toUpperCase().includes('AMERICANAS')) {
-                            isAmericanas = true;
-                        }
+                        let isAmericanas = item.isAmericanas !== undefined ? item.isAmericanas : (item.isAmericanas = (item.razaoSocial || item.Cliente || '').toUpperCase().includes('AMERICANAS'));
 
                         // Base Condition: Always Visible
                         const isBase = true; // All active non-inativos are visible now
@@ -3092,7 +3090,7 @@
             // Filter clients to match the "Active Structure" definition (Same as Coverage/Goals Table)
             const activeClients = allClientsData.filter(c => {
                 const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 if (isAmericanas) return true;
                 if (rca1 === '') return false; // Exclude INATIVOS
                 return true;
@@ -3445,7 +3443,7 @@
                 for(let i=0; i<len; i++) {
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
 
                     // FIX: Only filter orphans for Admins
                     if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
@@ -4106,7 +4104,7 @@
             const activeClients = clients.filter(c => {
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 return true;
             });
 
@@ -4640,7 +4638,7 @@
 
         function isActiveClient(c) {
             const rca1 = String(c.rca1 || '').trim();
-            const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+            const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
             if (isAmericanas) return true;
             // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS
             if (window.userRole === 'adm' && rca1 === '53') return false;
@@ -4693,7 +4691,7 @@
             const activeClients = clients.filter(c => {
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 return true;
             });
 
@@ -4941,7 +4939,7 @@
             // Apply Hierarchy Logic + "Active" Filter logic
             let clients = getHierarchyFilteredClients('meta-realizado', allClientsData).filter(c => {
                 const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 // Same active logic as Goals
                 if (isAmericanas) return true;
                 if (window.userRole === 'adm' && rca1 === '53') return false;
@@ -5910,7 +5908,7 @@
             // Apply Hierarchy Logic + "Active" Filter logic
             let clients = getHierarchyFilteredClients('meta-realizado', allClientsData).filter(c => {
                 const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 if (isAmericanas) return true;
                 if (window.userRole === 'adm' && rca1 === '53') return false;
                 if (rca1 === '') return false;
@@ -6339,7 +6337,7 @@
             const activeClients = clients.filter(c => {
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 return true;
             });
 
@@ -6400,7 +6398,7 @@
             // Apply "Active" Filter logic
             filteredSummaryClients = filteredSummaryClients.filter(c => {
                 const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 if (isAmericanas) return true;
                 if (rca1 === '') return false;
                 return true;
@@ -6637,7 +6635,7 @@
 
                 // 1. Exclusions (Structure)
                 const rca1 = String(client.rca1 || '').trim();
-                const isAmericanas = (client.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = client.isAmericanas !== undefined ? client.isAmericanas : (client.isAmericanas = (client.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
 
                 // Exclude Americanas (Specific Rule for Mix Base)
                 if (rca1 === '1001' || isAmericanas) continue;
@@ -6749,7 +6747,7 @@
             } else {
                 const allActiveClients = (window.allClientsData || allClientsData).filter(c => {
                     const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                     if (isAmericanas) return true;
                 if (rca1 === '') return false; // Exclude INATIVOS
                     return true;
@@ -7094,7 +7092,7 @@
 
                 // Is client active check (Same as others)
                 // Exclude Americanas explicitly from this calculation as per requirement
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 if (isAmericanas || (window.userRole === 'adm' && (rca1 === '53' || rca1 === '053' || rca1 === '' || rca1 === 'INATIVOS'))) return false;
 
                 // Does client belong to seller? (Current Hierarchy)
@@ -8081,7 +8079,7 @@
 
             clients = clients.filter(c => {
                 const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 if (isAmericanas) return true;
                 // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS
                 if (window.userRole === 'adm' && rca1 === '53') return false;
@@ -10435,7 +10433,7 @@ const supervisorGroups = new Map();
             let clientBaseForCoverage = baseFilteredHierarchyClients.filter(c => {
                 const rca1 = String(c.rca1 || '').trim();
 
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
 
                 // Regra de inclusão (Americanas ou RCA 1 diferente de 53)
                 // EXCEPTION: Allow RCA 53 if explicitly selected in filter OR implied by Supervisor
@@ -11108,7 +11106,7 @@ const supervisorGroups = new Map();
                     // Get all active clients to calculate the total base per vendor
                     const allActiveClients = allClientsData.filter(c => {
                         const rca1 = String(c.rca1 || '').trim();
-                        const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                        const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                         if (isAmericanas) return true;
                         if (window.userRole === 'adm' && rca1 === '53') return false; // Hide orphan balcao from admin if needed, wait, let's just use standard active logic
                         if (rca1 === '') return false;
@@ -11477,7 +11475,7 @@ const supervisorGroups = new Map();
                 for(let i=0; i<len; i++) {
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                     
                     // FIX: Only filter orphans for Admins
                     if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
@@ -12944,7 +12942,7 @@ const supervisorGroups = new Map();
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     // Basic active check (similar to getActiveClientsData but simpler)
                     const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
 
                     // FIX: Only filter orphans for Admins
                     if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue; // Skip strictly inactive
@@ -13999,7 +13997,7 @@ const supervisorGroups = new Map();
                 for(let i=0; i<len; i++) {
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
 
                     // FIX: Only filter orphans for Admins
                     if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
@@ -19067,7 +19065,7 @@ const supervisorGroups = new Map();
             const activeClients = clients.filter(c => {
                 const cod = String(c["Código"] || c["codigo_cliente"]);
                 const rca1 = String(c.rca1 || "").trim();
-                const isAmericanas = (c.razaoSocial || "").toUpperCase().includes("AMERICANAS");
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
             });
 
@@ -19779,7 +19777,7 @@ const supervisorGroups = new Map();
                     const activeClients = clients.filter(c => {
                         const cod = String(c['Código'] || c['codigo_cliente']);
                         const rca1 = String(c.rca1 || '').trim();
-                        const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                        const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                         return (isAmericanas || (window.userRole !== 'adm' || rca1 !== '53') || clientsWithSalesThisMonth.has(cod));
                     });
 
@@ -24164,7 +24162,7 @@ const supervisorGroups = new Map();
             for(let i=0; i<len; i++) {
                 const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                 const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 // FIX: Only filter orphans for Admins
                 if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
                 let keep = true;
@@ -25600,7 +25598,7 @@ const supervisorGroups = new Map();
             for(let i=0; i<len; i++) {
                 const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                 const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 // FIX: Only filter orphans for Admins
                 if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
                 let keep = true;
@@ -29137,7 +29135,7 @@ const supervisorGroups = new Map();
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     // Basic active check (similar to getActiveClientsData but simpler)
                     const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                     
                     // FIX: Only filter orphans for Admins
                     if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue; // Skip strictly inactive
@@ -29806,7 +29804,7 @@ const supervisorGroups = new Map();
                 for(let i=0; i<len; i++) {
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                     
                     // FIX: Only filter orphans for Admins
                     if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
@@ -30450,7 +30448,7 @@ const supervisorGroups = new Map();
             for(let i=0; i<len; i++) {
                 const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                 const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 // FIX: Only filter orphans for Admins
                 if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
                 let keep = true;
@@ -31060,7 +31058,7 @@ const supervisorGroups = new Map();
                 for(let i=0; i<len; i++) {
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
 
                     // FIX: Only filter orphans for Admins
                     if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
