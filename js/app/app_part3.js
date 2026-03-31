@@ -6058,9 +6058,9 @@
                 return `
                     <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors">
                         <td class="px-4 py-3 font-mono text-xs text-slate-400">${t.codCli}</td>
-                        <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px]" title="${t.clientName}">${t.clientName}</td>
-                        <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${t.rcaName}</td>
-                        <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
+                        <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px]" title="${window.escapeHtml(t.clientName)}">${window.escapeHtml(t.clientName)}</td>
+                        <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${window.escapeHtml(t.rcaName)}</td>
+                        <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(t.city)}</td>
                         <td class="px-4 py-3 text-xs text-white text-center font-mono">${dateStr}</td>
                         <td class="px-4 py-3 text-xs text-slate-500 text-right hidden md:table-cell">${valOrig}</td>
                         <td class="px-4 py-3 text-sm text-white font-bold text-right">${valOpen}</td>
@@ -6369,9 +6369,9 @@
             return `
                 <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors flex md:table-row justify-between items-center">
                     <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${t.codigo_cliente}</td>
-                    <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] border-none" title="${t.clientName}">${t.clientName}</td>
+                    <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] border-none" title="${window.escapeHtml(t.clientName)}">${window.escapeHtml(t.clientName)}</td>
                     <td class="px-4 py-3 hidden md:table-cell">${researcherHtml}</td>
-                    <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
+                    <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(t.city)}</td>
                     <td class="px-4 py-3 text-center font-bold border-none" style="${colorStyle}">${t.nota_media.toFixed(1)}</td>
                 </tr>
             `;
