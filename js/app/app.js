@@ -14326,22 +14326,7 @@ const supervisorGroups = new Map();
             const categoryAnalysis = {};
             let topCoverageItem = { name: '-', coverage: 0, clients: 0 };
 
-            if (selectedCategory && categories[selectedCategory]) {
-                categories[selectedCategory].products.forEach(product => {
-                    const pCode = String(product.Codigo).trim();
-                    if (productResults[pCode]) {
-                        const count = productResults[pCode].current.size;
-                        const coverage = activeClientsCount > 0 ? (count / activeClientsCount) * 100 : 0;
-                        if (coverage > topCoverageItem.coverage) {
-                            topCoverageItem = { name: `(${pCode}) ${product.produto || product.Produto}`, coverage, clients: count };
-                        }
-                    }
-                });
-
-
-            } else {
-                // Top Category Logic
-                // Positivados calculation (Denominator)
+            // Positivados calculation (Denominator)
             const positivadosCurrentSet = new Set();
             mapsCurrent.mainMap.forEach((_, codCli) => { const c = String(codCli).trim(); if (activeClientCodes.has(c)) positivadosCurrentSet.add(c); });
             mapsCurrent.bonusMap.forEach((_, codCli) => { const c = String(codCli).trim(); if (activeClientCodes.has(c)) positivadosCurrentSet.add(c); });
@@ -14364,6 +14349,23 @@ const supervisorGroups = new Map();
 
             const positivadosPrevious3Set = getActiveSetFromMap(mapsPrevious3);
             const positivadosPrevious3Count = positivadosPrevious3Set.size;
+
+            if (selectedCategory && categories[selectedCategory]) {
+                categories[selectedCategory].products.forEach(product => {
+                    const pCode = String(product.Codigo).trim();
+                    if (productResults[pCode]) {
+                        const count = productResults[pCode].current.size;
+                        const coverage = activeClientsCount > 0 ? (count / activeClientsCount) * 100 : 0;
+                        if (coverage > topCoverageItem.coverage) {
+                            topCoverageItem = { name: `(${pCode}) ${product.produto || product.Produto}`, coverage, clients: count };
+                        }
+                    }
+                });
+
+
+            } else {
+                // Top Category Logic
+
 
             for (const cat in categoryResults) {
                     const unionSet = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
