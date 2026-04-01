@@ -5,3 +5,7 @@
 ## 2025-03-30 - Aria labels
 **Learning:** For a single micro-improvement, it is better to modify specific files directly rather than using a script across the entire document. Always clean up temporary files used for scripts or verification before submitting.
 **Action:** Use precise `sed` or file replacing tools to add `aria-label` to just the elements requested when trying to add a micro-UX improvement. Keep it below 50 lines. Remember to `rm` workspace files.
+
+## 2025-04-01 - Add ARIA Labels to Dynamic Icon-Only Buttons
+**Learning:** Icon-only buttons within template literals (JavaScript generated HTML) are a common pattern in this codebase and require explicit `aria-label` mapping since static HTML checkers miss them.
+**Action:** Always search dynamically generated HTML for icon-only buttons when doing accessibility sweeps.

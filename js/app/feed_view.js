@@ -1189,7 +1189,7 @@ const FeedVisitas = (() => {
                         }
 
                         const locationBtnHtml = `
-                            <button onclick="window.FeedVisitas.openLocationModal(${visit.id})" class="absolute top-2 right-2 z-20 bg-black/50 hover:bg-[#FF5E00] text-white p-1.5 rounded-full backdrop-blur-sm transition-colors border border-white/20 shadow-lg" title="Ver Localização">
+                            <button onclick="window.FeedVisitas.openLocationModal(${visit.id})" class="absolute top-2 right-2 z-20 bg-black/50 hover:bg-[#FF5E00] text-white p-1.5 rounded-full backdrop-blur-sm transition-colors border border-white/20 shadow-lg" title="Ver Localização" aria-label="Ver Localização">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -1216,7 +1216,7 @@ const FeedVisitas = (() => {
                                 <img src="${url}" class="w-full h-full object-cover absolute inset-0 z-10 transition-transform duration-500 group-hover/img:scale-105" loading="lazy" alt="Foto da Visita" onerror="this.onerror=null; this.parentElement.classList.add('image-error'); this.style.display='none'; this.nextElementSibling.classList.remove('hidden'); this.nextElementSibling.classList.add('flex');">
                                 <div class="absolute inset-0 z-15 bg-black/0 group-hover/img:bg-black/10 transition-colors pointer-events-none"></div>
 
-                                <button onclick="window.FeedVisitas.openImageModal('${originalUrl}'); event.stopPropagation();" class="absolute bottom-2 right-2 z-20 bg-black/50 hover:bg-[#FF5E00] text-white p-2 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover/img:opacity-100 shadow-lg border border-white/20" title="Ver imagem original">
+                                <button onclick="window.FeedVisitas.openImageModal('${originalUrl}'); event.stopPropagation();" class="absolute bottom-2 right-2 z-20 bg-black/50 hover:bg-[#FF5E00] text-white p-2 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover/img:opacity-100 shadow-lg border border-white/20" title="Ver imagem original" aria-label="Ver imagem original">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
                                 </button>
 
@@ -1234,13 +1234,13 @@ const FeedVisitas = (() => {
                     if (fotos.length > 1) {
                         // Left Arrow
                         fotosHtml += `
-                            <button onclick="window.FeedVisitas.scrollCarousel('${carouselId}', -1); event.stopPropagation();" class="absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-black/40 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-sm transition-colors opacity-0 group-hover:opacity-100 touch-pan-y" style="opacity: 0.8;">
+                            <button onclick="window.FeedVisitas.scrollCarousel('${carouselId}', -1); event.stopPropagation();" class="absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-black/40 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-sm transition-colors opacity-0 group-hover:opacity-100 touch-pan-y" style="opacity: 0.8;" aria-label="Anterior">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                             </button>
                         `;
                         // Right Arrow
                         fotosHtml += `
-                            <button onclick="window.FeedVisitas.scrollCarousel('${carouselId}', 1); event.stopPropagation();" class="absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-black/40 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-sm transition-colors opacity-0 group-hover:opacity-100 touch-pan-y" style="opacity: 0.8;">
+                            <button onclick="window.FeedVisitas.scrollCarousel('${carouselId}', 1); event.stopPropagation();" class="absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-black/40 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-sm transition-colors opacity-0 group-hover:opacity-100 touch-pan-y" style="opacity: 0.8;" aria-label="Próximo">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                             </button>
                         `;
@@ -1331,7 +1331,7 @@ const FeedVisitas = (() => {
                             <!-- Esquerda: Favorito -->
                             <div class="flex-1 flex justify-start">
                                 ${isManager && window.userId ? `
-                                <button onclick="window.FeedVisitas.toggleFavorite('${visit.id}', this)" class="p-1 rounded-full transition-all hover:bg-slate-800/50 ${(visit.favoritado_por || []).includes(window.userId) ? 'text-yellow-400 scale-110' : 'text-slate-400 hover:text-white'}" title="Favoritar">
+                                <button onclick="window.FeedVisitas.toggleFavorite('${visit.id}', this)" class="p-1 rounded-full transition-all hover:bg-slate-800/50 ${(visit.favoritado_por || []).includes(window.userId) ? 'text-yellow-400 scale-110' : 'text-slate-400 hover:text-white'}" title="Favoritar" aria-label="Favoritar visita">
                                     <svg class="w-6 h-6" ${(visit.favoritado_por || []).includes(window.userId) ? 'fill="currentColor"' : 'fill="none"'} stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
                                     </svg>
@@ -1452,7 +1452,7 @@ const FeedVisitas = (() => {
                         </svg>
                         <h3 class="text-white font-semibold text-lg">Detalhes do Cliente</h3>
                     </div>
-                    <button onclick="window.FeedVisitas.closeLocationModal()" class="text-slate-400 hover:text-white transition-colors bg-slate-800/50 hover:bg-slate-700 p-1.5 rounded-full">
+                    <button onclick="window.FeedVisitas.closeLocationModal()" class="text-slate-400 hover:text-white transition-colors bg-slate-800/50 hover:bg-slate-700 p-1.5 rounded-full" aria-label="Fechar modal de localização">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
