@@ -6260,14 +6260,24 @@
         }
 
         // 3. Filter Data
-        const filtered = rawData.filter(row => allowedClientCodes.has(normalizeKey(row.codigo_cliente))).map(row => {
-             const c = clientMap.get(normalizeKey(row.codigo_cliente));
-             return {
+        const filtered = [];
+        for (let i = 0; i < rawData.length; i++) {
+            const row = rawData[i];
+            const normCode = normalizeKey(row.codigo_cliente);
+            if (!allowedClientCodes.has(normCode)) continue;
+
+            // Researcher Filter
+            if (typeof selectedLpResearchers !== 'undefined' && selectedLpResearchers.size > 0) {
+                if (!row.pesquisador || !selectedLpResearchers.has(row.pesquisador.trim())) continue;
+            }
+
+            const c = clientMap.get(normCode);
+            filtered.push({
                  ...row,
                  clientName: c ? (c.nomeCliente || c.fantasia) : 'Desconhecido',
                  city: c ? (c.cidade || 'N/A') : 'N/A'
-             };
-        });
+            });
+        }
 
         // 4. Update KPIs
         let totalScore = 0;
