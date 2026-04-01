@@ -3842,7 +3842,17 @@
     <!-- Holidays -->
     <div id="holiday-modal" class="modal-overlay hidden"><div class="bg-modal-content"><button id="holiday-modal-close-btn" aria-label="Fechar"></button><div id="calendar-container"></div><button id="holiday-modal-done-btn"></button></div></div>
     <!-- Confirmation -->
-    <div id="confirmation-modal" class="modal-overlay hidden"><div class="bg-modal-content"><p id="confirmation-message"></p><button id="confirmation-cancel-btn"></button><button id="confirmation-confirm-btn"></button></div></div>
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="modal-overlay hidden z-[3000]">
+        <div class="bg-modal-content max-w-md w-full m-4 p-6 rounded-2xl shadow-2xl border border-slate-700 glass-panel/95 backdrop-blur-md text-center">
+            <h3 class="text-xl font-bold text-white mb-4">Confirmar Ação</h3>
+            <p id="confirmation-message" class="text-slate-300 text-sm mb-6"></p>
+            <div class="flex gap-3">
+                <button id="confirmation-cancel-btn" class="flex-1 py-2 px-4 glass-panel hover:bg-white/5 text-slate-300 rounded-lg font-medium transition-colors">Cancelar</button>
+                <button id="confirmation-confirm-btn" class="flex-1 py-2 px-4 bg-teal-600 hover:bg-teal-500 text-white rounded-lg font-bold shadow-lg transition-colors">Confirmar</button>
+            </div>
+        </div>
+    </div>
     <!-- Admin Password Modal -->
     <div id="admin-password-modal" class="modal-overlay hidden z-[2500]">
         <div class="bg-modal-content max-w-sm w-full m-4 p-6 rounded-2xl shadow-2xl border border-slate-700 glass-panel/95 backdrop-blur-md text-center">
@@ -3959,6 +3969,12 @@
                                                         <!-- Diff rows injected here -->
                                                     </tbody>
                                                 </table>
+                                            </div>
+                                            <!-- Pagination Controls -->
+                                            <div id="import-pagination-controls" class="flex justify-between items-center p-4 border-t border-slate-700">
+                                                <button id="import-prev-page-btn" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded transition-colors text-xs">Anterior</button>
+                                                <span id="import-page-info-text" class="text-xs text-slate-400">Página 1 de 1</span>
+                                                <button id="import-next-page-btn" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded transition-colors text-xs">Próximo</button>
                                             </div>
                                         </div>
                                     </div>
