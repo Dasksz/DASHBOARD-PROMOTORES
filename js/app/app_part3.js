@@ -1383,10 +1383,10 @@
             div.innerHTML = `
                 <div>
                     <div class="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">
-                        <span class="font-mono text-slate-400 mr-2">${c.codigo_cliente}</span>
-                        ${c.fantasia || c.razaosocial}
+                        <span class="font-mono text-slate-400 mr-2">${window.escapeHtml(c.codigo_cliente)}</span>
+                        ${window.escapeHtml(c.fantasia || c.razaosocial)}
                     </div>
-                    <div class="text-xs text-slate-500">${c.cidade || ''} • ${c.cnpj_cpf || ''}</div>
+                    <div class="text-xs text-slate-500">${window.escapeHtml(c.cidade || '')} • ${window.escapeHtml(c.cnpj_cpf || '')}</div>
                 </div>
                  <div class="p-2 glass-panel-heavy rounded-full group-hover:bg-[#FF5E00] transition-colors text-slate-400 group-hover:text-white">
                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -3023,7 +3023,7 @@
                         <div class="w-2 h-10 ${barColor} rounded-full"></div>
                         <div>
                             <div class="text-sm font-bold text-white flex items-center gap-2">
-                                ${c.fantasia || c.nomeCliente}
+                                ${window.escapeHtml(c.fantasia || c.nomeCliente)}
                                 ${visitedThisMonth ? `
                                     <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Visitado este mês">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -3031,7 +3031,7 @@
                                     </svg>
                                 ` : ''}
                             </div>
-                            <div class="text-xs text-slate-400 font-mono flex flex-wrap items-center gap-1">${cod} • ${c.cidade || ''} ${visitTimeStr ? '• <span class="text-slate-300">' + visitTimeStr + '</span>' : ''} ${(isForaDeRota && isToday) ? '<span class="ml-2 px-1.5 py-0.5 bg-orange-900/50 text-orange-400 border border-orange-500/30 rounded text-[10px] font-bold">Atendido fora de rota</span>' : ''}</div>
+                            <div class="text-xs text-slate-400 font-mono flex flex-wrap items-center gap-1">${window.escapeHtml(cod)} • ${window.escapeHtml(c.cidade || '')} ${visitTimeStr ? '• <span class="text-slate-300">' + window.escapeHtml(visitTimeStr) + '</span>' : ''} ${(isForaDeRota && isToday) ? '<span class="ml-2 px-1.5 py-0.5 bg-orange-900/50 text-orange-400 border border-orange-500/30 rounded text-[10px] font-bold">Atendido fora de rota</span>' : ''}</div>
                         </div>
                     </div>
                     <div class="flex-shrink-0">
@@ -6068,10 +6068,10 @@
 
                 return `
                     <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors">
-                        <td class="px-4 py-3 font-mono text-xs text-slate-400">${t.codCli}</td>
-                        <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px]" title="${t.clientName}">${t.clientName}</td>
-                        <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${t.rcaName}</td>
-                        <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-slate-400">${window.escapeHtml(t.codCli)}</td>
+                        <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px]" title="${window.escapeHtml(t.clientName)}">${window.escapeHtml(t.clientName)}</td>
+                        <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${window.escapeHtml(t.rcaName)}</td>
+                        <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(t.city)}</td>
                         <td class="px-4 py-3 text-xs text-white text-center font-mono">${dateStr}</td>
                         <td class="px-4 py-3 text-xs text-slate-500 text-right hidden md:table-cell">${valOrig}</td>
                         <td class="px-4 py-3 text-sm text-white font-bold text-right">${valOpen}</td>
