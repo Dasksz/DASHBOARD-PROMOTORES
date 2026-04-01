@@ -11645,7 +11645,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(supervisors).sort().forEach(s => {
                 const checked = selectedCitySupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('city-supervisor-filter-text'), selectedCitySupervisors, 'Todos');
@@ -11676,7 +11676,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedCityVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('city-vendedor-filter-text'), selectedCityVendedores, 'Todos');
@@ -13091,7 +13091,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(supervisors).sort().forEach(s => {
                 const checked = selectedComparisonSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('comparison-supervisor-filter-text'), selectedComparisonSupervisors, 'Todos');
@@ -13122,7 +13122,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedComparisonVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('comparison-vendedor-filter-text'), selectedComparisonVendedores, 'Todos');
@@ -16500,10 +16500,10 @@ const supervisorGroups = new Map();
                     div.innerHTML = `
                         <div>
                             <div class="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">
-                                <span class="font-mono text-slate-400 mr-2">${code}</span>
-                                ${name}
+                                <span class="font-mono text-slate-400 mr-2">${window.escapeHtml(code)}</span>
+                                ${window.escapeHtml(name)}
                             </div>
-                            <div class="text-xs text-slate-500">${city} • ${doc}</div>
+                            <div class="text-xs text-slate-500">${window.escapeHtml(city)} • ${window.escapeHtml(doc)}</div>
                         </div>
                          <div class="p-2 glass-panel-heavy rounded-full group-hover:bg-[#FF5E00] transition-colors text-slate-400 group-hover:text-white">
                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -27976,7 +27976,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(supervisors).sort().forEach(s => {
                 const checked = selectedPositivacaoSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('positivacao-supervisor-filter-text'), selectedPositivacaoSupervisors, 'Todos');
@@ -28007,7 +28007,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedPositivacaoVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('positivacao-vendedor-filter-text'), selectedPositivacaoVendedores, 'Todos');
@@ -28093,7 +28093,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(supervisors).sort().forEach(s => {
                 const checked = selectedCoverageSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('coverage-supervisor-filter-text'), selectedCoverageSupervisors, 'Todos');
@@ -28124,7 +28124,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedCoverageVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('coverage-vendedor-filter-text'), selectedCoverageVendedores, 'Todos');
@@ -28240,7 +28240,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(supervisors).sort().forEach(s => {
                 const checked = selectedMixSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('mix-supervisor-filter-text'), selectedMixSupervisors, 'Todos');
@@ -28271,7 +28271,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedMixVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('mix-vendedor-filter-text'), selectedMixVendedores, 'Todos');
@@ -28587,7 +28587,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(supervisors).sort().forEach(s => {
                 const checked = selectedInnovationsMonthSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('innovations-month-supervisor-filter-text'), selectedInnovationsMonthSupervisors, 'Todos');
@@ -28618,7 +28618,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedInnovationsMonthVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('innovations-month-vendedor-filter-text'), selectedInnovationsMonthVendedores, 'Todos');
@@ -30083,10 +30083,10 @@ const supervisorGroups = new Map();
                 return `
                     <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors cursor-pointer md:cursor-default" onclick="if(window.innerWidth < 768) openTitulosMobileModal(${globalIndex})">
                         <!-- Desktop Columns (Hidden on Mobile) -->
-                        <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${t.codCli}</td>
-                        <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] hidden md:table-cell" title="${t.clientName}">${t.clientName}</td>
-                        <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${t.rcaName}</td>
-                        <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(t.codCli)}</td>
+                        <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] hidden md:table-cell" title="${window.escapeHtml(t.clientName)}">${window.escapeHtml(t.clientName)}</td>
+                        <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${window.escapeHtml(t.rcaName)}</td>
+                        <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(t.city)}</td>
                         <td class="px-4 py-3 text-xs text-white text-center font-mono hidden md:table-cell">${dateStr}</td>
                         <td class="px-4 py-3 text-xs text-slate-500 text-right hidden md:table-cell">${valOrig}</td>
                         <td class="px-4 py-3 text-sm text-white font-bold text-right hidden md:table-cell">${valOpen}</td>
@@ -30097,7 +30097,7 @@ const supervisorGroups = new Map();
                             <div class="flex flex-col gap-2 text-left">
                                 <div class="flex justify-between items-center text-left">
                                     <span class="text-xs font-bold text-white leading-tight truncate mr-2 text-left">
-                                        ${t.codCli} - ${mobileClientName}
+                                        ${window.escapeHtml(t.codCli)} - ${window.escapeHtml(mobileClientName)}
                                     </span>
                                     <div class="shrink-0">
                                         ${statusMobile}
@@ -30684,10 +30684,10 @@ const supervisorGroups = new Map();
 
             return `
                 <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors flex md:table-row justify-between items-center">
-                    <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${t.codigo_cliente}</td>
-                    <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] border-none" title="${t.clientName}">${t.clientName}</td>
+                    <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(t.codigo_cliente)}</td>
+                    <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] border-none" title="${window.escapeHtml(t.clientName)}">${window.escapeHtml(t.clientName)}</td>
                     <td class="px-4 py-3 hidden md:table-cell">${researcherHtml}</td>
-                    <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
+                    <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(t.city)}</td>
                     <td class="px-4 py-3 text-center font-bold border-none" style="${colorStyle}">${t.nota_media.toFixed(1)}</td>
                 </tr>
             `;
@@ -30923,7 +30923,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(valuesSet).sort().forEach(s => {
                 const checked = selectedSet.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
         }
@@ -30939,7 +30939,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedSet.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
         }
