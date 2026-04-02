@@ -12027,7 +12027,27 @@ const supervisorGroups = new Map();
 
         function calculateHistoricalBests() {
             const salesBySupervisorByDay = {};
-            const mostRecentSaleDate = allSalesData.map(s => parseDate(s.DTPED)).filter(Boolean).reduce((a, b) => a > b ? a : b, new Date(0));
+
+            // OPTIMIZATION: Use a single loop instead of .map().filter().reduce()
+            // to avoid intermediate array allocations and proxy overhead.
+            let mostRecentSaleDate = new Date(0);
+            if (typeof allSalesData.get === 'function' && typeof allSalesData.length === 'number') {
+                const len = allSalesData.length;
+                for (let i = 0; i < len; i++) {
+                    const d = parseDate(allSalesData.get(i).DTPED);
+                    if (d && d > mostRecentSaleDate) {
+                        mostRecentSaleDate = d;
+                    }
+                }
+            } else {
+                allSalesData.forEach(s => {
+                    const d = parseDate(s.DTPED);
+                    if (d && d > mostRecentSaleDate) {
+                        mostRecentSaleDate = d;
+                    }
+                });
+            }
+
             const previousMonthDate = new Date(Date.UTC(mostRecentSaleDate.getUTCFullYear(), mostRecentSaleDate.getUTCMonth() - 1, 1));
             const previousMonth = previousMonthDate.getUTCMonth();
             const previousMonthYear = previousMonthDate.getUTCFullYear();
