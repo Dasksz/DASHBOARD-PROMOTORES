@@ -11663,7 +11663,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(supervisors).sort().forEach(s => {
                 const checked = selectedCitySupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('city-supervisor-filter-text'), selectedCitySupervisors, 'Todos');
@@ -11694,7 +11694,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedCityVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('city-vendedor-filter-text'), selectedCityVendedores, 'Todos');
@@ -12045,7 +12045,27 @@ const supervisorGroups = new Map();
 
         function calculateHistoricalBests() {
             const salesBySupervisorByDay = {};
-            const mostRecentSaleDate = allSalesData.map(s => parseDate(s.DTPED)).filter(Boolean).reduce((a, b) => a > b ? a : b, new Date(0));
+
+            // OPTIMIZATION: Use a single loop instead of .map().filter().reduce()
+            // to avoid intermediate array allocations and proxy overhead.
+            let mostRecentSaleDate = new Date(0);
+            if (typeof allSalesData.get === 'function' && typeof allSalesData.length === 'number') {
+                const len = allSalesData.length;
+                for (let i = 0; i < len; i++) {
+                    const d = parseDate(allSalesData.get(i).DTPED);
+                    if (d && d > mostRecentSaleDate) {
+                        mostRecentSaleDate = d;
+                    }
+                }
+            } else {
+                allSalesData.forEach(s => {
+                    const d = parseDate(s.DTPED);
+                    if (d && d > mostRecentSaleDate) {
+                        mostRecentSaleDate = d;
+                    }
+                });
+            }
+
             const previousMonthDate = new Date(Date.UTC(mostRecentSaleDate.getUTCFullYear(), mostRecentSaleDate.getUTCMonth() - 1, 1));
             const previousMonth = previousMonthDate.getUTCMonth();
             const previousMonthYear = previousMonthDate.getUTCFullYear();
@@ -13109,7 +13129,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(supervisors).sort().forEach(s => {
                 const checked = selectedComparisonSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('comparison-supervisor-filter-text'), selectedComparisonSupervisors, 'Todos');
@@ -13140,7 +13160,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedComparisonVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('comparison-vendedor-filter-text'), selectedComparisonVendedores, 'Todos');
@@ -16518,10 +16538,10 @@ const supervisorGroups = new Map();
                     div.innerHTML = `
                         <div>
                             <div class="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">
-                                <span class="font-mono text-slate-400 mr-2">${code}</span>
-                                ${name}
+                                <span class="font-mono text-slate-400 mr-2">${window.escapeHtml(code)}</span>
+                                ${window.escapeHtml(name)}
                             </div>
-                            <div class="text-xs text-slate-500">${city} • ${doc}</div>
+                            <div class="text-xs text-slate-500">${window.escapeHtml(city)} • ${window.escapeHtml(doc)}</div>
                         </div>
                          <div class="p-2 glass-panel-heavy rounded-full group-hover:bg-[#FF5E00] transition-colors text-slate-400 group-hover:text-white">
                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -21076,7 +21096,7 @@ const supervisorGroups = new Map();
                         const div = document.createElement('div');
                         div.className = 'relative aspect-square rounded-lg overflow-hidden border border-slate-700 bg-slate-800';
                         div.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">
-                        <button type="button" class="absolute top-1 right-1 bg-red-600/90 hover:bg-red-500 text-white p-1 rounded-md transition-colors" onclick="window.removeFotoVisita('${type}', ${index})">
+                        <button type="button" class="absolute top-1 right-1 bg-red-600/90 hover:bg-red-500 text-white p-1 rounded-md transition-colors" onclick="window.removeFotoVisita('${type}', ${index})" aria-label="Remover foto">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>`;
                         preview.appendChild(div);
@@ -24637,10 +24657,10 @@ const supervisorGroups = new Map();
                             <span class="font-bold text-[#FF5E00]">Est.Cx: ${totalStock}</span>
                         </div>
                         <div class="flex gap-2 mt-3">
-                            <button onclick="window.handleProductAction('promo', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-lime-400 rounded hover:bg-slate-600 border border-slate-600" title="Detalhes Comerciais"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg></button>
-                            <button class="p-1.5 bg-slate-700 text-red-400 rounded hover:bg-slate-600 border border-slate-600" title="Visualizar Imagem" onclick="window.openImageModal('${imageUrl}', '${window.escapeHtml(desc)} - ${code}')"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
-                            <button onclick="window.handleProductAction('stock', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-blue-400 rounded hover:bg-slate-600 border border-slate-600" title="Estoque"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg></button>
-                            <button onclick="window.handleProductAction('expand', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-purple-400 rounded hover:bg-slate-600 border border-slate-600 ml-auto" title="Expandir"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg></button>
+                            <button onclick="window.handleProductAction('promo', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-lime-400 rounded hover:bg-slate-600 border border-slate-600" title="Detalhes Comerciais" aria-label="Detalhes Comerciais"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg></button>
+                            <button class="p-1.5 bg-slate-700 text-red-400 rounded hover:bg-slate-600 border border-slate-600" title="Visualizar Imagem" onclick="window.openImageModal('${imageUrl}', '${window.escapeHtml(desc)} - ${code}')" aria-label="Visualizar Imagem"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
+                            <button onclick="window.handleProductAction('stock', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-blue-400 rounded hover:bg-slate-600 border border-slate-600" title="Estoque" aria-label="Ver Estoque"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg></button>
+                            <button onclick="window.handleProductAction('expand', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-purple-400 rounded hover:bg-slate-600 border border-slate-600 ml-auto" title="Expandir" aria-label="Expandir Detalhes"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg></button>
                         </div>
                     </div>
                 `;
@@ -27994,7 +28014,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(supervisors).sort().forEach(s => {
                 const checked = selectedPositivacaoSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('positivacao-supervisor-filter-text'), selectedPositivacaoSupervisors, 'Todos');
@@ -28025,7 +28045,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedPositivacaoVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('positivacao-vendedor-filter-text'), selectedPositivacaoVendedores, 'Todos');
@@ -28111,7 +28131,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(supervisors).sort().forEach(s => {
                 const checked = selectedCoverageSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('coverage-supervisor-filter-text'), selectedCoverageSupervisors, 'Todos');
@@ -28142,7 +28162,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedCoverageVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('coverage-vendedor-filter-text'), selectedCoverageVendedores, 'Todos');
@@ -28258,7 +28278,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(supervisors).sort().forEach(s => {
                 const checked = selectedMixSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('mix-supervisor-filter-text'), selectedMixSupervisors, 'Todos');
@@ -28289,7 +28309,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedMixVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('mix-vendedor-filter-text'), selectedMixVendedores, 'Todos');
@@ -28605,7 +28625,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(supervisors).sort().forEach(s => {
                 const checked = selectedInnovationsMonthSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('innovations-month-supervisor-filter-text'), selectedInnovationsMonthSupervisors, 'Todos');
@@ -28636,7 +28656,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedInnovationsMonthVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
             updateFilterButtonText(document.getElementById('innovations-month-vendedor-filter-text'), selectedInnovationsMonthVendedores, 'Todos');
@@ -30101,10 +30121,10 @@ const supervisorGroups = new Map();
                 return `
                     <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors cursor-pointer md:cursor-default" onclick="if(window.innerWidth < 768) openTitulosMobileModal(${globalIndex})">
                         <!-- Desktop Columns (Hidden on Mobile) -->
-                        <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${t.codCli}</td>
-                        <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] hidden md:table-cell" title="${t.clientName}">${t.clientName}</td>
-                        <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${t.rcaName}</td>
-                        <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(t.codCli)}</td>
+                        <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] hidden md:table-cell" title="${window.escapeHtml(t.clientName)}">${window.escapeHtml(t.clientName)}</td>
+                        <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${window.escapeHtml(t.rcaName)}</td>
+                        <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(t.city)}</td>
                         <td class="px-4 py-3 text-xs text-white text-center font-mono hidden md:table-cell">${dateStr}</td>
                         <td class="px-4 py-3 text-xs text-slate-500 text-right hidden md:table-cell">${valOrig}</td>
                         <td class="px-4 py-3 text-sm text-white font-bold text-right hidden md:table-cell">${valOpen}</td>
@@ -30115,7 +30135,7 @@ const supervisorGroups = new Map();
                             <div class="flex flex-col gap-2 text-left">
                                 <div class="flex justify-between items-center text-left">
                                     <span class="text-xs font-bold text-white leading-tight truncate mr-2 text-left">
-                                        ${t.codCli} - ${mobileClientName}
+                                        ${window.escapeHtml(t.codCli)} - ${window.escapeHtml(mobileClientName)}
                                     </span>
                                     <div class="shrink-0">
                                         ${statusMobile}
@@ -30581,21 +30601,24 @@ const supervisorGroups = new Map();
         }
 
         // 3. Filter Data
-        const filtered = rawData.filter(row => {
-            if (!allowedClientCodes.has(normalizeKey(row.codigo_cliente))) return false;
+        const filtered = [];
+        for (let i = 0; i < rawData.length; i++) {
+            const row = rawData[i];
+            const normCode = normalizeKey(row.codigo_cliente);
+            if (!allowedClientCodes.has(normCode)) continue;
+
             // Researcher Filter
             if (selectedLpResearchers.size > 0) {
-                if (!row.pesquisador || !selectedLpResearchers.has(row.pesquisador.trim())) return false;
+                if (!row.pesquisador || !selectedLpResearchers.has(row.pesquisador.trim())) continue;
             }
-            return true;
-        }).map(row => {
-             const c = clientMap.get(normalizeKey(row.codigo_cliente));
-             return {
+
+            const c = clientMap.get(normCode);
+            filtered.push({
                  ...row,
                  clientName: c ? (c.nomeCliente || c.fantasia) : 'Desconhecido',
                  city: c ? (c.cidade || 'N/A') : 'N/A'
-             };
-        });
+            });
+        }
 
         // 4. Update KPIs
         let totalScore = 0;
@@ -30702,10 +30725,10 @@ const supervisorGroups = new Map();
 
             return `
                 <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors flex md:table-row justify-between items-center">
-                    <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${t.codigo_cliente}</td>
-                    <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] border-none" title="${t.clientName}">${t.clientName}</td>
+                    <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(t.codigo_cliente)}</td>
+                    <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] border-none" title="${window.escapeHtml(t.clientName)}">${window.escapeHtml(t.clientName)}</td>
                     <td class="px-4 py-3 hidden md:table-cell">${researcherHtml}</td>
-                    <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${t.city}</td>
+                    <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(t.city)}</td>
                     <td class="px-4 py-3 text-center font-bold border-none" style="${colorStyle}">${t.nota_media.toFixed(1)}</td>
                 </tr>
             `;
@@ -30941,7 +30964,7 @@ const supervisorGroups = new Map();
             let html = '';
             Array.from(valuesSet).sort().forEach(s => {
                 const checked = selectedSet.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${s}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
             });
             dropdown.innerHTML = html;
         }
@@ -30957,7 +30980,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedSet.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
         }
