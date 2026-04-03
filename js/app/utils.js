@@ -412,4 +412,41 @@
         return new Date(d.getTime() + userTimezoneOffset).toLocaleDateString('pt-BR');
     };
 
+
+
+    /**
+     * Reusable generic function to render a seller filter dropdown.
+     */
+    window.updateGenericVendedorFilter = function(dropdownId, textId, supervisorsSet, vendedoresSet, sellerDetailsMap, updateTextFn, defaultLabel = 'Todos', checkboxColorClass = 'text-orange-500') {
+        const dropdown = document.getElementById(dropdownId);
+        if(!dropdown) return;
+
+        const validRcas = new Set();
+        if (supervisorsSet.size > 0) {
+            sellerDetailsMap.forEach((d, code) => {
+                if (supervisorsSet.has(d.supervisor)) validRcas.add(code);
+            });
+        } else {
+            sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+        }
+
+        let options = [];
+        validRcas.forEach(rca => {
+            const details = sellerDetailsMap.get(rca);
+            options.push({ value: rca, label: details ? (details.name || rca) : rca });
+        });
+        options.sort((a,b) => a.label.localeCompare(b.label));
+
+        let html = '';
+        options.forEach(opt => {
+            const checked = vendedoresSet.has(opt.value) ? 'checked' : '';
+            html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 ${checkboxColorClass} rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
+        });
+        dropdown.innerHTML = html;
+
+        if (typeof updateTextFn === 'function') {
+            updateTextFn(document.getElementById(textId), vendedoresSet, defaultLabel);
+        }
+    };
+
 })();
