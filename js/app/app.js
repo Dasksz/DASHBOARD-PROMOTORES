@@ -19385,7 +19385,7 @@ const supervisorGroups = new Map();
                 // 4. TORCIDA (752)
                 addKeys('752', ['FAT_META', 'FAT_AJUSTE', 'POS_META', 'POS_AJUSTE']);
                 // 5. KG ELMA (tonnage)
-                addKeys('tonelada_elma', [null, 'VOL_VOLUME', 'VOL_AJUSTE']);
+                addKeys('tonelada_elma', [null, 'VOL_META', 'VOL_AJUSTE']);
                 // 6. MIX SALTY (mix)
                 addKeys('mix_salty', [null, 'MIX_META', 'MIX_AJUSTE']);
 
@@ -19398,7 +19398,7 @@ const supervisorGroups = new Map();
                 // 10. QUAKER/KEROCOCO
                 addKeys('1119_QUAKER_KEROCOCO', ['FAT_META', 'FAT_AJUSTE', 'POS_META', 'POS_AJUSTE']);
                 // 11. KG FOODS (tonnage)
-                addKeys('tonelada_foods', [null, 'VOL_VOLUME', 'VOL_AJUSTE']);
+                addKeys('tonelada_foods', [null, 'VOL_META', 'VOL_AJUSTE']);
                 // 12. MIX FOODS (mix)
                 addKeys('mix_foods', [null, 'MIX_META', 'MIX_AJUSTE']);
 
