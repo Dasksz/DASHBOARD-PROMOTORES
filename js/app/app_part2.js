@@ -3087,7 +3087,7 @@ innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
             console.log(`[Parser] Linhas encontradas: ${rows.length}`);
 
             // Helper: Parse Value (Moved up for availability)
-            const parseImportValue = (rawStr) => {
+                        const parseImportValue = (rawStr) => {
                 if (!rawStr) return NaN;
                 let clean = String(rawStr).trim().toUpperCase().replace(/[^0-9,.-]/g, '');
                 if (!clean) return NaN;
@@ -3099,10 +3099,20 @@ innovationsMonthCategoryFilter.addEventListener('change', updateInnovations);
                     if (dotIdx > commaIdx) clean = clean.replace(/,/g, '');
                     else clean = clean.replace(/\./g, '').replace(',', '.');
                 } else if (commaIdx > -1) {
-                    if (/,\d{3}$/.test(clean)) clean = clean.replace(/,/g, '');
-                    else clean = clean.replace(',', '.');
+                    if (/,\d{3}$/.test(clean) && !/,\d{1,2}$/.test(clean) && clean.split(',').length > 2) {
+                        clean = clean.replace(/,/g, '');
+                    } else if (/,\d{3}$/.test(clean) && clean.indexOf(',') === clean.lastIndexOf(',')) {
+                        // Single comma with 3 trailing digits. Assume decimal in PT-BR context
+                        clean = clean.replace(',', '.');
+                    } else {
+                        clean = clean.replace(',', '.');
+                    }
                 } else if (dotIdx > -1) {
-                    if (/\.\d{3}$/.test(clean)) clean = clean.replace(/\./g, '');
+                    // Tricky: if multiple dots, it's thousands separator
+                    if (clean.split('.').length > 2) {
+                        clean = clean.replace(/\./g, '');
+                    }
+                    // Else, assume it's a decimal dot (XLSX exports standard floats with dot)
                 }
                 return parseFloat(clean);
             };
