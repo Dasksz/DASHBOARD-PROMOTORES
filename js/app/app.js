@@ -5704,22 +5704,7 @@
         }
 
         function updateMetaRealizadoVendedorFilter() {
-            const dropdown = document.getElementById('meta-realizado-vendedor-filter-dropdown');
-            if(!dropdown) return;
-
-            const validRcas = new Set();
-            if (selectedMetaRealizadoSupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => {
-                    if (selectedMetaRealizadoSupervisors.has(d.supervisor)) validRcas.add(code);
-                });
-
-
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-
-            renderRcaCheckboxDropdown(dropdown, validRcas, selectedMetaRealizadoVendedores);
-            updateFilterButtonText(document.getElementById('meta-realizado-vendedor-filter-text'), selectedMetaRealizadoVendedores, 'Todos');
+            updateGenericVendedorFilter('meta-realizado-vendedor-filter-dropdown', 'meta-realizado-vendedor-filter-text', selectedMetaRealizadoSupervisors, selectedMetaRealizadoVendedores);
         }
 
         function updateMetaRealizadoView() {
@@ -11670,34 +11655,7 @@ const supervisorGroups = new Map();
         }
 
         function updateCityVendedorFilter() {
-            const dropdown = document.getElementById('city-vendedor-filter-dropdown');
-            if(!dropdown) return;
-
-            const validRcas = new Set();
-            if (selectedCitySupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => {
-                    if (selectedCitySupervisors.has(d.supervisor)) validRcas.add(code);
-                });
-
-
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-
-            let options = [];
-            validRcas.forEach(rca => {
-                const details = sellerDetailsMap.get(rca);
-                options.push({ value: rca, label: details ? (details.name || rca) : rca });
-            });
-            options.sort((a,b) => a.label.localeCompare(b.label));
-
-            let html = '';
-            options.forEach(opt => {
-                const checked = selectedCityVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
-            updateFilterButtonText(document.getElementById('city-vendedor-filter-text'), selectedCityVendedores, 'Todos');
+            updateGenericVendedorFilter('city-vendedor-filter-dropdown', 'city-vendedor-filter-text', selectedCitySupervisors, selectedCityVendedores);
         }
 
         function updateAllCityFilters(options = {}) {
@@ -13136,34 +13094,7 @@ const supervisorGroups = new Map();
         }
 
         function updateComparisonVendedorFilter() {
-            const dropdown = document.getElementById('comparison-vendedor-filter-dropdown');
-            if(!dropdown) return;
-
-            const validRcas = new Set();
-            if (selectedComparisonSupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => {
-                    if (selectedComparisonSupervisors.has(d.supervisor)) validRcas.add(code);
-                });
-
-
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-
-            let options = [];
-            validRcas.forEach(rca => {
-                const details = sellerDetailsMap.get(rca);
-                options.push({ value: rca, label: details ? (details.name || rca) : rca });
-            });
-            options.sort((a,b) => a.label.localeCompare(b.label));
-
-            let html = '';
-            options.forEach(opt => {
-                const checked = selectedComparisonVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
-            updateFilterButtonText(document.getElementById('comparison-vendedor-filter-text'), selectedComparisonVendedores, 'Todos');
+            updateGenericVendedorFilter('comparison-vendedor-filter-dropdown', 'comparison-vendedor-filter-text', selectedComparisonSupervisors, selectedComparisonVendedores);
         }
 
         function updateAllComparisonFilters() {
@@ -26381,38 +26312,8 @@ const supervisorGroups = new Map();
     }
 
     function updateWeeklyVendedorFilter() {
-        const dd = document.getElementById('weekly-vendedor-filter-dropdown');
-        if(!dd) return;
-        
-        const validRcas = new Set();
-        // If supervisors selected, filter sellers
-        if (selectedWeeklySupervisors.size > 0) {
-            sellerDetailsMap.forEach((d, code) => {
-                if (selectedWeeklySupervisors.has(d.supervisor)) validRcas.add(code);
-            });
-        } else {
-            sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            updateGenericVendedorFilter('weekly-vendedor-filter-dropdown', 'weekly-vendedor-filter-text', selectedWeeklySupervisors, selectedWeeklyVendedores);
         }
-
-        let options = [];
-        validRcas.forEach(rca => {
-            const details = sellerDetailsMap.get(rca);
-            const name = details ? (details.name || rca) : rca;
-            options.push({ value: rca, label: name });
-        });
-        options.sort((a,b) => a.label.localeCompare(b.label));
-
-        let html = '';
-        options.forEach(opt => {
-            const checked = selectedWeeklyVendedores.has(opt.value) ? 'checked' : '';
-            html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
-                        <input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600">
-                        <span class="ml-2 text-sm text-slate-300 truncate">${opt.label}</span>
-                     </label>`;
-        });
-        dd.innerHTML = html;
-        updateWeeklyFilterText('weekly-vendedor-filter-text', selectedWeeklyVendedores, 'Todos');
-    }
 
     function updateWeeklySupplierFilter() {
         const dd = document.getElementById('weekly-fornecedor-filter-dropdown');
@@ -28021,34 +27922,7 @@ const supervisorGroups = new Map();
         }
 
         function updatePositivacaoVendedorFilter() {
-            const dropdown = document.getElementById('positivacao-vendedor-filter-dropdown');
-            if(!dropdown) return;
-
-            const validRcas = new Set();
-            if (selectedPositivacaoSupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => {
-                    if (selectedPositivacaoSupervisors.has(d.supervisor)) validRcas.add(code);
-                });
-
-
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-
-            let options = [];
-            validRcas.forEach(rca => {
-                const details = sellerDetailsMap.get(rca);
-                options.push({ value: rca, label: details ? (details.name || rca) : rca });
-            });
-            options.sort((a,b) => a.label.localeCompare(b.label));
-
-            let html = '';
-            options.forEach(opt => {
-                const checked = selectedPositivacaoVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
-            updateFilterButtonText(document.getElementById('positivacao-vendedor-filter-text'), selectedPositivacaoVendedores, 'Todos');
+            updateGenericVendedorFilter('positivacao-vendedor-filter-dropdown', 'positivacao-vendedor-filter-text', selectedPositivacaoSupervisors, selectedPositivacaoVendedores);
         }
 
         function setupCoverageSupervisorFilterHandlers() {
@@ -28138,34 +28012,7 @@ const supervisorGroups = new Map();
         }
 
         function updateCoverageVendedorFilter() {
-            const dropdown = document.getElementById('coverage-vendedor-filter-dropdown');
-            if(!dropdown) return;
-
-            const validRcas = new Set();
-            if (selectedCoverageSupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => {
-                    if (selectedCoverageSupervisors.has(d.supervisor)) validRcas.add(code);
-                });
-
-
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-
-            let options = [];
-            validRcas.forEach(rca => {
-                const details = sellerDetailsMap.get(rca);
-                options.push({ value: rca, label: details ? (details.name || rca) : rca });
-            });
-            options.sort((a,b) => a.label.localeCompare(b.label));
-
-            let html = '';
-            options.forEach(opt => {
-                const checked = selectedCoverageVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
-            updateFilterButtonText(document.getElementById('coverage-vendedor-filter-text'), selectedCoverageVendedores, 'Todos');
+            updateGenericVendedorFilter('coverage-vendedor-filter-dropdown', 'coverage-vendedor-filter-text', selectedCoverageSupervisors, selectedCoverageVendedores);
         }
 
         function setupMixSupervisorFilterHandlers() {
@@ -28285,34 +28132,7 @@ const supervisorGroups = new Map();
         }
 
         function updateMixVendedorFilter() {
-            const dropdown = document.getElementById('mix-vendedor-filter-dropdown');
-            if(!dropdown) return;
-
-            const validRcas = new Set();
-            if (selectedMixSupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => {
-                    if (selectedMixSupervisors.has(d.supervisor)) validRcas.add(code);
-                });
-
-
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-
-            let options = [];
-            validRcas.forEach(rca => {
-                const details = sellerDetailsMap.get(rca);
-                options.push({ value: rca, label: details ? (details.name || rca) : rca });
-            });
-            options.sort((a,b) => a.label.localeCompare(b.label));
-
-            let html = '';
-            options.forEach(opt => {
-                const checked = selectedMixVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
-            updateFilterButtonText(document.getElementById('mix-vendedor-filter-text'), selectedMixVendedores, 'Todos');
+            updateGenericVendedorFilter('mix-vendedor-filter-dropdown', 'mix-vendedor-filter-text', selectedMixSupervisors, selectedMixVendedores);
         }
 
         function setupComparisonFilialFilterHandlers() {
@@ -28632,34 +28452,7 @@ const supervisorGroups = new Map();
         }
 
         function updateInnovationsMonthVendedorFilter() {
-            const dropdown = document.getElementById('innovations-month-vendedor-filter-dropdown');
-            if(!dropdown) return;
-
-            const validRcas = new Set();
-            if (selectedInnovationsMonthSupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => {
-                    if (selectedInnovationsMonthSupervisors.has(d.supervisor)) validRcas.add(code);
-                });
-
-
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-
-            let options = [];
-            validRcas.forEach(rca => {
-                const details = sellerDetailsMap.get(rca);
-                options.push({ value: rca, label: details ? (details.name || rca) : rca });
-            });
-            options.sort((a,b) => a.label.localeCompare(b.label));
-
-            let html = '';
-            options.forEach(opt => {
-                const checked = selectedInnovationsMonthVendedores.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
-            updateFilterButtonText(document.getElementById('innovations-month-vendedor-filter-text'), selectedInnovationsMonthVendedores, 'Todos');
+            updateGenericVendedorFilter('innovations-month-vendedor-filter-dropdown', 'innovations-month-vendedor-filter-text', selectedInnovationsMonthSupervisors, selectedInnovationsMonthVendedores);
         }
 
         function setupTitulosSupervisorFilterHandlers() {
@@ -28732,16 +28525,7 @@ const supervisorGroups = new Map();
         }
 
         function updateTitulosVendedorFilter() {
-            const dropdown = document.getElementById('titulos-vendedor-filter-dropdown');
-            if(!dropdown) return;
-            const validRcas = new Set();
-            if (selectedTitulosSupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => { if (selectedTitulosSupervisors.has(d.supervisor)) validRcas.add(code); });
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-            renderRcaCheckboxDropdown(dropdown, validRcas, selectedTitulosVendedores);
-            updateFilterButtonText(document.getElementById('titulos-vendedor-filter-text'), selectedTitulosVendedores, 'Todos');
+            updateGenericVendedorFilter('titulos-vendedor-filter-dropdown', 'titulos-vendedor-filter-text', selectedTitulosSupervisors, selectedTitulosVendedores);
         }
 
         function setupLpSupervisorFilterHandlers() {
@@ -28814,16 +28598,7 @@ const supervisorGroups = new Map();
         }
 
         function updateLpVendedorFilter() {
-            const dropdown = document.getElementById('lp-vendedor-filter-dropdown');
-            if(!dropdown) return;
-            const validRcas = new Set();
-            if (selectedLpSupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => { if (selectedLpSupervisors.has(d.supervisor)) validRcas.add(code); });
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-            renderRcaCheckboxDropdown(dropdown, validRcas, selectedLpVendedores);
-            updateFilterButtonText(document.getElementById('lp-vendedor-filter-text'), selectedLpVendedores, 'Todos');
+            updateGenericVendedorFilter('lp-vendedor-filter-dropdown', 'lp-vendedor-filter-text', selectedLpSupervisors, selectedLpVendedores);
         }
 
         function setupHistorySupervisorFilterHandlers() {
@@ -28898,16 +28673,7 @@ const supervisorGroups = new Map();
         }
 
         function updateHistoryVendedorFilter() {
-            const dropdown = document.getElementById('history-vendedor-filter-dropdown');
-            if(!dropdown) return;
-            const validRcas = new Set();
-            if (selectedHistorySupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => { if (selectedHistorySupervisors.has(d.supervisor)) validRcas.add(code); });
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-            renderRcaCheckboxDropdown(dropdown, validRcas, selectedHistoryVendedores);
-            updateFilterButtonText(document.getElementById('history-vendedor-filter-text'), selectedHistoryVendedores, 'Todos');
+            updateGenericVendedorFilter('history-vendedor-filter-dropdown', 'history-vendedor-filter-text', selectedHistorySupervisors, selectedHistoryVendedores);
         }
 
         function setupStockSupervisorFilterHandlers() {
@@ -28988,16 +28754,7 @@ const supervisorGroups = new Map();
         }
 
         function updateStockVendedorFilter() {
-            const dropdown = document.getElementById('stock-vendedor-filter-dropdown');
-            if(!dropdown) return;
-            const validRcas = new Set();
-            if (selectedStockSupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => { if (selectedStockSupervisors.has(d.supervisor)) validRcas.add(code); });
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-            renderRcaCheckboxDropdown(dropdown, validRcas, selectedStockVendedores);
-            updateFilterButtonText(document.getElementById('stock-vendedor-filter-text'), selectedStockVendedores, 'Todos');
+            updateGenericVendedorFilter('stock-vendedor-filter-dropdown', 'stock-vendedor-filter-text', selectedStockSupervisors, selectedStockVendedores);
         }
 
         function renderPositivacaoView() {
@@ -30916,16 +30673,7 @@ const supervisorGroups = new Map();
         }
 
         function updateGoalsGvVendedorFilter() {
-            const dropdown = document.getElementById('goals-gv-seller-filter-dropdown');
-            if(!dropdown) return;
-            const validRcas = new Set();
-            if (selectedGoalsGvSupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => { if (selectedGoalsGvSupervisors.has(d.supervisor)) validRcas.add(code); });
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-            renderRcaCheckboxDropdown(dropdown, validRcas, selectedGoalsGvVendedores);
-            updateFilterButtonText(document.getElementById('goals-gv-seller-filter-text'), selectedGoalsGvVendedores, 'Todos');
+            updateGenericVendedorFilter('goals-gv-seller-filter-dropdown', 'goals-gv-seller-filter-text', selectedGoalsGvSupervisors, selectedGoalsGvVendedores);
         }
 
         function updateGoalsSummarySupervisorFilter() {
@@ -30938,16 +30686,7 @@ const supervisorGroups = new Map();
         }
 
         function updateGoalsSummaryVendedorFilter() {
-            const dropdown = document.getElementById('goals-summary-seller-filter-dropdown');
-            if(!dropdown) return;
-            const validRcas = new Set();
-            if (selectedGoalsSummarySupervisors.size > 0) {
-                sellerDetailsMap.forEach((d, code) => { if (selectedGoalsSummarySupervisors.has(d.supervisor)) validRcas.add(code); });
-            } else {
-                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
-            }
-            renderRcaCheckboxDropdown(dropdown, validRcas, selectedGoalsSummaryVendedores);
-            updateFilterButtonText(document.getElementById('goals-summary-seller-filter-text'), selectedGoalsSummaryVendedores, 'Todos');
+            updateGenericVendedorFilter('goals-summary-seller-filter-dropdown', 'goals-summary-seller-filter-text', selectedGoalsSummarySupervisors, selectedGoalsSummaryVendedores);
         }
 
         function updateGoalsSvSupervisorFilter() {
@@ -30983,6 +30722,20 @@ const supervisorGroups = new Map();
                 html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
+        }
+
+        // Generic helper for rendering Vendedor filters based on selected Supervisors
+        function updateGenericVendedorFilter(dropdownId, textId, selectedSupervisorsSet, selectedVendedoresSet) {
+            const dropdown = document.getElementById(dropdownId);
+            if (!dropdown) return;
+            const validRcas = new Set();
+            if (selectedSupervisorsSet.size > 0) {
+                sellerDetailsMap.forEach((d, code) => { if (selectedSupervisorsSet.has(d.supervisor)) validRcas.add(code); });
+            } else {
+                sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            }
+            renderRcaCheckboxDropdown(dropdown, validRcas, selectedVendedoresSet);
+            updateFilterButtonText(document.getElementById(textId), selectedVendedoresSet, 'Todos');
         }
 
     window.openImageModal = function(imageUrl, title) {
