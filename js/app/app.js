@@ -6406,9 +6406,27 @@
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 if (isAmericanas) return true;
+                if (rca1 === '53') return false; // Exclude virtual inactive code if necessary
                 if (rca1 === '') return false;
                 return true;
             });
+
+            // Apply Supervisor Filter (goals-summary)
+            if (selectedGoalsSummarySupervisors.size > 0) {
+                filteredSummaryClients = filteredSummaryClients.filter(c => {
+                    const rca1 = String(c.rca1 || '').trim();
+                    const details = sellerDetailsMap.get(rca1);
+                    return details && details.supervisor && selectedGoalsSummarySupervisors.has(details.supervisor);
+                });
+            }
+
+            // Apply Seller Filter (goals-summary)
+            if (selectedGoalsSummarySellers.size > 0) {
+                filteredSummaryClients = filteredSummaryClients.filter(c => {
+                    const rca1 = String(c.rca1 || '').trim();
+                    return selectedGoalsSummarySellers.has(rca1);
+                });
+            }
 
             // Calculate Metrics based on filtered clients
             // Since getMetricsForSupervisors only handles supervisor list, we need to rebuild metrics from scratch for arbitrary client list?
