@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="js/app/utils.js"></script>
+<script>
+    // Create some dummy data
+    const len = 50000;
+    const columns = {
+        'TIPOVENDA': new Array(len).fill(1).map((_, i) => (i % 5) + 1),
+        'CODCLI': new Array(len).fill(1).map((_, i) => i)
+    };
+
+    const data = {
+        columns: ['TIPOVENDA', 'CODCLI'],
+        values: columns,
+        length: len
+    };
+
+    window.allSalesData = new ColumnarDataset(data);
+    window.allHistoryData = new ColumnarDataset(data);
+
+    const t0 = performance.now();
+    const availableTypes1 = new Set([...allSalesData.map(s => String(s.TIPOVENDA)), ...allHistoryData.map(s => String(s.TIPOVENDA))]);
+    const t1 = performance.now();
+    console.log("Original map chain took: " + (t1 - t0) + " ms");
+    console.log("Original sizes: ", availableTypes1.size);
+
+    const t2 = performance.now();
+    const availableTypes2 = new Set();
+    // optimize with direct access
+    let isColSales = typeof allSalesData.get === 'function';
+    let isColHist = typeof allHistoryData.get === 'function';
+
+    let salesTV = isColSales ? allSalesData._data['TIPOVENDA'] : null;
+    let histTV = isColHist ? allHistoryData._data['TIPOVENDA'] : null;
+
+    if (isColSales && salesTV) {
+        for(let i = 0; i < allSalesData.length; i++) availableTypes2.add(String(salesTV[i]));
+    } else {
+        for(let i = 0; i < allSalesData.length; i++) availableTypes2.add(String(allSalesData[i].TIPOVENDA));
+    }
+
+    if (isColHist && histTV) {
+        for(let i = 0; i < allHistoryData.length; i++) availableTypes2.add(String(histTV[i]));
+    } else {
+         for(let i = 0; i < allHistoryData.length; i++) availableTypes2.add(String(allHistoryData[i].TIPOVENDA));
+    }
+    const t3 = performance.now();
+    console.log("Optimized loop took: " + (t3 - t2) + " ms");
+    console.log("Optimized sizes: ", availableTypes2.size);
+
+</script>
+</head>
+<body>
+</body>
+</html>

@@ -1,0 +1,6 @@
+[
+  {
+    "comment_id": "review-1",
+    "reply": "The codebase instructions in `.jules/bolt.md` specifically mandate this optimization pattern for `ColumnarDataset` proxies to avoid expensive object creation and memory allocation. It clearly states: 'When iterating, check `typeof dataset.get === 'function'` instead of `instanceof ColumnarDataset` to safely handle both array and proxy types... Use `.get(i)` inside the loop if it's a proxy.' The implementation follows this critical project-specific rule."
+  }
+]
