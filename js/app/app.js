@@ -11385,7 +11385,7 @@ const supervisorGroups = new Map();
                 for (let i = 0; i < tiposVendaToShow.length; i++) {
                     const s = tiposVendaToShow[i];
                     const isChecked = selectedArray.includes(s);
-                    htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${s}" ${isChecked ? 'checked' : ''}><span class="ml-2">${s}</span></label>`);
+                    htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${window.escapeHtml(s)}" ${isChecked ? 'checked' : ''}><span class="ml-2">${window.escapeHtml(s)}</span></label>`);
                 }
                 dropdown.innerHTML = htmlParts.join('');
             }
@@ -11410,7 +11410,7 @@ const supervisorGroups = new Map();
             for (let i = 0; i < redesToShow.length; i++) {
                 const r = redesToShow[i];
                 const isChecked = validSelected.includes(r);
-                htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${r}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-sm">${r}</span></label>`);
+                htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${window.escapeHtml(r)}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-sm">${window.escapeHtml(r)}</span></label>`);
             }
             dropdown.innerHTML = htmlParts.join('');
 
@@ -12124,7 +12124,7 @@ const supervisorGroups = new Map();
 
                     let displayName = name;
 
-                    htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${cod}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-xs">${displayName}</span></label>`);
+                    htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${window.escapeHtml(cod)}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-xs">${window.escapeHtml(displayName)}</span></label>`);
                 }
                 dropdown.innerHTML = htmlParts.join('');
             }
@@ -25477,8 +25477,8 @@ const supervisorGroups = new Map();
                 cats.sort().forEach(c => {
                     const checked = selectedStockCategories.includes(c) ? 'checked' : '';
                     html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
-                                <input type="checkbox" value="${c}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
-                                <span class="ml-2 text-sm text-slate-300">${c}</span>
+                                <input type="checkbox" value="${window.escapeHtml(c)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                                <span class="ml-2 text-sm text-slate-300">${window.escapeHtml(c)}</span>
                              </label>`;
                 });
 
@@ -26319,8 +26319,8 @@ const supervisorGroups = new Map();
         sorted.forEach(s => {
             const checked = selectedWeeklySupervisors.has(s) ? 'checked' : '';
             html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
-                        <input type="checkbox" value="${s}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600">
-                        <span class="ml-2 text-sm text-slate-300">${s}</span>
+                        <input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600">
+                        <span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span>
                      </label>`;
         });
         dd.innerHTML = html;
