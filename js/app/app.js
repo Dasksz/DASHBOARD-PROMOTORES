@@ -14147,7 +14147,22 @@ const supervisorGroups = new Map();
             // --- OPTIMIZED AGGREGATION LOGIC ---
 
             // Determine types to use
-            const availableTypes = new Set([...allSalesData.map(s => String(s.TIPOVENDA)), ...allHistoryData.map(s => String(s.TIPOVENDA))]);
+            // ⚡ Bolt Optimization: Replaced expensive `.map()` calls on large ColumnarDataset proxies with optimized vanilla `for` loops.
+            // This prevents the allocation of two massive intermediate arrays and avoids triggering proxy overhead
+            // for every single row, significantly reducing memory usage and main thread blocking during re-renders.
+            const availableTypes = new Set();
+            const processTypes = (dataset) => {
+                if (!dataset || !dataset.length) return;
+                const isCol = typeof dataset.get === 'function';
+                const len = dataset.length;
+                for (let i = 0; i < len; i++) {
+                    const tipo = isCol ? (dataset._data['TIPOVENDA'] ? dataset._data['TIPOVENDA'][i] : dataset.get(i).TIPOVENDA) : dataset[i].TIPOVENDA;
+                    if (tipo !== undefined) availableTypes.add(String(tipo));
+                }
+            };
+            processTypes(allSalesData);
+            processTypes(allHistoryData);
+
             let currentSelection = selectedInnovationsMonthTiposVenda.length > 0 ? selectedInnovationsMonthTiposVenda : Array.from(availableTypes);
             const currentSelectionKey = currentSelection.slice().sort().join(',');
 
