@@ -6,3 +6,8 @@
 **Vulnerability:** XSS vulnerability through HTML injection in `.innerHTML` dropdown components like `updateMixSupervisorFilter` when they fail to sanitize filter option strings.
 **Learning:** The application heavily duplicates dropdown filter functions across views. If one filter template literal misses escaping, it is likely that dozens of other duplicated filter functions contain the same vulnerability. These values, such as supervisor names or product codes, could contain unescaped quotes or HTML characters that break the markup.
 **Prevention:** Use the globally available `window.escapeHtml()` function consistently for *all* user-provided or dynamic data passed to `.innerHTML` string templates.
+
+## 2024-05-24 - XSS in dynamic `.innerHTML` mappings
+**Vulnerability:** Found XSS vulnerabilities in `js/app/app.js` and `js/app/app_part3.js` where user-controlled strings (like supervisor names, client IDs, and chart labels) were dynamically inserted into HTML templates using `.innerHTML` without sanitization.
+**Learning:** Arrays mapped directly into HTML template literals or object entries iterated to build DOM strings are extremely common in this codebase. When variables are inserted dynamically without `window.escapeHtml()`, they become vulnerable to XSS if the data source contains special characters (`<`, `>`, `&`, `'`, `"`).
+**Prevention:** Always ensure that any variables injected into template literals assigned via `.innerHTML` are wrapped in `window.escapeHtml()`, particularly when dealing with mapped arrays, dynamically created rows, or object entries.
