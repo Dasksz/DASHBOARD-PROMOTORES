@@ -5693,14 +5693,9 @@
         }
 
         function updateMetaRealizadoSupervisorFilter() {
-            const dropdown = document.getElementById('meta-realizado-supervisor-filter-dropdown');
-            if(!dropdown) return;
-
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
-
-            renderCheckboxDropdown(dropdown, supervisors, selectedMetaRealizadoSupervisors);
-            updateFilterButtonText(document.getElementById('meta-realizado-supervisor-filter-text'), selectedMetaRealizadoSupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('meta-realizado-supervisor-filter-dropdown', 'meta-realizado-supervisor-filter-text', selectedMetaRealizadoSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
+            }
         }
 
         function updateMetaRealizadoVendedorFilter() {
@@ -11641,19 +11636,9 @@ const supervisorGroups = new Map();
         }
 
         function updateCitySupervisorFilter() {
-            const dropdown = document.getElementById('city-supervisor-filter-dropdown');
-            if(!dropdown) return;
-
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
-
-            let html = '';
-            Array.from(supervisors).sort().forEach(s => {
-                const checked = selectedCitySupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
-            updateFilterButtonText(document.getElementById('city-supervisor-filter-text'), selectedCitySupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('city-supervisor-filter-dropdown', 'city-supervisor-filter-text', selectedCitySupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
+            }
         }
 
         function updateCityVendedorFilter() {
@@ -13082,19 +13067,9 @@ const supervisorGroups = new Map();
         }
 
         function updateComparisonSupervisorFilter() {
-            const dropdown = document.getElementById('comparison-supervisor-filter-dropdown');
-            if(!dropdown) return;
-
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
-
-            let html = '';
-            Array.from(supervisors).sort().forEach(s => {
-                const checked = selectedComparisonSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
-            updateFilterButtonText(document.getElementById('comparison-supervisor-filter-text'), selectedComparisonSupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('comparison-supervisor-filter-dropdown', 'comparison-supervisor-filter-text', selectedComparisonSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
+            }
         }
 
         function updateComparisonVendedorFilter() {
@@ -26312,8 +26287,8 @@ const supervisorGroups = new Map();
         updateWeeklySupplierFilter();
     }
 
-    function updateWeeklyFilterText(elementId, set, defaultText) {
-        const el = document.getElementById(elementId);
+    function updateWeeklyFilterText(elementIdOrElement, set, defaultText) {
+        const el = typeof elementIdOrElement === 'string' ? document.getElementById(elementIdOrElement) : elementIdOrElement;
         if(!el) return;
         if (set.size === 0) el.textContent = defaultText;
         else if (set.size === 1) el.textContent = set.values().next().value;
@@ -26321,26 +26296,10 @@ const supervisorGroups = new Map();
     }
 
     function updateWeeklySupervisorFilter() {
-        const dd = document.getElementById('weekly-supervisor-filter-dropdown');
-        if(!dd) return;
-        // Collect Supervisors from allSalesData (current)
-        const supervisors = new Set();
-        sellerDetailsMap.forEach(d => {
-            if (d.supervisor) supervisors.add(d.supervisor);
-        });
-        
-        let html = '';
-        const sorted = Array.from(supervisors).sort();
-        sorted.forEach(s => {
-            const checked = selectedWeeklySupervisors.has(s) ? 'checked' : '';
-            html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
-                        <input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600">
-                        <span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span>
-                     </label>`;
-        });
-        dd.innerHTML = html;
-        updateWeeklyFilterText('weekly-supervisor-filter-text', selectedWeeklySupervisors, 'Todos');
-    }
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('weekly-supervisor-filter-dropdown', 'weekly-supervisor-filter-text', selectedWeeklySupervisors, sellerDetailsMap, updateWeeklyFilterText, 'Todos', 'text-orange-500');
+            }
+        }
 
     function updateWeeklyVendedorFilter() {
             if (typeof window.updateGenericVendedorFilter === 'function') {
@@ -27939,19 +27898,9 @@ const supervisorGroups = new Map();
         }
 
         function updatePositivacaoSupervisorFilter() {
-            const dropdown = document.getElementById('positivacao-supervisor-filter-dropdown');
-            if(!dropdown) return;
-
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
-
-            let html = '';
-            Array.from(supervisors).sort().forEach(s => {
-                const checked = selectedPositivacaoSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
-            updateFilterButtonText(document.getElementById('positivacao-supervisor-filter-text'), selectedPositivacaoSupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('positivacao-supervisor-filter-dropdown', 'positivacao-supervisor-filter-text', selectedPositivacaoSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
+            }
         }
 
         function updatePositivacaoVendedorFilter() {
@@ -28031,19 +27980,9 @@ const supervisorGroups = new Map();
         }
 
         function updateCoverageSupervisorFilter() {
-            const dropdown = document.getElementById('coverage-supervisor-filter-dropdown');
-            if(!dropdown) return;
-
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
-
-            let html = '';
-            Array.from(supervisors).sort().forEach(s => {
-                const checked = selectedCoverageSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
-            updateFilterButtonText(document.getElementById('coverage-supervisor-filter-text'), selectedCoverageSupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('coverage-supervisor-filter-dropdown', 'coverage-supervisor-filter-text', selectedCoverageSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
+            }
         }
 
         function updateCoverageVendedorFilter() {
@@ -28153,19 +28092,9 @@ const supervisorGroups = new Map();
         }
 
         function updateMixSupervisorFilter() {
-            const dropdown = document.getElementById('mix-supervisor-filter-dropdown');
-            if(!dropdown) return;
-
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
-
-            let html = '';
-            Array.from(supervisors).sort().forEach(s => {
-                const checked = selectedMixSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
-            updateFilterButtonText(document.getElementById('mix-supervisor-filter-text'), selectedMixSupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('mix-supervisor-filter-dropdown', 'mix-supervisor-filter-text', selectedMixSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
+            }
         }
 
         function updateMixVendedorFilter() {
@@ -28475,19 +28404,9 @@ const supervisorGroups = new Map();
         }
 
         function updateInnovationsMonthSupervisorFilter() {
-            const dropdown = document.getElementById('innovations-month-supervisor-filter-dropdown');
-            if(!dropdown) return;
-
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
-
-            let html = '';
-            Array.from(supervisors).sort().forEach(s => {
-                const checked = selectedInnovationsMonthSupervisors.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
-            updateFilterButtonText(document.getElementById('innovations-month-supervisor-filter-text'), selectedInnovationsMonthSupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('innovations-month-supervisor-filter-dropdown', 'innovations-month-supervisor-filter-text', selectedInnovationsMonthSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
+            }
         }
 
         function updateInnovationsMonthVendedorFilter() {
@@ -28557,12 +28476,9 @@ const supervisorGroups = new Map();
         }
 
         function updateTitulosSupervisorFilter() {
-            const dropdown = document.getElementById('titulos-supervisor-filter-dropdown');
-            if(!dropdown) return;
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
-            renderCheckboxDropdown(dropdown, supervisors, selectedTitulosSupervisors);
-            updateFilterButtonText(document.getElementById('titulos-supervisor-filter-text'), selectedTitulosSupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('titulos-supervisor-filter-dropdown', 'titulos-supervisor-filter-text', selectedTitulosSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
+            }
         }
 
         function updateTitulosVendedorFilter() {
@@ -28632,12 +28548,9 @@ const supervisorGroups = new Map();
         }
 
         function updateLpSupervisorFilter() {
-            const dropdown = document.getElementById('lp-supervisor-filter-dropdown');
-            if(!dropdown) return;
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
-            renderCheckboxDropdown(dropdown, supervisors, selectedLpSupervisors);
-            updateFilterButtonText(document.getElementById('lp-supervisor-filter-text'), selectedLpSupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('lp-supervisor-filter-dropdown', 'lp-supervisor-filter-text', selectedLpSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
+            }
         }
 
         function updateLpVendedorFilter() {
@@ -28709,12 +28622,9 @@ const supervisorGroups = new Map();
         }
 
         function updateHistorySupervisorFilter() {
-            const dropdown = document.getElementById('history-supervisor-filter-dropdown');
-            if(!dropdown) return;
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
-            renderCheckboxDropdown(dropdown, supervisors, selectedHistorySupervisors);
-            updateFilterButtonText(document.getElementById('history-supervisor-filter-text'), selectedHistorySupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('history-supervisor-filter-dropdown', 'history-supervisor-filter-text', selectedHistorySupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
+            }
         }
 
         function updateHistoryVendedorFilter() {
@@ -28792,12 +28702,9 @@ const supervisorGroups = new Map();
         }
 
         function updateStockSupervisorFilter() {
-            const dropdown = document.getElementById('stock-supervisor-filter-dropdown');
-            if(!dropdown) return;
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor) supervisors.add(d.supervisor); });
-            renderCheckboxDropdown(dropdown, supervisors, selectedStockSupervisors);
-            updateFilterButtonText(document.getElementById('stock-supervisor-filter-text'), selectedStockSupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('stock-supervisor-filter-dropdown', 'stock-supervisor-filter-text', selectedStockSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
+            }
         }
 
         function updateStockVendedorFilter() {
@@ -30713,12 +30620,9 @@ const supervisorGroups = new Map();
         }
 
         function updateGoalsGvSupervisorFilter() {
-            const dropdown = document.getElementById('goals-gv-supervisor-filter-dropdown');
-            if(!dropdown) return;
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor && d.supervisor !== '0') supervisors.add(d.supervisor); });
-            renderCheckboxDropdown(dropdown, supervisors, selectedGoalsGvSupervisors);
-            updateFilterButtonText(document.getElementById('goals-gv-supervisor-filter-text'), selectedGoalsGvSupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('goals-gv-supervisor-filter-dropdown', 'goals-gv-supervisor-filter-text', selectedGoalsGvSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500', (d) => d.supervisor && d.supervisor !== '0');
+            }
         }
 
         function updateGoalsGvVendedorFilter() {
@@ -30728,12 +30632,9 @@ const supervisorGroups = new Map();
         }
 
         function updateGoalsSummarySupervisorFilter() {
-            const dropdown = document.getElementById('goals-summary-supervisor-filter-dropdown');
-            if(!dropdown) return;
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor && d.supervisor !== '0') supervisors.add(d.supervisor); });
-            renderCheckboxDropdown(dropdown, supervisors, selectedGoalsSummarySupervisors);
-            updateFilterButtonText(document.getElementById('goals-summary-supervisor-filter-text'), selectedGoalsSummarySupervisors, 'Todos');
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('goals-summary-supervisor-filter-dropdown', 'goals-summary-supervisor-filter-text', selectedGoalsSummarySupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500', (d) => d.supervisor && d.supervisor !== '0');
+            }
         }
 
         function updateGoalsSummaryVendedorFilter() {
@@ -30743,22 +30644,9 @@ const supervisorGroups = new Map();
         }
 
         function updateGoalsSvSupervisorFilter() {
-            const dropdown = document.getElementById('goals-sv-supervisor-filter-dropdown');
-            if(!dropdown) return;
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => { if(d.supervisor && d.supervisor !== '0') supervisors.add(d.supervisor); });
-            renderCheckboxDropdown(dropdown, supervisors, selectedGoalsSvSupervisors);
-            updateFilterButtonText(document.getElementById('goals-sv-supervisor-filter-text'), selectedGoalsSvSupervisors, 'Todos');
-        }
-
-        // Helper for rendering checkboxes (DRY)
-        function renderCheckboxDropdown(dropdown, valuesSet, selectedSet) {
-            let html = '';
-            Array.from(valuesSet).sort().forEach(s => {
-                const checked = selectedSet.has(s) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
-            });
-            dropdown.innerHTML = html;
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('goals-sv-supervisor-filter-dropdown', 'goals-sv-supervisor-filter-text', selectedGoalsSvSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500', (d) => d.supervisor && d.supervisor !== '0');
+            }
         }
 
         function renderRcaCheckboxDropdown(dropdown, rcaSet, selectedSet) {
