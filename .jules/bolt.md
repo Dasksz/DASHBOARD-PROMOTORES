@@ -5,3 +5,6 @@
 ## 2024-05-16 - Avoid spread syntax with `.map()` on ColumnarDataset
 **Learning:** Extracting unique values from large datasets using `new Set([...dataset.map(...)])` allocates massive intermediate arrays and triggers severe proxy overhead on `ColumnarDataset` instances, blocking the main thread during view updates.
 **Action:** Always use a vanilla `for` loop to build sets from large proxy arrays. Iterate by `length`, access the underlying array via `_data['COLUMN']` directly (with a fallback to `.get(i)`), and add items to the `Set` individually.
+## 2026-04-05 - Optimize array method chains before new Set()
+**Learning:** Using `new Set(array.map(fn))` or `new Set([...array1, ...array2])` creates short-lived intermediate arrays that increase memory usage and garbage collection overhead, especially in hot paths over large datasets.
+**Action:** Always use vanilla `for` loops to directly populate sets instead of chaining `map` or spread operators when dealing with arrays.
