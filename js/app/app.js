@@ -13933,7 +13933,7 @@ const supervisorGroups = new Map();
 
                     // Supervisor Table
                     const supervisorTableBody = document.getElementById('supervisorComparisonTableBody');
-                    const supRows = Object.entries(m.charts.supervisorData).map(([sup, data]) => { const variation = data.history > 0 ? ((data.current - data.history) / data.history) * 100 : (data.current > 0 ? 100 : 0); const colorClass = variation > 0 ? 'text-green-400' : variation < 0 ? 'text-red-400' : 'text-slate-400'; return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm truncate max-w-[100px]">${sup}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm ${colorClass}">${variation.toFixed(2)}%</td></tr>`; }).join('');
+                    const supRows = Object.entries(m.charts.supervisorData).map(([sup, data]) => { const variation = data.history > 0 ? ((data.current - data.history) / data.history) * 100 : (data.current > 0 ? 100 : 0); const colorClass = variation > 0 ? 'text-green-400' : variation < 0 ? 'text-red-400' : 'text-slate-400'; return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm truncate max-w-[100px]">${window.escapeHtml(sup)}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm ${colorClass}">${variation.toFixed(2)}%</td></tr>`; }).join('');
                     supervisorTableBody.innerHTML = supRows;
                 }, () => currentRenderId !== comparisonRenderId); // Cancel check
             }, () => currentRenderId !== comparisonRenderId); // Cancel check
@@ -14713,7 +14713,7 @@ const supervisorGroups = new Map();
             const innovationsByClientLegend = document.getElementById('innovations-by-client-legend');
 
             categoryLegendForExport = chartLabels.map((name, index) => `${index + 1} - ${name}`);
-            if (innovationsByClientLegend) innovationsByClientLegend.innerHTML = `<strong>Legenda:</strong> ${categoryLegendForExport.join('; ')}`;
+            if (innovationsByClientLegend) innovationsByClientLegend.innerHTML = `<strong>Legenda:</strong> ${window.escapeHtml(categoryLegendForExport.join('; '))}`;
 
             let tableHeadHTML = `
                 <tr>
