@@ -1657,8 +1657,8 @@
                 const checked = selectedSet.has(opt.value) ? 'checked' : '';
                 html += `
                     <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer">
-                        <span class="text-xs text-slate-300 truncate mr-2">${opt.label}</span>
-                        <input type="checkbox" value="${opt.value}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                        <span class="text-xs text-slate-300 truncate mr-2">${window.escapeHtml(opt.label)}</span>
+                        <input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
                     </label>
                 `;
             });
@@ -14115,8 +14115,8 @@ const supervisorGroups = new Map();
                 allCategories.forEach(cat => {
                     const isSelected = cat === currentFilterValue;
                     html += `
-                        <div class="dropdown-item p-2 hover:bg-slate-700 rounded cursor-pointer group flex items-center justify-between" data-value="${cat}">
-                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">${cat}</span>
+                        <div class="dropdown-item p-2 hover:bg-slate-700 rounded cursor-pointer group flex items-center justify-between" data-value="${window.escapeHtml(cat)}">
+                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">${window.escapeHtml(cat)}</span>
                             ${isSelected ? '<svg class="w-4 h-4 text-[#FF5E00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' : ''}
                         </div>
                     `;
@@ -20571,13 +20571,13 @@ const supervisorGroups = new Map();
                                 <div class="p-5 border-b border-slate-700 bg-glass">
                                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                                         <div class="w-2 h-8 bg-blue-500 rounded-full"></div>
-                                        ${sup.name}
+                                        ${window.escapeHtml(sup.name)}
                                     </h3>
                                 </div>
                                 <div class="p-6 flex-1">
                                     <div class="mb-6">
                                         <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Análise do Time</h4>
-                                        <p class="text-slate-300 text-sm leading-relaxed">${sup.analysis}</p>
+                                        <p class="text-slate-300 text-sm leading-relaxed">${window.escapeHtml(sup.analysis)}</p>
                                     </div>
 
                                     <div>
@@ -20612,17 +20612,17 @@ const supervisorGroups = new Map();
 
                                 // Format metric with bold prefix
                                 const metricParts = v.metric.split('(');
-                                let formattedMetric = v.metric;
+                                let formattedMetric = window.escapeHtml(v.metric);
                                 if (metricParts.length > 1) {
-                                    formattedMetric = `<span class="text-slate-300 font-medium">${metricParts[0]}</span> <span class="text-slate-500 text-xs">(${metricParts[1]}</span>`;
+                                    formattedMetric = `<span class="text-slate-300 font-medium">${window.escapeHtml(metricParts[0])}</span> <span class="text-slate-500 text-xs">(${window.escapeHtml(metricParts[1])}</span>`;
                                 }
 
                                 html += `
                                     <tr class="hover:bg-slate-700/40 transition-colors group">
-                                        <td class="px-4 py-3 font-medium text-white group-hover:text-blue-300 transition-colors">${v.seller}</td>
+                                        <td class="px-4 py-3 font-medium text-white group-hover:text-blue-300 transition-colors">${window.escapeHtml(v.seller)}</td>
                                         <td class="px-4 py-3 text-slate-400">${formattedMetric}</td>
                                         <td class="px-4 py-3 font-mono text-xs text-right whitespace-nowrap">${coloredChange}</td>
-                                        <td class="px-4 py-3 text-blue-300/90 text-xs italic border-l border-slate-700/50 pl-4">"${v.insight}"</td>
+                                        <td class="px-4 py-3 text-blue-300/90 text-xs italic border-l border-slate-700/50 pl-4">"${window.escapeHtml(v.insight)}"</td>
                                     </tr>
                                 `;
                             });

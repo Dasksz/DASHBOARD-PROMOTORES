@@ -228,13 +228,13 @@
                                 <div class="p-5 border-b border-slate-700 bg-glass">
                                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                                         <div class="w-2 h-8 bg-blue-500 rounded-full"></div>
-                                        ${sup.name}
+                                        ${window.escapeHtml(sup.name)}
                                     </h3>
                                 </div>
                                 <div class="p-6 flex-1">
                                     <div class="mb-6">
                                         <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Análise do Time</h4>
-                                        <p class="text-slate-300 text-sm leading-relaxed">${sup.analysis}</p>
+                                        <p class="text-slate-300 text-sm leading-relaxed">${window.escapeHtml(sup.analysis)}</p>
                                     </div>
 
                                     <div>
@@ -269,17 +269,17 @@
 
                                 // Format metric with bold prefix
                                 const metricParts = v.metric.split('(');
-                                let formattedMetric = v.metric;
+                                let formattedMetric = window.escapeHtml(v.metric);
                                 if (metricParts.length > 1) {
-                                    formattedMetric = `<span class="text-slate-300 font-medium">${metricParts[0]}</span> <span class="text-slate-500 text-xs">(${metricParts[1]}</span>`;
+                                    formattedMetric = `<span class="text-slate-300 font-medium">${window.escapeHtml(metricParts[0])}</span> <span class="text-slate-500 text-xs">(${window.escapeHtml(metricParts[1])}</span>`;
                                 }
 
                                 html += `
                                     <tr class="hover:bg-slate-700/40 transition-colors group">
-                                        <td class="px-4 py-3 font-medium text-white group-hover:text-blue-300 transition-colors">${v.seller}</td>
+                                        <td class="px-4 py-3 font-medium text-white group-hover:text-blue-300 transition-colors">${window.escapeHtml(v.seller)}</td>
                                         <td class="px-4 py-3 text-slate-400">${formattedMetric}</td>
                                         <td class="px-4 py-3 font-mono text-xs text-right whitespace-nowrap">${coloredChange}</td>
-                                        <td class="px-4 py-3 text-blue-300/90 text-xs italic border-l border-slate-700/50 pl-4">"${v.insight}"</td>
+                                        <td class="px-4 py-3 text-blue-300/90 text-xs italic border-l border-slate-700/50 pl-4">"${window.escapeHtml(v.insight)}"</td>
                                     </tr>
                                 `;
                             });
