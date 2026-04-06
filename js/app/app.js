@@ -3353,8 +3353,10 @@
             const mainMapRaw = new Map();
             const bonusMapRaw = new Map();
             const clientTotalMap = new Map(); // Track overall total sales per client to properly filter out positive clients (<1)
-            const mainSet = new Set(mainTypes.map(String));
-            const bonusSet = new Set(bonusTypes.map(String));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const mainSet = new Set(); for(let i=0; i<mainTypes.length; i++) mainSet.add(String(mainTypes[i]));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const bonusSet = new Set(); for(let i=0; i<bonusTypes.length; i++) bonusSet.add(String(bonusTypes[i]));
 
             salesData.forEach(sale => {
                 const tipoVendaStr = String(sale.TIPOVENDA);
@@ -4978,7 +4980,8 @@
             // Goals are derived from `globalClientGoals` and manual overrides.
             // To ensure consistency, both the base client list and the goal calculation must respect all active filters.
 
-            const filteredClientCodes = new Set(clients.map(c => String(c['Código'] || c['codigo_cliente'])));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const filteredClientCodes = new Set(); for(let i=0; i<clients.length; i++) filteredClientCodes.add(String(clients[i]['Código'] || clients[i]['codigo_cliente']));
 
             // 2. Goals Aggregation (By Seller)
             // Structure: Map<SellerName, TotalGoal>
@@ -5925,7 +5928,8 @@
             }
 
             // Optimization: Create Set of Client Codes
-            const allowedClientCodes = new Set(clients.map(c => String(c['Código'] || c['codigo_cliente'])));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const allowedClientCodes = new Set(); for(let i=0; i<clients.length; i++) allowedClientCodes.add(String(clients[i]['Código'] || clients[i]['codigo_cliente']));
 
             // 2. Aggregate Data per Client
             const clientMap = new Map(); // Map<CodCli, { clientObj, goal: 0, salesTotal: 0, salesWeeks: [] }>
@@ -6206,7 +6210,8 @@
             const prevMonthIndex = prevMonthDate.getUTCMonth();
             const prevMonthYear = prevMonthDate.getUTCFullYear();
 
-            const clientCodes = new Set(clientsList.map(c => String(c['Código'] || c['codigo_cliente'])));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const clientCodes = new Set(); for(let i=0; i<clientsList.length; i++) clientCodes.add(String(clientsList[i]['Código'] || clientsList[i]['codigo_cliente']));
 
             clientCodes.forEach(codCli => {
                 const historyIds = optimizedData.indices.history.byClient.get(normalizeKey(codCli));
@@ -7454,7 +7459,8 @@
 
             // Group by Seller to avoid duplicates if clientMetrics has multiple rows per seller?
             // clientMetrics is PER CLIENT. So we need to aggregate unique sellers first.
-            const uniqueSellers = new Set(filteredClientMetrics.map(c => c.seller));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const uniqueSellers = new Set(); for(let i=0; i<filteredClientMetrics.length; i++) uniqueSellers.add(filteredClientMetrics[i].seller);
 
             uniqueSellers.forEach(seller => {
                 const hist = getHistoricalPositivation(seller, targetKey);
@@ -7513,7 +7519,8 @@
             let totalHistoryMix = 0;
             const sellersHistory = [];
 
-            const uniqueSellers = new Set(filteredClientMetrics.map(c => c.seller));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const uniqueSellers = new Set(); for(let i=0; i<filteredClientMetrics.length; i++) uniqueSellers.add(filteredClientMetrics[i].seller);
 
             uniqueSellers.forEach(seller => {
                 const hist = getHistoricalMix(seller, type);
@@ -7797,7 +7804,8 @@
                         }
                     } else {
                         // Aggregate Logic for Multiple Sellers (Supervisor/Global)
-                        const visibleSellers = new Set(clientMetrics.map(c => c.seller));
+                        // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+                        const visibleSellers = new Set(); for(let i=0; i<clientMetrics.length; i++) visibleSellers.add(clientMetrics[i].seller);
                         const naturalPosBySeller = new Map();
 
                         // 1. Calculate Natural Pos per Seller
@@ -7933,7 +7941,8 @@
                             }
                         } else {
                             // Aggregate Logic for Multiple Sellers (Mix)
-                            const visibleSellers = new Set(clientMetrics.map(c => c.seller));
+                            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+                        const visibleSellers = new Set(); for(let i=0; i<clientMetrics.length; i++) visibleSellers.add(clientMetrics[i].seller);
                             const naturalBaseBySeller = new Map();
 
                             // 1. Calculate Natural Base per Seller
@@ -8013,7 +8022,8 @@
                     // Calculate Natural Base using ELMA metrics (excluding Americanas) for consistency
 
                     // Determine visible sellers set for filtering adjustments in helper
-                    let visibleSellersSet = new Set(clientMetrics.map(c => c.seller));
+                    // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+                    let visibleSellersSet = new Set(); for(let i=0; i<clientMetrics.length; i++) visibleSellersSet.add(clientMetrics[i].seller);
 
                     // Bugfix: If table is empty (e.g. no active clients) but we have a specific seller filter,
                     // use the filter to prevent getElmaTargetBase from returning global counts (empty set bypass).
@@ -8982,7 +8992,8 @@ const supervisorGroups = new Map();
 
             }
 
-            const clientCodes = new Set(clients.map(c => c['Código']));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const clientCodes = new Set(); for(let i=0; i<clients.length; i++) clientCodes.add(clients[i]['Código']);
 
             const filters = {
                 filial,
@@ -9143,12 +9154,17 @@ const supervisorGroups = new Map();
             const currentRenderId = coverageRenderId;
 
             const { clients, sales, history } = getCoverageFilteredData();
-            const productsToAnalyze = [...new Set([...sales.map(s => s.PRODUTO), ...history.map(s => s.PRODUTO)])];
+            // ⚡ Bolt Optimization: Replaced intermediate array allocations from .map() and spread operators with direct Set insertions for performance.
+            const productsToAnalyzeSet = new Set();
+            for(let i=0; i<sales.length; i++) productsToAnalyzeSet.add(sales[i].PRODUTO);
+            for(let i=0; i<history.length; i++) productsToAnalyzeSet.add(history[i].PRODUTO);
+            const productsToAnalyze = Array.from(productsToAnalyzeSet);
 
             const activeClientsForCoverage = clients;
             const activeClientsCount = activeClientsForCoverage.length;
             // Normalize keys for robust Set matching
-            const activeClientCodes = new Set(activeClientsForCoverage.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const activeClientCodes = new Set(); for(let i=0; i<activeClientsForCoverage.length; i++) activeClientCodes.add(normalizeKey(activeClientsForCoverage[i]['Código'] || activeClientsForCoverage[i]['codigo_cliente']));
 
             coverageActiveClientsKpi.textContent = activeClientsCount.toLocaleString('pt-BR');
 
@@ -10470,7 +10486,8 @@ const supervisorGroups = new Map();
             }
 
             // Filters for Hierarchy, Seller, and Supervisor are now pre-computed in baseFilteredHierarchyClients
-            const clientCodesInRede = new Set(clientBaseForCoverage.map(c => c['Código']));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const clientCodesInRede = new Set(); for(let i=0; i<clientBaseForCoverage.length; i++) clientCodesInRede.add(clientBaseForCoverage[i]['Código']);
 
             const intersectSets = (sets) => {
                 if (sets.length === 0) return new Set();
@@ -10605,7 +10622,8 @@ const supervisorGroups = new Map();
             const filteredHistoryData = getFilteredIds(optimizedData.indices.history, optimizedData.historyById);
 
             const hierarchyClientsForTable = baseFilteredHierarchyClients;
-            const hierarchyClientCodes = new Set(hierarchyClientsForTable.map(c => String(c['Código'] || c['codigo_cliente'])));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const hierarchyClientCodes = new Set(); for(let i=0; i<hierarchyClientsForTable.length; i++) hierarchyClientCodes.add(String(hierarchyClientsForTable[i]['Código'] || hierarchyClientsForTable[i]['codigo_cliente']));
             const isHierarchyFiltered = hierarchyClientsForTable.length < allClientsData.length;
 
             // OTIMIZAÇÃO: Set lookup O(1) inside aggregatedOrders filter loop
@@ -11551,7 +11569,8 @@ const supervisorGroups = new Map();
             }
 
             // Normalize keys for robust filtering against normalized indices
-            const clientCodes = new Set(clients.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const clientCodes = new Set(); for(let i=0; i<clients.length; i++) clientCodes.add(normalizeKey(clients[i]['Código'] || clients[i]['codigo_cliente']));
 
             const filters = {
                 city: null, // Relies on clientCodes
@@ -12280,7 +12299,8 @@ const supervisorGroups = new Map();
         function calculateAverageMixComDevolucao(salesData, targetCodfors) {
              if (!salesData || salesData.length === 0 || !targetCodfors || targetCodfors.length === 0) return 0;
 
-            const targetCodforsSet = new Set(targetCodfors.map(String));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const targetCodforsSet = new Set(); for(let i=0; i<targetCodfors.length; i++) targetCodforsSet.add(String(targetCodfors[i]));
             const clientProductNetValue = new Map();
 
             for (const sale of salesData) {
@@ -12973,7 +12993,8 @@ const supervisorGroups = new Map();
                 }
             }
             
-            const clientCodes = new Set(clients.map(c => c['Código'] || c['codigo_cliente']));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const clientCodes = new Set(); for(let i=0; i<clients.length; i++) clientCodes.add(clients[i]['Código'] || clients[i]['codigo_cliente']);
 
             const filters = {
                 filial,
@@ -13145,7 +13166,8 @@ const supervisorGroups = new Map();
 
 
             // Filter selectedArray to keep only items present in the current dataSource
-            const availableProductCodes = new Set(products.map(p => p[0]));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const availableProductCodes = new Set(); for(let i=0; i<products.length; i++) availableProductCodes.add(products[i][0]);
             selectedArray = selectedArray.filter(code => availableProductCodes.has(code));
 
             // Logic:
@@ -14117,7 +14139,8 @@ const supervisorGroups = new Map();
 
             const activeClients = filteredClients;
             const activeClientsCount = activeClients.length;
-            const activeClientCodes = new Set(activeClients.map(c => String(c['Código']).trim()));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const activeClientCodes = new Set(); for(let i=0; i<activeClients.length; i++) activeClientCodes.add(String(activeClients[i]['Código']).trim());
 
             // --- OPTIMIZED AGGREGATION LOGIC ---
 
@@ -25653,7 +25676,12 @@ const supervisorGroups = new Map();
         const filteredClients = [];
 
         // Filter by City (Stock View)
-        const citySet = selectedStockCities.length > 0 ? new Set(selectedStockCities.map(c => c.toLowerCase())) : null;
+        // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+        let citySet = null;
+        if (selectedStockCities.length > 0) {
+            citySet = new Set();
+            for(let i=0; i<selectedStockCities.length; i++) citySet.add(selectedStockCities[i].toLowerCase());
+        }
 
         for(const c of activeClients) {
              if (citySet) {
@@ -26349,7 +26377,8 @@ const supervisorGroups = new Map();
 
             }
 
-            const clientCodes = new Set(filteredClients.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+            const clientCodes = new Set(); for(let i=0; i<filteredClients.length; i++) clientCodes.add(normalizeKey(filteredClients[i]['Código'] || filteredClients[i]['codigo_cliente']));
             const hasSupp = selectedWeeklySuppliers.size > 0;
 
             for(let i=0; i<allSalesData.length; i++) {
@@ -26449,7 +26478,8 @@ const supervisorGroups = new Map();
         let historyClientCodes = null;
         if (isPromoterMode) {
              const filteredClients = getHierarchyFilteredClients('weekly', allClientsData);
-             historyClientCodes = new Set(filteredClients.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
+            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
+             historyClientCodes = new Set(); for(let i=0; i<filteredClients.length; i++) historyClientCodes.add(normalizeKey(filteredClients[i]['Código'] || filteredClients[i]['codigo_cliente']));
         }
 
         const hasSup = selectedWeeklySupervisors.size > 0;
