@@ -415,6 +415,36 @@
 
 
     /**
+     * Reusable generic function to render a supervisor filter dropdown.
+     */
+    window.updateGenericSupervisorFilter = function(dropdownId, textId, selectedSet, sellerDetailsMap, updateTextFn, defaultLabel = 'Todos', checkboxColorClass = 'text-teal-500', filterFn = null) {
+        const dropdown = document.getElementById(dropdownId);
+        if(!dropdown) return;
+
+        const supervisors = new Set();
+        if (sellerDetailsMap) {
+            sellerDetailsMap.forEach(d => {
+                if (filterFn) {
+                    if (filterFn(d)) supervisors.add(d.supervisor);
+                } else {
+                    if (d.supervisor) supervisors.add(d.supervisor);
+                }
+            });
+        }
+
+        let html = '';
+        Array.from(supervisors).sort().forEach(s => {
+            const checked = selectedSet.has(s) ? 'checked' : '';
+            html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 ${checkboxColorClass} rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
+        });
+        dropdown.innerHTML = html;
+
+        if (typeof updateTextFn === 'function') {
+            updateTextFn(document.getElementById(textId), selectedSet, defaultLabel);
+        }
+    };
+
+    /**
      * Reusable generic function to render a seller filter dropdown.
      */
     window.updateGenericVendedorFilter = function(dropdownId, textId, supervisorsSet, vendedoresSet, sellerDetailsMap, updateTextFn, defaultLabel = 'Todos', checkboxColorClass = 'text-orange-500') {
