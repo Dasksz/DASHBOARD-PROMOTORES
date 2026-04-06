@@ -11372,67 +11372,18 @@ const supervisorGroups = new Map();
         }
 
 
-        const forbiddenTiposVenda = new Set(['TIPOVENDA', 'TIPO VENDA', 'TIPO', 'CODUSUR', 'CODCLI', 'SUPERV', 'NOME']);
         function updateTipoVendaFilter(dropdown, filterText, selectedArray, dataSource, skipRender = false) {
-            if (!dropdown || !filterText) return selectedArray;
-            // Collect unique types from data source
-            const uniqueTypes = dataSource.reduce((acc, item) => {
-                const t = item.TIPOVENDA;
-                if (t && !forbiddenTiposVenda.has(t.toUpperCase())) acc.add(t);
-                return acc;
-            }, new Set());
-
-            // Ensure currently selected items are kept in the list (Safety Net)
-            selectedArray.forEach(type => uniqueTypes.add(type));
-
-            const tiposVendaToShow = [...uniqueTypes].sort((a, b) => parseInt(a) - parseInt(b));
-
-            // Re-filter selectedArray ensures we don't have stale data if we wanted strictness,
-            // but here we just ensured they are IN the list, so this line effectively does nothing
-            // except ordering or removing truly invalid ones if we didn't add them above.
-            // Since we added them above, this is redundant but harmless.
-            selectedArray = selectedArray.filter(tipo => tiposVendaToShow.includes(tipo));
-
-            if (!skipRender) {
-                const htmlParts = [];
-                for (let i = 0; i < tiposVendaToShow.length; i++) {
-                    const s = tiposVendaToShow[i];
-                    const isChecked = selectedArray.includes(s);
-                    htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${window.escapeHtml(s)}" ${isChecked ? 'checked' : ''}><span class="ml-2">${window.escapeHtml(s)}</span></label>`);
-                }
-                dropdown.innerHTML = htmlParts.join('');
+            if (typeof window.updateGenericTipoVendaFilter === 'function') {
+                return window.updateGenericTipoVendaFilter(dropdown, filterText, selectedArray, dataSource, skipRender);
             }
-
-            if (selectedArray.length === 0 || selectedArray.length === tiposVendaToShow.length) filterText.textContent = 'Todos os Tipos';
-            else if (selectedArray.length === 1) filterText.textContent = selectedArray[0];
-            else filterText.textContent = `${selectedArray.length} tipos selecionados`;
             return selectedArray;
         }
 
-        const forbiddenRedes = new Set(['RAMO', 'RAMO DE ATIVIDADE', 'RAMO_ATIVIDADE', 'DESCRICAO', 'ATIVIDADE']);
         function updateRedeFilter(dropdown, buttonTextElement, selectedArray, dataSource, baseText = 'C/Rede') {
-            if (!dropdown || !buttonTextElement) return selectedArray;
-            const redesToShow = [...dataSource.reduce((acc, item) => {
-                const r = item.ramo;
-                if (r && r !== 'N/A' && !forbiddenRedes.has(r.toUpperCase())) acc.add(r);
-                return acc;
-            }, new Set())].sort();
-            const validSelected = selectedArray.filter(rede => redesToShow.includes(rede));
-
-            const htmlParts = [];
-            for (let i = 0; i < redesToShow.length; i++) {
-                const r = redesToShow[i];
-                const isChecked = validSelected.includes(r);
-                htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${window.escapeHtml(r)}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-sm">${window.escapeHtml(r)}</span></label>`);
+            if (typeof window.updateGenericRedeFilter === 'function') {
+                return window.updateGenericRedeFilter(dropdown, buttonTextElement, selectedArray, dataSource, baseText);
             }
-            dropdown.innerHTML = htmlParts.join('');
-
-            if (validSelected.length === 0) {
-                buttonTextElement.textContent = baseText;
-            } else {
-                buttonTextElement.textContent = `${baseText} (${validSelected.length})`;
-            }
-            return validSelected;
+            return selectedArray;
         }
 
         function resetMainFilters() {

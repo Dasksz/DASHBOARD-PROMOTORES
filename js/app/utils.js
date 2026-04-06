@@ -479,4 +479,96 @@
         }
     };
 
+
+    /**
+     * Reusable generic function to render a Tipo Venda filter dropdown.
+     */
+    window.updateGenericTipoVendaFilter = function(dropdownId, textId, selectedArray, dataSource, skipRender = false) {
+        const dropdown = typeof dropdownId === 'string' ? document.getElementById(dropdownId) : dropdownId;
+        const filterText = typeof textId === 'string' ? document.getElementById(textId) : textId;
+        if (!dropdown || !filterText) return selectedArray;
+
+        const forbiddenTiposVenda = new Set(['TIPOVENDA', 'TIPO VENDA', 'TIPO', 'CODUSUR', 'CODCLI', 'SUPERV', 'NOME']);
+        const uniqueTypes = new Set();
+
+        // Fast columnar access
+        if (typeof dataSource.get === 'function' && dataSource._data && dataSource._data['TIPOVENDA']) {
+            const arr = dataSource._data['TIPOVENDA'];
+            for(let i=0; i<dataSource.length; i++) {
+                const t = arr[i];
+                if (t && !forbiddenTiposVenda.has(String(t).toUpperCase())) uniqueTypes.add(String(t));
+            }
+        } else {
+            for(let i=0; i<dataSource.length; i++) {
+                const item = typeof dataSource.get === 'function' ? dataSource.get(i) : dataSource[i];
+                const t = item.TIPOVENDA;
+                if (t && !forbiddenTiposVenda.has(String(t).toUpperCase())) uniqueTypes.add(String(t));
+            }
+        }
+
+        selectedArray.forEach(type => uniqueTypes.add(type));
+        const tiposVendaToShow = [...uniqueTypes].sort((a, b) => parseInt(a) - parseInt(b));
+        selectedArray = selectedArray.filter(tipo => tiposVendaToShow.includes(tipo));
+
+        if (!skipRender) {
+            let html = '';
+            for (let i = 0; i < tiposVendaToShow.length; i++) {
+                const s = tiposVendaToShow[i];
+                const isChecked = selectedArray.includes(s);
+                html += `<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${window.escapeHtml(s)}" ${isChecked ? 'checked' : ''}><span class="ml-2">${window.escapeHtml(s)}</span></label>`;
+            }
+            dropdown.innerHTML = html;
+        }
+
+        if (selectedArray.length === 0 || selectedArray.length === tiposVendaToShow.length) filterText.textContent = 'Todos os Tipos';
+        else if (selectedArray.length === 1) filterText.textContent = selectedArray[0];
+        else filterText.textContent = `${selectedArray.length} tipos selecionados`;
+        return selectedArray;
+    };
+
+    /**
+     * Reusable generic function to render a Rede filter dropdown.
+     */
+    window.updateGenericRedeFilter = function(dropdownId, textId, selectedArray, dataSource, baseText = 'C/Rede') {
+        const dropdown = typeof dropdownId === 'string' ? document.getElementById(dropdownId) : dropdownId;
+        const buttonTextElement = typeof textId === 'string' ? document.getElementById(textId) : textId;
+        if (!dropdown || !buttonTextElement) return selectedArray;
+
+        const forbiddenRedes = new Set(['RAMO', 'RAMO DE ATIVIDADE', 'RAMO_ATIVIDADE', 'DESCRICAO', 'ATIVIDADE']);
+        const uniqueRedes = new Set();
+
+        // Fast columnar access
+        if (typeof dataSource.get === 'function' && dataSource._data && dataSource._data['ramo']) {
+            const arr = dataSource._data['ramo'];
+            for(let i=0; i<dataSource.length; i++) {
+                const r = arr[i];
+                if (r && r !== 'N/A' && !forbiddenRedes.has(String(r).toUpperCase())) uniqueRedes.add(String(r));
+            }
+        } else {
+            for(let i=0; i<dataSource.length; i++) {
+                const item = typeof dataSource.get === 'function' ? dataSource.get(i) : dataSource[i];
+                const r = item.ramo;
+                if (r && r !== 'N/A' && !forbiddenRedes.has(String(r).toUpperCase())) uniqueRedes.add(String(r));
+            }
+        }
+
+        const redesToShow = [...uniqueRedes].sort();
+        const validSelected = selectedArray.filter(rede => redesToShow.includes(rede));
+
+        let html = '';
+        for (let i = 0; i < redesToShow.length; i++) {
+            const r = redesToShow[i];
+            const isChecked = validSelected.includes(r);
+            html += `<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${window.escapeHtml(r)}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-sm">${window.escapeHtml(r)}</span></label>`;
+        }
+        dropdown.innerHTML = html;
+
+        if (validSelected.length === 0) {
+            buttonTextElement.textContent = baseText;
+        } else {
+            buttonTextElement.textContent = `${baseText} (${validSelected.length})`;
+        }
+        return validSelected;
+    };
+
 })();
