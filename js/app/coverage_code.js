@@ -53,12 +53,25 @@
             const currentRenderId = coverageRenderId;
 
             const { clients, sales, history } = getCoverageFilteredData();
-            const productsToAnalyze = [...new Set([...sales.map(s => s.PRODUTO), ...history.map(s => s.PRODUTO)])];
+            const productsSet = new Set();
+            for(let i=0, len=sales.length; i<len; i++) {
+                const s = sales.get ? sales.get(i) : sales[i];
+                if(s && s.PRODUTO !== undefined) productsSet.add(s.PRODUTO);
+            }
+            for(let i=0, len=history.length; i<len; i++) {
+                const h = history.get ? history.get(i) : history[i];
+                if(h && h.PRODUTO !== undefined) productsSet.add(h.PRODUTO);
+            }
+            const productsToAnalyze = Array.from(productsSet);
 
             const activeClientsForCoverage = clients;
             const activeClientsCount = activeClientsForCoverage.length;
             // Normalize keys for robust Set matching
-            const activeClientCodes = new Set(activeClientsForCoverage.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
+            const activeClientCodes = new Set();
+            for(let i=0, len=activeClientsForCoverage.length; i<len; i++) {
+                const c = activeClientsForCoverage.get ? activeClientsForCoverage.get(i) : activeClientsForCoverage[i];
+                if(c) activeClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+            }
 
             coverageActiveClientsKpi.textContent = activeClientsCount.toLocaleString('pt-BR');
 
