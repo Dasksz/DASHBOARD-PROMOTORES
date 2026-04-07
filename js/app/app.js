@@ -20188,7 +20188,7 @@ const supervisorGroups = new Map();
                         },
                         scales: {
                             y: {
-                                beginAtZero: false,
+                                beginAtZero: true,
                                 grid: { color: '#334155' },
                                 ticks: {
                                     color: '#94a3b8',
@@ -20711,7 +20711,7 @@ const supervisorGroups = new Map();
                             },
                             scales: {
                                 y: {
-                                    beginAtZero: false,
+                                    beginAtZero: true,
                                     grid: { color: '#334155' },
                                     ticks: { color: '#94a3b8' }
                                 },
