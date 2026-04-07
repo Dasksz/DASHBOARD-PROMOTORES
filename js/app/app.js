@@ -11963,48 +11963,94 @@ const supervisorGroups = new Map();
         function calculateHistoricalBests() {
             const salesBySupervisorByDay = {};
 
-            // OPTIMIZATION: Use a single loop instead of .map().filter().reduce()
-            // to avoid intermediate array allocations and proxy overhead.
+            // 1. Determine most recent sale date
             let mostRecentSaleDate = new Date(0);
-            if (typeof allSalesData.get === 'function' && typeof allSalesData.length === 'number') {
-                const len = allSalesData.length;
-                for (let i = 0; i < len; i++) {
-                    const d = parseDate(allSalesData.get(i).DTPED);
-                    if (d && d > mostRecentSaleDate) {
-                        mostRecentSaleDate = d;
-                    }
+            const isSalesColumnar = typeof allSalesData.get === 'function';
+            const salesLen = allSalesData.length;
+
+            if (isSalesColumnar && allSalesData._data && allSalesData._data['DTPED']) {
+                const dtpedCol = allSalesData._data['DTPED'];
+                for (let i = 0; i < salesLen; i++) {
+                    const d = parseDate(dtpedCol[i]);
+                    if (d && d > mostRecentSaleDate) mostRecentSaleDate = d;
                 }
             } else {
-                allSalesData.forEach(s => {
-                    const d = parseDate(s.DTPED);
-                    if (d && d > mostRecentSaleDate) {
-                        mostRecentSaleDate = d;
-                    }
-                });
+                for (let i = 0; i < salesLen; i++) {
+                    const item = isSalesColumnar ? allSalesData.get(i) : allSalesData[i];
+                    const d = parseDate(item.DTPED);
+                    if (d && d > mostRecentSaleDate) mostRecentSaleDate = d;
+                }
             }
 
             const previousMonthDate = new Date(Date.UTC(mostRecentSaleDate.getUTCFullYear(), mostRecentSaleDate.getUTCMonth() - 1, 1));
             const previousMonth = previousMonthDate.getUTCMonth();
             const previousMonthYear = previousMonthDate.getUTCFullYear();
-            const historyLastMonthData = allHistoryData.filter(sale => { const saleDate = parseDate(sale.DTPED); return saleDate && saleDate.getUTCMonth() === previousMonth && saleDate.getUTCFullYear() === previousMonthYear; });
-            historyLastMonthData.forEach(sale => {
-                const supervisorName = window.resolveDim('supervisores', sale.CODSUPERVISOR);
-                if (!supervisorName || supervisorName === 'BALCAO' || !sale.DTPED) return;
-                const saleDate = parseDate(sale.DTPED); if (!saleDate) return;
-                const supervisor = supervisorName.toUpperCase(); const dateString = saleDate.toISOString().split('T')[0];
+
+            // 2. Process history data in a single pass to avoid intermediate array allocations and redundant parsing
+            const isHistoryColumnar = typeof allHistoryData.get === 'function';
+            const historyLen = allHistoryData.length;
+            const historyDataCols = (isHistoryColumnar && allHistoryData._data) ? allHistoryData._data : null;
+
+            // Cache for date strings to avoid repeated formatting
+            const dateStringCache = new Map(); // timestamp -> dateString
+
+            for (let i = 0; i < historyLen; i++) {
+                let dtped, codSup, vlVenda;
+
+                if (historyDataCols) {
+                    dtped = historyDataCols['DTPED'] ? historyDataCols['DTPED'][i] : undefined;
+                    codSup = historyDataCols['CODSUPERVISOR'] ? historyDataCols['CODSUPERVISOR'][i] : undefined;
+                    vlVenda = historyDataCols['VLVENDA'] ? historyDataCols['VLVENDA'][i] : 0;
+                } else {
+                    const sale = isHistoryColumnar ? allHistoryData.get(i) : allHistoryData[i];
+                    dtped = sale.DTPED;
+                    codSup = sale.CODSUPERVISOR;
+                    vlVenda = sale.VLVENDA || 0;
+                }
+
+                if (!dtped) continue;
+                const saleDate = parseDate(dtped);
+                if (!saleDate || saleDate.getUTCMonth() !== previousMonth || saleDate.getUTCFullYear() !== previousMonthYear) continue;
+
+                const supervisorName = window.resolveDim('supervisores', codSup);
+                if (!supervisorName || supervisorName === 'BALCAO') continue;
+
+                const supervisor = supervisorName.toUpperCase();
+
+                // Get date string from cache or calculate
+                const ts = saleDate.getTime();
+                let dateString = dateStringCache.get(ts);
+                if (!dateString) {
+                    dateString = saleDate.toISOString().split('T')[0];
+                    dateStringCache.set(ts, dateString);
+                }
+
                 if (!salesBySupervisorByDay[supervisor]) salesBySupervisorByDay[supervisor] = {};
                 if (!salesBySupervisorByDay[supervisor][dateString]) salesBySupervisorByDay[supervisor][dateString] = 0;
-                salesBySupervisorByDay[supervisor][dateString] += sale.VLVENDA;
-            });
+                salesBySupervisorByDay[supervisor][dateString] += Number(vlVenda) || 0;
+            }
+
+            // 3. Find best days per weekday
             const bestDayByWeekdayBySupervisor = {};
+            const dayOfWeekCache = new Map(); // dateString -> dayOfWeek
+
             for (const supervisor in salesBySupervisorByDay) {
                 const salesByDay = salesBySupervisorByDay[supervisor];
                 const bests = {};
                 for (const dateString in salesByDay) {
-                    const date = new Date(dateString + 'T00:00:00Z');
-                    const dayOfWeek = date.getUTCDay();
-                    const total = salesByDay[dateString];
-                    if (dayOfWeek >= 1 && dayOfWeek <= 5) { if (!bests[dayOfWeek] || total > bests[dayOfWeek]) bests[dayOfWeek] = total; }
+                    // OPTIMIZATION: Cache dayOfWeek to avoid redundant Date instantiations across supervisors
+                    let dayOfWeek = dayOfWeekCache.get(dateString);
+                    if (dayOfWeek === undefined) {
+                        dayOfWeek = new Date(dateString + 'T00:00:00Z').getUTCDay();
+                        dayOfWeekCache.set(dateString, dayOfWeek);
+                    }
+
+                    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                        const total = salesByDay[dateString];
+                        if (!bests[dayOfWeek] || total > bests[dayOfWeek]) {
+                            bests[dayOfWeek] = total;
+                        }
+                    }
                 }
                 bestDayByWeekdayBySupervisor[supervisor] = bests;
             }
