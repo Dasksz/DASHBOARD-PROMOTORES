@@ -321,7 +321,7 @@
             <p class="mb-8 text-slate-400 text-sm">Atualize a base de dados do sistema.</p>
 
             <div class="space-y-4 mb-6 text-left hidden"> <!-- Hidden Supabase URL -->
-                <input type="text" id="supabase-url" class="hidden" value="https://dldsocponbjthqxhmttj.supabase.co">
+                <input type="text" id="supabase-url" class="hidden" value="https://dldsocponbjthqxhmttj.supabase.co" aria-label="Supabase URL">
             </div>
 
             <div class="space-y-3 mb-8 text-left">
@@ -1560,7 +1560,7 @@
                                     <div class="bg-[#3b0764] kpi-glow-base kpi-glow-purple rounded-lg p-3 relative overflow-hidden group shadow-md">
                                         <label class="text-[10px] font-bold text-purple-300 uppercase tracking-wider mb-1 block">META POSITIVAÇÃO</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="goal-global-mix" autocomplete="off" class="w-full glass-panel border border-purple-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-purple-500" value="0" readonly>
+                                            <input type="text" id="goal-global-mix" autocomplete="off" class="w-full glass-panel border border-purple-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-purple-500" value="0" readonly aria-label="Meta Positivação">
                                             <button id="btn-distribute-mix" class="bg-purple-600 hover:bg-purple-500 text-white px-3 rounded flex items-center justify-center transition-colors" style="display: none;" aria-label="Distribuir Mix">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                                             </button>
@@ -2339,8 +2339,8 @@
                 <div class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Preço (R$)</label>
                     <div class="flex gap-2">
-                        <input type="number" id="coverage-price-min" placeholder="Min" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-[#FF5E00]" min="0" step="0.01">
-                        <input type="number" id="coverage-price-max" placeholder="Max" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-[#FF5E00]" min="0" step="0.01">
+                        <input type="number" id="coverage-price-min" aria-label="Preço Mínimo" placeholder="Min" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-[#FF5E00]" min="0" step="0.01">
+                        <input type="number" id="coverage-price-max" aria-label="Preço Máximo" placeholder="Max" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-[#FF5E00]" min="0" step="0.01">
                     </div>
                 </div>
 
