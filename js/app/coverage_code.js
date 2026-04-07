@@ -53,12 +53,27 @@
             const currentRenderId = coverageRenderId;
 
             const { clients, sales, history } = getCoverageFilteredData();
-            const productsToAnalyze = [...new Set([...sales.map(s => s.PRODUTO), ...history.map(s => s.PRODUTO)])];
+
+            // ⚡ Bolt Optimization: Use vanilla loop instead of allocating intermediate arrays with map and spread
+            const productsSet = new Set();
+            for (let i = 0; i < sales.length; i++) {
+                if (sales[i] && sales[i].PRODUTO !== undefined) productsSet.add(sales[i].PRODUTO);
+            }
+            for (let i = 0; i < history.length; i++) {
+                if (history[i] && history[i].PRODUTO !== undefined) productsSet.add(history[i].PRODUTO);
+            }
+            const productsToAnalyze = [...productsSet];
 
             const activeClientsForCoverage = clients;
             const activeClientsCount = activeClientsForCoverage.length;
+
+            // ⚡ Bolt Optimization: Use vanilla loop instead of map to avoid intermediate array allocation
             // Normalize keys for robust Set matching
-            const activeClientCodes = new Set(activeClientsForCoverage.map(c => normalizeKey(c['Código'] || c['codigo_cliente'])));
+            const activeClientCodes = new Set();
+            for (let i = 0; i < activeClientsCount; i++) {
+                const c = activeClientsForCoverage[i];
+                if (c) activeClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+            }
 
             coverageActiveClientsKpi.textContent = activeClientsCount.toLocaleString('pt-BR');
 
@@ -1207,7 +1222,13 @@
             if (selectedVendedores.size > 0) {
                 clientBaseForCoverage = clientBaseForCoverage.filter(c => selectedVendedores.has(String(c.rca1 || '').trim()));
             }
-            const clientCodesInRede = new Set(clientBaseForCoverage.map(c => c['Código']));
+
+            // ⚡ Bolt Optimization: Use vanilla loop instead of map to avoid intermediate array allocation
+            const clientCodesInRede = new Set();
+            for (let i = 0; i < clientBaseForCoverage.length; i++) {
+                const c = clientBaseForCoverage[i];
+                if (c && c['Código'] !== undefined) clientCodesInRede.add(c['Código']);
+            }
 
             const intersectSets = (sets) => {
                 if (sets.length === 0) return new Set();
