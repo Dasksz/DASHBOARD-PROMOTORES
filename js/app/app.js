@@ -1493,44 +1493,17 @@
         }
 
         function updateSupervisorFilterDropdown() {
-            const dropdown = document.getElementById('main-supervisor-filter-dropdown');
-            const text = document.getElementById('main-supervisor-filter-text');
-            if (!dropdown) return;
-
-            // Get all supervisors from data (available in sellerDetailsMap)
-            const supervisors = new Set();
-            sellerDetailsMap.forEach(d => {
-                if (d.supervisor && d.supervisor !== '0' && d.supervisor !== 'N/A') {
-                    supervisors.add(d.supervisor);
-                }
-            });
-
-            const options = Array.from(supervisors).sort();
-
-            let html = `
-                <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-700/50 mb-1">
-                    <span class="text-xs text-orange-400 font-bold uppercase tracking-wider">Selecionar Todos</span>
-                    <input type="checkbox" value="ALL" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
-                </label>
-            `;
-
-            options.forEach(sup => {
-                const checked = selectedSupervisors.has(sup) ? 'checked' : '';
-                html += `
-                    <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                        <span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(sup)}</span>
-                        <input type="checkbox" value="${window.escapeHtml(sup)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
-                    </label>
-                `;
-            });
-            dropdown.innerHTML = html;
-
-            if (selectedSupervisors.size === 0) {
-                if (text) text.textContent = 'Todos';
-            } else if (selectedSupervisors.size === 1) {
-                if (text) text.textContent = selectedSupervisors.values().next().value;
-            } else {
-                if (text) text.textContent = `${selectedSupervisors.size} Selecionados`;
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter(
+                    'main-supervisor-filter-dropdown',
+                    'main-supervisor-filter-text',
+                    selectedSupervisors,
+                    sellerDetailsMap,
+                    updateFilterButtonText,
+                    'Todos',
+                    'text-[#FF5E00]',
+                    (d) => d.supervisor && d.supervisor !== '0' && d.supervisor !== 'N/A'
+                );
             }
         }
 
