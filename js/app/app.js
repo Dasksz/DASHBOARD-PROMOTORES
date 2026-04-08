@@ -11165,12 +11165,24 @@ const supervisorGroups = new Map();
                                         ? window.goalsSellerTargets.get(vendorName)
                                         : {};
 
+                        // Helper function for case-insensitive target lookup
+                        const getTargetValue = (targetObj, key) => {
+                            if (!targetObj) return undefined;
+                            if (targetObj[key] !== undefined) return targetObj[key];
+                            const lowerKey = key.toLowerCase();
+                            for (const k in targetObj) {
+                                if (k.toLowerCase() === lowerKey) return targetObj[k];
+                            }
+                            return undefined;
+                        };
+
                         // Mix Salty Proportional Goal
                         if (activeGoalKeys.has('PEPSICO_ALL') || activeGoalKeys.has('ELMA_ALL')) {
                             // Defaults based on logic from calculateGoalsMetrics (50% of Elma base for Salty, 30% for Foods)
                             const elmaPosBase = window.sellerDetailsMap?.get(rcaCode)?.elmaPos || 0;
                             const defaultSalty = Math.round(elmaPosBase * 0.50);
-                            let vendorMixSaltyGoal = (targets['mix_salty'] !== undefined) ? targets['mix_salty'] : (targets['MIX_SALTY'] !== undefined ? targets['MIX_SALTY'] : defaultSalty);
+                            const targetVal = getTargetValue(targets, 'mix_salty');
+                            let vendorMixSaltyGoal = targetVal !== undefined ? targetVal : defaultSalty;
                             mixSaltyGoal += vendorMixSaltyGoal * ratio;
                         }
 
@@ -11178,7 +11190,8 @@ const supervisorGroups = new Map();
                         if (activeGoalKeys.has('PEPSICO_ALL') || activeGoalKeys.has('FOODS_ALL')) {
                             const elmaPosBase = window.sellerDetailsMap?.get(rcaCode)?.elmaPos || 0;
                             const defaultFoods = Math.round(elmaPosBase * 0.30);
-                            let vendorMixFoodsGoal = (targets['mix_foods'] !== undefined) ? targets['mix_foods'] : (targets['MIX_FOODS'] !== undefined ? targets['MIX_FOODS'] : defaultFoods);
+                            const targetVal = getTargetValue(targets, 'mix_foods');
+                            let vendorMixFoodsGoal = targetVal !== undefined ? targetVal : defaultFoods;
                             mixFoodsGoal += vendorMixFoodsGoal * ratio;
                         }
 
@@ -11193,7 +11206,8 @@ const supervisorGroups = new Map();
 
                         if (suppliersSet.size === 0) {
                             if (activeGoalKeys.has('PEPSICO_ALL')) {
-                                overrideKey = (targets['pepsico_all'] !== undefined || targets['PEPSICO_ALL'] !== undefined) ? 'pepsico_all' : 'GERAL';
+                                const hasPepsicoAll = getTargetValue(targets, 'pepsico_all') !== undefined;
+                                overrideKey = hasPepsicoAll ? 'pepsico_all' : 'GERAL';
                             } else if (activeGoalKeys.has('ELMA_ALL')) {
                                 overrideKey = 'total_elma';
                             } else if (activeGoalKeys.has('FOODS_ALL')) {
@@ -11216,21 +11230,16 @@ const supervisorGroups = new Map();
                             } else if (activeGoalKeys.has('FOODS_ALL') && allFoodsSelected) {
                                 overrideKey = 'total_foods';
                             } else if (activeGoalKeys.has('PEPSICO_ALL') && allElmaSelected && allFoodsSelected) {
-                                overrideKey = (targets['pepsico_all'] !== undefined || targets['PEPSICO_ALL'] !== undefined) ? 'pepsico_all' : 'GERAL';
+                                const hasPepsicoAll = getTargetValue(targets, 'pepsico_all') !== undefined;
+                                overrideKey = hasPepsicoAll ? 'pepsico_all' : 'GERAL';
                             }
                         }
 
                         let vendorPosGoal = 0;
-                        if (overrideKey && targets[overrideKey] !== undefined) {
-                            vendorPosGoal = targets[overrideKey];
-                        } else if (overrideKey && targets[overrideKey.toUpperCase()] !== undefined) {
-                            vendorPosGoal = targets[overrideKey.toUpperCase()];
+                        if (overrideKey) {
+                            const posTargetVal = getTargetValue(targets, overrideKey);
+                            if (posTargetVal !== undefined) vendorPosGoal = posTargetVal;
                         }
-
-                        // Note: targets[overrideKey.toLowerCase()] might also be present if user imported lower case
-                            if (vendorPosGoal === 0 && overrideKey && targets[overrideKey.toLowerCase()] !== undefined) {
-                                vendorPosGoal = targets[overrideKey.toLowerCase()];
-                            }
 
                             if (vendorPosGoal === 0) {
                             // Fallback to sum of individual clients
