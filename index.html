@@ -667,7 +667,7 @@
                     </div>
                     <div class="flex-1 min-w-[200px]">
                         <label for="posicao-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Posição</label>
-                        <select id="posicao-filter" class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full p-2.5">
+                        <select id="posicao-filter" aria-label="Filtrar por posição" class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full p-2.5">
                             <option value="">Todas</option>
                             <option value="L">Liberado</option>
                             <option value="M">Montado</option>
@@ -2001,7 +2001,7 @@
                 </div>
                 <div class="flex-1 min-w-[150px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Filial</label>
-                    <select id="mix-filial-filter" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5"><option value="ambas">Ambas</option><option value="05">05</option><option value="08">08</option></select>
+                    <select id="mix-filial-filter" aria-label="Filtrar por filial" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5"><option value="ambas">Ambas</option><option value="05">05</option><option value="08">08</option></select>
                 </div>
                 <div id="mix-tipo-venda-filter-wrapper" class="relative z-20 flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Tipo Venda</label>
@@ -2346,7 +2346,7 @@
 
                 <div>
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Filial</label>
-                    <select id="coverage-filial-filter" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5">
+                    <select id="coverage-filial-filter" aria-label="Filtrar por filial" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5">
                         <option value="ambas">Ambas</option>
                         <option value="05">05</option>
                         <option value="08">08</option>
@@ -3188,7 +3188,7 @@
                     <!-- Status Filter -->
                     <div>
                         <label for="history-posicao-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Posição</label>
-                        <select id="history-posicao-filter" class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full p-2.5">
+                        <select id="history-posicao-filter" aria-label="Filtrar por posição" class="glass-input border border-slate-700 text-white text-sm rounded-lg focus:ring-2 focus:ring-[#FF5E00] block w-full p-2.5">
                             <option value="">Todas</option>
                             <option value="L">Liberado</option>
                             <option value="M">Montado</option>
@@ -3481,7 +3481,7 @@
 
             <div class="space-y-2">
                 <label class="block text-sm font-bold text-slate-300">Estado da Gôndola:</label>
-                <select name="estado_gondola" required class="w-full glass-input border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-[#FF5E00]">
+                <select name="estado_gondola" id="estado_gondola" aria-label="Estado da Gôndola" required class="w-full glass-input border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-[#FF5E00]">
                     <option value="Excelente">Excelente</option>
                     <option value="Boa">Boa</option>
                     <option value="Bagunçada">Bagunçada</option>
