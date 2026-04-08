@@ -11198,10 +11198,8 @@ const supervisorGroups = new Map();
                         }
                     });
 
-                    // Iterate over visible vendors and calculate their proportional contribution to the goal
+                    // Iterate over visible vendors and calculate their absolute contribution to the goal
                     vendorVisibleCount.forEach((visibleCount, rcaCode) => {
-                        const totalCount = vendorTotalCount.get(rcaCode) || visibleCount;
-                        const ratio = totalCount > 0 ? (visibleCount / totalCount) : 0;
                         const vendorName = (window.sellerDetailsMap && window.sellerDetailsMap.has(rcaCode))
                                             ? window.sellerDetailsMap.get(rcaCode).name
                                             : rcaCode;
@@ -11222,26 +11220,26 @@ const supervisorGroups = new Map();
                             return undefined;
                         };
 
-                        // Mix Salty Proportional Goal
+                        // Mix Salty Proportional Goal -> Now Absolute Sum (same as 'Metas' report tab)
                         if (activeGoalKeys.has('PEPSICO_ALL') || activeGoalKeys.has('ELMA_ALL')) {
                             // Defaults based on logic from calculateGoalsMetrics (50% of Elma base for Salty, 30% for Foods)
                             const elmaPosBase = window.sellerDetailsMap?.get(rcaCode)?.elmaPos || 0;
                             const defaultSalty = Math.round(elmaPosBase * 0.50);
                             const targetVal = getTargetValue(targets, 'mix_salty');
                             let vendorMixSaltyGoal = targetVal !== undefined ? targetVal : defaultSalty;
-                            mixSaltyGoal += vendorMixSaltyGoal * ratio;
+                            mixSaltyGoal += vendorMixSaltyGoal;
                         }
 
-                        // Mix Foods Proportional Goal
+                        // Mix Foods Proportional Goal -> Now Absolute Sum
                         if (activeGoalKeys.has('PEPSICO_ALL') || activeGoalKeys.has('FOODS_ALL')) {
                             const elmaPosBase = window.sellerDetailsMap?.get(rcaCode)?.elmaPos || 0;
                             const defaultFoods = Math.round(elmaPosBase * 0.30);
                             const targetVal = getTargetValue(targets, 'mix_foods');
                             let vendorMixFoodsGoal = targetVal !== undefined ? targetVal : defaultFoods;
-                            mixFoodsGoal += vendorMixFoodsGoal * ratio;
+                            mixFoodsGoal += vendorMixFoodsGoal;
                         }
 
-                        // Positivação Proportional Goal
+                        // Positivação Proportional Goal -> Now Absolute Sum
                         let overrideKey = null;
                         const elmaKeys = window.SUPPLIER_CODES.ELMA;
                         const foodsKeys = window.SUPPLIER_CODES.VIRTUAL_LIST;
@@ -11287,8 +11285,8 @@ const supervisorGroups = new Map();
                             if (posTargetVal !== undefined) vendorPosGoal = posTargetVal;
                         }
 
-                            if (vendorPosGoal === 0) {
-                            // Fallback to sum of individual clients
+                        if (vendorPosGoal === 0) {
+                            // Fallback to sum of individual clients if explicit goal doesn't exist
                             let defaultPosForVendor = 0;
                             goalClients.forEach(c => {
                                 if (String(c.rca1 || '').trim() === rcaCode) {
@@ -11303,19 +11301,13 @@ const supervisorGroups = new Map();
                                     }
                                 }
                             });
-                            // Don't multiply by ratio here, because defaultPosForVendor is ALREADY based only on goalClients (visible)
                             posGoal += defaultPosForVendor;
                         } else {
-                            // Apply proportion (e.g. 10 visible clients / 100 total base = 0.1 ratio)
-                            posGoal += vendorPosGoal * ratio;
+                            // Use absolute explicit vendor goal (no proportion applied)
+                            posGoal += vendorPosGoal;
                         }
                     });
                 }
-
-                // Default POS Goal is 100% of visible clients if no specific goal is set
-                // But only for the specific active filter (if Pepsico, base is everyone; if Elma, base is active Elma clients)
-                // We use goalClients.length if posGoal is 0 or missing, but wait, the logic for Positivacao goal is better left to explicit goals.
-                // Removemos o fallback antigo. O cálculo agora será proporcional baseado nos vendedores.
 
 
                 // 2. Accumulate Realized values
