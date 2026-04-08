@@ -1718,9 +1718,11 @@
                     // Initial Load Failed - Show Error Screen
                     const card = document.getElementById('loading-card-content');
                     if (card) {
+                        // Prevent XSS from unescaped error messages
+                        const safeErrorMessage = (err.message || 'Não foi possível verificar suas credenciais.').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                         card.innerHTML = `
                             <h2 style="margin-top: 0; font-size: 1.5rem; font-weight: 600; color: #fc8181;">Erro de Conexão</h2>
-                            <p style="color: #a0aec0; margin-bottom: 1.5rem;">${err.message || 'Não foi possível verificar suas credenciais.'}</p>
+                            <p style="color: #a0aec0; margin-bottom: 1.5rem;">${safeErrorMessage}</p>
                             <button id="retry-connection-btn" class="gatekeeper-btn" style="background-color: #2d3748; border-color: #4a5568;">
                                 Tentar Novamente
                             </button>

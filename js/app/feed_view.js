@@ -553,7 +553,7 @@ const FeedVisitas = (() => {
 
     function showError(msg) {
         if (errorContainer) {
-            errorContainer.innerHTML = msg;
+            errorContainer.textContent = msg; // Use textContent to prevent XSS
             errorContainer.classList.remove('hidden');
         }
     }
@@ -561,7 +561,7 @@ const FeedVisitas = (() => {
     function hideError() {
         if (errorContainer) {
             errorContainer.classList.add('hidden');
-            errorContainer.innerHTML = '';
+            errorContainer.textContent = '';
         }
     }
 
