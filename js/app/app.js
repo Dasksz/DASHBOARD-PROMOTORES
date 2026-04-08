@@ -11098,7 +11098,53 @@ const supervisorGroups = new Map();
                 // 1.5 Calculate Mix and Positivação Goals PROPORTIONALLY
                 // For promotores (and other filtered views), the goal is a percentage of the vendor's total goal,
                 // proportional to the number of clients from that vendor currently visible vs the vendor's total active base.
-                if (goalClients && goalClients.length > 0) {
+                // --- FIX: Global Override for Admin ---
+                // Se nenhum filtro restritivo for aplicado, usamos as metas globais importadas (se existirem), evitando erro de fallback pro-rata
+                let isGlobalAdminView = false;
+                if (window.userRole === 'adm' && typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+                    if ((!selectedVendedores || selectedVendedores.size === 0) && (!selectedSupervisors || selectedSupervisors.size === 0)) {
+                        isGlobalAdminView = true;
+                    }
+                }
+
+                let usedGlobalOverride = false;
+                if (isGlobalAdminView && window.goalsTargets) {
+                    const getTargetValueGlobal = (targetObj, key) => {
+                        if (!targetObj) return undefined;
+                        if (targetObj[key] !== undefined) return targetObj[key];
+                        const lowerKey = key.toLowerCase();
+                        for (const k in targetObj) {
+                            if (k.toLowerCase() === lowerKey) return targetObj[k];
+                        }
+                        return undefined;
+                    };
+
+                    const globalPepsico = getTargetValueGlobal(window.goalsTargets, 'pepsico_all');
+                    const globalMixSalty = getTargetValueGlobal(window.goalsTargets, 'mix_salty');
+                    const globalMixFoods = getTargetValueGlobal(window.goalsTargets, 'mix_foods');
+
+                    let activeKey = null;
+                    if (activeGoalKeys.has('PEPSICO_ALL')) activeKey = 'pepsico_all';
+                    else if (activeGoalKeys.has('ELMA_ALL')) activeKey = 'total_elma';
+                    else if (activeGoalKeys.has('FOODS_ALL')) activeKey = 'total_foods';
+                    else if (activeGoalKeys.size === 1) activeKey = [...activeGoalKeys][0];
+
+                    const specificGlobalPos = getTargetValueGlobal(window.goalsTargets, activeKey) || globalPepsico;
+
+                    if (specificGlobalPos && (specificGlobalPos.pos !== undefined || typeof specificGlobalPos === 'number')) {
+                        posGoal = specificGlobalPos.pos !== undefined ? specificGlobalPos.pos : specificGlobalPos;
+
+                        mixSaltyGoal = globalMixSalty && globalMixSalty.mix !== undefined ? globalMixSalty.mix : 0;
+                        mixFoodsGoal = globalMixFoods && globalMixFoods.mix !== undefined ? globalMixFoods.mix : 0;
+
+                        if (globalMixSalty && typeof globalMixSalty === 'number') mixSaltyGoal = globalMixSalty;
+                        if (globalMixFoods && typeof globalMixFoods === 'number') mixFoodsGoal = globalMixFoods;
+
+                        usedGlobalOverride = true;
+                    }
+                }
+
+                if (!usedGlobalOverride && goalClients && goalClients.length > 0) {
                     const vendorVisibleCount = new Map(); // vendorCode -> count
                     goalClients.forEach(c => {
                         const rca = String(c.rca1 || '').trim();
