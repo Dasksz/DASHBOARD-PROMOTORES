@@ -10197,7 +10197,7 @@ const supervisorGroups = new Map();
                                 
                                 <!-- Product Info -->
                                 <span class="text-[10px] font-bold text-white group-hover:text-[#FF5E00] transition-colors truncate">
-                                    ${item.code} - ${fullName}
+                                    ${window.escapeHtml(item.code)} - ${window.escapeHtml(fullName)}
                                 </span>
                             </div>
                             
@@ -10209,15 +10209,15 @@ const supervisorGroups = new Map();
                         
                         <!-- Mobile Manufacturer/Category (Secondary Line) -->
                         <div class="md:hidden text-[9px] text-slate-500 uppercase tracking-wide ml-6 truncate leading-none mt-0.5">
-                            ${item.category || ''}
+                            ${window.escapeHtml(item.category || '')}
                         </div>
 
                         <!-- Desktop View (Original) -->
                         <div class="hidden md:block">
-                            <span class="text-sm font-bold text-white group-hover:text-[#FF5E00] transition-colors truncate block" title="${fullName}">
-                                ${item.code} - ${fullName}
+                            <span class="text-sm font-bold text-white group-hover:text-[#FF5E00] transition-colors truncate block" title="${window.escapeHtml(fullName)}">
+                                ${window.escapeHtml(item.code)} - ${window.escapeHtml(fullName)}
                             </span>
-                            <span class="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5 truncate leading-none block">${item.category || ''}</span>
+                            <span class="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5 truncate leading-none block">${window.escapeHtml(item.category || '')}</span>
                         </div>
                     </div>
                 `;
