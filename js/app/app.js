@@ -537,11 +537,11 @@
                     <button class="text-left px-3 py-2 hover:bg-slate-700 rounded text-sm text-white" data-range="current">Mês Atual</button>
                     <div class="border-t border-slate-600 my-1"></div>
                     <div class="flex flex-col gap-1">
-                        <label class="text-[10px] uppercase text-slate-500 font-bold">Início</label>
+                        <label for="coverage-date-start" class="text-[10px] uppercase text-slate-500 font-bold">Início</label>
                         <input type="date" id="coverage-date-start" class="bg-slate-800 border border-slate-600 rounded text-xs text-white p-1">
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="text-[10px] uppercase text-slate-500 font-bold">Fim</label>
+                        <label for="coverage-date-end" class="text-[10px] uppercase text-slate-500 font-bold">Fim</label>
                         <input type="date" id="coverage-date-end" class="bg-slate-800 border border-slate-600 rounded text-xs text-white p-1">
                     </div>
                     <button id="coverage-date-apply" class="mt-2 bg-[#FF5E00] hover:bg-[#CC4A00] text-white font-bold py-1 px-3 rounded text-xs">Aplicar</button>
@@ -23006,7 +23006,7 @@ const supervisorGroups = new Map();
             // Inserted below the header, visible on all screens
             filterContainer.className = 'px-4 pb-3 border-b border-slate-800 flex justify-end';
             filterContainer.innerHTML = `
-                <select id="roteiro-promoter-filter" class="glass-panel-heavy border border-slate-700 text-white text-xs rounded-lg p-2 focus:ring-2 focus:ring-purple-500 w-full sm:w-auto">
+                <select id="roteiro-promoter-filter" aria-label="Filtrar por Promotor" class="glass-panel-heavy border border-slate-700 text-white text-xs rounded-lg p-2 focus:ring-2 focus:ring-purple-500 w-full sm:w-auto">
                     <option value="">Todos os Promotores</option>
                 </select>
             `;

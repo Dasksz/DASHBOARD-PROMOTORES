@@ -9,3 +9,7 @@
 ## 2025-04-01 - Add ARIA Labels to Dynamic Icon-Only Buttons
 **Learning:** Icon-only buttons within template literals (JavaScript generated HTML) are a common pattern in this codebase and require explicit `aria-label` mapping since static HTML checkers miss them.
 **Action:** Always search dynamically generated HTML for icon-only buttons when doing accessibility sweeps.
+
+## 2025-04-09 - Missing `for` Attributes on Labels
+**Learning:** Many form `<label>` elements in both static (`index.html`) and dynamically generated HTML are missing the `for` attribute that links them to their corresponding input fields (`<input>`, `<select>`). This impacts screen reader accessibility as the label is not programmatically associated with the input.
+**Action:** Always ensure that `<label>` elements use the `for` attribute (or `htmlFor` in React/JSX) matching the ID of their associated input, especially when working with form components or dynamically rendering filters.
