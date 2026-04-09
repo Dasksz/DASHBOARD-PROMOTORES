@@ -8,3 +8,6 @@
 ## 2026-04-05 - Optimize array method chains before new Set()
 **Learning:** Using `new Set(array.map(fn))` or `new Set([...array1, ...array2])` creates short-lived intermediate arrays that increase memory usage and garbage collection overhead, especially in hot paths over large datasets.
 **Action:** Always use vanilla `for` loops to directly populate sets instead of chaining `map` or spread operators when dealing with arrays.
+## 2024-03-24 - Pre-resolving Columnar Datasets Array Lookups
+**Learning:** Calling functions with property fallbacks and `.toUpperCase()` string manipulation on every iteration of a large `ColumnarDataset` loop introduces massive overhead.
+**Action:** When looping over `ColumnarDataset` objects in critical paths, hoist array property lookups before the loop block. Save references to `_data['KEY']` and use conditional indexing inside the loop (`col ? col[i] : fallback`) to gain O(1) performance.

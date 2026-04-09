@@ -29749,6 +29749,15 @@ const supervisorGroups = new Map();
             // Standard from CSV parser: keys are UPPERCASE of DB columns.
             // DB: cod_cliente -> CSV: COD_CLIENTE
 
+            // Pre-resolve arrays if columnar
+            let colCodCliente, colVlReceber, colVlTitulos, colDtVencimento;
+            if (isCol && rawTitulos._data) {
+                colCodCliente = rawTitulos._data['cod_cliente'] || rawTitulos._data['COD_CLIENTE'];
+                colVlReceber = rawTitulos._data['vl_receber'] || rawTitulos._data['VL_RECEBER'];
+                colVlTitulos = rawTitulos._data['vl_titulos'] || rawTitulos._data['VL_TITULOS'];
+                colDtVencimento = rawTitulos._data['dt_vencimento'] || rawTitulos._data['DT_VENCIMENTO'];
+            }
+
             // Optimized read with Dual Case Check (Lowercase and Uppercase)
             const getVal = (i, col) => {
                 const val = isCol ? (rawTitulos._data[col] ? rawTitulos._data[col][i] : undefined) : rawTitulos[i][col];
@@ -29769,13 +29778,14 @@ const supervisorGroups = new Map();
             criticalDate.setDate(today.getDate() - 60);
 
             for (let i=0; i<len; i++) {
-                const codCli = normalizeKey(getVal(i, 'cod_cliente'));
+                const rawCodCli = colCodCliente ? colCodCliente[i] : getVal(i, 'cod_cliente');
+                const codCli = normalizeKey(rawCodCli);
 
                 if (allowedClientCodes.has(codCli)) {
                     // Match!
-                    const valReceber = Number(getVal(i, 'vl_receber')) || 0;
-                    const valOriginal = Number(getVal(i, 'vl_titulos')) || 0;
-                    const dtVenc = parseDate(getVal(i, 'dt_vencimento'));
+                    const valReceber = Number(colVlReceber ? colVlReceber[i] : getVal(i, 'vl_receber')) || 0;
+                    const valOriginal = Number(colVlTitulos ? colVlTitulos[i] : getVal(i, 'vl_titulos')) || 0;
+                    const dtVenc = parseDate(colDtVencimento ? colDtVencimento[i] : getVal(i, 'dt_vencimento'));
 
                     totalReceber += valReceber;
 
@@ -30986,6 +30996,15 @@ const supervisorGroups = new Map();
             // Standard from CSV parser: keys are UPPERCASE of DB columns.
             // DB: cod_cliente -> CSV: COD_CLIENTE
 
+            // Pre-resolve arrays if columnar
+            let colCodCliente, colVlReceber, colVlTitulos, colDtVencimento;
+            if (isCol && rawTitulos._data) {
+                colCodCliente = rawTitulos._data['cod_cliente'] || rawTitulos._data['COD_CLIENTE'];
+                colVlReceber = rawTitulos._data['vl_receber'] || rawTitulos._data['VL_RECEBER'];
+                colVlTitulos = rawTitulos._data['vl_titulos'] || rawTitulos._data['VL_TITULOS'];
+                colDtVencimento = rawTitulos._data['dt_vencimento'] || rawTitulos._data['DT_VENCIMENTO'];
+            }
+
             // Optimized read with Dual Case Check (Lowercase and Uppercase)
             const getVal = (i, col) => {
                 const val = isCol ? (rawTitulos._data[col] ? rawTitulos._data[col][i] : undefined) : rawTitulos[i][col];
@@ -31006,13 +31025,14 @@ const supervisorGroups = new Map();
             criticalDate.setDate(today.getDate() - 60);
 
             for (let i=0; i<len; i++) {
-                const codCli = normalizeKey(getVal(i, 'cod_cliente'));
+                const rawCodCli = colCodCliente ? colCodCliente[i] : getVal(i, 'cod_cliente');
+                const codCli = normalizeKey(rawCodCli);
 
                 if (allowedClientCodes.has(codCli)) {
                     // Match!
-                    const valReceber = Number(getVal(i, 'vl_receber')) || 0;
-                    const valOriginal = Number(getVal(i, 'vl_titulos')) || 0;
-                    const dtVenc = parseDate(getVal(i, 'dt_vencimento'));
+                    const valReceber = Number(colVlReceber ? colVlReceber[i] : getVal(i, 'vl_receber')) || 0;
+                    const valOriginal = Number(colVlTitulos ? colVlTitulos[i] : getVal(i, 'vl_titulos')) || 0;
+                    const dtVenc = parseDate(colDtVencimento ? colDtVencimento[i] : getVal(i, 'dt_vencimento'));
 
                     totalReceber += valReceber;
 
