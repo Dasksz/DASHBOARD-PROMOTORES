@@ -22750,7 +22750,7 @@ const supervisorGroups = new Map();
     function toggleRoteiroMode() {
         isRoteiroMode = !isRoteiroMode;
 
-        const isPromotorUserLocal = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+        const isPromotorUserLocal = window.getUserRoleContext().isPromoter;
         if (isRoteiroMode && isPromotorUserLocal) {
             const todayRef = new Date();
             todayRef.setHours(0,0,0,0);
@@ -23057,7 +23057,7 @@ const supervisorGroups = new Map();
             todayRef.setHours(0,0,0,0);
             const dRef = new Date(d);
             dRef.setHours(0,0,0,0);
-            const isPromotorUser = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+            const isPromotorUser = window.getUserRoleContext().isPromoter;
             const isPast = dRef.getTime() < todayRef.getTime() && isPromotorUser;
 
             const dayEl = document.createElement('div');
@@ -23092,7 +23092,7 @@ const supervisorGroups = new Map();
         nextBtn.parentNode.replaceChild(newNext, nextBtn);
 
         newPrev.onclick = () => {
-            const isPromotorUserLocal = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+            const isPromotorUserLocal = window.getUserRoleContext().isPromoter;
             if (isPromotorUserLocal) {
                 const today = new Date();
                 today.setHours(0,0,0,0);
@@ -23114,8 +23114,8 @@ const supervisorGroups = new Map();
         };
 
         // Visual Feedback for disabled button
-        const isPromotorUserLocal = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
-            if (isPromotorUserLocal) {
+        const isPromotorUserLocal = window.getUserRoleContext().isPromoter;
+        if (isPromotorUserLocal) {
             const today = new Date();
             today.setHours(0,0,0,0);
             const roteiroRef = new Date(roteiroDate);
@@ -23193,7 +23193,7 @@ const supervisorGroups = new Map();
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         dateDisplay.textContent = date.toLocaleDateString('pt-BR', options);
 
-        const isPromotorUser = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+        const isPromotorUser = window.getUserRoleContext().isPromoter;
         const isPast = viewDate < today && isPromotorUser;
 
         // Filter Logic
@@ -26469,7 +26469,7 @@ const supervisorGroups = new Map();
     }
     
     function updateWeeklyView() {
-        const isPromotorUserLocal = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+        const isPromotorUserLocal = window.getUserRoleContext().isPromoter;
         if (isPromotorUserLocal) return;
         
         const filteredSales = getWeeklyFilteredData();

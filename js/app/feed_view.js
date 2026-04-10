@@ -28,16 +28,6 @@ const FeedVisitas = (() => {
     let errorContainer;
     let periodInfo;
 
-    function checkIsManager() {
-        const role = (window.userRole || '').trim().toLowerCase();
-        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
-        const isPromoter = window.userIsPromoter || hierarchyRole === 'promotor' || (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
-        const isAdmin = role === 'adm';
-        const isCoord = (hierarchyRole === 'coord' || hierarchyRole === 'cocoord') && !isPromoter;
-        const isSup = window.userIsSupervisor || hierarchyRole === 'supervisor' || role === 'supervisor';
-        const isManager = isAdmin || isCoord || isSup;
-        return { isManager, isAdmin, isCoord, isSup, isPromoter, role, hierarchyRole };
-    }
 
     function init() {
         console.log("Inicializando FeedVisitas Simples...");
@@ -65,7 +55,7 @@ const FeedVisitas = (() => {
         setupFiltersUI();
         
         // Setup Favorites Buttons Visibility based on user role
-        const { isManager } = checkIsManager();
+        const { isManager } = window.getUserRoleContext();
 
         if (!isManager) {
             document.getElementById('feed-favorites-btn')?.classList.add('hidden');
@@ -479,7 +469,7 @@ const FeedVisitas = (() => {
     function clearFavoritesFilter() {
         showOnlyFavorites = false;
 
-        const { isManager } = checkIsManager();
+        const { isManager } = window.getUserRoleContext();
 
         document.getElementById('feed-clear-favorites-btn')?.classList.add('hidden');
         if (isManager) {
@@ -743,7 +733,7 @@ const FeedVisitas = (() => {
 
         query = query.range(from, to);
 
-        const { role, hierarchyRole, isPromoter, isAdmin, isCoord, isSup, isManager } = checkIsManager();
+        const { role, hierarchyRole, isPromoter, isAdmin, isCoord, isSup, isManager } = window.getUserRoleContext();
         const isSeller = window.userIsSeller || hierarchyRole === 'vendedor' || hierarchyRole === 'seller';
         // We will filter the results in memory below.
 
