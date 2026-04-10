@@ -32,6 +32,18 @@
         }
     };
 
+    window.getUserRoleContext = function() {
+        const role = (window.userRole || '').trim().toLowerCase();
+        const hierarchyRole = typeof window.userHierarchyContext !== 'undefined' && window.userHierarchyContext ? window.userHierarchyContext.role : '';
+        const isPromoter = window.userIsPromoter || role === 'promotor' || hierarchyRole === 'promotor' || (typeof window.optimizedData !== 'undefined' && window.optimizedData.promotorMap && window.optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
+        const isAdmin = role === 'adm';
+        const isCoord = (hierarchyRole === 'coord' || hierarchyRole === 'cocoord') && !isPromoter;
+        const isSup = window.userIsSupervisor || hierarchyRole === 'supervisor' || role === 'supervisor';
+        const isManager = isAdmin || isCoord || isSup;
+        return { isManager, isAdmin, isCoord, isSup, isPromoter, role, hierarchyRole };
+    };
+
+
     window.isElma = function(code) {
         return window.SUPPLIER_CODES.ELMA.includes(String(code));
     };
