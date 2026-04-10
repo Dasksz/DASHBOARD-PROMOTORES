@@ -538,11 +538,11 @@
                     <div class="border-t border-slate-600 my-1"></div>
                     <div class="flex flex-col gap-1">
                         <label for="coverage-date-start" class="text-[10px] uppercase text-slate-500 font-bold">Início</label>
-                        <input type="date" id="coverage-date-start" class="bg-slate-800 border border-slate-600 rounded text-xs text-white p-1">
+                        <input type="date" id="coverage-date-start" aria-label="Data Inicial da Cobertura" class="bg-slate-800 border border-slate-600 rounded text-xs text-white p-1">
                     </div>
                     <div class="flex flex-col gap-1">
                         <label for="coverage-date-end" class="text-[10px] uppercase text-slate-500 font-bold">Fim</label>
-                        <input type="date" id="coverage-date-end" class="bg-slate-800 border border-slate-600 rounded text-xs text-white p-1">
+                        <input type="date" id="coverage-date-end" aria-label="Data Final da Cobertura" class="bg-slate-800 border border-slate-600 rounded text-xs text-white p-1">
                     </div>
                     <button id="coverage-date-apply" class="mt-2 bg-[#FF5E00] hover:bg-[#CC4A00] text-white font-bold py-1 px-3 rounded text-xs">Aplicar</button>
                 </div>
