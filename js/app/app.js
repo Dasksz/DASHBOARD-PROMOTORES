@@ -15190,14 +15190,31 @@ const supervisorGroups = new Map();
             }
 
             // Attempt to find items
-            let itemsDoPedido = allSalesData.filter(item => item.PEDIDO == pedidoId);
+            // ⚡ Bolt Optimization: Replace `.filter()` array method with a vanilla for-loop to avoid Proxy overhead
+            let itemsDoPedido = [];
+            if (allSalesData) {
+                const isCol = typeof allSalesData.get === 'function';
+                const lenSales = allSalesData.length;
+                // Pre-resolve PEDIDO column if columnar to avoid proxy get(i) overhead
+                const colPed = isCol ? (allSalesData._data?.['PEDIDO'] || allSalesData._data?.['pedido']) : null;
+                for(let i=0; i<lenSales; i++) {
+                    const pedido = isCol ? (colPed ? colPed[i] : allSalesData.get(i).PEDIDO) : allSalesData[i].PEDIDO;
+                    if (pedido == pedidoId) {
+                        itemsDoPedido.push(isCol ? allSalesData.get(i) : allSalesData[i]);
+                    }
+                }
+            }
 
             // Fallback: Search in History Items
             if (itemsDoPedido.length === 0 && allHistoryData) {
-                const len = allHistoryData.length;
-                for(let i=0; i<len; i++) {
-                    const item = allHistoryData instanceof ColumnarDataset ? allHistoryData.get(i) : allHistoryData[i];
-                    if (item.PEDIDO == pedidoId) itemsDoPedido.push(item);
+                const isColHist = typeof allHistoryData.get === 'function';
+                const lenHist = allHistoryData.length;
+                const colPedHist = isColHist ? (allHistoryData._data?.['PEDIDO'] || allHistoryData._data?.['pedido']) : null;
+                for(let i=0; i<lenHist; i++) {
+                    const pedido = isColHist ? (colPedHist ? colPedHist[i] : allHistoryData.get(i).PEDIDO) : allHistoryData[i].PEDIDO;
+                    if (pedido == pedidoId) {
+                        itemsDoPedido.push(isColHist ? allHistoryData.get(i) : allHistoryData[i]);
+                    }
                 }
             }
 
