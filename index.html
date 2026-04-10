@@ -161,7 +161,7 @@
             <div class="space-y-1.5">
                 <label for="email" class="text-xs font-semibold text-gray-400 uppercase tracking-wider ml-1">E-mail</label>
                 <div class="relative">
-                    <input type="email" id="email" name="email" autocomplete="username" required class="input-field w-full rounded-lg py-3 px-4 text-white placeholder-gray-600 outline-none" placeholder="seu@email.com">
+                    <input type="email" id="email" aria-label="E-mail" name="email" autocomplete="username" required class="input-field w-full rounded-lg py-3 px-4 text-white placeholder-gray-600 outline-none" placeholder="seu@email.com">
                     <svg class="w-5 h-5 absolute right-3 top-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" /></svg>
                 </div>
             </div>
@@ -169,7 +169,7 @@
             <div class="space-y-1.5">
                 <label for="password" class="text-xs font-semibold text-gray-400 uppercase tracking-wider ml-1">Senha</label>
                 <div class="relative">
-                    <input type="password" id="password" name="password" autocomplete="current-password" required class="input-field w-full rounded-lg py-3 px-4 text-white placeholder-gray-600 outline-none" placeholder="••••••••">
+                    <input type="password" id="password" aria-label="Senha" name="password" autocomplete="current-password" required class="input-field w-full rounded-lg py-3 px-4 text-white placeholder-gray-600 outline-none" placeholder="••••••••">
                     <button type="button" id="togglePassword" aria-label="Mostrar senha" class="absolute right-3 top-3.5 text-gray-600 cursor-pointer hover:text-white transition-colors">
                         <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -328,16 +328,16 @@
                 <!-- Inputs stylised -->
                 <div class="group">
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Vendas (Mês Atual)</label>
-                    <input type="file" id="sales-file-input" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
+                    <input type="file" id="sales-file-input" aria-label="Upload de Vendas (Mês Atual)" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                 </div>
                 <div class="group">
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Cadastro de Clientes</label>
-                    <input type="file" id="clients-file-input" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
+                    <input type="file" id="clients-file-input" aria-label="Upload de Cadastro de Clientes" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                 </div>
 
                 <!-- Optional Uploads Toggle -->
                 <div class="col-span-1 md:col-span-2 mt-2">
-                    <button id="toggle-optional-uploads-btn" class="text-[#FF5E00] hover:text-[#CC4A00] text-xs font-bold uppercase flex items-center transition-colors focus:outline-none">
+                    <button id="toggle-optional-uploads-btn" aria-label="Alternar Uploads Opcionais" class="text-[#FF5E00] hover:text-[#CC4A00] text-xs font-bold uppercase flex items-center transition-colors focus:outline-none">
                         <span id="optional-uploads-icon" class="mr-1 transform transition-transform duration-200">▶</span>
                         Planilhas Opcionais
                     </button>
@@ -347,41 +347,41 @@
                 <div id="optional-uploads-container" class="col-span-1 md:col-span-2 hidden pl-2 border-l-2 border-slate-700/50 mt-2 transition-all duration-300">
                     <div class="group mb-2">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Cadastro de Produtos</label>
-                        <input type="file" id="products-file-input" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
+                        <input type="file" id="products-file-input" aria-label="Upload de Produtos" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                     <div class="group mb-2">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Inovações (Mês)</label>
-                        <input type="file" id="innovations-file-input" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
+                        <input type="file" id="innovations-file-input" aria-label="Upload de Inovações" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                     <div class="group mb-2">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Estrutura de Equipe</label>
-                        <input type="file" id="hierarchy-file-input" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
+                        <input type="file" id="hierarchy-file-input" aria-label="Upload de Hierarquia" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                     <div class="group mb-2">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Histórico (Trimestre)</label>
-                        <input type="file" id="history-file-input" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
+                        <input type="file" id="history-file-input" aria-label="Upload de Histórico" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                     <div class="group mb-2">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Títulos</label>
-                        <input type="file" id="titulos-file-input" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
+                        <input type="file" id="titulos-file-input" aria-label="Upload de Títulos" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                     <div class="group mb-2">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Nota Involves - 1</label>
-                        <input type="file" id="nota-involves-1-input" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
+                        <input type="file" id="nota-involves-1-input" aria-label="Upload de Nota Involves 1" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                     <div class="group">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Nota Involves - 2</label>
-                        <input type="file" id="nota-involves-2-input" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
+                        <input type="file" id="nota-involves-2-input" aria-label="Upload de Nota Involves 2" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                 </div>
             </div>
 
-            <button id="generate-btn" class="bg-gradient-to-r from-[#FF5E00] to-[#CC4A00] hover:from-[#CC4A00] hover:to-[#993300] text-white font-bold py-3 px-6 rounded-xl w-full shadow-lg transform active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            <button id="generate-btn" aria-label="Gerar Relatório" class="bg-gradient-to-r from-[#FF5E00] to-[#CC4A00] hover:from-[#CC4A00] hover:to-[#993300] text-white font-bold py-3 px-6 rounded-xl w-full shadow-lg transform active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 Iniciar Upload
             </button>
 
             <div class="mt-4 border-t border-slate-700 pt-4">
-                <button id="system-diagnosis-btn" class="text-xs text-slate-500 hover:text-slate-300 flex items-center justify-center gap-1 cursor-pointer w-full transition-colors">
+                <button id="system-diagnosis-btn" aria-label="Diagnóstico do Sistema" class="text-xs text-slate-500 hover:text-slate-300 flex items-center justify-center gap-1 cursor-pointer w-full transition-colors">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     Diagnóstico do Sistema
                 </button>
@@ -407,7 +407,7 @@
 
         <!-- Logo Dropdown -->
         <div id="logo-dropdown-menu" class="hidden absolute top-14 left-0 w-48 glass-panel rounded-xl shadow-2xl py-1 z-50 animate-fade-in-down origin-top-left">
-            <button id="btn-evolution-link" class="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3">
+            <button id="btn-evolution-link" aria-label="Acessar Painel de Evolução" class="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3">
                 <svg class="w-4 h-4 text-[#FF5E00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 Evolution
             </button>
@@ -444,16 +444,16 @@
                     <p id="user-menu-name" class="text-sm font-bold text-white truncate">Usuário</p>
                     <p id="user-menu-role" class="text-xs text-slate-500 truncate uppercase mt-0.5">Função</p>
                 </div>
-                <button id="user-menu-wallet-btn" class="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3">
+                <button id="user-menu-wallet-btn" aria-label="Minha Carteira" class="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3">
                     <svg class="w-4 h-4 text-[#FF5E00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     Gestão de Carteira
                 </button>
                 <div class="border-t border-slate-700 my-1"></div>
-                <button id="user-menu-refresh-cache-btn" class="hidden w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3">
+                <button id="user-menu-refresh-cache-btn" aria-label="Atualizar Dados" class="hidden w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3">
                     <svg class="w-4 h-4 text-[#FF5E00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     Sincronizar
                 </button>
-                <button id="user-menu-logout-btn" class="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-white/5/50 hover:text-red-300 transition-colors flex items-center gap-3">
+                <button id="user-menu-logout-btn" aria-label="Sair" class="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-white/5/50 hover:text-red-300 transition-colors flex items-center gap-3">
                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                     Sair
                 </button>
@@ -590,7 +590,7 @@
                     <!-- Supervisor Filter (Hidden by default, shown in Seller Mode) -->
                     <div id="main-supervisor-filter-wrapper" class="relative flex-1 min-w-[200px] hidden">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
-                        <button id="main-supervisor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
+                        <button id="main-supervisor-filter-btn" aria-label="Filtrar por Supervisor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
                             <span id="main-supervisor-filter-text">Todos</span>
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
@@ -599,7 +599,7 @@
 
                     <div id="main-coord-filter-wrapper" class="relative flex-1 min-w-[200px]">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                        <button id="main-coord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
+                        <button id="main-coord-filter-btn" aria-label="Filtrar por Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
                             <span id="main-coord-filter-text">Todos</span>
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
@@ -608,7 +608,7 @@
 
                     <div id="main-cocoord-filter-wrapper" class="relative flex-1 min-w-[200px]">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                        <button id="main-cocoord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
+                        <button id="main-cocoord-filter-btn" aria-label="Filtrar por Co-Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
                             <span id="main-cocoord-filter-text">Todos</span>
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
@@ -617,7 +617,7 @@
 
                     <div id="main-promotor-filter-wrapper" class="relative flex-1 min-w-[200px]">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                        <button id="main-promotor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
+                        <button id="main-promotor-filter-btn" aria-label="Filtrar por Promotor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
                             <span id="main-promotor-filter-text">Todos</span>
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
@@ -625,7 +625,7 @@
                     </div>
 
                     <div class="flex-1 min-w-[200px]">
-                        <button id="clear-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg transition-colors border border-slate-600">Limpar Filtros</button>
+                        <button id="clear-filters-btn" aria-label="Limpar Filtros" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg transition-colors border border-slate-600">Limpar Filtros</button>
                     </div>
                 </div>
                 
@@ -633,7 +633,7 @@
                 <div class="flex flex-wrap gap-4 items-end mt-4 pt-4 border-t border-slate-800/50">
                      <div class="relative flex-1 min-w-[200px]">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Tipo Venda</label>
-                        <button id="tipo-venda-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
+                        <button id="tipo-venda-filter-btn" aria-label="Filtrar por Tipo de Venda" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
                             <span id="tipo-venda-filter-text">Todos</span>
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
@@ -641,7 +641,7 @@
                     </div>
                     <div class="relative flex-1 min-w-[200px]">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Fornecedor</label>
-                        <button id="fornecedor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
+                        <button id="fornecedor-filter-btn" aria-label="Filtrar por Fornecedor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
                             <span id="fornecedor-filter-text">Todos</span>
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
@@ -649,7 +649,7 @@
                     </div>
                     <div id="vendedor-filter-wrapper" class="relative flex-1 min-w-[200px]">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
-                        <button id="vendedor-filter-btn" class="w-full bg-slate-800 text-left text-xs text-white p-3 rounded-xl border border-slate-700 hover:border-[#FF5E00] focus:outline-none focus:border-[#FF5E00] transition-colors flex justify-between items-center">
+                        <button id="vendedor-filter-btn" aria-label="Filtrar por Vendedor" class="w-full bg-slate-800 text-left text-xs text-white p-3 rounded-xl border border-slate-700 hover:border-[#FF5E00] focus:outline-none focus:border-[#FF5E00] transition-colors flex justify-between items-center">
                             <span id="vendedor-filter-text">Todos</span>
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
@@ -830,7 +830,7 @@
                     <!-- Filial Filter -->
                     <div class="relative flex-1">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Filial</label>
-                        <button id="feed-filial-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
+                        <button id="feed-filial-filter-btn" aria-label="Filtrar por Filial" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
                             <span id="feed-filial-filter-text">Todas (05 + 08)</span>
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
@@ -854,7 +854,7 @@
                     <!-- Promotor Filter -->
                     <div class="relative flex-1">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                        <button id="feed-promotor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
+                        <button id="feed-promotor-filter-btn" aria-label="Filtrar por Promotor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
                             <span id="feed-promotor-filter-text">Todos</span>
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
@@ -920,7 +920,7 @@
                         <!-- Supervisor (Seller Mode) -->
                         <div id="positivacao-supervisor-filter-wrapper" class="relative hidden">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
-                            <button id="positivacao-supervisor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
+                            <button id="positivacao-supervisor-filter-btn" aria-label="Filtrar por Supervisor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
                                 <span id="positivacao-supervisor-filter-text">Todos</span>
                                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
@@ -930,7 +930,7 @@
                         <!-- Vendedor (Seller Mode) -->
                         <div id="positivacao-vendedor-filter-wrapper" class="relative hidden">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
-                            <button id="positivacao-vendedor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
+                            <button id="positivacao-vendedor-filter-btn" aria-label="Filtrar por Vendedor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
                                 <span id="positivacao-vendedor-filter-text">Todos</span>
                                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
@@ -940,7 +940,7 @@
                         <!-- Coordenador -->
                         <div id="positivacao-coord-filter-wrapper" class="relative">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                            <button id="positivacao-coord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
+                            <button id="positivacao-coord-filter-btn" aria-label="Filtrar por Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
                                 <span id="positivacao-coord-filter-text">Todos</span>
                                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
@@ -950,7 +950,7 @@
                         <!-- Co-Coordenador -->
                         <div id="positivacao-cocoord-filter-wrapper" class="relative">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                            <button id="positivacao-cocoord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
+                            <button id="positivacao-cocoord-filter-btn" aria-label="Filtrar por Co-Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
                                 <span id="positivacao-cocoord-filter-text">Todos</span>
                                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
@@ -960,7 +960,7 @@
                         <!-- Promotor -->
                         <div id="positivacao-promotor-filter-wrapper" class="relative">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                            <button id="positivacao-promotor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
+                            <button id="positivacao-promotor-filter-btn" aria-label="Filtrar por Promotor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between">
                                 <span id="positivacao-promotor-filter-text">Todos</span>
                                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
@@ -996,7 +996,7 @@
                      <div class="flex flex-wrap gap-4 items-end mt-4 pt-4 border-t border-slate-800/50">
                         <div class="relative flex-1 min-w-[200px] max-w-sm">
                             <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Fornecedor</label>
-                            <button id="positivacao-supplier-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
+                            <button id="positivacao-supplier-filter-btn" aria-label="Filtrar por Fornecedor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
                                 <span id="positivacao-supplier-filter-text">Todos</span>
                                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
@@ -1241,19 +1241,19 @@
                 <!-- Coordenador -->
                 <div id="comparison-coord-filter-wrapper" class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                    <button id="comparison-coord-filter-btn" class="w-full glass-panel p-2.5 rounded-lg text-slate-300 text-sm flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors"><span id="comparison-coord-filter-text">Todos</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="comparison-coord-filter-btn" aria-label="Filtrar por Coordenador" class="w-full glass-panel p-2.5 rounded-lg text-slate-300 text-sm flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors"><span id="comparison-coord-filter-text">Todos</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="comparison-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <!-- Co-Coordenador -->
                 <div id="comparison-cocoord-filter-wrapper" class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                    <button id="comparison-cocoord-filter-btn" class="w-full glass-panel p-2.5 rounded-lg text-slate-300 text-sm flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors"><span id="comparison-cocoord-filter-text">Todos</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="comparison-cocoord-filter-btn" aria-label="Filtrar por Co-Coordenador" class="w-full glass-panel p-2.5 rounded-lg text-slate-300 text-sm flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors"><span id="comparison-cocoord-filter-text">Todos</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="comparison-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <!-- Promotor -->
                 <div id="comparison-promotor-filter-wrapper" class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                    <button id="comparison-promotor-filter-btn" class="w-full glass-panel p-2.5 rounded-lg text-slate-300 text-sm flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors"><span id="comparison-promotor-filter-text">Todos</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="comparison-promotor-filter-btn" aria-label="Filtrar por Promotor" class="w-full glass-panel p-2.5 rounded-lg text-slate-300 text-sm flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors"><span id="comparison-promotor-filter-text">Todos</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="comparison-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
 
@@ -1532,7 +1532,7 @@
                                     <div class="bg-[#064e3b] kpi-glow-base kpi-glow-green rounded-lg p-3 relative overflow-hidden group shadow-md">
                                         <label for="goal-global-fat" class="text-[10px] font-bold text-green-300 uppercase tracking-wider mb-1 block">META FATURAMENTO (R$)</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="goal-global-fat" autocomplete="off" class="w-full glass-panel border border-green-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-green-500" value="0,00">
+                                            <input type="text" id="goal-global-fat" aria-label="Meta Global de Faturamento" autocomplete="off" class="w-full glass-panel border border-green-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-green-500" value="0,00">
                                             <button id="btn-distribute-fat" class="bg-green-600 hover:bg-green-500 text-white px-3 rounded flex items-center justify-center transition-colors" aria-label="Distribuir Faturamento">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                                             </button>
@@ -1546,7 +1546,7 @@
                                     <div class="bg-[#1e2a5a] kpi-glow-base kpi-glow-blue rounded-lg p-3 relative overflow-hidden group shadow-md">
                                         <label for="goal-global-vol" class="text-[10px] font-bold text-blue-300 uppercase tracking-wider mb-1 block">META VOLUME (KG)</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="goal-global-vol" autocomplete="off" class="w-full glass-panel border border-blue-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-blue-500" value="0,000">
+                                            <input type="text" id="goal-global-vol" aria-label="Meta Global de Volume" autocomplete="off" class="w-full glass-panel border border-blue-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-blue-500" value="0,000">
                                             <button id="btn-distribute-vol" class="bg-[#FF5E00] hover:bg-[#CC4A00] text-white px-3 rounded flex items-center justify-center transition-colors" aria-label="Distribuir Volume">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                                             </button>
@@ -1574,7 +1574,7 @@
                                     <div id="card-mix-salty" class="hidden bg-[#064e3b] kpi-glow-base kpi-glow-green rounded-lg p-3 relative overflow-hidden group shadow-md">
                                         <label for="goal-global-mix-salty" class="text-[10px] font-bold text-emerald-300 uppercase tracking-wider mb-1 block">META MIX SALTY</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="goal-global-mix-salty" autocomplete="off" class="w-full glass-panel border border-emerald-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-emerald-500" value="0" readonly>
+                                            <input type="text" id="goal-global-mix-salty" aria-label="Meta Global de Mix Salty" autocomplete="off" class="w-full glass-panel border border-emerald-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-emerald-500" value="0" readonly>
                                             <button id="btn-distribute-mix-salty" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 rounded flex items-center justify-center transition-colors" style="display: none;" aria-label="Distribuir Mix">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                                             </button>
@@ -1587,7 +1587,7 @@
                                     <div id="card-mix-foods" class="hidden bg-[#713f12] kpi-glow-base kpi-glow-yellow rounded-lg p-3 relative overflow-hidden group shadow-md">
                                         <label for="goal-global-mix-foods" class="text-[10px] font-bold text-yellow-300 uppercase tracking-wider mb-1 block">META MIX FOODS</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="goal-global-mix-foods" autocomplete="off" class="w-full glass-panel border border-yellow-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-yellow-500" value="0" readonly>
+                                            <input type="text" id="goal-global-mix-foods" aria-label="Meta Global de Mix Foods" autocomplete="off" class="w-full glass-panel border border-yellow-900/50 text-white font-bold text-lg p-2 rounded focus:outline-none focus:border-yellow-500" value="0" readonly>
                                             <button id="btn-distribute-mix-foods" class="bg-yellow-600 hover:bg-yellow-500 text-white px-3 rounded flex items-center justify-center transition-colors" style="display: none;" aria-label="Distribuir Mix">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                                             </button>
@@ -1787,7 +1787,7 @@
                  <!-- Tipo Venda -->
                  <div class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Tipo Venda</label>
-                    <button id="innovations-month-tipo-venda-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="innovations-month-tipo-venda-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="innovations-month-tipo-venda-filter-btn" aria-label="Filtrar por Tipo de Venda" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="innovations-month-tipo-venda-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="innovations-month-tipo-venda-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
             </div>
@@ -1972,19 +1972,19 @@
                 <!-- Coordenador -->
                 <div id="mix-coord-filter-wrapper" class="relative z-20 flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                    <button id="mix-coord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-coord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="mix-coord-filter-btn" aria-label="Filtrar por Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-coord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="mix-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <!-- Co-Coordenador -->
                 <div id="mix-cocoord-filter-wrapper" class="relative z-20 flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                    <button id="mix-cocoord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-cocoord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="mix-cocoord-filter-btn" aria-label="Filtrar por Co-Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-cocoord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="mix-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <!-- Promotor -->
                 <div id="mix-promotor-filter-wrapper" class="relative z-20 flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                    <button id="mix-promotor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-promotor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="mix-promotor-filter-btn" aria-label="Filtrar por Promotor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-promotor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="mix-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
             </div>
@@ -2005,7 +2005,7 @@
                 </div>
                 <div id="mix-tipo-venda-filter-wrapper" class="relative z-20 flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Tipo Venda</label>
-                    <button id="mix-tipo-venda-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-tipo-venda-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="mix-tipo-venda-filter-btn" aria-label="Filtrar por Tipo de Venda" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="mix-tipo-venda-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="mix-tipo-venda-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <div class="flex-1 min-w-[150px]">
@@ -2146,24 +2146,24 @@
                 <!-- Coordenador -->
                 <div id="meta-realizado-coord-filter-wrapper" class="relative flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                    <button id="meta-realizado-coord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-coord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="meta-realizado-coord-filter-btn" aria-label="Filtrar por Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-coord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="meta-realizado-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <!-- Co-Coordenador -->
                 <div id="meta-realizado-cocoord-filter-wrapper" class="relative flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                    <button id="meta-realizado-cocoord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-cocoord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="meta-realizado-cocoord-filter-btn" aria-label="Filtrar por Co-Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-cocoord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="meta-realizado-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <!-- Promotor -->
                 <div id="meta-realizado-promotor-filter-wrapper" class="relative flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                    <button id="meta-realizado-promotor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-promotor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="meta-realizado-promotor-filter-btn" aria-label="Filtrar por Promotor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-promotor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="meta-realizado-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <div class="relative flex-1 min-w-[200px]">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Fornecedor</label>
-                    <button id="meta-realizado-supplier-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-supplier-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="meta-realizado-supplier-filter-btn" aria-label="Filtrar por Fornecedor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="meta-realizado-supplier-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="meta-realizado-supplier-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
             </div>
@@ -2265,22 +2265,22 @@
 
                 <div id="coverage-coord-filter-wrapper" class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                    <button id="coverage-coord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-coord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="coverage-coord-filter-btn" aria-label="Filtrar por Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-coord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="coverage-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <div id="coverage-cocoord-filter-wrapper" class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                    <button id="coverage-cocoord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-cocoord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="coverage-cocoord-filter-btn" aria-label="Filtrar por Co-Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-cocoord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="coverage-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <div id="coverage-promotor-filter-wrapper" class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                    <button id="coverage-promotor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-promotor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="coverage-promotor-filter-btn" aria-label="Filtrar por Promotor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-promotor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="coverage-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <div class="relative">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Fornecedor</label>
-                    <button id="coverage-supplier-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-supplier-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="coverage-supplier-filter-btn" aria-label="Filtrar por Fornecedor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-supplier-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="coverage-supplier-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <div class="relative">
@@ -2314,7 +2314,7 @@
 
                 <div class="relative lg:col-span-2">
                     <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Produto</label>
-                    <button id="coverage-product-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-product-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                    <button id="coverage-product-filter-btn" aria-label="Filtrar por Produto" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="coverage-product-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                     <div id="coverage-product-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2 max-h-60 overflow-y-auto custom-scrollbar">
                         <input type="search" id="coverage-product-search-input" autocomplete="new-password" class="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2 mb-2" aria-label="Buscar" placeholder="Buscar...">
                         <div id="coverage-product-list" class="space-y-1"></div>
@@ -2358,7 +2358,7 @@
             </div>
             <!-- Hidden inputs needed for logic -->
             <div class="hidden">
-                <input type="text" id="coverage-unit-price-filter" autocomplete="off">
+                <input type="text" id="coverage-unit-price-filter" aria-label="Filtro de Preço Unitário" autocomplete="off">
             </div>
         </div>
         </div>
@@ -2587,12 +2587,12 @@
                     </div>
                      <div id="stock-supervisor-filter-wrapper" class="relative hidden">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
-                        <button id="stock-supervisor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="stock-supervisor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="stock-supervisor-filter-btn" aria-label="Filtrar por Supervisor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="stock-supervisor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="stock-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                      <div id="stock-vendedor-filter-wrapper" class="relative hidden">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
-                        <button id="stock-vendedor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="stock-vendedor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="stock-vendedor-filter-btn" aria-label="Filtrar por Vendedor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="stock-vendedor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="stock-vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
 
@@ -2694,35 +2694,35 @@
                     <!-- Coordenador (Promoter Mode) -->
                     <div id="weekly-coord-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                        <button id="weekly-coord-filter-btn" class="w-full glass-panel p-2.5 rounded-lg text-slate-300 text-sm flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors"><span id="weekly-coord-filter-text">Todos</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="weekly-coord-filter-btn" aria-label="Filtrar por Coordenador" class="w-full glass-panel p-2.5 rounded-lg text-slate-300 text-sm flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors"><span id="weekly-coord-filter-text">Todos</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="weekly-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                     <!-- Co-Coordenador (Promoter Mode) -->
                     <div id="weekly-cocoord-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                        <button id="weekly-cocoord-filter-btn" class="w-full glass-panel p-2.5 rounded-lg text-slate-300 text-sm flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors"><span id="weekly-cocoord-filter-text">Todos</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="weekly-cocoord-filter-btn" aria-label="Filtrar por Co-Coordenador" class="w-full glass-panel p-2.5 rounded-lg text-slate-300 text-sm flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors"><span id="weekly-cocoord-filter-text">Todos</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="weekly-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                     <!-- Promotor (Promoter Mode) -->
                     <div id="weekly-promotor-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                        <button id="weekly-promotor-filter-btn" class="w-full glass-panel p-2.5 rounded-lg text-slate-300 text-sm flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors"><span id="weekly-promotor-filter-text">Todos</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="weekly-promotor-filter-btn" aria-label="Filtrar por Promotor" class="w-full glass-panel p-2.5 rounded-lg text-slate-300 text-sm flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors"><span id="weekly-promotor-filter-text">Todos</span><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="weekly-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
 
                      <div id="weekly-supervisor-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Supervisor</label>
-                        <button id="weekly-supervisor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-supervisor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="weekly-supervisor-filter-btn" aria-label="Filtrar por Supervisor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-supervisor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="weekly-supervisor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                      <div id="weekly-vendedor-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Vendedor</label>
-                        <button id="weekly-vendedor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-vendedor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="weekly-vendedor-filter-btn" aria-label="Filtrar por Vendedor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-vendedor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="weekly-vendedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                     <div id="weekly-fornecedor-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Fornecedor</label>
-                        <button id="weekly-fornecedor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-fornecedor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="weekly-fornecedor-filter-btn" aria-label="Filtrar por Fornecedor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="weekly-fornecedor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="weekly-fornecedor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
 
@@ -2899,17 +2899,17 @@
                     <!-- Hierarchy Filters -->
                     <div id="titulos-coord-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                        <button id="titulos-coord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="titulos-coord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="titulos-coord-filter-btn" aria-label="Filtrar por Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="titulos-coord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="titulos-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                     <div id="titulos-cocoord-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                        <button id="titulos-cocoord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="titulos-cocoord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="titulos-cocoord-filter-btn" aria-label="Filtrar por Co-Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="titulos-cocoord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="titulos-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                     <div id="titulos-promotor-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                        <button id="titulos-promotor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="titulos-promotor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="titulos-promotor-filter-btn" aria-label="Filtrar por Promotor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="titulos-promotor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="titulos-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
 
@@ -3044,17 +3044,17 @@
                     <!-- Hierarchy Filters -->
                     <div id="lp-coord-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                        <button id="lp-coord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="lp-coord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="lp-coord-filter-btn" aria-label="Filtrar por Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="lp-coord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="lp-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                     <div id="lp-cocoord-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                        <button id="lp-cocoord-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="lp-cocoord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="lp-cocoord-filter-btn" aria-label="Filtrar por Co-Coordenador" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="lp-cocoord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="lp-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                     <div id="lp-promotor-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Pesquisador (Promotor)</label>
-                        <button id="lp-promotor-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="lp-promotor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="lp-promotor-filter-btn" aria-label="Filtrar por Promotor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="lp-promotor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="lp-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
 
@@ -3179,11 +3179,11 @@
                     <!-- Date Range -->
                     <div>
                         <label for="history-date-start" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Data Inicial</label>
-                        <input type="date" id="history-date-start" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-[#FF5E00]">
+                        <input type="date" id="history-date-start" aria-label="Data Inicial do Histórico" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-[#FF5E00]">
                     </div>
                     <div>
                         <label for="history-date-end" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Data Final</label>
-                        <input type="date" id="history-date-end" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-[#FF5E00]">
+                        <input type="date" id="history-date-end" aria-label="Data Final do Histórico" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-[#FF5E00]">
                     </div>
                     <!-- Status Filter -->
                     <div>
@@ -3210,17 +3210,17 @@
                     <!-- Hierarchy Filters -->
                     <div id="history-coord-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
-                        <button id="history-coord-filter-btn" class="w-full glass-panel p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="history-coord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="history-coord-filter-btn" aria-label="Filtrar por Coordenador" class="w-full glass-panel p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="history-coord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="history-coord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                     <div id="history-cocoord-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Co-Coordenador</label>
-                        <button id="history-cocoord-filter-btn" class="w-full glass-panel p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="history-cocoord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="history-cocoord-filter-btn" aria-label="Filtrar por Co-Coordenador" class="w-full glass-panel p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="history-cocoord-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="history-cocoord-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                     <div id="history-promotor-filter-wrapper" class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
-                        <button id="history-promotor-filter-btn" class="w-full glass-panel p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="history-promotor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="history-promotor-filter-btn" aria-label="Filtrar por Promotor" class="w-full glass-panel p-2.5 rounded-lg text-left text-sm text-slate-300 flex justify-between"><span id="history-promotor-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="history-promotor-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
 
@@ -3247,7 +3247,7 @@
                     <!-- Other Filters -->
                     <div class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Fornecedor</label>
-                        <button id="history-supplier-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="history-supplier-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="history-supplier-filter-btn" aria-label="Filtrar por Fornecedor" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="history-supplier-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="history-supplier-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                     <div class="relative">
@@ -3272,7 +3272,7 @@
                     <!-- Tipo Venda Filter -->
                     <div class="relative">
                         <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Tipo Venda</label>
-                        <button id="history-tipo-venda-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="history-tipo-venda-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                        <button id="history-tipo-venda-filter-btn" aria-label="Filtrar por Tipo de Venda" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between"><span id="history-tipo-venda-filter-text">Todos</span><svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
                         <div id="history-tipo-venda-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                     </div>
                 </div>
@@ -3634,7 +3634,7 @@
                         <button type="button" onclick="document.getElementById('input-foto-geral').click()" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Add Foto
                         </button>
-                        <input type="file" id="input-foto-geral" accept="image/*" multiple class="hidden">
+                        <input type="file" id="input-foto-geral" aria-label="Upload de Foto Geral" accept="image/*" multiple class="hidden">
                     </div>
                     <!-- Previews -->
                     <div id="preview-geral" class="grid grid-cols-3 sm:grid-cols-4 gap-2"></div>
@@ -3652,7 +3652,7 @@
                             <button type="button" onclick="document.getElementById('input-foto-antes').click()" class="text-xs bg-red-900/30 hover:bg-red-900/50 text-red-300 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
                                 Add Foto
                             </button>
-                            <input type="file" id="input-foto-antes" accept="image/*" multiple class="hidden">
+                            <input type="file" id="input-foto-antes" aria-label="Upload de Foto Antes" accept="image/*" multiple class="hidden">
                         </div>
                         <div id="preview-antes" class="grid grid-cols-3 sm:grid-cols-4 gap-2 min-h-[4rem]"></div>
                     </div>
@@ -3667,7 +3667,7 @@
                             <button type="button" onclick="document.getElementById('input-foto-depois').click()" class="text-xs bg-green-900/30 hover:bg-green-900/50 text-green-300 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
                                 Add Foto
                             </button>
-                            <input type="file" id="input-foto-depois" accept="image/*" multiple class="hidden">
+                            <input type="file" id="input-foto-depois" aria-label="Upload de Foto Depois" accept="image/*" multiple class="hidden">
                         </div>
                         <div id="preview-depois" class="grid grid-cols-3 sm:grid-cols-4 gap-2 min-h-[4rem]"></div>
                     </div>
@@ -3893,7 +3893,7 @@
                                         </label>
                                         <p class="text-xs text-slate-500 mt-4">Formatos suportados: .xlsx, .xls, .csv</p>
                                     </div>
-                                    <input type="file" id="import-goals-file" class="hidden" accept=".xlsx, .xls, .csv">
+                                    <input type="file" id="import-goals-file" aria-label="Importar Planilha de Metas" class="hidden" accept=".xlsx, .xls, .csv">
 
                                     <div class="relative flex py-2 items-center mb-4">
                                         <div class="flex-grow border-t border-slate-700"></div>
@@ -4196,7 +4196,7 @@
 
                             <div>
                                 <label for="itinerary-next-date" class="block text-xs font-bold text-slate-500 uppercase mb-2">Próxima Data de Atendimento</label>
-                                <input type="date" id="itinerary-next-date" class="w-full glass-panel border border-slate-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 block">
+                                <input type="date" id="itinerary-next-date" aria-label="Próxima Data de Atendimento" class="w-full glass-panel border border-slate-600 text-white text-sm rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 block">
                                 <p class="mt-2 text-xs text-slate-400" id="itinerary-calc-preview">
                                     Define o dia base para o cálculo das próximas visitas.
                                 </p>
