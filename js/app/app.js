@@ -16674,16 +16674,22 @@ const supervisorGroups = new Map();
 
             }
 
-            const checkPassword = () => {
+            const checkPassword = async () => {
                 const input = pwdInput.value;
                 // Find password in metadata
-                let storedPwd = 'admin'; // Default fallback
+                let storedPwdHash = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'; // Default fallback for 'admin'
                 if (embeddedData.metadata && Array.isArray(embeddedData.metadata)) {
                     const entry = embeddedData.metadata.find(m => m.key === 'senha_modal');
-                    if (entry && entry.value) storedPwd = entry.value;
+                    if (entry && entry.value) storedPwdHash = entry.value;
                 }
                 
-                if (input === storedPwd) {
+                // Hash the input before comparing
+                const msgBuffer = new TextEncoder().encode(input);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashedInput = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+                if (hashedInput === storedPwdHash || input === storedPwdHash) {
                     openAdminModal();
                 } else {
                     window.showToast('error', 'Senha incorreta.');
