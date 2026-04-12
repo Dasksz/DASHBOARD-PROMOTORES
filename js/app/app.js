@@ -1507,7 +1507,12 @@
             if (level === 'coord') {
                 // Show all Coords (or restricted)
                 if (userHierarchyContext.role === 'adm') {
-                    options = Array.from(optimizedData.coordMap.entries()).map(([k, v]) => ({ value: k, label: v }));
+                    // ⚡ Bolt Optimization: Use pre-allocated array and direct loop instead of Array.from().map()
+                    options = new Array(optimizedData.coordMap.size);
+                    let idx = 0;
+                    for (const [k, v] of optimizedData.coordMap.entries()) {
+                        options[idx++] = { value: k, label: v };
+                    }
                 } else {
                     // Restricted: Only show own
                     if (userHierarchyContext.coord) {
@@ -1549,7 +1554,12 @@
                     }
                 }
 
-                options = Array.from(validCodes).map(c => ({ value: c, label: optimizedData.cocoordMap.get(c) || c }));
+                // ⚡ Bolt Optimization: Use pre-allocated array and direct loop instead of Array.from().map()
+                options = new Array(validCodes.size);
+                let idx = 0;
+                for (const c of validCodes) {
+                    options[idx++] = { value: c, label: optimizedData.cocoordMap.get(c) || c };
+                }
             } else if (level === 'promotor') {
                 // Show Promotors belonging to selected CoCoords
                 let parentCoCoords = state.cocoords;
@@ -1600,7 +1610,12 @@
                     }
                 }
 
-                options = Array.from(validCodes).map(c => ({ value: c, label: optimizedData.promotorMap.get(c) || c }));
+                // ⚡ Bolt Optimization: Use pre-allocated array and direct loop instead of Array.from().map()
+                options = new Array(validCodes.size);
+                let idx = 0;
+                for (const c of validCodes) {
+                    options[idx++] = { value: c, label: optimizedData.promotorMap.get(c) || c };
+                }
             }
 
             // Sort
@@ -10572,7 +10587,13 @@ const supervisorGroups = new Map();
 
                 const finalIds = intersectSets(setsToIntersect);
                 // finalIds are indices (integers). Use getItem to retrieve the object/proxy.
-                return Array.from(finalIds).map(id => getItem(id));
+                // ⚡ Bolt Optimization: Use pre-allocated array and direct loop instead of Array.from().map()
+                const finalIdsArr = new Array(finalIds.size);
+                let idx = 0;
+                for (const id of finalIds) {
+                    finalIdsArr[idx++] = getItem(id);
+                }
+                return finalIdsArr;
             };
 
             const filteredSalesData = getFilteredIds(optimizedData.indices.current, optimizedData.salesById);
@@ -19544,9 +19565,9 @@ const supervisorGroups = new Map();
             importPaginationControls.id = 'import-pagination-controls';
             importPaginationControls.className = 'flex justify-between items-center mt-4 hidden';
             importPaginationControls.innerHTML = `
-                <button id="import-prev-page-btn" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs" disabled>Anterior</button>
+                <button id="import-prev-page-btn" aria-label="Página Anterior" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs" disabled>Anterior</button>
                 <span id="import-page-info-text" class="text-slate-400 text-xs">Página 1 de 1</span>
-                <button id="import-next-page-btn" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs" disabled>Próxima</button>
+                <button id="import-next-page-btn" aria-label="Próxima Página" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs" disabled>Próxima</button>
             `;
             // Insert after table container (which is inside analysisContainer -> div.bg-slate-900)
             // analysisContainer contains a header div, result div, and then the table container div.
@@ -21458,7 +21479,13 @@ const supervisorGroups = new Map();
                  }
             });
             
-            walletState.promoters = Array.from(myPromoters).map(s => JSON.parse(s)).sort((a,b) => a.name.localeCompare(b.name));
+            // ⚡ Bolt Optimization: Use pre-allocated array and direct loop instead of Array.from().map()
+            const walletPromotersArr = new Array(myPromoters.size);
+            let idx = 0;
+            for (const s of myPromoters) {
+                walletPromotersArr[idx++] = JSON.parse(s);
+            }
+            walletState.promoters = walletPromotersArr.sort((a,b) => a.name.localeCompare(b.name));
             walletState.canEdit = isManager;
             
             // UI Toggle based on permission
@@ -23685,9 +23712,9 @@ const supervisorGroups = new Map();
             paginationContainer.id = 'clients-pagination';
             paginationContainer.className = 'p-4 flex justify-between items-center glass-panel border-t border-white/10 mt-4';
             paginationContainer.innerHTML = `
-                <button id="client-prev-btn" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
+                <button id="client-prev-btn" aria-label="Página Anterior" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
                 <span id="client-page-info" class="text-slate-400 text-xs font-medium"></span>
-                <button id="client-next-btn" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
+                <button id="client-next-btn" aria-label="Próxima Página" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
             `;
             container.parentNode.appendChild(paginationContainer);
 
@@ -30880,217 +30907,3 @@ const supervisorGroups = new Map();
 
         modal.classList.remove('hidden');
     };
-        function updateTitulosView() {
-            titulosRenderId++;
-            const currentId = titulosRenderId;
-
-            // 1. Get Data
-            const rawTitulos = embeddedData.titulos; // Columnar
-            if (!rawTitulos || !rawTitulos.length) {
-                // Empty state
-                renderTitulosKPIs(0, 0, 0, 0);
-                titulosTableState.filteredData = [];
-                renderTitulosTable();
-                return;
-            }
-
-            // 2. Filter Clients Base (Hierarchy + Rede)
-            // Use Hierarchy Filter
-            let allowedClients;
-            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                allowedClients = [];
-                const hasSup = selectedTitulosSupervisors.size > 0;
-                const hasVend = selectedTitulosVendedores.size > 0;
-                const source = allClientsData;
-                const len = source.length;
-                for(let i=0; i<len; i++) {
-                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
-                    const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-
-                    // FIX: Only filter orphans for Admins
-                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
-
-                    let keep = true;
-                    if (hasSup || hasVend) {
-                        const details = sellerDetailsMap.get(rca1);
-                        if (hasSup) {
-                            if (!details || !selectedTitulosSupervisors.has(details.supervisor)) keep = false;
-                        }
-                        if (keep && hasVend) {
-                            if (!selectedTitulosVendedores.has(rca1)) keep = false;
-                        }
-                    }
-                    if (keep) allowedClients.push(c);
-                }
-            } else {
-                allowedClients = getHierarchyFilteredClients('titulos', allClientsData);
-            }
-
-            // Apply Rede Filter
-            const isComRede = titulosRedeGroupFilter === 'com_rede';
-            const isSemRede = titulosRedeGroupFilter === 'sem_rede';
-            const redeSet = (isComRede && selectedTitulosRedes.length > 0) ? new Set(selectedTitulosRedes) : null;
-            const clientSearch = document.getElementById('titulos-codcli-filter').value.toLowerCase().trim();
-            const citySearch = document.getElementById('titulos-city-filter') ? document.getElementById('titulos-city-filter').value.toLowerCase().trim() : '';
-
-            const allowedClientCodes = new Set();
-            for(let i=0; i<allowedClients.length; i++) {
-                const c = allowedClients[i]; // Proxy or Object
-
-                // Rede Check
-                if (isComRede) {
-                    if (!c.ramo || c.ramo === 'N/A') continue;
-                    if (redeSet && !redeSet.has(c.ramo)) continue;
-                } else if (isSemRede) {
-                    if (c.ramo && c.ramo !== 'N/A') continue;
-                }
-
-                // Search Check (Name/Code) - Optimization: Check here to reduce set size
-                if (clientSearch) {
-                    const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
-                    const name = (c.nomeCliente || '').toLowerCase();
-                    if (!code.includes(clientSearch) && !name.includes(clientSearch)) continue;
-                }
-
-                // City Search
-                if (citySearch) {
-                    const city = (c.cidade || '').toLowerCase();
-                    if (!city.includes(citySearch)) continue;
-                }
-
-                allowedClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
-            }
-
-            // 3. Filter Titulos based on Allowed Client Codes
-            const filteredTitulos = [];
-            const isCol = rawTitulos instanceof ColumnarDataset;
-            const len = rawTitulos.length;
-
-            // Indices
-            // We assume column names from SQL: cod_cliente, vl_receber, etc.
-            // But 'embeddedData.titulos' comes from 'fetchAll' which uses CSV parser.
-            // The CSV parser uppercases headers. So: COD_CLIENTE, VL_RECEBER, etc.
-
-            // Let's verify column names dynamically or assume standard
-            // Standard from CSV parser: keys are UPPERCASE of DB columns.
-            // DB: cod_cliente -> CSV: COD_CLIENTE
-
-            // Pre-resolve arrays if columnar
-            let colCodCliente, colVlReceber, colVlTitulos, colDtVencimento;
-            if (isCol && rawTitulos._data) {
-                colCodCliente = rawTitulos._data['cod_cliente'] || rawTitulos._data['COD_CLIENTE'];
-                colVlReceber = rawTitulos._data['vl_receber'] || rawTitulos._data['VL_RECEBER'];
-                colVlTitulos = rawTitulos._data['vl_titulos'] || rawTitulos._data['VL_TITULOS'];
-                colDtVencimento = rawTitulos._data['dt_vencimento'] || rawTitulos._data['DT_VENCIMENTO'];
-            }
-
-            // Optimized read with Dual Case Check (Lowercase and Uppercase)
-            const getVal = (i, col) => {
-                const val = isCol ? (rawTitulos._data[col] ? rawTitulos._data[col][i] : undefined) : rawTitulos[i][col];
-                if (val !== undefined) return val;
-                // Try Uppercase
-                const colUpper = col.toUpperCase();
-                return isCol ? (rawTitulos._data[colUpper] ? rawTitulos._data[colUpper][i] : undefined) : rawTitulos[i][colUpper];
-            };
-
-            let totalReceber = 0;
-
-            let countCritical = 0;
-            const today = new Date();
-            today.setHours(0,0,0,0);
-
-            // Critical Date: 60 days ago
-            const criticalDate = new Date();
-            criticalDate.setDate(today.getDate() - 60);
-
-            for (let i=0; i<len; i++) {
-                const rawCodCli = colCodCliente ? colCodCliente[i] : getVal(i, 'cod_cliente');
-                const codCli = normalizeKey(rawCodCli);
-
-                if (allowedClientCodes.has(codCli)) {
-                    // Match!
-                    const valReceber = Number(colVlReceber ? colVlReceber[i] : getVal(i, 'vl_receber')) || 0;
-                    const valOriginal = Number(colVlTitulos ? colVlTitulos[i] : getVal(i, 'vl_titulos')) || 0;
-                    const dtVenc = parseDate(colDtVencimento ? colDtVencimento[i] : getVal(i, 'dt_vencimento'));
-
-                    totalReceber += valReceber;
-
-                    let isCritical = false;
-                    let daysOverdue = 0;
-
-                    if (dtVenc && valReceber > 0) {
-                        if (dtVenc < criticalDate) {
-                            isCritical = true;
-                            countCritical++;
-                        }
-                        // Calculate days overdue if past due
-                        if (dtVenc < today) {
-                             const diffTime = Math.abs(today - dtVenc);
-                             daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        }
-                    }
-
-                    // Enrich Data for Table
-                    // Resolve Client Name and RCA
-                    const clientObj = clientMapForKPIs.get(codCli);
-                    let clientName = 'Desconhecido';
-                    let rcaName = 'N/A';
-                    let city = 'N/A';
-
-                    if (clientObj) {
-                         let c = clientObj;
-                         if (typeof clientObj === 'number') {
-                             c = allClientsData.get(clientObj);
-                         }
-
-                         clientName = c.nomeCliente || c.fantasia || 'N/A';
-                         city = c.cidade || 'N/A';
-                         const rcaCode = String(c.rca1 || '').trim();
-                         // Resolve RCA Name
-                         if (optimizedData.rcaNameByCode && optimizedData.rcaNameByCode.has(rcaCode)) {
-                             rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode;
-                         } else {
-                             rcaName = rcaCode;
-                         }
-                    }
-
-                    filteredTitulos.push({
-                        codCli,
-                        clientName,
-                        rcaName,
-                        city,
-                        dtVenc,
-                        valReceber,
-                        valOriginal,
-                        isCritical,
-                        daysOverdue
-                    });
-
-
-                }
-            }
-
-            // Update State
-            titulosTableState.filteredData = filteredTitulos;
-            titulosTableState.page = 1;
-
-            // Sort by Date Ascending (Oldest first usually for debt)
-            titulosTableState.filteredData.sort((a,b) => (a.dtVenc || 0) - (b.dtVenc || 0));
-
-            // KPIs
-            const totalCount = filteredTitulos.length;
-            let criticalDebt = 0;
-            const uniqueClientsCriticalSet = new Set();
-            for (let j = 0; j < totalCount; j++) {
-                const t = filteredTitulos[j];
-                if (t.isCritical) {
-                    criticalDebt += t.valReceber;
-                    uniqueClientsCriticalSet.add(t.codCli);
-                }
-            }
-            const uniqueClientsCritical = uniqueClientsCriticalSet.size;
-
-            renderTitulosKPIs(totalReceber, criticalDebt, uniqueClientsCritical, totalCount);
-            renderTitulosTable();
-        }
