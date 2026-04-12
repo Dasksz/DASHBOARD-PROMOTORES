@@ -19544,9 +19544,9 @@ const supervisorGroups = new Map();
             importPaginationControls.id = 'import-pagination-controls';
             importPaginationControls.className = 'flex justify-between items-center mt-4 hidden';
             importPaginationControls.innerHTML = `
-                <button id="import-prev-page-btn" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs" disabled>Anterior</button>
+                <button id="import-prev-page-btn" aria-label="Página Anterior" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs" disabled>Anterior</button>
                 <span id="import-page-info-text" class="text-slate-400 text-xs">Página 1 de 1</span>
-                <button id="import-next-page-btn" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs" disabled>Próxima</button>
+                <button id="import-next-page-btn" aria-label="Próxima Página" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs" disabled>Próxima</button>
             `;
             // Insert after table container (which is inside analysisContainer -> div.bg-slate-900)
             // analysisContainer contains a header div, result div, and then the table container div.
@@ -23685,9 +23685,9 @@ const supervisorGroups = new Map();
             paginationContainer.id = 'clients-pagination';
             paginationContainer.className = 'p-4 flex justify-between items-center glass-panel border-t border-white/10 mt-4';
             paginationContainer.innerHTML = `
-                <button id="client-prev-btn" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
+                <button id="client-prev-btn" aria-label="Página Anterior" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
                 <span id="client-page-info" class="text-slate-400 text-xs font-medium"></span>
-                <button id="client-next-btn" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
+                <button id="client-next-btn" aria-label="Próxima Página" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
             `;
             container.parentNode.appendChild(paginationContainer);
 
