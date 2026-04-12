@@ -1507,7 +1507,12 @@
             if (level === 'coord') {
                 // Show all Coords (or restricted)
                 if (userHierarchyContext.role === 'adm') {
-                    options = Array.from(optimizedData.coordMap.entries()).map(([k, v]) => ({ value: k, label: v }));
+                    // ⚡ Bolt Optimization: Use pre-allocated array and direct loop instead of Array.from().map()
+                    options = new Array(optimizedData.coordMap.size);
+                    let idx = 0;
+                    for (const [k, v] of optimizedData.coordMap.entries()) {
+                        options[idx++] = { value: k, label: v };
+                    }
                 } else {
                     // Restricted: Only show own
                     if (userHierarchyContext.coord) {
@@ -1549,7 +1554,12 @@
                     }
                 }
 
-                options = Array.from(validCodes).map(c => ({ value: c, label: optimizedData.cocoordMap.get(c) || c }));
+                // ⚡ Bolt Optimization: Use pre-allocated array and direct loop instead of Array.from().map()
+                options = new Array(validCodes.size);
+                let idx = 0;
+                for (const c of validCodes) {
+                    options[idx++] = { value: c, label: optimizedData.cocoordMap.get(c) || c };
+                }
             } else if (level === 'promotor') {
                 // Show Promotors belonging to selected CoCoords
                 let parentCoCoords = state.cocoords;
@@ -1600,7 +1610,12 @@
                     }
                 }
 
-                options = Array.from(validCodes).map(c => ({ value: c, label: optimizedData.promotorMap.get(c) || c }));
+                // ⚡ Bolt Optimization: Use pre-allocated array and direct loop instead of Array.from().map()
+                options = new Array(validCodes.size);
+                let idx = 0;
+                for (const c of validCodes) {
+                    options[idx++] = { value: c, label: optimizedData.promotorMap.get(c) || c };
+                }
             }
 
             // Sort
@@ -10572,7 +10587,13 @@ const supervisorGroups = new Map();
 
                 const finalIds = intersectSets(setsToIntersect);
                 // finalIds are indices (integers). Use getItem to retrieve the object/proxy.
-                return Array.from(finalIds).map(id => getItem(id));
+                // ⚡ Bolt Optimization: Use pre-allocated array and direct loop instead of Array.from().map()
+                const finalIdsArr = new Array(finalIds.size);
+                let idx = 0;
+                for (const id of finalIds) {
+                    finalIdsArr[idx++] = getItem(id);
+                }
+                return finalIdsArr;
             };
 
             const filteredSalesData = getFilteredIds(optimizedData.indices.current, optimizedData.salesById);
@@ -21458,7 +21479,13 @@ const supervisorGroups = new Map();
                  }
             });
             
-            walletState.promoters = Array.from(myPromoters).map(s => JSON.parse(s)).sort((a,b) => a.name.localeCompare(b.name));
+            // ⚡ Bolt Optimization: Use pre-allocated array and direct loop instead of Array.from().map()
+            const walletPromotersArr = new Array(myPromoters.size);
+            let idx = 0;
+            for (const s of myPromoters) {
+                walletPromotersArr[idx++] = JSON.parse(s);
+            }
+            walletState.promoters = walletPromotersArr.sort((a,b) => a.name.localeCompare(b.name));
             walletState.canEdit = isManager;
             
             // UI Toggle based on permission
