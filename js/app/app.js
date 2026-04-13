@@ -5597,6 +5597,18 @@
             totalPages: 1
         };
 
+        function updateMetaRealizadoSupervisorFilter() {
+            if (typeof window.updateGenericSupervisorFilter === 'function') {
+                window.updateGenericSupervisorFilter('meta-realizado-supervisor-filter-dropdown', 'meta-realizado-supervisor-filter-text', selectedMetaRealizadoSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
+            }
+        }
+
+        function updateMetaRealizadoVendedorFilter() {
+            if (typeof window.updateGenericVendedorFilter === 'function') {
+                window.updateGenericVendedorFilter('meta-realizado-vendedor-filter-dropdown', 'meta-realizado-vendedor-filter-text', selectedMetaRealizadoSupervisors, selectedMetaRealizadoVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
+            }
+        }
+
         function setupMetaRealizadoSupervisorFilterHandlers() {
             if (typeof window.setupGenericFilterHandlers === 'function') {
                 window.setupGenericFilterHandlers(
@@ -28138,7 +28150,7 @@ const supervisorGroups = new Map();
                     selectedHistoryVendedores,
                     updateHistorySupervisorFilter,
                     updateHistoryVendedorFilter,
-                    () => {
+                    () => { 
                         if(historyTableState.hasSearched && typeof filterHistoryView === 'function') filterHistoryView();
                         else if(typeof renderHistoryView === 'function') renderHistoryView();
                     },
@@ -29958,7 +29970,7 @@ const supervisorGroups = new Map();
                     true, // isSellerFilter = true
                     typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
                 );
-
+                
                 // Summary Tab
                 window.setupGenericFilterHandlers(
                     'goals-summary',
@@ -29971,7 +29983,7 @@ const supervisorGroups = new Map();
                     true, // isSellerFilter = true
                     typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
                 );
-
+                
                 // SV Tab (Supervisor only)
                 const svSupBtn = document.getElementById('goals-sv-supervisor-filter-btn');
                 const svSupDropdown = document.getElementById('goals-sv-supervisor-filter-dropdown');
@@ -29993,7 +30005,7 @@ const supervisorGroups = new Map();
                             if (typeof updateGoalsSvView === 'function') updateGoalsSvView();
                         }
                     };
-
+                    
                     // Close listener for SV Tab
                     if (!document._goalsSvFilterListener) {
                         document.addEventListener('click', (e) => {
