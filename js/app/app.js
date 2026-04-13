@@ -5598,84 +5598,18 @@
         };
 
         function setupMetaRealizadoSupervisorFilterHandlers() {
-            // Supervisor
-            const supBtn = document.getElementById('meta-realizado-supervisor-filter-btn');
-            const supDropdown = document.getElementById('meta-realizado-supervisor-filter-dropdown');
-            if(supBtn && supDropdown) {
-                const newBtn = supBtn.cloneNode(true);
-                supBtn.parentNode.replaceChild(newBtn, supBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    supDropdown.classList.toggle('hidden');
-                    document.getElementById('meta-realizado-vendedor-filter-dropdown')?.classList.add('hidden');
-                };
-                supDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedMetaRealizadoSupervisors.add(val);
-                        else selectedMetaRealizadoSupervisors.delete(val);
-
-                        updateFilterButtonText(document.getElementById('meta-realizado-supervisor-filter-text'), selectedMetaRealizadoSupervisors, 'Todos');
-                        selectedMetaRealizadoVendedores.clear();
-                        updateMetaRealizadoVendedorFilter();
-                        debouncedUpdateMetaRealizado();
-                    }
-                };
-            }
-
-            // Seller
-            const vendBtn = document.getElementById('meta-realizado-vendedor-filter-btn');
-            const vendDropdown = document.getElementById('meta-realizado-vendedor-filter-dropdown');
-            if(vendBtn && vendDropdown) {
-                const newBtn = vendBtn.cloneNode(true);
-                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    vendDropdown.classList.toggle('hidden');
-                    document.getElementById('meta-realizado-supervisor-filter-dropdown')?.classList.add('hidden');
-                };
-                vendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedMetaRealizadoVendedores.add(val);
-                        else selectedMetaRealizadoVendedores.delete(val);
-
-                        updateFilterButtonText(document.getElementById('meta-realizado-vendedor-filter-text'), selectedMetaRealizadoVendedores, 'Todos');
-                        debouncedUpdateMetaRealizado();
-                    }
-                };
-            }
-
-            // Global close logic
-            if (!document._metaRealizadoFilterListener) {
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('#meta-realizado-supervisor-filter-wrapper')) {
-                        document.getElementById('meta-realizado-supervisor-filter-dropdown')?.classList.add('hidden');
-                    }
-                    if (!e.target.closest('#meta-realizado-vendedor-filter-wrapper')) {
-                        document.getElementById('meta-realizado-vendedor-filter-dropdown')?.classList.add('hidden');
-                    }
-                });
-
-
-                document._metaRealizadoFilterListener = true;
-            }
-
-            updateMetaRealizadoSupervisorFilter();
-            updateMetaRealizadoVendedorFilter();
-        }
-
-        function updateMetaRealizadoSupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('meta-realizado-supervisor-filter-dropdown', 'meta-realizado-supervisor-filter-text', selectedMetaRealizadoSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
-            }
-        }
-
-        function updateMetaRealizadoVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('meta-realizado-vendedor-filter-dropdown', 'meta-realizado-vendedor-filter-text', selectedMetaRealizadoSupervisors, selectedMetaRealizadoVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                window.setupGenericFilterHandlers(
+                    'meta-realizado',
+                    selectedMetaRealizadoSupervisors,
+                    selectedMetaRealizadoVendedores,
+                    updateMetaRealizadoSupervisorFilter,
+                    updateMetaRealizadoVendedorFilter,
+                    () => { debouncedUpdateMetaRealizado(); },
+                    null,
+                    false,
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
             }
         }
 
@@ -11561,73 +11495,19 @@ const supervisorGroups = new Map();
         }
 
         function setupCitySupervisorFilterHandlers() {
-            // Supervisor
-            const supBtn = document.getElementById('city-supervisor-filter-btn');
-            const supDropdown = document.getElementById('city-supervisor-filter-dropdown');
-            if(supBtn && supDropdown) {
-                const newBtn = supBtn.cloneNode(true);
-                supBtn.parentNode.replaceChild(newBtn, supBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    supDropdown.classList.toggle('hidden');
-                    document.getElementById('city-vendedor-filter-dropdown')?.classList.add('hidden');
-                };
-                supDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedCitySupervisors.add(val);
-                        else selectedCitySupervisors.delete(val);
-
-                        updateFilterButtonText(document.getElementById('city-supervisor-filter-text'), selectedCitySupervisors, 'Todos');
-                        selectedCityVendedores.clear();
-                        updateCityVendedorFilter();
-                        handleCityFilterChange({ excludeFilter: 'supervisor' });
-                    }
-                };
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                window.setupGenericFilterHandlers(
+                    'city',
+                    selectedCitySupervisors,
+                    selectedCityVendedores,
+                    updateCitySupervisorFilter,
+                    updateCityVendedorFilter,
+                    (info) => { handleCityFilterChange(info); },
+                    null,
+                    false,
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
             }
-
-            // Seller
-            const vendBtn = document.getElementById('city-vendedor-filter-btn');
-            const vendDropdown = document.getElementById('city-vendedor-filter-dropdown');
-            if(vendBtn && vendDropdown) {
-                const newBtn = vendBtn.cloneNode(true);
-                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    vendDropdown.classList.toggle('hidden');
-                    document.getElementById('city-supervisor-filter-dropdown')?.classList.add('hidden');
-                };
-                vendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedCityVendedores.add(val);
-                        else selectedCityVendedores.delete(val);
-
-                        updateFilterButtonText(document.getElementById('city-vendedor-filter-text'), selectedCityVendedores, 'Todos');
-                        handleCityFilterChange({ excludeFilter: 'seller' });
-                    }
-                };
-            }
-
-            // Global close logic
-            if (!document._cityFilterListener) {
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('#city-supervisor-filter-wrapper')) {
-                        document.getElementById('city-supervisor-filter-dropdown')?.classList.add('hidden');
-                    }
-                    if (!e.target.closest('#city-vendedor-filter-wrapper')) {
-                        document.getElementById('city-vendedor-filter-dropdown')?.classList.add('hidden');
-                    }
-                });
-
-
-                document._cityFilterListener = true;
-            }
-
-            updateCitySupervisorFilter();
-            updateCityVendedorFilter();
         }
 
         function updateCitySupervisorFilter() {
@@ -13040,73 +12920,19 @@ const supervisorGroups = new Map();
 
 
         function setupComparisonSupervisorFilterHandlers() {
-            // Supervisor
-            const supBtn = document.getElementById('comparison-supervisor-filter-btn');
-            const supDropdown = document.getElementById('comparison-supervisor-filter-dropdown');
-            if(supBtn && supDropdown) {
-                const newBtn = supBtn.cloneNode(true);
-                supBtn.parentNode.replaceChild(newBtn, supBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    supDropdown.classList.toggle('hidden');
-                    document.getElementById('comparison-vendedor-filter-dropdown')?.classList.add('hidden');
-                };
-                supDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedComparisonSupervisors.add(val);
-                        else selectedComparisonSupervisors.delete(val);
-
-                        updateFilterButtonText(document.getElementById('comparison-supervisor-filter-text'), selectedComparisonSupervisors, 'Todos');
-                        selectedComparisonVendedores.clear();
-                        updateComparisonVendedorFilter();
-                        updateComparisonView();
-                    }
-                };
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                window.setupGenericFilterHandlers(
+                    'comparison',
+                    selectedComparisonSupervisors,
+                    selectedComparisonVendedores,
+                    updateComparisonSupervisorFilter,
+                    updateComparisonVendedorFilter,
+                    () => { updateComparisonView(); },
+                    null,
+                    false,
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
             }
-
-            // Seller
-            const vendBtn = document.getElementById('comparison-vendedor-filter-btn');
-            const vendDropdown = document.getElementById('comparison-vendedor-filter-dropdown');
-            if(vendBtn && vendDropdown) {
-                const newBtn = vendBtn.cloneNode(true);
-                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    vendDropdown.classList.toggle('hidden');
-                    document.getElementById('comparison-supervisor-filter-dropdown')?.classList.add('hidden');
-                };
-                vendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedComparisonVendedores.add(val);
-                        else selectedComparisonVendedores.delete(val);
-
-                        updateFilterButtonText(document.getElementById('comparison-vendedor-filter-text'), selectedComparisonVendedores, 'Todos');
-                        updateComparisonView();
-                    }
-                };
-            }
-
-            // Global close logic
-            if (!document._comparisonFilterListener) {
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('#comparison-supervisor-filter-wrapper')) {
-                        document.getElementById('comparison-supervisor-filter-dropdown')?.classList.add('hidden');
-                    }
-                    if (!e.target.closest('#comparison-vendedor-filter-wrapper')) {
-                        document.getElementById('comparison-vendedor-filter-dropdown')?.classList.add('hidden');
-                    }
-                });
-
-
-                document._comparisonFilterListener = true;
-            }
-
-            updateComparisonSupervisorFilter();
-            updateComparisonVendedorFilter();
         }
 
         function updateComparisonSupervisorFilter() {
@@ -27907,75 +27733,19 @@ const supervisorGroups = new Map();
     }
 
         function setupPositivacaoSupervisorFilterHandlers() {
-            // Supervisor
-            const supBtn = document.getElementById('positivacao-supervisor-filter-btn');
-            const supDropdown = document.getElementById('positivacao-supervisor-filter-dropdown');
-            if(supBtn && supDropdown) {
-                // Remove old listeners by cloning
-                const newBtn = supBtn.cloneNode(true);
-                supBtn.parentNode.replaceChild(newBtn, supBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    supDropdown.classList.toggle('hidden');
-                    document.getElementById('positivacao-vendedor-filter-dropdown')?.classList.add('hidden');
-                };
-                supDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedPositivacaoSupervisors.add(val);
-                        else selectedPositivacaoSupervisors.delete(val);
-
-                        updateFilterButtonText(document.getElementById('positivacao-supervisor-filter-text'), selectedPositivacaoSupervisors, 'Todos');
-                        selectedPositivacaoVendedores.clear();
-                        updatePositivacaoVendedorFilter();
-                        handlePositivacaoFilterChange({ excludeFilter: 'supervisor' });
-                    }
-                };
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                window.setupGenericFilterHandlers(
+                    'positivacao',
+                    selectedPositivacaoSupervisors,
+                    selectedPositivacaoVendedores,
+                    updatePositivacaoSupervisorFilter,
+                    updatePositivacaoVendedorFilter,
+                    (info) => { handlePositivacaoFilterChange(info); },
+                    null,
+                    false,
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
             }
-
-            // Seller
-            const vendBtn = document.getElementById('positivacao-vendedor-filter-btn');
-            const vendDropdown = document.getElementById('positivacao-vendedor-filter-dropdown');
-            if(vendBtn && vendDropdown) {
-                // Remove old listeners by cloning
-                const newBtn = vendBtn.cloneNode(true);
-                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    vendDropdown.classList.toggle('hidden');
-                    document.getElementById('positivacao-supervisor-filter-dropdown')?.classList.add('hidden');
-                };
-                vendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedPositivacaoVendedores.add(val);
-                        else selectedPositivacaoVendedores.delete(val);
-
-                        updateFilterButtonText(document.getElementById('positivacao-vendedor-filter-text'), selectedPositivacaoVendedores, 'Todos');
-                        handlePositivacaoFilterChange({ excludeFilter: 'seller' });
-                    }
-                };
-            }
-
-            // Global close logic
-            if (!document._positivacaoFilterListener) {
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('#positivacao-supervisor-filter-wrapper')) {
-                        document.getElementById('positivacao-supervisor-filter-dropdown')?.classList.add('hidden');
-                    }
-                    if (!e.target.closest('#positivacao-vendedor-filter-wrapper')) {
-                        document.getElementById('positivacao-vendedor-filter-dropdown')?.classList.add('hidden');
-                    }
-                });
-
-
-                document._positivacaoFilterListener = true;
-            }
-
-            updatePositivacaoSupervisorFilter();
-            updatePositivacaoVendedorFilter();
         }
 
         function updatePositivacaoSupervisorFilter() {
@@ -27991,73 +27761,19 @@ const supervisorGroups = new Map();
         }
 
         function setupCoverageSupervisorFilterHandlers() {
-            // Supervisor
-            const supBtn = document.getElementById('coverage-supervisor-filter-btn');
-            const supDropdown = document.getElementById('coverage-supervisor-filter-dropdown');
-            if(supBtn && supDropdown) {
-                const newBtn = supBtn.cloneNode(true);
-                supBtn.parentNode.replaceChild(newBtn, supBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    supDropdown.classList.toggle('hidden');
-                    document.getElementById('coverage-vendedor-filter-dropdown')?.classList.add('hidden');
-                };
-                supDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedCoverageSupervisors.add(val);
-                        else selectedCoverageSupervisors.delete(val);
-
-                        updateFilterButtonText(document.getElementById('coverage-supervisor-filter-text'), selectedCoverageSupervisors, 'Todos');
-                        selectedCoverageVendedores.clear();
-                        updateCoverageVendedorFilter();
-                        handleCoverageFilterChange({ excludeFilter: 'supervisor' });
-                    }
-                };
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                window.setupGenericFilterHandlers(
+                    'coverage',
+                    selectedCoverageSupervisors,
+                    selectedCoverageVendedores,
+                    updateCoverageSupervisorFilter,
+                    updateCoverageVendedorFilter,
+                    (info) => { handleCoverageFilterChange(info); },
+                    null,
+                    false,
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
             }
-
-            // Seller
-            const vendBtn = document.getElementById('coverage-vendedor-filter-btn');
-            const vendDropdown = document.getElementById('coverage-vendedor-filter-dropdown');
-            if(vendBtn && vendDropdown) {
-                const newBtn = vendBtn.cloneNode(true);
-                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    vendDropdown.classList.toggle('hidden');
-                    document.getElementById('coverage-supervisor-filter-dropdown')?.classList.add('hidden');
-                };
-                vendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedCoverageVendedores.add(val);
-                        else selectedCoverageVendedores.delete(val);
-
-                        updateFilterButtonText(document.getElementById('coverage-vendedor-filter-text'), selectedCoverageVendedores, 'Todos');
-                        handleCoverageFilterChange({ excludeFilter: 'seller' });
-                    }
-                };
-            }
-
-            // Global close logic
-            if (!document._coverageFilterListener) {
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('#coverage-supervisor-filter-wrapper')) {
-                        document.getElementById('coverage-supervisor-filter-dropdown')?.classList.add('hidden');
-                    }
-                    if (!e.target.closest('#coverage-vendedor-filter-wrapper')) {
-                        document.getElementById('coverage-vendedor-filter-dropdown')?.classList.add('hidden');
-                    }
-                });
-
-
-                document._coverageFilterListener = true;
-            }
-
-            updateCoverageSupervisorFilter();
-            updateCoverageVendedorFilter();
         }
 
         function updateCoverageSupervisorFilter() {
@@ -28073,103 +27789,19 @@ const supervisorGroups = new Map();
         }
 
         function setupMixSupervisorFilterHandlers() {
-            const supWrapper = document.getElementById('mix-supervisor-filter-wrapper');
-            const vendWrapper = document.getElementById('mix-vendedor-filter-wrapper');
-
-            // Supervisor
-            const supBtn = document.getElementById('mix-supervisor-filter-btn');
-            const supDropdown = document.getElementById('mix-supervisor-filter-dropdown');
-            if(supBtn && supDropdown) {
-                const newBtn = supBtn.cloneNode(true);
-                supBtn.parentNode.replaceChild(newBtn, supBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    const isHidden = supDropdown.classList.contains('hidden');
-
-                    // Close others
-                    document.getElementById('mix-vendedor-filter-dropdown')?.classList.add('hidden');
-                    if(vendWrapper) vendWrapper.classList.remove('z-50');
-
-                    if(isHidden) {
-                        supDropdown.classList.remove('hidden');
-                        if(supWrapper) supWrapper.classList.add('z-50');
-                    } else {
-                        supDropdown.classList.add('hidden');
-                        if(supWrapper) supWrapper.classList.remove('z-50');
-                    }
-                };
-                supDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedMixSupervisors.add(val);
-                        else selectedMixSupervisors.delete(val);
-
-                        updateFilterButtonText(document.getElementById('mix-supervisor-filter-text'), selectedMixSupervisors, 'Todos');
-                        selectedMixVendedores.clear();
-                        updateMixVendedorFilter();
-                        updateMixView();
-                    }
-                };
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                window.setupGenericFilterHandlers(
+                    'mix',
+                    selectedMixSupervisors,
+                    selectedMixVendedores,
+                    updateMixSupervisorFilter,
+                    updateMixVendedorFilter,
+                    () => { updateMixView(); },
+                    null,
+                    false,
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
             }
-
-            // Seller
-            const vendBtn = document.getElementById('mix-vendedor-filter-btn');
-            const vendDropdown = document.getElementById('mix-vendedor-filter-dropdown');
-            if(vendBtn && vendDropdown) {
-                const newBtn = vendBtn.cloneNode(true);
-                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    const isHidden = vendDropdown.classList.contains('hidden');
-
-                    // Close others
-                    document.getElementById('mix-supervisor-filter-dropdown')?.classList.add('hidden');
-                    if(supWrapper) supWrapper.classList.remove('z-50');
-
-                    if(isHidden) {
-                        vendDropdown.classList.remove('hidden');
-                        if(vendWrapper) vendWrapper.classList.add('z-50');
-                    } else {
-                        vendDropdown.classList.add('hidden');
-                        if(vendWrapper) vendWrapper.classList.remove('z-50');
-                    }
-                };
-                vendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedMixVendedores.add(val);
-                        else selectedMixVendedores.delete(val);
-
-                        updateFilterButtonText(document.getElementById('mix-vendedor-filter-text'), selectedMixVendedores, 'Todos');
-                        updateMixView();
-                    }
-                };
-            }
-
-            // Global close logic
-            if (!document._mixFilterListener) {
-                document.addEventListener('click', (e) => {
-                    const supDd = document.getElementById('mix-supervisor-filter-dropdown');
-                    const vendDd = document.getElementById('mix-vendedor-filter-dropdown');
-
-                    if (!e.target.closest('#mix-supervisor-filter-wrapper')) {
-                        if(supDd) supDd.classList.add('hidden');
-                        if(supWrapper) supWrapper.classList.remove('z-50');
-                    }
-                    if (!e.target.closest('#mix-vendedor-filter-wrapper')) {
-                        if(vendDd) vendDd.classList.add('hidden');
-                        if(vendWrapper) vendWrapper.classList.remove('z-50');
-                    }
-                });
-
-
-                document._mixFilterListener = true;
-            }
-
-            updateMixSupervisorFilter();
-            updateMixVendedorFilter();
         }
 
         function updateMixSupervisorFilter() {
@@ -28415,73 +28047,19 @@ const supervisorGroups = new Map();
         }
 
         function setupInnovationsMonthSupervisorFilterHandlers() {
-            // Supervisor
-            const supBtn = document.getElementById('innovations-month-supervisor-filter-btn');
-            const supDropdown = document.getElementById('innovations-month-supervisor-filter-dropdown');
-            if(supBtn && supDropdown) {
-                const newBtn = supBtn.cloneNode(true);
-                supBtn.parentNode.replaceChild(newBtn, supBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    supDropdown.classList.toggle('hidden');
-                    document.getElementById('innovations-month-vendedor-filter-dropdown')?.classList.add('hidden');
-                };
-                supDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedInnovationsMonthSupervisors.add(val);
-                        else selectedInnovationsMonthSupervisors.delete(val);
-
-                        updateFilterButtonText(document.getElementById('innovations-month-supervisor-filter-text'), selectedInnovationsMonthSupervisors, 'Todos');
-                        selectedInnovationsMonthVendedores.clear();
-                        updateInnovationsMonthVendedorFilter();
-                        updateInnovationsMonthView();
-                    }
-                };
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                window.setupGenericFilterHandlers(
+                    'innovations-month',
+                    selectedInnovationsMonthSupervisors,
+                    selectedInnovationsMonthVendedores,
+                    updateInnovationsMonthSupervisorFilter,
+                    updateInnovationsMonthVendedorFilter,
+                    () => { updateInnovationsMonthView(); },
+                    null,
+                    false,
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
             }
-
-            // Seller
-            const vendBtn = document.getElementById('innovations-month-vendedor-filter-btn');
-            const vendDropdown = document.getElementById('innovations-month-vendedor-filter-dropdown');
-            if(vendBtn && vendDropdown) {
-                const newBtn = vendBtn.cloneNode(true);
-                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    vendDropdown.classList.toggle('hidden');
-                    document.getElementById('innovations-month-supervisor-filter-dropdown')?.classList.add('hidden');
-                };
-                vendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedInnovationsMonthVendedores.add(val);
-                        else selectedInnovationsMonthVendedores.delete(val);
-
-                        updateFilterButtonText(document.getElementById('innovations-month-vendedor-filter-text'), selectedInnovationsMonthVendedores, 'Todos');
-                        updateInnovationsMonthView();
-                    }
-                };
-            }
-
-            // Global close logic
-            if (!document._innovationsMonthFilterListener) {
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('#innovations-month-supervisor-filter-wrapper')) {
-                        document.getElementById('innovations-month-supervisor-filter-dropdown')?.classList.add('hidden');
-                    }
-                    if (!e.target.closest('#innovations-month-vendedor-filter-wrapper')) {
-                        document.getElementById('innovations-month-vendedor-filter-dropdown')?.classList.add('hidden');
-                    }
-                });
-
-
-                document._innovationsMonthFilterListener = true;
-            }
-
-            updateInnovationsMonthSupervisorFilter();
-            updateInnovationsMonthVendedorFilter();
         }
 
         function updateInnovationsMonthSupervisorFilter() {
@@ -28497,63 +28075,19 @@ const supervisorGroups = new Map();
         }
 
         function setupTitulosSupervisorFilterHandlers() {
-            const supBtn = document.getElementById('titulos-supervisor-filter-btn');
-            const supDropdown = document.getElementById('titulos-supervisor-filter-dropdown');
-            if(supBtn && supDropdown) {
-                const newBtn = supBtn.cloneNode(true);
-                supBtn.parentNode.replaceChild(newBtn, supBtn);
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    supDropdown.classList.toggle('hidden');
-                    document.getElementById('titulos-vendedor-filter-dropdown')?.classList.add('hidden');
-                };
-                supDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedTitulosSupervisors.add(val);
-                        else selectedTitulosSupervisors.delete(val);
-                        updateFilterButtonText(document.getElementById('titulos-supervisor-filter-text'), selectedTitulosSupervisors, 'Todos');
-                        selectedTitulosVendedores.clear();
-                        updateTitulosVendedorFilter();
-                        handleTitulosFilterChange();
-                    }
-                };
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                window.setupGenericFilterHandlers(
+                    'titulos',
+                    selectedTitulosSupervisors,
+                    selectedTitulosVendedores,
+                    updateTitulosSupervisorFilter,
+                    updateTitulosVendedorFilter,
+                    () => { handleTitulosFilterChange(); },
+                    null,
+                    false,
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
             }
-            const vendBtn = document.getElementById('titulos-vendedor-filter-btn');
-            const vendDropdown = document.getElementById('titulos-vendedor-filter-dropdown');
-            if(vendBtn && vendDropdown) {
-                const newBtn = vendBtn.cloneNode(true);
-                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    vendDropdown.classList.toggle('hidden');
-                    document.getElementById('titulos-supervisor-filter-dropdown')?.classList.add('hidden');
-                };
-                vendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedTitulosVendedores.add(val);
-                        else selectedTitulosVendedores.delete(val);
-                        updateFilterButtonText(document.getElementById('titulos-vendedor-filter-text'), selectedTitulosVendedores, 'Todos');
-                        handleTitulosFilterChange();
-                    }
-                };
-            }
-            if (!document._titulosFilterListener) {
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('#titulos-supervisor-filter-wrapper')) {
-                        document.getElementById('titulos-supervisor-filter-dropdown')?.classList.add('hidden');
-                    }
-                    if (!e.target.closest('#titulos-vendedor-filter-wrapper')) {
-                        document.getElementById('titulos-vendedor-filter-dropdown')?.classList.add('hidden');
-                    }
-                });
-
-
-                document._titulosFilterListener = true;
-            }
-            updateTitulosSupervisorFilter();
-            updateTitulosVendedorFilter();
         }
 
         function updateTitulosSupervisorFilter() {
@@ -28569,63 +28103,19 @@ const supervisorGroups = new Map();
         }
 
         function setupLpSupervisorFilterHandlers() {
-            const supBtn = document.getElementById('lp-supervisor-filter-btn');
-            const supDropdown = document.getElementById('lp-supervisor-filter-dropdown');
-            if(supBtn && supDropdown) {
-                const newBtn = supBtn.cloneNode(true);
-                supBtn.parentNode.replaceChild(newBtn, supBtn);
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    supDropdown.classList.toggle('hidden');
-                    document.getElementById('lp-vendedor-filter-dropdown')?.classList.add('hidden');
-                };
-                supDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedLpSupervisors.add(val);
-                        else selectedLpSupervisors.delete(val);
-                        updateFilterButtonText(document.getElementById('lp-supervisor-filter-text'), selectedLpSupervisors, 'Todos');
-                        selectedLpVendedores.clear();
-                        updateLpVendedorFilter();
-                        handleLpFilterChange();
-                    }
-                };
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                window.setupGenericFilterHandlers(
+                    'lp',
+                    selectedLpSupervisors,
+                    selectedLpVendedores,
+                    updateLpSupervisorFilter,
+                    updateLpVendedorFilter,
+                    () => { handleLpFilterChange(); },
+                    null,
+                    false,
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
             }
-            const vendBtn = document.getElementById('lp-vendedor-filter-btn');
-            const vendDropdown = document.getElementById('lp-vendedor-filter-dropdown');
-            if(vendBtn && vendDropdown) {
-                const newBtn = vendBtn.cloneNode(true);
-                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    vendDropdown.classList.toggle('hidden');
-                    document.getElementById('lp-supervisor-filter-dropdown')?.classList.add('hidden');
-                };
-                vendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedLpVendedores.add(val);
-                        else selectedLpVendedores.delete(val);
-                        updateFilterButtonText(document.getElementById('lp-vendedor-filter-text'), selectedLpVendedores, 'Todos');
-                        handleLpFilterChange();
-                    }
-                };
-            }
-            if (!document._lpFilterListener) {
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('#lp-supervisor-filter-wrapper')) {
-                        document.getElementById('lp-supervisor-filter-dropdown')?.classList.add('hidden');
-                    }
-                    if (!e.target.closest('#lp-vendedor-filter-wrapper')) {
-                        document.getElementById('lp-vendedor-filter-dropdown')?.classList.add('hidden');
-                    }
-                });
-
-
-                document._lpFilterListener = true;
-            }
-            updateLpSupervisorFilter();
-            updateLpVendedorFilter();
         }
 
         function updateLpSupervisorFilter() {
@@ -28641,65 +28131,22 @@ const supervisorGroups = new Map();
         }
 
         function setupHistorySupervisorFilterHandlers() {
-            const supBtn = document.getElementById('history-supervisor-filter-btn');
-            const supDropdown = document.getElementById('history-supervisor-filter-dropdown');
-            if(supBtn && supDropdown) {
-                const newBtn = supBtn.cloneNode(true);
-                supBtn.parentNode.replaceChild(newBtn, supBtn);
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    supDropdown.classList.toggle('hidden');
-                    document.getElementById('history-vendedor-filter-dropdown')?.classList.add('hidden');
-                };
-                supDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedHistorySupervisors.add(val);
-                        else selectedHistorySupervisors.delete(val);
-                        updateFilterButtonText(document.getElementById('history-supervisor-filter-text'), selectedHistorySupervisors, 'Todos');
-                        selectedHistoryVendedores.clear();
-                        updateHistoryVendedorFilter();
-                        if(historyTableState.hasSearched) filterHistoryView();
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                window.setupGenericFilterHandlers(
+                    'history',
+                    selectedHistorySupervisors,
+                    selectedHistoryVendedores,
+                    updateHistorySupervisorFilter,
+                    updateHistoryVendedorFilter,
+                    () => {
+                        if(historyTableState.hasSearched && typeof filterHistoryView === 'function') filterHistoryView();
                         else if(typeof renderHistoryView === 'function') renderHistoryView();
-                    }
-                };
+                    },
+                    null,
+                    false,
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
             }
-            const vendBtn = document.getElementById('history-vendedor-filter-btn');
-            const vendDropdown = document.getElementById('history-vendedor-filter-dropdown');
-            if(vendBtn && vendDropdown) {
-                const newBtn = vendBtn.cloneNode(true);
-                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    vendDropdown.classList.toggle('hidden');
-                    document.getElementById('history-supervisor-filter-dropdown')?.classList.add('hidden');
-                };
-                vendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedHistoryVendedores.add(val);
-                        else selectedHistoryVendedores.delete(val);
-                        updateFilterButtonText(document.getElementById('history-vendedor-filter-text'), selectedHistoryVendedores, 'Todos');
-                        if(historyTableState.hasSearched) filterHistoryView();
-                        else if(typeof renderHistoryView === 'function') renderHistoryView();
-                    }
-                };
-            }
-            if (!document._historyFilterListener) {
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('#history-supervisor-filter-wrapper')) {
-                        document.getElementById('history-supervisor-filter-dropdown')?.classList.add('hidden');
-                    }
-                    if (!e.target.closest('#history-vendedor-filter-wrapper')) {
-                        document.getElementById('history-vendedor-filter-dropdown')?.classList.add('hidden');
-                    }
-                });
-
-
-                document._historyFilterListener = true;
-            }
-            updateHistorySupervisorFilter();
-            updateHistoryVendedorFilter();
         }
 
         function updateHistorySupervisorFilter() {
@@ -28715,71 +28162,24 @@ const supervisorGroups = new Map();
         }
 
         function setupStockSupervisorFilterHandlers() {
-            const supBtn = document.getElementById('stock-supervisor-filter-btn');
-            const supDropdown = document.getElementById('stock-supervisor-filter-dropdown');
-            if(supBtn && supDropdown) {
-                const newBtn = supBtn.cloneNode(true);
-                supBtn.parentNode.replaceChild(newBtn, supBtn);
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    supDropdown.classList.toggle('hidden');
-                    // Close others
-                    document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
-                    document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
-                    document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
-                    document.getElementById('stock-filial-filter-dropdown')?.classList.add('hidden');
-                };
-                supDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedStockSupervisors.add(val);
-                        else selectedStockSupervisors.delete(val);
-                        updateFilterButtonText(document.getElementById('stock-supervisor-filter-text'), selectedStockSupervisors, 'Todos');
-                        selectedStockVendedores.clear();
-                        updateStockVendedorFilter();
-                        handleStockFilterChange();
-                    }
-                };
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                window.setupGenericFilterHandlers(
+                    'stock',
+                    selectedStockSupervisors,
+                    selectedStockVendedores,
+                    updateStockSupervisorFilter,
+                    updateStockVendedorFilter,
+                    () => { handleStockFilterChange(); },
+                    () => {
+                        // Close other stock specific dropdowns
+                        document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
+                        document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
+                        document.getElementById('stock-filial-filter-dropdown')?.classList.add('hidden');
+                    },
+                    false,
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
             }
-            const vendBtn = document.getElementById('stock-vendedor-filter-btn');
-            const vendDropdown = document.getElementById('stock-vendedor-filter-dropdown');
-            if(vendBtn && vendDropdown) {
-                const newBtn = vendBtn.cloneNode(true);
-                vendBtn.parentNode.replaceChild(newBtn, vendBtn);
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    vendDropdown.classList.toggle('hidden');
-                    // Close others
-                    document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
-                    document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
-                    document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
-                    document.getElementById('stock-filial-filter-dropdown')?.classList.add('hidden');
-                };
-                vendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedStockVendedores.add(val);
-                        else selectedStockVendedores.delete(val);
-                        updateFilterButtonText(document.getElementById('stock-vendedor-filter-text'), selectedStockVendedores, 'Todos');
-                        handleStockFilterChange();
-                    }
-                };
-            }
-            if (!document._stockFilterListener) {
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('#stock-supervisor-filter-wrapper')) {
-                        document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
-                    }
-                    if (!e.target.closest('#stock-vendedor-filter-wrapper')) {
-                        document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
-                    }
-                });
-
-
-                document._stockFilterListener = true;
-            }
-            updateStockSupervisorFilter();
-            updateStockVendedorFilter();
         }
 
         function updateStockSupervisorFilter() {
@@ -30545,169 +29945,67 @@ const supervisorGroups = new Map();
     }
 
         function setupGoalsSupervisorFilterHandlers() {
-            // --- GV Tab ---
-            // Supervisor
-            const gvSupBtn = document.getElementById('goals-gv-supervisor-filter-btn');
-            const gvSupDropdown = document.getElementById('goals-gv-supervisor-filter-dropdown');
-            if(gvSupBtn && gvSupDropdown) {
-                const newBtn = gvSupBtn.cloneNode(true);
-                gvSupBtn.parentNode.replaceChild(newBtn, gvSupBtn);
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                // GV Tab
+                window.setupGenericFilterHandlers(
+                    'goals-gv',
+                    selectedGoalsGvSupervisors,
+                    selectedGoalsGvVendedores,
+                    updateGoalsGvSupervisorFilter,
+                    updateGoalsGvVendedorFilter,
+                    () => { updateGoalsView(); },
+                    null,
+                    true, // isSellerFilter = true
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
 
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    gvSupDropdown.classList.toggle('hidden');
-                    document.getElementById('goals-gv-seller-filter-dropdown')?.classList.add('hidden');
-                };
-                gvSupDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedGoalsGvSupervisors.add(val);
-                        else selectedGoalsGvSupervisors.delete(val);
+                // Summary Tab
+                window.setupGenericFilterHandlers(
+                    'goals-summary',
+                    selectedGoalsSummarySupervisors,
+                    selectedGoalsSummaryVendedores,
+                    updateGoalsSummarySupervisorFilter,
+                    updateGoalsSummaryVendedorFilter,
+                    () => { updateGoalsSummaryView(); },
+                    null,
+                    true, // isSellerFilter = true
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
 
-                        updateFilterButtonText(document.getElementById('goals-gv-supervisor-filter-text'), selectedGoalsGvSupervisors, 'Todos');
-                        selectedGoalsGvVendedores.clear();
-                        updateGoalsGvVendedorFilter();
-                        updateGoalsView();
-                    }
-                };
-            }
+                // SV Tab (Supervisor only)
+                const svSupBtn = document.getElementById('goals-sv-supervisor-filter-btn');
+                const svSupDropdown = document.getElementById('goals-sv-supervisor-filter-dropdown');
+                if(svSupBtn && svSupDropdown) {
+                    const newBtn = svSupBtn.cloneNode(true);
+                    svSupBtn.parentNode.replaceChild(newBtn, svSupBtn);
 
-            // Seller
-            const gvVendBtn = document.getElementById('goals-gv-seller-filter-btn');
-            const gvVendDropdown = document.getElementById('goals-gv-seller-filter-dropdown');
-            if(gvVendBtn && gvVendDropdown) {
-                const newBtn = gvVendBtn.cloneNode(true);
-                gvVendBtn.parentNode.replaceChild(newBtn, gvVendBtn);
+                    newBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        svSupDropdown.classList.toggle('hidden');
+                    };
+                    svSupDropdown.onchange = (e) => {
+                        if (e.target.type === 'checkbox') {
+                            const val = e.target.value;
+                            if(e.target.checked) selectedGoalsSvSupervisors.add(val);
+                            else selectedGoalsSvSupervisors.delete(val);
 
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    gvVendDropdown.classList.toggle('hidden');
-                    document.getElementById('goals-gv-supervisor-filter-dropdown')?.classList.add('hidden');
-                };
-                gvVendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedGoalsGvVendedores.add(val);
-                        else selectedGoalsGvVendedores.delete(val);
-
-                        updateFilterButtonText(document.getElementById('goals-gv-seller-filter-text'), selectedGoalsGvVendedores, 'Todos');
-                        updateGoalsView();
-                    }
-                };
-            }
-
-            // --- Summary Tab ---
-            // Supervisor
-            const sumSupBtn = document.getElementById('goals-summary-supervisor-filter-btn');
-            const sumSupDropdown = document.getElementById('goals-summary-supervisor-filter-dropdown');
-            if(sumSupBtn && sumSupDropdown) {
-                const newBtn = sumSupBtn.cloneNode(true);
-                sumSupBtn.parentNode.replaceChild(newBtn, sumSupBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    sumSupDropdown.classList.toggle('hidden');
-                    document.getElementById('goals-summary-seller-filter-dropdown')?.classList.add('hidden');
-                };
-                sumSupDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedGoalsSummarySupervisors.add(val);
-                        else selectedGoalsSummarySupervisors.delete(val);
-
-                        updateFilterButtonText(document.getElementById('goals-summary-supervisor-filter-text'), selectedGoalsSummarySupervisors, 'Todos');
-                        selectedGoalsSummaryVendedores.clear();
-                        updateGoalsSummaryVendedorFilter();
-                        updateGoalsSummaryView();
-                    }
-                };
-            }
-
-            // Seller
-            const sumVendBtn = document.getElementById('goals-summary-seller-filter-btn');
-            const sumVendDropdown = document.getElementById('goals-summary-seller-filter-dropdown');
-            if(sumVendBtn && sumVendDropdown) {
-                const newBtn = sumVendBtn.cloneNode(true);
-                sumVendBtn.parentNode.replaceChild(newBtn, sumVendBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    sumVendDropdown.classList.toggle('hidden');
-                    document.getElementById('goals-summary-supervisor-filter-dropdown')?.classList.add('hidden');
-                };
-                sumVendDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedGoalsSummaryVendedores.add(val);
-                        else selectedGoalsSummaryVendedores.delete(val);
-
-                        updateFilterButtonText(document.getElementById('goals-summary-seller-filter-text'), selectedGoalsSummaryVendedores, 'Todos');
-                        updateGoalsSummaryView();
-                    }
-                };
-            }
-
-            // --- SV Tab ---
-            // Supervisor
-            const svSupBtn = document.getElementById('goals-sv-supervisor-filter-btn');
-            const svSupDropdown = document.getElementById('goals-sv-supervisor-filter-dropdown');
-            if(svSupBtn && svSupDropdown) {
-                const newBtn = svSupBtn.cloneNode(true);
-                svSupBtn.parentNode.replaceChild(newBtn, svSupBtn);
-
-                newBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    svSupDropdown.classList.toggle('hidden');
-                };
-                svSupDropdown.onchange = (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if(e.target.checked) selectedGoalsSvSupervisors.add(val);
-                        else selectedGoalsSvSupervisors.delete(val);
-
-                        updateFilterButtonText(document.getElementById('goals-sv-supervisor-filter-text'), selectedGoalsSvSupervisors, 'Todos');
-                        if (typeof updateGoalsSvView === 'function') updateGoalsSvView();
-                    }
-                };
-            }
-
-            // Global Close Listener for Goals
-            if (!document._goalsFilterListener) {
-                document.addEventListener('click', (e) => {
-                    // GV
-                    if (!e.target.closest('#goals-gv-supervisor-filter-wrapper')) {
-                        document.getElementById('goals-gv-supervisor-filter-dropdown')?.classList.add('hidden');
-                    }
-                    if (!e.target.closest('#goals-gv-seller-filter-wrapper')) {
-                        document.getElementById('goals-gv-seller-filter-dropdown')?.classList.add('hidden');
-                    }
-                    // Summary
-                    if (!e.target.closest('#goals-summary-supervisor-filter-wrapper')) {
-                        document.getElementById('goals-summary-supervisor-filter-dropdown')?.classList.add('hidden');
-                    }
-                    if (!e.target.closest('#goals-summary-seller-filter-wrapper')) {
-                        document.getElementById('goals-summary-seller-filter-dropdown')?.classList.add('hidden');
-                    }
-                    // SV
-                    const svSupBtn = document.getElementById('goals-sv-supervisor-filter-btn');
-                    const svSupDropdown = document.getElementById('goals-sv-supervisor-filter-dropdown');
-                    if (svSupBtn && svSupDropdown) {
-                        if (!svSupBtn.contains(e.target) && !svSupDropdown.contains(e.target)) {
-                            svSupDropdown.classList.add('hidden');
+                            updateFilterButtonText(document.getElementById('goals-sv-supervisor-filter-text'), selectedGoalsSvSupervisors, 'Todos');
+                            if (typeof updateGoalsSvView === 'function') updateGoalsSvView();
                         }
+                    };
+
+                    // Close listener for SV Tab
+                    if (!document._goalsSvFilterListener) {
+                        document.addEventListener('click', (e) => {
+                            if (!e.target.closest('#goals-sv-supervisor-filter-wrapper')) {
+                                document.getElementById('goals-sv-supervisor-filter-dropdown')?.classList.add('hidden');
+                            }
+                        });
+                        document._goalsSvFilterListener = true;
                     }
-                });
-
-
-                document._goalsFilterListener = true;
+                }
+                updateGoalsSvSupervisorFilter();
             }
-
-            // Initial Populate
-            updateGoalsGvSupervisorFilter();
-            updateGoalsGvVendedorFilter();
-            updateGoalsSummarySupervisorFilter();
-            updateGoalsSummaryVendedorFilter();
-            updateGoalsSvSupervisorFilter();
         }
 
         function updateGoalsGvSupervisorFilter() {
