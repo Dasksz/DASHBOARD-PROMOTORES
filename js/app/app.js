@@ -11115,7 +11115,7 @@ const supervisorGroups = new Map();
                 let usedGlobalOverride = false;
                 if (isGlobalAdminView && window.goalsTargets) {
                     const getTargetValueGlobal = (targetObj, key) => {
-                        if (!targetObj) return undefined;
+                        if (!targetObj || !key) return undefined;
                         if (targetObj[key] !== undefined) return targetObj[key];
                         const lowerKey = key.toLowerCase();
                         for (const k in targetObj) {
@@ -11189,7 +11189,7 @@ const supervisorGroups = new Map();
 
                         // Helper function for case-insensitive target lookup
                         const getTargetValue = (targetObj, key) => {
-                            if (!targetObj) return undefined;
+                            if (!targetObj || !key) return undefined;
                             if (targetObj[key] !== undefined) return targetObj[key];
                             const lowerKey = key.toLowerCase();
                             for (const k in targetObj) {
