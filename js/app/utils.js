@@ -571,4 +571,141 @@
         return validSelected;
     };
 
+
+    /**
+     * Reusable generic filter handler for Supervisor & Vendedor views
+     * This avoids duplicating the DOM handler boilerplate across different views.
+     */
+    window.setupGenericFilterHandlers = function(prefix, selectedSupervisorsSet, selectedVendedoresSet, updateSupervisorFilterFn, updateVendedorFilterFn, filterChangeCallback, customCloseLogic, isSellerFilter = false, updateFilterButtonTextFn = null) {
+        const supWrapperId = `${prefix}-supervisor-filter-wrapper`;
+        const vendSuffix = isSellerFilter ? 'seller' : 'vendedor';
+        const vendWrapperId = `${prefix}-${vendSuffix}-filter-wrapper`;
+
+        const supBtn = document.getElementById(`${prefix}-supervisor-filter-btn`);
+        const supDropdown = document.getElementById(`${prefix}-supervisor-filter-dropdown`);
+
+        const vendBtn = document.getElementById(`${prefix}-${vendSuffix}-filter-btn`);
+        const vendDropdown = document.getElementById(`${prefix}-${vendSuffix}-filter-dropdown`);
+
+        const supTextId = `${prefix}-supervisor-filter-text`;
+        const vendTextId = `${prefix}-${vendSuffix}-filter-text`;
+
+        // If updateFilterButtonText is available locally or globally, use it
+        const updateText = updateFilterButtonTextFn || (typeof window.updateFilterButtonText === 'function' ? window.updateFilterButtonText : null);
+
+        if (supBtn && supDropdown) {
+            const newBtn = supBtn.cloneNode(true);
+            supBtn.parentNode.replaceChild(newBtn, supBtn);
+
+            newBtn.onclick = (e) => {
+                e.stopPropagation();
+                const isHidden = supDropdown.classList.contains('hidden');
+
+                // Close others
+                const currentVendDd = document.getElementById(`${prefix}-${vendSuffix}-filter-dropdown`);
+                if (currentVendDd) currentVendDd.classList.add('hidden');
+
+                const vendWrapper = document.getElementById(vendWrapperId);
+                if(vendWrapper) vendWrapper.classList.remove('z-50');
+
+                if (typeof customCloseLogic === 'function') customCloseLogic();
+
+                if(isHidden) {
+                    supDropdown.classList.remove('hidden');
+                    const supWrapper = document.getElementById(supWrapperId);
+                    if(supWrapper) supWrapper.classList.add('z-50');
+                } else {
+                    supDropdown.classList.add('hidden');
+                    const supWrapper = document.getElementById(supWrapperId);
+                    if(supWrapper) supWrapper.classList.remove('z-50');
+                }
+            };
+
+            supDropdown.onchange = (e) => {
+                if (e.target.type === 'checkbox') {
+                    const val = e.target.value;
+                    if (e.target.checked) selectedSupervisorsSet.add(val);
+                    else selectedSupervisorsSet.delete(val);
+
+                    if (typeof updateText === 'function') {
+                        updateText(document.getElementById(supTextId), selectedSupervisorsSet, 'Todos');
+                    }
+
+                    selectedVendedoresSet.clear();
+                    if (typeof updateVendedorFilterFn === 'function') updateVendedorFilterFn();
+
+                    if (typeof filterChangeCallback === 'function') {
+                        filterChangeCallback({ excludeFilter: 'supervisor' });
+                    }
+                }
+            };
+        }
+
+        if (vendBtn && vendDropdown) {
+            const newBtn = vendBtn.cloneNode(true);
+            vendBtn.parentNode.replaceChild(newBtn, vendBtn);
+
+            newBtn.onclick = (e) => {
+                e.stopPropagation();
+                const isHidden = vendDropdown.classList.contains('hidden');
+
+                // Close others
+                const currentSupDd = document.getElementById(`${prefix}-supervisor-filter-dropdown`);
+                if (currentSupDd) currentSupDd.classList.add('hidden');
+                const supWrapper = document.getElementById(supWrapperId);
+                if(supWrapper) supWrapper.classList.remove('z-50');
+
+                if (typeof customCloseLogic === 'function') customCloseLogic();
+
+                if(isHidden) {
+                    vendDropdown.classList.remove('hidden');
+                    const vendWrapper = document.getElementById(vendWrapperId);
+                    if(vendWrapper) vendWrapper.classList.add('z-50');
+                } else {
+                    vendDropdown.classList.add('hidden');
+                    const vendWrapper = document.getElementById(vendWrapperId);
+                    if(vendWrapper) vendWrapper.classList.remove('z-50');
+                }
+            };
+
+            vendDropdown.onchange = (e) => {
+                if (e.target.type === 'checkbox') {
+                    const val = e.target.value;
+                    if (e.target.checked) selectedVendedoresSet.add(val);
+                    else selectedVendedoresSet.delete(val);
+
+                    if (typeof updateText === 'function') {
+                        updateText(document.getElementById(vendTextId), selectedVendedoresSet, 'Todos');
+                    }
+
+                    if (typeof filterChangeCallback === 'function') {
+                        filterChangeCallback({ excludeFilter: 'seller' });
+                    }
+                }
+            };
+        }
+
+        const listenerKey = `_${prefix}FilterListener`;
+        if (!document[listenerKey]) {
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest(`#${supWrapperId}`)) {
+                    const currentSupDd = document.getElementById(`${prefix}-supervisor-filter-dropdown`);
+                    if (currentSupDd) currentSupDd.classList.add('hidden');
+                    const supWrapper = document.getElementById(supWrapperId);
+                    if(supWrapper) supWrapper.classList.remove('z-50');
+                }
+                if (!e.target.closest(`#${vendWrapperId}`)) {
+                    const currentVendDd = document.getElementById(`${prefix}-${vendSuffix}-filter-dropdown`);
+                    if (currentVendDd) currentVendDd.classList.add('hidden');
+                    const vendWrapper = document.getElementById(vendWrapperId);
+                    if(vendWrapper) vendWrapper.classList.remove('z-50');
+                }
+            });
+            document[listenerKey] = true;
+        }
+
+        if (typeof updateSupervisorFilterFn === 'function') updateSupervisorFilterFn();
+        if (typeof updateVendedorFilterFn === 'function') updateVendedorFilterFn();
+    };
+
 })();
