@@ -422,7 +422,7 @@
         }
 
         /* Fix: Ensure hidden columns/rows stay hidden despite display: block/flex override */
-        .hidden {
+        .hidden, .hidden-col {
             display: none !important;
         }
         td::before {
