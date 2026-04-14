@@ -938,10 +938,7 @@
             console.log("[GeoSync] Iniciando verificação de coordenadas em segundo plano...");
 
             const activeClientsList = getActiveClientsData();
-            const activeClientCodes = new Set();
-            for (const c of activeClientsList) {
-                activeClientCodes.add(String(c['Código'] || c['codigo_cliente']));
-            }
+            const activeClientCodes = getActiveClientCodes();
 
             // 1. Cleanup Orphans
             const orphanedCodes = [];
@@ -2534,19 +2531,33 @@
         // cityNameFilter removed
         // Cache variables for Active Clients Optimization
         let cachedActiveClientsBase = null;
+        let cachedActiveClientCodesSet = null;
         let lastAllClientsData = null;
 
         window.getActiveClientsData = getActiveClientsData;
+        window.getActiveClientCodes = getActiveClientCodes;
+
+        function getActiveClientCodes() {
+            if (lastAllClientsData !== allClientsData || !cachedActiveClientCodesSet) {
+                getActiveClientsData();
+            }
+            // Optimization: Return the original Set.
+            // CONSUMERS MUST NOT MODIFY THIS SET.
+            return cachedActiveClientCodesSet || new Set();
+        }
+
         function getActiveClientsData() {
             try {
                 // Invalidate cache if source data reference changes
                 if (lastAllClientsData !== allClientsData) {
                     cachedActiveClientsBase = null;
+                    cachedActiveClientCodesSet = null;
                     lastAllClientsData = allClientsData;
                 }
 
-                if (!cachedActiveClientsBase) {
+                if (!cachedActiveClientsBase || !cachedActiveClientCodesSet) {
                     cachedActiveClientsBase = [];
+                    cachedActiveClientCodesSet = new Set();
 
                     const isColumnar = allClientsData instanceof ColumnarDataset;
                     const len = allClientsData.length;
@@ -2585,6 +2596,7 @@
 
                         if (isBase) {
                             cachedActiveClientsBase.push(item);
+                            cachedActiveClientCodesSet.add(codcli);
                         }
                     }
                 }
