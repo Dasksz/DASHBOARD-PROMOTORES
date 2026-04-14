@@ -1021,8 +1021,12 @@
             const chartId = 'metaRealizadoPosChartInstance';
 
             // Aggregate Totals for Positivação
-            const totalGoal = data.reduce((sum, d) => sum + (d.posGoal || 0), 0);
-            const totalReal = data.reduce((sum, d) => sum + (d.posRealized || 0), 0);
+            let totalGoal = 0;
+            let totalReal = 0;
+            for (let i = 0; i < data.length; i++) {
+                totalGoal += (data[i].posGoal || 0);
+                totalReal += (data[i].posRealized || 0);
+            }
 
             if (charts[chartId]) {
                 charts[chartId].data.datasets[0].data = [totalGoal];
@@ -5487,8 +5491,12 @@
             const chartId = 'metaRealizadoChartInstance';
 
             // Aggregate totals for the chart (Total Meta vs Total Realizado)
-            const totalMeta = data.reduce((sum, d) => sum + d.metaTotal, 0);
-            const totalReal = data.reduce((sum, d) => sum + d.realTotal, 0);
+            let totalMeta = 0;
+            let totalReal = 0;
+            for (let i = 0; i < data.length; i++) {
+                totalMeta += data[i].metaTotal;
+                totalReal += data[i].realTotal;
+            }
 
             // Adjust formatting based on metric
             const isVolume = currentMetaRealizadoMetric === 'peso';
@@ -5630,7 +5638,10 @@
             const { goalsBySeller, salesBySeller, weeks } = getMetaRealizadoFilteredData();
 
             // Re-calculate Total Working Days
-            let totalWorkingDays = weeks.reduce((sum, w) => sum + w.workingDays, 0);
+            let totalWorkingDays = 0;
+            for (let i = 0; i < weeks.length; i++) {
+                totalWorkingDays += weeks[i].workingDays;
+            }
             if (totalWorkingDays === 0) totalWorkingDays = 1;
 
             // 2. Combine Data for Rendering (Sellers)
@@ -6837,8 +6848,12 @@
             });
 
             // Calculate auto distribution if goal is set but individual goals are zero (first run)
-            const totalShareFat = clientMetrics.reduce((sum, c) => sum + c.shareFat, 0);
-            const totalShareVol = clientMetrics.reduce((sum, c) => sum + c.shareVol, 0);
+            let totalShareFat = 0;
+            let totalShareVol = 0;
+            for (let i = 0; i < clientMetrics.length; i++) {
+                totalShareFat += clientMetrics[i].shareFat;
+                totalShareVol += clientMetrics[i].shareVol;
+            }
 
             // If we have input goals, we can distribute them proportionally (Visual only, not saved unless clicked)
             // But here we just return the metrics. The view uses these metrics.
@@ -7702,7 +7717,10 @@
 
                 const goalMixInput = document.getElementById('goal-global-mix');
                 const btnDistributeMix = document.getElementById('btn-distribute-mix');
-                const naturalTotalPos = clientMetrics.reduce((sum, item) => sum + item.metaPos, 0);
+                let naturalTotalPos = 0;
+                for (let i = 0; i < clientMetrics.length; i++) {
+                    naturalTotalPos += clientMetrics[i].metaPos;
+                }
                 const isSingleSeller = hierarchyState['goals-gv'] && hierarchyState['goals-gv'].promotors.size === 1;
 
                 if (goalMixInput) {
@@ -9365,7 +9383,10 @@ const supervisorGroups = new Map();
 
                 }
 
-                const totalBoxesFiltered = filteredTableData.reduce((sum, item) => sum + item.boxesSoldCurrentMonth, 0);
+                let totalBoxesFiltered = 0;
+                for (let i = 0; i < filteredTableData.length; i++) {
+                    totalBoxesFiltered += filteredTableData[i].boxesSoldCurrentMonth;
+                }
                 if (coverageTotalBoxesEl) {
                     coverageTotalBoxesEl.textContent = totalBoxesFiltered.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
                 }
@@ -9485,7 +9506,11 @@ const supervisorGroups = new Map();
                 const isMobile = window.innerWidth < 768;
                 const chartLimit = isMobile ? 5 : 10;
 
-                const totalCaixas = Object.values(salesByCity).reduce((a, b) => a + b, 0);
+                let totalCaixas = 0;
+                const cityVals = Object.values(salesByCity);
+                for (let i = 0; i < cityVals.length; i++) {
+                    totalCaixas += cityVals[i];
+                }
                 const totalKpiEl = document.getElementById("coverage-chart-total-kpi");
                 if (totalKpiEl) {
                     if (currentCoverageMetricMode === 'boxes') {
@@ -10650,7 +10675,11 @@ const supervisorGroups = new Map();
                     if (chartInstance) chartInstance.destroy();
 
                     // Calculate Total Realized (Sum of all entities in chartData)
-                    const totalRealized = Object.values(chartData).reduce((a, b) => a + b, 0);
+                    let totalRealized = 0;
+                    const chartDataVals = Object.values(chartData);
+                    for (let i = 0; i < chartDataVals.length; i++) {
+                        totalRealized += chartDataVals[i];
+                    }
 
                     // Calculate Goal for the visible clients
                     let totalGoal = 0;
@@ -11791,7 +11820,10 @@ const supervisorGroups = new Map();
 
                 const cityChartTitleEl = document.getElementById('city-chart-title');
                 const cityChartOptions = { indexAxis: 'y', scales: { x: { grace: '15%' } }, plugins: { datalabels: { align: 'end', anchor: 'end', color: '#cbd5e1', font: { size: 14, weight: 'bold' }, formatter: (value) => (value / 1000).toFixed(1) + 'k', offset: 8 } } };
-                const totalFaturamentoCidade = salesForAnalysis.reduce((sum, item) => sum + item.VLVENDA, 0);
+                let totalFaturamentoCidade = 0;
+                for (let i = 0; i < salesForAnalysis.length; i++) {
+                    totalFaturamentoCidade += salesForAnalysis[i].VLVENDA;
+                }
                 totalFaturamentoCidadeEl.textContent = totalFaturamentoCidade.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
                 if (totalClientesCidadeEl) {
@@ -12230,7 +12262,8 @@ const supervisorGroups = new Map();
                 clientProducts.set(sale.PRODUTO, currentValue + (Number(sale.VLVENDA) || 0));
             }
 
-            const mixValues = [];
+            let mixValuesSum = 0;
+            let mixValuesCount = 0;
             for (const products of clientProductNetValue.values()) {
                 let positiveProductCount = 0;
                 for (const netValue of products.values()) {
@@ -12239,13 +12272,14 @@ const supervisorGroups = new Map();
                     }
                 }
                 if (positiveProductCount > 0) {
-                    mixValues.push(positiveProductCount);
+                    mixValuesSum += positiveProductCount;
+                    mixValuesCount++;
                 }
             }
 
-            if (mixValues.length === 0) return 0;
+            if (mixValuesCount === 0) return 0;
 
-            return mixValues.reduce((a, b) => a + b, 0) / mixValues.length;
+            return mixValuesSum / mixValuesCount;
         }
 
         function calculatePositivacaoPorCestaComDevolucao(salesData, requiredCategories) {
@@ -12635,25 +12669,32 @@ const supervisorGroups = new Map();
 
             if (sortedMonths.length > 0) {
                 const firstMonthKey = sortedMonths[0];
-                const firstSaleInFirstMonth = salesByMonth[firstMonthKey].reduce((earliest, sale) => {
-                    const saleDate = parseDate(sale.DTPED);
-                    return (!earliest || (saleDate && saleDate < earliest)) ? saleDate : earliest;
-                }, null);
+                let earliest = null;
+                const monthSales = salesByMonth[firstMonthKey];
+                for (let i = 0; i < monthSales.length; i++) {
+                    const saleDate = parseDate(monthSales[i].DTPED);
+                    if (!earliest || (saleDate && saleDate < earliest)) {
+                        earliest = saleDate;
+                    }
+                }
 
-                if (firstSaleInFirstMonth && firstSaleInFirstMonth.getUTCDate() > 20) {
+                if (earliest && earliest.getUTCDate() > 20) {
                     sortedMonths.shift();
                 }
             }
 
             const monthsToAverage = sortedMonths.slice(-3);
 
-            const kpiValues = monthsToAverage.map(monthKey => {
+            let kpiSum = 0;
+            const kpiCount = monthsToAverage.length;
+            for (let i = 0; i < kpiCount; i++) {
+                const monthKey = monthsToAverage[i];
                 const salesForMonth = salesByMonth[monthKey];
-                return kpiFn(salesForMonth, ...kpiArgs);
-            });
+                kpiSum += kpiFn(salesForMonth, ...kpiArgs);
+            }
 
-            if (kpiValues.length === 0) return 0;
-            return kpiValues.reduce((a, b) => a + b, 0) / QUARTERLY_DIVISOR;
+            if (kpiCount === 0) return 0;
+            return kpiSum / QUARTERLY_DIVISOR;
         }
 
         const getFilteredDataFromIndices = (indices, dataset, filters, excludeFilter = null) => {
@@ -13342,7 +13383,10 @@ const supervisorGroups = new Map();
                     Object.values(metrics.charts.supervisorData).forEach(d => d.history /= QUARTERLY_DIVISOR);
 
                     // Calculate Day Weights
-                    const totalHistoryDays = metrics.historicalDayTotals.reduce((a, b) => a + b, 0);
+                    let totalHistoryDays = 0;
+                    for (let i = 0; i < metrics.historicalDayTotals.length; i++) {
+                        totalHistoryDays += metrics.historicalDayTotals[i];
+                    }
                     metrics.dayWeights = metrics.historicalDayTotals.map(v => totalHistoryDays > 0 ? v / totalHistoryDays : 0);
 
                     const sortedMonths = Array.from(historyMonths.keys()).sort((a, b) => {
@@ -13759,13 +13803,19 @@ const supervisorGroups = new Map();
 
                             if (workingDaysPassed > 0 && totalWorkingDays > 0) {
                                 const weekData = salesByWeekAndDay[currentWeekIndex + 1];
-                                const salesSoFar = weekData.reduce((a, b) => a + b, 0);
+                                let salesSoFar = 0;
+                                for (let k = 0; k < weekData.length; k++) salesSoFar += weekData[k];
                                 const projectedWeekTotal = (salesSoFar / workingDaysPassed) * totalWorkingDays;
                                 const remainder = projectedWeekTotal - salesSoFar;
 
                                 if (remainder > 0 && remainingDaysIndices.length > 0) {
-                                    const weightsForRemaining = remainingDaysIndices.map(d => m.dayWeights[d] || 0);
-                                    const totalWeightRemaining = weightsForRemaining.reduce((a, b) => a + b, 0);
+                                    let totalWeightRemaining = 0;
+                                    const weightsForRemaining = [];
+                                    for (let k = 0; k < remainingDaysIndices.length; k++) {
+                                        const w = m.dayWeights[remainingDaysIndices[k]] || 0;
+                                        weightsForRemaining.push(w);
+                                        totalWeightRemaining += w;
+                                    }
 
                                     remainingDaysIndices.forEach(dayIndex => {
                                         const weight = m.dayWeights[dayIndex] || 0;
@@ -13780,8 +13830,13 @@ const supervisorGroups = new Map();
                         }
 
                         // 2. Fill Future Weeks with Historical Average (Distributed by Day Weights)
-                        const weightsMonFri = [1, 2, 3, 4, 5].map(d => m.dayWeights[d] || 0);
-                        const totalWeightMonFri = weightsMonFri.reduce((a, b) => a + b, 0);
+                        let totalWeightMonFri = 0;
+                        const weightsMonFri = [];
+                        for (let k = 1; k <= 5; k++) {
+                            const w = m.dayWeights[k] || 0;
+                            weightsMonFri.push(w);
+                            totalWeightMonFri += w;
+                        }
 
                         for (let i = currentWeekIndex + 1; i < currentMonthWeeks.length; i++) {
                             const historicalTotal = m.charts.weeklyHistory[i] || 0;
@@ -13805,7 +13860,11 @@ const supervisorGroups = new Map();
                          let grandTotal = 0;
                          const weekKeys = Object.keys(salesByWeekAndDay).sort((a,b) => parseInt(a) - parseInt(b));
                          const rowsHTML = weekKeys.map(weekNum => {
-                             const weekTotal = Object.values(salesByWeekAndDay[weekNum]).reduce((a, b) => a + b, 0);
+                             let weekTotal = 0;
+                             const vals = Object.values(salesByWeekAndDay[weekNum]);
+                             for (let k = 0; k < vals.length; k++) {
+                                 weekTotal += vals[k];
+                             }
                              grandTotal += weekTotal;
                              return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">Semana ${weekNum}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${weekTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`;
                          }).join('');
@@ -15104,7 +15163,14 @@ const supervisorGroups = new Map();
                     DTPED: first.DTPED,
                     DTSAIDA: first.DTSAIDA,
                     CIDADE: first.CIDADE || 'N/A', // City might need lookup if not in sales
-                    VLVENDA: itemsDoPedido.reduce((acc, i) => acc + (Number((String(i.TIPOVENDA) === '5' || String(i.TIPOVENDA) === '11') ? (i.VLBONIFIC || i.VLVENDA) : i.VLVENDA)||0), 0)
+                    VLVENDA: (() => {
+                        let total = 0;
+                        for (let k = 0; k < itemsDoPedido.length; k++) {
+                            const i = itemsDoPedido[k];
+                            total += (Number((String(i.TIPOVENDA) === '5' || String(i.TIPOVENDA) === '11') ? (i.VLBONIFIC || i.VLVENDA) : i.VLVENDA)||0);
+                        }
+                        return total;
+                    })()
                 };
             }
 
@@ -15146,7 +15212,9 @@ const supervisorGroups = new Map();
             modalPedidoId.textContent = pedidoId + (itemsDoPedido.length > 0 && itemsDoPedido[0].TIPOVENDA ? ' (Tipo ' + itemsDoPedido[0].TIPOVENDA + ')' : '');
             modalHeaderInfo.innerHTML = `<div><p class="font-bold">Cód. Cliente:</p><p>${window.escapeHtml(orderInfo.CODCLI || 'N/A')}</p></div><div><p class="font-bold">Cliente:</p><p>${window.escapeHtml(orderInfo.CLIENTE_NOME || orderInfo.CLIENTE || 'N/A')}</p></div><div><p class="font-bold">Vendedor:</p><p>${window.escapeHtml(orderInfo.NOME || orderInfo.VENDEDOR || 'N/A')}</p></div><div><p class="font-bold">Data Pedido:</p><p>${formatDate(orderInfo.DTPED)}</p></div><div><p class="font-bold">Data Faturamento:</p><p>${formatDate(orderInfo.DTSAIDA)}</p></div><div><p class="font-bold">Cidade:</p><p>${window.escapeHtml(orderInfo.CIDADE || 'N/A')}</p></div>`;
 
-            modalTableBody.innerHTML = itemsDoPedido.map(item => {
+            let modalHtml = '';
+            for (let i = 0; i < itemsDoPedido.length; i++) {
+                const item = itemsDoPedido[i];
                 const isLossOrBonus = String(item.TIPOVENDA) === '5' || String(item.TIPOVENDA) === '11';
                 const itemVal = isLossOrBonus ? (Number(item.VLBONIFIC) || Number(item.VLVENDA)) : Number(item.VLVENDA);
                 const subTotal = itemVal || 0;
@@ -15174,7 +15242,7 @@ const supervisorGroups = new Map();
                     nameForMobile = parts.slice(1).join('-').trim();
                 }
 
-                return `
+                modalHtml += `
                 <tr class="hover:bg-slate-700">
                     <!-- Desktop Layout (Hidden on Mobile) -->
                     <td class="hidden md:table-cell px-4 py-2">(${window.escapeHtml(item.PRODUTO)}) ${window.escapeHtml(fullProductName)}</td>
@@ -15207,9 +15275,14 @@ const supervisorGroups = new Map();
                         </div>
                     </td>
                 </tr>`;
-            }).join('');
+            }
+            modalTableBody.innerHTML = modalHtml;
 
-            const calculatedTotal = itemsDoPedido.reduce((acc, i) => acc + (Number((String(i.TIPOVENDA) === '5' || String(i.TIPOVENDA) === '11') ? (i.VLBONIFIC || i.VLVENDA) : i.VLVENDA)||0), 0);
+            let calculatedTotal = 0;
+            for (let k = 0; k < itemsDoPedido.length; k++) {
+                const i = itemsDoPedido[k];
+                calculatedTotal += (Number((String(i.TIPOVENDA) === '5' || String(i.TIPOVENDA) === '11') ? (i.VLBONIFIC || i.VLVENDA) : i.VLVENDA)||0);
+            }
             const displayTotal = calculatedTotal > 0 ? calculatedTotal : (Number(orderInfo.VLVENDA) || 0);
             modalFooterTotal.innerHTML = `<p class="text-lg font-bold text-teal-400">Mix de Produtos: ${itemsDoPedido.length}</p><p class="text-lg font-bold text-emerald-400">Total do Pedido: ${displayTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>`;
             modal.classList.remove('hidden');
@@ -17725,10 +17798,13 @@ const supervisorGroups = new Map();
                             const gQuaker = getGoal(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO);
 
                             const sumGoals = (list) => {
-                                return list.reduce((acc, curr) => ({
-                                    fat: acc.fat + (curr.fat || 0),
-                                    vol: acc.vol + (curr.vol || 0)
-                                }), { fat: 0, vol: 0 });
+                                let fat = 0;
+                                let vol = 0;
+                                for (let i = 0; i < list.length; i++) {
+                                    fat += (list[i].fat || 0);
+                                    vol += (list[i].vol || 0);
+                                }
+                                return { fat, vol };
                             };
 
                             const elmaAll = sumGoals([g707, g708, g752]);
@@ -18887,7 +18963,10 @@ const supervisorGroups = new Map();
             let adjustedGoals = new Array(weeks.length).fill(0);
             let remainingWorkingDays = 0;
             let pastDifference = 0;
-            let totalWorkingDays = weeks.reduce((sum, w) => sum + w.workingDays, 0);
+            let totalWorkingDays = 0;
+            for (let i = 0; i < weeks.length; i++) {
+                totalWorkingDays += weeks[i].workingDays;
+            }
             if (totalWorkingDays === 0) totalWorkingDays = 1;
 
             const currentDate = lastSaleDate; // Global context
