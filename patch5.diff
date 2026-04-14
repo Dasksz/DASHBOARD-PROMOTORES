@@ -1,0 +1,21 @@
+<<<<<<< SEARCH
+                const totalFaturamentoCidade = salesForAnalysis.reduce((sum, item) => sum + item.VLVENDA, 0);
+                totalFaturamentoCidadeEl.textContent = totalFaturamentoCidade.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+=======
+                let totalFaturamentoCidade = 0;
+                for (let i = 0; i < salesForAnalysis.length; i++) {
+                    totalFaturamentoCidade += salesForAnalysis[i].VLVENDA;
+                }
+                totalFaturamentoCidadeEl.textContent = totalFaturamentoCidade.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+                const totalCaixas = Object.values(salesByCity).reduce((a, b) => a + b, 0);
+                const totalKpiEl = document.getElementById("coverage-chart-total-kpi");
+=======
+                let totalCaixas = 0;
+                const cityVals = Object.values(salesByCity);
+                for (let i = 0; i < cityVals.length; i++) {
+                    totalCaixas += cityVals[i];
+                }
+                const totalKpiEl = document.getElementById("coverage-chart-total-kpi");
+>>>>>>> REPLACE
