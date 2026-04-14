@@ -19467,9 +19467,9 @@ const supervisorGroups = new Map();
                     if (u.type === 'pos') displayCategory += '_POS';
 
                     row.innerHTML = `
-                        <td class="px-4 py-2 text-xs text-slate-300">${sellerCode}</td>
-                        <td class="px-4 py-2 text-xs text-slate-400">${u.seller}</td>
-                        <td class="px-4 py-2 text-xs text-blue-300">${displayCategory}</td>
+                        <td class="px-4 py-2 text-xs text-slate-300">${window.escapeHtml(sellerCode)}</td>
+                        <td class="px-4 py-2 text-xs text-slate-400">${window.escapeHtml(u.seller)}</td>
+                        <td class="px-4 py-2 text-xs text-blue-300">${window.escapeHtml(displayCategory)}</td>
                         <td class="px-4 py-2 text-xs text-slate-400 font-mono text-right">${currentValStr}</td>
                         <td class="px-4 py-2 text-xs text-white font-bold font-mono text-right">${newValStr}</td>
                         <td class="px-4 py-2 text-xs font-mono text-right" style="color: ${diffColor}; font-weight: ${diffWeight};">${diff > 0 ? '+' : ''}${diffStr}</td>
@@ -22259,7 +22259,7 @@ const supervisorGroups = new Map();
                 prodMap.forEach((v, k) => {
                     detailsHtml += `
                         <tr class="border-b border-white/10/50 last:border-0">
-                            <td class="py-1 pr-2 truncate max-w-[150px]" title="${v.desc}">${k} - ${v.desc}</td>
+                            <td class="py-1 pr-2 truncate max-w-[150px]" title="${window.escapeHtml(v.desc)}">${window.escapeHtml(k)} - ${window.escapeHtml(v.desc)}</td>
                             <td class="py-1 text-right font-mono">${v.qty}</td>
                             <td class="py-1 text-right font-mono text-slate-200">${v.val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                         </tr>
