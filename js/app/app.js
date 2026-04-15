@@ -29927,19 +29927,26 @@ const supervisorGroups = new Map();
         let totalAudits = 0;
         let totalPerfectAudits = 0;
         let perfectStoresCount = 0;
+        const uniqueClientsAudited = new Set();
 
         filtered.forEach(item => {
             totalScore += item.nota_media; 
             totalAudits += item.auditorias;
             totalPerfectAudits += item.auditorias_perfeitas;
             if (item.nota_media >= 80) perfectStoresCount++;
+            if (item.codigo_cliente) {
+                uniqueClientsAudited.add(normalizeKey(item.codigo_cliente));
+            }
         });
 
         const avgScore = filtered.length > 0 ? (totalScore / filtered.length) : 0;
         // Perfect Store %: (Perfect Audits / Total Audits) * 100
         const perfectPct = totalAudits > 0 ? (totalPerfectAudits / totalAudits) * 100 : 0;
 
-        renderLpKPIs(avgScore, totalAudits, perfectPct, totalPerfectAudits);
+        // Total Auditorias now uses distinct client count as requested
+        const kpiTotalAudits = uniqueClientsAudited.size;
+
+        renderLpKPIs(avgScore, kpiTotalAudits, perfectPct, totalPerfectAudits);
 
         // 5. Update Table
         // Sort by Score Descending
