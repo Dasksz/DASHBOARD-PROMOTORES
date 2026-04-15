@@ -877,11 +877,18 @@
                 dim_supervisores = dimSupervisoresFetched;
                 dim_fornecedores = dimFornecedoresFetched;
                 dim_produtos = dimProdutosFetched;
+                if (configCityBranchesFetched && configCityBranchesFetched.length > 0) {
+                    configCityBranchesFetched.forEach(r => {
+                        if (r.cidade) {
+                            r.cidade = r.cidade.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                        }
+                    });
+                }
                 config_city_branches = configCityBranchesFetched;
 
                 // Update Cache with Merged Data
                 const dataToCache = {
-                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos
+                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches
                     };
                     saveToCache('dashboardData', dataToCache).then(() => console.log('Dados atualizados salvos no cache.'));
             }
@@ -1318,6 +1325,13 @@
                 }
             }
 
+            if (embeddedData.config_city_branches && embeddedData.config_city_branches.length > 0) {
+                embeddedData.config_city_branches.forEach(r => {
+                    if (r.cidade) {
+                        r.cidade = r.cidade.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                    }
+                });
+            }
             window.embeddedData = embeddedData;
             window.isDataLoaded = true;
 
