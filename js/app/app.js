@@ -3419,7 +3419,6 @@
 
             const tiposVendaSet = new Set(selectedMixTiposVenda);
             const city = document.getElementById('mix-city-filter').value.trim().toLowerCase();
-            const codcliFilter = document.getElementById('mix-codcli-filter').value.trim();
             const filial = document.getElementById('mix-filial-filter').value;
 
             // --- SELLER MODE / HIERARCHY MODE LOGIC ---
@@ -3465,7 +3464,6 @@
 
             const checkFilial = filial !== 'ambas';
             const checkCity = excludeFilter !== 'city' && !!city;
-            const checkCodcli = excludeFilter !== 'codcli' && !!codcliFilter;
 
             // Removed Supervisor/Seller checks
             // if (excludeFilter !== 'supplier' && selectedCitySuppliers.length > 0) { ... }
@@ -3491,11 +3489,6 @@
                     if (!c.cidade || c.cidade.toLowerCase() !== city) return false;
                 }
 
-                // 4. Codcli Logic
-                if (checkCodcli) {
-                    if (String(c['Código']) !== codcliFilter) return false;
-                }
-
                 return true;
             });
 
@@ -3506,7 +3499,6 @@
 
             const filters = {
                 city: city,
-                codcli: codcliFilter,
                 filial: filial,
                 tipoVenda: tiposVendaSet,
                 clientCodes: clientCodes
@@ -25750,17 +25742,53 @@ const supervisorGroups = new Map();
     }
 
     function setupStockFilialFilterHandlers() {
-        if (typeof window.setupGenericFilialFilterHandlers === 'function') {
-            window.setupGenericFilialFilterHandlers(
-                'stock',
-                () => updateStockView(),
-                () => {
-                    document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
-                    document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
-                    document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
-                    document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
+        const btn = document.getElementById('stock-filial-filter-btn');
+        const dropdown = document.getElementById('stock-filial-filter-dropdown');
+        const hiddenInput = document.getElementById('stock-filial-filter');
+        const textSpan = document.getElementById('stock-filial-filter-text');
+        const wrapper = document.getElementById('stock-filial-filter-wrapper');
+
+        if (btn && dropdown && hiddenInput) {
+            // Toggle Dropdown
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                
+                // Close others
+                document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
+                document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
+                document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
+                document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
+
+                if (wrapper) {
+                    if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
+                    else wrapper.classList.add('z-50');
                 }
-            );
+            });
+
+            // Handle Selection
+            dropdown.addEventListener('change', (e) => {
+                if (e.target.type === 'radio') {
+                    const val = e.target.value;
+                    const label = e.target.closest('label').querySelector('span').textContent;
+
+                    hiddenInput.value = val;
+                    if (textSpan) textSpan.textContent = label;
+
+                    dropdown.classList.add('hidden');
+                    if (wrapper) wrapper.classList.remove('z-50');
+
+                    updateStockView();
+                }
+            });
+
+            // Close on click outside
+            document.addEventListener('click', (e) => {
+                if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                    if (wrapper) wrapper.classList.remove('z-50');
+                }
+            });
         }
     }
 
@@ -27703,14 +27731,54 @@ const supervisorGroups = new Map();
         }
 
         function setupComparisonFilialFilterHandlers() {
-            if (typeof window.setupGenericFilialFilterHandlers === 'function') {
-                window.setupGenericFilialFilterHandlers(
-                    'comparison',
-                    () => {
+            const btn = document.getElementById('comparison-filial-filter-btn');
+            const dropdown = document.getElementById('comparison-filial-filter-dropdown');
+            const hiddenInput = document.getElementById('comparison-filial-filter');
+            const textSpan = document.getElementById('comparison-filial-filter-text');
+            const wrapper = document.getElementById('comparison-filial-filter-wrapper');
+
+            if (btn && dropdown && hiddenInput) {
+                // Toggle Dropdown
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    if (wrapper) {
+                        if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
+                        else wrapper.classList.add('z-50');
+                    }
+                });
+
+
+
+                // Handle Selection
+                dropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'radio') {
+                        const val = e.target.value;
+                        const label = e.target.closest('label').querySelector('span').textContent;
+
+                        hiddenInput.value = val;
+                        if (textSpan) textSpan.textContent = label;
+
+                        dropdown.classList.add('hidden');
+                        if (wrapper) wrapper.classList.remove('z-50');
+
+                        // Trigger Updates
                         updateAllComparisonFilters();
                         updateComparisonView();
                     }
-                );
+                });
+
+
+
+                // Close on click outside
+                document.addEventListener('click', (e) => {
+                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                        if (wrapper) wrapper.classList.remove('z-50');
+                    }
+                });
+
+
             }
         }
 
@@ -27841,17 +27909,54 @@ const supervisorGroups = new Map();
         }
 
         function setupInnovationsMonthFilialFilterHandlers() {
-            if (typeof window.setupGenericFilialFilterHandlers === 'function') {
-                window.setupGenericFilialFilterHandlers(
-                    'innovations-month',
-                    () => {
+            const btn = document.getElementById('innovations-month-filial-filter-btn');
+            const dropdown = document.getElementById('innovations-month-filial-filter-dropdown');
+            const hiddenInput = document.getElementById('innovations-month-filial-filter');
+            const textSpan = document.getElementById('innovations-month-filial-filter-text');
+            const wrapper = document.getElementById('innovations-month-filial-filter-wrapper');
+
+            if (btn && dropdown && hiddenInput) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    if (wrapper) {
+                        if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
+                        else wrapper.classList.add('z-50');
+                    }
+                });
+
+
+
+                dropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'radio') {
+                        const val = e.target.value;
+                        const label = e.target.closest('label').querySelector('span').textContent;
+
+                        hiddenInput.value = val;
+                        if (textSpan) textSpan.textContent = label;
+
+                        dropdown.classList.add('hidden');
+                        if (wrapper) wrapper.classList.remove('z-50');
+
+                        // Trigger Update
                         if (typeof debouncedUpdateInnovationsMonth === 'function') {
                             debouncedUpdateInnovationsMonth();
                         } else if (typeof updateInnovationsMonthView === 'function') {
                             updateInnovationsMonthView();
                         }
                     }
-                );
+                });
+
+
+
+                document.addEventListener('click', (e) => {
+                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                        if (wrapper) wrapper.classList.remove('z-50');
+                    }
+                });
+
+
             }
         }
 
@@ -29387,7 +29492,7 @@ const supervisorGroups = new Map();
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('landscape');
-
+        
         // Use the filtered data that's already in the view state
         const data = lpState.filteredData || [];
 
@@ -29400,7 +29505,7 @@ const supervisorGroups = new Map();
         data.forEach(row => {
             const resKey = (row.pesquisador || '').toLowerCase().trim();
             const isRowPromotor = resKey.toUpperCase().includes('PROMOTOR');
-
+            
             // Only consider researchers matching the current view mode
             if (isPromoterMode && !isRowPromotor) return;
             if (!isPromoterMode && isRowPromotor) return;
@@ -29411,7 +29516,24 @@ const supervisorGroups = new Map();
             if (lpResearcherMap && lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
                 agentCode = info.sellerCode;
-                agentName = info.sellerName || agentCode;
+                
+                if (isRowPromotor) {
+                     if (info.sellerName && info.sellerName !== info.sellerCode) {
+                         agentName = `Promot. ${getFirstName(info.sellerName)}`;
+                     } else {
+                         agentName = `Promot. ${info.sellerCode}`;
+                     }
+                } else {
+                    let prefix = '';
+                    if (resKey.toUpperCase().includes('SUPERVISOR')) prefix = 'Sup. ';
+                    else if (!resKey.toUpperCase().includes('PROMOTOR')) prefix = 'RCA ';
+
+                    if (info.sellerName && info.sellerName !== info.sellerCode) {
+                        agentName = `${prefix}${getFirstName(info.sellerName)}`;
+                    } else {
+                        agentName = `${prefix}${info.sellerCode}`;
+                    }
+                }
             } else {
                 if (isRowPromotor) {
                     agentName = `Promot. ${row.pesquisador}`;
@@ -29422,18 +29544,16 @@ const supervisorGroups = new Map();
                 agentMap.set(agentCode, {
                     code: agentCode,
                     name: agentName,
-                    clients: new Set(),
-                    totalScores: 0
+                    totalAuditorias: 0,
+                    totalScores: 0,
+                    auditoriaCount: 0
                 });
             }
 
             const agent = agentMap.get(agentCode);
-            const clientCode = row.codigo_cliente;
-
-            if (!agent.clients.has(clientCode)) {
-                agent.clients.add(clientCode);
-                agent.totalScores += (row.nota_media || 0);
-            }
+            agent.totalAuditorias += (row.auditorias || 0);
+            agent.totalScores += (row.nota_media || 0);
+            agent.auditoriaCount++;
         });
 
         const tableBody = [];
@@ -29442,9 +29562,9 @@ const supervisorGroups = new Map();
         let countMediasGeral = 0;
 
         agentMap.forEach((agent) => {
-            const qtdPesquisas = agent.clients.size;
-            const media = qtdPesquisas > 0 ? agent.totalScores / qtdPesquisas : 0;
-
+            const qtdPesquisas = agent.totalAuditorias;
+            const media = agent.auditoriaCount > 0 ? agent.totalScores / agent.auditoriaCount : 0;
+            
             tableBody.push([
                 agent.code,
                 agent.name,
@@ -29496,7 +29616,7 @@ const supervisorGroups = new Map();
             const vend = document.getElementById('lp-seller-filter-text')?.textContent || 'Todos';
             filtersText = `Filtros Aplicados: Supervisor: ${sup} | Vendedor: ${vend}`;
         }
-
+        
         const pesquisador = document.getElementById('lp-researcher-filter-text')?.textContent || 'Todos';
         filtersText += ` | Pesquisador: ${pesquisador}`;
 
