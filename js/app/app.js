@@ -17383,7 +17383,8 @@ const supervisorGroups = new Map();
 
 
             // FAB Setup for Positivacao View (Custom with multiple PDF options)
-            setupFab('positivacao-fab-container', null, null); // Setup toggle only
+            setupFab('positivacao-fab-container', null, null);
+            setupFab('lp-fab-container', exportLpPDF, null);
 
             const positivacaoFab = document.getElementById('positivacao-fab-container');
             if (positivacaoFab) {
@@ -29376,6 +29377,175 @@ const supervisorGroups = new Map();
     let selectedLpRedes = [];
     let lpRedeGroupFilter = '';
     let lpRenderId = 0;
+
+    async function exportLpPDF() {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        window.showToast('error', 'Biblioteca jsPDF não carregada.');
+        return;
+    }
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape');
+
+        // Use the filtered data that's already in the view state
+        const data = lpState.filteredData || [];
+
+        // Determine if we are in 'promoter' or 'seller' view.
+        // Even though adminViewMode dictates the filter, we'll group by whatever the active view is
+        const isPromoterMode = typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter';
+
+        const agentMap = new Map(); // key -> { code, name, clients: Set(), sumScore: number, countScore: number }
+
+        data.forEach(row => {
+            const resKey = (row.pesquisador || '').toLowerCase().trim();
+            const isRowPromotor = resKey.toUpperCase().includes('PROMOTOR');
+
+            // Only consider researchers matching the current view mode
+            if (isPromoterMode && !isRowPromotor) return;
+            if (!isPromoterMode && isRowPromotor) return;
+
+            let agentCode = resKey;
+            let agentName = row.pesquisador;
+
+            if (lpResearcherMap && lpResearcherMap.has(resKey)) {
+                const info = lpResearcherMap.get(resKey);
+                agentCode = info.sellerCode;
+                agentName = info.sellerName || agentCode;
+            } else {
+                if (isRowPromotor) {
+                    agentName = `Promot. ${row.pesquisador}`;
+                }
+            }
+
+            if (!agentMap.has(agentCode)) {
+                agentMap.set(agentCode, {
+                    code: agentCode,
+                    name: agentName,
+                    clients: new Set(),
+                    totalScores: 0
+                });
+            }
+
+            const agent = agentMap.get(agentCode);
+            const clientCode = row.codigo_cliente;
+
+            if (!agent.clients.has(clientCode)) {
+                agent.clients.add(clientCode);
+                agent.totalScores += (row.nota_media || 0);
+            }
+        });
+
+        const tableBody = [];
+        let totalPesquisasGeral = 0;
+        let sumMediasGeral = 0;
+        let countMediasGeral = 0;
+
+        agentMap.forEach((agent) => {
+            const qtdPesquisas = agent.clients.size;
+            const media = qtdPesquisas > 0 ? agent.totalScores / qtdPesquisas : 0;
+
+            tableBody.push([
+                agent.code,
+                agent.name,
+                qtdPesquisas,
+                media.toFixed(1)
+            ]);
+
+            totalPesquisasGeral += qtdPesquisas;
+            if (qtdPesquisas > 0) {
+                sumMediasGeral += media;
+                countMediasGeral++;
+            }
+        });
+
+        // Sort by Media Descending
+        tableBody.sort((a, b) => parseFloat(b[3]) - parseFloat(a[3]));
+
+        const mediaGeral = countMediasGeral > 0 ? (sumMediasGeral / countMediasGeral) : 0;
+
+        // Add Total Row
+        tableBody.push([
+            { content: 'TOTAL', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
+            { content: totalPesquisasGeral.toString(), styles: { fontStyle: 'bold', halign: 'center' } },
+            { content: mediaGeral.toFixed(1), styles: { fontStyle: 'bold', halign: 'center' } }
+        ]);
+
+        // Header and Titles
+        const generationDate = new Date().toLocaleString('pt-BR');
+        const title = "Resumo Loja Perfeita - Notas de Execução";
+        const roleStr = isPromoterMode ? 'Promotor' : 'Vendedor';
+
+        doc.setFontSize(18);
+        doc.text(title, 14, 22);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Data de Emissão: ${generationDate}`, 14, 30);
+        doc.text(`Visualização Ativa: ${roleStr}es`, 14, 36);
+
+        // Get Filters
+        let filtersText = '';
+        if (isPromoterMode) {
+            const coord = document.getElementById('lp-coord-filter-text')?.textContent || 'Todos';
+            const cocoord = document.getElementById('lp-cocoord-filter-text')?.textContent || 'Todos';
+            const promotor = document.getElementById('lp-promotor-filter-text')?.textContent || 'Todos';
+            filtersText = `Filtros Aplicados: Coordenador: ${coord} | Co-Coordenador: ${cocoord} | Promotor: ${promotor}`;
+        } else {
+            const sup = document.getElementById('lp-supervisor-filter-text')?.textContent || 'Todos';
+            const vend = document.getElementById('lp-seller-filter-text')?.textContent || 'Todos';
+            filtersText = `Filtros Aplicados: Supervisor: ${sup} | Vendedor: ${vend}`;
+        }
+
+        const pesquisador = document.getElementById('lp-researcher-filter-text')?.textContent || 'Todos';
+        filtersText += ` | Pesquisador: ${pesquisador}`;
+
+        doc.setFontSize(9);
+        doc.text(filtersText, 14, 42);
+
+        // --- Add KPI at Top Right ---
+        doc.setFontSize(10);
+        doc.setTextColor(0);
+        doc.setFont('helvetica', 'bold');
+        const kpiText1 = 'Total Geral de Pesquisas:';
+        const kpiText2 = `${totalPesquisasGeral}`;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        // Right align bounding box
+        doc.text(kpiText1, pageWidth - 14, 22, { align: 'right' });
+        doc.setFontSize(14);
+        doc.setTextColor(34, 197, 94); // some green
+        doc.text(kpiText2, pageWidth - 14, 30, { align: 'right' });
+
+
+        doc.autoTable({
+            startY: 50,
+            head: [[
+                `Código (${roleStr})`,
+                `Nome (${roleStr})`,
+                'Qtd. Pesquisas',
+                'Média de Nota'
+            ]],
+            body: tableBody,
+            theme: 'grid',
+            headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', halign: 'center' },
+            styles: { fontSize: 9, cellPadding: 3, textColor: [0, 0, 0] },
+            alternateRowStyles: { fillColor: [240, 240, 240] },
+            columnStyles: {
+                0: { cellWidth: 40, halign: 'center' },
+                1: { cellWidth: 'auto' },
+                2: { cellWidth: 50, halign: 'center' },
+                3: { cellWidth: 50, halign: 'center' }
+            }
+        });
+
+        doc.save(`Loja_Perfeita_Resumo_${isPromoterMode ? 'Promotor' : 'Vendedor'}.pdf`);
+
+    } catch (e) {
+        console.error('Error generating PDF:', e);
+        if (window.showToast) window.showToast('error', 'Erro ao gerar o PDF.');
+    }
+}
+
 
     function renderLojaPerfeitaView() {
         // Inject Researcher Filter (New)
