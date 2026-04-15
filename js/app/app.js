@@ -5657,7 +5657,10 @@
             if (totalWorkingDays === 0) totalWorkingDays = 1;
 
             // 2. Combine Data for Rendering (Sellers)
-            const allSellers = new Set([...goalsBySeller.keys(), ...salesBySeller.keys()]);
+            const allSellers = new Set(goalsBySeller.keys());
+            for (const seller of salesBySeller.keys()) {
+                allSellers.add(seller);
+            }
             const rowData = [];
 
             allSellers.forEach(sellerName => {
@@ -14086,7 +14089,8 @@ const supervisorGroups = new Map();
 
 
             for (const cat in categoryResults) {
-                    const unionSet = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
+                    const unionSet = new Set(categoryResults[cat].current);
+                    categoryResults[cat].bonusCurrent.forEach(c => unionSet.add(c));
                     const count = unionSet.size;
                     const coverage = activeClientsCount > 0 ? (count / activeClientsCount) * 100 : 0;
 
@@ -14112,10 +14116,17 @@ const supervisorGroups = new Map();
                 categoryResults[cat].bonusPrevious.forEach(c => clientsWhoGotBonusAnyVisibleProductPrevious.add(c));
 
                 // Prepare Analysis Object for Chart/Table
-                const currentUnion = new Set([...categoryResults[cat].current, ...categoryResults[cat].bonusCurrent]);
-                const previousUnion = new Set([...categoryResults[cat].previous, ...categoryResults[cat].bonusPrevious]);
-                const previous2Union = new Set([...categoryResults[cat].previous2, ...categoryResults[cat].bonusPrevious2]);
-                const previous3Union = new Set([...categoryResults[cat].previous3, ...categoryResults[cat].bonusPrevious3]);
+                const currentUnion = new Set(categoryResults[cat].current);
+                categoryResults[cat].bonusCurrent.forEach(c => currentUnion.add(c));
+
+                const previousUnion = new Set(categoryResults[cat].previous);
+                categoryResults[cat].bonusPrevious.forEach(c => previousUnion.add(c));
+
+                const previous2Union = new Set(categoryResults[cat].previous2);
+                categoryResults[cat].bonusPrevious2.forEach(c => previous2Union.add(c));
+
+                const previous3Union = new Set(categoryResults[cat].previous3);
+                categoryResults[cat].bonusPrevious3.forEach(c => previous3Union.add(c));
 
                 const countCurr = currentUnion.size;
                 const countPrev = previousUnion.size;

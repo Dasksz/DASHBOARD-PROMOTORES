@@ -18,3 +18,6 @@
 ## 2024-05-20 - Replace Array.prototype.reduce with for-loops
 **Learning:** Chaining array methods or using `.reduce()` in hot paths inside rendering and calculation functions allocates short-lived closure scopes and intermediate arrays, increasing garbage collection overhead.
 **Action:** Replaced `.reduce()` and related `.map().reduce()` chains with vanilla `for` loops in key reporting aggregations (e.g., `monthlyKpiAverage`, `calculateAdjustedWeeklyGoals`, total calculations for charts and order items) to eliminate closures, intermediate arrays, and improve execution speed during UI updates.
+## 2026-04-15 - Avoid Set spreads for merging collections
+**Learning:** Merging sets or iterables using spread syntax (e.g., `new Set([...set1, ...set2])` or `[...new Set(array.map(...))]`) causes severe garbage collection overhead by allocating large intermediate arrays before passing them to the Set constructor.
+**Action:** Always instantiate sets directly and add items incrementally using vanilla `for` loops or `.forEach()` to optimize memory footprint and rendering speed during hot loops.

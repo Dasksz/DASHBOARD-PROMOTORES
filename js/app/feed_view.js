@@ -332,7 +332,12 @@ const FeedVisitas = (() => {
         
         let promotores = [];
         if(window.embeddedData && window.embeddedData.hierarchy) {
-            promotores = [...new Set(window.embeddedData.hierarchy.map(h => h.nome_promotor).filter(n => n))].sort();
+            const promotoresSet = new Set();
+            for (let i = 0; i < window.embeddedData.hierarchy.length; i++) {
+                const n = window.embeddedData.hierarchy[i].nome_promotor;
+                if (n) promotoresSet.add(n);
+            }
+            promotores = Array.from(promotoresSet).sort();
         }
 
         let html = `<div class="p-2 hover:bg-slate-700 cursor-pointer rounded text-sm text-slate-300" onclick="window.FeedVisitas.setPromotorFilter('')">Todos</div>`;
@@ -768,7 +773,14 @@ const FeedVisitas = (() => {
         window.FeedVisitas.clientNamesMap = window.FeedVisitas.clientNamesMap || new Map();
         window.FeedVisitas.clientNamesMap.clear();
         const clientNamesMap = window.FeedVisitas.clientNamesMap;
-        const uniqueClientCodes = [...new Set(data.map(v => v.client_code).filter(c => c))];
+
+        const uniqueClientCodesSet = new Set();
+        for (let i = 0; i < data.length; i++) {
+            const c = data[i].client_code;
+            if (c) uniqueClientCodesSet.add(c);
+        }
+        const uniqueClientCodes = Array.from(uniqueClientCodesSet);
+
         if (uniqueClientCodes.length > 0) {
             try {
                 const { data: clientsData } = await window.supabaseClient
