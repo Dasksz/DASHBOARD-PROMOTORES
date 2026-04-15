@@ -3419,6 +3419,7 @@
 
             const tiposVendaSet = new Set(selectedMixTiposVenda);
             const city = document.getElementById('mix-city-filter').value.trim().toLowerCase();
+            const codcliFilter = document.getElementById('mix-codcli-filter').value.trim();
             const filial = document.getElementById('mix-filial-filter').value;
 
             // --- SELLER MODE / HIERARCHY MODE LOGIC ---
@@ -3464,6 +3465,7 @@
 
             const checkFilial = filial !== 'ambas';
             const checkCity = excludeFilter !== 'city' && !!city;
+            const checkCodcli = excludeFilter !== 'codcli' && !!codcliFilter;
 
             // Removed Supervisor/Seller checks
             // if (excludeFilter !== 'supplier' && selectedCitySuppliers.length > 0) { ... }
@@ -3489,6 +3491,11 @@
                     if (!c.cidade || c.cidade.toLowerCase() !== city) return false;
                 }
 
+                // 4. Codcli Logic
+                if (checkCodcli) {
+                    if (String(c['Código']) !== codcliFilter) return false;
+                }
+
                 return true;
             });
 
@@ -3499,6 +3506,7 @@
 
             const filters = {
                 city: city,
+                codcli: codcliFilter,
                 filial: filial,
                 tipoVenda: tiposVendaSet,
                 clientCodes: clientCodes

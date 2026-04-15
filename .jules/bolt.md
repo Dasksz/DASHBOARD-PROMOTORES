@@ -21,3 +21,6 @@
 ## 2026-04-15 - Avoid Set spreads for merging collections
 **Learning:** Merging sets or iterables using spread syntax (e.g., `new Set([...set1, ...set2])` or `[...new Set(array.map(...))]`) causes severe garbage collection overhead by allocating large intermediate arrays before passing them to the Set constructor.
 **Action:** Always instantiate sets directly and add items incrementally using vanilla `for` loops or `.forEach()` to optimize memory footprint and rendering speed during hot loops.
+## 2026-04-15 - Fixed Mix Client Filter missing logic
+**Issue:** The filter `mix-codcli-filter` was not taken into account when producing filtered list of clients in `getMixFilteredData`.
+**Resolution:** Added `codcliFilter` variable to fetch `mix-codcli-filter` and passed it inside the array filter using `String(c['Código']) === codcliFilter`.
