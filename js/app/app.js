@@ -29516,7 +29516,24 @@ const supervisorGroups = new Map();
             if (lpResearcherMap && lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
                 agentCode = info.sellerCode;
-                agentName = info.sellerName || agentCode;
+
+                if (isRowPromotor) {
+                     if (info.sellerName && info.sellerName !== info.sellerCode) {
+                         agentName = `Promot. ${getFirstName(info.sellerName)}`;
+                     } else {
+                         agentName = `Promot. ${info.sellerCode}`;
+                     }
+                } else {
+                    let prefix = '';
+                    if (resKey.toUpperCase().includes('SUPERVISOR')) prefix = 'Sup. ';
+                    else if (!resKey.toUpperCase().includes('PROMOTOR')) prefix = 'RCA ';
+
+                    if (info.sellerName && info.sellerName !== info.sellerCode) {
+                        agentName = `${prefix}${getFirstName(info.sellerName)}`;
+                    } else {
+                        agentName = `${prefix}${info.sellerCode}`;
+                    }
+                }
             } else {
                 if (isRowPromotor) {
                     agentName = `Promot. ${row.pesquisador}`;
@@ -29527,18 +29544,16 @@ const supervisorGroups = new Map();
                 agentMap.set(agentCode, {
                     code: agentCode,
                     name: agentName,
-                    clients: new Set(),
-                    totalScores: 0
+                    totalAuditorias: 0,
+                    totalScores: 0,
+                    auditoriaCount: 0
                 });
             }
 
             const agent = agentMap.get(agentCode);
-            const clientCode = row.codigo_cliente;
-
-            if (!agent.clients.has(clientCode)) {
-                agent.clients.add(clientCode);
-                agent.totalScores += (row.nota_media || 0);
-            }
+            agent.totalAuditorias += (row.auditorias || 0);
+            agent.totalScores += (row.nota_media || 0);
+            agent.auditoriaCount++;
         });
 
         const tableBody = [];
@@ -29547,8 +29562,8 @@ const supervisorGroups = new Map();
         let countMediasGeral = 0;
 
         agentMap.forEach((agent) => {
-            const qtdPesquisas = agent.clients.size;
-            const media = qtdPesquisas > 0 ? agent.totalScores / qtdPesquisas : 0;
+            const qtdPesquisas = agent.totalAuditorias;
+            const media = agent.auditoriaCount > 0 ? agent.totalScores / agent.auditoriaCount : 0;
 
             tableBody.push([
                 agent.code,
