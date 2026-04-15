@@ -25741,53 +25741,17 @@ const supervisorGroups = new Map();
     }
 
     function setupStockFilialFilterHandlers() {
-        const btn = document.getElementById('stock-filial-filter-btn');
-        const dropdown = document.getElementById('stock-filial-filter-dropdown');
-        const hiddenInput = document.getElementById('stock-filial-filter');
-        const textSpan = document.getElementById('stock-filial-filter-text');
-        const wrapper = document.getElementById('stock-filial-filter-wrapper');
-
-        if (btn && dropdown && hiddenInput) {
-            // Toggle Dropdown
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                dropdown.classList.toggle('hidden');
-                
-                // Close others
-                document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
-                document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
-                document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
-                document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
-
-                if (wrapper) {
-                    if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
-                    else wrapper.classList.add('z-50');
+        if (typeof window.setupGenericFilialFilterHandlers === 'function') {
+            window.setupGenericFilialFilterHandlers(
+                'stock',
+                () => updateStockView(),
+                () => {
+                    document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
+                    document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
                 }
-            });
-
-            // Handle Selection
-            dropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'radio') {
-                    const val = e.target.value;
-                    const label = e.target.closest('label').querySelector('span').textContent;
-
-                    hiddenInput.value = val;
-                    if (textSpan) textSpan.textContent = label;
-
-                    dropdown.classList.add('hidden');
-                    if (wrapper) wrapper.classList.remove('z-50');
-
-                    updateStockView();
-                }
-            });
-
-            // Close on click outside
-            document.addEventListener('click', (e) => {
-                if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
-                    dropdown.classList.add('hidden');
-                    if (wrapper) wrapper.classList.remove('z-50');
-                }
-            });
+            );
         }
     }
 
@@ -27730,54 +27694,14 @@ const supervisorGroups = new Map();
         }
 
         function setupComparisonFilialFilterHandlers() {
-            const btn = document.getElementById('comparison-filial-filter-btn');
-            const dropdown = document.getElementById('comparison-filial-filter-dropdown');
-            const hiddenInput = document.getElementById('comparison-filial-filter');
-            const textSpan = document.getElementById('comparison-filial-filter-text');
-            const wrapper = document.getElementById('comparison-filial-filter-wrapper');
-
-            if (btn && dropdown && hiddenInput) {
-                // Toggle Dropdown
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    dropdown.classList.toggle('hidden');
-                    if (wrapper) {
-                        if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
-                        else wrapper.classList.add('z-50');
-                    }
-                });
-
-
-
-                // Handle Selection
-                dropdown.addEventListener('change', (e) => {
-                    if (e.target.type === 'radio') {
-                        const val = e.target.value;
-                        const label = e.target.closest('label').querySelector('span').textContent;
-
-                        hiddenInput.value = val;
-                        if (textSpan) textSpan.textContent = label;
-
-                        dropdown.classList.add('hidden');
-                        if (wrapper) wrapper.classList.remove('z-50');
-
-                        // Trigger Updates
+            if (typeof window.setupGenericFilialFilterHandlers === 'function') {
+                window.setupGenericFilialFilterHandlers(
+                    'comparison',
+                    () => {
                         updateAllComparisonFilters();
                         updateComparisonView();
                     }
-                });
-
-
-
-                // Close on click outside
-                document.addEventListener('click', (e) => {
-                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
-                        dropdown.classList.add('hidden');
-                        if (wrapper) wrapper.classList.remove('z-50');
-                    }
-                });
-
-
+                );
             }
         }
 
@@ -27908,54 +27832,17 @@ const supervisorGroups = new Map();
         }
 
         function setupInnovationsMonthFilialFilterHandlers() {
-            const btn = document.getElementById('innovations-month-filial-filter-btn');
-            const dropdown = document.getElementById('innovations-month-filial-filter-dropdown');
-            const hiddenInput = document.getElementById('innovations-month-filial-filter');
-            const textSpan = document.getElementById('innovations-month-filial-filter-text');
-            const wrapper = document.getElementById('innovations-month-filial-filter-wrapper');
-
-            if (btn && dropdown && hiddenInput) {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    dropdown.classList.toggle('hidden');
-                    if (wrapper) {
-                        if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
-                        else wrapper.classList.add('z-50');
-                    }
-                });
-
-
-
-                dropdown.addEventListener('change', (e) => {
-                    if (e.target.type === 'radio') {
-                        const val = e.target.value;
-                        const label = e.target.closest('label').querySelector('span').textContent;
-
-                        hiddenInput.value = val;
-                        if (textSpan) textSpan.textContent = label;
-
-                        dropdown.classList.add('hidden');
-                        if (wrapper) wrapper.classList.remove('z-50');
-
-                        // Trigger Update
+            if (typeof window.setupGenericFilialFilterHandlers === 'function') {
+                window.setupGenericFilialFilterHandlers(
+                    'innovations-month',
+                    () => {
                         if (typeof debouncedUpdateInnovationsMonth === 'function') {
                             debouncedUpdateInnovationsMonth();
                         } else if (typeof updateInnovationsMonthView === 'function') {
                             updateInnovationsMonthView();
                         }
                     }
-                });
-
-
-
-                document.addEventListener('click', (e) => {
-                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
-                        dropdown.classList.add('hidden');
-                        if (wrapper) wrapper.classList.remove('z-50');
-                    }
-                });
-
-
+                );
             }
         }
 

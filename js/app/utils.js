@@ -803,6 +803,59 @@
      * Reusable generic filter handler for Supervisor & Vendedor views
      * This avoids duplicating the DOM handler boilerplate across different views.
      */
+        /**
+     * Reusable logic for configuring filial filter event handlers.
+     * Encapsulates duplicated toggling, selecting, and closing logic.
+     */
+    window.setupGenericFilialFilterHandlers = function(prefix, updateCallbackFn, customCloseLogic) {
+        const btn = document.getElementById(`${prefix}-filial-filter-btn`);
+        const dropdown = document.getElementById(`${prefix}-filial-filter-dropdown`);
+        const hiddenInput = document.getElementById(`${prefix}-filial-filter`);
+        const textSpan = document.getElementById(`${prefix}-filial-filter-text`);
+        const wrapper = document.getElementById(`${prefix}-filial-filter-wrapper`);
+
+        if (btn && dropdown && hiddenInput) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+
+                if (typeof customCloseLogic === 'function') {
+                    customCloseLogic();
+                }
+
+                if (wrapper) {
+                    if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
+                    else wrapper.classList.add('z-50');
+                }
+            });
+
+            dropdown.addEventListener('change', (e) => {
+                if (e.target.type === 'radio') {
+                    const val = e.target.value;
+                    const labelSpan = e.target.closest('label').querySelector('span');
+                    const label = labelSpan ? labelSpan.textContent : '';
+
+                    hiddenInput.value = val;
+                    if (textSpan) textSpan.textContent = label;
+
+                    dropdown.classList.add('hidden');
+                    if (wrapper) wrapper.classList.remove('z-50');
+
+                    if (typeof updateCallbackFn === 'function') {
+                        updateCallbackFn();
+                    }
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                    if (wrapper) wrapper.classList.remove('z-50');
+                }
+            });
+        }
+    };
+
     window.setupGenericFilterHandlers = function(prefix, selectedSupervisorsSet, selectedVendedoresSet, updateSupervisorFilterFn, updateVendedorFilterFn, filterChangeCallback, customCloseLogic, isSellerFilter = false, updateFilterButtonTextFn = null) {
         const supWrapperId = `${prefix}-supervisor-filter-wrapper`;
         const vendSuffix = isSellerFilter ? 'seller' : 'vendedor';
