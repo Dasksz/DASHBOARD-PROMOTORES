@@ -331,12 +331,12 @@
             <div class="space-y-3 mb-8 text-left">
                 <!-- Inputs stylised -->
                 <div class="group">
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Vendas (Mês Atual)</label>
-                    <input type="file" id="sales-file-input" aria-label="Upload de Vendas (Mês Atual)" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
+                    <label for="sales-file-input" class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Vendas (Mês Atual)</label>
+                        <input type="file" id="sales-file-input" aria-label="Upload de Vendas (Mês Atual)" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                 </div>
                 <div class="group">
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Cadastro de Clientes</label>
-                    <input type="file" id="clients-file-input" aria-label="Upload de Cadastro de Clientes" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
+                    <label for="clients-file-input" class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Cadastro de Clientes</label>
+                        <input type="file" id="clients-file-input" aria-label="Upload de Cadastro de Clientes" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                 </div>
 
                 <!-- Optional Uploads Toggle -->
@@ -350,31 +350,31 @@
                 <!-- Hidden Container for Optional Files -->
                 <div id="optional-uploads-container" class="col-span-1 md:col-span-2 hidden pl-2 border-l-2 border-slate-700/50 mt-2 transition-all duration-300">
                     <div class="group mb-2">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Cadastro de Produtos</label>
+                        <label for="products-file-input" class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Cadastro de Produtos</label>
                         <input type="file" id="products-file-input" aria-label="Upload de Produtos" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                     <div class="group mb-2">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Inovações (Mês)</label>
+                        <label for="innovations-file-input" class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Inovações (Mês)</label>
                         <input type="file" id="innovations-file-input" aria-label="Upload de Inovações" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                     <div class="group mb-2">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Estrutura de Equipe</label>
+                        <label for="hierarchy-file-input" class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Estrutura de Equipe</label>
                         <input type="file" id="hierarchy-file-input" aria-label="Upload de Hierarquia" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                     <div class="group mb-2">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Histórico (Trimestre)</label>
+                        <label for="history-file-input" class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Histórico (Trimestre)</label>
                         <input type="file" id="history-file-input" aria-label="Upload de Histórico" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                     <div class="group mb-2">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Títulos</label>
+                        <label for="titulos-file-input" class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Títulos</label>
                         <input type="file" id="titulos-file-input" aria-label="Upload de Títulos" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                     <div class="group mb-2">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Nota Involves - 1</label>
+                        <label for="nota-involves-1-input" class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Nota Involves - 1</label>
                         <input type="file" id="nota-involves-1-input" aria-label="Upload de Nota Involves 1" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                     <div class="group">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Nota Involves - 2</label>
+                        <label for="nota-involves-2-input" class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Nota Involves - 2</label>
                         <input type="file" id="nota-involves-2-input" aria-label="Upload de Nota Involves 2" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700" accept=".csv, .xls, .xlsx"/>
                     </div>
                 </div>
@@ -579,8 +579,8 @@
                 <div class="flex flex-wrap gap-4 items-end">
                     <!-- Rede Filter -->
                     <div id="main-rede-filter-wrapper" class="relative flex-1 min-w-[260px] z-20">
-                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
-                        <div id="main-rede-group-container" class="inline-flex rounded-lg shadow-sm w-full glass-panel p-1" role="group">
+                        <span id="main-rede-label" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</span>
+                        <div id="main-rede-group-container" aria-labelledby="main-rede-label" class="inline-flex rounded-lg shadow-sm w-full glass-panel p-1" role="group">
                             <button type="button" data-group="" class="group-btn active flex-1 py-2 px-3 text-xs font-bold rounded-md transition-all">Todos</button>
                             <button type="button" data-group="com_rede" id="main-com-rede-btn" class="group-btn flex-1 py-2 px-3 text-xs font-medium text-slate-400 hover:text-white rounded-md transition-all flex items-center justify-center gap-1">
                                 <span id="main-com-rede-btn-text">C/Rede</span>
@@ -660,7 +660,7 @@
                         <div id="vendedor-filter-dropdown" class="hidden absolute top-full left-0 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto p-2 space-y-1"></div>
                     </div>
                     <div class="flex-1 min-w-[200px] relative">
-                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
+                        <label for="codcli-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
                         <div class="relative">
                             <div id="codcli-search-icon" class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
                                 <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -809,7 +809,7 @@
                     
                     <!-- Client Filter -->
                     <div class="relative flex-1">
-                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
+                        <label for="feed-client-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
                                 <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -821,7 +821,7 @@
 
                     <!-- City Filter -->
                     <div class="relative flex-1">
-                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
+                        <label for="feed-city-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -909,8 +909,8 @@
                      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
                         <!-- Rede -->
                         <div id="positivacao-rede-filter-wrapper" class="relative lg:col-span-2 z-20">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
-                            <div id="positivacao-rede-group-container" class="inline-flex rounded-lg glass-panel p-1 w-full">
+                            <span id="positivacao-rede-label" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</span>
+                        <div id="positivacao-rede-group-container" aria-labelledby="positivacao-rede-label" class="inline-flex rounded-lg glass-panel p-1 w-full">
                                 <button type="button" data-group="" class="group-btn active flex-1 py-2 text-xs font-bold rounded-md">Todos</button>
                                 <button type="button" data-group="com_rede" id="positivacao-com-rede-btn" class="group-btn flex-1 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-md flex justify-center gap-1">
                                     <span id="positivacao-com-rede-btn-text">C/Rede</span>
@@ -973,7 +973,7 @@
 
                         <!-- Cliente Input -->
                         <div id="positivacao-codcli-filter-wrapper" class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
+                            <label for="positivacao-codcli-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
                             <div class="relative">
                                 <div id="positivacao-codcli-search-icon" class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
                                     <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -985,7 +985,7 @@
 
                         <!-- City -->
                         <div class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
+                            <label for="positivacao-city-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
                             <input type="search" id="positivacao-city-filter" autocomplete="new-password" class="w-full glass-input border border-slate-700 p-2.5 rounded-lg text-white text-sm focus:ring-2 focus:ring-[#FF5E00]" aria-label="Buscar" placeholder="Buscar...">
                             <div id="positivacao-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                         </div>
@@ -1073,8 +1073,8 @@
                      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
                         <!-- Rede -->
                         <div id="city-rede-filter-wrapper" class="relative lg:col-span-2 z-20">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
-                            <div id="city-rede-group-container" class="inline-flex rounded-lg glass-panel p-1 w-full">
+                            <span id="city-rede-label" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</span>
+                        <div id="city-rede-group-container" aria-labelledby="city-rede-label" class="inline-flex rounded-lg glass-panel p-1 w-full">
                                 <button type="button" data-group="" class="group-btn active flex-1 py-2 text-xs font-bold rounded-md">Todos</button>
                                 <button type="button" data-group="com_rede" id="city-com-rede-btn" class="group-btn flex-1 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-md flex justify-center gap-1">
                                     <span id="city-com-rede-btn-text">C/Rede</span>
@@ -1147,7 +1147,7 @@
 
                         <!-- Cliente Input -->
                         <div id="city-codcli-filter-wrapper" class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
+                            <label for="city-codcli-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
                             <div class="relative">
                                 <div id="city-codcli-search-icon" class="absolute inset-y-0 left-0 pl-3 flex items-center cursor-pointer hover:text-white transition-colors group">
                                     <svg class="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -1159,7 +1159,7 @@
 
                         <!-- City -->
                         <div class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
+                            <label for="city-city-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
                             <input type="search" id="city-city-filter" autocomplete="new-password" class="w-full glass-input border border-slate-700 p-2.5 rounded-lg text-white text-sm focus:ring-2 focus:ring-[#FF5E00]" aria-label="Buscar" placeholder="Buscar...">
                             <div id="city-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                         </div>
@@ -1230,8 +1230,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                 <!-- Rede Filter -->
                 <div id="comparison-rede-filter-wrapper" class="relative z-20">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
-                    <div id="comparison-rede-group-container" class="inline-flex rounded-lg shadow-sm w-full glass-panel p-1" role="group">
+                    <span id="comparison-rede-label" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</span>
+                        <div id="comparison-rede-group-container" aria-labelledby="comparison-rede-label" class="inline-flex rounded-lg shadow-sm w-full glass-panel p-1" role="group">
                         <button type="button" data-group="" class="group-btn active flex-1 py-2 px-3 text-xs font-bold rounded-md transition-all">Todos</button>
                         <button type="button" data-group="com_rede" id="comparison-com-rede-btn" class="group-btn flex-1 py-2 px-3 text-xs font-medium text-slate-400 hover:text-white rounded-md transition-all flex items-center justify-center gap-1">
                             <span id="comparison-com-rede-btn-text">C/Rede</span>
@@ -1283,7 +1283,7 @@
 
                 <!-- City -->
                 <div class="relative">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
+                    <label for="comparison-city-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
                     <input type="search" id="comparison-city-filter" name="comp_city_q" autocomplete="new-password" class="w-full glass-input border border-slate-700 p-2.5 rounded-lg text-white text-sm focus:ring-2 focus:ring-[#FF5E00]" aria-label="Buscar" placeholder="Buscar...">
                     <div id="comparison-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                 </div>
@@ -1778,13 +1778,13 @@
                 </div>
                 <!-- Cidade -->
                 <div class="relative">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
+                    <label for="innovations-month-city-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
                     <input type="search" id="innovations-month-city-filter" name="innov_city_q" autocomplete="new-password" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" aria-label="Buscar" placeholder="Buscar...">
                     <div id="innovations-month-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                 </div>
                 <!-- Cliente -->
                 <div class="relative">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
+                    <label for="innovations-month-codcli-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
                     <input type="search" id="innovations-month-codcli-filter" name="innov_codcli_q" autocomplete="new-password" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" aria-label="Buscar" placeholder="Buscar...">
                     <div id="innovations-month-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
                 </div>
@@ -1798,8 +1798,8 @@
             <div class="flex flex-wrap gap-4 items-end mt-4 justify-between">
                  <!-- Rede Filter -->
                  <div id="innovations-month-rede-filter-wrapper" class="relative flex-1 min-w-[150px]">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
-                    <div id="innovations-month-rede-group-container" class="inline-flex rounded-lg glass-panel p-1 w-full">
+                    <span id="innovations-month-rede-label" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</span>
+                        <div id="innovations-month-rede-group-container" aria-labelledby="innovations-month-rede-label" class="inline-flex rounded-lg glass-panel p-1 w-full">
                         <button type="button" data-group="" class="group-btn active flex-1 py-2 text-xs font-bold rounded-md">Todos</button>
                         <button type="button" data-group="com_rede" id="innovations-month-com-rede-btn" class="group-btn flex-1 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-md flex justify-center gap-1">
                             <span id="innovations-month-com-rede-btn-text">C/Rede</span>
@@ -1945,8 +1945,8 @@
         <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
             <div class="flex flex-wrap gap-4 items-end">
                 <div id="mix-rede-filter-wrapper" class="relative flex-1 min-w-[260px] z-20">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
-                    <div id="mix-rede-group-container" class="inline-flex rounded-lg glass-panel p-1 w-full">
+                    <span id="mix-rede-label" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</span>
+                        <div id="mix-rede-group-container" aria-labelledby="mix-rede-label" class="inline-flex rounded-lg glass-panel p-1 w-full">
                         <button type="button" data-group="" class="group-btn active flex-1 py-2 text-xs font-bold rounded-md">Todos</button>
                         <button type="button" id="mix-com-rede-btn" data-group="com_rede" class="group-btn flex-1 py-2 text-xs font-medium text-slate-400 rounded-md"><span id="mix-com-rede-btn-text">C/Rede</span></button>
                         <button type="button" data-group="sem_rede" class="group-btn flex-1 py-2 text-xs font-medium text-slate-400 rounded-md">S/Rede</button>
@@ -1994,12 +1994,12 @@
             </div>
             <div class="flex flex-wrap gap-4 items-end mt-4">
                 <div class="relative flex-1 min-w-[200px]">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
+                    <label for="mix-city-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
                     <input type="search" id="mix-city-filter" autocomplete="new-password" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" aria-label="Buscar" placeholder="Buscar...">
                     <div id="mix-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <div class="relative flex-1 min-w-[200px]">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
+                    <label for="mix-codcli-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cliente</label>
                     <input type="search" id="mix-codcli-filter" autocomplete="new-password" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" aria-label="Buscar" placeholder="Buscar...">
                     <div id="mix-codcli-filter-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-0 overflow-hidden"></div>
                 </div>
@@ -2288,14 +2288,14 @@
                     <div id="coverage-supplier-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2"></div>
                 </div>
                 <div class="relative">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
+                    <label for="coverage-city-filter" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
                     <input type="search" id="coverage-city-filter" name="coverage_city_q" autocomplete="new-password" class="w-full glass-input border border-slate-700 text-white text-sm rounded-lg p-2.5" aria-label="Buscar" placeholder="Buscar...">
                     <div id="coverage-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
                 </div>
                  <!-- Rede Filter -->
                  <div id="coverage-rede-filter-wrapper" class="relative z-20">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
-                    <div id="coverage-rede-group-container" class="inline-flex rounded-lg glass-panel p-1 w-full">
+                    <span id="coverage-rede-label" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</span>
+                        <div id="coverage-rede-group-container" aria-labelledby="coverage-rede-label" class="inline-flex rounded-lg glass-panel p-1 w-full">
                         <button type="button" data-group="" class="group-btn active flex-1 py-2 text-xs font-bold rounded-md">Todos</button>
                         <button type="button" data-group="com_rede" id="coverage-com-rede-btn" class="group-btn flex-1 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-md flex justify-center gap-1">
                             <span id="coverage-com-rede-btn-text">C/Rede</span>
@@ -2464,7 +2464,7 @@
              <div class="flex flex-col md:flex-row gap-6">
                 <!-- Promoter Selector (For Coords) -->
                 <div id="wallet-promoter-select-container" class="flex-1 min-w-[250px]">
-                    <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
+                    <label for="wallet-promoter-select-btn" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Promotor</label>
                     <div class="relative">
                         <button id="wallet-promoter-select-btn" class="w-full glass-panel text-white text-sm rounded-lg p-3 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] transition-all hover:bg-slate-750">
                             <span id="wallet-promoter-select-text" class="truncate">Selecione...</span>
@@ -2735,8 +2735,8 @@
 
                     <!-- Rede Filter -->
                     <div id="weekly-rede-filter-wrapper" class="relative">
-                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
-                        <div id="weekly-rede-group-container" class="inline-flex rounded-lg glass-panel p-1 w-full">
+                        <span id="weekly-rede-label" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</span>
+                        <div id="weekly-rede-group-container" aria-labelledby="weekly-rede-label" class="inline-flex rounded-lg glass-panel p-1 w-full">
                             <button type="button" data-group="" class="group-btn active flex-1 py-2 text-xs font-bold rounded-md">Todos</button>
                             <button type="button" data-group="com_rede" id="weekly-com-rede-btn" class="group-btn flex-1 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-md flex justify-center gap-1">
                                 <span id="weekly-com-rede-btn-text">C/Rede</span>
@@ -2942,8 +2942,8 @@
 
                     <!-- Rede Filter -->
                     <div id="titulos-rede-filter-wrapper" class="relative z-20">
-                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
-                        <div id="titulos-rede-group-container" class="inline-flex rounded-lg glass-panel p-1 w-full">
+                        <span id="titulos-rede-label" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</span>
+                        <div id="titulos-rede-group-container" aria-labelledby="titulos-rede-label" class="inline-flex rounded-lg glass-panel p-1 w-full">
                             <button type="button" data-group="" class="group-btn active flex-1 py-2 text-xs font-bold rounded-md">Todos</button>
                             <button type="button" data-group="com_rede" id="titulos-com-rede-btn" class="group-btn flex-1 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-md flex justify-center gap-1">
                                 <span id="titulos-com-rede-btn-text">C/Rede</span>
@@ -3044,7 +3044,7 @@
                 <p class="text-slate-400">Auditoria e Notas de Execução</p>
             </div>
             <div id="lp-fab-container" class="fab-container group relative z-50">
-                <button class="fab-btn bg-[#FF5E00] hover:bg-[#FF7A33] text-white p-4 rounded-full shadow-lg shadow-[#FF5E00]/30 transition-all duration-300 flex items-center justify-center">
+                <button class="fab-btn bg-[#FF5E00] hover:bg-[#FF7A33] text-white p-4 rounded-full shadow-lg shadow-[#FF5E00]/30 transition-all duration-300 flex items-center justify-center" aria-label="Ações">
                     <svg class="w-6 h-6 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 </button>
                 <div class="fab-menu absolute bottom-full right-0 mb-4 flex flex-col gap-3 items-end opacity-0 pointer-events-none transition-all duration-300 transform translate-y-4">
@@ -3055,7 +3055,7 @@
                 </div>
             </div>
             <div id="lp-fab-container" class="fab-container group relative z-50">
-                <button class="fab-btn bg-[#FF5E00] hover:bg-[#FF7A33] text-white p-4 rounded-full shadow-lg shadow-[#FF5E00]/30 transition-all duration-300 flex items-center justify-center">
+                <button class="fab-btn bg-[#FF5E00] hover:bg-[#FF7A33] text-white p-4 rounded-full shadow-lg shadow-[#FF5E00]/30 transition-all duration-300 flex items-center justify-center" aria-label="Ações">
                     <svg class="w-6 h-6 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 </button>
                 <div class="fab-menu absolute bottom-full right-0 mb-4 flex flex-col gap-3 items-end opacity-0 pointer-events-none transition-all duration-300 transform translate-y-4">
@@ -3109,8 +3109,8 @@
 
                     <!-- Rede Filter -->
                     <div id="lp-rede-filter-wrapper" class="relative z-20">
-                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
-                        <div id="lp-rede-group-container" class="inline-flex rounded-lg glass-panel p-1 w-full">
+                        <span id="lp-rede-label" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</span>
+                        <div id="lp-rede-group-container" aria-labelledby="lp-rede-label" class="inline-flex rounded-lg glass-panel p-1 w-full">
                             <button type="button" data-group="" class="group-btn active flex-1 py-2 text-xs font-bold rounded-md">Todos</button>
                             <button type="button" data-group="com_rede" id="lp-com-rede-btn" class="group-btn flex-1 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-md flex justify-center gap-1">
                                 <span id="lp-com-rede-btn-text">C/Rede</span>
@@ -3286,8 +3286,8 @@
 
                     <!-- Rede Filter -->
                     <div id="history-rede-filter-wrapper" class="relative">
-                        <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</label>
-                        <div id="history-rede-group-container" class="inline-flex rounded-lg glass-panel p-1 w-full">
+                        <span id="history-rede-label" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Rede</span>
+                        <div id="history-rede-group-container" aria-labelledby="history-rede-label" class="inline-flex rounded-lg glass-panel p-1 w-full">
                             <button type="button" data-group="" class="group-btn active flex-1 py-2 text-xs font-bold rounded-md">Todos</button>
                             <button type="button" data-group="com_rede" id="history-com-rede-btn" class="group-btn flex-1 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-md flex justify-center gap-1">
                                 <span id="history-com-rede-btn-text">C/Rede</span>
@@ -3511,7 +3511,7 @@
             </p>
 
             <div class="space-y-2">
-                <label class="block text-sm font-bold text-slate-300">Estado da Gôndola:</label>
+                <label for="estado_gondola" class="block text-sm font-bold text-slate-300">Estado da Gôndola:</label>
                 <select name="estado_gondola" id="estado_gondola" aria-label="Estado da Gôndola" required class="w-full glass-input border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-[#FF5E00]">
                     <option value="Excelente">Excelente</option>
                     <option value="Boa">Boa</option>
@@ -3709,8 +3709,8 @@
             </div>
 
             <div class="space-y-2">
-                <label class="block text-sm font-bold text-slate-300">Observações:</label>
-                <textarea name="observacoes" rows="3" class="w-full glass-input border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-[#FF5E00]" placeholder="Alguma observação importante?" aria-label="Observações"></textarea>
+                <label for="observacoes_input" class="block text-sm font-bold text-slate-300">Observações:</label>
+                <textarea id="observacoes_input" name="observacoes" rows="3" class="w-full glass-input border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-[#FF5E00]" placeholder="Alguma observação importante?" aria-label="Observações"></textarea>
             </div>
 
             <button type="submit" class="w-full bg-[#FF5E00] hover:bg-[#CC4A00] text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">

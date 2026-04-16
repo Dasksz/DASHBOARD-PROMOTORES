@@ -9,3 +9,7 @@
 ## 2026-04-14 - Icon-only and ambiguous buttons accessibility
 **Learning:** This app heavily uses utility-class driven (Tailwind) design and interactive icon-only buttons as well as dynamically injected buttons via `innerHTML`. `aria-label`s should be reserved for icon-only buttons or situations where the visible text is not descriptive enough, not simply duplicating the inner text of a button.
 **Action:** Add missing `aria-label` to icon-only buttons or ambiguous buttons that are not descriptive enough on their own.
+
+## 2024-11-20 - Adding explicit explicit form labels and missing aria-labels
+**Learning:** Found a widespread pattern where form labels were visually associated but lacked `for` attributes connecting them programmatically to `<input>`, `<select>`, and `<button>` elements, especially for filter dropdowns and search inputs. Additionally, floating action buttons (FABs) which were icon-only lacked descriptive `aria-label`s.
+**Action:** When adding new form inputs or interactive filters, ensure labels explicitly use the `for="id"` attribute linking to the target element's `id`. Add missing `aria-label` to icon-only buttons.
