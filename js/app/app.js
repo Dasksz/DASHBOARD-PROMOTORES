@@ -29368,7 +29368,7 @@ const supervisorGroups = new Map();
 
     let lpState = { page: 1, limit: 50, filteredData: [], allowedClientCodes: new Set() };
     let selectedLpRedes = [];
-    let
+    let lpRedeGroupFilter = "";
         const filialInput = document.getElementById('lp-filial-filter');
         if (filialInput) filialInput.value = 'all';
         const filialText = document.getElementById('lp-filial-filter-text');
@@ -29378,7 +29378,6 @@ const supervisorGroups = new Map();
             filialRadios.forEach(r => r.checked = r.value === 'all');
         }
 
-        lpRedeGroupFilter = '';
     let lpRenderId = 0;
 
     async function exportLpPDF() {
