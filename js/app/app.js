@@ -29431,13 +29431,15 @@ const supervisorGroups = new Map();
 
                 if (lpResearcherMap.has(normRes)) {
                     const info = lpResearcherMap.get(normRes);
+                    let rawName = info.sellerName || info.sellerCode;
+                    rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
 
-                    if (info.sellerName && info.sellerName !== info.sellerCode) {
-                        label = getFirstName(info.sellerName);
+                    if (rawName && rawName !== info.sellerCode) {
+                        label = rawName;
                     } else {
                         label = info.sellerCode;
                     }
-                    subtext = res;
+                    subtext = info.sellerCode;
                 } else {
                     // Fallback
                     label = res;
@@ -29498,9 +29500,11 @@ const supervisorGroups = new Map();
             if (lpResearcherMap && lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
                 agentCode = info.sellerCode;
+                let rawName = info.sellerName || info.sellerCode;
+                rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
                 
-                if (info.sellerName && info.sellerName !== info.sellerCode) {
-                    agentName = getFirstName(info.sellerName);
+                if (rawName && rawName !== info.sellerCode) {
+                    agentName = rawName;
                 } else {
                     agentName = info.sellerCode;
                 }
@@ -29978,15 +29982,23 @@ const supervisorGroups = new Map();
             const resKey = (t.pesquisador || '').toLowerCase().trim();
             if (lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
+                let rawName = info.sellerName || info.sellerCode;
+                // remove prefixes just like in filter
+                rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
 
-                if (info.sellerName && info.sellerName !== info.sellerCode) {
-                    resDisplay = getFirstName(info.sellerName);
+                if (rawName && rawName !== info.sellerCode) {
+                    // Try to get first and second name for better display instead of just first name
+                    // if it's too long, but if it's like "ARIANA", it works.
+                    // The filter uses the full name but formatted. Let's match exactly what we did in the filter.
+                    resDisplay = rawName;
                 } else {
                     resDisplay = info.sellerCode;
                 }
+                resSub = info.sellerCode;
             } else {
                 // Fallback if no map entry
                 resDisplay = t.pesquisador;
+                resSub = t.pesquisador;
             }
 
             const researcherHtml = `
