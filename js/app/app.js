@@ -29681,7 +29681,7 @@ const supervisorGroups = new Map();
                 const fVal = `${count}`;
                 const fLabel = `Filial ${fKey}: `;
 
-                doc.setTextColor(colorMap[fKey] || [0, 0, 0]);
+                doc.setTextColor(...(colorMap[fKey] || [0, 0, 0]));
                 doc.text(fVal, currentX, 36, { align: 'right' });
                 const valWidth = doc.getTextWidth(fVal);
                 currentX -= valWidth + 1;
