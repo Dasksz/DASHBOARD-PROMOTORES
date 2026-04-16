@@ -29424,35 +29424,17 @@ const supervisorGroups = new Map();
 
                 if (lpResearcherMap.has(normRes)) {
                     const info = lpResearcherMap.get(normRes);
-                    const isPromotor = res.toUpperCase().includes('PROMOTOR');
 
-                    if (isPromotor) {
-                        if (info.sellerName && info.sellerName !== info.sellerCode) {
-                            label = `Promot. ${getFirstName(info.sellerName)}`;
-                        } else {
-                            label = `Promot. ${info.sellerCode}`;
-                        }
-                        subtext = `Origem: ${res}`;
+                    if (info.sellerName && info.sellerName !== info.sellerCode) {
+                        label = getFirstName(info.sellerName);
                     } else {
-                        // Standard logic for others
-                        let prefix = 'RCA';
-                        if (res.toUpperCase().includes('SUPERVISOR')) {
-                            prefix = 'Supervisor';
-                        }
-
-                        if (info.sellerName && info.sellerName !== info.sellerCode) {
-                            label = `${prefix} ${getFirstName(info.sellerName)} (${info.sellerCode})`;
-                        } else {
-                            label = `${prefix} ${info.sellerCode}`;
-                        }
-                        if (label !== res) subtext = `Origem: ${res}`;
+                        label = info.sellerCode;
                     }
+                    subtext = res;
                 } else {
                     // Fallback
-                    if (res.toUpperCase().includes('PROMOTOR')) {
-                        label = `Promot. ${res}`;
-                        subtext = `Origem: ${res}`;
-                    }
+                    label = res;
+                    subtext = res;
                 }
 
                 const checked = selectedLpResearchers.has(res) ? 'checked' : '';
@@ -29510,27 +29492,13 @@ const supervisorGroups = new Map();
                 const info = lpResearcherMap.get(resKey);
                 agentCode = info.sellerCode;
                 
-                if (isRowPromotor) {
-                     if (info.sellerName && info.sellerName !== info.sellerCode) {
-                         agentName = `Promot. ${getFirstName(info.sellerName)}`;
-                     } else {
-                         agentName = `Promot. ${info.sellerCode}`;
-                     }
+                if (info.sellerName && info.sellerName !== info.sellerCode) {
+                    agentName = getFirstName(info.sellerName);
                 } else {
-                    let prefix = '';
-                    if (resKey.toUpperCase().includes('SUPERVISOR')) prefix = 'Sup. ';
-                    else if (!resKey.toUpperCase().includes('PROMOTOR')) prefix = 'RCA ';
-
-                    if (info.sellerName && info.sellerName !== info.sellerCode) {
-                        agentName = `${prefix}${getFirstName(info.sellerName)}`;
-                    } else {
-                        agentName = `${prefix}${info.sellerCode}`;
-                    }
+                    agentName = info.sellerCode;
                 }
             } else {
-                if (isRowPromotor) {
-                    agentName = `Promot. ${row.pesquisador}`;
-                }
+                agentName = row.pesquisador;
             }
 
             if (!agentMap.has(agentCode)) {
@@ -29998,40 +29966,20 @@ const supervisorGroups = new Map();
             
             // Resolve Researcher Display
             let resDisplay = t.pesquisador;
-            let resSub = '';
+            let resSub = t.pesquisador;
 
             const resKey = (t.pesquisador || '').toLowerCase().trim();
             if (lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
-                const isPromotor = resKey.toUpperCase().includes('PROMOTOR');
 
-                if (isPromotor) {
-                     if (info.sellerName && info.sellerName !== info.sellerCode) {
-                         resDisplay = `Promot. ${getFirstName(info.sellerName)}`;
-                     } else {
-                         resDisplay = `Promot. ${info.sellerCode}`;
-                     }
-                     // If resolved name is different from origin code, show origin code as subtext
-                     // If t.pesquisador is the code, use it.
-                     resSub = t.pesquisador;
+                if (info.sellerName && info.sellerName !== info.sellerCode) {
+                    resDisplay = getFirstName(info.sellerName);
                 } else {
-                    let prefix = '';
-                    if (resKey.toUpperCase().includes('SUPERVISOR')) prefix = 'Sup. ';
-                    else if (!resKey.toUpperCase().includes('PROMOTOR')) prefix = 'RCA ';
-
-                    if (info.sellerName && info.sellerName !== info.sellerCode) {
-                        resDisplay = `${prefix}${getFirstName(info.sellerName)}`;
-                    } else {
-                        resDisplay = `${prefix}${info.sellerCode}`;
-                    }
-                    resSub = t.pesquisador;
+                    resDisplay = info.sellerCode;
                 }
             } else {
-                // Fallback
-                if ((t.pesquisador||'').toUpperCase().includes('PROMOTOR')) {
-                    resDisplay = `Promot. ${t.pesquisador}`;
-                    resSub = t.pesquisador;
-                }
+                // Fallback if no map entry
+                resDisplay = t.pesquisador;
             }
 
             const researcherHtml = `
