@@ -18683,10 +18683,13 @@ const supervisorGroups = new Map();
         });
 
         setupHierarchyFilters('comparison', updateComparisonView);
-        setupComparisonFilialFilterHandlers();
+        window.setupGenericFilialFilterHandlers('comparison', () => { updateAllComparisonFilters(); updateComparisonView(); });
         setupHierarchyFilters('innovations-month', updateInnovationsMonthView);
         setupInnovationsMonthCategoryFilterHandlers();
-        setupInnovationsMonthFilialFilterHandlers();
+        window.setupGenericFilialFilterHandlers('innovations-month', () => {
+            if (typeof debouncedUpdateInnovationsMonth === 'function') debouncedUpdateInnovationsMonth();
+            else if (typeof updateInnovationsMonthView === 'function') updateInnovationsMonthView();
+        });
         setupInnovationsMonthRedeFilterHandlers();
         setupHierarchyFilters('mix', updateMixView);
         setupHierarchyFilters('meta-realizado', updateMetaRealizadoView);
@@ -25146,7 +25149,12 @@ const supervisorGroups = new Map();
                 }
             });
 
-            setupStockFilialFilterHandlers(); // Initialize Filial Filter Handlers
+            window.setupGenericFilialFilterHandlers('stock', updateStockView, () => {
+            document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
+            document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
+            document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
+            document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
+        }); // Initialize Filial Filter Handlers
 
             // City Filter (Stock)
             const stockCityInput = document.getElementById('stock-city-filter');
@@ -25734,56 +25742,7 @@ const supervisorGroups = new Map();
         });
     }
 
-    function setupStockFilialFilterHandlers() {
-        const btn = document.getElementById('stock-filial-filter-btn');
-        const dropdown = document.getElementById('stock-filial-filter-dropdown');
-        const hiddenInput = document.getElementById('stock-filial-filter');
-        const textSpan = document.getElementById('stock-filial-filter-text');
-        const wrapper = document.getElementById('stock-filial-filter-wrapper');
 
-        if (btn && dropdown && hiddenInput) {
-            // Toggle Dropdown
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                dropdown.classList.toggle('hidden');
-                
-                // Close others
-                document.getElementById('stock-supervisor-filter-dropdown')?.classList.add('hidden');
-                document.getElementById('stock-vendedor-filter-dropdown')?.classList.add('hidden');
-                document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
-                document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
-
-                if (wrapper) {
-                    if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
-                    else wrapper.classList.add('z-50');
-                }
-            });
-
-            // Handle Selection
-            dropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'radio') {
-                    const val = e.target.value;
-                    const label = e.target.closest('label').querySelector('span').textContent;
-
-                    hiddenInput.value = val;
-                    if (textSpan) textSpan.textContent = label;
-
-                    dropdown.classList.add('hidden');
-                    if (wrapper) wrapper.classList.remove('z-50');
-
-                    updateStockView();
-                }
-            });
-
-            // Close on click outside
-            document.addEventListener('click', (e) => {
-                if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
-                    dropdown.classList.add('hidden');
-                    if (wrapper) wrapper.classList.remove('z-50');
-                }
-            });
-        }
-    }
 
     const clearStockFiltersBtn = document.getElementById('clear-stock-filters-btn');
     if (clearStockFiltersBtn) {
@@ -27723,57 +27682,7 @@ const supervisorGroups = new Map();
             }
         }
 
-        function setupComparisonFilialFilterHandlers() {
-            const btn = document.getElementById('comparison-filial-filter-btn');
-            const dropdown = document.getElementById('comparison-filial-filter-dropdown');
-            const hiddenInput = document.getElementById('comparison-filial-filter');
-            const textSpan = document.getElementById('comparison-filial-filter-text');
-            const wrapper = document.getElementById('comparison-filial-filter-wrapper');
 
-            if (btn && dropdown && hiddenInput) {
-                // Toggle Dropdown
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    dropdown.classList.toggle('hidden');
-                    if (wrapper) {
-                        if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
-                        else wrapper.classList.add('z-50');
-                    }
-                });
-
-
-
-                // Handle Selection
-                dropdown.addEventListener('change', (e) => {
-                    if (e.target.type === 'radio') {
-                        const val = e.target.value;
-                        const label = e.target.closest('label').querySelector('span').textContent;
-
-                        hiddenInput.value = val;
-                        if (textSpan) textSpan.textContent = label;
-
-                        dropdown.classList.add('hidden');
-                        if (wrapper) wrapper.classList.remove('z-50');
-
-                        // Trigger Updates
-                        updateAllComparisonFilters();
-                        updateComparisonView();
-                    }
-                });
-
-
-
-                // Close on click outside
-                document.addEventListener('click', (e) => {
-                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
-                        dropdown.classList.add('hidden');
-                        if (wrapper) wrapper.classList.remove('z-50');
-                    }
-                });
-
-
-            }
-        }
 
         setupComparisonSupervisorFilterHandlers();
 
@@ -27901,57 +27810,7 @@ const supervisorGroups = new Map();
             }
         }
 
-        function setupInnovationsMonthFilialFilterHandlers() {
-            const btn = document.getElementById('innovations-month-filial-filter-btn');
-            const dropdown = document.getElementById('innovations-month-filial-filter-dropdown');
-            const hiddenInput = document.getElementById('innovations-month-filial-filter');
-            const textSpan = document.getElementById('innovations-month-filial-filter-text');
-            const wrapper = document.getElementById('innovations-month-filial-filter-wrapper');
 
-            if (btn && dropdown && hiddenInput) {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    dropdown.classList.toggle('hidden');
-                    if (wrapper) {
-                        if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
-                        else wrapper.classList.add('z-50');
-                    }
-                });
-
-
-
-                dropdown.addEventListener('change', (e) => {
-                    if (e.target.type === 'radio') {
-                        const val = e.target.value;
-                        const label = e.target.closest('label').querySelector('span').textContent;
-
-                        hiddenInput.value = val;
-                        if (textSpan) textSpan.textContent = label;
-
-                        dropdown.classList.add('hidden');
-                        if (wrapper) wrapper.classList.remove('z-50');
-
-                        // Trigger Update
-                        if (typeof debouncedUpdateInnovationsMonth === 'function') {
-                            debouncedUpdateInnovationsMonth();
-                        } else if (typeof updateInnovationsMonthView === 'function') {
-                            updateInnovationsMonthView();
-                        }
-                    }
-                });
-
-
-
-                document.addEventListener('click', (e) => {
-                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
-                        dropdown.classList.add('hidden');
-                        if (wrapper) wrapper.classList.remove('z-50');
-                    }
-                });
-
-
-            }
-        }
 
         function setupInnovationsMonthSupervisorFilterHandlers() {
             if (typeof window.setupGenericFilterHandlers === 'function') {
@@ -29306,7 +29165,7 @@ const supervisorGroups = new Map();
 
         modal.classList.remove('hidden');
     };
-    
+
         function setupLpFilialFilterHandlers() {
             let filiais = new Set();
             if (window.embeddedData && window.embeddedData.config_city_branches) {
@@ -29314,7 +29173,7 @@ const supervisorGroups = new Map();
                     if (r.filial) filiais.add(r.filial.trim().toUpperCase());
                 });
             }
-            
+
             const dropdown = document.getElementById('lp-filial-filter-dropdown');
             if (dropdown) {
                 let html = `
@@ -29323,7 +29182,7 @@ const supervisorGroups = new Map();
                         <input type="radio" name="lp-filial" value="all" checked class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
                     </label>
                 `;
-                
+
                 // Add known filiais (sorted)
                 Array.from(filiais).sort().forEach(f => {
                     html += `
@@ -29333,7 +29192,7 @@ const supervisorGroups = new Map();
                         </label>
                     `;
                 });
-                
+
                 // Add fallback for Desconhecida
                 html += `
                     <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
@@ -29341,7 +29200,7 @@ const supervisorGroups = new Map();
                         <input type="radio" name="lp-filial" value="desconhecida" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
                     </label>
                 `;
-                
+
                 dropdown.innerHTML = html;
             }
 
@@ -29461,12 +29320,20 @@ const supervisorGroups = new Map();
             let html = '';
             
             sortedResearchers.forEach(res => {
-                const normRes = res.toLowerCase();
+                const rawPesquisador = (res || '').trim();
+                const normRes = rawPesquisador.toLowerCase();
+                const upperResKey = rawPesquisador.toUpperCase();
+
                 // Resolve friendly name
                 let label = res;
                 let subtext = '';
 
-                if (lpResearcherMap.has(normRes)) {
+                if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                    let pName = optimizedData.promotorMap.get(upperResKey);
+                    pName = pName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
+                    label = pName || rawPesquisador;
+                    subtext = rawPesquisador;
+                } else if (lpResearcherMap.has(normRes)) {
                     const info = lpResearcherMap.get(normRes);
                     let rawName = info.sellerName || info.sellerCode;
                     rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
@@ -29479,8 +29346,8 @@ const supervisorGroups = new Map();
                     subtext = info.sellerCode;
                 } else {
                     // Fallback
-                    label = res;
-                    subtext = res;
+                    label = rawPesquisador;
+                    subtext = rawPesquisador;
                 }
 
                 const checked = selectedLpResearchers.has(res) ? 'checked' : '';
@@ -29501,7 +29368,17 @@ const supervisorGroups = new Map();
 
     let lpState = { page: 1, limit: 50, filteredData: [], allowedClientCodes: new Set() };
     let selectedLpRedes = [];
-    let lpRedeGroupFilter = '';
+    let
+        const filialInput = document.getElementById('lp-filial-filter');
+        if (filialInput) filialInput.value = 'all';
+        const filialText = document.getElementById('lp-filial-filter-text');
+        if (filialText) filialText.textContent = 'Todas';
+        const filialRadios = document.querySelectorAll('input[name="lp-filial"]');
+        if (filialRadios) {
+            filialRadios.forEach(r => r.checked = r.value === 'all');
+        }
+
+        lpRedeGroupFilter = '';
     let lpRenderId = 0;
 
     async function exportLpPDF() {
@@ -29532,7 +29409,15 @@ const supervisorGroups = new Map();
             let agentCode = resKey;
             let agentName = row.pesquisador;
 
-            if (lpResearcherMap && lpResearcherMap.has(resKey)) {
+            const rawPesquisador = (row.pesquisador || '').trim();
+            const upperResKey = rawPesquisador.toUpperCase();
+
+            if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                let pName = optimizedData.promotorMap.get(upperResKey);
+                pName = pName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
+                agentName = pName || rawPesquisador;
+                agentCode = upperResKey; // Using uppercase code as key
+            } else if (lpResearcherMap && lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
                 agentCode = info.sellerCode;
                 let rawName = info.sellerName || info.sellerCode;
@@ -29544,15 +29429,15 @@ const supervisorGroups = new Map();
                     agentName = info.sellerCode;
                 }
             } else {
-                agentName = row.pesquisador;
+                agentName = rawPesquisador;
             }
 
             const filialKey = row.filial || 'DESCONHECIDA';
-            
+
             if (!filialMap.has(filialKey)) {
                 filialMap.set(filialKey, new Map());
             }
-            
+
             const agentMap = filialMap.get(filialKey);
 
             if (!agentMap.has(agentCode)) {
@@ -29606,9 +29491,9 @@ const supervisorGroups = new Map();
         doc.text(filtersText, 14, 42);
 
         // Calculate Total Geral de Pesquisas overall and per filial based strictly on the allowedClientCodes
-        // Wait, the allowedClientCodes already applies all filters EXCEPT the researcher filter. 
+        // Wait, the allowedClientCodes already applies all filters EXCEPT the researcher filter.
         // We also need to compute per-filial breakdown for the top right.
-        
+
         const configBranches = (window.embeddedData && window.embeddedData.config_city_branches) ? window.embeddedData.config_city_branches : [];
         const uniqueClientsOverallPDF = new Set();
         const filialCounts = new Map(); // branch -> Set of clients
@@ -29619,7 +29504,7 @@ const supervisorGroups = new Map();
                 const normCode = normalizeKey(row.codigo_cliente);
                 if (lpState.allowedClientCodes.has(normCode)) {
                     uniqueClientsOverallPDF.add(normCode);
-                    
+
                     // Since row here is raw data, we need to map city to filial again for the global count
                     let cFilial = 'DESCONHECIDA';
                     // We can look it up efficiently if we have the client obj, but the row has no city.
@@ -29630,7 +29515,7 @@ const supervisorGroups = new Map();
                 }
             }
         }
-        
+
         // Let's find the filial for all allowed clients
         const allAllowedClients = getHierarchyFilteredClients('lp', allClientsData);
         for(let i=0; i<allAllowedClients.length; i++) {
@@ -29673,19 +29558,19 @@ const supervisorGroups = new Map();
             '08': [168, 85, 247], // Purple
             'DESCONHECIDA': [156, 163, 175] // Gray
         };
-        
+
         const sortedFiliais = Array.from(filialCounts.keys()).sort().reverse();
         sortedFiliais.forEach(fKey => {
             const count = filialCounts.get(fKey).size;
             if (count > 0) {
                 const fVal = `${count}`;
                 const fLabel = `Filial ${fKey}: `;
-                
+
                 doc.setTextColor(colorMap[fKey] || [0, 0, 0]);
                 doc.text(fVal, currentX, 36, { align: 'right' });
                 const valWidth = doc.getTextWidth(fVal);
                 currentX -= valWidth + 1;
-                
+
                 doc.setTextColor(139, 0, 0); // Dark red for "Filial X:"
                 doc.text(fLabel, currentX, 36, { align: 'right' });
                 const labelWidth = doc.getTextWidth(fLabel);
@@ -29695,10 +29580,10 @@ const supervisorGroups = new Map();
 
         // Print Tables per Filial
         let startY = 50;
-        
+
         // Sort filiais for tables
         const tableFiliais = Array.from(filialMap.keys()).sort();
-        
+
         if (tableFiliais.length === 0) {
              doc.text("Nenhum dado encontrado.", 14, startY);
         }
@@ -29719,7 +29604,7 @@ const supervisorGroups = new Map();
             agentMap.forEach((agent) => {
                 const qtdPesquisas = agent.clients.size;
                 const media = agent.auditoriaCount > 0 ? agent.totalScores / agent.auditoriaCount : 0;
-                
+
                 tableBody.push([
                     agent.code,
                     agent.name,
@@ -29748,7 +29633,7 @@ const supervisorGroups = new Map();
             doc.setTextColor(0);
             doc.setFont('helvetica', 'bold');
             doc.text(`Filial: ${fKey}`, 14, startY);
-            
+
             doc.autoTable({
                 startY: startY + 4,
                 head: [[
@@ -29769,7 +29654,7 @@ const supervisorGroups = new Map();
                     3: { cellWidth: 50, halign: 'center' }
                 }
             });
-            
+
             startY = doc.lastAutoTable.finalY + 10;
         });
 
@@ -29912,7 +29797,7 @@ const supervisorGroups = new Map();
         selectedLpSupervisors.clear();
         selectedLpVendedores.clear();
 
-        
+
         const filialInput = document.getElementById('lp-filial-filter');
         if (filialInput) filialInput.value = 'all';
         const filialText = document.getElementById('lp-filial-filter-text');
@@ -30000,7 +29885,7 @@ const supervisorGroups = new Map();
         const isSemRede = lpRedeGroupFilter === 'sem_rede';
         const redeSet = (isComRede && selectedLpRedes.length > 0) ? new Set(selectedLpRedes) : null;
         const clientSearch = document.getElementById('lp-codcli-filter').value.toLowerCase().trim();
-        
+
         const filialFilterInput = document.getElementById('lp-filial-filter');
         const selectedFilial = filialFilterInput ? filialFilterInput.value : 'all';
 
@@ -30141,8 +30026,19 @@ const supervisorGroups = new Map();
             let resDisplay = t.pesquisador;
             let resSub = t.pesquisador;
 
-            const resKey = (t.pesquisador || '').toLowerCase().trim();
-            if (lpResearcherMap.has(resKey)) {
+            const rawPesquisador = (t.pesquisador || '').trim();
+            const resKey = rawPesquisador.toLowerCase();
+            const upperResKey = rawPesquisador.toUpperCase();
+
+            // 1. Try to resolve using optimizedData.promotorMap directly (Best match for Promotors)
+            if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                let pName = optimizedData.promotorMap.get(upperResKey);
+                pName = pName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
+                resDisplay = pName || rawPesquisador;
+                resSub = rawPesquisador;
+            }
+            // 2. Fallback to lpResearcherMap
+            else if (lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
                 let rawName = info.sellerName || info.sellerCode;
                 // remove prefixes just like in filter
@@ -30157,10 +30053,11 @@ const supervisorGroups = new Map();
                     resDisplay = info.sellerCode;
                 }
                 resSub = info.sellerCode;
-            } else {
-                // Fallback if no map entry
-                resDisplay = t.pesquisador;
-                resSub = t.pesquisador;
+            }
+            // 3. Fallback to raw value
+            else {
+                resDisplay = rawPesquisador;
+                resSub = rawPesquisador;
             }
 
             const researcherHtml = `
