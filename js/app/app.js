@@ -3076,14 +3076,8 @@
             const prevMonthIndex = prevMonthDate.getUTCMonth();
             const prevMonthYear = prevMonthDate.getUTCFullYear();
 
-            // Filter clients to match the "Active Structure" definition (Same as Coverage/Goals Table)
-            const activeClients = allClientsData.filter(c => {
-                const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                if (isAmericanas) return true;
-                if (rca1 === '') return false; // Exclude INATIVOS
-                return true;
-            });
+            // ⚡ Bolt Optimization: Use cached getActiveClientsData() instead of expensive .filter() on Proxy
+            const activeClients = getActiveClientsData();
 
             // Optimization: Detect if history is columnar and IndexMap is available
             const isHistoryColumnar = optimizedData.historyById instanceof IndexMap && optimizedData.historyById._source.values;
@@ -7044,19 +7038,25 @@
             // Find natural base for this seller based on ELMA metrics (excluding Americanas)
             const sellerCode = optimizedData.rcaCodeByName.get(sellerName);
 
-            // Re-use logic for Active Clients counting
-            const sellerClients = allClientsData.filter(c => {
+            // ⚡ Bolt Optimization: Replace `.filter()` on proxy array with pre-filtered clients by RCA
+            const baseClients = optimizedData.clientsByRca.get(sellerCode) || [];
+            const sellerClients = [];
+            const sellerLen = baseClients.length;
+
+            for (let i = 0; i < sellerLen; i++) {
+                const c = baseClients[i];
                 const rca1 = String(c.rca1 || '').trim();
-                if (!sellerCode) return false;
 
                 // Is client active check (Same as others)
                 // Exclude Americanas explicitly from this calculation as per requirement
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                if (isAmericanas || (window.userRole === 'adm' && (rca1 === '53' || rca1 === '053' || rca1 === '' || rca1 === 'INATIVOS'))) return false;
+                if (isAmericanas || (window.userRole === 'adm' && (rca1 === '53' || rca1 === '053' || rca1 === '' || rca1 === 'INATIVOS'))) continue;
 
                 // Does client belong to seller? (Current Hierarchy)
-                return c.rcas.includes(sellerCode);
-            });
+                if (c.rcas && c.rcas.includes(sellerCode)) {
+                    sellerClients.push(c);
+                }
+            }
 
             let naturalCount = 0;
             // Count "Meta Pos" (Revenue > 1 in ELMA_ALL: 707, 708, 752) for these clients
@@ -11148,15 +11148,8 @@ const supervisorGroups = new Map();
                         }
                     });
 
-                    // Get all active clients to calculate the total base per vendor
-                    const allActiveClients = allClientsData.filter(c => {
-                        const rca1 = String(c.rca1 || '').trim();
-                        const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                        if (isAmericanas) return true;
-                        if (window.userRole === 'adm' && rca1 === '53') return false; // Hide orphan balcao from admin if needed, wait, let's just use standard active logic
-                        if (rca1 === '') return false;
-                        return true;
-                    });
+                    // ⚡ Bolt Optimization: Use cached getActiveClientsData() instead of expensive .filter() on Proxy
+                    const allActiveClients = getActiveClientsData();
 
                     const vendorTotalCount = new Map(); // vendorCode -> count
                     allActiveClients.forEach(c => {
@@ -29431,35 +29424,19 @@ const supervisorGroups = new Map();
 
                 if (lpResearcherMap.has(normRes)) {
                     const info = lpResearcherMap.get(normRes);
-                    const isPromotor = res.toUpperCase().includes('PROMOTOR');
+                    let rawName = info.sellerName || info.sellerCode;
+                    rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
 
-                    if (isPromotor) {
-                        if (info.sellerName && info.sellerName !== info.sellerCode) {
-                            label = `Promot. ${getFirstName(info.sellerName)}`;
-                        } else {
-                            label = `Promot. ${info.sellerCode}`;
-                        }
-                        subtext = `Origem: ${res}`;
+                    if (rawName && rawName !== info.sellerCode) {
+                        label = rawName;
                     } else {
-                        // Standard logic for others
-                        let prefix = 'RCA';
-                        if (res.toUpperCase().includes('SUPERVISOR')) {
-                            prefix = 'Supervisor';
-                        }
-
-                        if (info.sellerName && info.sellerName !== info.sellerCode) {
-                            label = `${prefix} ${getFirstName(info.sellerName)} (${info.sellerCode})`;
-                        } else {
-                            label = `${prefix} ${info.sellerCode}`;
-                        }
-                        if (label !== res) subtext = `Origem: ${res}`;
+                        label = info.sellerCode;
                     }
+                    subtext = info.sellerCode;
                 } else {
                     // Fallback
-                    if (res.toUpperCase().includes('PROMOTOR')) {
-                        label = `Promot. ${res}`;
-                        subtext = `Origem: ${res}`;
-                    }
+                    label = res;
+                    subtext = res;
                 }
 
                 const checked = selectedLpResearchers.has(res) ? 'checked' : '';
@@ -29478,7 +29455,7 @@ const supervisorGroups = new Map();
             updateFilterButtonText(document.getElementById('lp-researcher-filter-text'), selectedLpResearchers, 'Todos');
     }
 
-    let lpState = { page: 1, limit: 50, filteredData: [] };
+    let lpState = { page: 1, limit: 50, filteredData: [], allowedClientCodes: new Set() };
     let selectedLpRedes = [];
     let lpRedeGroupFilter = '';
     let lpRenderId = 0;
@@ -29516,42 +29493,32 @@ const supervisorGroups = new Map();
             if (lpResearcherMap && lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
                 agentCode = info.sellerCode;
+                let rawName = info.sellerName || info.sellerCode;
+                rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
                 
-                if (isRowPromotor) {
-                     if (info.sellerName && info.sellerName !== info.sellerCode) {
-                         agentName = `Promot. ${getFirstName(info.sellerName)}`;
-                     } else {
-                         agentName = `Promot. ${info.sellerCode}`;
-                     }
+                if (rawName && rawName !== info.sellerCode) {
+                    agentName = rawName;
                 } else {
-                    let prefix = '';
-                    if (resKey.toUpperCase().includes('SUPERVISOR')) prefix = 'Sup. ';
-                    else if (!resKey.toUpperCase().includes('PROMOTOR')) prefix = 'RCA ';
-
-                    if (info.sellerName && info.sellerName !== info.sellerCode) {
-                        agentName = `${prefix}${getFirstName(info.sellerName)}`;
-                    } else {
-                        agentName = `${prefix}${info.sellerCode}`;
-                    }
+                    agentName = info.sellerCode;
                 }
             } else {
-                if (isRowPromotor) {
-                    agentName = `Promot. ${row.pesquisador}`;
-                }
+                agentName = row.pesquisador;
             }
 
             if (!agentMap.has(agentCode)) {
                 agentMap.set(agentCode, {
                     code: agentCode,
                     name: agentName,
-                    totalAuditorias: 0,
+                    clients: new Set(),
                     totalScores: 0,
                     auditoriaCount: 0
                 });
             }
 
             const agent = agentMap.get(agentCode);
-            agent.totalAuditorias += (row.auditorias || 0);
+            if (row.codigo_cliente) {
+                agent.clients.add(normalizeKey(row.codigo_cliente));
+            }
             agent.totalScores += (row.nota_media || 0);
             agent.auditoriaCount++;
         });
@@ -29562,7 +29529,7 @@ const supervisorGroups = new Map();
         let countMediasGeral = 0;
 
         agentMap.forEach((agent) => {
-            const qtdPesquisas = agent.totalAuditorias;
+            const qtdPesquisas = agent.clients.size;
             const media = agent.auditoriaCount > 0 ? agent.totalScores / agent.auditoriaCount : 0;
             
             tableBody.push([
@@ -29623,12 +29590,25 @@ const supervisorGroups = new Map();
         doc.setFontSize(9);
         doc.text(filtersText, 14, 42);
 
+        // Calculate Total Geral de Pesquisas (Overall Unique Clients, ignoring researcher filter)
+        const uniqueClientsOverallPDF = new Set();
+        if (embeddedData.nota_perfeita && lpState.allowedClientCodes) {
+            for (let i = 0; i < embeddedData.nota_perfeita.length; i++) {
+                const row = embeddedData.nota_perfeita[i];
+                const normCode = normalizeKey(row.codigo_cliente);
+                if (lpState.allowedClientCodes.has(normCode)) {
+                    uniqueClientsOverallPDF.add(normCode);
+                }
+            }
+        }
+        const kpiTotalOverall = uniqueClientsOverallPDF.size;
+
         // --- Add KPI at Top Right ---
         doc.setFontSize(10);
         doc.setTextColor(0);
         doc.setFont('helvetica', 'bold');
         const kpiText1 = 'Total Geral de Pesquisas:';
-        const kpiText2 = `${totalPesquisasGeral}`;
+        const kpiText2 = `${kpiTotalOverall}`;
         const pageWidth = doc.internal.pageSize.getWidth();
         // Right align bounding box
         doc.text(kpiText1, pageWidth - 14, 22, { align: 'right' });
@@ -29901,6 +29881,7 @@ const supervisorGroups = new Map();
             allowedClientCodes.add(code);
             clientMap.set(code, c);
         }
+        lpState.allowedClientCodes = allowedClientCodes;
 
         // 3. Filter Data
         const filtered = [];
@@ -29989,40 +29970,28 @@ const supervisorGroups = new Map();
             
             // Resolve Researcher Display
             let resDisplay = t.pesquisador;
-            let resSub = '';
+            let resSub = t.pesquisador;
 
             const resKey = (t.pesquisador || '').toLowerCase().trim();
             if (lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
-                const isPromotor = resKey.toUpperCase().includes('PROMOTOR');
+                let rawName = info.sellerName || info.sellerCode;
+                // remove prefixes just like in filter
+                rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
 
-                if (isPromotor) {
-                     if (info.sellerName && info.sellerName !== info.sellerCode) {
-                         resDisplay = `Promot. ${getFirstName(info.sellerName)}`;
-                     } else {
-                         resDisplay = `Promot. ${info.sellerCode}`;
-                     }
-                     // If resolved name is different from origin code, show origin code as subtext
-                     // If t.pesquisador is the code, use it.
-                     resSub = t.pesquisador;
+                if (rawName && rawName !== info.sellerCode) {
+                    // Try to get first and second name for better display instead of just first name
+                    // if it's too long, but if it's like "ARIANA", it works.
+                    // The filter uses the full name but formatted. Let's match exactly what we did in the filter.
+                    resDisplay = rawName;
                 } else {
-                    let prefix = '';
-                    if (resKey.toUpperCase().includes('SUPERVISOR')) prefix = 'Sup. ';
-                    else if (!resKey.toUpperCase().includes('PROMOTOR')) prefix = 'RCA ';
-
-                    if (info.sellerName && info.sellerName !== info.sellerCode) {
-                        resDisplay = `${prefix}${getFirstName(info.sellerName)}`;
-                    } else {
-                        resDisplay = `${prefix}${info.sellerCode}`;
-                    }
-                    resSub = t.pesquisador;
+                    resDisplay = info.sellerCode;
                 }
+                resSub = info.sellerCode;
             } else {
-                // Fallback
-                if ((t.pesquisador||'').toUpperCase().includes('PROMOTOR')) {
-                    resDisplay = `Promot. ${t.pesquisador}`;
-                    resSub = t.pesquisador;
-                }
+                // Fallback if no map entry
+                resDisplay = t.pesquisador;
+                resSub = t.pesquisador;
             }
 
             const researcherHtml = `
