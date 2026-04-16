@@ -29478,7 +29478,7 @@ const supervisorGroups = new Map();
             updateFilterButtonText(document.getElementById('lp-researcher-filter-text'), selectedLpResearchers, 'Todos');
     }
 
-    let lpState = { page: 1, limit: 50, filteredData: [] };
+    let lpState = { page: 1, limit: 50, filteredData: [], allowedClientCodes: new Set() };
     let selectedLpRedes = [];
     let lpRedeGroupFilter = '';
     let lpRenderId = 0;
@@ -29544,14 +29544,16 @@ const supervisorGroups = new Map();
                 agentMap.set(agentCode, {
                     code: agentCode,
                     name: agentName,
-                    totalAuditorias: 0,
+                    clients: new Set(),
                     totalScores: 0,
                     auditoriaCount: 0
                 });
             }
 
             const agent = agentMap.get(agentCode);
-            agent.totalAuditorias += (row.auditorias || 0);
+            if (row.codigo_cliente) {
+                agent.clients.add(normalizeKey(row.codigo_cliente));
+            }
             agent.totalScores += (row.nota_media || 0);
             agent.auditoriaCount++;
         });
@@ -29562,7 +29564,7 @@ const supervisorGroups = new Map();
         let countMediasGeral = 0;
 
         agentMap.forEach((agent) => {
-            const qtdPesquisas = agent.totalAuditorias;
+            const qtdPesquisas = agent.clients.size;
             const media = agent.auditoriaCount > 0 ? agent.totalScores / agent.auditoriaCount : 0;
             
             tableBody.push([
@@ -29623,12 +29625,25 @@ const supervisorGroups = new Map();
         doc.setFontSize(9);
         doc.text(filtersText, 14, 42);
 
+        // Calculate Total Geral de Pesquisas (Overall Unique Clients, ignoring researcher filter)
+        const uniqueClientsOverallPDF = new Set();
+        if (embeddedData.nota_perfeita && lpState.allowedClientCodes) {
+            for (let i = 0; i < embeddedData.nota_perfeita.length; i++) {
+                const row = embeddedData.nota_perfeita[i];
+                const normCode = normalizeKey(row.codigo_cliente);
+                if (lpState.allowedClientCodes.has(normCode)) {
+                    uniqueClientsOverallPDF.add(normCode);
+                }
+            }
+        }
+        const kpiTotalOverall = uniqueClientsOverallPDF.size;
+
         // --- Add KPI at Top Right ---
         doc.setFontSize(10);
         doc.setTextColor(0);
         doc.setFont('helvetica', 'bold');
         const kpiText1 = 'Total Geral de Pesquisas:';
-        const kpiText2 = `${totalPesquisasGeral}`;
+        const kpiText2 = `${kpiTotalOverall}`;
         const pageWidth = doc.internal.pageSize.getWidth();
         // Right align bounding box
         doc.text(kpiText1, pageWidth - 14, 22, { align: 'right' });
@@ -29901,6 +29916,7 @@ const supervisorGroups = new Map();
             allowedClientCodes.add(code);
             clientMap.set(code, c);
         }
+        lpState.allowedClientCodes = allowedClientCodes;
 
         // 3. Filter Data
         const filtered = [];
