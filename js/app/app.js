@@ -29417,12 +29417,20 @@ const supervisorGroups = new Map();
             let html = '';
             
             sortedResearchers.forEach(res => {
-                const normRes = res.toLowerCase();
+                const rawPesquisador = (res || '').trim();
+                const normRes = rawPesquisador.toLowerCase();
+                const upperResKey = rawPesquisador.toUpperCase();
+
                 // Resolve friendly name
                 let label = res;
                 let subtext = '';
 
-                if (lpResearcherMap.has(normRes)) {
+                if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                    let pName = optimizedData.promotorMap.get(upperResKey);
+                    pName = pName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
+                    label = pName || rawPesquisador;
+                    subtext = rawPesquisador;
+                } else if (lpResearcherMap.has(normRes)) {
                     const info = lpResearcherMap.get(normRes);
                     let rawName = info.sellerName || info.sellerCode;
                     rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
@@ -29435,8 +29443,8 @@ const supervisorGroups = new Map();
                     subtext = info.sellerCode;
                 } else {
                     // Fallback
-                    label = res;
-                    subtext = res;
+                    label = rawPesquisador;
+                    subtext = rawPesquisador;
                 }
 
                 const checked = selectedLpResearchers.has(res) ? 'checked' : '';
@@ -29490,7 +29498,15 @@ const supervisorGroups = new Map();
             let agentCode = resKey;
             let agentName = row.pesquisador;
 
-            if (lpResearcherMap && lpResearcherMap.has(resKey)) {
+            const rawPesquisador = (row.pesquisador || '').trim();
+            const upperResKey = rawPesquisador.toUpperCase();
+
+            if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                let pName = optimizedData.promotorMap.get(upperResKey);
+                pName = pName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
+                agentName = pName || rawPesquisador;
+                agentCode = upperResKey; // Using uppercase code as key
+            } else if (lpResearcherMap && lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
                 agentCode = info.sellerCode;
                 let rawName = info.sellerName || info.sellerCode;
@@ -29502,7 +29518,7 @@ const supervisorGroups = new Map();
                     agentName = info.sellerCode;
                 }
             } else {
-                agentName = row.pesquisador;
+                agentName = rawPesquisador;
             }
 
             if (!agentMap.has(agentCode)) {
@@ -29972,8 +29988,19 @@ const supervisorGroups = new Map();
             let resDisplay = t.pesquisador;
             let resSub = t.pesquisador;
 
-            const resKey = (t.pesquisador || '').toLowerCase().trim();
-            if (lpResearcherMap.has(resKey)) {
+            const rawPesquisador = (t.pesquisador || '').trim();
+            const resKey = rawPesquisador.toLowerCase();
+            const upperResKey = rawPesquisador.toUpperCase();
+
+            // 1. Try to resolve using optimizedData.promotorMap directly (Best match for Promotors)
+            if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                let pName = optimizedData.promotorMap.get(upperResKey);
+                pName = pName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
+                resDisplay = pName || rawPesquisador;
+                resSub = rawPesquisador;
+            }
+            // 2. Fallback to lpResearcherMap
+            else if (lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
                 let rawName = info.sellerName || info.sellerCode;
                 // remove prefixes just like in filter
@@ -29988,10 +30015,11 @@ const supervisorGroups = new Map();
                     resDisplay = info.sellerCode;
                 }
                 resSub = info.sellerCode;
-            } else {
-                // Fallback if no map entry
-                resDisplay = t.pesquisador;
-                resSub = t.pesquisador;
+            }
+            // 3. Fallback to raw value
+            else {
+                resDisplay = rawPesquisador;
+                resSub = rawPesquisador;
             }
 
             const researcherHtml = `
