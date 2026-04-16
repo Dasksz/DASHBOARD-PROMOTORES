@@ -29306,51 +29306,7 @@ const supervisorGroups = new Map();
 
         modal.classList.remove('hidden');
     };
-    
-        function setupLpFilialFilterHandlers() {
-            let filiais = new Set();
-            if (window.embeddedData && window.embeddedData.config_city_branches) {
-                window.embeddedData.config_city_branches.forEach(r => {
-                    if (r.filial) filiais.add(r.filial.trim().toUpperCase());
-                });
-            }
-            
-            const dropdown = document.getElementById('lp-filial-filter-dropdown');
-            if (dropdown) {
-                let html = `
-                    <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                        <span class="text-xs text-slate-300 group-hover:text-white transition-colors">Todas</span>
-                        <input type="radio" name="lp-filial" value="all" checked class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
-                    </label>
-                `;
-                
-                // Add known filiais (sorted)
-                Array.from(filiais).sort().forEach(f => {
-                    html += `
-                        <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">${f}</span>
-                            <input type="radio" name="lp-filial" value="${f}" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
-                        </label>
-                    `;
-                });
-                
-                // Add fallback for Desconhecida
-                html += `
-                    <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                        <span class="text-xs text-slate-300 group-hover:text-white transition-colors">Desconhecida</span>
-                        <input type="radio" name="lp-filial" value="desconhecida" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
-                    </label>
-                `;
-                
-                dropdown.innerHTML = html;
-            }
-
-            if (typeof window.setupGenericFilialFilterHandlers === 'function') {
-                window.setupGenericFilialFilterHandlers('lp', () => handleLpFilterChange({ excludeFilter: 'filial' }));
-            }
-        }
-
-        function setupLpResearcherFilterHandlers() {
+    function setupLpResearcherFilterHandlers() {
         const btn = document.getElementById('lp-researcher-filter-btn');
         const dropdown = document.getElementById('lp-researcher-filter-dropdown');
         const wrapper = document.getElementById('lp-researcher-filter-wrapper');
@@ -29461,12 +29417,20 @@ const supervisorGroups = new Map();
             let html = '';
             
             sortedResearchers.forEach(res => {
-                const normRes = res.toLowerCase();
+                const rawPesquisador = (res || '').trim();
+                const normRes = rawPesquisador.toLowerCase();
+                const upperResKey = rawPesquisador.toUpperCase();
+                
                 // Resolve friendly name
                 let label = res;
                 let subtext = '';
 
-                if (lpResearcherMap.has(normRes)) {
+                if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                    let pName = optimizedData.promotorMap.get(upperResKey);
+                    pName = pName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
+                    label = pName || rawPesquisador;
+                    subtext = rawPesquisador;
+                } else if (lpResearcherMap.has(normRes)) {
                     const info = lpResearcherMap.get(normRes);
                     let rawName = info.sellerName || info.sellerCode;
                     rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
@@ -29479,8 +29443,8 @@ const supervisorGroups = new Map();
                     subtext = info.sellerCode;
                 } else {
                     // Fallback
-                    label = res;
-                    subtext = res;
+                    label = rawPesquisador;
+                    subtext = rawPesquisador;
                 }
 
                 const checked = selectedLpResearchers.has(res) ? 'checked' : '';
@@ -29517,22 +29481,32 @@ const supervisorGroups = new Map();
         // Use the filtered data that's already in the view state
         const data = lpState.filteredData || [];
 
+        // Determine if we are in 'promoter' or 'seller' view.
+        // Even though adminViewMode dictates the filter, we'll group by whatever the active view is
         const isPromoterMode = typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter';
 
-        // Group data by filial
-        const filialMap = new Map(); // key -> map of agents
+        const agentMap = new Map(); // key -> { code, name, clients: Set(), sumScore: number, countScore: number }
 
         data.forEach(row => {
             const resKey = (row.pesquisador || '').toLowerCase().trim();
             const isRowPromotor = resKey.toUpperCase().includes('PROMOTOR');
             
+            // Only consider researchers matching the current view mode
             if (isPromoterMode && !isRowPromotor) return;
             if (!isPromoterMode && isRowPromotor) return;
 
             let agentCode = resKey;
             let agentName = row.pesquisador;
+            
+            const rawPesquisador = (row.pesquisador || '').trim();
+            const upperResKey = rawPesquisador.toUpperCase();
 
-            if (lpResearcherMap && lpResearcherMap.has(resKey)) {
+            if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                let pName = optimizedData.promotorMap.get(upperResKey);
+                pName = pName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
+                agentName = pName || rawPesquisador;
+                agentCode = upperResKey; // Using uppercase code as key
+            } else if (lpResearcherMap && lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
                 agentCode = info.sellerCode;
                 let rawName = info.sellerName || info.sellerCode;
@@ -29544,16 +29518,8 @@ const supervisorGroups = new Map();
                     agentName = info.sellerCode;
                 }
             } else {
-                agentName = row.pesquisador;
+                agentName = rawPesquisador;
             }
-
-            const filialKey = row.filial || 'DESCONHECIDA';
-            
-            if (!filialMap.has(filialKey)) {
-                filialMap.set(filialKey, new Map());
-            }
-            
-            const agentMap = filialMap.get(filialKey);
 
             if (!agentMap.has(agentCode)) {
                 agentMap.set(agentCode, {
@@ -29572,6 +29538,41 @@ const supervisorGroups = new Map();
             agent.totalScores += (row.nota_media || 0);
             agent.auditoriaCount++;
         });
+
+        const tableBody = [];
+        let totalPesquisasGeral = 0;
+        let sumMediasGeral = 0;
+        let countMediasGeral = 0;
+
+        agentMap.forEach((agent) => {
+            const qtdPesquisas = agent.clients.size;
+            const media = agent.auditoriaCount > 0 ? agent.totalScores / agent.auditoriaCount : 0;
+            
+            tableBody.push([
+                agent.code,
+                agent.name,
+                qtdPesquisas,
+                media.toFixed(1)
+            ]);
+
+            totalPesquisasGeral += qtdPesquisas;
+            if (qtdPesquisas > 0) {
+                sumMediasGeral += media;
+                countMediasGeral++;
+            }
+        });
+
+        // Sort by Media Descending
+        tableBody.sort((a, b) => parseFloat(b[3]) - parseFloat(a[3]));
+
+        const mediaGeral = countMediasGeral > 0 ? (sumMediasGeral / countMediasGeral) : 0;
+
+        // Add Total Row
+        tableBody.push([
+            { content: 'TOTAL', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
+            { content: totalPesquisasGeral.toString(), styles: { fontStyle: 'bold', halign: 'center' } },
+            { content: mediaGeral.toFixed(1), styles: { fontStyle: 'bold', halign: 'center' } }
+        ]);
 
         // Header and Titles
         const generationDate = new Date().toLocaleString('pt-BR');
@@ -29605,51 +29606,17 @@ const supervisorGroups = new Map();
         doc.setFontSize(9);
         doc.text(filtersText, 14, 42);
 
-        // Calculate Total Geral de Pesquisas overall and per filial based strictly on the allowedClientCodes
-        // Wait, the allowedClientCodes already applies all filters EXCEPT the researcher filter. 
-        // We also need to compute per-filial breakdown for the top right.
-        
-        const configBranches = (window.embeddedData && window.embeddedData.config_city_branches) ? window.embeddedData.config_city_branches : [];
+        // Calculate Total Geral de Pesquisas (Overall Unique Clients, ignoring researcher filter)
         const uniqueClientsOverallPDF = new Set();
-        const filialCounts = new Map(); // branch -> Set of clients
-
         if (embeddedData.nota_perfeita && lpState.allowedClientCodes) {
             for (let i = 0; i < embeddedData.nota_perfeita.length; i++) {
                 const row = embeddedData.nota_perfeita[i];
                 const normCode = normalizeKey(row.codigo_cliente);
                 if (lpState.allowedClientCodes.has(normCode)) {
                     uniqueClientsOverallPDF.add(normCode);
-                    
-                    // Since row here is raw data, we need to map city to filial again for the global count
-                    let cFilial = 'DESCONHECIDA';
-                    // We can look it up efficiently if we have the client obj, but the row has no city.
-                    // However, we cached `clientMap` in `updateLpView`? No, it's local.
-                    // Let's use the allClientsData or just extract from `data` array if we want exact matching.
-                    // Actually, `kpiTotalOverall` should match the KPI in view. It ignores researcher filter.
-                    // Let's lookup city from allClientsData.
                 }
             }
         }
-        
-        // Let's find the filial for all allowed clients
-        const allAllowedClients = getHierarchyFilteredClients('lp', allClientsData);
-        for(let i=0; i<allAllowedClients.length; i++) {
-             const c = allAllowedClients[i];
-             const code = normalizeKey(c['Código'] || c['codigo_cliente']);
-             if (uniqueClientsOverallPDF.has(code)) {
-                 let cFilial = 'DESCONHECIDA';
-                 if (c.cidade) {
-                     const normCity = normalizeCity(c.cidade);
-                     const branchRow = configBranches.find(r => normalizeCity(r.cidade) === normCity);
-                     if (branchRow && branchRow.filial) {
-                         cFilial = branchRow.filial.trim().toUpperCase();
-                     }
-                 }
-                 if (!filialCounts.has(cFilial)) filialCounts.set(cFilial, new Set());
-                 filialCounts.get(cFilial).add(code);
-             }
-        }
-
         const kpiTotalOverall = uniqueClientsOverallPDF.size;
 
         // --- Add KPI at Top Right ---
@@ -29665,112 +29632,26 @@ const supervisorGroups = new Map();
         doc.setTextColor(34, 197, 94); // some green
         doc.text(kpiText2, pageWidth - 14, 30, { align: 'right' });
 
-        // Add Breakdown by Filial directly below
-        doc.setFontSize(11);
-        let currentX = pageWidth - 14;
-        const colorMap = {
-            '05': [59, 130, 246], // Blue
-            '08': [168, 85, 247], // Purple
-            'DESCONHECIDA': [156, 163, 175] // Gray
-        };
-        
-        const sortedFiliais = Array.from(filialCounts.keys()).sort().reverse();
-        sortedFiliais.forEach(fKey => {
-            const count = filialCounts.get(fKey).size;
-            if (count > 0) {
-                const fVal = `${count}`;
-                const fLabel = `Filial ${fKey}: `;
-                
-                doc.setTextColor(colorMap[fKey] || [0, 0, 0]);
-                doc.text(fVal, currentX, 36, { align: 'right' });
-                const valWidth = doc.getTextWidth(fVal);
-                currentX -= valWidth + 1;
-                
-                doc.setTextColor(139, 0, 0); // Dark red for "Filial X:"
-                doc.text(fLabel, currentX, 36, { align: 'right' });
-                const labelWidth = doc.getTextWidth(fLabel);
-                currentX -= labelWidth + 4;
+
+        doc.autoTable({
+            startY: 50,
+            head: [[
+                `Código (${roleStr})`,
+                `Nome (${roleStr})`,
+                'Qtd. Pesquisas',
+                'Média de Nota'
+            ]],
+            body: tableBody,
+            theme: 'grid',
+            headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', halign: 'center' },
+            styles: { fontSize: 9, cellPadding: 3, textColor: [0, 0, 0] },
+            alternateRowStyles: { fillColor: [240, 240, 240] },
+            columnStyles: {
+                0: { cellWidth: 40, halign: 'center' },
+                1: { cellWidth: 'auto' },
+                2: { cellWidth: 50, halign: 'center' },
+                3: { cellWidth: 50, halign: 'center' }
             }
-        });
-
-        // Print Tables per Filial
-        let startY = 50;
-        
-        // Sort filiais for tables
-        const tableFiliais = Array.from(filialMap.keys()).sort();
-        
-        if (tableFiliais.length === 0) {
-             doc.text("Nenhum dado encontrado.", 14, startY);
-        }
-
-        tableFiliais.forEach(fKey => {
-            // Check if page break is needed
-            if (startY > doc.internal.pageSize.getHeight() - 40) {
-                doc.addPage();
-                startY = 20;
-            }
-
-            const agentMap = filialMap.get(fKey);
-            const tableBody = [];
-            let totalPesquisas = 0;
-            let sumMedias = 0;
-            let countMedias = 0;
-
-            agentMap.forEach((agent) => {
-                const qtdPesquisas = agent.clients.size;
-                const media = agent.auditoriaCount > 0 ? agent.totalScores / agent.auditoriaCount : 0;
-                
-                tableBody.push([
-                    agent.code,
-                    agent.name,
-                    qtdPesquisas,
-                    media.toFixed(1)
-                ]);
-
-                totalPesquisas += qtdPesquisas;
-                if (qtdPesquisas > 0) {
-                    sumMedias += media;
-                    countMedias++;
-                }
-            });
-
-            tableBody.sort((a, b) => parseFloat(b[3]) - parseFloat(a[3]));
-
-            const mediaFilial = countMedias > 0 ? (sumMedias / countMedias) : 0;
-
-            tableBody.push([
-                { content: 'TOTAL', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: totalPesquisas.toString(), styles: { fontStyle: 'bold', halign: 'center' } },
-                { content: mediaFilial.toFixed(1), styles: { fontStyle: 'bold', halign: 'center' } }
-            ]);
-
-            doc.setFontSize(12);
-            doc.setTextColor(0);
-            doc.setFont('helvetica', 'bold');
-            doc.text(`Filial: ${fKey}`, 14, startY);
-            
-            doc.autoTable({
-                startY: startY + 4,
-                head: [[
-                    `Código (${roleStr})`,
-                    `Nome (${roleStr})`,
-                    'Qtd. Pesquisas',
-                    'Média de Nota'
-                ]],
-                body: tableBody,
-                theme: 'grid',
-                headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', halign: 'center' },
-                styles: { fontSize: 9, cellPadding: 3, textColor: [0, 0, 0] },
-                alternateRowStyles: { fillColor: [240, 240, 240] },
-                columnStyles: {
-                    0: { cellWidth: 40, halign: 'center' },
-                    1: { cellWidth: 'auto' },
-                    2: { cellWidth: 50, halign: 'center' },
-                    3: { cellWidth: 50, halign: 'center' }
-                }
-            });
-            
-            startY = doc.lastAutoTable.finalY + 10;
         });
 
         doc.save(`Loja_Perfeita_Resumo_${isPromoterMode ? 'Promotor' : 'Vendedor'}.pdf`);
@@ -29780,6 +29661,8 @@ const supervisorGroups = new Map();
         if (window.showToast) window.showToast('error', 'Erro ao gerar o PDF.');
     }
 }
+
+
     function renderLojaPerfeitaView() {
         // Inject Researcher Filter (New)
         const lpGrid = document.querySelector('#loja-perfeita-view .sticky-filters .grid');
@@ -29805,7 +29688,6 @@ const supervisorGroups = new Map();
         }
 
         setupHierarchyFilters('lp', () => handleLpFilterChange({ excludeFilter: 'hierarchy' }));
-        setupLpFilialFilterHandlers();
         setupLpSupervisorFilterHandlers();
         setupLpResearcherFilterHandlers();
 
@@ -29912,16 +29794,6 @@ const supervisorGroups = new Map();
         selectedLpSupervisors.clear();
         selectedLpVendedores.clear();
 
-        
-        const filialInput = document.getElementById('lp-filial-filter');
-        if (filialInput) filialInput.value = 'all';
-        const filialText = document.getElementById('lp-filial-filter-text');
-        if (filialText) filialText.textContent = 'Todas';
-        const filialRadios = document.querySelectorAll('input[name="lp-filial"]');
-        if (filialRadios) {
-            filialRadios.forEach(r => r.checked = r.value === 'all');
-        }
-
         lpRedeGroupFilter = '';
         document.getElementById('lp-codcli-filter').value = '';
 
@@ -29994,21 +29866,14 @@ const supervisorGroups = new Map();
             allowedClients = getHierarchyFilteredClients('lp', allClientsData);
         }
 
-
         // Apply Rede Filter
         const isComRede = lpRedeGroupFilter === 'com_rede';
         const isSemRede = lpRedeGroupFilter === 'sem_rede';
         const redeSet = (isComRede && selectedLpRedes.length > 0) ? new Set(selectedLpRedes) : null;
         const clientSearch = document.getElementById('lp-codcli-filter').value.toLowerCase().trim();
-        
-        const filialFilterInput = document.getElementById('lp-filial-filter');
-        const selectedFilial = filialFilterInput ? filialFilterInput.value : 'all';
 
         const allowedClientCodes = new Set();
         const clientMap = new Map(); // Store metadata for table enrichment
-
-        // Build City to Filial Cache
-        const configBranches = (window.embeddedData && window.embeddedData.config_city_branches) ? window.embeddedData.config_city_branches : [];
 
         for(let i=0; i<allowedClients.length; i++) {
             const c = allowedClients[i];
@@ -30019,22 +29884,6 @@ const supervisorGroups = new Map();
                 if (redeSet && !redeSet.has(c.ramo)) continue;
             } else if (isSemRede) {
                 if (c.ramo && c.ramo !== 'N/A') continue;
-            }
-
-            // Filial Check
-            let cFilial = 'desconhecida';
-            if (c.cidade) {
-                const normCity = normalizeCity(c.cidade);
-                const branchRow = configBranches.find(r => normalizeCity(r.cidade) === normCity);
-                if (branchRow && branchRow.filial) {
-                    cFilial = branchRow.filial.trim().toUpperCase();
-                }
-            }
-            c.calculatedFilial = cFilial; // Save for PDF/Table
-
-            if (selectedFilial !== 'all') {
-                if (selectedFilial === 'desconhecida' && cFilial !== 'desconhecida') continue;
-                if (selectedFilial !== 'desconhecida' && cFilial !== selectedFilial) continue;
             }
 
             // Search Check
@@ -30048,7 +29897,6 @@ const supervisorGroups = new Map();
             allowedClientCodes.add(code);
             clientMap.set(code, c);
         }
-
         lpState.allowedClientCodes = allowedClientCodes;
 
         // 3. Filter Data
@@ -30067,8 +29915,7 @@ const supervisorGroups = new Map();
             filtered.push({
                  ...row,
                  clientName: c ? (c.nomeCliente || c.fantasia) : 'Desconhecido',
-                 city: c ? (c.cidade || 'N/A') : 'N/A',
-                 filial: c ? c.calculatedFilial : 'desconhecida'
+                 city: c ? (c.cidade || 'N/A') : 'N/A'
             });
         }
 
@@ -30141,8 +29988,19 @@ const supervisorGroups = new Map();
             let resDisplay = t.pesquisador;
             let resSub = t.pesquisador;
 
-            const resKey = (t.pesquisador || '').toLowerCase().trim();
-            if (lpResearcherMap.has(resKey)) {
+            const rawPesquisador = (t.pesquisador || '').trim();
+            const resKey = rawPesquisador.toLowerCase();
+            const upperResKey = rawPesquisador.toUpperCase();
+
+            // 1. Try to resolve using optimizedData.promotorMap directly (Best match for Promotors)
+            if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                let pName = optimizedData.promotorMap.get(upperResKey);
+                pName = pName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
+                resDisplay = pName || rawPesquisador;
+                resSub = rawPesquisador;
+            } 
+            // 2. Fallback to lpResearcherMap
+            else if (lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
                 let rawName = info.sellerName || info.sellerCode;
                 // remove prefixes just like in filter
@@ -30157,10 +30015,11 @@ const supervisorGroups = new Map();
                     resDisplay = info.sellerCode;
                 }
                 resSub = info.sellerCode;
-            } else {
-                // Fallback if no map entry
-                resDisplay = t.pesquisador;
-                resSub = t.pesquisador;
+            } 
+            // 3. Fallback to raw value
+            else {
+                resDisplay = rawPesquisador;
+                resSub = rawPesquisador;
             }
 
             const researcherHtml = `
