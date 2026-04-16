@@ -71,6 +71,12 @@
     };
 
     // Helper to normalize keys (remove leading zeros) to ensure consistent joins
+
+    window.normalizeCity = function(c) {
+        if (!c) return '';
+        return c.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
+    };
+
     window.normalizeKey = function(key) {
         if (!key) return '';
         if (typeof key === 'number') return String(key);
