@@ -3076,14 +3076,8 @@
             const prevMonthIndex = prevMonthDate.getUTCMonth();
             const prevMonthYear = prevMonthDate.getUTCFullYear();
 
-            // Filter clients to match the "Active Structure" definition (Same as Coverage/Goals Table)
-            const activeClients = allClientsData.filter(c => {
-                const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                if (isAmericanas) return true;
-                if (rca1 === '') return false; // Exclude INATIVOS
-                return true;
-            });
+            // ⚡ Bolt Optimization: Use cached getActiveClientsData() instead of expensive .filter() on Proxy
+            const activeClients = getActiveClientsData();
 
             // Optimization: Detect if history is columnar and IndexMap is available
             const isHistoryColumnar = optimizedData.historyById instanceof IndexMap && optimizedData.historyById._source.values;
@@ -7044,19 +7038,25 @@
             // Find natural base for this seller based on ELMA metrics (excluding Americanas)
             const sellerCode = optimizedData.rcaCodeByName.get(sellerName);
 
-            // Re-use logic for Active Clients counting
-            const sellerClients = allClientsData.filter(c => {
+            // ⚡ Bolt Optimization: Replace `.filter()` on proxy array with pre-filtered clients by RCA
+            const baseClients = optimizedData.clientsByRca.get(sellerCode) || [];
+            const sellerClients = [];
+            const sellerLen = baseClients.length;
+
+            for (let i = 0; i < sellerLen; i++) {
+                const c = baseClients[i];
                 const rca1 = String(c.rca1 || '').trim();
-                if (!sellerCode) return false;
 
                 // Is client active check (Same as others)
                 // Exclude Americanas explicitly from this calculation as per requirement
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                if (isAmericanas || (window.userRole === 'adm' && (rca1 === '53' || rca1 === '053' || rca1 === '' || rca1 === 'INATIVOS'))) return false;
+                if (isAmericanas || (window.userRole === 'adm' && (rca1 === '53' || rca1 === '053' || rca1 === '' || rca1 === 'INATIVOS'))) continue;
 
                 // Does client belong to seller? (Current Hierarchy)
-                return c.rcas.includes(sellerCode);
-            });
+                if (c.rcas && c.rcas.includes(sellerCode)) {
+                    sellerClients.push(c);
+                }
+            }
 
             let naturalCount = 0;
             // Count "Meta Pos" (Revenue > 1 in ELMA_ALL: 707, 708, 752) for these clients
@@ -11148,15 +11148,8 @@ const supervisorGroups = new Map();
                         }
                     });
 
-                    // Get all active clients to calculate the total base per vendor
-                    const allActiveClients = allClientsData.filter(c => {
-                        const rca1 = String(c.rca1 || '').trim();
-                        const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                        if (isAmericanas) return true;
-                        if (window.userRole === 'adm' && rca1 === '53') return false; // Hide orphan balcao from admin if needed, wait, let's just use standard active logic
-                        if (rca1 === '') return false;
-                        return true;
-                    });
+                    // ⚡ Bolt Optimization: Use cached getActiveClientsData() instead of expensive .filter() on Proxy
+                    const allActiveClients = getActiveClientsData();
 
                     const vendorTotalCount = new Map(); // vendorCode -> count
                     allActiveClients.forEach(c => {
