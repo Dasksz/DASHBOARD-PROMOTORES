@@ -29187,8 +29187,8 @@ const supervisorGroups = new Map();
                 Array.from(filiais).sort().forEach(f => {
                     html += `
                         <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">${f}</span>
-                            <input type="radio" name="lp-filial" value="${f}" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">${window.escapeHtml(f)}</span>
+                            <input type="radio" name="lp-filial" value="${window.escapeHtml(f)}" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
                         </label>
                     `;
                 });
