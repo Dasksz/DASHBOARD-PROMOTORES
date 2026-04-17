@@ -15235,9 +15235,9 @@ const supervisorGroups = new Map();
 
             let calendarHTML = `
                 <div class="flex justify-between items-center mb-4">
-                    <button id="prev-month-btn" class="p-2 rounded-full hover:bg-slate-600">&lt;</button>
+                    <button id="prev-month-btn" class="p-2 rounded-full hover:bg-slate-600" aria-label="Mês anterior">&lt;</button>
                     <h3 class="font-bold text-lg">${monthNames[month]} ${year}</h3>
-                    <button id="next-month-btn" class="p-2 rounded-full hover:bg-slate-600">&gt;</button>
+                    <button id="next-month-btn" class="p-2 rounded-full hover:bg-slate-600" aria-label="Próximo mês">&gt;</button>
                 </div>
                 <div class="grid grid-cols-7 gap-1 text-center text-xs text-slate-400 mb-2">
                     <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
