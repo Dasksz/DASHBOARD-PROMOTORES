@@ -4677,13 +4677,13 @@
             if (!sellerCode) return 0;
 
             const clients = optimizedData.clientsByRca.get(sellerCode) || [];
-            // Filter active clients same as main view
-            const activeClients = clients.filter(c => {
-                const cod = String(c['Código'] || c['codigo_cliente']);
-                const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                return true;
-            });
+            // ⚡ Bolt Optimization: Replace Proxy .filter() array allocation with a direct loop.
+            const activeClients = [];
+            for (let i = 0; i < clients.length; i++) {
+                const c = clients[i];
+                c.isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.razaoSocial || '').toUpperCase().includes('AMERICANAS');
+                activeClients.push(c);
+            }
 
             // Iterate Active Clients
             let totalMixMonths = 0;
