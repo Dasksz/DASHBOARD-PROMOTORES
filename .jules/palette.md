@@ -9,3 +9,7 @@
 ## 2026-04-14 - Icon-only and ambiguous buttons accessibility
 **Learning:** This app heavily uses utility-class driven (Tailwind) design and interactive icon-only buttons as well as dynamically injected buttons via `innerHTML`. `aria-label`s should be reserved for icon-only buttons or situations where the visible text is not descriptive enough, not simply duplicating the inner text of a button.
 **Action:** Add missing `aria-label` to icon-only buttons or ambiguous buttons that are not descriptive enough on their own.
+
+## 2024-04-19 - Modals Close Buttons & Filter Groups
+**Learning:** Found pattern where modal close buttons using `&times;` were built using `<span>` with `onclick` instead of interactive `<button>` elements, breaking keyboard accessibility and screen readers. Also, custom toggle groups using `role="group"` lacked `aria-labelledby` referencing their titles.
+**Action:** Always use `<button>` with `aria-label` for modal close actions instead of `<span onclick="...">`. When using `role="group"` for custom button groups, ensure the visual label has an `id` and is linked via `aria-labelledby` to the group container.

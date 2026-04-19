@@ -1,0 +1,4 @@
+1. I found multiple `aria-label` missing on buttons, `aria-labelledby` missing on `role="group"` elements, missing `<label for="..."` tags, and some `<span>` acting as close buttons for modals. I replaced them using Python scripts locally.
+2. I have added a `.jules/palette.md` entry describing the learnings.
+3. Pre-commit check
+4. Submit PR
