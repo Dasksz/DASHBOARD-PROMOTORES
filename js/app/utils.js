@@ -995,3 +995,68 @@
     };
 
 })();
+
+    window.setupGenericRedeFilterHandlers = function(prefix, stateObj, getFilteredDataFn, updateViewFn, updateRedeFilterFn) {
+        const redeGroupContainer = document.getElementById(prefix + '-rede-group-container');
+        const dropdown = document.getElementById(prefix + '-rede-filter-dropdown');
+        const comRedeBtn = document.getElementById(prefix + '-com-rede-btn');
+        const comRedeBtnText = document.getElementById(prefix + '-com-rede-btn-text');
+
+        if (redeGroupContainer) {
+            redeGroupContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+
+                const group = btn.dataset.group;
+                stateObj.groupFilter = group;
+
+                // UI Update
+                redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                if (group === 'com_rede') {
+                    dropdown.classList.remove('hidden');
+                    const data = getFilteredDataFn({ excludeFilter: 'rede' });
+                    const clients = data ? (data.clients || data) : []; // Handle both { clients } and array
+                    if (typeof updateRedeFilterFn === 'function') {
+                        stateObj.selectedRedes = updateRedeFilterFn(dropdown, comRedeBtnText, stateObj.selectedRedes, clients);
+                    } else if (typeof window.updateGenericRedeFilter === 'function') {
+                        stateObj.selectedRedes = window.updateGenericRedeFilter(dropdown, comRedeBtnText, stateObj.selectedRedes, clients);
+                    }
+                } else {
+                    dropdown.classList.add('hidden');
+                    if (group !== 'com_rede' && comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
+                    if (typeof updateViewFn === 'function') updateViewFn();
+                }
+            });
+
+            if (dropdown) {
+                dropdown.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        const val = e.target.value;
+                        if (e.target.checked) {
+                            stateObj.selectedRedes.push(val);
+                        } else {
+                            stateObj.selectedRedes = stateObj.selectedRedes.filter(v => v !== val);
+                        }
+
+                        const data = getFilteredDataFn({ excludeFilter: 'rede' });
+                        const clients = data ? (data.clients || data) : [];
+                        if (typeof updateRedeFilterFn === 'function') {
+                        stateObj.selectedRedes = updateRedeFilterFn(dropdown, comRedeBtnText, stateObj.selectedRedes, clients);
+                    } else if (typeof window.updateGenericRedeFilter === 'function') {
+                        stateObj.selectedRedes = window.updateGenericRedeFilter(dropdown, comRedeBtnText, stateObj.selectedRedes, clients);
+                    }
+
+                        if (typeof updateViewFn === 'function') updateViewFn();
+                    }
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                if (comRedeBtn && dropdown && !comRedeBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+    };
