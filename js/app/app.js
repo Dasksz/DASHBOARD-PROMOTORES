@@ -450,62 +450,6 @@
             }
         }
 
-        function setupCoverageRedeFilterHandlers() {
-            const redeGroupContainer = document.getElementById('coverage-rede-group-container');
-            const dropdown = document.getElementById('coverage-rede-filter-dropdown');
-            const comRedeBtn = document.getElementById('coverage-com-rede-btn');
-            const comRedeBtnText = document.getElementById('coverage-com-rede-btn-text');
-
-            if (redeGroupContainer) {
-                redeGroupContainer.addEventListener('click', (e) => {
-                    const btn = e.target.closest('button');
-                    if (!btn) return;
-
-                    const group = btn.dataset.group;
-                    coverageRedeGroupFilter = group;
-
-                    // UI Update
-                    redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-
-                    if (group === 'com_rede') {
-                        dropdown.classList.remove('hidden');
-                        const { clients } = getCoverageFilteredData({ excludeFilter: 'rede' });
-                        selectedCoverageRedes = updateRedeFilter(dropdown, comRedeBtnText, selectedCoverageRedes, clients);
-                    } else {
-                        dropdown.classList.add('hidden');
-                        if (group !== 'com_rede' && comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
-                        updateCoverageView();
-                    }
-                });
-
-
-
-                if (dropdown) {
-                    dropdown.addEventListener('change', (e) => {
-                        if (e.target.type === 'checkbox') {
-                            const val = e.target.value;
-                            if (e.target.checked) selectedCoverageRedes.push(val);
-                            else selectedCoverageRedes = selectedCoverageRedes.filter(v => v !== val);
-
-                            const { clients } = getCoverageFilteredData({ excludeFilter: 'rede' });
-                            updateRedeFilter(dropdown, comRedeBtnText, selectedCoverageRedes, clients);
-                            updateCoverageView();
-                        }
-                    });
-
-
-                }
-
-                document.addEventListener('click', (e) => {
-                    if (comRedeBtn && dropdown && !comRedeBtn.contains(e.target) && !dropdown.contains(e.target)) {
-                        dropdown.classList.add('hidden');
-                    }
-                });
-
-
-            }
-        }
 
         function setupCoveragePriceFilterHandlers() {
             const minInput = document.getElementById('coverage-price-min');
@@ -18690,12 +18634,24 @@ const supervisorGroups = new Map();
             if (typeof debouncedUpdateInnovationsMonth === 'function') debouncedUpdateInnovationsMonth();
             else if (typeof updateInnovationsMonthView === 'function') updateInnovationsMonthView();
         });
-        setupInnovationsMonthRedeFilterHandlers();
+        window.setupGenericRedeFilterHandlers('innovations-month',
+            { get groupFilter() { return innovationsMonthRedeGroupFilter; }, set groupFilter(v) { innovationsMonthRedeGroupFilter = v; },
+              get selectedRedes() { return selectedInnovationsMonthRedes; }, set selectedRedes(v) { selectedInnovationsMonthRedes = v; } },
+            getInnovationsMonthFilteredData,
+            updateInnovationsMonthView,
+            updateRedeFilter
+        );
         setupHierarchyFilters('mix', updateMixView);
         setupHierarchyFilters('meta-realizado', updateMetaRealizadoView);
         setupHierarchyFilters('coverage', updateCoverageView);
         setupCoverageSupervisorFilterHandlers(); // Initialize Coverage Supervisor Filters
-        setupCoverageRedeFilterHandlers();
+        window.setupGenericRedeFilterHandlers('coverage',
+            { get groupFilter() { return coverageRedeGroupFilter; }, set groupFilter(v) { coverageRedeGroupFilter = v; },
+              get selectedRedes() { return selectedCoverageRedes; }, set selectedRedes(v) { selectedCoverageRedes = v; } },
+            getCoverageFilteredData,
+            updateCoverageView,
+            updateRedeFilter
+        );
         setupCoveragePriceFilterHandlers();
         setupCoverageDateFilterHandlers();
         setupHierarchyFilters('goals-gv', updateGoalsView);
@@ -23681,76 +23637,6 @@ const supervisorGroups = new Map();
         renderList();
     }
 
-    function setupHistoryRedeFilterHandlers() {
-        const redeGroupContainer = document.getElementById('history-rede-group-container');
-        const dropdown = document.getElementById('history-rede-filter-dropdown');
-        const comRedeBtn = document.getElementById('history-com-rede-btn');
-        const comRedeBtnText = document.getElementById('history-com-rede-btn-text');
-
-        if (redeGroupContainer) {
-            redeGroupContainer.addEventListener('click', (e) => {
-                const btn = e.target.closest('button');
-                if (!btn) return;
-
-                const group = btn.dataset.group;
-                historyRedeGroupFilter = group;
-
-                redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-
-                if (group === 'com_rede') {
-                    dropdown.classList.remove('hidden');
-                    // We need a list of clients available in history context.
-                    // Use allClientsData filtered by hierarchy/seller mode.
-                    let clients = [];
-                    if (typeof getHierarchyFilteredClients === 'function') {
-                        clients = getHierarchyFilteredClients('history', allClientsData);
-                    }
-                    selectedHistoryRedes = updateRedeFilter(dropdown, comRedeBtnText, selectedHistoryRedes, clients);
-                } else {
-                    dropdown.classList.add('hidden');
-                    if (group !== 'com_rede' && comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
-                    // We don't auto-update history view on filter change, only on "Filtrar" click usually?
-                    // The requirement says "Ao clicar para limpar os filtros...".
-                    // Usually History requires explicit "Filtrar" button for dates, but side filters might be instant or not.
-                    // Given the button structure, let's wait for "Filtrar" or auto-update?
-                    // User didn't specify. I will assume explicit "Filtrar" button triggers the main fetch, but maybe these filters work on the result?
-                    // No, `filterHistoryView` re-scans everything.
-                    // Let's NOT auto-trigger `filterHistoryView` here if it's heavy. The user has a "Filtrar" button.
-                    // BUT for Rede/Tipo Venda, users might expect instant feedback if data is loaded.
-                    // However, History View data loading depends on Date Range which might be huge.
-                    // I'll stick to manual "Filtrar" trigger for consistency with Date, OR just let the user click Filtrar.
-                    // Actually, for better UX, if data is already loaded (hasSearched=true), we could re-filter.
-                    if (historyTableState.hasSearched) filterHistoryView();
-                }
-            });
-
-            if (dropdown) {
-                dropdown.addEventListener('change', (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if (e.target.checked) selectedHistoryRedes.push(val);
-                        else selectedHistoryRedes = selectedHistoryRedes.filter(v => v !== val);
-
-                        let clients = [];
-                        if (typeof getHierarchyFilteredClients === 'function') {
-                            clients = getHierarchyFilteredClients('history', allClientsData);
-                        }
-                        updateRedeFilter(dropdown, comRedeBtnText, selectedHistoryRedes, clients);
-                        if (historyTableState.hasSearched) filterHistoryView();
-                    }
-                });
-
-
-            }
-
-            document.addEventListener('click', (e) => {
-                if (comRedeBtn && dropdown && !comRedeBtn.contains(e.target) && !dropdown.contains(e.target)) {
-                    dropdown.classList.add('hidden');
-                }
-            });
-        }
-    }
 
     function setupHistoryTipoVendaFilterHandlers() {
         const btn = document.getElementById('history-tipo-venda-filter-btn');
@@ -23796,7 +23682,19 @@ const supervisorGroups = new Map();
         if (!isHistoryViewInitialized) {
             setupHierarchyFilters('history', null); // Reuse hierarchy logic
             setupHistorySupervisorFilterHandlers();
-            setupHistoryRedeFilterHandlers();
+            window.setupGenericRedeFilterHandlers('history',
+                { get groupFilter() { return historyRedeGroupFilter; }, set groupFilter(v) { historyRedeGroupFilter = v; },
+                  get selectedRedes() { return selectedHistoryRedes; }, set selectedRedes(v) { selectedHistoryRedes = v; } },
+                () => {
+                    let clients = [];
+                    if (typeof getHierarchyFilteredClients === 'function') {
+                        clients = getHierarchyFilteredClients('history', allClientsData);
+                    }
+                    return clients;
+                },
+                () => { if (historyTableState.hasSearched) filterHistoryView(); },
+                updateRedeFilter
+            );
             setupHistoryTipoVendaFilterHandlers();
             
             // Set default dates (Current Month)
@@ -27741,74 +27639,6 @@ const supervisorGroups = new Map();
             }
         }
 
-        function setupInnovationsMonthRedeFilterHandlers() {
-            const redeGroupContainer = document.getElementById('innovations-month-rede-group-container');
-            const dropdown = document.getElementById('innovations-month-rede-filter-dropdown');
-            const comRedeBtn = document.getElementById('innovations-month-com-rede-btn');
-            const comRedeBtnText = document.getElementById('innovations-month-com-rede-btn-text');
-
-            if (redeGroupContainer) {
-                redeGroupContainer.addEventListener('click', (e) => {
-                    const btn = e.target.closest('button');
-                    if (!btn) return;
-
-                    const group = btn.dataset.group;
-                    innovationsMonthRedeGroupFilter = group;
-
-                    // UI Update
-                    redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-
-                    if (group === 'com_rede') {
-                        dropdown.classList.remove('hidden');
-                        const { clients: clientsRede } = getInnovationsMonthFilteredData({ excludeFilter: 'rede' });
-                        selectedInnovationsMonthRedes = updateRedeFilter(dropdown, comRedeBtnText, selectedInnovationsMonthRedes, clientsRede);
-                    } else {
-                        dropdown.classList.add('hidden');
-                        // Do NOT clear selected redes immediately if switching to "Todos" or "Sem Rede",
-                        // but logic says if "sem_rede", selected redes don't apply.
-                        // If "com_rede" is deselected, we usually clear selections or just hide.
-                        // Let's follow mix pattern:
-                        if (group !== 'com_rede') {
-                             // Reset text?
-                             if (comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
-                        }
-                        updateInnovationsMonthView();
-                    }
-                });
-
-
-
-                // Dropdown Listener for Checkboxes (Delegation)
-                if (dropdown) {
-                    dropdown.addEventListener('change', (e) => {
-                        if (e.target.type === 'checkbox') {
-                            const val = e.target.value;
-                            if (e.target.checked) {
-                                selectedInnovationsMonthRedes.push(val);
-                            } else {
-                                selectedInnovationsMonthRedes = selectedInnovationsMonthRedes.filter(v => v !== val);
-                            }
-                            // Re-render dropdown to update count/text
-                            const { clients: clientsRede } = getInnovationsMonthFilteredData({ excludeFilter: 'rede' });
-                            updateRedeFilter(dropdown, comRedeBtnText, selectedInnovationsMonthRedes, clientsRede);
-                            updateInnovationsMonthView();
-                        }
-                    });
-
-
-                }
-
-                // Close dropdown on click outside
-                document.addEventListener('click', (e) => {
-                    if (comRedeBtn && dropdown && !comRedeBtn.contains(e.target) && !dropdown.contains(e.target)) {
-                        dropdown.classList.add('hidden');
-                    }
-                });
-
-
-            }
-        }
 
 
 
