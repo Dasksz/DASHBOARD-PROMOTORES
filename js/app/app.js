@@ -5265,7 +5265,7 @@
 
                 // Desktop Cells
                 let desktopCells = `
-                    <td class="px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 glass-panel-heavy z-30 truncate hidden md:table-cell" title="${row.name}">${getFirstName(row.name)}</td>
+                    <td class="px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 glass-panel-heavy z-30 truncate hidden md:table-cell" title="${window.escapeHtml(row.name)}">${window.escapeHtml(getFirstName(row.name))}</td>
                     <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs hidden md:table-cell" title="Meta Contratual Mensal">${metaTotalStr}</td>
                     <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs hidden md:table-cell">${realTotalStr}</td>
                 `;
@@ -5288,7 +5288,7 @@
                 // Mobile Content (Compact List) - WRAPPED IN TD
                 const mobileContent = `
                     <td class="md:hidden w-full py-3 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${index}, 'seller')">
-                        <div class="font-bold text-sm text-slate-200 mb-1 truncate">${row.codusur || ''} - ${row.name}</div>
+                        <div class="font-bold text-sm text-slate-200 mb-1 truncate">${window.escapeHtml(row.codusur || '')} - ${window.escapeHtml(row.name)}</div>
                         <div class="flex justify-between items-center text-xs">
                             <div class="text-slate-400">Meta: <span class="text-slate-200 font-medium">${metaTotalStr}</span></div>
                             <div class="text-slate-400">Real: <span class="${colorClass} font-bold">${realTotalStr}</span></div>
@@ -8676,7 +8676,7 @@ const supervisorGroups = new Map();
 
                     sup.sellers.sort((a, b) => (b.data['total_elma']?.metaFat || 0) - (a.data['total_elma']?.metaFat || 0));
                     sup.sellers.forEach(seller => {
-                        bodyHTML += `<tr class="hover:bg-white/5 border-b border-white/10"><td class="px-2 py-1 text-center text-slate-400 font-mono">${seller.code}</td><td class="px-2 py-1 text-left text-white font-medium truncate max-w-[200px]" title="${seller.name}">${getFirstName(seller.name)}</td>`;
+                        bodyHTML += `<tr class="hover:bg-white/5 border-b border-white/10"><td class="px-2 py-1 text-center text-slate-400 font-mono">${seller.code}</td><td class="px-2 py-1 text-left text-white font-medium truncate max-w-[200px]" title="${window.escapeHtml(seller.name)}">${window.escapeHtml(getFirstName(seller.name))}</td>`;
                         svColumns.forEach(col => {
                             const d = seller.data[col.id] || { metaFat: 0, metaVol: 0, metaPos: 0, avgVol: 0, avgMix: 0, metaMix: 0, avgFat: 0, monthlyValues: {} };
                             if (col.type === 'standard') {
