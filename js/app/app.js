@@ -4641,32 +4641,30 @@
             const codCli = goalsGvCodcliFilter.value.trim();
 
             // Apply Hierarchy Filter + "Active" Filter logic
-            let clients = getHierarchyFilteredClients('goals-gv', allClientsData).filter(c => isActiveClient(c));
+            const baseClients = getHierarchyFilteredClients('goals-gv', allClientsData);
+            const clients = [];
 
-            // Filter by Supervisor (goals-gv)
-            if (selectedGoalsGvSupervisors.size > 0) {
-                clients = clients.filter(c => {
-                    const rca1 = String(c.rca1 || '').trim();
+            const hasSup = selectedGoalsGvSupervisors.size > 0;
+            const hasVend = selectedGoalsGvVendedores.size > 0;
+
+            // ⚡ Bolt Optimization: Replace chained .filter() array allocations with a single O(N) pass loop
+            for (let i = 0; i < baseClients.length; i++) {
+                const c = baseClients[i]; // getHierarchyFilteredClients already resolves ColumnarDataset items to objects
+
+                if (!isActiveClient(c)) continue;
+
+                const rca1 = String(c.rca1 || '').trim();
+
+                if (hasSup) {
                     const details = sellerDetailsMap.get(rca1);
-                    return details && details.supervisor && selectedGoalsGvSupervisors.has(details.supervisor);
-                });
+                    if (!(details && details.supervisor && selectedGoalsGvSupervisors.has(details.supervisor))) continue;
+                }
 
+                if (hasVend && !selectedGoalsGvVendedores.has(rca1)) continue;
 
-            }
+                if (codCli && String(c['Código']) !== codCli) continue;
 
-            // Filter by Seller (goals-gv)
-            if (selectedGoalsGvVendedores.size > 0) {
-                clients = clients.filter(c => {
-                    const rca1 = String(c.rca1 || '').trim();
-                    return selectedGoalsGvVendedores.has(rca1);
-                });
-
-
-            }
-
-            // Filter by Client Code
-            if (codCli) {
-                clients = clients.filter(c => String(c['Código']) === codCli);
+                clients.push(c);
             }
 
             return clients;
@@ -4927,35 +4925,33 @@
 
             // 1. Clients Filter
             // Apply Hierarchy Logic + "Active" Filter logic
-            let clients = getHierarchyFilteredClients('meta-realizado', allClientsData).filter(c => {
+            const baseClients = getHierarchyFilteredClients('meta-realizado', allClientsData);
+            const clients = [];
+
+            const isSellerMode = adminViewMode === 'seller';
+            const hasSup = isSellerMode && selectedMetaRealizadoSupervisors.size > 0;
+            const hasVend = isSellerMode && selectedMetaRealizadoVendedores.size > 0;
+
+            // ⚡ Bolt Optimization: Replace chained .filter() array allocations with a single O(N) pass loop
+            for (let i = 0; i < baseClients.length; i++) {
+                const c = baseClients[i];
                 const rca1 = String(c.rca1 || '').trim();
+
+                // Active logic
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                // Same active logic as Goals
-                if (isAmericanas) return true;
-                if (window.userRole === 'adm' && rca1 === '53') return false;
-                if (rca1 === '') return false;
-                return true;
-            });
+                if (!isAmericanas) {
+                    if (window.userRole === 'adm' && rca1 === '53') continue;
+                    if (rca1 === '') continue;
+                }
 
-            // Filter by Supervisor (Meta-Realizado) - Seller Mode ONLY
-            if (adminViewMode === 'seller' && selectedMetaRealizadoSupervisors.size > 0) {
-                clients = clients.filter(c => {
-                    const rca1 = String(c.rca1 || '').trim();
+                if (hasSup) {
                     const details = sellerDetailsMap.get(rca1);
-                    return details && details.supervisor && selectedMetaRealizadoSupervisors.has(details.supervisor);
-                });
+                    if (!(details && details.supervisor && selectedMetaRealizadoSupervisors.has(details.supervisor))) continue;
+                }
 
+                if (hasVend && !selectedMetaRealizadoVendedores.has(rca1)) continue;
 
-            }
-
-            // Filter by Seller (Meta-Realizado) - Seller Mode ONLY
-            if (adminViewMode === 'seller' && selectedMetaRealizadoVendedores.size > 0) {
-                clients = clients.filter(c => {
-                    const rca1 = String(c.rca1 || '').trim();
-                    return selectedMetaRealizadoVendedores.has(rca1);
-                });
-
-
+                clients.push(c);
             }
 
             // Implement Supplier Filter Logic (Virtual IDs for Foods) - Step 7
@@ -5835,34 +5831,33 @@
 
             // 1. Identify Target Clients (Active/Americanas/etc + Filtered)
             // Apply Hierarchy Logic + "Active" Filter logic
-            let clients = getHierarchyFilteredClients('meta-realizado', allClientsData).filter(c => {
+            const baseClients = getHierarchyFilteredClients('meta-realizado', allClientsData);
+            const clients = [];
+
+            const isSellerMode = adminViewMode === 'seller';
+            const hasSup = isSellerMode && selectedMetaRealizadoSupervisors.size > 0;
+            const hasVend = isSellerMode && selectedMetaRealizadoVendedores.size > 0;
+
+            // ⚡ Bolt Optimization: Replace chained .filter() array allocations with a single O(N) pass loop
+            for (let i = 0; i < baseClients.length; i++) {
+                const c = baseClients[i];
                 const rca1 = String(c.rca1 || '').trim();
+
+                // Active logic
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                if (isAmericanas) return true;
-                if (window.userRole === 'adm' && rca1 === '53') return false;
-                if (rca1 === '') return false;
-                return true;
-            });
+                if (!isAmericanas) {
+                    if (window.userRole === 'adm' && rca1 === '53') continue;
+                    if (rca1 === '') continue;
+                }
 
-            // Filter by Supervisor (Meta-Realizado) - Seller Mode ONLY
-            if (adminViewMode === 'seller' && selectedMetaRealizadoSupervisors.size > 0) {
-                clients = clients.filter(c => {
-                    const rca1 = String(c.rca1 || '').trim();
+                if (hasSup) {
                     const details = sellerDetailsMap.get(rca1);
-                    return details && details.supervisor && selectedMetaRealizadoSupervisors.has(details.supervisor);
-                });
+                    if (!(details && details.supervisor && selectedMetaRealizadoSupervisors.has(details.supervisor))) continue;
+                }
 
+                if (hasVend && !selectedMetaRealizadoVendedores.has(rca1)) continue;
 
-            }
-
-            // Filter by Seller (Meta-Realizado) - Seller Mode ONLY
-            if (adminViewMode === 'seller' && selectedMetaRealizadoVendedores.size > 0) {
-                clients = clients.filter(c => {
-                    const rca1 = String(c.rca1 || '').trim();
-                    return selectedMetaRealizadoVendedores.has(rca1);
-                });
-
-
+                clients.push(c);
             }
 
             // Optimization: Create Set of Client Codes
