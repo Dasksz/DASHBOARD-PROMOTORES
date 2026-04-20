@@ -16644,20 +16644,17 @@ const supervisorGroups = new Map();
 
             }
 
-            if (tipoVendaFilterBtn && tipoVendaFilterDropdown) {
-                tipoVendaFilterBtn.addEventListener('click', () => tipoVendaFilterDropdown.classList.toggle('hidden'));
-                tipoVendaFilterDropdown.addEventListener('change', (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const { value, checked } = e.target;
-                        if (checked) selectedTiposVenda.push(value);
-                        else selectedTiposVenda = selectedTiposVenda.filter(s => s !== value);
-                        selectedTiposVenda = updateTipoVendaFilter(tipoVendaFilterDropdown, tipoVendaFilterText, selectedTiposVenda, allSalesData);
-
-                        updateDashboard();
-                    }
-                });
 
 
+
+            if (typeof window.setupGenericTipoVendaFilterHandlers === 'function') {
+                window.setupGenericTipoVendaFilterHandlers(
+                    'main',
+                    { get selectedTiposVenda() { return selectedTiposVenda; }, set selectedTiposVenda(v) { selectedTiposVenda = v; } },
+                    updateTipoVendaFilter,
+                    () => allSalesData || [],
+                    () => { updateDashboard(); }
+                );
             }
 
             if (posicaoFilter) posicaoFilter.addEventListener('change', () => {  updateDashboard(); });
@@ -16787,21 +16784,14 @@ const supervisorGroups = new Map();
 
             }
 
-            if (cityTipoVendaFilterBtn && cityTipoVendaFilterDropdown) {
-                cityTipoVendaFilterBtn.addEventListener('click', () => cityTipoVendaFilterDropdown.classList.toggle('hidden'));
-                cityTipoVendaFilterDropdown.addEventListener('change', (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const { value, checked } = e.target;
-                        if (checked) {
-                            if (!selectedCityTiposVenda.includes(value)) selectedCityTiposVenda.push(value);
-                        } else {
-                            selectedCityTiposVenda = selectedCityTiposVenda.filter(s => s !== value);
-                        }
-                        handleCityFilterChange({ skipFilter: 'tipoVenda' });
-                    }
-                });
-
-
+            if (typeof window.setupGenericTipoVendaFilterHandlers === 'function') {
+                window.setupGenericTipoVendaFilterHandlers(
+                    'city',
+                    { get selectedTiposVenda() { return selectedCityTiposVenda; }, set selectedTiposVenda(v) { selectedCityTiposVenda = v; } },
+                    updateTipoVendaFilter,
+                    () => allSalesData || [],
+                    () => { handleCityFilterChange({ skipFilter: 'tipoVenda' }); }
+                );
             }
 
             if (cityComRedeBtn) cityComRedeBtn.addEventListener('click', () => cityRedeFilterDropdown.classList.toggle('hidden'));
@@ -23633,46 +23623,7 @@ const supervisorGroups = new Map();
     }
 
 
-    function setupHistoryTipoVendaFilterHandlers() {
-        const btn = document.getElementById('history-tipo-venda-filter-btn');
-        const dropdown = document.getElementById('history-tipo-venda-filter-dropdown');
-        const textSpan = document.getElementById('history-tipo-venda-filter-text');
-
-        if (btn && dropdown) {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                dropdown.classList.toggle('hidden');
-            });
-
-            dropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const val = e.target.value;
-                    if (e.target.checked) selectedHistoryTiposVenda.push(val);
-                    else selectedHistoryTiposVenda = selectedHistoryTiposVenda.filter(v => v !== val);
-
-                    // We need sales data to update counts? Or just static list?
-                    // History can be huge. Let's pass empty or current sales for now, or just update text.
-                    const salesSource = allSalesData || [];
-                    updateTipoVendaFilter(dropdown, textSpan, selectedHistoryTiposVenda, salesSource);
-
-                    if (historyTableState.hasSearched) filterHistoryView();
-                }
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
-                    dropdown.classList.add('hidden');
-                }
-            });
-
-            // Initialize once with all sales data just to populate options
-            if (allSalesData) {
-                 updateTipoVendaFilter(dropdown, textSpan, selectedHistoryTiposVenda, allSalesData);
-            }
-        }
-    }
-
-    let isHistoryViewInitialized = false;
+        let isHistoryViewInitialized = false;
     window.renderHistoryView = function() {
         if (!isHistoryViewInitialized) {
             setupHierarchyFilters('history', null); // Reuse hierarchy logic
@@ -23690,7 +23641,19 @@ const supervisorGroups = new Map();
                 () => { if (historyTableState.hasSearched) filterHistoryView(); },
                 updateRedeFilter
             );
-            setupHistoryTipoVendaFilterHandlers();
+
+            setupHistorySupervisorFilterHandlers();
+
+            if (typeof window.setupGenericTipoVendaFilterHandlers === 'function') {
+                window.setupGenericTipoVendaFilterHandlers(
+                    'history',
+                    { get selectedTiposVenda() { return selectedHistoryTiposVenda; }, set selectedTiposVenda(v) { selectedHistoryTiposVenda = v; } },
+                    updateTipoVendaFilter,
+                    () => allSalesData || [],
+                    () => { if (historyTableState.hasSearched) filterHistoryView(); }
+                );
+            }
+
             
             // Set default dates (Current Month)
             const now = typeof lastSaleDate !== 'undefined' && lastSaleDate ? new Date(lastSaleDate) : new Date();

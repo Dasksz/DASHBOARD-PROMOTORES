@@ -813,6 +813,86 @@
      * Reusable logic for configuring filial filter event handlers.
      * Encapsulates duplicated toggling, selecting, and closing logic.
      */
+
+    /**
+     * Reusable generic function to setup TipoVenda filter handlers.
+     */
+    window.setupGenericTipoVendaFilterHandlers = function(prefix, stateObj, updateTipoVendaFilterFn, dataSourceFn, updateCallbackFn) {
+        let btnPrefix = prefix;
+        if (prefix === 'main') {
+            btnPrefix = ''; // for main view
+        } else if (prefix === 'mix') {
+            btnPrefix = 'mix';
+        }
+
+        const btnId = prefix === 'main' ? 'tipo-venda-filter-btn' : `${prefix}-tipo-venda-filter-btn`;
+        const dropdownId = prefix === 'main' ? 'tipo-venda-filter-dropdown' : `${prefix}-tipo-venda-filter-dropdown`;
+        const textId = prefix === 'main' ? 'tipo-venda-filter-text' : `${prefix}-tipo-venda-filter-text`;
+        const wrapperId = prefix === 'main' ? 'tipo-venda-filter-wrapper' : `${prefix}-tipo-venda-filter-wrapper`;
+
+        // Special case for Mix
+        const actualBtnId = prefix === 'mix' ? 'mix-tipo-venda-filter-btn' : btnId;
+
+        const btn = document.getElementById(actualBtnId);
+        const dropdown = document.getElementById(dropdownId);
+        const textSpan = document.getElementById(textId);
+        const wrapper = document.getElementById(wrapperId);
+
+        if (btn && dropdown) {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+
+            const newDropdown = dropdown.cloneNode(true);
+            dropdown.parentNode.replaceChild(newDropdown, dropdown);
+
+            newBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                newDropdown.classList.toggle('hidden');
+                if (wrapper) {
+                    if (!newDropdown.classList.contains('hidden')) {
+                        wrapper.classList.add('z-50');
+                    } else {
+                        wrapper.classList.remove('z-50');
+                    }
+                }
+            });
+
+            newDropdown.addEventListener('change', (e) => {
+                if (e.target.type === 'checkbox') {
+                    const val = e.target.value;
+                    let currentSelected = stateObj.selectedTiposVenda || [];
+                    if (e.target.checked) {
+                         if (!currentSelected.includes(val)) currentSelected.push(val);
+                    } else {
+                         currentSelected = currentSelected.filter(v => v !== val);
+                    }
+                    stateObj.selectedTiposVenda = currentSelected;
+
+                    const dataSource = typeof dataSourceFn === 'function' ? dataSourceFn() : (dataSourceFn || []);
+
+                    if (typeof updateTipoVendaFilterFn === 'function') {
+                        stateObj.selectedTiposVenda = updateTipoVendaFilterFn(newDropdown, textSpan, stateObj.selectedTiposVenda, dataSource);
+                    } else if (typeof window.updateGenericTipoVendaFilter === 'function') {
+                        stateObj.selectedTiposVenda = window.updateGenericTipoVendaFilter(newDropdown, textSpan, stateObj.selectedTiposVenda, dataSource);
+                    }
+
+                    if (typeof updateCallbackFn === 'function') {
+                        updateCallbackFn();
+                    }
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!newBtn.contains(e.target) && !newDropdown.contains(e.target)) {
+                    newDropdown.classList.add('hidden');
+                    if(wrapper) wrapper.classList.remove('z-50');
+                }
+            });
+
+            newDropdown._hasListener = true;
+        }
+    };
+
     window.setupGenericFilialFilterHandlers = function(prefix, updateCallbackFn, customCloseLogic) {
         const btn = document.getElementById(`${prefix}-filial-filter-btn`);
         const dropdown = document.getElementById(`${prefix}-filial-filter-dropdown`);
