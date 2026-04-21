@@ -9808,7 +9808,10 @@ const supervisorGroups = new Map();
 
             let typeDefaults = {};
             if (type === 'bar') typeDefaults = { layout: { padding: { right: 30, top: 30 } }, plugins: { datalabels: { display: true, anchor: 'end', align: 'end', offset: -4, color: textColor, font: { size: 10 }, formatter: (v) => (v > 1000 ? (v/1000).toFixed(1) + 'k' : v.toFixed(0)) } } };
-            if (type === 'doughnut') typeDefaults = { maintainAspectRatio: true, scales: { y: { display: false }, x: { display: false } }, plugins: { legend: { position: 'top', labels: { color: textColor } }, datalabels: { display: true, color: '#fff', font: { size: 11, weight: 'bold' }, formatter: (v, ctx) => { const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); if(total === 0 || v === 0) return ''; const p = (v / total) * 100; return p > 5 ? p.toFixed(0) + '%' : ''; } } } };
+            if (type === 'doughnut') {
+                const totalChartValue = (finalDatasets && finalDatasets[0] && finalDatasets[0].data) ? finalDatasets[0].data.reduce((a, b) => a + b, 0) : 0;
+                typeDefaults = { maintainAspectRatio: true, scales: { y: { display: false }, x: { display: false } }, plugins: { legend: { position: 'top', labels: { color: textColor } }, datalabels: { display: true, color: '#fff', font: { size: 11, weight: 'bold' }, formatter: (v) => { if(totalChartValue === 0 || v === 0) return ''; const p = (v / totalChartValue) * 100; return p > 5 ? p.toFixed(0) + '%' : ''; } } } };
+            }
 
             // 1. Sempre construir um objeto de opções novo e limpo
             const options = mergeDeep({}, baseOptions, typeDefaults, optionsOverrides);
@@ -11747,7 +11750,8 @@ const supervisorGroups = new Map();
                 inactiveClientsForExport = inactiveClientsList;
 
                 if (clientsForAnalysis.length > 0) {
-                     const statusChartOptions = { maintainAspectRatio: false, animation: { duration: 800, easing: 'easeOutQuart' }, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1' } }, tooltip: { callbacks: { label: function(context) { return context.label; } } }, datalabels: { formatter: (value, ctx) => { const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); if (total === 0 || value === 0) return ''; const percentage = (value * 100 / total).toFixed(1) + "%"; return `${value}\n(${percentage})`; }, color: '#fff', backgroundColor: 'rgba(0, 0, 0, 0.6)', borderRadius: 4, padding: 4, font: { weight: 'bold', size: 12 }, textAlign: 'center' } } };
+                    const totalStatus = activeClientsList.length + inactiveClientsList.length;
+                    const statusChartOptions = { maintainAspectRatio: false, animation: { duration: 800, easing: 'easeOutQuart' }, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1' } }, tooltip: { callbacks: { label: function(context) { return context.label; } } }, datalabels: { formatter: (value) => { if (totalStatus === 0 || value === 0) return ''; const percentage = (value * 100 / totalStatus).toFixed(1) + "%"; return `${value}\n(${percentage})`; }, color: '#fff', backgroundColor: 'rgba(0, 0, 0, 0.6)', borderRadius: 4, padding: 4, font: { weight: 'bold', size: 12 }, textAlign: 'center' } } };
                     createChart('customerStatusChart', 'doughnut', ['Ativos no Mês', 'S/ Vendas no Mês'], [activeClientsList.length, inactiveClientsList.length], statusChartOptions);
                 } else showNoDataMessage('customerStatusChart', 'Sem clientes no filtro para exibir o status.');
 
