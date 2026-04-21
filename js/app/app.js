@@ -1109,7 +1109,13 @@
 
             // Update Heatmap
             if (heatLayer) {
-                heatLayer.setLatLngs(heatData);
+                // Fix: Check if layer is active on map to avoid "Cannot read properties of null (reading '_animating')"
+                if (leafletMap && leafletMap.hasLayer(heatLayer)) {
+                    heatLayer.setLatLngs(heatData);
+                } else {
+                    // Update data source even if hidden to keep it in sync
+                    heatLayer._latlngs = heatData;
+                }
             }
 
             // Fit Bounds
