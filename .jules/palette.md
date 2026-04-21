@@ -12,3 +12,7 @@
 ## 2024-04-18 - Missing ARIA label on Loja Perfeita FAB
 **Learning:** Found an accessibility issue where the main Floating Action Button (FAB) in the "Loja Perfeita" view, containing only an SVG plus icon for toggling export options, lacked an `aria-label`. Static HTML checkers and regex searches are necessary to find these isolated `<button>` elements that have no text content.
 **Action:** Always verify that buttons containing only an SVG or icon have descriptive `aria-label` attributes to ensure screen reader users can understand their function. Used `aria-label="Abrir menu de exportação"` to match the other FABs.
+
+## 2024-04-21 - Accessible Modal Close Buttons
+**Learning:** Found a modal close action implemented using a non-interactive `<span>` tag with an `onclick` handler (e.g., `<span onclick="closeResearchModal()">&times;</span>`). This pattern breaks keyboard accessibility (not focusable, missing role) and screen reader support (no description).
+**Action:** When implementing modal close buttons (especially those using characters like '&times;'), always use an interactive `<button>` element with a descriptive `aria-label="Fechar"`. Avoid using `<span>` for interactive elements.
