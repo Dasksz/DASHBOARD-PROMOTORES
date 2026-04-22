@@ -1699,69 +1699,17 @@
         }
 
         function setupSupervisorFilterHandlers() {
-            if (mainSupervisorFilterBtn && mainSupervisorFilterDropdown) {
-                // Toggle Dropdown
-                mainSupervisorFilterBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    mainSupervisorFilterDropdown.classList.toggle('hidden');
-                });
-
-
-
-                // Close on Outside Click
-                document.addEventListener('click', (e) => {
-                    if (!mainSupervisorFilterBtn.contains(e.target) && !mainSupervisorFilterDropdown.contains(e.target)) {
-                        mainSupervisorFilterDropdown.classList.add('hidden');
-                    }
-                });
-
-
-
-                // Handle Selection
-                mainSupervisorFilterDropdown.addEventListener('change', (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        const isChecked = e.target.checked;
-
-                        if (val === 'ALL') {
-                            const checkboxes = mainSupervisorFilterDropdown.querySelectorAll('input[type="checkbox"]');
-                            checkboxes.forEach(cb => {
-                                if (cb.value !== 'ALL') {
-                                    cb.checked = isChecked;
-                                    if (isChecked) selectedSupervisors.add(cb.value);
-                                    else selectedSupervisors.delete(cb.value);
-                                }
-                            });
-
-
-                            if (!isChecked) selectedSupervisors.clear();
-                        } else {
-                            if (isChecked) {
-                                selectedSupervisors.add(val);
-                            } else {
-                                selectedSupervisors.delete(val);
-                                // Uncheck 'All' if present
-                                const allChk = mainSupervisorFilterDropdown.querySelector('input[value="ALL"]');
-                                if (allChk) allChk.checked = false;
-                            }
-                        }
-
-                        // Update Button Text
-                        const text = document.getElementById('main-supervisor-filter-text');
-                        if (text) {
-                            if (selectedSupervisors.size === 0) text.textContent = 'Todos';
-                            else if (selectedSupervisors.size === 1) text.textContent = selectedSupervisors.values().next().value;
-                            else text.textContent = `${selectedSupervisors.size} Selecionados`;
-                        }
-
-                        // Update Dependent Filters and Dashboard
-                        updateVendedorFilterDropdown();
-                        updateDashboard();
-                    }
-                });
-
-
-            }
+            window.setupGenericFilterHandlers(
+                'main',
+                selectedSupervisors,
+                selectedVendedores,
+                updateSupervisorFilterDropdown,
+                updateVendedorFilterDropdown,
+                updateDashboard,
+                null,
+                false,
+                updateFilterButtonText
+            );
         }
 
         function setupHierarchyFilters(viewPrefix, onUpdate) {
