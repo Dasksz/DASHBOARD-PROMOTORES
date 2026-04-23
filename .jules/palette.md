@@ -16,3 +16,7 @@
 ## 2026-04-23 - Modal close buttons accessibility and consistency
 **Learning:** Found non-interactive `<span>` elements acting as modal close buttons using `onclick`, lacking keyboard focusability. Also found inconsistent usage of the `&times;` character instead of the standard SVG 'X' icon used in other modals.
 **Action:** Replaced `<span>` with `<button aria-label="Fechar">`. Standardized modal close icons to use the uniform SVG path `M6 18L18 6M6 6l12 12` for consistent visual weight and accessibility.
+
+## 2024-04-23 - Secondary Text in KPIs
+**Learning:** Found a case where secondary KPIs text context ("Base para os KPIs") was updated to include dynamic data context, like "Clientes Ativos". We wrapped the changing number in a separate `<span>` allowing easy targetability from JS without blowing up the whole text element wrapper, which preserves styling.
+**Action:** Always maintain CSS text styles when updating secondary metrics, isolating dynamic content into nested `<span>` elements for targeting.
