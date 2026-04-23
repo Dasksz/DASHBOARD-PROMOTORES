@@ -8917,7 +8917,13 @@ const supervisorGroups = new Map();
                 history = history.filter(checkPrice);
             }
 
-            return { sales, history, clients };
+
+            // Return all data (unfiltered by date) to allow calculating 3-month active clients
+            const allSalesAndHistory = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters, excludeFilter).concat(
+                getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters, excludeFilter)
+            );
+
+            return { sales, history, clients, allSalesAndHistory };
         }
 
         function updateAllCoverageFilters(options = {}) {
@@ -8997,7 +9003,7 @@ const supervisorGroups = new Map();
             coverageRenderId++;
             const currentRenderId = coverageRenderId;
 
-            const { clients, sales, history } = getCoverageFilteredData();
+            const { clients, sales, history, allSalesAndHistory } = getCoverageFilteredData();
             // ⚡ Bolt Optimization: Replaced intermediate array allocations from .map() and spread operators with direct Set insertions for performance.
             const productsToAnalyzeSet = new Set();
             for(let i=0; i<sales.length; i++) productsToAnalyzeSet.add(sales[i].PRODUTO);
@@ -9010,18 +9016,43 @@ const supervisorGroups = new Map();
             // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
             const activeClientCodes = new Set(); for(let i=0; i<activeClientsForCoverage.length; i++) activeClientCodes.add(normalizeKey(activeClientsForCoverage[i]['Código'] || activeClientsForCoverage[i]['codigo_cliente']));
 
+            // Calculate active clients in last 3 months
+            const activeClientCodes3M = new Set();
+            for (let i = 0; i < allSalesAndHistory.length; i++) {
+                const s = allSalesAndHistory[i];
+                if (s.VLVENDA >= 1) {
+                    activeClientCodes3M.add(normalizeKey(s.CODCLI));
+                }
+            }
+
+            let active3MCount = 0;
+            activeClientCodes.forEach(code => {
+                if (activeClientCodes3M.has(code)) {
+                    active3MCount++;
+                }
+            });
+
             coverageActiveClientsKpi.textContent = activeClientsCount.toLocaleString('pt-BR');
+            const coverageActiveClients3MKpi = document.getElementById('coverage-active-clients-3m-kpi');
+            if (coverageActiveClients3MKpi) {
+                coverageActiveClients3MKpi.textContent = active3MCount.toLocaleString('pt-BR');
+            }
 
             // Show Loading State in Table
             coverageTableBody.innerHTML = getSkeletonRows(8, 10);
 
             if (productsToAnalyze.length === 0) {
                 coverageSelectionCoverageValueKpi.textContent = '0%';
-                coverageSelectionCoverageCountKpi.textContent = `0 de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
+                coverageSelectionCoverageCountKpi.textContent = `0 de ${active3MCount.toLocaleString('pt-BR')} clientes`;
                 coverageSelectionCoverageValueKpiPrevious.textContent = '0%';
-                coverageSelectionCoverageCountKpiPrevious.textContent = `0 de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
+                coverageSelectionCoverageCountKpiPrevious.textContent = `0 de ${active3MCount.toLocaleString('pt-BR')} clientes`;
                 coverageTopCoverageValueKpi.textContent = '0%';
                 coverageTopCoverageProductKpi.textContent = '-';
+                const coverageTopCoverageCountKpi = document.getElementById('coverage-top-coverage-count-kpi');
+                if (coverageTopCoverageCountKpi) {
+                    coverageTopCoverageCountKpi.textContent = `0 clientes | 0% dos clientes ativos`;
+                    coverageTopCoverageCountKpi.classList.remove('hidden');
+                }
                 coverageTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-slate-500">Nenhum produto selecionado ou encontrado para os filtros.</td></tr>';
                 showNoDataMessage('coverageCityChart', 'Sem dados para exibir.');
                 return;
@@ -9255,21 +9286,22 @@ const supervisorGroups = new Map();
                 coverageTopCoverageProductKpi.textContent = topCoverageItem.name;
                 coverageTopCoverageProductKpi.title = topCoverageItem.name;
                 if (coverageTopCoverageCountKpi) {
-                    coverageTopCoverageCountKpi.textContent = `${topCoverageItem.clients.toLocaleString('pt-BR')} PDVs`;
+                    const topActivePercent = active3MCount > 0 ? (topCoverageItem.clients / active3MCount) * 100 : 0;
+                    coverageTopCoverageCountKpi.textContent = `${topCoverageItem.clients.toLocaleString('pt-BR')} clientes | ${topActivePercent.toFixed(1)}% dos clientes ativos`;
                     coverageTopCoverageCountKpi.classList.remove('hidden');
                 }
 
                 let selectionCoveredCountCurrent = 0;
                 clientSelectionValueCurrent.forEach(val => { if (val >= 1) selectionCoveredCountCurrent++; });
-                const selectionCoveragePercentCurrent = activeClientsCount > 0 ? (selectionCoveredCountCurrent / activeClientsCount) * 100 : 0;
+                const selectionCoveragePercentCurrent = active3MCount > 0 ? (selectionCoveredCountCurrent / active3MCount) * 100 : 0;
                 coverageSelectionCoverageValueKpi.textContent = `${selectionCoveragePercentCurrent.toFixed(2)}%`;
-                coverageSelectionCoverageCountKpi.textContent = `${selectionCoveredCountCurrent.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
+                coverageSelectionCoverageCountKpi.textContent = `${selectionCoveredCountCurrent.toLocaleString('pt-BR')} de ${active3MCount.toLocaleString('pt-BR')} clientes ativos`;
 
                 let selectionCoveredCountPrevious = 0;
                 clientSelectionValuePrevious.forEach(val => { if (val >= 1) selectionCoveredCountPrevious++; });
-                const selectionCoveragePercentPrevious = activeClientsCount > 0 ? (selectionCoveredCountPrevious / activeClientsCount) * 100 : 0;
+                const selectionCoveragePercentPrevious = active3MCount > 0 ? (selectionCoveredCountPrevious / active3MCount) * 100 : 0;
                 coverageSelectionCoverageValueKpiPrevious.textContent = `${selectionCoveragePercentPrevious.toFixed(2)}%`;
-                coverageSelectionCoverageCountKpiPrevious.textContent = `${selectionCoveredCountPrevious.toLocaleString('pt-BR')} de ${activeClientsCount.toLocaleString('pt-BR')} clientes`;
+                coverageSelectionCoverageCountKpiPrevious.textContent = `${selectionCoveredCountPrevious.toLocaleString('pt-BR')} de ${active3MCount.toLocaleString('pt-BR')} clientes ativos`;
 
                 tableData.sort((a, b) => {
                     return b.stockQty - a.stockQty;
