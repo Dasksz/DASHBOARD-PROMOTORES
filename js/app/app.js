@@ -8837,7 +8837,7 @@ const supervisorGroups = new Map();
             }
 
             // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
-            const clientCodes = new Set(); for(let i=0; i<clients.length; i++) clientCodes.add(clients[i]['Código']);
+            const clientCodes = new Set(); for(let i=0; i<clients.length; i++) clientCodes.add(normalizeKey(clients[i]['Código'] || clients[i]['codigo_cliente']));
 
             const filters = {
                 filial,
@@ -8918,12 +8918,10 @@ const supervisorGroups = new Map();
             }
 
 
-            // Return all data (unfiltered by date) to allow calculating 3-month active clients
-            const allSalesAndHistory = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters, excludeFilter).concat(
-                getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters, excludeFilter)
-            );
+            // Return history data (unfiltered by date) to allow calculating 3-month active clients
+            const allHistoryUnfiltered = getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters, excludeFilter);
 
-            return { sales, history, clients, allSalesAndHistory };
+            return { sales, history, clients, allHistoryUnfiltered };
         }
 
         function updateAllCoverageFilters(options = {}) {
@@ -9003,7 +9001,7 @@ const supervisorGroups = new Map();
             coverageRenderId++;
             const currentRenderId = coverageRenderId;
 
-            const { clients, sales, history, allSalesAndHistory } = getCoverageFilteredData();
+            const { clients, sales, history, allHistoryUnfiltered } = getCoverageFilteredData();
             // ⚡ Bolt Optimization: Replaced intermediate array allocations from .map() and spread operators with direct Set insertions for performance.
             const productsToAnalyzeSet = new Set();
             for(let i=0; i<sales.length; i++) productsToAnalyzeSet.add(sales[i].PRODUTO);
@@ -9017,13 +9015,20 @@ const supervisorGroups = new Map();
             const activeClientCodes = new Set(); for(let i=0; i<activeClientsForCoverage.length; i++) activeClientCodes.add(normalizeKey(activeClientsForCoverage[i]['Código'] || activeClientsForCoverage[i]['codigo_cliente']));
 
             // Calculate active clients in last 3 months
-            const activeClientCodes3M = new Set();
-            for (let i = 0; i < allSalesAndHistory.length; i++) {
-                const s = allSalesAndHistory[i];
-                if (s.VLVENDA >= 1) {
-                    activeClientCodes3M.add(normalizeKey(s.CODCLI));
-                }
+            const clientHistorySum = new Map();
+            for (let i = 0; i < allHistoryUnfiltered.length; i++) {
+                const s = allHistoryUnfiltered[i];
+                const cod = normalizeKey(s.CODCLI);
+                const val = parseFloat(s.VLVENDA) || 0;
+                clientHistorySum.set(cod, (clientHistorySum.get(cod) || 0) + val);
             }
+
+            const activeClientCodes3M = new Set();
+            clientHistorySum.forEach((total, cod) => {
+                if (total >= 1) {
+                    activeClientCodes3M.add(cod);
+                }
+            });
 
             let active3MCount = 0;
             activeClientCodes.forEach(code => {
