@@ -871,6 +871,13 @@
                 hierarchy = hierarchyFetched;
                 clientPromoters = clientPromotersFetched;
                 titulos = titulosFetched;
+                if (notaPerfeitaFetched && notaPerfeitaFetched.length > 0) {
+                    notaPerfeitaFetched.forEach(row => {
+                        if (row.pesquisador) {
+                            row.pesquisador = String(row.pesquisador).toUpperCase().replace(/\s+/g, '');
+                        }
+                    });
+                }
                 nota_perfeita = notaPerfeitaFetched;
                 relacao_rota_involves = relacaoRotaInvolvesFetched;
                 dim_vendedores = dimVendedoresFetched;
