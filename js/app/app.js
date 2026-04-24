@@ -25689,58 +25689,20 @@ const supervisorGroups = new Map();
     }
 
     function renderWeeklyView() {
-        // Init Filters logic (Simplificado e Robusto)
-        const supervisorBtn = document.getElementById('weekly-supervisor-filter-btn');
-        const supervisorDropdown = document.getElementById('weekly-supervisor-filter-dropdown');
-
-        if (supervisorBtn && supervisorDropdown) {
-            supervisorBtn.onclick = (e) => {
-                e.stopPropagation();
-                supervisorDropdown.classList.toggle('hidden');
-                // Fechar outros
-                document.getElementById('weekly-vendedor-filter-dropdown')?.classList.add('hidden');
-                document.getElementById('weekly-fornecedor-filter-dropdown')?.classList.add('hidden');
-            };
-
-            supervisorDropdown.onchange = (e) => {
-                 if (e.target.type === 'checkbox') {
-                    const val = e.target.value;
-                    const checked = e.target.checked;
-                    if (checked) selectedWeeklySupervisors.add(val);
-                    else selectedWeeklySupervisors.delete(val);
-                    
-                    updateWeeklyFilterText('weekly-supervisor-filter-text', selectedWeeklySupervisors, 'Todos');
-                    // Reset Dependent
-                    selectedWeeklyVendedores.clear();
-                    updateWeeklyVendedorFilter();
-                    updateWeeklyView();
-                }
-            }
-        }
-
-        const vendedorBtn = document.getElementById('weekly-vendedor-filter-btn');
-        const vendedorDropdown = document.getElementById('weekly-vendedor-filter-dropdown');
-
-        if (vendedorBtn && vendedorDropdown) {
-            vendedorBtn.onclick = (e) => {
-                e.stopPropagation();
-                vendedorDropdown.classList.toggle('hidden');
-                // Fechar outros
-                document.getElementById('weekly-supervisor-filter-dropdown')?.classList.add('hidden');
-                document.getElementById('weekly-fornecedor-filter-dropdown')?.classList.add('hidden');
-            };
-
-            vendedorDropdown.onchange = (e) => {
-                 if (e.target.type === 'checkbox') {
-                    const val = e.target.value;
-                    const checked = e.target.checked;
-                    if (checked) selectedWeeklyVendedores.add(val);
-                    else selectedWeeklyVendedores.delete(val);
-                    
-                    updateWeeklyFilterText('weekly-vendedor-filter-text', selectedWeeklyVendedores, 'Todos');
-                    updateWeeklyView();
-                }
-            }
+        if (typeof window.setupGenericFilterHandlers === 'function') {
+            window.setupGenericFilterHandlers(
+                'weekly',
+                selectedWeeklySupervisors,
+                selectedWeeklyVendedores,
+                updateWeeklySupervisorFilter,
+                updateWeeklyVendedorFilter,
+                () => { updateWeeklyView(); },
+                () => {
+                    document.getElementById('weekly-fornecedor-filter-dropdown')?.classList.add('hidden');
+                },
+                false,
+                updateWeeklyFilterText
+            );
         }
 
         const fornecedorBtn = document.getElementById('weekly-fornecedor-filter-btn');
@@ -25818,49 +25780,26 @@ const supervisorGroups = new Map();
             }
         }
 
-        // Filial Filter (Weekly)
-        const filialBtn = document.getElementById('weekly-filial-filter-btn');
-        const filialDropdown = document.getElementById('weekly-filial-filter-dropdown');
-        const filialText = document.getElementById('weekly-filial-filter-text');
-
-        if (filialBtn && filialDropdown) {
-            filialBtn.onclick = (e) => {
-                e.stopPropagation();
-                filialDropdown.classList.toggle('hidden');
-            };
-
-            filialDropdown.onchange = (e) => {
-                if (e.target.type === 'radio') {
-                    weeklyFilialFilter = e.target.value;
-                    const label = e.target.closest('label').querySelector('span').textContent;
-                    filialText.textContent = label;
-                    filialDropdown.classList.add('hidden');
-                    updateWeeklyView();
+        if (typeof window.setupGenericFilialFilterHandlers === 'function') {
+            window.setupGenericFilialFilterHandlers(
+                'weekly',
+                () => { updateWeeklyView(); },
+                () => {
+                    const hiddenInput = document.getElementById('weekly-filial-filter');
+                    if (hiddenInput) {
+                        weeklyFilialFilter = hiddenInput.value;
+                    }
                 }
-            };
+            );
         }
 
-        // Global Click Listener for closing dropdowns (Ensure only one is attached)
-        if (!document._weeklyFilterListener) {
+        if (!document._weeklyFornecedorListener) {
             document.addEventListener('click', (e) => {
-                // Close all if clicking outside
-                if (!e.target.closest('#weekly-supervisor-filter-wrapper')) {
-                    document.getElementById('weekly-supervisor-filter-dropdown')?.classList.add('hidden');
-                }
-                if (!e.target.closest('#weekly-vendedor-filter-wrapper')) {
-                    document.getElementById('weekly-vendedor-filter-dropdown')?.classList.add('hidden');
-                }
                 if (!e.target.closest('#weekly-fornecedor-filter-wrapper')) {
                     document.getElementById('weekly-fornecedor-filter-dropdown')?.classList.add('hidden');
                 }
-                if (!e.target.closest('#weekly-rede-filter-wrapper') && comRedeBtn && !comRedeBtn.contains(e.target)) {
-                    document.getElementById('weekly-rede-filter-dropdown')?.classList.add('hidden');
-                }
-                if (!e.target.closest('#weekly-filial-filter-wrapper')) {
-                    document.getElementById('weekly-filial-filter-dropdown')?.classList.add('hidden');
-                }
             });
-            document._weeklyFilterListener = true;
+            document._weeklyFornecedorListener = true;
         }
 
         const clearBtn = document.getElementById('clear-weekly-filters-btn');
