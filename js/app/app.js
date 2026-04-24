@@ -29752,14 +29752,14 @@ const supervisorGroups = new Map();
         let totalScore = 0;
         let totalAudits = 0;
         let totalPerfectAudits = 0;
-        let perfectStoresCount = 0;
+        const uniquePerfectStores = new Set();
         const uniqueClientsAudited = new Set();
 
         filtered.forEach(item => {
             totalScore += item.nota_media; 
             totalAudits += item.auditorias;
             totalPerfectAudits += item.auditorias_perfeitas;
-            if (item.nota_media >= 80) perfectStoresCount++;
+            if (item.nota_media >= 80 && item.codigo_cliente) uniquePerfectStores.add(normalizeKey(item.codigo_cliente));
             if (item.codigo_cliente) {
                 uniqueClientsAudited.add(normalizeKey(item.codigo_cliente));
             }
@@ -29768,12 +29768,13 @@ const supervisorGroups = new Map();
         const avgScore = filtered.length > 0 ? (totalScore / filtered.length) : 0;
         // Perfect Store %: (Perfect Audits / Total Audits) * 100
         // Perfect Store %: (Perfect Stores Count / Total Distinct Audits) * 100
+        const perfectStoresCount = uniquePerfectStores.size;
         const perfectPct = uniqueClientsAudited.size > 0 ? (perfectStoresCount / uniqueClientsAudited.size) * 100 : 0;
 
         // Total Auditorias now uses distinct client count as requested
         const kpiTotalAudits = uniqueClientsAudited.size;
 
-        renderLpKPIs(avgScore, kpiTotalAudits, perfectPct, totalPerfectAudits);
+        renderLpKPIs(avgScore, kpiTotalAudits, perfectPct, perfectStoresCount);
 
         // 5. Update Table
         // Sort by Score Descending
