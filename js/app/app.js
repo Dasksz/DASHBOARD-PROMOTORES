@@ -29227,6 +29227,7 @@ const supervisorGroups = new Map();
                     code: agentCode,
                     name: agentName,
                     clients: new Set(),
+                    lojasPerfeitas: new Set(),
                     totalScores: 0,
                     auditoriaCount: 0
                 });
@@ -29235,6 +29236,7 @@ const supervisorGroups = new Map();
             const agent = agentMap.get(agentCode);
             if (row.codigo_cliente) {
                 agent.clients.add(normalizeKey(row.codigo_cliente));
+                if (row.nota_media >= 80) agent.lojasPerfeitas.add(normalizeKey(row.codigo_cliente));
             }
             agent.totalScores += (row.nota_media || 0);
             agent.auditoriaCount++;
@@ -29380,21 +29382,25 @@ const supervisorGroups = new Map();
             const agentMap = filialMap.get(fKey);
             const tableBody = [];
             let totalPesquisas = 0;
+            let totalPerfeitas = 0;
             let sumMedias = 0;
             let countMedias = 0;
 
             agentMap.forEach((agent) => {
                 const qtdPesquisas = agent.clients.size;
+                const qtdPerfeitas = agent.lojasPerfeitas.size;
                 const media = agent.auditoriaCount > 0 ? agent.totalScores / agent.auditoriaCount : 0;
 
                 tableBody.push([
                     agent.code,
                     agent.name,
                     qtdPesquisas,
+                    qtdPerfeitas,
                     media.toFixed(1)
                 ]);
 
                 totalPesquisas += qtdPesquisas;
+                totalPerfeitas += qtdPerfeitas;
                 if (qtdPesquisas > 0) {
                     sumMedias += media;
                     countMedias++;
@@ -29408,6 +29414,7 @@ const supervisorGroups = new Map();
             tableBody.push([
                 { content: 'TOTAL', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
                 { content: totalPesquisas.toString(), styles: { fontStyle: 'bold', halign: 'center' } },
+                { content: totalPerfeitas.toString(), styles: { fontStyle: 'bold', halign: 'center' } },
                 { content: mediaFilial.toFixed(1), styles: { fontStyle: 'bold', halign: 'center' } }
             ]);
 
@@ -29422,6 +29429,7 @@ const supervisorGroups = new Map();
                     `Código (${roleStr})`,
                     `Nome (${roleStr})`,
                     'Qtd. Pesquisas',
+                    'Lojas Perfeitas',
                     'Média de Nota'
                 ]],
                 body: tableBody,
@@ -29430,10 +29438,11 @@ const supervisorGroups = new Map();
                 styles: { fontSize: 9, cellPadding: 3, textColor: [0, 0, 0] },
                 alternateRowStyles: { fillColor: [240, 240, 240] },
                 columnStyles: {
-                    0: { cellWidth: 40, halign: 'center' },
+                    0: { cellWidth: 35, halign: 'center' },
                     1: { cellWidth: 'auto' },
-                    2: { cellWidth: 50, halign: 'center' },
-                    3: { cellWidth: 50, halign: 'center' }
+                    2: { cellWidth: 40, halign: 'center' },
+                    3: { cellWidth: 40, halign: 'center' },
+                    4: { cellWidth: 40, halign: 'center' }
                 }
             });
 
@@ -29758,7 +29767,8 @@ const supervisorGroups = new Map();
 
         const avgScore = filtered.length > 0 ? (totalScore / filtered.length) : 0;
         // Perfect Store %: (Perfect Audits / Total Audits) * 100
-        const perfectPct = totalAudits > 0 ? (totalPerfectAudits / totalAudits) * 100 : 0;
+        // Perfect Store %: (Perfect Stores Count / Total Distinct Audits) * 100
+        const perfectPct = uniqueClientsAudited.size > 0 ? (perfectStoresCount / uniqueClientsAudited.size) * 100 : 0;
 
         // Total Auditorias now uses distinct client count as requested
         const kpiTotalAudits = uniqueClientsAudited.size;
