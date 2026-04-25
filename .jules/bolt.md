@@ -5,3 +5,7 @@
 ## 2026-04-24 - Normalize Data Upfront
 **Learning:** When fetching raw database rows for application-wide mapping (like Researcher codes from 'data_nota_perfeita' spreadsheet imports), normalize the keys immediately at the edge layer (`js/init.js`) by upper-casing and stripping spaces.
 **Action:** This prevents the rest of the application (like filters and KPIs) from breaking or duplicating logic to handle minor string inconsistencies like trailing spaces or casing variations.
+
+## 2026-04-24 - Prevent duplicated DOM Event Listeners upon re-initialization
+**Learning:** Functions designed to configure UI bindings, like `setupHierarchyFilters` in `js/app/app.js`, are frequently invoked during filter resets. Without mechanisms to verify existing attachments, this results in duplicate event listeners. These duplicates execute serially, often reversing the intended effect (e.g., toggling a dropdown open and immediately closed).
+**Action:** Always decorate target DOM elements with a tracking boolean (e.g., `_hasListener = true`) after listener attachment. Prefix listener configuration routines with a check for this flag.

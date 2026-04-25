@@ -1738,7 +1738,7 @@
             };
 
             const bindToggle = (el) => {
-                if (el.btn && el.dd) {
+                if (el.btn && el.dd && !el.btn._hasListener) {
                     el.btn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         // Close others and reset z-index
@@ -1760,8 +1760,7 @@
                             if (el.wrapper) el.wrapper.classList.remove('z-50');
                         }
                     });
-
-
+                    el.btn._hasListener = true;
                 }
             };
             bindToggle(els.coord);
@@ -1769,22 +1768,26 @@
             bindToggle(els.promotor);
 
             // Close dropdowns when clicking outside
-            document.addEventListener('click', (e) => {
-                Object.values(els).forEach(x => {
-                    if (x.dd && !x.dd.classList.contains('hidden')) {
-                        if (x.btn && !x.btn.contains(e.target) && !x.dd.contains(e.target)) {
-                            x.dd.classList.add('hidden');
-                            if (x.wrapper) x.wrapper.classList.remove('z-50');
+            if (!document._hasHierarchyOutsideListener) {
+                document._hasHierarchyOutsideListener = new Set();
+            }
+            if (!document._hasHierarchyOutsideListener.has(viewPrefix)) {
+                document.addEventListener('click', (e) => {
+                    Object.values(els).forEach(x => {
+                        if (x.dd && !x.dd.classList.contains('hidden')) {
+                            if (x.btn && !x.btn.contains(e.target) && !x.dd.contains(e.target)) {
+                                x.dd.classList.add('hidden');
+                                if (x.wrapper) x.wrapper.classList.remove('z-50');
+                            }
                         }
-                    }
+                    });
                 });
-
-
-            });
+                document._hasHierarchyOutsideListener.add(viewPrefix);
+            }
 
             const bindChange = (level, nextLevel, nextNextLevel) => {
                 const el = els[level];
-                if (el && el.dd) {
+                if (el && el.dd && !el.dd._hasListener) {
                     el.dd.addEventListener('change', (e) => {
                         if (e.target.type === 'checkbox') {
                             const val = e.target.value;
@@ -1807,11 +1810,9 @@
                             if (onUpdate) onUpdate();
                         }
                     });
-
-
+                    el.dd._hasListener = true;
                 }
             };
-
             bindChange('coord', 'cocoord', 'promotor');
             bindChange('cocoord', 'promotor', null);
             bindChange('promotor', null, null);
