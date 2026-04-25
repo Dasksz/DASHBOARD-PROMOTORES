@@ -12724,18 +12724,37 @@ const supervisorGroups = new Map();
                 // --- OPTIMIZATION END ---
             } else if (filters.clientCodes) {
                  const allData = [];
-                 // Use iteration if values() unavailable
-                 if (Array.isArray(dataset)) {
+                 // ⚡ Bolt Optimization: Bypass expensive Proxy allocations and normalizeKey overhead
+                 const codCliCol = dataset._data ? (dataset._data['CODCLI'] || dataset._data['codcli']) : null;
+
+                 if (codCliCol && dataset.get) {
                      for(let i=0; i<dataset.length; i++) {
-                         if(filters.clientCodes.has(normalizeKey(dataset[i].CODCLI))) allData.push(dataset[i]);
+                         const cod = codCliCol[i];
+                         if (cod && typeof cod === 'string' && filters.clientCodes.has(cod)) {
+                             allData.push(dataset.get(i));
+                         } else if (filters.clientCodes.has(normalizeKey(cod))) {
+                             allData.push(dataset.get(i));
+                         }
+                     }
+                 } else if (Array.isArray(dataset)) {
+                     for(let i=0; i<dataset.length; i++) {
+                         const cod = dataset[i].CODCLI;
+                         if (cod && typeof cod === 'string' && filters.clientCodes.has(cod)) allData.push(dataset[i]);
+                         else if(filters.clientCodes.has(normalizeKey(cod))) allData.push(dataset[i]);
                      }
                  } else if (dataset.values && typeof dataset.values === 'function') {
                      const vals = dataset.values();
-                     for(let i=0; i<vals.length; i++) if(filters.clientCodes.has(normalizeKey(vals[i].CODCLI))) allData.push(vals[i]);
+                     for(let i=0; i<vals.length; i++) {
+                         const cod = vals[i].CODCLI;
+                         if (cod && typeof cod === 'string' && filters.clientCodes.has(cod)) allData.push(vals[i]);
+                         else if(filters.clientCodes.has(normalizeKey(cod))) allData.push(vals[i]);
+                     }
                  } else {
                      for(let i=0; i<dataset.length; i++) {
                          const item = getItem(i);
-                         if(filters.clientCodes.has(normalizeKey(item.CODCLI))) allData.push(item);
+                         const cod = item.CODCLI;
+                         if (cod && typeof cod === 'string' && filters.clientCodes.has(cod)) allData.push(item);
+                         else if(filters.clientCodes.has(normalizeKey(cod))) allData.push(item);
                      }
                  }
                  return allData;
@@ -12749,10 +12768,17 @@ const supervisorGroups = new Map();
             }
 
             const result = [];
+            const codCliCol = dataset._data ? (dataset._data['CODCLI'] || dataset._data['codcli']) : null;
             for (const id of resultIds) {
-                const item = getItem(id);
-                if (!filters.clientCodes || filters.clientCodes.has(normalizeKey(item.CODCLI))) {
-                    result.push(item);
+                if (!filters.clientCodes) {
+                    result.push(getItem(id));
+                } else {
+                    const cod = codCliCol ? codCliCol[id] : getItem(id).CODCLI;
+                    if (cod && typeof cod === 'string' && filters.clientCodes.has(cod)) {
+                        result.push(getItem(id));
+                    } else if (filters.clientCodes.has(normalizeKey(cod))) {
+                        result.push(getItem(id));
+                    }
                 }
             }
             return result;
