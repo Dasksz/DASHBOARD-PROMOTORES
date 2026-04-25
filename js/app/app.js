@@ -26191,7 +26191,7 @@ const supervisorGroups = new Map();
                 <li class="flex justify-between items-center text-xs p-2 hover:bg-white/5 rounded">
                     <div class="flex items-center gap-2">
                         <span class="font-bold text-slate-500 w-4">${i+1}</span>
-                        <span class="text-slate-300 truncate max-w-[120px]" title="${r.name}">${r.name}</span>
+                        <span class="text-slate-300 truncate max-w-[120px]" title="${window.escapeHtml(r.name)}">${window.escapeHtml(r.name)}</span>
                     </div>
                     <span class="font-bold text-green-400">${r.val.toLocaleString('pt-BR', { notation: 'compact', style: 'currency', currency: 'BRL' })}</span>
                 </li>
@@ -26207,7 +26207,7 @@ const supervisorGroups = new Map();
                 <li class="flex justify-between items-center text-xs p-2 hover:bg-white/5 rounded">
                     <div class="flex items-center gap-2">
                         <span class="font-bold text-slate-500 w-4">${i+1}</span>
-                        <span class="text-slate-300 truncate max-w-[120px]" title="${r.name}">${r.name}</span>
+                        <span class="text-slate-300 truncate max-w-[120px]" title="${window.escapeHtml(r.name)}">${window.escapeHtml(r.name)}</span>
                     </div>
                     <span class="font-bold text-purple-400">${r.pos}</span>
                 </li>
@@ -26333,11 +26333,11 @@ const supervisorGroups = new Map();
                 
                 item.innerHTML = `
                     <div class="flex justify-between items-start mb-1">
-                        <span class="text-sm font-bold text-white">${c.name}</span>
+                        <span class="text-sm font-bold text-white">${window.escapeHtml(c.name)}</span>
                         <span class="text-xs font-bold text-green-400 bg-green-900/30 px-2 py-0.5 rounded-full">${c.orders.length} Pedido(s)</span>
                     </div>
                     <div class="text-[10px] text-slate-400 break-words">
-                        PED: ${orderList}
+                        PED: ${window.escapeHtml(orderList)}
                     </div>
                 `;
                 content.appendChild(item);

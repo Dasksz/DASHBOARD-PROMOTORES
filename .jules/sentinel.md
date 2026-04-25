@@ -35,3 +35,7 @@
 **Vulnerability:** Found XSS vulnerabilities in `js/app/app.js` where user-controlled strings inside array mapping functions (specifically strings processed by helpers like `getFirstName(row.name)`) were dynamically inserted into HTML templates using `.innerHTML` without sanitization.
 **Learning:** String manipulation helpers like `getFirstName()` do not sanitize their output. When using their results in HTML string interpolations for `.innerHTML`, the entire function call must be wrapped in `window.escapeHtml()` (e.g., `window.escapeHtml(getFirstName(row.name))`). Forgetting to wrap helper function outputs is a common oversight that leads to XSS.
 **Prevention:** Consistently apply `window.escapeHtml()` to all variables injected into string templates bound to `.innerHTML`, including the outputs of pure string manipulation helpers.
+## 2026-04-25 - Fix XSS in weekly ranking lists
+**Vulnerability:** Found XSS vulnerabilities in `js/app/app.js` where user-controlled strings (`r.name`) were dynamically inserted into HTML templates using `.innerHTML` without sanitization within the `renderWeeklySummary` function.
+**Learning:** Template literals (`...`) combined with `.innerHTML` are prone to XSS if not explicitly wrapped in an escaping utility function.
+**Prevention:** Always use `window.escapeHtml()` when generating dynamic string content inside `.innerHTML`.
