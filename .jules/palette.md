@@ -20,3 +20,7 @@
 ## 2024-04-23 - Secondary Text in KPIs
 **Learning:** Found a case where secondary KPIs text context ("Base para os KPIs") was updated to include dynamic data context, like "Clientes Ativos". We wrapped the changing number in a separate `<span>` allowing easy targetability from JS without blowing up the whole text element wrapper, which preserves styling.
 **Action:** Always maintain CSS text styles when updating secondary metrics, isolating dynamic content into nested `<span>` elements for targeting.
+
+## 2024-11-20 - Keyboard Accessibility and Empty States
+**Learning:** Found that `focus-visible` was completely missing for key navigation/action buttons, severely hindering keyboard accessibility. Additionally, empty chart states were relying on generic and unhelpful text ("Sem dados para exibir.").
+**Action:** Added `focus-visible` classes with proper contrast rings (`focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900`) to interactive components and improved empty state feedback strings to guide users on why data might be missing (due to active filters or period selected).
