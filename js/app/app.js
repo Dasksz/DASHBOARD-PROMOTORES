@@ -9060,7 +9060,7 @@ const supervisorGroups = new Map();
                     coverageTopCoverageCountKpi.classList.remove('hidden');
                 }
                 coverageTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-slate-500">Nenhum produto selecionado ou encontrado para os filtros.</td></tr>';
-                showNoDataMessage('coverageCityChart', 'Sem dados para exibir.');
+                showNoDataMessage('coverageCityChart', 'Nenhum dado encontrado para o período ou filtros selecionados.');
                 return;
             }
 
@@ -9507,13 +9507,13 @@ const supervisorGroups = new Map();
                 if (sortedCities.length > 0) {
                     createChart('coverageCityChart', 'bar', sortedCities.map(([city]) => city), sortedCities.map(([, qty]) => qty), commonChartOptions);
                 } else {
-                    showNoDataMessage('coverageCityChart', 'Sem dados para exibir.');
+                    showNoDataMessage('coverageCityChart', 'Nenhum dado encontrado para o período ou filtros selecionados.');
                 }
 
                 if (sortedRanking.length > 0) {
                     createChart('coverageSellerChart', 'bar', sortedRanking.map(([name]) => getFirstName(name)), sortedRanking.map(([, qty]) => qty), commonChartOptions);
                 } else {
-                    showNoDataMessage('coverageSellerChart', 'Sem dados para exibir.');
+                    showNoDataMessage('coverageSellerChart', 'Nenhum dado encontrado para o período ou filtros selecionados.');
                 }
 
                 // Visibility Toggle Logic
@@ -26911,7 +26911,7 @@ const supervisorGroups = new Map();
         }
 
         if (!tableData || tableData.length === 0) {
-            container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Sem dados para exibir.</div>';
+            container.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Nenhum dado encontrado para o período ou filtros selecionados.</div>';
             return;
         }
 
