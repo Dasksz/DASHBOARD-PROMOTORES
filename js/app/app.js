@@ -15568,7 +15568,12 @@ const supervisorGroups = new Map();
                                     });
 
 
-                                    const matches = Array.from(uniqueCities).filter(c => c.toLowerCase().includes(val)).sort();
+                                    // ⚡ Bolt Optimization: Avoid Array.from().filter() intermediate allocations
+                                    const matches = [];
+                                    for (const c of uniqueCities) {
+                                        if (c.toLowerCase().includes(val)) matches.push(c);
+                                    }
+                                    matches.sort();
 
                                     if (matches.length > 0) {
                                         cityCitySuggestions.innerHTML = matches.slice(0, 10).map(c => {
@@ -22008,7 +22013,11 @@ const supervisorGroups = new Map();
                         // Extract type info if available
                         let typeLabels = '';
                         if (orderData.types && orderData.types.size > 0) {
-                            const typesArr = Array.from(orderData.types).filter(t => t);
+                            // ⚡ Bolt Optimization: Avoid Array.from().filter() intermediate allocations
+                            const typesArr = [];
+                            for (const t of orderData.types) {
+                                if (t) typesArr.push(t);
+                            }
                             if (typesArr.length > 0) {
                                 typeLabels = '<span class="text-[10px] text-slate-500 ml-2 font-normal">(Tipo ' + typesArr.join(', ') + ')</span>';
                             }
@@ -25057,9 +25066,15 @@ const supervisorGroups = new Map();
                             if (c.cidade) cities.add(c.cidade);
                         }
                     }
-                    const matches = Array.from(cities).filter(c => c.toLowerCase().includes(val)).sort().slice(0, 10);
+                    // ⚡ Bolt Optimization: Avoid Array.from().filter() intermediate allocations
+                    const matches = [];
+                    for (const c of cities) {
+                        if (c.toLowerCase().includes(val)) matches.push(c);
+                    }
+                    matches.sort();
+                    const slicedMatches = matches.slice(0, 10);
 
-                    stockCitySuggestions.innerHTML = matches.map(c =>
+                    stockCitySuggestions.innerHTML = slicedMatches.map(c =>
                         `<div class="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300">${window.escapeHtml(c)}</div>`
                     ).join('');
                     stockCitySuggestions.classList.remove('hidden');
@@ -27879,7 +27894,12 @@ const supervisorGroups = new Map();
 
 
 
-                    const matches = Array.from(uniqueCities).filter(c => c.toLowerCase().includes(val)).sort();
+                    // ⚡ Bolt Optimization: Avoid Array.from().filter() intermediate allocations
+                    const matches = [];
+                    for (const c of uniqueCities) {
+                        if (c.toLowerCase().includes(val)) matches.push(c);
+                    }
+                    matches.sort();
 
                     if (matches.length > 0) {
                         positivacaoCitySuggestions.innerHTML = matches.slice(0, 10).map(c => {
@@ -28498,7 +28518,12 @@ const supervisorGroups = new Map();
 
 
 
-                    const matches = Array.from(cities).filter(c => c.toLowerCase().includes(val)).sort();
+                    // ⚡ Bolt Optimization: Avoid Array.from().filter() intermediate allocations
+                    const matches = [];
+                    for (const c of cities) {
+                        if (c.toLowerCase().includes(val)) matches.push(c);
+                    }
+                    matches.sort();
 
                     if (matches.length > 0) {
                         suggestions.innerHTML = matches.slice(0, 10).map(c => {
