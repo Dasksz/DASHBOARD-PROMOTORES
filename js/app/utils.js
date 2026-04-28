@@ -893,6 +893,58 @@
         }
     };
 
+
+    window.setupGenericSingleDropdownFilterHandlers = function(prefix, updateCallbackFn) {
+        const btn = document.getElementById(prefix + '-filter-btn');
+        const dropdown = document.getElementById(prefix + '-filter-dropdown');
+        const hiddenInput = document.getElementById(prefix + '-filter');
+        const textSpan = document.getElementById(prefix + '-filter-text');
+        const wrapper = document.getElementById(prefix + '-filter-wrapper');
+
+        if (btn && dropdown && hiddenInput) {
+            // Prevent attaching multiple identical listeners
+            if (btn._hasSingleDropdownListener) return;
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+                if (wrapper) {
+                    if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
+                    else wrapper.classList.add('z-50');
+                }
+            });
+
+            // Selection logic is dynamic since options might be added dynamically.
+            dropdown.addEventListener('click', (e) => {
+                const item = e.target.closest('.dropdown-item');
+                if (item) {
+                    const val = item.dataset.value;
+                    const label = item.textContent.trim();
+
+                    hiddenInput.value = val;
+                    if (textSpan) textSpan.textContent = label;
+
+                    dropdown.classList.add('hidden');
+                    if (wrapper) wrapper.classList.remove('z-50');
+
+                    // Trigger Update
+                    if (typeof updateCallbackFn === 'function') {
+                        updateCallbackFn();
+                    }
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                    if (wrapper) wrapper.classList.remove('z-50');
+                }
+            });
+
+            btn._hasSingleDropdownListener = true;
+        }
+    };
+
     window.setupGenericFilialFilterHandlers = function(prefix, updateCallbackFn, customCloseLogic) {
         const btn = document.getElementById(`${prefix}-filial-filter-btn`);
         const dropdown = document.getElementById(`${prefix}-filial-filter-dropdown`);

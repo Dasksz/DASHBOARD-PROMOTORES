@@ -1,6 +1,10 @@
-1. **Add `focus-visible` to interactive elements:** Use `replace_with_git_merge_diff` to add existing Tailwind classes `focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900` to specific buttons in `index.html`: `feed-toggle-filters-btn`, `clear-filters-btn`, `feed-favorites-btn`, and `history-filter-btn` to improve keyboard navigation accessibility.
-2. **Update Empty States with Helpful Messaging:** Use `replace_with_git_merge_diff` to replace the exact strings 'Sem dados para exibir.' with 'Nenhum dado encontrado para o período ou filtros selecionados.' in `js/app/app.js` at lines 9063, 9510, 9516, and 26888.
-3. **Record Findings in `.jules/palette.md`:** Use `run_in_bash_session` to echo and append the new journal entry to `.jules/palette.md` regarding the improved empty state messaging and `focus-visible` classes.
-4. **Verify Implementation:** Use `run_in_bash_session` to execute `bash ./run_tests.sh` to ensure no regressions were introduced.
-5. **Complete Pre-Commit Steps:** Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
-6. **Submit PR:** Submit the change with "🎨 Palette: Improve keyboard accessibility and empty state messaging".
+1. **Add generic single-select dropdown filter handler**
+   - Add `window.setupGenericSingleDropdownFilterHandlers` to `js/app/utils.js`. This generic function will handle the dropdown toggle, selection updates (by capturing clicks on `.dropdown-item`), updating the hidden input, updating the text span, closing on outside click, and executing a callback. This logic exactly mirrors what is currently in `setupInnovationsMonthCategoryFilterHandlers`.
+2. **Refactor `setupInnovationsMonthCategoryFilterHandlers`**
+   - Update `js/app/app.js` to replace the verbose implementation inside `setupInnovationsMonthCategoryFilterHandlers` with a call to the new `window.setupGenericSingleDropdownFilterHandlers`.
+   - Note: There are two places where `setupInnovationsMonthCategoryFilterHandlers` might be defined, or it might be duplicate logic. We will ensure the implementation is DRY.
+3. **Run Pre Commit Steps**
+   - Ensure the code parses correctly, UI tests pass (if any), and everything looks clean without changing business logic.
+4. **Submit PR**
+   - Title: `🧹 Tidy: Extrai lógica do dropdown de categoria (single-select) para utilitário global`
+   - Description includes the what, why, impact and verification.
