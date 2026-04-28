@@ -14,6 +14,7 @@ const FeedVisitas = (() => {
     let flatpickrInstance = null;
 
     // State Filtros
+    let cachedHierarchyMap = null;
     let feedCurrentClientFilter = '';
     let feedCurrentCityFilter = '';
     let feedCurrentFilialFilter = 'all';
@@ -728,6 +729,20 @@ const FeedVisitas = (() => {
     async function fetchFeedData() {
         if (!currentStartBound || !currentEndBound) return;
 
+        if (!cachedHierarchyMap && window.embeddedData && window.embeddedData.hierarchy) {
+            cachedHierarchyMap = new Map();
+            window.embeddedData.hierarchy.forEach(h => {
+                if (h.cod_promotor) {
+                    const hCod = String(h.cod_promotor)
+                        .trim()
+                        .toUpperCase()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, "");
+                    cachedHierarchyMap.set(hCod, h);
+                }
+            });
+        }
+
         const from = currentPage * PAGE_SIZE;
         const to = from + PAGE_SIZE - 1;
 
@@ -1117,15 +1132,7 @@ const FeedVisitas = (() => {
                                     .normalize('NFD')
                                     .replace(/[\u0300-\u036f]/g, "");
 
-                                const hierarquiaRow = window.embeddedData.hierarchy.find(h => {
-                                    if (!h.cod_promotor) return false;
-                                    const hCod = String(h.cod_promotor)
-                                        .trim()
-                                        .toUpperCase()
-                                        .normalize('NFD')
-                                        .replace(/[\u0300-\u036f]/g, "");
-                                    return hCod === normalizedPromoterCode;
-                                });
+                                const hierarquiaRow = cachedHierarchyMap ? cachedHierarchyMap.get(normalizedPromoterCode) : null;
 
                                 if (hierarquiaRow) {
                                     nomeCoCoordenador = hierarquiaRow.nome_cocoord || hierarquiaRow.cod_cocoord || '-';
