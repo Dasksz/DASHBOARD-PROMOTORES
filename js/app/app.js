@@ -14143,7 +14143,7 @@ const supervisorGroups = new Map();
             innovationsMonthTopCoverageKpi.textContent = topCoverageItem.name;
             innovationsMonthTopCoverageKpi.title = topCoverageItem.name;
             innovationsMonthTopCoverageCountKpi.textContent = `${topCategoryAvg.toFixed(2)} Mix/Cliente`;
-            document.getElementById('innovations-month-top-coverage-title').textContent = selectedCategory ? 'Produto Maior Cobertura' : 'Categ. Maior Cobertura';
+            document.getElementById('innovations-month-top-coverage-title').textContent = selectedCategory ? 'Melhor Categoria' : 'Melhor Categoria';
 
             innovationsMonthSelectionCoverageValueKpi.textContent = `${selectionCoveragePercentCurrent.toFixed(2)}%`;
             innovationsMonthSelectionCoverageCountKpi.textContent = `${selectionCoveredCountCurrent.toLocaleString('pt-BR')} de ${positivadosCurrentCount.toLocaleString('pt-BR')}`;
