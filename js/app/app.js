@@ -27580,57 +27580,14 @@ const supervisorGroups = new Map();
         setupComparisonSupervisorFilterHandlers();
 
         function setupInnovationsMonthCategoryFilterHandlers() {
-            const btn = document.getElementById('innovations-month-category-filter-btn');
-            const dropdown = document.getElementById('innovations-month-category-filter-dropdown');
-            const hiddenInput = document.getElementById('innovations-month-category-filter');
-            const textSpan = document.getElementById('innovations-month-category-filter-text');
-            const wrapper = document.getElementById('innovations-month-category-filter-wrapper');
-
-            if (btn && dropdown && hiddenInput) {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    dropdown.classList.toggle('hidden');
-                    if (wrapper) {
-                        if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
-                        else wrapper.classList.add('z-50');
+            if (typeof window.setupGenericSingleDropdownFilterHandlers === 'function') {
+                window.setupGenericSingleDropdownFilterHandlers('innovations-month-category', () => {
+                    if (typeof updateInnovations === 'function') {
+                        updateInnovations();
+                    } else if (typeof updateInnovationsMonthView === 'function') {
+                        updateInnovationsMonthView();
                     }
                 });
-
-
-
-                // Selection logic is dynamic since options are added dynamically.
-                // We delegate the event listener to the dropdown container.
-                dropdown.addEventListener('click', (e) => {
-                    const item = e.target.closest('.dropdown-item');
-                    if (item) {
-                        const val = item.dataset.value;
-                        const label = item.textContent.trim();
-
-                        hiddenInput.value = val;
-                        if (textSpan) textSpan.textContent = label;
-
-                        dropdown.classList.add('hidden');
-                        if (wrapper) wrapper.classList.remove('z-50');
-
-                        // Trigger Update
-                        if (typeof updateInnovations === 'function') {
-                            updateInnovations();
-                        } else if (typeof updateInnovationsMonthView === 'function') {
-                            updateInnovationsMonthView();
-                        }
-                    }
-                });
-
-
-
-                document.addEventListener('click', (e) => {
-                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
-                        dropdown.classList.add('hidden');
-                        if (wrapper) wrapper.classList.remove('z-50');
-                    }
-                });
-
-
             }
         }
 
