@@ -4,3 +4,7 @@
 ## 2024-05-24 - Avoid ColumnarDataset proxy allocations in filter iterations
 **Learning:** When evaluating filter conditions (like `filters.clientCodes.has(item.CODCLI)`) across a large `ColumnarDataset`, using `dataset.get(i)` for every row allocates thousands of intermediate Proxy objects, creating extreme garbage collection overhead.
 **Action:** Extract the raw column array via `dataset._data['CODCLI']` before the loop and evaluate the condition against the raw value. Only call `dataset.get(i)` if the row matches the filter condition. Additionally, bypass expensive helper calls like `normalizeKey()` by first checking the exact raw value if the filter `Set` already accommodates it.
+
+## 2026-04-27 - Replace O(N) Array.find with O(1) Map lookup in Feed View processing
+**Learning:** Iterating over feed items while performing an inner `.find()` on a large hierarchy array creates O(N*M) complexity. This is particularly expensive when each `.find()` call also involves complex string normalization (trim, toUpperCase, normalize, regex).
+**Action:** Pre-calculate a Map keyed by pre-normalized codes from the hierarchy array before starting the feed items processing loop. This reduces the inner search to O(1) and eliminates redundant normalization.
