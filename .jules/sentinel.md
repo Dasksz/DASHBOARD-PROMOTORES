@@ -39,3 +39,8 @@
 **Vulnerability:** Found XSS vulnerabilities in `js/app/app.js` where user-controlled strings (`r.name`) were dynamically inserted into HTML templates using `.innerHTML` without sanitization within the `renderWeeklySummary` function.
 **Learning:** Template literals (`...`) combined with `.innerHTML` are prone to XSS if not explicitly wrapped in an escaping utility function.
 **Prevention:** Always use `window.escapeHtml()` when generating dynamic string content inside `.innerHTML`.
+
+## 2024-10-27 - [XSS Vulnerability in .innerHTML concatenations - open visit warning]
+**Vulnerability:** Found an XSS vulnerability in `js/app/app.js` where a user-controlled string (`normOpen` derived from `clienteEmVisitaId`) was dynamically inserted into an HTML template using `.innerHTML` without sanitization within the `verificarEstadoVisita` function.
+**Learning:** String interpolations used with `.innerHTML` are highly susceptible to XSS if not explicitly wrapped in an escaping utility function. Even seemingly benign values like IDs or names can be manipulated to execute arbitrary scripts if they are reflected back to the user without proper encoding.
+**Prevention:** Always use `window.escapeHtml()` when generating dynamic string content inside `.innerHTML`.

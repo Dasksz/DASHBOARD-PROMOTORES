@@ -24430,7 +24430,7 @@ const supervisorGroups = new Map();
                 // Visit open for ANOTHER client
                 btnCheckIn.classList.remove('hidden');
                 btnCheckIn.disabled = true;
-                btnCheckIn.innerHTML = `<span class="text-xs">Finalize a visita anterior (${normOpen})</span>`;
+                btnCheckIn.innerHTML = `<span class="text-xs">Finalize a visita anterior (${window.escapeHtml(normOpen)})</span>`;
                 btnCheckOut.classList.add('hidden');
                 btnPesquisa.classList.add('hidden');
 
