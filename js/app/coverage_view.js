@@ -38,7 +38,7 @@
                 coverageTopCoverageValueKpi.textContent = '0%';
                 coverageTopCoverageProductKpi.textContent = '-';
                 coverageTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-slate-500">Nenhum produto selecionado ou encontrado para os filtros.</td></tr>';
-                showNoDataMessage('coverageCityChart', 'Sem dados para exibir.');
+                showNoDataMessage('coverageCityChart', 'Nenhum dado encontrado para o período ou filtros selecionados.');
                 return;
             }
 
@@ -386,13 +386,13 @@
                 if (sortedCities.length > 0) {
                     createChart('coverageCityChart', 'bar', sortedCities.map(([city]) => city), sortedCities.map(([, qty]) => qty), commonChartOptions);
                 } else {
-                    showNoDataMessage('coverageCityChart', 'Sem dados para exibir.');
+                    showNoDataMessage('coverageCityChart', 'Nenhum dado encontrado para o período ou filtros selecionados.');
                 }
 
                 if (sortedSellers.length > 0) {
                     createChart('coverageSellerChart', 'bar', sortedSellers.map(([seller]) => getFirstName(seller)), sortedSellers.map(([, qty]) => qty), commonChartOptions);
                 } else {
-                    showNoDataMessage('coverageSellerChart', 'Sem dados para exibir.');
+                    showNoDataMessage('coverageSellerChart', 'Nenhum dado encontrado para o período ou filtros selecionados.');
                 }
 
                 // Visibility Toggle Logic
