@@ -24,3 +24,6 @@
 ## 2024-11-20 - Keyboard Accessibility and Empty States
 **Learning:** Found that `focus-visible` was completely missing for key navigation/action buttons, severely hindering keyboard accessibility. Additionally, empty chart states were relying on generic and unhelpful text ("Sem dados para exibir.").
 **Action:** Added `focus-visible` classes with proper contrast rings (`focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900`) to interactive components and improved empty state feedback strings to guide users on why data might be missing (due to active filters or period selected).
+## 2024-04-28 - Descriptive Empty State Messages
+**Learning:** Found that generic empty state messages in charts (like "Sem dados para exibir.") are unhelpful to users when filtering datasets. Describing why the data is missing improves the UX significantly.
+**Action:** Replaced generic empty state text in the coverage view charts with a more descriptive message explaining that the active filters or period selected might be the cause.
