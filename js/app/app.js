@@ -14030,7 +14030,7 @@ const supervisorGroups = new Map();
                     const pCode = String(product.Codigo).trim();
                     if (productResults[pCode]) {
                         const count = productResults[pCode].current.size;
-                        const coverage = activeClientsCount > 0 ? (count / activeClientsCount) * 100 : 0;
+                        const coverage = positivadosCurrentCount > 0 ? (count / positivadosCurrentCount) * 100 : 0;
                         if (coverage > topCoverageItem.coverage) {
                             topCoverageItem = { name: `(${pCode}) ${product.produto || product.Produto}`, coverage, clients: count };
                         }
@@ -14046,7 +14046,7 @@ const supervisorGroups = new Map();
                     const unionSet = new Set(categoryResults[cat].current);
                     categoryResults[cat].bonusCurrent.forEach(c => unionSet.add(c));
                     const count = unionSet.size;
-                    const coverage = activeClientsCount > 0 ? (count / activeClientsCount) * 100 : 0;
+                    const coverage = positivadosCurrentCount > 0 ? (count / positivadosCurrentCount) * 100 : 0;
 
                     if (coverage > topCoverageItem.coverage) {
                         topCoverageItem = { name: cat, coverage, clients: count };
@@ -14087,7 +14087,7 @@ const supervisorGroups = new Map();
                 const countPrev2 = previous2Union.size;
                 const countPrev3 = previous3Union.size;
 
-                const covCurr = activeClientsCount > 0 ? (countCurr / activeClientsCount) * 100 : 0;
+                const covCurr = positivadosCurrentCount > 0 ? (countCurr / positivadosCurrentCount) * 100 : 0;
                 const covPrev = positivadosPreviousCount > 0 ? (countPrev / positivadosPreviousCount) * 100 : 0;
                 const covPrev2 = positivadosPrevious2Count > 0 ? (countPrev2 / positivadosPrevious2Count) * 100 : 0;
                 const covPrev3 = positivadosPrevious3Count > 0 ? (countPrev3 / positivadosPrevious3Count) * 100 : 0;
@@ -14125,14 +14125,14 @@ const supervisorGroups = new Map();
 
             const selectionCoveredCountCurrent = clientsWhoGotAnyVisibleProductCurrent.size;
             // Percentual is Selection / Total Active Clients
-            const selectionCoveragePercentCurrent = activeClientsCount > 0 ? (selectionCoveredCountCurrent / activeClientsCount) * 100 : 0;
+            const selectionCoveragePercentCurrent = positivadosCurrentCount > 0 ? (selectionCoveredCountCurrent / positivadosCurrentCount) * 100 : 0;
             const selectionCoveredCountPrevious = clientsWhoGotAnyVisibleProductPrevious.size;
-            const selectionCoveragePercentPrevious = activeClientsCount > 0 ? (selectionCoveredCountPrevious / activeClientsCount) * 100 : 0;
+            const selectionCoveragePercentPrevious = positivadosPreviousCount > 0 ? (selectionCoveredCountPrevious / positivadosPreviousCount) * 100 : 0;
 
             const bonusCoveredCountCurrent = clientsWhoGotBonusAnyVisibleProductCurrent.size;
-            const bonusCoveragePercentCurrent = activeClientsCount > 0 ? (bonusCoveredCountCurrent / activeClientsCount) * 100 : 0;
+            const bonusCoveragePercentCurrent = positivadosCurrentCount > 0 ? (bonusCoveredCountCurrent / positivadosCurrentCount) * 100 : 0;
             const bonusCoveredCountPrevious = clientsWhoGotBonusAnyVisibleProductPrevious.size;
-            const bonusCoveragePercentPrevious = activeClientsCount > 0 ? (bonusCoveredCountPrevious / activeClientsCount) * 100 : 0;
+            const bonusCoveragePercentPrevious = positivadosPreviousCount > 0 ? (bonusCoveredCountPrevious / positivadosPreviousCount) * 100 : 0;
 
             // Calculate Top Category Average (Mix/Cliente)
             const topCategoryAvg = positivadosCurrentCount > 0 ? (topCoverageItem.clients / positivadosCurrentCount) : 0;
