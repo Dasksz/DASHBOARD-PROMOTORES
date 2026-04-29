@@ -21442,10 +21442,10 @@ const supervisorGroups = new Map();
                         <td class="md:hidden mobile-card-header p-4 border-b border-white/10" colspan="3">
                             <div class="flex flex-col text-left items-start">
                                 <div class="text-sm font-bold text-white mb-1 text-left">
-                                    ${code} - ${rowFantasia || 'N/A'}
+                                    ${window.escapeHtml(code)} - ${window.escapeHtml(rowFantasia || 'N/A')}
                                 </div>
                                 <div class="text-xs text-slate-500 font-medium uppercase text-left">
-                                    ${rowCnpj || ''} ${rowRazao || ''}
+                                    ${window.escapeHtml(rowCnpj || '')} ${window.escapeHtml(rowRazao || '')}
                                 </div>
                             </div>
                         </td>
@@ -21453,12 +21453,12 @@ const supervisorGroups = new Map();
 
                      // Desktop Layout (Columns)
                      const desktopCells = `
-                        <td data-label="Código" class="hidden md:table-cell px-6 py-4 font-mono text-xs text-slate-400 w-32 border-b border-white/10">${code}</td>
+                        <td data-label="Código" class="hidden md:table-cell px-6 py-4 font-mono text-xs text-slate-400 w-32 border-b border-white/10">${window.escapeHtml(code)}</td>
                         <td data-label="Cliente" class="hidden md:table-cell px-6 py-4 border-b border-white/10">
-                            <div class="text-sm font-bold text-white truncate">${rowFantasia || 'N/A'}</div>
-                            <div class="text-xs text-slate-500 truncate">${rowRazao || ''}</div>
+                            <div class="text-sm font-bold text-white truncate">${window.escapeHtml(rowFantasia || 'N/A')}</div>
+                            <div class="text-xs text-slate-500 truncate">${window.escapeHtml(rowRazao || '')}</div>
                         </td>
-                        <td data-label="CNPJ" class="hidden md:table-cell px-6 py-4 text-xs text-slate-400 border-b border-white/10">${rowCnpj || ''}</td>
+                        <td data-label="CNPJ" class="hidden md:table-cell px-6 py-4 text-xs text-slate-400 border-b border-white/10">${window.escapeHtml(rowCnpj || '')}</td>
                      `;
 
                      tr.innerHTML = mobileCell + desktopCells;
@@ -21518,10 +21518,10 @@ const supervisorGroups = new Map();
             div.innerHTML = `
                 <div>
                     <div class="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">
-                        <span class="font-mono text-slate-400 mr-2">${c.codigo_cliente}</span>
-                        ${c.fantasia || c.razaosocial}
+                        <span class="font-mono text-slate-400 mr-2">${window.escapeHtml(c.codigo_cliente)}</span>
+                        ${window.escapeHtml(c.fantasia || c.razaosocial)}
                     </div>
-                    <div class="text-xs text-slate-500">${c.cidade || ''} • ${c.cnpj_cpf || ''}</div>
+                    <div class="text-xs text-slate-500">${window.escapeHtml(c.cidade || '')} • ${window.escapeHtml(c.cnpj_cpf || '')}</div>
                 </div>
                  <div class="p-2 glass-panel-heavy rounded-full group-hover:bg-[#FF5E00] transition-colors text-slate-400 group-hover:text-white">
                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -23208,7 +23208,7 @@ const supervisorGroups = new Map();
                         <div class="w-2 h-10 ${barColor} rounded-full"></div>
                         <div>
                             <div class="text-sm font-bold text-white flex items-center gap-2">
-                                ${c.fantasia || c.nomeCliente}
+                                ${window.escapeHtml(c.fantasia || c.nomeCliente)}
                                 ${visitedThisMonth ? `
                                     <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Visitado este mês">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -23216,7 +23216,7 @@ const supervisorGroups = new Map();
                                     </svg>
                                 ` : ''}
                             </div>
-                            <div class="text-xs text-slate-400 font-mono flex flex-wrap items-center gap-1">${cod} • ${c.cidade || ''} ${visitTimeStr ? '• <span class="text-slate-300">' + visitTimeStr + '</span>' : ''} ${(isForaDeRota && isToday) ? '<span class="ml-2 px-1.5 py-0.5 bg-orange-900/50 text-orange-400 border border-orange-500/30 rounded text-[10px] font-bold">Atendido fora de rota</span>' : ''}</div>
+                            <div class="text-xs text-slate-400 font-mono flex flex-wrap items-center gap-1">${window.escapeHtml(cod)} • ${window.escapeHtml(c.cidade || '')} ${visitTimeStr ? '• <span class="text-slate-300">' + window.escapeHtml(visitTimeStr) + '</span>' : ''} ${(isForaDeRota && isToday) ? '<span class="ml-2 px-1.5 py-0.5 bg-orange-900/50 text-orange-400 border border-orange-500/30 rounded text-[10px] font-bold">Atendido fora de rota</span>' : ''}</div>
                         </div>
                     </div>
                     <div class="flex-shrink-0">
