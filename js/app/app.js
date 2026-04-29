@@ -1913,7 +1913,7 @@
                     for (let i = 0; i < rawRel.length; i++) {
                          const item = rawRel[i];
                          // Try both lowercase and snake_case keys just in case
-                         const involvesCode = String(item.involves_code || item.INVOLVES_CODE || '').trim().toLowerCase();
+                         const involvesCode = window.normalizeResearcherCode(item.involves_code || item.INVOLVES_CODE);
                          const sellerCode = String(item.seller_code || item.SELLER_CODE || '').trim();
                          
                          if (involvesCode) {
@@ -29127,7 +29127,7 @@ const supervisorGroups = new Map();
             
             sortedResearchers.forEach(res => {
                 const rawPesquisador = (res || '').trim();
-                const normRes = rawPesquisador.toLowerCase();
+                const normRes = window.normalizeResearcherCode(rawPesquisador);
                 const upperResKey = rawPesquisador.toUpperCase();
 
                 // Resolve friendly name
@@ -29205,7 +29205,7 @@ const supervisorGroups = new Map();
         const filialMap = new Map(); // key -> map of agents
 
         data.forEach(row => {
-            const resKey = (row.pesquisador || '').toLowerCase().trim();
+            const resKey = window.normalizeResearcherCode(row.pesquisador);
             const isRowPromotor = resKey.toUpperCase().includes('PROMOTOR');
             
             if (isPromoterMode && !isRowPromotor) return;
@@ -29843,7 +29843,7 @@ const supervisorGroups = new Map();
             let resSub = t.pesquisador;
 
             const rawPesquisador = (t.pesquisador || '').trim();
-            const resKey = rawPesquisador.toLowerCase();
+            const resKey = window.normalizeResearcherCode(rawPesquisador);
             const upperResKey = rawPesquisador.toUpperCase();
 
             // 1. Try to resolve using optimizedData.promotorMap directly (Best match for Promotors)
