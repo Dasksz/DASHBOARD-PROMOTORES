@@ -27,3 +27,7 @@
 ## 2024-04-28 - Descriptive Empty State Messages
 **Learning:** Found that generic empty state messages in charts (like "Sem dados para exibir.") are unhelpful to users when filtering datasets. Describing why the data is missing improves the UX significantly.
 **Action:** Replaced generic empty state text in the coverage view charts with a more descriptive message explaining that the active filters or period selected might be the cause.
+
+## 2024-04-29 - Missing programmatic linkages for labels
+**Learning:** Found a widespread pattern where form labels were visually associated but lacked programmatic linkage. Standard text `<label>` elements were missing the `for` attribute referencing the input's `id` (e.g., in 'Cliente', 'Cidade', and File Uploads). Additionally, custom UI filter groups structured with `role="group"` (like the 'Rede' buttons) incorrectly used generic `<label>` tags which violate HTML standards when containing or sibling to non-form groupings.
+**Action:** Always add the `for="id"` attribute to `<label>` tags associating them with `<input>` or `<select>` elements. For custom UI groupings that aren't native inputs, replace the generic `<label>` tag with a `<span id="...">` and add `aria-labelledby="..."` to the container `<div>` with `role="group"` to ensure proper screen reader support.
