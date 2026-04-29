@@ -77,6 +77,11 @@
         return c.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
     };
 
+    window.normalizeResearcherCode = function(c) {
+        if (!c) return '';
+        return String(c).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/\s+/g, '');
+    };
+
     window.normalizeKey = function(key) {
         if (!key) return '';
         if (typeof key === 'number') return String(key);
