@@ -13881,45 +13881,59 @@ const supervisorGroups = new Map();
                 const tsPrev2Start = prev2MonthStart.getTime();
                 const tsPrev2End = prev2MonthEnd.getTime();
 
-                // Filter History Data
-                const filterHistory = (start, end) => {
-                    return allHistoryData.filter(item => {
-                        const val = item.DTPED;
-                        if (!val) return false;
-                        
-                        let ts = 0;
-                        if (typeof val === 'number') {
-                            if (val < 100000) {
-                                 // Excel serial date to Unix timestamp (days since Dec 30, 1899)
-                                 // Adding Timezone Offset so it matches UTC boundaries properly.
-                                 // The formula in utils.js returns a UTC date, we just need its timestamp.
-                                 const utcDate = new Date(Math.round((val - 25569) * 86400 * 1000));
-                                 ts = utcDate.getTime() + (utcDate.getTimezoneOffset() * 60000);
-                            } else {
-                                 ts = val;
-                            }
-                        } else {
-                            // Use global parseDate which returns a UTC Date object
-                            const d = parseDate(val);
-                            if(d) {
-                                ts = d.getTime(); // parseDate already ensures it's UTC time internally
-                            }
-                        }
-                        return ts >= start && ts < end;
-                    });
-
-
-                };
-
-                const previousMonthData = filterHistory(tsPrevStart, tsPrevEnd);
-                const previousMonthData2 = filterHistory(tsPrev2Start, tsPrev2End);
+                // Filter History Data - ⚡ Bolt Optimization: Single Pass Loop
+                const previousMonthData = [];
+                const previousMonthData2 = [];
+                const previousMonthData3 = [];
 
                 // T-3: Previous Previous Previous Month
                 const prev3MonthStart = new Date(Date.UTC(currentYear, currentMonth - 3, 1));
                 const prev3MonthEnd = new Date(Date.UTC(currentYear, currentMonth - 2, 1));
                 const tsPrev3Start = prev3MonthStart.getTime();
                 const tsPrev3End = prev3MonthEnd.getTime();
-                const previousMonthData3 = filterHistory(tsPrev3Start, tsPrev3End);
+
+                const isHistoryColumnar = allHistoryData instanceof ColumnarDataset;
+                const historyLen = allHistoryData.length;
+                let colDtPed;
+
+                if (isHistoryColumnar) {
+                    colDtPed = allHistoryData._data['DTPED'] || allHistoryData._data['dtped'];
+                }
+
+                for (let i = 0; i < historyLen; i++) {
+                    let val;
+                    if (isHistoryColumnar && colDtPed) {
+                         val = colDtPed[i];
+                    } else {
+                         const item = isHistoryColumnar ? allHistoryData.get(i) : allHistoryData[i];
+                         val = item.DTPED;
+                    }
+
+                    if (!val) continue;
+
+                    let ts = 0;
+                    if (typeof val === 'number') {
+                        if (val < 100000) {
+                             const utcDate = new Date(Math.round((val - 25569) * 86400 * 1000));
+                             ts = utcDate.getTime() + (utcDate.getTimezoneOffset() * 60000);
+                        } else {
+                             ts = val;
+                        }
+                    } else {
+                        const d = parseDate(val);
+                        if (d) {
+                            ts = d.getTime();
+                        }
+                    }
+
+                    if (ts >= tsPrevStart && ts < tsPrevEnd) {
+                        previousMonthData.push(isHistoryColumnar ? allHistoryData.get(i) : allHistoryData[i]);
+                    } else if (ts >= tsPrev2Start && ts < tsPrev2End) {
+                        previousMonthData2.push(isHistoryColumnar ? allHistoryData.get(i) : allHistoryData[i]);
+                    } else if (ts >= tsPrev3Start && ts < tsPrev3End) {
+                        previousMonthData3.push(isHistoryColumnar ? allHistoryData.get(i) : allHistoryData[i]);
+                    }
+                }
 
                 mapsPrevious = buildInnovationSalesMaps(previousMonthData, mainTypes, bonusTypes);
                 mapsPrevious2 = buildInnovationSalesMaps(previousMonthData2, mainTypes, bonusTypes);
