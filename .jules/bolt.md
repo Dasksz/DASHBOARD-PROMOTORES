@@ -11,3 +11,6 @@
 ## 2024-05-24 - Avoid repeated `.filter()` passes on large proxy arrays
 **Learning:** Chaining or repeating `.filter()` calls over the same large dataset (like `allHistoryData` or `ColumnarDataset` instances) to extract multiple different subsets (e.g. date ranges) causes severe performance bottlenecks. It allocates multiple intermediate proxy arrays and repeats expensive operations (like date parsing) N times.
 **Action:** Consolidate these operations into a single O(N) `for` loop, caching expensive property computations (like parsing timestamps) once per row, and bucketing the results into their respective target arrays via `if/else` or `push()`.
+## 2024-04-30 - Avoid throwing away intermediate sets/arrays in chained Array.filter() calls
+**Learning:** Chaining `.filter()` array methods that first filter a list by one condition, and then subsequently re-filter the newly created array against a Set allocates redundant arrays which are immediately thrown away, causing garbage collection pauses.
+**Action:** Consolidate filtering conditions into a single pass loop using early returns or single evaluation blocks. For example, evaluate `!item.prop || item.prop === 'N/A'` and `!mySet.has(item.prop)` inside a single `.filter()` callback.
