@@ -844,17 +844,14 @@
         const wrapper = document.getElementById(wrapperId);
 
         if (btn && dropdown) {
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
+            if (!btn._hasTipoVendaListener) {
+                btn._hasTipoVendaListener = true;
 
-            const newDropdown = dropdown.cloneNode(true);
-            dropdown.parentNode.replaceChild(newDropdown, dropdown);
-
-            newBtn.addEventListener('click', (e) => {
+                btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                newDropdown.classList.toggle('hidden');
+                dropdown.classList.toggle('hidden');
                 if (wrapper) {
-                    if (!newDropdown.classList.contains('hidden')) {
+                    if (!dropdown.classList.contains('hidden')) {
                         wrapper.classList.add('z-50');
                     } else {
                         wrapper.classList.remove('z-50');
@@ -862,7 +859,7 @@
                 }
             });
 
-            newDropdown.addEventListener('change', (e) => {
+            dropdown.addEventListener('change', (e) => {
                 if (e.target.type === 'checkbox') {
                     const val = e.target.value;
                     let currentSelected = stateObj.selectedTiposVenda || [];
@@ -876,9 +873,9 @@
                     const dataSource = typeof dataSourceFn === 'function' ? dataSourceFn() : (dataSourceFn || []);
 
                     if (typeof updateTipoVendaFilterFn === 'function') {
-                        stateObj.selectedTiposVenda = updateTipoVendaFilterFn(newDropdown, textSpan, stateObj.selectedTiposVenda, dataSource);
+                        stateObj.selectedTiposVenda = updateTipoVendaFilterFn(dropdown, textSpan, stateObj.selectedTiposVenda, dataSource);
                     } else if (typeof window.updateGenericTipoVendaFilter === 'function') {
-                        stateObj.selectedTiposVenda = window.updateGenericTipoVendaFilter(newDropdown, textSpan, stateObj.selectedTiposVenda, dataSource);
+                        stateObj.selectedTiposVenda = window.updateGenericTipoVendaFilter(dropdown, textSpan, stateObj.selectedTiposVenda, dataSource);
                     }
 
                     if (typeof updateCallbackFn === 'function') {
@@ -888,13 +885,12 @@
             });
 
             document.addEventListener('click', (e) => {
-                if (!newBtn.contains(e.target) && !newDropdown.contains(e.target)) {
-                    newDropdown.classList.add('hidden');
+                if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
                     if(wrapper) wrapper.classList.remove('z-50');
                 }
             });
-
-            newDropdown._hasListener = true;
+            }
         }
     };
 
@@ -1017,10 +1013,10 @@
         const updateText = updateFilterButtonTextFn || (typeof window.updateFilterButtonText === 'function' ? window.updateFilterButtonText : null);
 
         if (supBtn && supDropdown) {
-            const newBtn = supBtn.cloneNode(true);
-            supBtn.parentNode.replaceChild(newBtn, supBtn);
+            if (!supBtn._hasSupFilterListener) {
+                supBtn._hasSupFilterListener = true;
 
-            newBtn.onclick = (e) => {
+                supBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isHidden = supDropdown.classList.contains('hidden');
 
@@ -1042,9 +1038,9 @@
                     const supWrapper = document.getElementById(supWrapperId);
                     if(supWrapper) supWrapper.classList.remove('z-50');
                 }
-            };
+            });
 
-            supDropdown.onchange = (e) => {
+            supDropdown.addEventListener('change', (e) => {
                 if (e.target.type === 'checkbox') {
                     const val = e.target.value;
                     if (e.target.checked) selectedSupervisorsSet.add(val);
@@ -1061,14 +1057,15 @@
                         filterChangeCallback({ excludeFilter: 'supervisor' });
                     }
                 }
-            };
+            });
+            }
         }
 
         if (vendBtn && vendDropdown) {
-            const newBtn = vendBtn.cloneNode(true);
-            vendBtn.parentNode.replaceChild(newBtn, vendBtn);
+            if (!vendBtn._hasVendFilterListener) {
+                vendBtn._hasVendFilterListener = true;
 
-            newBtn.onclick = (e) => {
+                vendBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isHidden = vendDropdown.classList.contains('hidden');
 
@@ -1089,9 +1086,9 @@
                     const vendWrapper = document.getElementById(vendWrapperId);
                     if(vendWrapper) vendWrapper.classList.remove('z-50');
                 }
-            };
+            });
 
-            vendDropdown.onchange = (e) => {
+            vendDropdown.addEventListener('change', (e) => {
                 if (e.target.type === 'checkbox') {
                     const val = e.target.value;
                     if (e.target.checked) selectedVendedoresSet.add(val);
@@ -1105,7 +1102,8 @@
                         filterChangeCallback({ excludeFilter: 'seller' });
                     }
                 }
-            };
+            });
+            }
         }
 
         const listenerKey = `_${prefix}FilterListener`;
