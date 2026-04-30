@@ -27,3 +27,7 @@
 ## 2024-04-28 - Descriptive Empty State Messages
 **Learning:** Found that generic empty state messages in charts (like "Sem dados para exibir.") are unhelpful to users when filtering datasets. Describing why the data is missing improves the UX significantly.
 **Action:** Replaced generic empty state text in the coverage view charts with a more descriptive message explaining that the active filters or period selected might be the cause.
+
+## 2024-12-05 - Focus-visible on all buttons and inputs
+**Learning:** Found that most interactive elements (`<button>` and `<input>`) did not have the `focus-visible` classes, hurting keyboard accessibility.
+**Action:** Added `focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900` to all `<button>`, `<input>`, `<select>`, and `<textarea>` elements across `index.html` and javascript files that generate html strings (`app.js`, `feed_view.js`, `utils.js`).

@@ -446,7 +446,7 @@
         let html = '';
         Array.from(supervisors).sort().forEach(s => {
             const checked = selectedSet.has(s) ? 'checked' : '';
-            html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 ${checkboxColorClass} rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
+            html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(s)}" ${checked} class="form-checkbox h-4 w-4 ${checkboxColorClass} rounded bg-slate-700 border-slate-600 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"><span class="ml-2 text-sm text-slate-300">${window.escapeHtml(s)}</span></label>`;
         });
         dropdown.innerHTML = html;
 
@@ -481,7 +481,7 @@
         let html = '';
         options.forEach(opt => {
             const checked = vendedoresSet.has(opt.value) ? 'checked' : '';
-            html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 ${checkboxColorClass} rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
+            html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 ${checkboxColorClass} rounded bg-slate-700 border-slate-600 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
         });
         dropdown.innerHTML = html;
 
@@ -526,7 +526,7 @@
             for (let i = 0; i < tiposVendaToShow.length; i++) {
                 const s = tiposVendaToShow[i];
                 const isChecked = selectedArray.includes(s);
-                html += `<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${window.escapeHtml(s)}" ${isChecked ? 'checked' : ''}><span class="ml-2">${window.escapeHtml(s)}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" value="${window.escapeHtml(s)}" ${isChecked ? 'checked' : ''}><span class="ml-2">${window.escapeHtml(s)}</span></label>`;
             }
             dropdown.innerHTML = html;
         }
@@ -613,7 +613,7 @@
 
                     let displayName = name;
 
-                    htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${window.escapeHtml(cod)}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-xs">${window.escapeHtml(displayName)}</span></label>`);
+                    htmlParts.push(`<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" value="${window.escapeHtml(cod)}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-xs">${window.escapeHtml(displayName)}</span></label>`);
                 }
                 dropdown.innerHTML = htmlParts.join('');
             }
@@ -749,7 +749,7 @@
                     const isChecked = selectedSet.has(code);
                     htmlParts.push(`
                         <label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer">
-                            <input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${code}" ${isChecked ? 'checked' : ''}>
+                            <input type="checkbox" data-filter-type="${filterType}" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" value="${code}" ${isChecked ? 'checked' : ''}>
                             <span class="ml-2 text-xs">(${code}) ${name}</span>
                         </label>`);
                 }
@@ -797,7 +797,7 @@
         for (let i = 0; i < redesToShow.length; i++) {
             const r = redesToShow[i];
             const isChecked = validSelected.includes(r);
-            html += `<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500" value="${window.escapeHtml(r)}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-sm">${window.escapeHtml(r)}</span></label>`;
+            html += `<label class="flex items-center p-2 hover:bg-slate-600 cursor-pointer"><input type="checkbox" class="form-checkbox h-4 w-4 glass-panel-heavy border-slate-500 rounded text-teal-500 focus:ring-teal-500 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" value="${window.escapeHtml(r)}" ${isChecked ? 'checked' : ''}><span class="ml-2 text-sm">${window.escapeHtml(r)}</span></label>`;
         }
         dropdown.innerHTML = html;
 
