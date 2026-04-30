@@ -11422,11 +11422,12 @@ const supervisorGroups = new Map();
 
             if (excludeFilter !== 'rede') {
                  if (cityRedeGroupFilter === 'com_rede') {
-                    clients = clients.filter(c => c.ramo && c.ramo !== 'N/A');
-                    if (selectedCityRedes.length > 0) {
-                        const redeSet = new Set(selectedCityRedes);
-                        clients = clients.filter(c => redeSet.has(c.ramo));
-                    }
+                    const redeSet = (selectedCityRedes.length > 0) ? new Set(selectedCityRedes) : null;
+                    clients = clients.filter(c => {
+                        if (!c.ramo || c.ramo === 'N/A') return false;
+                        if (redeSet && !redeSet.has(c.ramo)) return false;
+                        return true;
+                    });
                 } else if (cityRedeGroupFilter === 'sem_rede') {
                     clients = clients.filter(c => !c.ramo || c.ramo === 'N/A');
                 }
@@ -12833,10 +12834,11 @@ const supervisorGroups = new Map();
 
             if (comparisonRedeGroupFilter) {
                 if (comparisonRedeGroupFilter === 'com_rede') {
-                    clients = clients.filter(c => c.ramo && c.ramo !== 'N/A');
-                     if (redeSet.size > 0) {
-                        clients = clients.filter(c => redeSet.has(c.ramo));
-                    }
+                    clients = clients.filter(c => {
+                        if (!c.ramo || c.ramo === 'N/A') return false;
+                        if (redeSet && redeSet.size > 0 && !redeSet.has(c.ramo)) return false;
+                        return true;
+                    });
                 } else if (comparisonRedeGroupFilter === 'sem_rede') {
                     clients = clients.filter(c => !c.ramo || c.ramo === 'N/A');
                 }
