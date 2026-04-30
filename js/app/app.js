@@ -478,17 +478,17 @@
             // Inject Content
             dropdown.innerHTML = `
                 <div class="flex flex-col gap-2">
-                    <button class="text-left px-3 py-2 hover:bg-slate-700 rounded text-sm text-white" data-range="current">Mês Atual</button>
+                    <button class="text-left px-3 py-2 hover:bg-slate-700 rounded text-sm text-white focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" data-range="current">Mês Atual</button>
                     <div class="border-t border-slate-600 my-1"></div>
                     <div class="flex flex-col gap-1">
                         <label for="coverage-date-start" class="text-[10px] uppercase text-slate-500 font-bold">Início</label>
-                        <input type="date" id="coverage-date-start" aria-label="Data Inicial da Cobertura" class="bg-slate-800 border border-slate-600 rounded text-xs text-white p-1">
+                        <input type="date" id="coverage-date-start" aria-label="Data Inicial da Cobertura" class="bg-slate-800 border border-slate-600 rounded text-xs text-white p-1 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                     </div>
                     <div class="flex flex-col gap-1">
                         <label for="coverage-date-end" class="text-[10px] uppercase text-slate-500 font-bold">Fim</label>
-                        <input type="date" id="coverage-date-end" aria-label="Data Final da Cobertura" class="bg-slate-800 border border-slate-600 rounded text-xs text-white p-1">
+                        <input type="date" id="coverage-date-end" aria-label="Data Final da Cobertura" class="bg-slate-800 border border-slate-600 rounded text-xs text-white p-1 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                     </div>
-                    <button id="coverage-date-apply" class="mt-2 bg-[#FF5E00] hover:bg-[#CC4A00] text-white font-bold py-1 px-3 rounded text-xs">Aplicar</button>
+                    <button id="coverage-date-apply" class="mt-2 bg-[#FF5E00] hover:bg-[#CC4A00] text-white font-bold py-1 px-3 rounded text-xs focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">Aplicar</button>
                 </div>
             `;
 
@@ -1407,7 +1407,7 @@
             let html = `
                 <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-700/50 mb-1">
                     <span class="text-xs text-orange-400 font-bold uppercase tracking-wider">Selecionar Todos</span>
-                    <input type="checkbox" value="ALL" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                    <input type="checkbox" value="ALL" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                 </label>
             `;
             
@@ -1416,7 +1416,7 @@
                 html += `
                     <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
                         <span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(opt.label)}</span>
-                        <input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                        <input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                     </label>
                 `;
             });
@@ -1581,7 +1581,7 @@
                 html += `
                     <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer">
                         <span class="text-xs text-slate-300 truncate mr-2">${window.escapeHtml(opt.label)}</span>
-                        <input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                        <input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                     </label>
                 `;
             });
@@ -7923,7 +7923,7 @@
                         if (!exportBtn) {
                              const btnContainer = document.createElement('div');
                              btnContainer.className = "flex items-center ml-4";
-                             btnContainer.innerHTML = `<button id="btn-export-goals-gv" class="flex items-center space-x-1 text-xs font-bold text-green-400 hover:text-green-300 border border-green-500/30 hover:border-green-500/50 bg-green-500/10 hover:bg-green-500/20 px-3 py-1.5 rounded transition-colors" title="Exportar tabela completa (XLSX)">
+                             btnContainer.innerHTML = `<button id="btn-export-goals-gv" class="flex items-center space-x-1 text-xs font-bold text-green-400 hover:text-green-300 border border-green-500/30 hover:border-green-500/50 bg-green-500/10 hover:bg-green-500/20 px-3 py-1.5 rounded transition-colors focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" title="Exportar tabela completa (XLSX)">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
@@ -8637,11 +8637,11 @@ const supervisorGroups = new Map();
                             if (col.type === 'standard') {
                                 const isReadOnly = col.isAgg; const inputClass = isReadOnly ? 'text-slate-400 font-bold opacity-70' : 'text-yellow-300'; const readonlyAttr = 'readonly disabled'; const cellBg = isReadOnly ? 'bg-glass' : 'bg-glass';
                                 quarterMonths.forEach(m => bodyHTML += `<td class="px-1 py-1 text-right text-slate-400 border-r border-white/10/50 text-[10px] bg-blue-900/5">${(d.monthlyValues[m.key] || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`);
-                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 bg-blue-900/10 font-medium">${d.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right ${col.colorClass} border-r border-white/10/50 text-xs font-mono">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 ${cellBg} border-r border-white/10/50"><input type="text" autocomplete="off" value="${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none ${inputClass} text-xs font-mono" ${readonlyAttr} aria-label="Meta Faturamento de ${seller.name} para ${col.label}"></td><td class="px-1 py-1 text-center text-slate-300 border-r border-white/10/50">${d.metaPos}</td><td class="px-1 py-1 ${cellBg} border-r border-white/10/50"><input type="text" autocomplete="off" value="${d.metaPos}" class="goals-sv-input bg-transparent text-center w-full outline-none ${inputClass} text-xs font-mono" ${readonlyAttr} aria-label="Meta Positivação de ${seller.name} para ${col.label}"></td>`;
+                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 bg-blue-900/10 font-medium">${d.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right ${col.colorClass} border-r border-white/10/50 text-xs font-mono">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 ${cellBg} border-r border-white/10/50"><input type="text" autocomplete="off" value="${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none ${inputClass} text-xs font-mono focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" ${readonlyAttr} aria-label="Meta Faturamento de ${seller.name} para ${col.label}"></td><td class="px-1 py-1 text-center text-slate-300 border-r border-white/10/50">${d.metaPos}</td><td class="px-1 py-1 ${cellBg} border-r border-white/10/50"><input type="text" autocomplete="off" value="${d.metaPos}" class="goals-sv-input bg-transparent text-center w-full outline-none ${inputClass} text-xs font-mono focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" ${readonlyAttr} aria-label="Meta Positivação de ${seller.name} para ${col.label}"></td>`;
                             } else if (col.type === 'tonnage') {
-                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-mono text-xs">${d.avgVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold font-mono text-xs">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 bg-glass border-r border-white/10/50"><input type="text" autocomplete="off" value="${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled aria-label="Meta Volume de ${seller.name} para ${col.label}"></td>`;
+                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-mono text-xs">${d.avgVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold font-mono text-xs">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 bg-glass border-r border-white/10/50"><input type="text" autocomplete="off" value="${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" readonly disabled aria-label="Meta Volume de ${seller.name} para ${col.label}"></td>`;
                             } else if (col.type === 'mix') {
-                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50">${d.avgMix.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold">${d.metaMix}</td><td class="px-1 py-1 bg-glass border-r border-white/10/50"><input type="text" autocomplete="off" value="${d.metaMix}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono" readonly disabled aria-label="Meta Mix de ${seller.name} para ${col.label}"></td>`;
+                                bodyHTML += `<td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50">${d.avgMix.toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td><td class="px-1 py-1 text-right text-slate-300 border-r border-white/10/50 font-bold">${d.metaMix}</td><td class="px-1 py-1 bg-glass border-r border-white/10/50"><input type="text" autocomplete="off" value="${d.metaMix}" class="goals-sv-input bg-transparent text-right w-full outline-none text-yellow-300 text-xs font-mono focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" readonly disabled aria-label="Meta Mix de ${seller.name} para ${col.label}"></td>`;
                             } else if (col.type === 'geral') {
                                 bodyHTML += `<td class="px-1 py-1 text-right text-slate-400 border-r border-white/10/50 font-mono text-xs">${d.avgFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right text-white font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="fat" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-fat">${d.metaFat.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="px-1 py-1 text-right text-white font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="ton" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-ton">${d.metaVol.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Kg</td><td class="px-1 py-1 text-center text-white font-bold border-r border-white/10/50 font-mono text-xs goals-sv-text" data-sup-id="${sup.id}" data-col-id="geral" data-field="pos" id="geral-${seller.id || seller.name.replace(/\s+/g,'_')}-pos">${d.metaPos}</td>`;
                             } else if (col.type === 'pedev') {
@@ -15210,9 +15210,9 @@ const supervisorGroups = new Map();
 
             let calendarHTML = `
                 <div class="flex justify-between items-center mb-4">
-                    <button id="prev-month-btn" class="p-2 rounded-full hover:bg-slate-600" aria-label="Mês anterior">&lt;</button>
+                    <button id="prev-month-btn" class="p-2 rounded-full hover:bg-slate-600 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" aria-label="Mês anterior">&lt;</button>
                     <h3 class="font-bold text-lg">${monthNames[month]} ${year}</h3>
-                    <button id="next-month-btn" class="p-2 rounded-full hover:bg-slate-600" aria-label="Próximo mês">&gt;</button>
+                    <button id="next-month-btn" class="p-2 rounded-full hover:bg-slate-600 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" aria-label="Próximo mês">&gt;</button>
                 </div>
                 <div class="grid grid-cols-7 gap-1 text-center text-xs text-slate-400 mb-2">
                     <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
@@ -19283,9 +19283,9 @@ const supervisorGroups = new Map();
             importPaginationControls.id = 'import-pagination-controls';
             importPaginationControls.className = 'flex justify-between items-center mt-4 hidden';
             importPaginationControls.innerHTML = `
-                <button id="import-prev-page-btn" aria-label="Página Anterior" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs" disabled>Anterior</button>
+                <button id="import-prev-page-btn" aria-label="Página Anterior" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" disabled>Anterior</button>
                 <span id="import-page-info-text" class="text-slate-400 text-xs">Página 1 de 1</span>
-                <button id="import-next-page-btn" aria-label="Próxima Página" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs" disabled>Próxima</button>
+                <button id="import-next-page-btn" aria-label="Próxima Página" class="bg-slate-700 border border-slate-600 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" disabled>Próxima</button>
             `;
             // Insert after table container (which is inside analysisContainer -> div.bg-slate-900)
             // analysisContainer contains a header div, result div, and then the table container div.
@@ -20819,7 +20819,7 @@ const supervisorGroups = new Map();
                         const div = document.createElement('div');
                         div.className = 'relative aspect-square rounded-lg overflow-hidden border border-slate-700 bg-slate-800';
                         div.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">
-                        <button type="button" class="absolute top-1 right-1 bg-red-600/90 hover:bg-red-500 text-white p-1 rounded-md transition-colors" onclick="window.removeFotoVisita('${type}', ${index})" aria-label="Remover foto">
+                        <button type="button" class="absolute top-1 right-1 bg-red-600/90 hover:bg-red-500 text-white p-1 rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" onclick="window.removeFotoVisita('${type}', ${index})" aria-label="Remover foto">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>`;
                         preview.appendChild(div);
@@ -22735,7 +22735,7 @@ const supervisorGroups = new Map();
             // Inserted below the header, visible on all screens
             filterContainer.className = 'px-4 pb-3 border-b border-slate-800 flex justify-end';
             filterContainer.innerHTML = `
-                <select id="roteiro-promoter-filter" aria-label="Filtrar por Promotor" class="glass-panel-heavy border border-slate-700 text-white text-xs rounded-lg p-2 focus:ring-2 focus:ring-purple-500 w-full sm:w-auto">
+                <select id="roteiro-promoter-filter" aria-label="Filtrar por Promotor" class="glass-panel-heavy border border-slate-700 text-white text-xs rounded-lg p-2 focus:ring-2 focus:ring-purple-500 w-full sm:w-auto focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                     <option value="">Todos os Promotores</option>
                 </select>
             `;
@@ -23434,9 +23434,9 @@ const supervisorGroups = new Map();
             paginationContainer.id = 'clients-pagination';
             paginationContainer.className = 'p-4 flex justify-between items-center glass-panel border-t border-white/10 mt-4';
             paginationContainer.innerHTML = `
-                <button id="client-prev-btn" aria-label="Página Anterior" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Anterior</button>
+                <button id="client-prev-btn" aria-label="Página Anterior" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">Anterior</button>
                 <span id="client-page-info" class="text-slate-400 text-xs font-medium"></span>
-                <button id="client-next-btn" aria-label="Próxima Página" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors">Próxima</button>
+                <button id="client-next-btn" aria-label="Próxima Página" class="glass-panel-heavy hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">Próxima</button>
             `;
             container.parentNode.appendChild(paginationContainer);
 
@@ -24192,7 +24192,7 @@ const supervisorGroups = new Map();
                 <!-- Desktop Columns (Hidden on Mobile) -->
                 <td data-label="Data" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 font-mono">${window.escapeHtml(dateStr)}</td>
                 <td data-label="Pedido" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold">
-                    <button class="text-[#FF5E00] hover:text-[#CC4A00] hover:underline transition-colors order-link font-mono">${window.escapeHtml(order.PEDIDO)}</button>
+                    <button class="text-[#FF5E00] hover:text-[#CC4A00] hover:underline transition-colors order-link font-mono focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">${window.escapeHtml(order.PEDIDO)}</button>
                 </td>
                 <td data-label="Cliente" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3">
                     <div class="text-xs md:text-sm text-white max-w-[120px] md:max-w-none truncate" title="${window.escapeHtml(order.CLIENTE_NOME || '')}">${window.escapeHtml(order.CLIENTE_NOME || 'N/A')}</div>
@@ -24208,7 +24208,7 @@ const supervisorGroups = new Map();
                     <div class="flex flex-col gap-2">
                         <!-- Line 1: Order | Code - Fantasy -->
                         <div class="flex items-center gap-2 overflow-hidden whitespace-nowrap">
-                            <button class="text-[#FF5E00] font-bold font-mono hover:underline order-link shrink-0 text-sm">${window.escapeHtml(order.PEDIDO)}</button>
+                            <button class="text-[#FF5E00] font-bold font-mono hover:underline order-link shrink-0 text-sm focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">${window.escapeHtml(order.PEDIDO)}</button>
                             <span class="text-slate-500 text-sm">|</span>
                             <span class="text-white font-bold truncate text-sm">
                                 ${window.escapeHtml(order.CODCLI)} - ${window.escapeHtml(order.CLIENTE_FANTASIA || order.CLIENTE_NOME || 'N/A')}
@@ -24305,10 +24305,10 @@ const supervisorGroups = new Map();
                             <span class="font-bold text-[#FF5E00]">Est.Cx: ${totalStock}</span>
                         </div>
                         <div class="flex gap-2 mt-3">
-                            <button onclick="window.handleProductAction('promo', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-lime-400 rounded hover:bg-slate-600 border border-slate-600" title="Detalhes Comerciais" aria-label="Detalhes Comerciais"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg></button>
-                            <button class="p-1.5 bg-slate-700 text-red-400 rounded hover:bg-slate-600 border border-slate-600" title="Visualizar Imagem" onclick="window.openImageModal('${imageUrl}', '${window.escapeHtml(desc)} - ${code}')" aria-label="Visualizar Imagem"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
-                            <button onclick="window.handleProductAction('stock', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-blue-400 rounded hover:bg-slate-600 border border-slate-600" title="Estoque" aria-label="Ver Estoque"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg></button>
-                            <button onclick="window.handleProductAction('expand', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-purple-400 rounded hover:bg-slate-600 border border-slate-600 ml-auto" title="Expandir" aria-label="Expandir Detalhes"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg></button>
+                            <button onclick="window.handleProductAction('promo', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-lime-400 rounded hover:bg-slate-600 border border-slate-600 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" title="Detalhes Comerciais" aria-label="Detalhes Comerciais"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg></button>
+                            <button class="p-1.5 bg-slate-700 text-red-400 rounded hover:bg-slate-600 border border-slate-600 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" title="Visualizar Imagem" onclick="window.openImageModal('${imageUrl}', '${window.escapeHtml(desc)} - ${code}')" aria-label="Visualizar Imagem"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
+                            <button onclick="window.handleProductAction('stock', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-blue-400 rounded hover:bg-slate-600 border border-slate-600 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" title="Estoque" aria-label="Ver Estoque"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg></button>
+                            <button onclick="window.handleProductAction('expand', '${window.escapeHtml(code)}')" class="p-1.5 bg-slate-700 text-purple-400 rounded hover:bg-slate-600 border border-slate-600 ml-auto focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" title="Expandir" aria-label="Expandir Detalhes"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg></button>
                         </div>
                     </div>
                 `;
@@ -24976,8 +24976,8 @@ const supervisorGroups = new Map();
                 pastaWrapper.innerHTML = `
                     <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 tracking-wider">Pasta</label>
                     <div class="bg-slate-900 p-1 rounded-lg flex shadow-inner border border-slate-700" id="stock-pasta-toggle-container">
-                        <button class="flex-1 py-1.5 px-2 text-[10px] md:text-xs font-bold rounded-md transition-all duration-200 ${currentPasta === 'PEPSICO' ? 'bg-[#FF5E00] text-white font-bold border-2 border-[#FF5E00] shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'} stock-pasta-btn" data-pasta="PEPSICO">PEPSICO</button>
-                        <button class="flex-1 py-1.5 px-2 text-[10px] md:text-xs font-bold rounded-md transition-all duration-200 ${currentPasta === 'MULTIMARCAS' ? 'bg-[#FF5E00] text-white font-bold border-2 border-[#FF5E00] shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'} stock-pasta-btn" data-pasta="MULTIMARCAS">MULTIMARCAS</button>
+                        <button class="flex-1 py-1.5 px-2 text-[10px] md:text-xs font-bold rounded-md transition-all duration-200 ${currentPasta === 'PEPSICO' ? 'bg-[#FF5E00] text-white font-bold border-2 border-[#FF5E00] shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'} stock-pasta-btn focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" data-pasta="PEPSICO">PEPSICO</button>
+                        <button class="flex-1 py-1.5 px-2 text-[10px] md:text-xs font-bold rounded-md transition-all duration-200 ${currentPasta === 'MULTIMARCAS' ? 'bg-[#FF5E00] text-white font-bold border-2 border-[#FF5E00] shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'} stock-pasta-btn focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" data-pasta="MULTIMARCAS">MULTIMARCAS</button>
                     </div>
                 `;
 
@@ -25189,7 +25189,7 @@ const supervisorGroups = new Map();
                 cats.sort().forEach(c => {
                     const checked = selectedStockCategories.includes(c) ? 'checked' : '';
                     html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
-                                <input type="checkbox" value="${window.escapeHtml(c)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                                <input type="checkbox" value="${window.escapeHtml(c)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                                 <span class="ml-2 text-sm text-slate-300">${window.escapeHtml(c)}</span>
                              </label>`;
                 });
@@ -25303,7 +25303,7 @@ const supervisorGroups = new Map();
             html += `
                 <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
                     <span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(String(p.code))} - ${window.escapeHtml(p.descricao)}</span>
-                    <input type="checkbox" value="${window.escapeHtml(String(p.code))}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800">
+                    <input type="checkbox" value="${window.escapeHtml(String(p.code))}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                 </label>
             `;
         });
@@ -28985,7 +28985,7 @@ const supervisorGroups = new Map();
                 let html = `
                     <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
                         <span class="text-xs text-slate-300 group-hover:text-white transition-colors">Todas</span>
-                        <input type="radio" name="lp-filial" value="all" checked class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                        <input type="radio" name="lp-filial" value="all" checked class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                     </label>
                 `;
 
@@ -28994,7 +28994,7 @@ const supervisorGroups = new Map();
                     html += `
                         <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
                             <span class="text-xs text-slate-300 group-hover:text-white transition-colors">${f}</span>
-                            <input type="radio" name="lp-filial" value="${f}" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                            <input type="radio" name="lp-filial" value="${f}" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                         </label>
                     `;
                 });
@@ -29003,7 +29003,7 @@ const supervisorGroups = new Map();
                 html += `
                     <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
                         <span class="text-xs text-slate-300 group-hover:text-white transition-colors">Desconhecida</span>
-                        <input type="radio" name="lp-filial" value="desconhecida" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00]">
+                        <input type="radio" name="lp-filial" value="desconhecida" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                     </label>
                 `;
 
@@ -29159,7 +29159,7 @@ const supervisorGroups = new Map();
                 const checked = selectedLpResearchers.has(res) ? 'checked' : '';
                 html += `
                 <label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer group border-b border-white/5 last:border-0">
-                    <input type="checkbox" value="${window.escapeHtml(res)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600 shrink-0">
+                    <input type="checkbox" value="${window.escapeHtml(res)}" ${checked} class="form-checkbox h-4 w-4 text-orange-500 rounded bg-slate-700 border-slate-600 shrink-0 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                     <div class="ml-2 flex flex-col min-w-0">
                         <span class="text-xs text-slate-300 truncate font-bold group-hover:text-white transition-colors">${window.escapeHtml(label)}</span>
                         ${subtext ? `<span class="text-[9px] text-slate-500 truncate">${window.escapeHtml(subtext)}</span>` : ''}
@@ -29392,7 +29392,7 @@ const supervisorGroups = new Map();
         const tableFiliais = Array.from(filialMap.keys()).sort();
 
         if (tableFiliais.length === 0) {
-             doc.text("Nenhum dado encontrado.", 14, startY);
+             doc.text("Nenhum dado encontrado para o período ou filtros selecionados..", 14, startY);
         }
 
         tableFiliais.forEach(fKey => {
@@ -29488,7 +29488,7 @@ const supervisorGroups = new Map();
             wrapper.className = 'relative z-20'; 
             wrapper.innerHTML = `
                 <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Pesquisador</label>
-                <button id="lp-researcher-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors">
+                <button id="lp-researcher-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                     <span id="lp-researcher-filter-text">Todos</span>
                     <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
@@ -29827,7 +29827,7 @@ const supervisorGroups = new Map();
         const totalPages = Math.ceil(total / limit) || 1;
 
         if (total === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500">Nenhum dado encontrado.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500">Nenhum dado encontrado para o período ou filtros selecionados..</td></tr>';
             document.getElementById('lp-page-info-text').textContent = '0 de 0';
             return;
         }
@@ -30005,7 +30005,7 @@ const supervisorGroups = new Map();
             let html = '';
             options.forEach(opt => {
                 const checked = selectedSet.has(opt.value) ? 'checked' : '';
-                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
+                html += `<label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-teal-500 rounded bg-slate-700 border-slate-600 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"><span class="ml-2 text-sm text-slate-300 truncate">${window.escapeHtml(opt.label)}</span></label>`;
             });
             dropdown.innerHTML = html;
         }
