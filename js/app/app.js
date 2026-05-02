@@ -8864,9 +8864,6 @@ const supervisorGroups = new Map();
                 const [endYear, endMonth, endDay] = selectedCoverageDateRange.end.split('-');
                 const end = Date.UTC(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay), 23, 59, 59, 999);
 
-                // Combine all data to support filtering past dates that might be in history
-                const allCombinedData = [...sales, ...history];
-
                 // Calculate Proportional Previous Month Range
                 // Re-calculate strictly based on UTC
                 const [sYear, sMonth, sDay] = selectedCoverageDateRange.start.split('-').map(Number);
@@ -8890,19 +8887,29 @@ const supervisorGroups = new Map();
                 const clampedEndDay = Math.min(eDay, daysInPrevEndMonth);
                 const pEnd = Date.UTC(pEndYear, pEndMonth, clampedEndDay, 23, 59, 59, 999);
 
-                // Filter Sales (Current selected date range)
-                sales = allCombinedData.filter(s => {
-                    let d = s.DTPED;
-                    if (typeof d !== 'number') d = parseDate(d)?.getTime() || 0;
-                    return d >= start && d <= end;
-                });
+                // ⚡ Bolt Optimization: Replace chained .filter() array allocations with a single O(N) pass loop
+                const newSales = [];
+                const newHistory = [];
 
-                // Filter History (Proportional previous month date range)
-                history = allCombinedData.filter(s => {
-                    let d = s.DTPED;
-                    if (typeof d !== 'number') d = parseDate(d)?.getTime() || 0;
-                    return d >= pStart && d <= pEnd;
-                });
+                const processArray = (arr) => {
+                    for (let i = 0; i < arr.length; i++) {
+                        const s = arr[i];
+                        let d = s.DTPED;
+                        if (typeof d !== 'number') d = parseDate(d)?.getTime() || 0;
+                        if (d >= start && d <= end) {
+                            newSales.push(s);
+                        }
+                        if (d >= pStart && d <= pEnd) {
+                            newHistory.push(s);
+                        }
+                    }
+                };
+
+                processArray(sales);
+                processArray(history);
+
+                sales = newSales;
+                history = newHistory;
             }
 
             // Price Filter (Min/Max Unit Price)
