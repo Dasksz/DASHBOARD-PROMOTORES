@@ -29018,47 +29018,15 @@ const supervisorGroups = new Map();
         }
 
         function setupLpResearcherFilterHandlers() {
-        const btn = document.getElementById('lp-researcher-filter-btn');
-        const dropdown = document.getElementById('lp-researcher-filter-dropdown');
-        const wrapper = document.getElementById('lp-researcher-filter-wrapper');
-
-        if (btn && dropdown) {
-            // Remove old listeners (cloning technique)
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-
-            newBtn.onclick = (e) => {
-                e.stopPropagation();
-                dropdown.classList.toggle('hidden');
-                if (wrapper) {
-                        if (dropdown.classList.contains('hidden')) wrapper.classList.remove('z-50');
-                        else wrapper.classList.add('z-50');
-                }
-            };
-
-            dropdown.onchange = (e) => {
-                if (e.target.type === 'checkbox') {
-                    const val = e.target.value;
-                    if (e.target.checked) selectedLpResearchers.add(val);
-                    else selectedLpResearchers.delete(val);
-
+        if (typeof window.setupGenericCheckboxFilterHandlers === 'function') {
+            window.setupGenericCheckboxFilterHandlers(
+                'lp-researcher',
+                selectedLpResearchers,
+                () => {
                     updateFilterButtonText(document.getElementById('lp-researcher-filter-text'), selectedLpResearchers, 'Todos');
                     handleLpFilterChange({ excludeFilter: 'researcher' });
                 }
-            };
-
-            // Global Close
-                if (!document._lpResearcherFilterListener) {
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('#lp-researcher-filter-wrapper')) {
-                        dropdown.classList.add('hidden');
-                        if(wrapper) wrapper.classList.remove('z-50');
-                    }
-                });
-
-
-                document._lpResearcherFilterListener = true;
-            }
+            );
         }
         updateLpResearcherFilter();
     }
