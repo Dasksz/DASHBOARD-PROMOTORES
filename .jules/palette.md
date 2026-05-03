@@ -31,3 +31,7 @@
 ## 2024-12-05 - Focus-visible on all buttons and inputs
 **Learning:** Found that most interactive elements (`<button>` and `<input>`) did not have the `focus-visible` classes, hurting keyboard accessibility.
 **Action:** Added `focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900` to all `<button>`, `<input>`, `<select>`, and `<textarea>` elements across `index.html` and javascript files that generate html strings (`app.js`, `feed_view.js`, `utils.js`).
+
+## 2026-05-03 - Invalid Label tags on UI Groups
+**Learning:** Found multiple instances where custom UI groups (like filter button sets mapped to a `<div role="group">`) were incorrectly labelled using a `<label>` tag. In HTML, the `for` attribute of a `<label>` can only point to valid labelable form elements (`<input>`, `<select>`, `<textarea>`), meaning custom `div` groups were missing their accessible names for screen readers.
+**Action:** When creating custom filter groups, use a `<span id="...">` for the descriptive text and apply `aria-labelledby="..."` directly to the `role="group"` container `<div>` to ensure screen readers correctly announce the group's name.
