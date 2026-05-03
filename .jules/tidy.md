@@ -15,3 +15,6 @@
 ## 2024-05-18 : (Setup Checkbox Filter Refactoring)
 **Aprendizado:** Found duplicated checkbox setup logic across components, including `lp-researcher-filter-dropdown`.
 **Ação:** Refactored into a reusable `window.setupGenericCheckboxFilterHandlers` utility function in `js/app/utils.js` which handles button clicks, dropdown changes, updating button texts, and closing when clicking outside. Replaced repetitive `lpResearcherFilterHandlers` logic with a single call to the new generic function.
+## 2024/05/20 : (Generic Rede Filter Handlers Refactoring for titulos and lp views)
+**Aprendizado:** Found additional duplicated `setup[View]RedeFilterHandlers` logic blocks for the 'titulos' and 'lp' views in `js/app/app.js` involving boilerplate for dropdowns, click-outside closing, and calling update functions.
+**Ação:** Refactored by extracting the repetitive rede filter logic into the generic global `window.setupGenericRedeFilterHandlers` in `js/app/utils.js` for 'titulos' and 'lp' views, reducing technical debt.
