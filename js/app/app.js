@@ -7736,7 +7736,7 @@
                                         window.showToast('warning', `O valor não pode ultrapassar a Meta de Positivação PEPSICO definida (${pepsicoLimit.toLocaleString('pt-BR')}).\n(Natural: ${pepsicoNaturalPos}, Ajuste PEPSICO: ${pepsicoAdj})`);
                                         return;
                                     }
-                                    showConfirmationModal(`Confirmar ajuste de Meta Positivação para ${valStr} (Cliente: ${filterDesc})?`, () => {
+                                    showConfirmationModal(`Confirmar ajuste de Meta Positivação para ${window.escapeHtml(valStr)} (Cliente: ${filterDesc})?`, () => {
                                         const newAdjustment = val - naturalTotalPos;
                                         if (adjustmentMap) {
                                             updateGoalsView();
@@ -7847,7 +7847,7 @@
 
 
                                         } else {
-                                            showConfirmationModal(`Confirmar ajuste de Meta Mix ${type === 'salty' ? 'Salty' : 'Foods'} para ${valStr} (Vendedor: ${getFirstName(sellerName)})?`, () => {
+                                            showConfirmationModal(`Confirmar ajuste de Meta Mix ${type === 'salty' ? 'Salty' : 'Foods'} para ${window.escapeHtml(valStr)} (Vendedor: ${getFirstName(sellerName)})?`, () => {
                                                 saveMixAdjustment(type, val, sellerName);
                                             });
 
@@ -9552,12 +9552,12 @@ const supervisorGroups = new Map();
                         if (cityContainer) cityContainer.classList.remove('hidden');
                         if (sellerContainer) sellerContainer.classList.add('hidden');
                         if (toggleBtn) toggleBtn.textContent = `Ver ${targetLabel}`;
-                        if (chartTitle) chartTitle.innerHTML = `<span>Top ${chartLimit} Cidades${currentCoverageMetricMode === "revenue" ? " - Faturamento" : ""}</span> <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-current opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
+                        if (chartTitle) chartTitle.innerHTML = `<span>Top ${window.escapeHtml(chartLimit.toString())} Cidades${currentCoverageMetricMode === "revenue" ? " - Faturamento" : ""}</span> <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-current opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
                     } else {
                         if (cityContainer) cityContainer.classList.add('hidden');
                         if (sellerContainer) sellerContainer.classList.remove('hidden');
                         if (toggleBtn) toggleBtn.textContent = 'Ver Cidades';
-                        if (chartTitle) chartTitle.innerHTML = `<span>Ranking de ${targetLabel}${currentCoverageMetricMode === "revenue" ? " - Faturamento" : ""}</span> <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-current opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
+                        if (chartTitle) chartTitle.innerHTML = `<span>Ranking de ${window.escapeHtml(targetLabel)}${currentCoverageMetricMode === "revenue" ? " - Faturamento" : ""}</span> <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-current opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
                     }
                 }
             }, () => currentRenderId !== coverageRenderId);
@@ -9842,7 +9842,7 @@ const supervisorGroups = new Map();
             const container = document.getElementById(canvasId + 'Container');
             if(container) {
                 container.style.display = 'flex'; container.style.alignItems = 'center'; container.style.justifyContent = 'center';
-                container.innerHTML = `<p class="text-slate-500">${message}</p>`;
+                container.innerHTML = `<p class="text-slate-500">${window.escapeHtml(message)}</p>`;
             }
         }
 
@@ -15009,7 +15009,7 @@ const supervisorGroups = new Map();
             }
 
             modalPedidoId.textContent = pedidoId + (itemsDoPedido.length > 0 && itemsDoPedido[0].TIPOVENDA ? ' (Tipo ' + itemsDoPedido[0].TIPOVENDA + ')' : '');
-            modalHeaderInfo.innerHTML = `<div><p class="font-bold">Cód. Cliente:</p><p>${window.escapeHtml(orderInfo.CODCLI || 'N/A')}</p></div><div><p class="font-bold">Cliente:</p><p>${window.escapeHtml(orderInfo.CLIENTE_NOME || orderInfo.CLIENTE || 'N/A')}</p></div><div><p class="font-bold">Vendedor:</p><p>${window.escapeHtml(orderInfo.NOME || orderInfo.VENDEDOR || 'N/A')}</p></div><div><p class="font-bold">Data Pedido:</p><p>${formatDate(orderInfo.DTPED)}</p></div><div><p class="font-bold">Data Faturamento:</p><p>${formatDate(orderInfo.DTSAIDA)}</p></div><div><p class="font-bold">Cidade:</p><p>${window.escapeHtml(orderInfo.CIDADE || 'N/A')}</p></div>`;
+            modalHeaderInfo.innerHTML = `<div><p class="font-bold">Cód. Cliente:</p><p>${window.escapeHtml(orderInfo.CODCLI || 'N/A')}</p></div><div><p class="font-bold">Cliente:</p><p>${window.escapeHtml(orderInfo.CLIENTE_NOME || orderInfo.CLIENTE || 'N/A')}</p></div><div><p class="font-bold">Vendedor:</p><p>${window.escapeHtml(orderInfo.NOME || orderInfo.VENDEDOR || 'N/A')}</p></div><div><p class="font-bold">Data Pedido:</p><p>${window.escapeHtml(formatDate(orderInfo.DTPED))}</p></div><div><p class="font-bold">Data Faturamento:</p><p>${window.escapeHtml(formatDate(orderInfo.DTSAIDA))}</p></div><div><p class="font-bold">Cidade:</p><p>${window.escapeHtml(orderInfo.CIDADE || 'N/A')}</p></div>`;
 
             let modalHtml = '';
             for (let i = 0; i < itemsDoPedido.length; i++) {
@@ -15115,7 +15115,7 @@ const supervisorGroups = new Map();
             const ramo = getVal(clientData, ['Descricao', 'ramo', 'DESCRICAO', 'Descricao']) || 'N/A';
             const ultimaCompra = getVal(clientData, ['Data da Última Compra', 'ultimaCompra', 'ULTIMACOMPRA']);
 
-            clientModalContent.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm"><div><p class="font-bold text-slate-400">Código:</p><p>${window.escapeHtml(clientData['Código'] || 'N/A')}</p></div><div><p class="font-bold text-slate-400">CNPJ/CPF:</p><p>${window.escapeHtml(cnpj)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Insc. Est. / Produtor:</p><p>${window.escapeHtml(insc)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Razão Social:</p><p>${window.escapeHtml(razao)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Nome Fantasia:</p><p>${window.escapeHtml(fantasia)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Endereço:</p><p>${window.escapeHtml(finalAddress)}</p></div><div><p class="font-bold text-slate-400">Bairro:</p><p>${window.escapeHtml(bairro)}</p></div><div><p class="font-bold text-slate-400">Cidade:</p><p>${window.escapeHtml(cidade)}</p></div><div><p class="font-bold text-slate-400">CEP:</p><p>${window.escapeHtml(cep)}</p></div><div><p class="font-bold text-slate-400">Telefone:</p><p>${window.escapeHtml(telefone)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">E-mail:</p><p>${window.escapeHtml(email)}</p></div><div><p class="font-bold text-slate-400">Ramo de Atividade:</p><p>${window.escapeHtml(ramo)}</p></div><div><p class="font-bold text-slate-400">Última Compra:</p><p>${formatDate(ultimaCompra)}</p></div></div>`;
+            clientModalContent.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm"><div><p class="font-bold text-slate-400">Código:</p><p>${window.escapeHtml(clientData['Código'] || 'N/A')}</p></div><div><p class="font-bold text-slate-400">CNPJ/CPF:</p><p>${window.escapeHtml(cnpj)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Insc. Est. / Produtor:</p><p>${window.escapeHtml(insc)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Razão Social:</p><p>${window.escapeHtml(razao)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Nome Fantasia:</p><p>${window.escapeHtml(fantasia)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">Endereço:</p><p>${window.escapeHtml(finalAddress)}</p></div><div><p class="font-bold text-slate-400">Bairro:</p><p>${window.escapeHtml(bairro)}</p></div><div><p class="font-bold text-slate-400">Cidade:</p><p>${window.escapeHtml(cidade)}</p></div><div><p class="font-bold text-slate-400">CEP:</p><p>${window.escapeHtml(cep)}</p></div><div><p class="font-bold text-slate-400">Telefone:</p><p>${window.escapeHtml(telefone)}</p></div><div class="md:col-span-2"><p class="font-bold text-slate-400">E-mail:</p><p>${window.escapeHtml(email)}</p></div><div><p class="font-bold text-slate-400">Ramo de Atividade:</p><p>${window.escapeHtml(ramo)}</p></div><div><p class="font-bold text-slate-400">Última Compra:</p><p>${window.escapeHtml(formatDate(ultimaCompra))}</p></div></div>`;
             clientModal.classList.remove('hidden');
         }
 
@@ -17870,7 +17870,7 @@ const supervisorGroups = new Map();
                 btnDistributeMixSalty.addEventListener('click', () => {
                     if (!sellerName) return;
                     const valStr = document.getElementById('goal-global-mix-salty').value;
-                    showConfirmationModal(`Confirmar ajuste de Meta Mix Salty para ${valStr} (Vendedor: ${getFirstName(sellerName)})?`, () => {
+                    showConfirmationModal(`Confirmar ajuste de Meta Mix Salty para ${window.escapeHtml(valStr)} (Vendedor: ${getFirstName(sellerName)})?`, () => {
                         const val = parseFloat(valStr.replace(/\./g, '').replace(',', '.')) || 0;
 
                         // Calculate Natural Base again to store Delta
@@ -17901,7 +17901,7 @@ const supervisorGroups = new Map();
                 btnDistributeMixFoods.addEventListener('click', () => {
                     if (!sellerName) return;
                     const valStr = document.getElementById('goal-global-mix-foods').value;
-                    showConfirmationModal(`Confirmar ajuste de Meta Mix Foods para ${valStr} (Vendedor: ${getFirstName(sellerName)})?`, () => {
+                    showConfirmationModal(`Confirmar ajuste de Meta Mix Foods para ${window.escapeHtml(valStr)} (Vendedor: ${getFirstName(sellerName)})?`, () => {
                         const val = parseFloat(valStr.replace(/\./g, '').replace(',', '.')) || 0;
                         saveMixAdjustment('foods', val, sellerName);
                     });
@@ -19347,9 +19347,9 @@ const supervisorGroups = new Map();
                         <td class="px-4 py-2 text-xs text-slate-300">${window.escapeHtml(sellerCode)}</td>
                         <td class="px-4 py-2 text-xs text-slate-400">${window.escapeHtml(u.seller)}</td>
                         <td class="px-4 py-2 text-xs text-blue-300">${window.escapeHtml(displayCategory)}</td>
-                        <td class="px-4 py-2 text-xs text-slate-400 font-mono text-right">${currentValStr}</td>
-                        <td class="px-4 py-2 text-xs text-white font-bold font-mono text-right">${newValStr}</td>
-                        <td class="px-4 py-2 text-xs font-mono text-right" style="color: ${diffColor}; font-weight: ${diffWeight};">${diff > 0 ? '+' : ''}${diffStr}</td>
+                        <td class="px-4 py-2 text-xs text-slate-400 font-mono text-right">${window.escapeHtml(currentValStr)}</td>
+                        <td class="px-4 py-2 text-xs text-white font-bold font-mono text-right">${window.escapeHtml(newValStr)}</td>
+                        <td class="px-4 py-2 text-xs font-mono text-right" style="color: ${diffColor}; font-weight: ${diffWeight};">${diff > 0 ? '+' : ''}${window.escapeHtml(diffStr)}</td>
                         <td class="px-4 py-2 text-center text-xs"><span class="px-2 py-1 rounded-full bg-blue-900/50 text-blue-200 text-[10px]">Importar</span></td>
                     `;
                     analysisBody.appendChild(row);
@@ -19507,7 +19507,7 @@ const supervisorGroups = new Map();
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <p class="text-slate-300 font-medium animate-pulse">Carregando ${file.name}...</p>
+                            <p class="text-slate-300 font-medium animate-pulse">Carregando ${window.escapeHtml(file.name)}...</p>
                         </div>
                     `;
                 }
@@ -19530,7 +19530,7 @@ const supervisorGroups = new Map();
                             dropZone.innerHTML = `
                                 <svg class="w-12 h-12 text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                 <p class="text-green-400 font-bold mb-2">Sucesso!</p>
-                                <p class="text-slate-400 text-sm">${file.name} carregado.</p>
+                                <p class="text-slate-400 text-sm">${window.escapeHtml(file.name)} carregado.</p>
                             `;
                         }
 
@@ -20862,7 +20862,7 @@ const supervisorGroups = new Map();
                     }
 
                     if (file.size > 5 * 1024 * 1024) {
-                        if (window.showToast) window.showToast('error', `A imagem ${file.name} ainda excede o limite de 5MB após compressão.`);
+                        if (window.showToast) window.showToast('error', `A imagem ${window.escapeHtml(file.name)} ainda excede o limite de 5MB após compressão.`);
                         continue;
                     }
                     state.fotos[type].push(file);
@@ -20912,7 +20912,7 @@ const supervisorGroups = new Map();
             div.className = 'flex justify-between items-center p-3 hover:bg-slate-700 cursor-pointer transition-colors border-b border-slate-700/50 last:border-0';
             div.dataset.value = opt;
             div.innerHTML = `
-                <span class="text-sm text-white select-none">${opt}</span>
+                <span class="text-sm text-white select-none">${window.escapeHtml(opt)}</span>
                 <svg class="w-4 h-4 text-white hidden check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
             `;
 
@@ -21804,7 +21804,7 @@ const supervisorGroups = new Map();
             
             if (next) {
                 const options = { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' };
-                calcPreview.innerHTML = `Próximo atendimento previsto: <strong class="text-white">${next.toLocaleDateString('pt-BR', options)}</strong>`;
+                calcPreview.innerHTML = `Próximo atendimento previsto: <strong class="text-white">${window.escapeHtml(next.toLocaleDateString('pt-BR', options))}</strong>`;
             } else {
                 calcPreview.textContent = 'Não foi possível calcular.';
             }
@@ -22007,7 +22007,7 @@ const supervisorGroups = new Map();
                     <td class="px-4 py-2 capitalize text-slate-300 w-1/3">
                         <div class="flex items-center gap-1">
                             <svg class="w-3 h-3 text-slate-500 transition-transform duration-200 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                            ${monthName}
+                            ${window.escapeHtml(monthName)}
                         </div>
                     </td>
                     <td class="px-2 py-2 text-right font-mono font-bold text-white">${val.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
@@ -22096,7 +22096,7 @@ const supervisorGroups = new Map();
             let totalVal = 0;
             
             if (sorted.length === 0) {
-                container.innerHTML = `<div class="text-center text-slate-500 py-4 text-xs">${emptyMsg}</div>`;
+                container.innerHTML = `<div class="text-center text-slate-500 py-4 text-xs">${window.escapeHtml(emptyMsg)}</div>`;
                 totalEl.textContent = 'R$ 0,00';
                 return;
             }
@@ -22116,7 +22116,7 @@ const supervisorGroups = new Map();
                 header.innerHTML = `
                     <span class="text-sm font-bold text-slate-300 capitalize flex items-center gap-2">
                         <svg class="w-4 h-4 text-slate-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        ${monthName}
+                        ${window.escapeHtml(monthName)}
                     </span>
                     <span class="text-sm font-mono font-bold text-white">${data.value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span>
                 `;
@@ -24209,7 +24209,7 @@ const supervisorGroups = new Map();
                 </td>
                 <td data-label="Vendedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell truncate max-w-[100px]" title="${window.escapeHtml(order.NOME || '')}">${window.escapeHtml(order.NOME || '-')}</td>
                 <td data-label="Fornecedor" class="px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(order.CODFOR || '-')}</td>
-                <td data-label="Valor" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold text-right">${valStr}</td>
+                <td data-label="Valor" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3 text-xs md:text-sm text-white font-bold text-right">${window.escapeHtml(valStr)}</td>
                 <td data-label="Status" class="hidden md:table-cell px-2 py-1.5 md:px-2 md:py-3 text-[10px] md:text-xs text-center ${statusColor}">${window.escapeHtml(statusText)}</td>
 
                 <!-- Mobile Layout (Custom Row) -->
@@ -24294,7 +24294,7 @@ const supervisorGroups = new Map();
                 item.innerHTML = `
                     <div class="shrink-0 w-16 h-16 bg-white/5 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center">
                         <img
-                            src="${imageUrl}"
+                            src="${window.escapeHtml(imageUrl)}"
                             alt="${window.escapeHtml(desc)}"
                             class="w-full h-full object-contain"
                             loading="lazy"
@@ -25571,7 +25571,7 @@ const supervisorGroups = new Map();
             const tr = document.createElement('tr');
             tr.className = "border-b border-slate-700/50 hover:bg-white/5";
 
-            let nameCol = `<td class="py-1 truncate max-w-[100px] text-[10px] md:text-xs" title="${d.name}">${d.code} - ${d.name}</td>`;
+            let nameCol = `<td class="py-1 truncate max-w-[100px] text-[10px] md:text-xs" title="${window.escapeHtml(d.name)}">${window.escapeHtml(d.code)} - ${window.escapeHtml(d.name)}</td>`;
 
             let cols = '';
             if (type === 'lost') {
@@ -25632,15 +25632,15 @@ const supervisorGroups = new Map();
              
              tr.innerHTML = `
                 <!-- Product: Visible Mobile (Truncated) -->
-                <td class="px-2 py-2 text-[10px] md:text-xs text-white max-w-[120px] md:max-w-[200px]" title="${d.name}">
+                <td class="px-2 py-2 text-[10px] md:text-xs text-white max-w-[120px] md:max-w-[200px]" title="${window.escapeHtml(d.name)}">
                     <div class="flex items-center gap-1">
-                        <span class="font-mono text-slate-400 text-[9px] md:text-[10px] leading-tight shrink-0">${d.code}</span>
-                        <span class="truncate leading-tight min-w-0">${d.name}</span>
+                        <span class="font-mono text-slate-400 text-[9px] md:text-[10px] leading-tight shrink-0">${window.escapeHtml(d.code)}</span>
+                        <span class="truncate leading-tight min-w-0">${window.escapeHtml(d.name)}</span>
                     </div>
                 </td>
 
                 <!-- Supplier: Hidden Mobile -->
-                <td class="px-4 py-2 text-xs text-slate-400 hidden md:table-cell">${d.supplier}</td>
+                <td class="px-4 py-2 text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(d.supplier)}</td>
 
                 <!-- Stock: Visible Mobile (Left Aligned on Mobile) -->
                 <td class="px-2 py-2 text-[10px] md:text-xs text-left md:text-right font-mono text-blue-300 font-bold">${d.stock.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
