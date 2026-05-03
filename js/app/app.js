@@ -16170,12 +16170,15 @@ const supervisorGroups = new Map();
 
             if (!indices || indices.length === 0) return [];
 
+            // ⚡ Bolt Optimization: Pre-calculate regex string operations outside the hot loop
+            const cleanTerms = terms.map(term => term.replace(/[^a-z0-9]/g, ''));
+
             for (let i = 0; i < indices.length; i++) {
                 const idx = indices[i];
                 if (!idx) continue;
 
-                const match = terms.every(term => {
-                    const cleanTerm = term.replace(/[^a-z0-9]/g, '');
+                const match = terms.every((term, tIdx) => {
+                    const cleanTerm = cleanTerms[tIdx];
                     return (
                         (idx.code && idx.code.includes(cleanTerm)) ||
                         (idx.nameLower && idx.nameLower.includes(term)) ||

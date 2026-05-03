@@ -14,3 +14,6 @@
 ## 2024-04-30 - Avoid throwing away intermediate sets/arrays in chained Array.filter() calls
 **Learning:** Chaining `.filter()` array methods that first filter a list by one condition, and then subsequently re-filter the newly created array against a Set allocates redundant arrays which are immediately thrown away, causing garbage collection pauses.
 **Action:** Consolidate filtering conditions into a single pass loop using early returns or single evaluation blocks. For example, evaluate `!item.prop || item.prop === 'N/A'` and `!mySet.has(item.prop)` inside a single `.filter()` callback.
+## 2024-05-24 - Pre-calculate derived variables outside hot search loops
+**Learning:** Performing regex string manipulation (like `term.replace(/[^a-z0-9]/g, '')`) inside an `Array.every` callback that runs inside a massive `for` loop (e.g. iterating over 10k+ indices) recalculates the same value O(N * M) times. This causes significant, unnecessary CPU overhead during typeahead or search features.
+**Action:** Pre-calculate any derived values (like cleaned search terms) into an array or map *before* entering the main data iteration loop, then look them up by index inside the loop.
