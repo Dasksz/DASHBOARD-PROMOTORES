@@ -14,3 +14,7 @@
 ## 2024-04-30 - Avoid throwing away intermediate sets/arrays in chained Array.filter() calls
 **Learning:** Chaining `.filter()` array methods that first filter a list by one condition, and then subsequently re-filter the newly created array against a Set allocates redundant arrays which are immediately thrown away, causing garbage collection pauses.
 **Action:** Consolidate filtering conditions into a single pass loop using early returns or single evaluation blocks. For example, evaluate `!item.prop || item.prop === 'N/A'` and `!mySet.has(item.prop)` inside a single `.filter()` callback.
+
+## 2025-05-15 - Parallelize sequential I/O in Edge Functions
+**Learning:** Performing sequential await calls (like Storage deletion and DB updates) within a loop in Supabase Edge Functions creates significant latency. Converting these to concurrent operations using `Promise.all()` reduces total execution time from $O(N)$ to approximately $O(1)$ batch time.
+**Action:** Map the dataset to an array of async promises and await them concurrently using `Promise.all()`, aggregating results safely after resolution.
