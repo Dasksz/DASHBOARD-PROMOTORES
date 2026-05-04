@@ -82,7 +82,7 @@ serve(async (req) => {
 
         console.log(`[CLEANUP] Found ${visitsToCleanup.length} old visits to cleanup for client ${client_code}.`)
 
-        for (const oldVisit of visitsToCleanup) {
+        const cleanupPromises = visitsToCleanup.map(async (oldVisit) => {
             const respostas = oldVisit.respostas
             const filesToDeleteFromStorage = []
 
@@ -124,6 +124,9 @@ serve(async (req) => {
                  }
             }
 
+            let filesDeletedCount = 0
+            let deleteErrorResult = null
+
             // A. Delete from Storage bucket
             if (finalStoragePaths.length > 0) {
                 const { error: deleteError } = await supabase
@@ -133,9 +136,9 @@ serve(async (req) => {
 
                 if (deleteError) {
                     console.error(`[CLEANUP] Failed to delete storage files for visit ${oldVisit.id}:`, deleteError)
-                    filesFailedToDelete.push({ visitId: oldVisit.id, error: deleteError })
+                    deleteErrorResult = deleteError
                 } else {
-                    totalFilesDeleted += finalStoragePaths.length
+                    filesDeletedCount = finalStoragePaths.length
                     console.log(`[CLEANUP] Deleted ${finalStoragePaths.length} files for visit ${oldVisit.id}.`)
                 }
             }
@@ -156,11 +159,31 @@ serve(async (req) => {
                 .update({ respostas: updatedRespostas })
                 .eq('id', oldVisit.id)
 
+            let visitUpdatedId = null
             if (updateError) {
                 console.error(`[CLEANUP] Failed to update DB record for visit ${oldVisit.id}:`, updateError)
             } else {
-                visitsUpdated.push(oldVisit.id)
+                visitUpdatedId = oldVisit.id
                 console.log(`[CLEANUP] Updated JSON for visit ${oldVisit.id}.`)
+            }
+
+            return {
+                visitId: oldVisit.id,
+                filesDeletedCount,
+                deleteError: deleteErrorResult,
+                visitUpdatedId
+            }
+        })
+
+        const results = await Promise.all(cleanupPromises)
+
+        for (const res of results) {
+            totalFilesDeleted += res.filesDeletedCount
+            if (res.deleteError) {
+                filesFailedToDelete.push({ visitId: res.visitId, error: res.deleteError })
+            }
+            if (res.visitUpdatedId) {
+                visitsUpdated.push(res.visitUpdatedId)
             }
         }
 
