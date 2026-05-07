@@ -29907,36 +29907,16 @@ const supervisorGroups = new Map();
                 );
                 
                 // SV Tab (Supervisor only)
-                const svSupBtn = document.getElementById('goals-sv-supervisor-filter-btn');
-                const svSupDropdown = document.getElementById('goals-sv-supervisor-filter-dropdown');
-                if(svSupBtn && svSupDropdown) {
-                    const newBtn = svSupBtn.cloneNode(true);
-                    svSupBtn.parentNode.replaceChild(newBtn, svSupBtn);
-
-                    newBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        svSupDropdown.classList.toggle('hidden');
-                    };
-                    svSupDropdown.onchange = (e) => {
-                        if (e.target.type === 'checkbox') {
-                            const val = e.target.value;
-                            if(e.target.checked) selectedGoalsSvSupervisors.add(val);
-                            else selectedGoalsSvSupervisors.delete(val);
-
+                // Replaced repetitive dropdown toggle logic and cloneNode with generic checkbox filter handler
+                if (typeof window.setupGenericCheckboxFilterHandlers === 'function') {
+                    window.setupGenericCheckboxFilterHandlers(
+                        'goals-sv-supervisor',
+                        selectedGoalsSvSupervisors,
+                        () => {
                             updateFilterButtonText(document.getElementById('goals-sv-supervisor-filter-text'), selectedGoalsSvSupervisors, 'Todos');
                             if (typeof updateGoalsSvView === 'function') updateGoalsSvView();
                         }
-                    };
-                    
-                    // Close listener for SV Tab
-                    if (!document._goalsSvFilterListener) {
-                        document.addEventListener('click', (e) => {
-                            if (!e.target.closest('#goals-sv-supervisor-filter-wrapper')) {
-                                document.getElementById('goals-sv-supervisor-filter-dropdown')?.classList.add('hidden');
-                            }
-                        });
-                        document._goalsSvFilterListener = true;
-                    }
+                    );
                 }
                 updateGoalsSvSupervisorFilter();
             }

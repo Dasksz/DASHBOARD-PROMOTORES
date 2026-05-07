@@ -15,3 +15,6 @@
 ## 2024-05-18 : (Setup Checkbox Filter Refactoring)
 **Aprendizado:** Found duplicated checkbox setup logic across components, including `lp-researcher-filter-dropdown`.
 **Ação:** Refactored into a reusable `window.setupGenericCheckboxFilterHandlers` utility function in `js/app/utils.js` which handles button clicks, dropdown changes, updating button texts, and closing when clicking outside. Replaced repetitive `lpResearcherFilterHandlers` logic with a single call to the new generic function.
+## 2024-06-25 : (SV Tab Checkbox Filter Refactoring)
+**Aprendizado:** The SV tab inside the Goals view maintained duplicate logic for rendering and handling checkbox dropdowns, including the unsafe `node.cloneNode(true)` which clears external event listeners.
+**Ação:** Refactored this using the standard `window.setupGenericCheckboxFilterHandlers` from `js/app/utils.js`, which handles visibility toggling, state updates via a Set, and custom UI callbacks safely without destroying event listeners.
