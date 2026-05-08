@@ -15862,7 +15862,7 @@ const supervisorGroups = new Map();
                     // Fetch IDs in batches and delete them
                     console.log(`[ClearTable] Iniciando exclusão em lote para ${table}...`);
                     let hasMore = true;
-                    const chunkSize = 5000;
+                    const chunkSize = 100;
 
                     while (hasMore) {
                         // Fetch a chunk of IDs
@@ -16037,23 +16037,25 @@ const supervisorGroups = new Map();
                 };
 
                 // Helper to perform conditional upload
-                const conditionalUpload = async (table, dataPart, hashKey, isCol, pk = 'id', onConflictKey = null) => {
+                const conditionalUpload = async (table, dataPart, hashKey, isCol, pk = 'id', onConflictKey = null, forceClearAndUpload = false) => {
                     if (dataPart && (isCol ? dataPart.length > 0 : dataPart.length > 0)) {
                         // Check if table is empty (Force upload if empty)
-                        let forceUpload = false;
-                        try {
-                             const { data, error } = await window.supabaseClient
-                                .from(table)
-                                .select(pk)
-                                .limit(1);
-                             if (!error && data && data.length === 0) {
-                                 forceUpload = true;
-                                 console.log(`[Upload] Table ${table} is empty. Forcing upload.`);
-                             }
-                        } catch(e) {}
+                        let forceUpload = forceClearAndUpload;
+                        if (!forceUpload) {
+                            try {
+                                 const { data, error } = await window.supabaseClient
+                                    .from(table)
+                                    .select(pk)
+                                    .limit(1);
+                                 if (!error && data && data.length === 0) {
+                                     forceUpload = true;
+                                     console.log(`[Upload] Table ${table} is empty. Forcing upload.`);
+                                 }
+                            } catch(e) {}
+                        }
 
                         // checkHash returns FALSE if match (skip), TRUE if mismatch (upload)
-                        if (checkHash(hashKey, null) || forceUpload) {
+                        if (forceUpload || checkHash(hashKey, null)) {
                             await clearTable(table, pk);
                             await uploadBatchParallel(table, dataPart, isCol, onConflictKey);
                         } else {
@@ -16064,7 +16066,10 @@ const supervisorGroups = new Map();
 
                 const forbiddenDimCols = ['DESCRICAO', 'NOME', 'SUPERV', 'FORNECEDOR', 'OBSERVACAOFOR'];
                 await conditionalUpload('data_detailed', sanitizeColumnarForUpload(data.detailed, forbiddenDimCols), 'hash_detailed', true);
-                await conditionalUpload('data_history', sanitizeColumnarForUpload(data.history, forbiddenDimCols), 'hash_history', true, 'id', 'id');
+
+                const hasHistoryFile = document.getElementById('history-file-input').files.length > 0;
+                await conditionalUpload('data_history', sanitizeColumnarForUpload(data.history, forbiddenDimCols), 'hash_history', true, 'id', 'id', hasHistoryFile);
+
                 await conditionalUpload('data_orders', data.byOrder, 'hash_orders', false, 'id', 'pedido');
                 await conditionalUpload('data_clients', data.clients, 'hash_clients', true, 'id', 'codigo_cliente');
                 await conditionalUpload('data_stock', data.stock, 'hash_stock', false);
