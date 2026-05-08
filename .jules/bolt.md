@@ -18,3 +18,6 @@
 ## 2025-05-15 - Parallelize sequential I/O in Edge Functions
 **Learning:** Performing sequential await calls (like Storage deletion and DB updates) within a loop in Supabase Edge Functions creates significant latency. Converting these to concurrent operations using `Promise.all()` reduces total execution time from $O(N)$ to approximately $O(1)$ batch time.
 **Action:** Map the dataset to an array of async promises and await them concurrently using `Promise.all()`, aggregating results safely after resolution.
+## 2024-05-24 - Reduce memory pressure and URI Too Long errors in bulk deletions
+**Learning:** Sending bulk deletion queries using `.delete().in(pk, largeArrayOfIds)` via REST creates extremely long URL query strings. For chunks of 5000 UUIDs, this easily exceeds the 4KB-8KB URI limits, causing 414 URI Too Long errors and failing batch delete processes.
+**Action:** When performing chunked bulk deletions, reduce the chunk size limit to `100` instead of `5000` to keep the query URL well within safe limits, ensuring reliable background processing without HTTP-level rejections.
