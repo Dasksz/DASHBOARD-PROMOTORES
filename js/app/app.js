@@ -26670,6 +26670,7 @@ const supervisorGroups = new Map();
 
         const yAxis = chart.yAxes.push(
             am5xy.ValueAxis.new(root, {
+                min: 0,
                 renderer: yRenderer
             })
         );
@@ -26817,6 +26818,7 @@ const supervisorGroups = new Map();
 
         const yAxis = chart.yAxes.push(
             am5xy.ValueAxis.new(root, {
+                min: 0,
                 renderer: yRenderer
             })
         );
