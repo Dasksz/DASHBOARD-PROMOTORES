@@ -18,3 +18,6 @@
 ## 2024-06-25 : (SV Tab Checkbox Filter Refactoring)
 **Aprendizado:** The SV tab inside the Goals view maintained duplicate logic for rendering and handling checkbox dropdowns, including the unsafe `node.cloneNode(true)` which clears external event listeners.
 **Ação:** Refactored this using the standard `window.setupGenericCheckboxFilterHandlers` from `js/app/utils.js`, which handles visibility toggling, state updates via a Set, and custom UI callbacks safely without destroying event listeners.
+## 2026/05/10 : (Generic Supervisor and Seller Filters Abstraction)
+**Aprendizado:** When applying broad UI refactors in `js/app/app.js` to abstract repetitive view logic (e.g., generic supervisor/seller filter triplets `setup[View]SupervisorFilterHandlers`), certain views like 'Goals' (`metas`) often contain unique business logic, different HTML ID suffixes, or specialized update callbacks that break if treated as standard generic views. Additionally, using global regex replacements in large files can introduce massive unrelated whitespace diffs.
+**Ação:** Explicitly exclude non-standard views (like 'Goals') from generic automated refactors unless manually verified. Use precise index-based replacement targeting specific block scopes (`{ ... }`) rather than global regex (`re.sub`) to avoid collateral whitespace changes.
