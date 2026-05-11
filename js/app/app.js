@@ -13217,6 +13217,28 @@ const supervisorGroups = new Map();
                     metrics.history.avgPositivacaoSalty = sumPosSalty / QUARTERLY_DIVISOR;
                     metrics.history.avgPositivacaoFoods = sumPosFoods / QUARTERLY_DIVISOR;
 
+                    // --- NEW TENDENCY COMPARISON FOR KPIS AND SUPERVISORS ---
+                    if (useTendencyComparison) {
+                        const totalDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+                        const passedDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
+
+                        if (totalDays > 0 && passedDays > 0 && passedDays < totalDays) {
+                            const ratio = totalDays / passedDays;
+
+                            // 1. Project Global KPIs
+                            metrics.current.fat *= ratio;
+                            metrics.current.peso *= ratio;
+                            metrics.current.clients = Math.round(metrics.current.clients * ratio);
+                            metrics.current.positivacaoSalty = Math.round(metrics.current.positivacaoSalty * ratio);
+                            metrics.current.positivacaoFoods = Math.round(metrics.current.positivacaoFoods * ratio);
+
+                            // 2. Project Supervisor Data
+                            Object.values(metrics.charts.supervisorData).forEach(supData => {
+                                supData.current *= ratio;
+                            });
+                        }
+                    }
+
                     // Calculate Perdas KPI
                     let currentPerdas = 0;
                     if (perdasSales && perdasSales.length > 0) {
@@ -13234,6 +13256,14 @@ const supervisorGroups = new Map();
                         }
                     }
                     metrics.history.avgPerdas = historyPerdas / QUARTERLY_DIVISOR;
+
+                    if (useTendencyComparison) {
+                        const totalDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+                        const passedDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
+                        if (totalDays > 0 && passedDays > 0 && passedDays < totalDays) {
+                            metrics.current.perdas *= (totalDays / passedDays);
+                        }
+                    }
 
                     // 3. Render Views
                     const m = metrics;
