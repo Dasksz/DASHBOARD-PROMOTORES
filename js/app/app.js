@@ -13336,11 +13336,6 @@ const supervisorGroups = new Map();
                             currentMonthLabel = firstSaleDate.toLocaleString('pt-BR', { month: 'short', year: '2-digit' });
                         }
                         let currentVal = isFat ? m.current.fat : m.current.clients;
-                        if (isFat && useTendencyComparison) {
-                            const totalDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-                            const passedDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
-                            if (totalDays > 0 && passedDays > 0) { currentVal = (currentVal / passedDays) * totalDays; }
-                        }
                         monthLabels.push(currentMonthLabel);
                         monthValues.push(currentVal);
                         // Destroy Legacy Chart if exists
