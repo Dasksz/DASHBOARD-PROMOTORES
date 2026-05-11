@@ -1698,6 +1698,32 @@
             }
         }
 
+        function bindGenericSupervisorAndSellerFilters(prefix, supervisorsSet, vendedoresSet, updateCallback, customCloseLogic = null, isSellerFilter = false, defaultColor = 'text-orange-500') {
+            const updateSupervisorFn = () => {
+                if (typeof window.updateGenericSupervisorFilter === 'function') {
+                    window.updateGenericSupervisorFilter(`${prefix}-supervisor-filter-dropdown`, `${prefix}-supervisor-filter-text`, supervisorsSet, sellerDetailsMap, updateFilterButtonText, 'Todos', defaultColor);
+                }
+            };
+            const updateVendedorFn = () => {
+                if (typeof window.updateGenericVendedorFilter === 'function') {
+                    window.updateGenericVendedorFilter(`${prefix}-vendedor-filter-dropdown`, `${prefix}-vendedor-filter-text`, supervisorsSet, vendedoresSet, sellerDetailsMap, updateFilterButtonText, 'Todos', defaultColor);
+                }
+            };
+            if (typeof window.setupGenericFilterHandlers === 'function') {
+                window.setupGenericFilterHandlers(
+                    prefix,
+                    supervisorsSet,
+                    vendedoresSet,
+                    updateSupervisorFn,
+                    updateVendedorFn,
+                    updateCallback,
+                    customCloseLogic,
+                    isSellerFilter,
+                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
+                );
+            }
+        }
+
         function setupSupervisorFilterHandlers() {
             window.setupGenericFilterHandlers(
                 'main',
@@ -5506,32 +5532,16 @@
             totalPages: 1
         };
 
-        function updateMetaRealizadoSupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('meta-realizado-supervisor-filter-dropdown', 'meta-realizado-supervisor-filter-text', selectedMetaRealizadoSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
-            }
-        }
-
-        function updateMetaRealizadoVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('meta-realizado-vendedor-filter-dropdown', 'meta-realizado-vendedor-filter-text', selectedMetaRealizadoSupervisors, selectedMetaRealizadoVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
-            }
-        }
-
         function setupMetaRealizadoSupervisorFilterHandlers() {
-            if (typeof window.setupGenericFilterHandlers === 'function') {
-                window.setupGenericFilterHandlers(
-                    'meta-realizado',
-                    selectedMetaRealizadoSupervisors,
-                    selectedMetaRealizadoVendedores,
-                    updateMetaRealizadoSupervisorFilter,
-                    updateMetaRealizadoVendedorFilter,
-                    () => { debouncedUpdateMetaRealizado(); },
-                    null,
-                    false,
-                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
-                );
-            }
+            bindGenericSupervisorAndSellerFilters(
+                'meta-realizado',
+                selectedMetaRealizadoSupervisors,
+                selectedMetaRealizadoVendedores,
+                () => { debouncedUpdateMetaRealizado(); },
+                null,
+                false,
+                'text-teal-500'
+            );
         }
 
         function updateMetaRealizadoView() {
@@ -11487,31 +11497,15 @@ const supervisorGroups = new Map();
         }
 
         function setupCitySupervisorFilterHandlers() {
-            if (typeof window.setupGenericFilterHandlers === 'function') {
-                window.setupGenericFilterHandlers(
-                    'city',
-                    selectedCitySupervisors,
-                    selectedCityVendedores,
-                    updateCitySupervisorFilter,
-                    updateCityVendedorFilter,
-                    (info) => { handleCityFilterChange(info); },
-                    null,
-                    false,
-                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
-                );
-            }
-        }
-
-        function updateCitySupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('city-supervisor-filter-dropdown', 'city-supervisor-filter-text', selectedCitySupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
-        }
-
-        function updateCityVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('city-vendedor-filter-dropdown', 'city-vendedor-filter-text', selectedCitySupervisors, selectedCityVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
+            bindGenericSupervisorAndSellerFilters(
+                'city',
+                selectedCitySupervisors,
+                selectedCityVendedores,
+                (info) => { handleCityFilterChange(info); },
+                null,
+                false,
+                'text-orange-500'
+            );
         }
 
         function updateAllCityFilters(options = {}) {
@@ -12877,31 +12871,15 @@ const supervisorGroups = new Map();
 
 
         function setupComparisonSupervisorFilterHandlers() {
-            if (typeof window.setupGenericFilterHandlers === 'function') {
-                window.setupGenericFilterHandlers(
-                    'comparison',
-                    selectedComparisonSupervisors,
-                    selectedComparisonVendedores,
-                    updateComparisonSupervisorFilter,
-                    updateComparisonVendedorFilter,
-                    () => { updateComparisonView(); },
-                    null,
-                    false,
-                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
-                );
-            }
-        }
-
-        function updateComparisonSupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('comparison-supervisor-filter-dropdown', 'comparison-supervisor-filter-text', selectedComparisonSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
-            }
-        }
-
-        function updateComparisonVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('comparison-vendedor-filter-dropdown', 'comparison-vendedor-filter-text', selectedComparisonSupervisors, selectedComparisonVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
-            }
+            bindGenericSupervisorAndSellerFilters(
+                'comparison',
+                selectedComparisonSupervisors,
+                selectedComparisonVendedores,
+                () => { updateComparisonView(); },
+                null,
+                false,
+                'text-teal-500'
+            );
         }
 
         function updateAllComparisonFilters() {
@@ -27523,87 +27501,39 @@ const supervisorGroups = new Map();
     }
 
         function setupPositivacaoSupervisorFilterHandlers() {
-            if (typeof window.setupGenericFilterHandlers === 'function') {
-                window.setupGenericFilterHandlers(
-                    'positivacao',
-                    selectedPositivacaoSupervisors,
-                    selectedPositivacaoVendedores,
-                    updatePositivacaoSupervisorFilter,
-                    updatePositivacaoVendedorFilter,
-                    (info) => { handlePositivacaoFilterChange(info); },
-                    null,
-                    false,
-                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
-                );
-            }
-        }
-
-        function updatePositivacaoSupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('positivacao-supervisor-filter-dropdown', 'positivacao-supervisor-filter-text', selectedPositivacaoSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
-        }
-
-        function updatePositivacaoVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('positivacao-vendedor-filter-dropdown', 'positivacao-vendedor-filter-text', selectedPositivacaoSupervisors, selectedPositivacaoVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
+            bindGenericSupervisorAndSellerFilters(
+                'positivacao',
+                selectedPositivacaoSupervisors,
+                selectedPositivacaoVendedores,
+                (info) => { handlePositivacaoFilterChange(info); },
+                null,
+                false,
+                'text-orange-500'
+            );
         }
 
         function setupCoverageSupervisorFilterHandlers() {
-            if (typeof window.setupGenericFilterHandlers === 'function') {
-                window.setupGenericFilterHandlers(
-                    'coverage',
-                    selectedCoverageSupervisors,
-                    selectedCoverageVendedores,
-                    updateCoverageSupervisorFilter,
-                    updateCoverageVendedorFilter,
-                    (info) => { handleCoverageFilterChange(info); },
-                    null,
-                    false,
-                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
-                );
-            }
-        }
-
-        function updateCoverageSupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('coverage-supervisor-filter-dropdown', 'coverage-supervisor-filter-text', selectedCoverageSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
-        }
-
-        function updateCoverageVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('coverage-vendedor-filter-dropdown', 'coverage-vendedor-filter-text', selectedCoverageSupervisors, selectedCoverageVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
+            bindGenericSupervisorAndSellerFilters(
+                'coverage',
+                selectedCoverageSupervisors,
+                selectedCoverageVendedores,
+                (info) => { handleCoverageFilterChange(info); },
+                null,
+                false,
+                'text-orange-500'
+            );
         }
 
         function setupMixSupervisorFilterHandlers() {
-            if (typeof window.setupGenericFilterHandlers === 'function') {
-                window.setupGenericFilterHandlers(
-                    'mix',
-                    selectedMixSupervisors,
-                    selectedMixVendedores,
-                    updateMixSupervisorFilter,
-                    updateMixVendedorFilter,
-                    () => { updateMixView(); },
-                    null,
-                    false,
-                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
-                );
-            }
-        }
-
-        function updateMixSupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('mix-supervisor-filter-dropdown', 'mix-supervisor-filter-text', selectedMixSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
-        }
-
-        function updateMixVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('mix-vendedor-filter-dropdown', 'mix-vendedor-filter-text', selectedMixSupervisors, selectedMixVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
+            bindGenericSupervisorAndSellerFilters(
+                'mix',
+                selectedMixSupervisors,
+                selectedMixVendedores,
+                () => { updateMixView(); },
+                null,
+                false,
+                'text-orange-500'
+            );
         }
 
 
@@ -27626,151 +27556,71 @@ const supervisorGroups = new Map();
 
 
         function setupInnovationsMonthSupervisorFilterHandlers() {
-            if (typeof window.setupGenericFilterHandlers === 'function') {
-                window.setupGenericFilterHandlers(
-                    'innovations-month',
-                    selectedInnovationsMonthSupervisors,
-                    selectedInnovationsMonthVendedores,
-                    updateInnovationsMonthSupervisorFilter,
-                    updateInnovationsMonthVendedorFilter,
-                    () => { updateInnovationsMonthView(); },
-                    null,
-                    false,
-                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
-                );
-            }
-        }
-
-        function updateInnovationsMonthSupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('innovations-month-supervisor-filter-dropdown', 'innovations-month-supervisor-filter-text', selectedInnovationsMonthSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
-            }
-        }
-
-        function updateInnovationsMonthVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('innovations-month-vendedor-filter-dropdown', 'innovations-month-vendedor-filter-text', selectedInnovationsMonthSupervisors, selectedInnovationsMonthVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
+            bindGenericSupervisorAndSellerFilters(
+                'innovations-month',
+                selectedInnovationsMonthSupervisors,
+                selectedInnovationsMonthVendedores,
+                () => { updateInnovationsMonthView(); },
+                null,
+                false,
+                'text-teal-500'
+            );
         }
 
         function setupTitulosSupervisorFilterHandlers() {
-            if (typeof window.setupGenericFilterHandlers === 'function') {
-                window.setupGenericFilterHandlers(
-                    'titulos',
-                    selectedTitulosSupervisors,
-                    selectedTitulosVendedores,
-                    updateTitulosSupervisorFilter,
-                    updateTitulosVendedorFilter,
-                    () => { handleTitulosFilterChange(); },
-                    null,
-                    false,
-                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
-                );
-            }
-        }
-
-        function updateTitulosSupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('titulos-supervisor-filter-dropdown', 'titulos-supervisor-filter-text', selectedTitulosSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
-        }
-
-        function updateTitulosVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('titulos-vendedor-filter-dropdown', 'titulos-vendedor-filter-text', selectedTitulosSupervisors, selectedTitulosVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
+            bindGenericSupervisorAndSellerFilters(
+                'titulos',
+                selectedTitulosSupervisors,
+                selectedTitulosVendedores,
+                () => { handleTitulosFilterChange(); },
+                null,
+                false,
+                'text-orange-500'
+            );
         }
 
         function setupLpSupervisorFilterHandlers() {
-            if (typeof window.setupGenericFilterHandlers === 'function') {
-                window.setupGenericFilterHandlers(
-                    'lp',
-                    selectedLpSupervisors,
-                    selectedLpVendedores,
-                    updateLpSupervisorFilter,
-                    updateLpVendedorFilter,
-                    () => { handleLpFilterChange(); },
-                    null,
-                    false,
-                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
-                );
-            }
-        }
-
-        function updateLpSupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('lp-supervisor-filter-dropdown', 'lp-supervisor-filter-text', selectedLpSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
-        }
-
-        function updateLpVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('lp-vendedor-filter-dropdown', 'lp-vendedor-filter-text', selectedLpSupervisors, selectedLpVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
+            bindGenericSupervisorAndSellerFilters(
+                'lp',
+                selectedLpSupervisors,
+                selectedLpVendedores,
+                () => { handleLpFilterChange(); },
+                null,
+                false,
+                'text-orange-500'
+            );
         }
 
         function setupHistorySupervisorFilterHandlers() {
-            if (typeof window.setupGenericFilterHandlers === 'function') {
-                window.setupGenericFilterHandlers(
-                    'history',
-                    selectedHistorySupervisors,
-                    selectedHistoryVendedores,
-                    updateHistorySupervisorFilter,
-                    updateHistoryVendedorFilter,
-                    () => { 
+            bindGenericSupervisorAndSellerFilters(
+                'history',
+                selectedHistorySupervisors,
+                selectedHistoryVendedores,
+                () => {
                         if(historyTableState.hasSearched && typeof filterHistoryView === 'function') filterHistoryView();
                         else if(typeof renderHistoryView === 'function') renderHistoryView();
                     },
-                    null,
-                    false,
-                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
-                );
-            }
-        }
-
-        function updateHistorySupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('history-supervisor-filter-dropdown', 'history-supervisor-filter-text', selectedHistorySupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
-        }
-
-        function updateHistoryVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('history-vendedor-filter-dropdown', 'history-vendedor-filter-text', selectedHistorySupervisors, selectedHistoryVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
+                null,
+                false,
+                'text-orange-500'
+            );
         }
 
         function setupStockSupervisorFilterHandlers() {
-            if (typeof window.setupGenericFilterHandlers === 'function') {
-                window.setupGenericFilterHandlers(
-                    'stock',
-                    selectedStockSupervisors,
-                    selectedStockVendedores,
-                    updateStockSupervisorFilter,
-                    updateStockVendedorFilter,
-                    () => { handleStockFilterChange(); },
-                    () => {
+            bindGenericSupervisorAndSellerFilters(
+                'stock',
+                selectedStockSupervisors,
+                selectedStockVendedores,
+                () => { handleStockFilterChange(); },
+                () => {
                         // Close other stock specific dropdowns
                         document.getElementById('stock-supplier-filter-dropdown')?.classList.add('hidden');
                         document.getElementById('stock-product-filter-dropdown')?.classList.add('hidden');
                         document.getElementById('stock-filial-filter-dropdown')?.classList.add('hidden');
                     },
-                    false,
-                    typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
-                );
-            }
-        }
-
-        function updateStockSupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('stock-supervisor-filter-dropdown', 'stock-supervisor-filter-text', selectedStockSupervisors, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
-        }
-
-        function updateStockVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('stock-vendedor-filter-dropdown', 'stock-vendedor-filter-text', selectedStockSupervisors, selectedStockVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-orange-500');
-            }
+                false,
+                'text-orange-500'
+            );
         }
 
         function renderPositivacaoView() {
