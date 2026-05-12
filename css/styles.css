@@ -676,37 +676,37 @@
     html.light #goals-tabs button.text-slate-400 {
         color: #64748b !important;
     }
+    html.light #goals-tabs button:not(.active):hover {
+        color: #1e293b !important; /* slate-800 */
+        background-color: rgba(255, 255, 255, 0.5) !important;
+    }
     html.light #goals-tabs button.active {
         background-color: #ffffff !important;
-        border-color: #0f766e !important; /* teal-700 */
-        color: #0f766e !important;
+        border-color: #0d9488 !important; /* teal-600 */
+        color: #0f766e !important; /* teal-700 */
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         font-weight: 800 !important;
     }
 
-    /* 5. Fix Inactive Tab Buttons (Dark Slate) in other places if needed */
+    /* 5. Fix Inactive Buttons (Category Toggles & Sub-tabs) */
     html.light .bg-\[\#334155\] {
         background-color: #e2e8f0 !important;
         color: #475569 !important;
         border-color: #cbd5e1 !important;
     }
-
-    /* 3. Fix Inactive Tab Buttons (Dark Slate) */
-    html.light .bg-\[\#334155\] {
-        background-color: #e2e8f0 !important;
-        color: #475569 !important;
-        border-color: #cbd5e1 !important;
+    html.light .bg-\[\#334155\]:hover {
+        background-color: #cbd5e1 !important;
+        color: #1e293b !important;
     }
 
-    /* 4. Fix Inputs inside Goal Cards */
-    /* Target inputs that use the dark bg-[#0f172a] specifically */
+    /* 6. Fix Inputs inside Goal Cards */
     html.light input.bg-\[\#0f172a\] {
         background-color: #ffffff !important;
         color: #0f172a !important;
         border-color: #cbd5e1 !important;
     }
 
-    /* 5. Fix Borders for Goal Cards (Input containers) */
+    /* 7. Fix Borders for Goal Cards (Input containers) */
     html.light .border-green-900\/50 { border-color: #86efac !important; } /* green-300 */
     html.light .border-blue-900\/50 { border-color: #93c5fd !important; } /* blue-300 */
     html.light .border-purple-900\/50 { border-color: #d8b4fe !important; } /* purple-300 */
@@ -714,11 +714,13 @@
     html.light .border-yellow-900\/50 { border-color: #fde047 !important; } /* yellow-300 */
     html.light .border-teal-500\/50 { border-color: #0d9488 !important; } /* teal-600 */
 
-    /* 6. Fix "Rateio Metas" Tab Active State if needed */
+    /* 8. Fix Active State for Teal Buttons (Category / Rateio Metas) */
+    html.light .bg-teal-600.text-white,
+    html.light .bg-\[\#0d9488\].text-white,
     html.light .border-teal-500.text-teal-500.active {
-        background-color: #ccfbf1 !important; /* teal-50 */
+        background-color: #0d9488 !important;
+        color: #ffffff !important;
         border-color: #0d9488 !important;
-        color: #0f766e !important;
     }
 
 /* AI Insights Styles */
