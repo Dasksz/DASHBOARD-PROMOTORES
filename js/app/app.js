@@ -21641,10 +21641,11 @@ const supervisorGroups = new Map();
         }
 
         const titleEl = document.getElementById('wallet-modal-title');
-        titleEl.innerHTML = 'Detalhes do Cliente';
+        let titleHtml = 'Detalhes do Cliente';
         if (isNegativeBalance) {
-            titleEl.innerHTML += ` <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 shadow-sm shadow-red-900/20">Devolução</span>`;
+            titleHtml += ` <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 shadow-sm shadow-red-900/20">Devolução</span>`;
         }
+        titleEl.innerHTML = titleHtml;
         
         // 1. Populate Basic Info
         document.getElementById('wallet-modal-code').textContent = codeKey;
