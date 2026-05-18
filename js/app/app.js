@@ -1847,6 +1847,17 @@
             supervisorDetailsMap = new Map();
             const sellerLastSaleDateMap = new Map(); // Track latest date per seller
             const clientToCurrentSellerMap = new Map();
+            optimizedData.clientsByRca = new Map();
+            optimizedData.searchIndices.clients = new Array(allClientsData.length);
+            optimizedData.rcasBySupervisor = new Map();
+            optimizedData.productsBySupplier = new Map();
+            optimizedData.salesByProduct = { current: new Map(), history: new Map() };
+            optimizedData.rcaCodeByName = new Map();
+            optimizedData.rcaNameByCode = new Map();
+            optimizedData.supervisorCodeByName = new Map();
+            optimizedData.productPastaMap = new Map();
+
+
             let americanasCodCli = null;
 
             // Access via accessor method for potential ColumnarDataset
@@ -2027,16 +2038,6 @@
                     }
                 }
             }
-
-            optimizedData.clientsByRca = new Map();
-            optimizedData.searchIndices.clients = new Array(allClientsData.length);
-            optimizedData.rcasBySupervisor = new Map();
-            optimizedData.productsBySupplier = new Map();
-            optimizedData.salesByProduct = { current: new Map(), history: new Map() };
-            optimizedData.rcaCodeByName = new Map();
-            optimizedData.rcaNameByCode = new Map();
-            optimizedData.supervisorCodeByName = new Map();
-            optimizedData.productPastaMap = new Map();
 
             // --- HIERARCHY LOGIC START ---
             optimizedData.hierarchyMap = new Map(); // Promotor Code -> Hierarchy Node
