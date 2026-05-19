@@ -19189,7 +19189,7 @@ const supervisorGroups = new Map();
                 addKeys('mix_foods', [null, 'MIX_META', 'MIX_AJUSTE']);
 
                 // 13. GERAL (pepsico_all)
-                addKeys('pepsico_all', [null, 'FAT_META', 'VOL_META', 'POS_META']);
+                addKeys('pepsico_all', ['FAT_META', 'FAT_AJUSTE', 'VOL_META', 'POS_META']);
 
                 // 14. PEDEV
                 colIdx += 1;
@@ -19292,7 +19292,7 @@ const supervisorGroups = new Map();
                 };
 
                 // 1. Revenue
-                const revCats = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
+                const revCats = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO', 'total_elma', 'total_foods', 'pepsico_all'];
                 revCats.forEach(cat => {
                     const val = getPriorityValue(cat, 'FAT');
                     if (!isNaN(val)) updates.push({ type: 'rev', seller: sellerName, category: cat, val: val });
@@ -19302,7 +19302,7 @@ const supervisorGroups = new Map();
 
                 // 2. Volume
                 // Metas de Volume são importadas pelos Totais (KG ELMA / KG FOODS) e distribuídas automaticamente
-                const volCats = ['tonelada_elma', 'tonelada_foods'];
+                const volCats = ['tonelada_elma', 'tonelada_foods', 'pepsico_all'];
                 volCats.forEach(cat => {
                     const val = getPriorityValue(cat, 'VOL');
                     if (!isNaN(val)) updates.push({ type: 'vol', seller: sellerName, category: cat, val: val });
