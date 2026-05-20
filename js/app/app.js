@@ -6299,7 +6299,10 @@
                 }
             });
 
-            // 2. Sum up Revenue/Volume targets from `globalClientGoals` (Standard logic)
+            // 2. Determine if we are in Global Admin View (no filters)
+            const isGlobalAdminViewSummary = (window.userRole === 'adm' && selectedGoalsSummarySupervisors.size === 0 && selectedGoalsSummarySellers.size === 0);
+
+            // Sum up Revenue/Volume targets from `globalClientGoals` (Standard logic)
             const summaryGoalsSums = {
                 [window.SUPPLIER_CODES.ELMA[0]]: { fat: 0, vol: 0 },
                 [window.SUPPLIER_CODES.ELMA[1]]: { fat: 0, vol: 0 },
@@ -6309,26 +6312,60 @@
                 [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: { fat: 0, vol: 0 }
             };
 
-            filteredSummaryClients.forEach(c => {
-                const codCli = c['Código'];
-                const rcaCode = String(c.rca1 || '').trim();
-                let sellerName = null;
-                if (rcaCode) sellerName = optimizedData.rcaNameByCode.get(rcaCode);
-
-                if (sellerName && activeSellersInSummary.has(sellerName)) {
-                    if (globalClientGoals.has(codCli)) {
-                        const cGoals = globalClientGoals.get(codCli);
-                        cGoals.forEach((val, key) => {
-                            if (summaryGoalsSums[key]) {
-                                summaryGoalsSums[key].fat += val.fat;
-                                summaryGoalsSums[key].vol += val.vol;
-                            }
-                        });
-
-
+            if (isGlobalAdminViewSummary && window.goalsTargets) {
+                // If global view, use the explicit global targets directly instead of bottom-up summing (avoids pro-rata fallback loss)
+                for (const key of Object.keys(summaryGoalsSums)) {
+                    const targetKey = key;
+                    const val = window.goalsTargets[targetKey] || window.goalsTargets[targetKey.toLowerCase()];
+                    if (val) {
+                        summaryGoalsSums[key].fat = val.fat !== undefined ? val.fat : (val.FAT !== undefined ? val.FAT : 0);
+                        summaryGoalsSums[key].vol = val.vol !== undefined ? val.vol : (val.VOL !== undefined ? val.VOL : 0);
                     }
                 }
-            });
+            } else {
+                // Not global, we have specific filters.
+                // However, instead of summing by client (which loses target if client is inactive),
+                // we should sum by explicit seller targets!
+                activeSellersInSummary.forEach(sellerName => {
+                    const targets = window.goalsSellerTargets.get(sellerName) || {};
+                    for (const key of Object.keys(summaryGoalsSums)) {
+                        // keys in goalsSellerTargets look like: '1119_TODDYNHO_FAT', '707_FAT' etc.
+                        const fatKey1 = `${key}_FAT`;
+                        const fatKey2 = `${key.toLowerCase()}_FAT`;
+                        const volKey1 = `${key}_VOL`;
+                        const volKey2 = `${key.toLowerCase()}_VOL`;
+
+                        let sellerFat = undefined;
+                        let sellerVol = undefined;
+
+                        if (targets[fatKey1] !== undefined) sellerFat = targets[fatKey1];
+                        else if (targets[fatKey2] !== undefined) sellerFat = targets[fatKey2];
+
+                        if (targets[volKey1] !== undefined) sellerVol = targets[volKey1];
+                        else if (targets[volKey2] !== undefined) sellerVol = targets[volKey2];
+
+                        // If the seller has a manual target for this, sum it
+                        if (sellerFat !== undefined || sellerVol !== undefined) {
+                            summaryGoalsSums[key].fat += (sellerFat || 0);
+                            summaryGoalsSums[key].vol += (sellerVol || 0);
+                        } else {
+                            // Fallback to summing up clients for this specific seller if no manual target exists
+                            filteredSummaryClients.forEach(c => {
+                                const codCli = c['Código'];
+                                const rcaCode = String(c.rca1 || '').trim();
+                                const cName = optimizedData.rcaNameByCode.get(rcaCode);
+                                if (cName === sellerName && globalClientGoals.has(codCli)) {
+                                    const cGoals = globalClientGoals.get(codCli);
+                                    if (cGoals.has(key)) {
+                                        summaryGoalsSums[key].fat += cGoals.get(key).fat;
+                                        summaryGoalsSums[key].vol += cGoals.get(key).vol;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+            }
 
             // 3. Helper to calculate Total Positivation Target for a Category
             // Checks if a manual target exists for the seller; otherwise, calculates default (Natural + Adjustment)
@@ -6379,6 +6416,38 @@
             let totalFat = 0;
             let totalVol = 0;
 
+            // Compute General Pepsico values in case they override the sum of parts
+            let globalPepsicoFat = 0;
+            let globalPepsicoVol = 0;
+            if (isGlobalAdminViewSummary && window.goalsTargets) {
+                const pepVal = window.goalsTargets['pepsico_all'] || window.goalsTargets['PEPSICO_ALL'];
+                if (pepVal) {
+                    globalPepsicoFat = pepVal.fat !== undefined ? pepVal.fat : (pepVal.FAT !== undefined ? pepVal.FAT : 0);
+                    globalPepsicoVol = pepVal.vol !== undefined ? pepVal.vol : (pepVal.VOL !== undefined ? pepVal.VOL : 0);
+                }
+            } else {
+                activeSellersInSummary.forEach(sellerName => {
+                    const targets = window.goalsSellerTargets.get(sellerName) || {};
+                    let fat = undefined, vol = undefined;
+
+                    if (targets['pepsico_all_FAT'] !== undefined) fat = targets['pepsico_all_FAT'];
+                    else if (targets['PEPSICO_ALL_FAT'] !== undefined) fat = targets['PEPSICO_ALL_FAT'];
+
+                    if (targets['pepsico_all_VOL'] !== undefined) vol = targets['pepsico_all_VOL'];
+                    else if (targets['PEPSICO_ALL_VOL'] !== undefined) vol = targets['PEPSICO_ALL_VOL'];
+
+                    if (fat !== undefined || vol !== undefined) {
+                        globalPepsicoFat += (fat || 0);
+                        globalPepsicoVol += (vol || 0);
+                    }
+                });
+            }
+
+            if (globalPepsicoFat > 0 || globalPepsicoVol > 0) {
+                totalFat = globalPepsicoFat;
+                totalVol = globalPepsicoVol;
+            }
+
             const cardsHTML = summaryItems.map(item => {
                 const key = item.supplier + (item.brand ? `_${item.brand}` : '');
                 const target = summaryGoalsSums[key] || { fat: 0, vol: 0 };
@@ -6390,8 +6459,10 @@
                 if (displayFat < 0.01) displayFat = metrics.prevFat;
                 if (displayVol < 0.001) displayVol = metrics.prevVol;
 
-                totalFat += displayFat;
-                totalVol += displayVol;
+                if (!globalPepsicoFat && !globalPepsicoVol) {
+                    totalFat += displayFat;
+                    totalVol += displayVol;
+                }
 
                 // Calculate Pos Target using new Logic
                 const posTarget = calcTotalPosTarget(key);
@@ -11239,6 +11310,45 @@ const supervisorGroups = new Map();
                         if (overrideKey) {
                             const posTargetVal = getTargetValue(targets, overrideKey);
                             if (posTargetVal !== undefined) vendorPosGoal = posTargetVal;
+                        }
+
+                        // Also Override Fat and Vol if explicit target exists for this seller!
+                        if (overrideKey) {
+                            const fatTargetVal = getTargetValue(targets, overrideKey + '_FAT') !== undefined ? getTargetValue(targets, overrideKey + '_FAT') : getTargetValue(targets, overrideKey.toUpperCase() + '_FAT');
+                            const volTargetVal = getTargetValue(targets, overrideKey + '_VOL') !== undefined ? getTargetValue(targets, overrideKey + '_VOL') : getTargetValue(targets, overrideKey.toUpperCase() + '_VOL');
+
+                            if (fatTargetVal !== undefined) {
+                                // Subtract whatever was accumulated bottom-up for this seller and add the top-down target
+                                let bottomUpFat = 0;
+                                goalClients.forEach(c => {
+                                    if (String(c.rca1 || '').trim() === rcaCode) {
+                                        const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
+                                        const cGoals = window.globalClientGoals.get(codCli);
+                                        if (cGoals) {
+                                            activeGoalKeys.forEach(key => {
+                                                if (cGoals.has(key)) bottomUpFat += (cGoals.get(key).fat || 0);
+                                            });
+                                        }
+                                    }
+                                });
+                                fatGoal = fatGoal - bottomUpFat + fatTargetVal;
+                            }
+
+                            if (volTargetVal !== undefined) {
+                                let bottomUpVol = 0;
+                                goalClients.forEach(c => {
+                                    if (String(c.rca1 || '').trim() === rcaCode) {
+                                        const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
+                                        const cGoals = window.globalClientGoals.get(codCli);
+                                        if (cGoals) {
+                                            activeGoalKeys.forEach(key => {
+                                                if (cGoals.has(key)) bottomUpVol += (cGoals.get(key).vol || 0);
+                                            });
+                                        }
+                                    }
+                                });
+                                volGoal = volGoal - bottomUpVol + volTargetVal;
+                            }
                         }
 
                         if (vendorPosGoal === 0) {
