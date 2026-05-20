@@ -1238,3 +1238,50 @@
             });
         }
     };
+
+    /**
+     * Reusable generic function to setup exclusive toggling for a group of dropdowns.
+     * Only one dropdown in the group can be open at a time. Clicking outside closes all.
+     */
+    window.setupExclusiveDropdownGroup = function(els, outsideListenerSet, listenerKey) {
+        const bindToggle = (el) => {
+            if (el.btn && el.dd && !el.btn._hasListener) {
+                el.btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Close others and reset z-index
+                    Object.values(els).forEach(x => {
+                        if (x.dd && x !== el) {
+                            x.dd.classList.add('hidden');
+                            if (x.wrapper) x.wrapper.classList.remove('z-50');
+                        }
+                    });
+
+                    const isHidden = el.dd.classList.contains('hidden');
+                    if (isHidden) {
+                        el.dd.classList.remove('hidden');
+                        if (el.wrapper) el.wrapper.classList.add('z-50');
+                    } else {
+                        el.dd.classList.add('hidden');
+                        if (el.wrapper) el.wrapper.classList.remove('z-50');
+                    }
+                });
+                el.btn._hasListener = true;
+            }
+        };
+
+        Object.values(els).forEach(bindToggle);
+
+        if (!outsideListenerSet.has(listenerKey)) {
+            document.addEventListener('click', (e) => {
+                Object.values(els).forEach(x => {
+                    if (x.dd && !x.dd.classList.contains('hidden')) {
+                        if (x.btn && !x.btn.contains(e.target) && !x.dd.contains(e.target)) {
+                            x.dd.classList.add('hidden');
+                            if (x.wrapper) x.wrapper.classList.remove('z-50');
+                        }
+                    }
+                });
+            });
+            outsideListenerSet.add(listenerKey);
+        }
+    };
