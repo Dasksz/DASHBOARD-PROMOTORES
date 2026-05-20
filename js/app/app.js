@@ -4024,8 +4024,9 @@
 
             // Define Sub-Categories for Cascade Logic
             let targetCategories = [categoryId];
-            if (categoryId === 'tonelada_elma') targetCategories = window.SUPPLIER_CODES.ELMA;
-            else if (categoryId === 'tonelada_foods') targetCategories = window.SUPPLIER_CODES.VIRTUAL_LIST;
+            if (categoryId === 'tonelada_elma' || categoryId === 'total_elma') targetCategories = window.SUPPLIER_CODES.ELMA;
+            else if (categoryId === 'tonelada_foods' || categoryId === 'total_foods') targetCategories = window.SUPPLIER_CODES.VIRTUAL_LIST;
+            else if (categoryId === 'pepsico_all') targetCategories = [...window.SUPPLIER_CODES.ELMA, ...window.SUPPLIER_CODES.VIRTUAL_LIST];
 
             // 1. Calculate Total History for the Seller (All sub-cats combined)
             // AND Calculate individual client-subcat history to determine specific shares.
@@ -8398,10 +8399,22 @@
                     // Note: 'activeClientsCount' here is the Pepsico Natural Active Count.
                     // The 'geral' column will receive the 'PEPSICO_ALL' adjustment in the loop below.
 
+                    let geralMetaFat = totalElma.metaFat + totalFoods.metaFat;
+                    let geralMetaVol = totalElma.metaVol + totalFoods.metaVol;
+
+                    if (goalsSellerTargets && goalsSellerTargets.has(sellerObj.name)) {
+                        const targets = goalsSellerTargets.get(sellerObj.name);
+                        if (targets['pepsico_all_FAT'] !== undefined) geralMetaFat = targets['pepsico_all_FAT'];
+                        else if (targets['PEPSICO_ALL_FAT'] !== undefined) geralMetaFat = targets['PEPSICO_ALL_FAT'];
+
+                        if (targets['pepsico_all_VOL'] !== undefined) geralMetaVol = targets['pepsico_all_VOL'];
+                        else if (targets['PEPSICO_ALL_VOL'] !== undefined) geralMetaVol = targets['PEPSICO_ALL_VOL'];
+                    }
+
                     sellerObj.data['geral'] = {
                         avgFat: (totalElma.avgFat || 0) + (totalFoods.avgFat || 0),
-                        metaFat: totalElma.metaFat + totalFoods.metaFat,
-                        metaVol: totalElma.metaVol + totalFoods.metaVol,
+                        metaFat: geralMetaFat,
+                        metaVol: geralMetaVol,
                         metaPos: activeClientsCount
                     };
                     // Pedev uses Total Elma (Natural). We'll update it after adjustment loop to be safe.
@@ -8433,20 +8446,37 @@
 
                     for (const [colId, data] of Object.entries(seller.data)) {
                         // Priority Check: Explicit Target from Import/Supabase (goalsSellerTargets)
-                        let explicitTarget = undefined;
+                        let explicitPos = undefined;
+                        let explicitFat = undefined;
+                        let explicitVol = undefined;
+
+                        // Map colId to the keys used in goalsSellerTargets (e.g. 'geral' -> 'pepsico_all')
+                        const targetKeyPrefix = (colId === 'geral') ? 'pepsico_all' : colId;
+                        const targetKeyPrefixUpper = targetKeyPrefix.toUpperCase();
+
                         if (goalsSellerTargets && goalsSellerTargets.has(sellerName)) {
                             const targets = goalsSellerTargets.get(sellerName);
-                            // Check exact key or upper case key
-                            if (targets[colId] !== undefined) explicitTarget = targets[colId];
-                            else if (targets[colId.toUpperCase()] !== undefined) explicitTarget = targets[colId.toUpperCase()];
+
+                            if (targets[targetKeyPrefix] !== undefined) explicitPos = targets[targetKeyPrefix];
+                            else if (targets[targetKeyPrefixUpper] !== undefined) explicitPos = targets[targetKeyPrefixUpper];
+
+                            if (targets[`${targetKeyPrefix}_FAT`] !== undefined) explicitFat = targets[`${targetKeyPrefix}_FAT`];
+                            else if (targets[`${targetKeyPrefixUpper}_FAT`] !== undefined) explicitFat = targets[`${targetKeyPrefixUpper}_FAT`];
+
+                            if (targets[`${targetKeyPrefix}_VOL`] !== undefined) explicitVol = targets[`${targetKeyPrefix}_VOL`];
+                            else if (targets[`${targetKeyPrefixUpper}_VOL`] !== undefined) explicitVol = targets[`${targetKeyPrefixUpper}_VOL`];
                         }
 
-                        if (explicitTarget !== undefined) {
+                        // Apply overrides
+                        if (explicitFat !== undefined) data.metaFat = explicitFat;
+                        if (explicitVol !== undefined) data.metaVol = explicitVol;
+
+                        if (explicitPos !== undefined) {
                             // Apply Explicit Target
                             if (colId.startsWith('mix_')) {
-                                data.metaMix = explicitTarget;
+                                data.metaMix = explicitPos;
                             } else {
-                                data.metaPos = explicitTarget;
+                                data.metaPos = explicitPos;
                             }
                         } else {
                             // Fallback: Legacy Adjustment Logic (Session only)
