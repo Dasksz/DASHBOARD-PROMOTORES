@@ -18,3 +18,6 @@
 ## 2024-06-25 : (SV Tab Checkbox Filter Refactoring)
 **Aprendizado:** The SV tab inside the Goals view maintained duplicate logic for rendering and handling checkbox dropdowns, including the unsafe `node.cloneNode(true)` which clears external event listeners.
 **Ação:** Refactored this using the standard `window.setupGenericCheckboxFilterHandlers` from `js/app/utils.js`, which handles visibility toggling, state updates via a Set, and custom UI callbacks safely without destroying event listeners.
+## 2023/10/25 : (Extracted generic exclusive dropdown toggling to utils.js)
+**Aprendizado:** Em `setupHierarchyFilters`, havia um grande bloco de código repetitivo de UI DOM manipulation focado exclusivamente em alternar estado de dropdowns ocultos e clique externo para as hierarquias. Isso estava acoplado ao `app.js`.
+**Ação:** Removida a manipulação de DOM específica para uma função utilitária `setupExclusiveDropdownGroup` em `utils.js`, melhorando a legibilidade e focando a função `setupHierarchyFilters` estritamente na gestão do estado da hierarquia.
