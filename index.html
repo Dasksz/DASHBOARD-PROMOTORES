@@ -262,6 +262,35 @@
         </div>
     </div>
 
+
+    <!-- RESET PASSWORD VIEW (Hidden, Styled) -->
+    <div id="view-reset" class="glass-card w-full max-w-md rounded-2xl p-8 relative z-10 hidden transition-all duration-300">
+        <div class="flex flex-col items-center mb-6">
+            <h1 class="text-2xl font-bold text-white tracking-tight text-center">Nova Senha</h1>
+            <p class="text-sm text-gray-400 mt-1 text-center">Crie uma nova senha para acessar sua conta</p>
+        </div>
+        <form id="resetForm" class="space-y-5">
+            <div class="space-y-1.5">
+                <label for="reset-password" class="text-xs font-semibold text-gray-400 uppercase tracking-wider ml-1">Nova Senha</label>
+                <div class="relative">
+                    <input type="password" id="reset-password" name="password" required class="input-field w-full rounded-lg py-3 pl-4 pr-12 text-white placeholder-gray-600 outline-none focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" placeholder="••••••••" aria-label="Nova Senha">
+                    <button type="button" id="togglePasswordReset" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-brand-orange focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" aria-label="Mostrar senha">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="space-y-1.5">
+                <label for="reset-password-confirm" class="text-xs font-semibold text-gray-400 uppercase tracking-wider ml-1">Confirmar Nova Senha</label>
+                <div class="relative">
+                    <input type="password" id="reset-password-confirm" name="password-confirm" required class="input-field w-full rounded-lg py-3 px-4 text-white placeholder-gray-600 outline-none focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" placeholder="••••••••" aria-label="Confirmar Nova Senha">
+                </div>
+            </div>
+            <button type="submit" class="w-full bg-gradient-to-r from-brand-orange to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold py-3.5 rounded-lg shadow-lg transition-all focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+                SALVAR E ENTRAR
+            </button>
+        </form>
+    </div>
+
     <!-- FORGOT VIEW (Hidden, Styled) -->
     <div id="view-forgot" class="glass-card w-full max-w-md rounded-2xl p-8 relative z-10 hidden transition-all duration-300">
             <div class="flex flex-col items-center mb-6">
