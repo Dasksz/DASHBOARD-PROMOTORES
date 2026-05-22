@@ -1401,6 +1401,8 @@
         // Password Toggles
         const btnTogglePasswordSignin = document.getElementById('togglePassword');
         const inputPasswordSignin = document.getElementById('password');
+        const btnTogglePasswordReset = document.getElementById('togglePasswordReset');
+        const inputPasswordReset = document.getElementById('reset-password');
         // Signup toggle removed in new design
         const btnTogglePasswordSignup = null; 
         const inputPasswordSignup = document.getElementById('signup-password');
@@ -1437,6 +1439,54 @@
                 e.preventDefault();
                 viewForgot.classList.add('hidden');
                 viewLogin.classList.remove('hidden');
+            });
+        }
+
+        // Reset Password Form Logic
+        const formReset = document.getElementById('resetForm');
+        if (formReset) {
+            formReset.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const pwd = document.getElementById('reset-password').value;
+                const pwdConfirm = document.getElementById('reset-password-confirm').value;
+
+                if (pwd !== pwdConfirm) {
+                    window.showToast('error', 'As senhas não coincidem.');
+                    return;
+                }
+
+                if (pwd.length < 6) {
+                    window.showToast('error', 'A senha deve ter pelo menos 6 caracteres.');
+                    return;
+                }
+
+                const btn = formReset.querySelector('button[type="submit"]');
+                const oldText = btn.textContent;
+                btn.disabled = true; btn.textContent = 'Salvando...';
+
+                try {
+                    const { data, error } = await supabaseClient.auth.updateUser({
+                        password: pwd
+                    });
+
+                    if (error) {
+                        window.handleSupabaseError(error);
+                    } else {
+                        window.showToast('success', 'Senha atualizada com sucesso!');
+                        // Trigger standard flow since they're implicitly logged in after update
+                        const { data: { session } } = await supabaseClient.auth.getSession();
+                        if (session) {
+                            verifyUserProfile(session);
+                        } else {
+                            window.location.reload();
+                        }
+                    }
+                } catch (err) {
+                    console.error('Erro ao atualizar senha:', err);
+                    window.showToast('error', 'Ocorreu um erro ao atualizar a senha.');
+                } finally {
+                    btn.disabled = false; btn.textContent = oldText;
+                }
             });
         }
 
@@ -1492,6 +1542,22 @@
                     window.showToast('error', 'Ocorreu um erro ao processar sua solicitação.');
                 } finally {
                     btn.disabled = false; btn.textContent = oldText;
+                }
+            });
+        }
+
+        if (btnTogglePasswordReset && inputPasswordReset) {
+            btnTogglePasswordReset.addEventListener('click', () => {
+                const type = inputPasswordReset.getAttribute('type') === 'password' ? 'text' : 'password';
+                inputPasswordReset.setAttribute('type', type);
+
+                // Toggle Icon
+                if (type === 'text') {
+                    // Eye Off Icon
+                    btnTogglePasswordReset.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>';
+                } else {
+                    // Eye Icon
+                    btnTogglePasswordReset.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>';
                 }
             });
         }
@@ -1791,6 +1857,27 @@
 
         // Auth State Listener
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                const contentWrapper = document.getElementById('content-wrapper');
+                const topNavbar = document.getElementById('top-navbar');
+
+                if (contentWrapper) contentWrapper.classList.add('hidden');
+                if (topNavbar) topNavbar.classList.add('hidden');
+                if (telaLogin) telaLogin.classList.remove('hidden');
+
+                const viewLogin = document.getElementById('view-login');
+                const viewSignup = document.getElementById('view-signup');
+                const viewForgot = document.getElementById('view-forgot');
+                const viewReset = document.getElementById('view-reset');
+
+                if (viewLogin) viewLogin.classList.add('hidden');
+                if (viewSignup) viewSignup.classList.add('hidden');
+                if (viewForgot) viewForgot.classList.add('hidden');
+                if (viewReset) viewReset.classList.remove('hidden');
+
+                return; // Stop further processing to avoid redirecting
+            }
+
             if (session) {
                 verifyUserProfile(session);
             } else {
