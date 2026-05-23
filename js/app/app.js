@@ -505,15 +505,8 @@
                     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
                     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-                    const toLocalDateInput = (date) => {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                    };
-
-                    startInput.value = toLocalDateInput(firstDay);
-                    endInput.value = toLocalDateInput(lastDay);
+                    startInput.value = window.toLocalDateInput(firstDay);
+                    endInput.value = window.toLocalDateInput(lastDay);
                 } else if (selectedCoverageDateRange.start) {
                     startInput.value = selectedCoverageDateRange.start;
                     endInput.value = selectedCoverageDateRange.end;
@@ -23913,14 +23906,8 @@ const supervisorGroups = new Map();
             const endEl = document.getElementById('history-date-end');
             
             if (startEl && endEl) {
-                const toLocalDateInput = (date) => {
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                };
-                startEl.value = toLocalDateInput(firstDay);
-                endEl.value = toLocalDateInput(lastDay);
+                startEl.value = window.toLocalDateInput(firstDay);
+                endEl.value = window.toLocalDateInput(lastDay);
             } else {
                 console.error("History date inputs not found!");
             }
@@ -24020,15 +24007,9 @@ const supervisorGroups = new Map();
                     const endEl = document.getElementById('history-date-end');
 
                     // Fix timezone issue by using local date strings
-                    const toLocalDateInput = (date) => {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                    };
 
-                    if (startEl) startEl.value = toLocalDateInput(firstDay);
-                    if (endEl) endEl.value = toLocalDateInput(lastDay);
+                    if (startEl) startEl.value = window.toLocalDateInput(firstDay);
+                    if (endEl) endEl.value = window.toLocalDateInput(lastDay);
 
                     setupHierarchyFilters('history');
                     updateHistorySupervisorFilter();
