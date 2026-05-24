@@ -25909,29 +25909,6 @@ const supervisorGroups = new Map();
         });
     }
     
-    function getWorkingMonthWeeks(year, month) {
-        const weeks = [];
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        let weekIndex = 1;
-        let currentWeekData = { id: weekIndex, start: null, end: null, workingDays: 0 };
-        
-        for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
-            const dayOfWeek = d.getDay(); 
-            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-            if (!currentWeekData.start) currentWeekData.start = new Date(d);
-            currentWeekData.end = new Date(d);
-            if (!isWeekend) currentWeekData.workingDays++;
-            
-            if (dayOfWeek === 0 || d.getTime() === lastDay.getTime()) {
-                weeks.push({...currentWeekData});
-                weekIndex++;
-                currentWeekData = { id: weekIndex, start: null, end: null, workingDays: 0 };
-            }
-        }
-        return weeks;
-    }
-    
     function getBestDayPerWeekday(monthData) {
         const salesByDate = new Map();
         monthData.forEach(s => {
