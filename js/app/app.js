@@ -6172,7 +6172,16 @@
                  });
 
 
-                 clients = clients.filter(c => c.rcas.some(r => rcas.has(r)));
+             // ⚡ Bolt Optimization: Single-pass loop to combine filters
+             const filteredClients = [];
+             const len = clients.length;
+             for (let i = 0; i < len; i++) {
+                 const c = clients[i];
+                 if (c.rcas && c.rcas.some(r => rcas.has(r)) && isActiveClient(c)) {
+                     filteredClients.push(c);
+                 }
+             }
+             clients = filteredClients;
              }
              clients = clients.filter(c => isActiveClient(c));
              return calculateMetricsForClients(clients);
@@ -9471,7 +9480,7 @@ const supervisorGroups = new Map();
 
                 coverageTableDataForExport = filteredTableData;
 
-                coverageTableBody.innerHTML = filteredTableData.slice(0, 500).map((item, index) => {
+                coverageTableBody.innerHTML = filteredTableData.slice(0, 100).map((item, index) => {
                     let boxesVariationContent;
                     if (isFinite(item.boxesVariation)) {
                         const colorClass = item.boxesVariation >= 0 ? 'text-green-400' : 'text-red-400';
@@ -9543,6 +9552,12 @@ const supervisorGroups = new Map();
                         </tr>
                     `;
                 }).join('');
+                if (filteredTableData.length > 100) {
+                    coverageTableBody.insertAdjacentHTML('beforeend', `<tr><td colspan="7" class="text-center p-4 text-slate-500 text-xs italic">Exibindo os primeiros 100 resultados de ${filteredTableData.length}. Utilize os filtros ou exporte para ver mais.</td></tr>`);
+                }
+                if (filteredTableData.length > 100) {
+                    coverageTableBody.insertAdjacentHTML('beforeend', `<tr><td colspan="7" class="text-center p-4 text-slate-500 text-xs italic">Exibindo os primeiros 100 resultados de ${filteredTableData.length}. Utilize os filtros ou exporte para ver mais.</td></tr>`);
+                }
 
                 // Render Top 10 Cities Chart
                 const salesByCity = {};
@@ -13003,19 +13018,22 @@ const supervisorGroups = new Map();
                 clients = getHierarchyFilteredClients('comparison', allClientsData);
             }
 
+            // ⚡ Bolt Optimization: Single-pass loop to avoid .filter() array allocation
             if (comparisonRedeGroupFilter) {
-                if (comparisonRedeGroupFilter === 'com_rede') {
-                    clients = clients.filter(c => {
-                        if (!c.ramo || c.ramo === 'N/A') return false;
-                        if (redeSet && redeSet.size > 0 && !redeSet.has(c.ramo)) return false;
-                        return true;
-                    });
-                } else if (comparisonRedeGroupFilter === 'sem_rede') {
-                    clients = clients.filter(c => !c.ramo || c.ramo === 'N/A');
+                const filteredClients = [];
+                const len = clients.length;
+                for (let i = 0; i < len; i++) {
+                    const c = clients[i];
+                    if (comparisonRedeGroupFilter === 'com_rede') {
+                        if (!c.ramo || c.ramo === 'N/A') continue;
+                        if (redeSet && redeSet.size > 0 && !redeSet.has(c.ramo)) continue;
+                    } else if (comparisonRedeGroupFilter === 'sem_rede') {
+                        if (c.ramo && c.ramo !== 'N/A') continue;
+                    }
+                    filteredClients.push(c);
                 }
+                clients = filteredClients;
             }
-            
-            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
             const clientCodes = new Set(); for(let i=0; i<clients.length; i++) clientCodes.add(clients[i]['Código'] || clients[i]['codigo_cliente']);
 
             const filters = {
@@ -13889,29 +13907,25 @@ const supervisorGroups = new Map();
             }
             // ------------------------------------------
 
-            if (filial !== 'ambas') {
-                clients = clients.filter(c => clientLastBranch.get(c['Código']) === filial);
-            }
-
-            if (excludeFilter !== 'city' && city) {
-                clients = clients.filter(c => c.cidade && c.cidade.toLowerCase() === city);
-            }
-
-            if (excludeFilter !== 'rede') {
-                if (innovationsMonthRedeGroupFilter === 'com_rede') {
-                    const redeSet = (selectedInnovationsMonthRedes.length > 0) ? new Set(selectedInnovationsMonthRedes) : null;
-                    clients = clients.filter(c => {
-                        if (!c.ramo || c.ramo === 'N/A') return false;
-                        if (redeSet && !redeSet.has(c.ramo)) return false;
-                        return true;
-                    });
-
-
-                } else if (innovationsMonthRedeGroupFilter === 'sem_rede') {
-                    clients = clients.filter(c => !c.ramo || c.ramo === 'N/A');
+            // ⚡ Bolt Optimization: Single-pass loop to avoid multiple intermediate array allocations
+            const filteredClients = [];
+            const len = clients.length;
+            const redeSet = (innovationsMonthRedeGroupFilter === 'com_rede' && selectedInnovationsMonthRedes.length > 0) ? new Set(selectedInnovationsMonthRedes) : null;
+            for (let i = 0; i < len; i++) {
+                const c = clients[i];
+                if (filial !== 'ambas' && clientLastBranch.get(c['Código']) !== filial) continue;
+                if (excludeFilter !== 'city' && city && (!c.cidade || c.cidade.toLowerCase() !== city)) continue;
+                if (excludeFilter !== 'rede') {
+                    if (innovationsMonthRedeGroupFilter === 'com_rede') {
+                        if (!c.ramo || c.ramo === 'N/A') continue;
+                        if (redeSet && !redeSet.has(c.ramo)) continue;
+                    } else if (innovationsMonthRedeGroupFilter === 'sem_rede') {
+                        if (c.ramo && c.ramo !== 'N/A') continue;
+                    }
                 }
+                filteredClients.push(c);
             }
-
+            clients = filteredClients;
             return { clients };
         }
 
