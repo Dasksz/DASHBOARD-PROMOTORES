@@ -15715,7 +15715,7 @@ const supervisorGroups = new Map();
                     case 'dashboard':
                         showViewElement(mainDashboard);
                         // Trigger 3D Banner Resize (Fix for hidden container init)
-                        if (window.resizeBanner3D) setTimeout(window.resizeBanner3D, 100);
+
                         
                         if (document.getElementById('dashboard-kpi-container')) document.getElementById('dashboard-kpi-container').classList.remove('hidden');
                         if (chartView) chartView.classList.remove('hidden');
