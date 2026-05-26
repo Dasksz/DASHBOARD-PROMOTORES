@@ -60,8 +60,8 @@
     /* Top Navigation (Glassmorphism) */
     .glass-nav {
         background: var(--glass-bg);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+
+
         border-bottom: 1px solid var(--glass-border);
         transition: all 0.3s ease;
     }
@@ -89,7 +89,7 @@
     
     #itinerary-days-container label {
         cursor: pointer;
-        -webkit-tap-highlight-color: transparent; /* Remove delay on mobile touch */
+    tap-highlight-color: transparent; /* Remove delay on mobile touch */
         touch-action: manipulation; /* Disable double-tap zoom delay */
     }
 
@@ -445,7 +445,7 @@
     @media (max-width: 768px), (prefers-reduced-motion: reduce) {
         .glass-nav, .modal-overlay, .gatekeeper-card, .sticky-filters {
             backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
             background-color: rgba(15, 23, 42, 0.98) !important;
         }
     }
@@ -630,14 +630,14 @@
         font-weight: 700 !important;
         background-color: transparent !important;
         opacity: 1 !important; /* Force opacity for disabled inputs */
-        -webkit-text-fill-color: #1e293b !important; /* Force text color for Webkit/Chrome */
+    text-fill-color: #1e293b !important; /* Force text color for Webkit/Chrome */
     }
 
     /* Ensure Inputs turn white on hover */
     html.light #goals-sv-main-table tbody tr:hover td.bg-\[\#1e293b\] input,
     html.light #goals-sv-main-table tbody tr:hover td.bg-\[\#151c36\] input {
          color: #ffffff !important;
-         -webkit-text-fill-color: #ffffff !important;
+     text-fill-color: #ffffff !important;
     }
 
     /* Fix Adjustment Column Text Color & Background in Light Mode */
@@ -919,22 +919,12 @@ html.light .bg-green-900\/30 {
     border-radius: 28px;
     overflow: hidden;
     box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
-    background: rgba(10, 10, 10, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: url('../imagens/BANNERINICIO.jpeg') center/cover no-repeat;
     border: 1px solid rgba(255, 255, 255, 0.08);
     margin-bottom: 2rem; /* Replace mb-8 utility */
 }
 
-#banner-container canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1;
-}
+
 
 .content-overlay {
     position: relative;
@@ -943,8 +933,7 @@ html.light .bg-green-900\/30 {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding-left: 60px; 
-    background: linear-gradient(90deg, rgba(2,6,23,0.95) 0%, rgba(2,6,23,0.4) 60%, rgba(2,6,23,0) 100%);
+    padding-left: 60px;
     pointer-events: none; 
     max-width: 550px;
 }
@@ -952,7 +941,8 @@ html.light .bg-green-900\/30 {
 @media (max-width: 640px) {
     .content-overlay { padding-left: 20px; }
     .user-greeting { font-size: 1.5rem !important; }
-    .sub-text { font-size: 0.8rem !important; }
+    .sub-text {
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.5); font-size: 0.8rem !important; }
     .brand-tag {
         font-size: 0.5rem !important;
         padding: 2px 8px !important;
@@ -960,6 +950,7 @@ html.light .bg-green-900\/30 {
         white-space: nowrap !important;
     }
     .meta-info {
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
         margin-top: 15px;
         font-size: 0.7rem;
     }
@@ -986,19 +977,21 @@ html.light .bg-green-900\/30 {
     color: white;
     line-height: 1;
     font-style: italic;
-    text-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.5);
 }
 
 .sub-text {
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.5);
     font-size: 1.3rem;
-    color: #fbbf24;
+    color: #ffffff;
     font-weight: 600;
     margin-top: 10px;
 }
 
 .meta-info {
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: #e2e8f0;
     margin-top: 30px;
     display: flex;
     align-items: center;
@@ -1162,7 +1155,7 @@ html.light .bg-green-900\/30 {
 .glass-panel {
     background-color: rgba(10, 10, 10, 0.6) !important;
     backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
+backdrop-filter: blur(12px) !important;
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
     color: #f1f5f9 !important; /* Lighter text base */
@@ -1171,7 +1164,7 @@ html.light .bg-green-900\/30 {
 .glass-panel-heavy {
     background-color: rgba(15, 23, 42, 0.85) !important; /* Darker/More Opaque for Contrast */
     backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
+backdrop-filter: blur(16px) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
 }
@@ -1198,7 +1191,7 @@ html.light .bg-green-900\/30 {
 .kpi-card {
     background-color: rgba(23, 23, 23, 0.4) !important; /* Slightly more transparent than full panels */
     backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
+backdrop-filter: blur(12px) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1) !important;
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
@@ -1247,7 +1240,7 @@ html.light .bg-green-900\/30 {
 .glass-filter-box {
     background-color: rgba(30, 41, 59, 0.5) !important; /* Slightly bluish/slate tint */
     backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
+backdrop-filter: blur(16px) !important;
     border: 1px solid rgba(255, 255, 255, 0.12) !important;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
     border-radius: 1rem !important;
@@ -1338,7 +1331,7 @@ html.light .bg-green-900\/30 {
 .bg-glass {
     background-color: rgba(255, 255, 255, 0.03) !important;
     backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+backdrop-filter: blur(4px);
     transition: background-color 0.2s ease;
 }
 
@@ -1562,8 +1555,8 @@ html.light .bg-green-900\/30 {
 .text-shiny-gold {
     color: #facc15; /* Fallback */
     background: linear-gradient(180deg, #fef08a 0%, #eab308 50%, #ca8a04 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+background-clip: text;
+text-fill-color: transparent;
     filter: drop-shadow(0 0 5px rgba(234, 179, 8, 0.5));
 }
 
