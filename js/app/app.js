@@ -12979,7 +12979,7 @@ const supervisorGroups = new Map();
                 const filteredClients = [];
                 const len = clients.length;
                 for (let i = 0; i < len; i++) {
-                    const c = clients[i];
+                    const c = clients instanceof ColumnarDataset ? clients.get(i) : clients[i];
                     if (comparisonRedeGroupFilter === 'com_rede') {
                         if (!c.ramo || c.ramo === 'N/A') continue;
                         if (redeSet && redeSet.size > 0 && !redeSet.has(c.ramo)) continue;
@@ -12990,7 +12990,11 @@ const supervisorGroups = new Map();
                 }
                 clients = filteredClients;
             }
-            const clientCodes = new Set(); for(let i=0; i<clients.length; i++) clientCodes.add(clients[i]['Código'] || clients[i]['codigo_cliente']);
+            const clientCodes = new Set();
+            for (let i = 0; i < clients.length; i++) {
+                const c = clients instanceof ColumnarDataset ? clients.get(i) : clients[i];
+                clientCodes.add(c['Código'] || c['codigo_cliente']);
+            }
 
             const filters = {
                 filial,
