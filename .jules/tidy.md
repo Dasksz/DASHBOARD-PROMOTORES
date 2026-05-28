@@ -18,3 +18,6 @@
 ## 2024-06-25 : (SV Tab Checkbox Filter Refactoring)
 **Aprendizado:** The SV tab inside the Goals view maintained duplicate logic for rendering and handling checkbox dropdowns, including the unsafe `node.cloneNode(true)` which clears external event listeners.
 **Ação:** Refactored this using the standard `window.setupGenericCheckboxFilterHandlers` from `js/app/utils.js`, which handles visibility toggling, state updates via a Set, and custom UI callbacks safely without destroying event listeners.
+## 2024-05-18 : (Setup Hierarchy Dropdowns Refactoring)
+**Aprendizado:** The `setupHierarchyFilters` function in `js/app/app.js` contained duplicate logic to render exclusive dropdown groups and setup click-outside closing events, leading to a long, complex setup function for views with hierarchies.
+**Ação:** Refactored by creating `window.setupExclusiveDropdownGroup` in `js/app/utils.js`. Always use this generic function for groups of mutually exclusive dropdowns that need click-outside closing logic. Replaced repetitive DOM listener attachments inside `setupHierarchyFilters` with a single call to the new utility.
