@@ -1274,13 +1274,11 @@
 
             const { coords, cocoords, promotors } = state;
 
-            // ⚡ Bolt Optimization: If there are no hierarchy filters active, return the raw dataset directly.
-            // This prevents allocating an array of 300,000+ Proxy objects when the admin views the page without filters,
-            // dropping memory usage by ~200MB.
             let effectiveCoords = new Set(coords);
             let effectiveCoCoords = new Set(cocoords);
             let effectivePromotors = new Set(promotors);
 
+            // Apply User Context Constraints implicitly?
             if (userHierarchyContext.role === 'coord') effectiveCoords.add(userHierarchyContext.coord);
             if (userHierarchyContext.role === 'cocoord') {
                 effectiveCoords.add(userHierarchyContext.coord);
@@ -1291,14 +1289,6 @@
                 effectiveCoCoords.add(userHierarchyContext.cocoord);
                 effectivePromotors.add(userHierarchyContext.promotor);
             }
-
-            const hasAnyFilter = effectiveCoords.size > 0 || effectiveCoCoords.size > 0 || effectivePromotors.size > 0;
-            if (!hasAnyFilter) {
-                return sourceClients;
-            }
-
-
-
 
             const isColumnar = sourceClients instanceof ColumnarDataset;
             const result = [];
@@ -1747,52 +1737,8 @@
                 }
             };
 
-            const bindToggle = (el) => {
-                if (el.btn && el.dd && !el.btn._hasListener) {
-                    el.btn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        // Close others and reset z-index
-                        Object.values(els).forEach(x => {
-                            if(x.dd && x !== el) {
-                                x.dd.classList.add('hidden');
-                                if (x.wrapper) x.wrapper.classList.remove('z-50');
-                            }
-                        });
-
-
-
-                        const isHidden = el.dd.classList.contains('hidden');
-                        if (isHidden) {
-                            el.dd.classList.remove('hidden');
-                            if (el.wrapper) el.wrapper.classList.add('z-50');
-                        } else {
-                            el.dd.classList.add('hidden');
-                            if (el.wrapper) el.wrapper.classList.remove('z-50');
-                        }
-                    });
-                    el.btn._hasListener = true;
-                }
-            };
-            bindToggle(els.coord);
-            bindToggle(els.cocoord);
-            bindToggle(els.promotor);
-
-            // Close dropdowns when clicking outside
-            if (!document._hasHierarchyOutsideListener) {
-                document._hasHierarchyOutsideListener = new Set();
-            }
-            if (!document._hasHierarchyOutsideListener.has(viewPrefix)) {
-                document.addEventListener('click', (e) => {
-                    Object.values(els).forEach(x => {
-                        if (x.dd && !x.dd.classList.contains('hidden')) {
-                            if (x.btn && !x.btn.contains(e.target) && !x.dd.contains(e.target)) {
-                                x.dd.classList.add('hidden');
-                                if (x.wrapper) x.wrapper.classList.remove('z-50');
-                            }
-                        }
-                    });
-                });
-                document._hasHierarchyOutsideListener.add(viewPrefix);
+            if (typeof window.setupExclusiveDropdownGroup === 'function') {
+                window.setupExclusiveDropdownGroup(els, viewPrefix, '_hasHierarchyOutsideListener');
             }
 
             const bindChange = (level, nextLevel, nextNextLevel) => {
@@ -2483,40 +2429,68 @@
         }
 
         function getActiveClientsData() {
-            // ⚡ Bolt Optimization: All clients are active now since `isBase = true`.
-            // Hydrating 300,000 proxies and returning them in an array consumes ~200MB memory.
-            // We simply return the raw ColumnarDataset, which acts exactly like an array to consumers!
-            
             try {
-                if (lastAllClientsData !== allClientsData || !cachedActiveClientCodesSet) {
+                // Invalidate cache if source data reference changes
+                if (lastAllClientsData !== allClientsData) {
+                    cachedActiveClientsBase = null;
+                    cachedActiveClientCodesSet = null;
                     lastAllClientsData = allClientsData;
+                }
+
+                if (!cachedActiveClientsBase || !cachedActiveClientCodesSet) {
+                    cachedActiveClientsBase = [];
                     cachedActiveClientCodesSet = new Set();
-                    
+
                     const isColumnar = allClientsData instanceof ColumnarDataset;
                     const len = allClientsData.length;
-                    let colCode = null;
-                    
+
+                    // Prepare Accessors for Columnar path
+                    let colCode, colRca1, colRazao;
+                    let data;
                     if (isColumnar) {
-                        const data = allClientsData._data;
+                        data = allClientsData._data;
                         colCode = data['Código'] || data['codigo_cliente'] || [];
+                        colRca1 = data['rca1'] || data['RCA 1'] || data['RCA1'] || [];
+                        colRazao = data['razaoSocial'] || data['RAZAOSOCIAL'] || data['Cliente'] || data['CLIENTE'] || [];
                     }
-                    
+
                     for (let i = 0; i < len; i++) {
+                        let codcli, rca1, razao;
+                        let item;
+
                         if (isColumnar) {
-                            cachedActiveClientCodesSet.add(String(colCode[i] || ''));
+                            codcli = String(colCode[i] || '');
+                            rca1 = String(colRca1[i] || '').trim();
+                            razao = colRazao[i];
+                            // Push to cache (hydrate Proxy now)
+                            item = allClientsData.get(i);
                         } else {
-                            cachedActiveClientCodesSet.add(String(allClientsData[i]['Código'] || allClientsData[i]['codigo_cliente'] || ''));
+                            item = allClientsData[i];
+                            codcli = String(item['Código'] || item['codigo_cliente'] || '');
+                            rca1 = String(item.rca1 || '').trim();
+                            razao = item.razaoSocial || item.Cliente;
+                        }
+
+                        let isAmericanas = item.isAmericanas !== undefined ? item.isAmericanas : (item.isAmericanas = (item.razaoSocial || item.Cliente || '').toUpperCase().includes('AMERICANAS'));
+
+                        // Base Condition: Always Visible
+                        const isBase = true; // All active non-inativos are visible now
+
+                        if (isBase) {
+                            cachedActiveClientsBase.push(item);
+                            cachedActiveClientCodesSet.add(codcli);
                         }
                     }
                 }
 
-                return allClientsData;
+                // Return a copy to prevent external mutation of the cache
+                return cachedActiveClientsBase.slice();
+
             } catch (e) {
                 console.error("[ActiveClients] Error:", e);
-                return allClientsData;
+                return [];
             }
         }
-
         const cityCodCliFilter = document.getElementById('city-codcli-filter');
         const cityCodCliFilterSuggestions = document.getElementById('city-codcli-filter-suggestions');
         const clearCityFiltersBtn = document.getElementById('clear-city-filters-btn');
