@@ -1272,15 +1272,20 @@
             const state = hierarchyState[viewPrefix];
             if (!state) return sourceClients;
 
+            // ⚡ Bolt Optimization: If state is empty and user is admin, return source directly to avoid full iteration and O(N) proxy hydration
+            const hasAnyStateFilter = state.coords.size > 0 || state.cocoords.size > 0 || state.promotors.size > 0;
+            const hasAnyContextFilter = userHierarchyContext.role === 'coord' || userHierarchyContext.role === 'cocoord' || userHierarchyContext.role === 'promotor';
+            if (!hasAnyStateFilter && !hasAnyContextFilter) {
+                return sourceClients;
+            }
+
             const { coords, cocoords, promotors } = state;
 
-            // ⚡ Bolt Optimization: If there are no hierarchy filters active, return the raw dataset directly.
-            // This prevents allocating an array of 300,000+ Proxy objects when the admin views the page without filters,
-            // dropping memory usage by ~200MB.
             let effectiveCoords = new Set(coords);
             let effectiveCoCoords = new Set(cocoords);
             let effectivePromotors = new Set(promotors);
 
+            // Apply User Context Constraints implicitly?
             if (userHierarchyContext.role === 'coord') effectiveCoords.add(userHierarchyContext.coord);
             if (userHierarchyContext.role === 'cocoord') {
                 effectiveCoords.add(userHierarchyContext.coord);
@@ -1291,14 +1296,6 @@
                 effectiveCoCoords.add(userHierarchyContext.cocoord);
                 effectivePromotors.add(userHierarchyContext.promotor);
             }
-
-            const hasAnyFilter = effectiveCoords.size > 0 || effectiveCoCoords.size > 0 || effectivePromotors.size > 0;
-            if (!hasAnyFilter) {
-                return sourceClients;
-            }
-
-
-
 
             const isColumnar = sourceClients instanceof ColumnarDataset;
             const result = [];
@@ -1326,7 +1323,7 @@
                     } else {
                         result.push(client);
                     }
-                    continue; 
+                    continue;
                 }
 
                 // Check Coord
@@ -1361,7 +1358,7 @@
                 else if (optimizedData.cocoordMap.has(val)) name = optimizedData.cocoordMap.get(val);
                 else if (optimizedData.promotorMap.has(val)) name = optimizedData.promotorMap.get(val);
                 else if (window.sellerDetailsMap && window.sellerDetailsMap.has(val)) name = window.sellerDetailsMap.get(val).name;
-                
+
                 element.textContent = name;
             } else {
                 element.textContent = `${selectedSet.size} selecionados`;
@@ -1420,7 +1417,7 @@
                     <input type="checkbox" value="ALL" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                 </label>
             `;
-            
+
             options.forEach(opt => {
                 const checked = selectedVendedores.has(opt.value) ? 'checked' : '';
                 html += `
@@ -1485,7 +1482,7 @@
                 let parentCoords = state.coords;
                 // If no parent selected, and ADM, show ALL. If restricted, show allowed.
                 // If restricted, state.coords might be empty initially, but user context implies restriction.
-                
+
                 let allowedCoords = parentCoords;
                 if (allowedCoords.size === 0) {
                     if (userHierarchyContext.role === 'adm') {
@@ -1524,7 +1521,7 @@
             } else if (level === 'promotor') {
                 // Show Promotors belonging to selected CoCoords
                 let parentCoCoords = state.cocoords;
-                
+
                 let allowedCoCoords = parentCoCoords;
                 if (allowedCoCoords.size === 0) {
                     // Need to resolve relevant CoCoords from relevant Coords
@@ -1541,7 +1538,7 @@
                     });
 
 
-                    
+
                     // Filter by User Context
                     if (userHierarchyContext.role === 'cocoord' || userHierarchyContext.role === 'promotor') {
                          if (userHierarchyContext.cocoord) {
@@ -1596,7 +1593,7 @@
                 `;
             });
             target.dd.innerHTML = html;
-            
+
             // Update Text Label
             let label = 'Todos';
             if (level === 'coord') label = 'Coordenador';
@@ -1675,9 +1672,9 @@
                     btn.classList.remove('text-[#FF5E00]', 'bg-white/10');
                 }
             }
-            
+
             applyAdminViewVisibilityRules();
-            updateSupervisorFilterDropdown(); 
+            updateSupervisorFilterDropdown();
             updateVendedorFilterDropdown();
             updateDashboard();
 
@@ -1803,10 +1800,10 @@
                             const val = e.target.value;
                             const set = state[level + 's'];
                             if (e.target.checked) set.add(val); else set.delete(val);
-                            
+
                             // Update Button Text
                             updateHierarchyDropdown(viewPrefix, level); // Re-render self? No, just text. But re-rendering handles text.
-                            
+
                             // Cascade Clear
                             if (nextLevel) {
                                 state[nextLevel + 's'].clear();
@@ -1831,7 +1828,7 @@
             updateHierarchyDropdown(viewPrefix, 'coord');
             updateHierarchyDropdown(viewPrefix, 'cocoord');
             updateHierarchyDropdown(viewPrefix, 'promotor');
-            
+
             // Auto-select for restricted users?
             // If I am Coord, my Coord ID is userHierarchyContext.coord.
             // Should I pre-select it?
@@ -1839,12 +1836,12 @@
             // If I DON'T pre-select it (empty set), `getHierarchyFilteredClients` applies it anyway via context.
             // Visually, it's better if it shows "My Name" instead of "Coordenador" (which implies All/None).
             // So yes, let's pre-select.
-            
+
             if (userHierarchyContext.role !== 'adm') {
                 if (userHierarchyContext.coord) state.coords.add(userHierarchyContext.coord);
                 if (userHierarchyContext.cocoord) state.cocoords.add(userHierarchyContext.cocoord);
                 if (userHierarchyContext.promotor) state.promotors.add(userHierarchyContext.promotor);
-                
+
                 // Refresh UI to show checkmarks and text
                 updateHierarchyDropdown(viewPrefix, 'coord');
                 updateHierarchyDropdown(viewPrefix, 'cocoord');
@@ -1867,7 +1864,7 @@
             optimizedData.supervisorCodeByName = new Map();
             optimizedData.productPastaMap = new Map();
 
-            
+
             let americanasCodCli = null;
 
             // Access via accessor method for potential ColumnarDataset
@@ -1956,7 +1953,7 @@
                 };
             }
 
-            
+
 
             // Use History AND Current Data for identifying Supervisor (Optimized)
             // Identify Supervisor for each Seller based on the *Latest* sale
@@ -1968,9 +1965,9 @@
                     const s = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const originalCodUsur = s.CODUSUR;
                     const codCliRaw = normalizeKey(s.CODCLI);
-                    
+
                     let codUsur = originalCodUsur;
-                    
+
                     if (codCliRaw !== americanasCodCli) {
                         const currentSellerCode = clientToCurrentSellerMap.get(codCliRaw);
                         if (currentSellerCode) {
@@ -2027,7 +2024,7 @@
             if (embeddedData.relacao_rota_involves) {
                 const rawRel = embeddedData.relacao_rota_involves;
                 const relArray = (rawRel instanceof ColumnarDataset) ? [] : rawRel; // Assuming standard array for now as fetchAll returns objects usually unless specified. JS init uses 'object' format.
-                
+
                 // If it were columnar, we'd need to handle it, but init.js specified 'object'.
                 if (Array.isArray(rawRel)) {
                     for (let i = 0; i < rawRel.length; i++) {
@@ -2035,7 +2032,7 @@
                          // Try both lowercase and snake_case keys just in case
                          const involvesCode = window.normalizeResearcherCode(item.involves_code || item.INVOLVES_CODE);
                          const sellerCode = String(item.seller_code || item.SELLER_CODE || '').trim();
-                         
+
                          if (involvesCode) {
                              const details = sellerDetailsMap.get(sellerCode);
                              lpResearcherMap.set(involvesCode, {
@@ -2071,10 +2068,10 @@
 
                     const coordCode = getVal(['cod_coord', 'COD_COORD', 'COD COORD.']).trim().toUpperCase();
                     const coordName = (getVal(['nome_coord', 'NOME_COORD', 'COORDENADOR']) || coordCode).toUpperCase();
-                    
+
                     const cocoordCode = getVal(['cod_cocoord', 'COD_COCOORD', 'COD CO-COORD.']).trim().toUpperCase();
                     const cocoordName = (getVal(['nome_cocoord', 'NOME_COCOORD', 'CO-COORDENADOR']) || cocoordCode).toUpperCase();
-                    
+
                     const promotorCode = getVal(['cod_promotor', 'COD_PROMOTOR', 'COD PROMOTOR']).trim().toUpperCase();
                     const promotorName = (getVal(['nome_promotor', 'NOME_PROMOTOR', 'PROMOTOR']) || promotorCode).toUpperCase();
 
@@ -2176,7 +2173,7 @@
                     let codSupervisor = getVal(i, 'CODSUPERVISOR');
                     let codUsur = getVal(i, 'CODUSUR');
                     const rawCodCli = normalizeKey(getVal(i, 'CODCLI'));
-                    
+
                     if (rawCodCli !== americanasCodCli) {
                         const currentSellerCode = clientToCurrentSellerMap.get(rawCodCli);
                         if (currentSellerCode) {
@@ -2373,10 +2370,10 @@
                         // Check for Modal Internal History (Tabs)
                         if (openModal._tabHistory && openModal._tabHistory.length > 0) {
                             const prevTab = openModal._tabHistory.pop();
-                            // Find switchTab function context? 
+                            // Find switchTab function context?
                             // Since switchTab is closure-scoped inside openWalletClientModal, we can't call it directly unless we exposed it or stored it.
                             // Better approach: Store the 'restore' callback in the history.
-                            
+
                             // Re-evaluating: 'switchTab' is inside 'openWalletClientModal'.
                             // We need to expose switchTab or make _tabHistory store functions.
                             // Let's assume _tabHistory stores { callback: () => ... }
@@ -2385,7 +2382,7 @@
                                 return;
                             }
                         }
-                        
+
                         // Default: Close Modal
                         // Find the close button and click it to ensure cleanup logic runs
                         const closeBtn = openModal.querySelector('button[id$="close-btn"]');
@@ -2483,40 +2480,68 @@
         }
 
         function getActiveClientsData() {
-            // ⚡ Bolt Optimization: All clients are active now since `isBase = true`.
-            // Hydrating 300,000 proxies and returning them in an array consumes ~200MB memory.
-            // We simply return the raw ColumnarDataset, which acts exactly like an array to consumers!
-
             try {
-                if (lastAllClientsData !== allClientsData || !cachedActiveClientCodesSet) {
+                // Invalidate cache if source data reference changes
+                if (lastAllClientsData !== allClientsData) {
+                    cachedActiveClientsBase = null;
+                    cachedActiveClientCodesSet = null;
                     lastAllClientsData = allClientsData;
+                }
+
+                if (!cachedActiveClientsBase || !cachedActiveClientCodesSet) {
+                    cachedActiveClientsBase = [];
                     cachedActiveClientCodesSet = new Set();
 
                     const isColumnar = allClientsData instanceof ColumnarDataset;
                     const len = allClientsData.length;
-                    let colCode = null;
 
+                    // Prepare Accessors for Columnar path
+                    let colCode, colRca1, colRazao;
+                    let data;
                     if (isColumnar) {
-                        const data = allClientsData._data;
+                        data = allClientsData._data;
                         colCode = data['Código'] || data['codigo_cliente'] || [];
+                        colRca1 = data['rca1'] || data['RCA 1'] || data['RCA1'] || [];
+                        colRazao = data['razaoSocial'] || data['RAZAOSOCIAL'] || data['Cliente'] || data['CLIENTE'] || [];
                     }
 
                     for (let i = 0; i < len; i++) {
+                        let codcli, rca1, razao;
+                        let item;
+
                         if (isColumnar) {
-                            cachedActiveClientCodesSet.add(String(colCode[i] || ''));
+                            codcli = String(colCode[i] || '');
+                            rca1 = String(colRca1[i] || '').trim();
+                            razao = colRazao[i];
+                            // Push to cache (hydrate Proxy now)
+                            item = allClientsData.get(i);
                         } else {
-                            cachedActiveClientCodesSet.add(String(allClientsData[i]['Código'] || allClientsData[i]['codigo_cliente'] || ''));
+                            item = allClientsData[i];
+                            codcli = String(item['Código'] || item['codigo_cliente'] || '');
+                            rca1 = String(item.rca1 || '').trim();
+                            razao = item.razaoSocial || item.Cliente;
+                        }
+
+                        let isAmericanas = item.isAmericanas !== undefined ? item.isAmericanas : (item.isAmericanas = (item.razaoSocial || item.Cliente || '').toUpperCase().includes('AMERICANAS'));
+
+                        // Base Condition: Always Visible
+                        const isBase = true; // All active non-inativos are visible now
+
+                        if (isBase) {
+                            cachedActiveClientsBase.push(item);
+                            cachedActiveClientCodesSet.add(codcli);
                         }
                     }
                 }
 
-                return allClientsData;
+                // Return a copy to prevent external mutation of the cache
+                return cachedActiveClientsBase.slice();
+
             } catch (e) {
                 console.error("[ActiveClients] Error:", e);
-                return allClientsData;
+                return [];
             }
         }
-
         const cityCodCliFilter = document.getElementById('city-codcli-filter');
         const cityCodCliFilterSuggestions = document.getElementById('city-codcli-filter-suggestions');
         const clearCityFiltersBtn = document.getElementById('clear-city-filters-btn');
@@ -2722,7 +2747,7 @@
             consultas: { dirty: true, rendered: false },
             history: { dirty: true, rendered: false },
             wallet: { dirty: true, rendered: false },
-            positivacao: { dirty: true, rendered: false }, 
+            positivacao: { dirty: true, rendered: false },
             estoque: { dirty: true, rendered: false },
             feed: { dirty: true, rendered: false },
             weekly: { dirty: true, rendered: false }
@@ -3759,15 +3784,15 @@
                     // "Code - Razao" -> Limit Razao to 22 chars
                     const razao = row.razao || row.name; // Fallback
                     const truncatedRazao = razao.length > 22 ? razao.substring(0, 22) + '...' : razao;
-                    
+
                     const mobileLine1 = `${row.codcli} - ${truncatedRazao}`;
-                    const desktopLine1 = row.name; 
+                    const desktopLine1 = row.name;
                     const line2 = row.fantasia || '';
 
                     return `
                     <tr class="hover:bg-slate-700/50 border-b border-slate-500 last:border-0 cursor-pointer md:cursor-default" onclick="if(window.innerWidth < 768) openMixMobileModal('${row.codcli}')">
                         <td data-label="Cód" class="px-2 py-2 md:px-4 md:py-2 font-medium text-slate-300 text-[10px] md:text-xs hidden md:table-cell">${escapeHtml(row.codcli)}</td>
-                        
+
                         <td data-label="Cliente" class="px-2 py-2 md:px-4 md:py-2 text-left">
                             <!-- Mobile -->
                             <div class="md:hidden text-xs font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis max-w-full" title="${escapeHtml(razao)}">
@@ -3783,7 +3808,7 @@
 
                         <td data-label="Cidade" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs text-slate-300 truncate max-w-[80px] hidden md:table-cell">${escapeHtml(row.city)}</td>
                         <td data-label="Vendedor" class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-xs text-slate-400 truncate max-w-[80px] hidden md:table-cell">${escapeHtml(getFirstName(row.vendedor))}</td>
-                        
+
                         ${saltyCols}
                         ${foodsCols}
 
@@ -3799,14 +3824,14 @@
                     <tr class="glass-panel-heavy font-bold border-t-2 border-slate-500 text-xs sticky bottom-0 z-20">
                         <!-- Desktop Label -->
                         <td colspan="4" class="px-2 py-3 text-right text-white hidden md:table-cell">TOTAL POSITIVADOS:</td>
-                        
+
                         <!-- Mobile Label -->
                         <td class="px-2 py-3 text-right text-white md:hidden">TOTAL:</td>
 
                         <!-- Desktop Salty/Foods Counts -->
                         <td colspan="${MIX_SALTY_CATEGORIES.length}" class="px-2 py-3 text-center text-teal-400 text-sm border-l border-slate-500 hidden md:table-cell">${positivadosSalty}</td>
                         <td colspan="${MIX_FOODS_CATEGORIES.length}" class="px-2 py-3 text-center text-yellow-400 text-sm border-l border-slate-500 hidden md:table-cell">${positivadosFoods}</td>
-                        
+
                         <!-- Mobile Categorias Footer -->
                         <td class="px-2 py-3 text-center text-white text-sm border-l border-slate-500 md:hidden">
                             <span class="text-teal-400">${positivadosSalty}</span> / <span class="text-yellow-400">${positivadosFoods}</span>
@@ -4538,7 +4563,7 @@
             // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS
             if (window.userRole === 'adm' && rca1 === '53') return false;
             // FIX: Only exclude INATIVOS for Admins. Non-admins see everything in their wallet.
-            if (window.userRole === 'adm' && rca1 === '') return false; 
+            if (window.userRole === 'adm' && rca1 === '') return false;
             return true;
         }
 
@@ -5650,7 +5675,7 @@
             // --- Fix: Define Filter Sets from Hierarchy State ---
             const supervisorsSet = new Set();
             const sellersSet = new Set();
-            
+
             // Populate Sets based on Admin View Mode
             if (adminViewMode === 'seller') {
                 if (selectedMetaRealizadoVendedores.size > 0) {
@@ -5968,7 +5993,7 @@
                 const rowsHTML = pageData.map((row, index) => {
                     const metaTotalStr = row.metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     const realTotalStr = row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    
+
                     const percent = row.metaTotal > 0 ? (row.realTotal / row.metaTotal) * 100 : 0;
                     const colorClass = getAchievementColorClass(percent);
 
@@ -8463,12 +8488,12 @@
 
                     let geralMetaFat = totalElma.metaFat + totalFoods.metaFat;
                     let geralMetaVol = totalElma.metaVol + totalFoods.metaVol;
-                    
+
                     if (goalsSellerTargets && goalsSellerTargets.has(sellerObj.name)) {
                         const targets = goalsSellerTargets.get(sellerObj.name);
                         if (targets['pepsico_all_FAT'] !== undefined) geralMetaFat = targets['pepsico_all_FAT'];
                         else if (targets['PEPSICO_ALL_FAT'] !== undefined) geralMetaFat = targets['PEPSICO_ALL_FAT'];
-                        
+
                         if (targets['pepsico_all_VOL'] !== undefined) geralMetaVol = targets['pepsico_all_VOL'];
                         else if (targets['PEPSICO_ALL_VOL'] !== undefined) geralMetaVol = targets['PEPSICO_ALL_VOL'];
                     }
@@ -8511,20 +8536,20 @@
                         let explicitPos = undefined;
                         let explicitFat = undefined;
                         let explicitVol = undefined;
-                        
+
                         // Map colId to the keys used in goalsSellerTargets (e.g. 'geral' -> 'pepsico_all')
                         const targetKeyPrefix = (colId === 'geral') ? 'pepsico_all' : colId;
                         const targetKeyPrefixUpper = targetKeyPrefix.toUpperCase();
 
                         if (goalsSellerTargets && goalsSellerTargets.has(sellerName)) {
                             const targets = goalsSellerTargets.get(sellerName);
-                            
+
                             if (targets[targetKeyPrefix] !== undefined) explicitPos = targets[targetKeyPrefix];
                             else if (targets[targetKeyPrefixUpper] !== undefined) explicitPos = targets[targetKeyPrefixUpper];
-                            
+
                             if (targets[`${targetKeyPrefix}_FAT`] !== undefined) explicitFat = targets[`${targetKeyPrefix}_FAT`];
                             else if (targets[`${targetKeyPrefixUpper}_FAT`] !== undefined) explicitFat = targets[`${targetKeyPrefixUpper}_FAT`];
-                            
+
                             if (targets[`${targetKeyPrefix}_VOL`] !== undefined) explicitVol = targets[`${targetKeyPrefix}_VOL`];
                             else if (targets[`${targetKeyPrefixUpper}_VOL`] !== undefined) explicitVol = targets[`${targetKeyPrefixUpper}_VOL`];
                         }
@@ -9041,10 +9066,10 @@ const supervisorGroups = new Map();
                 history = history.filter(checkPrice);
             }
 
-            
+
             // Return history data (unfiltered by date) to allow calculating 3-month active clients
             const allHistoryUnfiltered = getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters, excludeFilter);
-            
+
             return { sales, history, clients, allHistoryUnfiltered };
         }
 
@@ -9146,14 +9171,14 @@ const supervisorGroups = new Map();
                 const val = parseFloat(s.VLVENDA) || 0;
                 clientHistorySum.set(cod, (clientHistorySum.get(cod) || 0) + val);
             }
-            
+
             const activeClientCodes3M = new Set();
             clientHistorySum.forEach((total, cod) => {
                 if (total >= 1) {
                     activeClientCodes3M.add(cod);
                 }
             });
-            
+
             let active3MCount = 0;
             activeClientCodes.forEach(code => {
                 if (activeClientCodes3M.has(code)) {
@@ -9557,7 +9582,7 @@ const supervisorGroups = new Map();
 
                     const client = clientMapForKPIs.get(String(s.CODCLI));
                     const city = client ? (client.cidade || client['Nome da Cidade'] || 'N/A') : 'N/A';
-                    
+
                     const resolvedProdChart = window.resolveDim('produtos', s.PRODUTO);
                     const qtdeMasterChart = (resolvedProdChart && resolvedProdChart.qtde_master && resolvedProdChart.qtde_master > 0) ? resolvedProdChart.qtde_master : 1;
                     const qty = currentCoverageMetricMode === "boxes" ? ((Number(s.QTVENDA) || 0) / qtdeMasterChart) : getValueForSale(s, selectedCoverageTiposVenda);
@@ -9989,12 +10014,12 @@ const supervisorGroups = new Map();
             const refDate = (typeof lastSaleDate !== 'undefined' && lastSaleDate) ? new Date(lastSaleDate) : new Date();
             const currentYear = refDate.getUTCFullYear();
             const currentMonth = refDate.getUTCMonth();
-            
+
             // Calculate Current Month Progress
             const totalWDCurrent = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
             // Use lastSaleDate (UTC) to match check
             const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, refDate);
-            
+
             const ratio = totalWDCurrent > 0 ? (passedWDCurrent / totalWDCurrent) : 1;
 
             // Calculate Target Cutoff for Previous Month
@@ -10194,10 +10219,10 @@ const supervisorGroups = new Map();
                 const tdProduct = document.createElement('td');
                 tdProduct.className = 'py-1 px-1 md:py-3 md:px-4';
                 tdProduct.setAttribute('data-label', 'Produto');
-                
+
                 // Custom truncation for mobile (Use CSS truncate instead of hard limit to maximize space)
                 const fullName = item.name || 'Desconhecido';
-                
+
                 // Variation Badge Data
                 const badgeBg = item.variation >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20';
                 const arrow = item.variation >= 0 ? '▲' : '▼';
@@ -10215,19 +10240,19 @@ const supervisorGroups = new Map();
                             <div class="flex items-center overflow-hidden min-w-0 flex-1 mr-2">
                                 <!-- Rank -->
                                 <span class="text-slate-500 font-mono text-[10px] font-bold mr-2 w-4 text-center flex-shrink-0">${index + 1}</span>
-                                
+
                                 <!-- Product Info -->
                                 <span class="text-[10px] font-bold text-white group-hover:text-[#FF5E00] transition-colors truncate">
                                     ${window.escapeHtml(item.code)} - ${window.escapeHtml(fullName)}
                                 </span>
                             </div>
-                            
+
                             <!-- Variation Badge (Right Aligned) -->
                             <div class="flex-shrink-0">
                                 ${variationBadgeHtml}
                             </div>
                         </div>
-                        
+
                         <!-- Mobile Manufacturer/Category (Secondary Line) -->
                         <div class="md:hidden text-[9px] text-slate-500 uppercase tracking-wide ml-6 truncate leading-none mt-0.5">
                             ${window.escapeHtml(item.category || '')}
@@ -10250,7 +10275,7 @@ const supervisorGroups = new Map();
                 tdPerf.setAttribute('data-label', 'Perf.');
                 const barWidth = Math.min((item.absVariation / maxVariation) * 100, 100);
                 const barColor = item.variation >= 0 ? 'bg-emerald-500' : 'bg-red-500';
-                
+
                 // Refined HTML for simple magnitude bar:
                 tdPerf.innerHTML = `
                     <div class="h-1 md:h-1.5 w-full glass-panel-heavy rounded-full overflow-hidden">
@@ -10467,7 +10492,7 @@ const supervisorGroups = new Map();
 
             // --- OPTIMIZATION: Compute Hierarchy and Seller Filters Once ---
             let baseFilteredHierarchyClients = getHierarchyFilteredClients('main');
-            
+
             if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller' && selectedSupervisors.size > 0) {
                 baseFilteredHierarchyClients = baseFilteredHierarchyClients.filter(c => {
                     const rca = String(c.rca1 || '').trim();
@@ -10691,7 +10716,7 @@ const supervisorGroups = new Map();
             if (!chartView.classList.contains('hidden')) {
                 let chartData = summary.vendasPorCoord;
                 const mainState = hierarchyState['main'];
-                
+
                 if (mainState.cocoords.size > 0) {
                     chartData = summary.vendasPorPromotor;
                 } else if (mainState.coords.size > 0) {
@@ -10835,29 +10860,29 @@ const supervisorGroups = new Map();
 
                     if (useManualSellerTargets && typeof goalsSellerTargets !== 'undefined') {
                         const sellerGoalMap = new Map();
-                        
+
                         goalClients.forEach(c => {
                             const codCli = normalizeKey(String(c['Código'] || c['codigo_cliente']));
                             const rca1 = String(c.rca1 || '').trim();
-                            
+
                             let sellerName = rca1;
                             if (optimizedData.rcaNameByCode && optimizedData.rcaNameByCode.has(rca1)) {
                                 sellerName = optimizedData.rcaNameByCode.get(rca1);
                             } else if (rca1 === '1001') sellerName = 'AMERICANAS';
-                            
+
                             if (!sellerGoalMap.has(sellerName)) {
-                                sellerGoalMap.set(sellerName, { 
-                                    hasManualProfile: goalsSellerTargets.has(sellerName), 
+                                sellerGoalMap.set(sellerName, {
+                                    hasManualProfile: goalsSellerTargets.has(sellerName),
                                     manualAddedKeys: new Set(),
-                                    total: 0 
+                                    total: 0
                                 });
 
 
                             }
-                            
+
                             const entry = sellerGoalMap.get(sellerName);
                             const clientGoals = window.globalClientGoals ? window.globalClientGoals.get(codCli) : null;
-                            
+
                             activeGoalKeys.forEach(key => {
                                 let usedManual = false;
                                 if (entry.hasManualProfile) {
@@ -10865,10 +10890,10 @@ const supervisorGroups = new Map();
                                     if (key === 'PEPSICO_ALL') manualKey = 'pepsico_all';
                                     else if (key === 'ELMA_ALL') manualKey = 'total_elma';
                                     else if (key === 'FOODS_ALL') manualKey = 'total_foods';
-                                    
+
                                     const targetKey = `${manualKey}${metricSuffix}`;
                                     const targets = goalsSellerTargets.get(sellerName);
-                                    
+
                                     if (targets && targets[targetKey] !== undefined) {
                                         if (!entry.manualAddedKeys.has(key)) {
                                             entry.total += targets[targetKey];
@@ -10877,7 +10902,7 @@ const supervisorGroups = new Map();
                                         usedManual = true;
                                     }
                                 }
-                                
+
                                 if (!usedManual && clientGoals && clientGoals.has(key)) {
                                     const val = (currentProductMetric === 'peso') ? (clientGoals.get(key).vol || 0) : (clientGoals.get(key).fat || 0);
                                     entry.total += val;
@@ -10888,7 +10913,7 @@ const supervisorGroups = new Map();
                         });
 
 
-                        
+
                         sellerGoalMap.forEach(entry => totalGoal += entry.total);
 
                     } else {
@@ -10978,7 +11003,7 @@ const supervisorGroups = new Map();
                     const productInfo = window.resolveDim('produtos', sale.PRODUTO);
                     // Use 'mix_marca' or 'mix_categoria' if available (from dim_produtos), else fallback to description
                     // Note: 'mix_marca' logic matches the goal definitions ideally.
-                    
+
                     if (window.isElma(codFor)) {
                         // Elma Logic
                         // Priority: mix_categoria > Description
@@ -10986,12 +11011,12 @@ const supervisorGroups = new Map();
                         const desc = (productInfo.descricao || '').toUpperCase();
 
                         if (cat === 'TORCIDA' || desc.includes('TORCIDA')) return window.SUPPLIER_CODES.ELMA[2]; // Torcida
-                        
+
                         // Extrusados Check
                         if (cat === 'EXTRUSADOS' || desc.includes('CHEETOS') || desc.includes('FANDANGOS') || desc.includes('CEBOLITOS') || desc.includes('BACONZITOS')) {
                             return window.SUPPLIER_CODES.ELMA[0];
                         }
-                        
+
                         // Default to Batata/Rest
                         return window.SUPPLIER_CODES.ELMA[1];
                     } else {
@@ -11034,7 +11059,7 @@ const supervisorGroups = new Map();
                     [window.SUPPLIER_CODES.VIRTUAL.TODDY]: 'Toddy',
                     [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO]: 'Quaker / Kero Coco'
                 };
-                
+
                 // Color Palette (Pepsico Brand Colors approximation or distinct colors)
                 const colors = [
                     0xeab308, // Yellow/Gold
@@ -11046,7 +11071,7 @@ const supervisorGroups = new Map();
                 ];
 
                 const orderedKeys = window.SUPPLIER_CODES.ALL_GOALS;
-                
+
                 orderedKeys.forEach((key, index) => {
                     const goal = categoryGoals[key];
                     const actual = actualsMap[key];
@@ -11054,9 +11079,9 @@ const supervisorGroups = new Map();
                     if (goal > 0) {
                         pct = (actual / goal) * 100;
                     } else if (actual > 0) {
-                        pct = 100; 
+                        pct = 100;
                     }
-                    
+
                     if (window.am5) {
                         radarData.push({
                             category: categoryLabels[key],
@@ -11120,7 +11145,7 @@ const supervisorGroups = new Map();
 
                 // We need to calculate Realized vs Meta for Faturamento, Volume, Positivation, Mix Salty, Mix Foods
                 // based on the visible goalClients
-                
+
                 const metasRadarData = [];
                 const mColors = [
                     0x3b82f6, // Faturamento - Blue
@@ -11191,13 +11216,13 @@ const supervisorGroups = new Map();
 
                     if (specificGlobalPos && (specificGlobalPos.pos !== undefined || typeof specificGlobalPos === 'number')) {
                         posGoal = specificGlobalPos.pos !== undefined ? specificGlobalPos.pos : specificGlobalPos;
-                        
+
                         mixSaltyGoal = globalMixSalty && globalMixSalty.mix !== undefined ? globalMixSalty.mix : 0;
                         mixFoodsGoal = globalMixFoods && globalMixFoods.mix !== undefined ? globalMixFoods.mix : 0;
-                        
+
                         if (globalMixSalty && typeof globalMixSalty === 'number') mixSaltyGoal = globalMixSalty;
                         if (globalMixFoods && typeof globalMixFoods === 'number') mixFoodsGoal = globalMixFoods;
-                        
+
                         usedGlobalOverride = true;
                     }
                 }
@@ -11384,7 +11409,7 @@ const supervisorGroups = new Map();
                 if (filteredSalesData) {
                     for(let i=0; i<filteredSalesData.length; i++) {
                         const s = (filteredSalesData instanceof ColumnarDataset) ? filteredSalesData.get(i) : filteredSalesData[i];
-                        
+
                         // Faturamento and Volume based on active filters (which are inherently applied to filteredSalesData)
                         fatRealized += (Number(s.VLVENDA) || 0);
                         volRealized += (Number(s.TOTPESOLIQ) || 0);
@@ -11398,7 +11423,7 @@ const supervisorGroups = new Map();
                              dashboardClientsMap.set(codCli, new Map());
                         }
                         const cMap = dashboardClientsMap.get(codCli);
-                        
+
                         const produto = String(s.PRODUTO);
                         if (!cMap.has(produto)) {
                             const pObj = window.resolveDim('produtos', produto);
@@ -11414,7 +11439,7 @@ const supervisorGroups = new Map();
                 dashboardClientsMap.forEach((prods, cli) => {
                     const boughtCatsSalty = new Set();
                     const boughtCatsFoods = new Set();
-                    
+
                     prods.forEach(pData => {
                         if (pData.val >= 1) { // Same threshold used in Comparison view
                             const desc = norm(pData.desc);
@@ -11435,7 +11460,7 @@ const supervisorGroups = new Map();
                      } else if (realized > 0) {
                          pct = 100;
                      }
-                     
+
                      let realizedStr, goalStr;
                      if (label === 'Volume (Ton)') {
                          realizedStr = realized.toLocaleString('pt-BR', {minimumFractionDigits: 3, maximumFractionDigits: 3}) + ' Ton';
@@ -11568,7 +11593,7 @@ const supervisorGroups = new Map();
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                    
+
                     // FIX: Only filter orphans for Admins
                     if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
 
@@ -13384,17 +13409,17 @@ const supervisorGroups = new Map();
                     if (useTendencyComparison) {
                         const totalDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
                         const passedDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
-                        
+
                         if (totalDays > 0 && passedDays > 0 && passedDays < totalDays) {
                             const ratio = totalDays / passedDays;
-                            
+
                             // 1. Project Global KPIs
                             metrics.current.fat *= ratio;
                             metrics.current.peso *= ratio;
                             metrics.current.clients = Math.round(metrics.current.clients * ratio);
                             metrics.current.positivacaoSalty = Math.round(metrics.current.positivacaoSalty * ratio);
                             metrics.current.positivacaoFoods = Math.round(metrics.current.positivacaoFoods * ratio);
-                            
+
                             // 2. Project Supervisor Data
                             Object.values(metrics.charts.supervisorData).forEach(supData => {
                                 supData.current *= ratio;
@@ -14439,7 +14464,7 @@ const supervisorGroups = new Map();
             // Render Table with Expandable Rows
             innovationsMonthTableBody.innerHTML = sortedCategories.map((catGroup, index) => {
                 const catId = `cat-group-${index}`;
-                
+
                 let variationContent;
                 if (isFinite(catGroup.metrics.variation)) {
                     const colorClass = catGroup.metrics.variation >= 0 ? 'text-green-400' : 'text-red-400';
@@ -14455,11 +14480,11 @@ const supervisorGroups = new Map();
 
                 // Refined styling: Border bottom for mobile (list view), Rounded/Border for Desktop (card view via md: classes if desired, or simplified globally)
                 // User requested "not cards", so we flatten it.
-                // Mobile: border-b border-slate-700 (separator). Desktop: can keep card or flatten too. 
+                // Mobile: border-b border-slate-700 (separator). Desktop: can keep card or flatten too.
                 // Let's flatten globally for consistency if "not cards" applies to the view concept, or at least ensure Mobile is flat.
-                // Using 'md:rounded-lg' to keep desktop card-like if preferred, but user said "categories must be listed in rows". 
+                // Using 'md:rounded-lg' to keep desktop card-like if preferred, but user said "categories must be listed in rows".
                 // I will remove rounded-lg globally to be safe and use border-b.
-                
+
                 const catRow = `
                     ${spacerRow}
                     <tr class="glass-panel-heavy hover:bg-slate-700 cursor-pointer transition-colors border-b border-slate-700 group" data-toggle="${catId}">
@@ -14519,7 +14544,7 @@ const supervisorGroups = new Map();
 
                     const isLast = pIdx === catGroup.items.length - 1;
                     const borderClass = isLast ? 'border-b border-slate-700' : 'border-b border-white/10/50';
-                    
+
                     return `
                     <tr class="hidden bg-slate-900/50 hover:bg-glass ${borderClass} border-l border-r border-slate-700" data-parent="${catId}">
                         <!-- Mobile View Cell (Clickable) -->
@@ -14566,7 +14591,7 @@ const supervisorGroups = new Map();
                         const catId = toggleRow.getAttribute('data-toggle');
                         const icons = toggleRow.querySelectorAll('svg');
                         const children = innovationsMonthTableBody.querySelectorAll(`tr[data-parent="${catId}"]`);
-                        
+
                         icons.forEach(icon => icon.classList.toggle('rotate-90'));
                         children.forEach(row => row.classList.toggle('hidden'));
                     }
@@ -15123,11 +15148,11 @@ const supervisorGroups = new Map();
             // Fallback: Construct Header from items if missing
             if (!orderInfo && itemsDoPedido.length > 0) {
                 const first = itemsDoPedido[0];
-                
+
                 // Resolve Names from Dimensions using ID from first item
                 // Use dimension maps
                 const clientName = window.resolveDim('clientes', first.CODCLI) || 'N/A'; // Need client map? App uses clientMapForKPIs
-                
+
                 // Client Name Resolution
                 let cName = 'N/A';
                 const clientObj = clientMapForKPIs.get(String(first.CODCLI));
@@ -15142,8 +15167,8 @@ const supervisorGroups = new Map();
                 orderInfo = {
                     PEDIDO: first.PEDIDO,
                     CODCLI: first.CODCLI,
-                    CLIENTE_NOME: cName, 
-                    NOME: sellerName, 
+                    CLIENTE_NOME: cName,
+                    NOME: sellerName,
                     DTPED: first.DTPED,
                     DTSAIDA: first.DTSAIDA,
                     CIDADE: first.CIDADE || 'N/A', // City might need lookup if not in sales
@@ -15169,10 +15194,10 @@ const supervisorGroups = new Map();
                      else { const c = allClientsData.get(clientObj); orderInfo.CLIENTE_NOME = c.nomeCliente || c.cliente; }
                  }
             }
-            
+
             // Resolve Seller Name if it looks like a code or is missing
             if (!orderInfo.NOME || !isNaN(orderInfo.NOME)) {
-                // If we have the seller code on the order object? 
+                // If we have the seller code on the order object?
                 // aggregatedOrders usually have NOME pre-filled.
                 // If constructed from items, we set it above.
             }
@@ -15213,7 +15238,7 @@ const supervisorGroups = new Map();
                 // Resolve Product Description
                 const productInfo = window.resolveDim('produtos', item.PRODUTO);
                 const fullProductName = (typeof productInfo === 'object') ? productInfo.descricao : (item.DESCRICAO || productInfo);
-                
+
                 const parts = fullProductName.split('-');
                 // If hyphen exists, take part after first hyphen, otherwise whole string.
                 // Then truncate to fit nicely on mobile line (~27 chars).
@@ -15698,7 +15723,7 @@ const supervisorGroups = new Map();
                         showViewElement(mainDashboard);
                         // Trigger 3D Banner Resize (Fix for hidden container init)
 
-                        
+
                         if (document.getElementById('dashboard-kpi-container')) document.getElementById('dashboard-kpi-container').classList.remove('hidden');
                         if (chartView) chartView.classList.remove('hidden');
                         if (viewState.dashboard.dirty || !viewState.dashboard.rendered) {
@@ -16086,7 +16111,7 @@ const supervisorGroups = new Map();
                         if (delError) {
                             throw new Error(`Erro no Chunked Delete (${table}): ${delError.message}`);
                         }
-                        
+
                         updateStatus(`Limpando ${table} (Lote progressivo)...`, 50); // Indeterminate progress
                         // Wait a bit to let DB breathe
                         await new Promise(r => setTimeout(r, 200));
@@ -16296,7 +16321,7 @@ const supervisorGroups = new Map();
                     // --- PRESERVE MANUAL KEYS ---
                     try {
                         const keysToPreserve = ['groq_api_key', 'senha_modal', 'BREVO_API_KEY', 'BREVO_SENDER_EMAIL'];
-                        
+
                         // We filter from remoteMetadata which we fetched earlier
                         if (remoteMetadata && remoteMetadata.length > 0) {
                             remoteMetadata.forEach(item => {
@@ -16608,7 +16633,7 @@ const supervisorGroups = new Map();
                     const entry = embeddedData.metadata.find(m => m.key === 'senha_modal');
                     if (entry && entry.value) storedPwdHash = entry.value;
                 }
-                
+
                 // Hash the input before comparing
                 const msgBuffer = new TextEncoder().encode(input);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -16711,7 +16736,7 @@ const supervisorGroups = new Map();
                                 // Try possible keys
                                 const codes = data['Código'] || data['codigo_cliente'] || data['CODCLI'];
                                 const cnpjs = data['CNPJ/CPF'] || data['cnpj_cpf'] || data['CNPJ'];
-                                
+
                                 if (codes && cnpjs) {
                                     for(let i=0; i<len; i++) {
                                         const cnpj = String(cnpjs[i] || '').replace(/\D/g, '');
@@ -16733,15 +16758,15 @@ const supervisorGroups = new Map();
                         }
                     }
 
-                    worker.postMessage({ 
-                        salesFile, 
-                        clientsFile, 
-                        productsFile, 
-                        historyFile, 
-                        innovationsFile, 
-                        hierarchyFile, 
-                        titulosFile, 
-                        notaInvolvesFile1: notaInvolves1File, 
+                    worker.postMessage({
+                        salesFile,
+                        clientsFile,
+                        productsFile,
+                        historyFile,
+                        innovationsFile,
+                        hierarchyFile,
+                        titulosFile,
+                        notaInvolvesFile1: notaInvolves1File,
                         notaInvolvesFile2: notaInvolves2File,
                         referenceData: referenceData, // Pass the map
                         fallbackData: fallbackData // Pass existing data for preservation
@@ -16786,7 +16811,7 @@ const supervisorGroups = new Map();
             };
 
             document.querySelectorAll('.nav-link').forEach(link => link.addEventListener('click', handleNavClick));
-            
+
             document.querySelectorAll('.mobile-nav-link').forEach(link => {
                 link.addEventListener('click', (e) => {
                     handleNavClick(e);
@@ -16839,7 +16864,7 @@ const supervisorGroups = new Map();
                 vendedorFilterDropdown.addEventListener('change', (e) => {
                     if (e.target.type === 'checkbox') {
                         const { value, checked } = e.target;
-                        
+
                         if (value === 'ALL') {
                             const inputs = vendedorFilterDropdown.querySelectorAll('input[type="checkbox"]');
                             if (checked) {
@@ -18833,7 +18858,7 @@ const supervisorGroups = new Map();
                 }
                 return;
             }
-            
+
             // Fallback: Default to ADM (UI allows all, but Data is filtered by init.js)
             userHierarchyContext.role = 'adm';
             console.warn(`[DEBUG] Role '${role}' not found in Hierarchy Maps. Defaulting to ADM context (Data filtered by Init).`);
@@ -20820,7 +20845,7 @@ const supervisorGroups = new Map();
 
 
                 diagnosisCloseBtn.addEventListener('click', () => diagnosisModal.classList.add('hidden'));
-                
+
                 diagnosisCopyBtn.addEventListener('click', () => {
                     navigator.clipboard.writeText(diagnosisContent.textContent).then(() => {
                         const originalText = diagnosisCopyBtn.innerHTML;
@@ -20849,7 +20874,7 @@ const supervisorGroups = new Map();
                 report += `Vendas Detalhadas (Bruto): ${allSalesData ? allSalesData.length : 'N/A'}\n`;
                 report += `Histórico (Bruto): ${allHistoryData ? allHistoryData.length : 'N/A'}\n`;
                 report += `Pedidos Agregados: ${aggregatedOrders ? aggregatedOrders.length : 'N/A'}\n`;
-                
+
                 report += `\n--- 3. HIERARQUIA ---\n`;
                 const hierRaw = embeddedData.hierarchy;
                 report += `Raw Data Length: ${hierRaw ? hierRaw.length : 'N/A (Null)'}\n`;
@@ -20859,18 +20884,18 @@ const supervisorGroups = new Map();
                 report += `Nós na Árvore de Hierarquia: ${optimizedData.hierarchyMap ? optimizedData.hierarchyMap.size : 'N/A'}\n`;
                 report += `Clientes Mapeados (Client->Promotor): ${optimizedData.clientHierarchyMap ? optimizedData.clientHierarchyMap.size : 'N/A'}\n`;
                 report += `Coordenadores Únicos: ${optimizedData.coordMap ? optimizedData.coordMap.size : 'N/A'}\n`;
-                
+
                 report += `\n--- 4. FILTROS ATIVOS (MAIN) ---\n`;
                 const mainState = hierarchyState['main'];
                 report += `Coords Selecionados: ${mainState ? Array.from(mainState.coords).join(', ') : 'N/A'}\n`;
                 report += `CoCoords Selecionados: ${mainState ? Array.from(mainState.cocoords).join(', ') : 'N/A'}\n`;
                 report += `Promotores Selecionados: ${mainState ? Array.from(mainState.promotors).join(', ') : 'N/A'}\n`;
-                
+
                 report += `\n--- 5. TESTE DE FILTRAGEM (Simulação) ---\n`;
                 try {
                     const filteredClients = getHierarchyFilteredClients('main', allClientsData);
                     report += `Clientes Após Filtro de Hierarquia: ${filteredClients.length}\n`;
-                    
+
                     if (filteredClients.length === 0) {
                         report += `[ALERTA] Filtro retornou 0 clientes. Verifique se o usuário '${window.userRole}' está mapeado na hierarquia.\n`;
                     } else {
@@ -20891,7 +20916,7 @@ const supervisorGroups = new Map();
                     report += `Exemplo Chave Cliente (Raw): '${c['Código'] || c['codigo_cliente']}'\n`;
                     report += `Exemplo Chave Cliente (Normalized): '${normalizeKey(c['Código'] || c['codigo_cliente'])}'\n`;
                 }
-                
+
                 return report;
             }
 
@@ -21205,16 +21230,16 @@ const supervisorGroups = new Map();
     function initWalletView() {
         if (isWalletInitialized) return;
         isWalletInitialized = true;
-        
+
         const role = (window.userRole || '').trim().toUpperCase();
-        
+
         // Setup User Menu
         const userMenuBtn = document.getElementById('user-menu-btn');
         const userMenuDropdown = document.getElementById('user-menu-dropdown');
         const userMenuWalletBtn = document.getElementById('user-menu-wallet-btn');
         const userMenuLogoutBtn = document.getElementById('user-menu-logout-btn');
         const userMenuRefreshCacheBtn = document.getElementById('user-menu-refresh-cache-btn');
-        
+
         if (userMenuBtn) {
             // Update User Info in Menu
             const nameEl = document.getElementById('user-menu-name');
@@ -21223,8 +21248,8 @@ const supervisorGroups = new Map();
                  roleEl.textContent = role;
                  // Try find name
                  const h = embeddedData.hierarchy || [];
-                 const me = h.find(x => 
-                    (x.cod_coord && x.cod_coord.trim().toUpperCase() === role) || 
+                 const me = h.find(x =>
+                    (x.cod_coord && x.cod_coord.trim().toUpperCase() === role) ||
                     (x.cod_cocoord && x.cod_cocoord.trim().toUpperCase() === role) ||
                     (x.cod_promotor && x.cod_promotor.trim().toUpperCase() === role)
                  );
@@ -21263,13 +21288,13 @@ const supervisorGroups = new Map();
                 e.stopPropagation();
                 userMenuDropdown.classList.toggle('hidden');
             });
-            
+
             document.addEventListener('click', (e) => {
                 if (!userMenuBtn.contains(e.target) && !userMenuDropdown.contains(e.target)) {
                     userMenuDropdown.classList.add('hidden');
                 }
             });
-            
+
             if (userMenuRefreshCacheBtn) {
                 userMenuRefreshCacheBtn.classList.remove('hidden');
                 userMenuRefreshCacheBtn.addEventListener('click', async () => {
@@ -21294,7 +21319,7 @@ const supervisorGroups = new Map();
                 userMenuDropdown.classList.add('hidden');
                 navigateTo('wallet');
             });
-            
+
             userMenuLogoutBtn.addEventListener('click', async () => {
                  const { error } = await window.supabaseClient.auth.signOut();
                  if (!error) window.location.reload();
@@ -21323,25 +21348,25 @@ const supervisorGroups = new Map();
                 logoDropdownMenu.classList.add('hidden');
             });
         }
-        
+
         // Setup Wallet Controls
         const selectBtn = document.getElementById('wallet-promoter-select-btn');
         const dropdown = document.getElementById('wallet-promoter-dropdown');
-        
+
         if (selectBtn) {
             selectBtn.addEventListener('click', (e) => {
                 if (walletState.promoters.length <= 1) return;
                 e.stopPropagation();
                 dropdown.classList.toggle('hidden');
             });
-            
+
             document.addEventListener('click', (e) => {
                 if (!selectBtn.contains(e.target) && !dropdown.contains(e.target)) {
                     dropdown.classList.add('hidden');
                 }
             });
         }
-        
+
         // Search
         const searchInput = document.getElementById('wallet-client-search');
         let debounce;
@@ -21358,11 +21383,11 @@ const supervisorGroups = new Map();
                 }
             });
         }
-        
+
         // Modal Actions
         const modalCancel = document.getElementById('wallet-modal-cancel-btn');
         const modalClose = document.getElementById('wallet-modal-close-btn');
-        
+
         const closeWalletModal = () => {
             document.getElementById('wallet-client-modal').classList.add('hidden');
         };
@@ -21373,7 +21398,7 @@ const supervisorGroups = new Map();
 
     window.renderWalletView = function() {
         initWalletView();
-        
+
         // Populate Promoters if empty
         if (walletState.promoters.length === 0) {
              const role = (window.userRole || '').trim().toUpperCase();
@@ -21395,7 +21420,7 @@ const supervisorGroups = new Map();
                      if (pRaw) myPromoters.add(JSON.stringify({ code: pRaw, name: pName }));
                  }
             });
-            
+
             // ⚡ Bolt Optimization: Use pre-allocated array and direct loop instead of Array.from().map()
             const walletPromotersArr = new Array(myPromoters.size);
             let idx = 0;
@@ -21404,14 +21429,14 @@ const supervisorGroups = new Map();
             }
             walletState.promoters = walletPromotersArr.sort((a,b) => a.name.localeCompare(b.name));
             walletState.canEdit = isManager;
-            
+
             // UI Toggle based on permission
             const searchContainer = document.getElementById('wallet-search-container');
             if (searchContainer) {
                 if (walletState.canEdit) searchContainer.classList.remove('hidden');
                 else searchContainer.classList.add('hidden');
             }
-            
+
             // Build Dropdown
             const dropdown = document.getElementById('wallet-promoter-dropdown');
             if (dropdown) {
@@ -21429,7 +21454,7 @@ const supervisorGroups = new Map();
 
 
             }
-            
+
             // Auto Select
             if (walletState.promoters.length === 1) {
                 selectWalletPromoter(walletState.promoters[0].code, walletState.promoters[0].name);
@@ -21445,18 +21470,18 @@ const supervisorGroups = new Map();
                  }
             }
         }
-        
+
         renderWalletTable();
     }
-    
+
     window.selectWalletPromoter = async function(code, name) {
         walletState.selectedPromoter = code;
         const txt = document.getElementById('wallet-promoter-select-text');
         const btn = document.getElementById('wallet-promoter-select-btn');
-        
+
         if (code) {
              if(txt) txt.textContent = `${code} - ${name}`;
-             
+
              // Inject Clear Icon if not exists
              let clearIcon = document.getElementById('wallet-promoter-clear-icon');
              if (!clearIcon && btn) {
@@ -21464,12 +21489,12 @@ const supervisorGroups = new Map();
                  clearIcon.id = 'wallet-promoter-clear-icon';
                  clearIcon.className = 'p-1 hover:bg-slate-700 rounded-full cursor-pointer mr-2 transition-colors';
                  clearIcon.innerHTML = `<svg class="w-4 h-4 text-slate-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
-                 
+
                  clearIcon.onclick = (e) => {
                      e.stopPropagation();
                      selectWalletPromoter(null, null);
                  };
-                 
+
                  // Insert before the arrow icon
                  const arrow = btn.querySelector('svg:not(#wallet-promoter-clear-icon svg)');
                  if (arrow) btn.insertBefore(clearIcon, arrow);
@@ -21480,12 +21505,12 @@ const supervisorGroups = new Map();
              const clearIcon = document.getElementById('wallet-promoter-clear-icon');
              if (clearIcon) clearIcon.remove();
         }
-        
+
         // --- Fetch Missing Clients Logic ---
         if (code) {
             const targetPromoter = String(code).trim().toUpperCase();
             const clientCodes = [];
-            
+
             // 1. Identify all clients linked to this promoter in the map
             if (embeddedData.clientPromoters) {
                 embeddedData.clientPromoters.forEach(cp => {
@@ -21496,13 +21521,13 @@ const supervisorGroups = new Map();
 
 
             }
-            
+
             if (clientCodes.length > 0) {
                 // 2. Identify which are missing from local embeddedData.clients
                 const dataset = embeddedData.clients;
                 const existingCodes = new Set();
                 const isColumnar = dataset && dataset.values && dataset.columns;
-                
+
                 if (isColumnar) {
                     const col = dataset.values['Código'] || dataset.values['CODIGO_CLIENTE'] || [];
                     const len = dataset.length || col.length || 0;
@@ -21510,26 +21535,26 @@ const supervisorGroups = new Map();
                 } else if (Array.isArray(dataset)) {
                     dataset.forEach(c => existingCodes.add(normalizeKey(c['Código'] || c['codigo_cliente'])));
                 }
-                
+
                 const missing = clientCodes.filter(c => !existingCodes.has(c));
-                
+
                 if (missing.length > 0) {
                     const badge = document.getElementById('wallet-count-badge');
                     if(badge) badge.textContent = '...';
-                    
+
                     try {
                         // 3. Fetch missing clients
                         const { data, error } = await window.supabaseClient
                             .from('data_clients')
                             .select('*')
                             .in('codigo_cliente', missing);
-                            
+
                         if (!error && data && data.length > 0) {
                             // 4. Inject into embeddedData.clients
                             data.forEach(newClient => {
                                 // Double check uniqueness before push (race condition)
                                 if (existingCodes.has(normalizeKey(newClient.codigo_cliente))) return;
-                                
+
                                 const mapped = {
                                      'Código': newClient.codigo_cliente,
                                      'Fantasia': newClient.fantasia,
@@ -21538,7 +21563,7 @@ const supervisorGroups = new Map();
                                      'Cidade': newClient.cidade,
                                      'PROMOTOR': code // Use the selected promoter code
                                  };
-                                 
+
                                  if (isColumnar) {
                                      dataset.columns.forEach(colName => {
                                          let val = '';
@@ -21550,7 +21575,7 @@ const supervisorGroups = new Map();
                                          else if(c === 'CIDADE') val = newClient.cidade;
                                          else if(c === 'PROMOTOR') val = code;
                                          else if(c === 'RCA1' || c === 'RCA 1') val = newClient.rca1;
-                                         
+
                                          if(dataset.values[colName]) dataset.values[colName].push(val);
                                      });
 
@@ -21570,29 +21595,29 @@ const supervisorGroups = new Map();
                 }
             }
         }
-        
+
         renderWalletTable();
     }
-    
+
     window.renderWalletTable = function() {
         const promoter = walletState.selectedPromoter;
         const tbody = document.getElementById('wallet-table-body');
         const mobileList = document.getElementById('wallet-mobile-list');
         const empty = document.getElementById('wallet-empty-state');
         const badge = document.getElementById('wallet-count-badge');
-        
+
         // Toggle Action Header (Removed as per user request)
-        
+
         if (!tbody) return;
         tbody.innerHTML = '';
         if (mobileList) mobileList.innerHTML = '';
-        
+
         const dataset = embeddedData.clients;
         const isColumnar = dataset && dataset.values && dataset.columns;
         const len = dataset.length || 0;
-        
+
         const clientPromoterMap = new Map();
-        
+
         // Normalize selected promoter for comparison
         const targetPromoter = String(promoter).trim().toUpperCase();
 
@@ -21604,12 +21629,12 @@ const supervisorGroups = new Map();
                  }
              });
         }
-        
+
         let count = 0;
         let renderedCount = 0;
         const fragment = document.createDocumentFragment();
         const RENDER_LIMIT = 150;
-        
+
         for(let i=0; i<len; i++) {
              let rowCode, rowFantasia, rowRazao, rowCnpj, rowUltimaCompra, rowBloqueio;
 
@@ -21630,14 +21655,14 @@ const supervisorGroups = new Map();
                  rowUltimaCompra = item['ultimacompra'] || item['ULTIMACOMPRA'] || item['Data da Última Compra'] || item['ultimaCompra'];
                  rowBloqueio = item['bloqueio'] || item['BLOQUEIO'];
              } else {
-                 continue; 
+                 continue;
              }
-             
+
              if (!rowCode) continue;
-             
+
              const code = normalizeKey(rowCode);
              const linkedPromoter = clientPromoterMap.get(code);
-             
+
              // Compare normalized values OR show all if no promoter selected
              if (!promoter || linkedPromoter === targetPromoter) {
                  count++;
@@ -21679,14 +21704,14 @@ const supervisorGroups = new Map();
                  }
              }
         }
-        
+
         tbody.appendChild(fragment);
         if (badge) badge.textContent = count;
-        
+
         if (count === 0) empty.classList.remove('hidden');
         else empty.classList.add('hidden');
     }
-    
+
     async function handleWalletSearch(query) {
         const sugg = document.getElementById('wallet-search-suggestions');
         if (!query || query.trim().length < 3) {
@@ -21695,7 +21720,7 @@ const supervisorGroups = new Map();
         }
 
         const terms = query.split('%').map(t => t.trim()).filter(t => t.length > 0);
-        
+
         if (terms.length === 0) {
              sugg.classList.add('hidden');
              return;
@@ -21708,22 +21733,22 @@ const supervisorGroups = new Map();
              const cleanTerm = term.replace(/[^a-zA-Z0-9]/g, '');
              // Basic fields including City and Bairro as requested
              let orClause = `codigo_cliente.ilike.%${term}%,fantasia.ilike.%${term}%,razaosocial.ilike.%${term}%,cnpj_cpf.ilike.%${term}%,cidade.ilike.%${term}%,bairro.ilike.%${term}%`;
-             
+
              // Add clean variations if they differ (mostly for CNPJ/Codes)
              if (cleanTerm.length > 0 && cleanTerm !== term) {
                  orClause += `,cnpj_cpf.ilike.%${cleanTerm}%,codigo_cliente.ilike.%${cleanTerm}%`;
              }
-             
+
              dbQuery = dbQuery.or(orClause);
         });
 
         const { data, error } = await dbQuery.limit(10);
-            
+
         if (error || !data || data.length === 0) {
             sugg.classList.add('hidden');
             return;
         }
-        
+
         sugg.innerHTML = '';
         data.forEach(c => {
             const div = document.createElement('div');
@@ -21749,7 +21774,7 @@ const supervisorGroups = new Map();
         });
         sugg.classList.remove('hidden');
     }
-    
+
     window.openWalletClientModal = async function(clientCode, clientData = null) {
         let client = clientData;
         if (!client) {
@@ -21776,7 +21801,7 @@ const supervisorGroups = new Map();
                  client.itinerary_next_date = promoData.itinerary_ref_date;
              }
         }
-        
+
         const modal = document.getElementById('wallet-client-modal');
         const codeKey = String(client['Código'] || client['codigo_cliente']);
 
@@ -21805,10 +21830,10 @@ const supervisorGroups = new Map();
             titleHtml += ` <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 shadow-sm shadow-red-900/20">Devolução</span>`;
         }
         titleEl.innerHTML = titleHtml;
-        
+
         // 1. Populate Basic Info
         document.getElementById('wallet-modal-code').textContent = codeKey;
-        
+
         // Robust Key Access
         const getVal = (keys) => {
             for (const k of keys) {
@@ -21818,7 +21843,7 @@ const supervisorGroups = new Map();
         };
 
         document.getElementById('wallet-modal-cnpj').textContent = getVal(['cnpj_cpf', 'CNPJ/CPF', 'CNPJ', 'CPF']) || '--';
-        
+
         // Razão Social: try variations including Name fallback if Razao is missing
         const razao = getVal(['razaosocial', 'Razão Social', 'RAZAOSOCIAL', 'razao', 'RAZAO', 'nomeCliente', 'NOMECLIENTE', 'Cliente', 'CLIENTE']);
         document.getElementById('wallet-modal-razao').textContent = razao || '--';
@@ -21826,18 +21851,18 @@ const supervisorGroups = new Map();
         // Fantasia: try variations
         const fantasia = getVal(['fantasia', 'Fantasia', 'FANTASIA', 'nome_fantasia', 'NOME_FANTASIA']);
         document.getElementById('wallet-modal-fantasia').textContent = fantasia || '--';
-        
+
         const bairro = getVal(['bairro', 'BAIRRO']) || '';
         const cidade = getVal(['cidade', 'CIDADE']) || '';
         document.getElementById('wallet-modal-city').textContent = (bairro && bairro !== 'N/A') ? `${bairro} - ${cidade}` : cidade;
-        
+
         // Address & Seller
         const address = buildAddress(client, 1);
         document.getElementById('wallet-modal-address').textContent = address || 'Endereço não disponível';
-        
+
         const rca1 = String(client.rca1 || client['RCA 1'] || '');
         let sellerName = rca1;
-        
+
         let resolvedName = optimizedData.rcaNameByCode ? optimizedData.rcaNameByCode.get(rca1) : null;
 
         // Fallback: If name is missing or "INATIVOS", try to find a valid name in current sales
@@ -21850,11 +21875,11 @@ const supervisorGroups = new Map();
                 }
             }
         }
-        
+
         if (resolvedName) {
             sellerName = `${rca1} - ${resolvedName}`;
         }
-        
+
         document.getElementById('wallet-modal-seller').textContent = sellerName || '--';
 
         // 2. Tabs Logic
@@ -21865,7 +21890,7 @@ const supervisorGroups = new Map();
             bonus: document.getElementById('wallet-tab-content-bonus'),
             itinerary: document.getElementById('wallet-tab-content-itinerary')
         };
-        
+
         // Initialize Modal Tab History
         modal._tabHistory = [];
         let activeTab = 'general';
@@ -21890,7 +21915,7 @@ const supervisorGroups = new Map();
 
 
             }
-            
+
             activeTab = tabName;
 
             tabs.forEach(t => {
@@ -21909,7 +21934,7 @@ const supervisorGroups = new Map();
                 }
             });
         };
-        
+
         tabs.forEach(t => t.onclick = () => switchTab(t.dataset.tab));
         switchTab('general', { skipHistory: true }); // Default
 
@@ -21968,10 +21993,10 @@ const supervisorGroups = new Map();
         // Live Prediction Logic
         const updatePrediction = () => {
             if (!calcPreview || !itinDateInput) return;
-            
+
             const freq = document.querySelector('input[name="itinerary-frequency"]:checked')?.value;
             const refDate = itinDateInput.value;
-            
+
             if (!freq || !refDate) {
                 calcPreview.textContent = 'Selecione frequência e data para calcular.';
                 return;
@@ -21992,7 +22017,7 @@ const supervisorGroups = new Map();
 
             // Use 'today' as base to find next visit from NOW
             const next = calculateNextRoteiroDate(tempClient, new Date());
-            
+
             if (next) {
                 const options = { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' };
                 calcPreview.innerHTML = `Próximo atendimento previsto: <strong class="text-white">${window.escapeHtml(next.toLocaleDateString('pt-BR', options))}</strong>`;
@@ -22006,38 +22031,38 @@ const supervisorGroups = new Map();
         document.querySelectorAll('input[name="itinerary-day"]').forEach(cb => {
             cb.onchange = updatePrediction;
         });
-        
+
         if (dateVal) {
             // Auto-update Display Date Logic
             // If the stored reference date has passed, show the *next* valid future date based on frequency.
             // This prevents showing an old date and helps the user visualize the current schedule status.
-            
+
             const d = parseDate(dateVal);
             if (d) {
                 let displayDate = d;
-                
+
                 // Only calculate if we have a valid frequency
                 if (freqVal === 'weekly' || freqVal === 'biweekly') {
                     const today = new Date();
                     today.setHours(0,0,0,0);
-                    
+
                     // Use UTC for day diff calculation to avoid timezone issues
                     const utcRef = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
                     const utcToday = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-                    
+
                     if (utcRef < utcToday) {
                         const diffTime = utcToday - utcRef;
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                         const interval = (freqVal === 'weekly') ? 7 : 14;
-                        
+
                         // Calculate days to add to reach next cycle >= today
                         // We want the smallest N where Ref + (N * interval) >= Today
                         // Ref + X = Today -> X = Today - Ref = diffDays
                         // We need ceil(diffDays / interval) * interval
-                        
+
                         const cycles = Math.ceil(diffDays / interval);
                         const daysToAdd = cycles * interval;
-                        
+
                         // Create new date object from ref
                         const nextFutureDate = new Date(d);
                         nextFutureDate.setDate(d.getDate() + daysToAdd);
@@ -22059,11 +22084,11 @@ const supervisorGroups = new Map();
             // Remove old listeners
             const newBtn = itinSaveBtn.cloneNode(true);
             itinSaveBtn.parentNode.replaceChild(newBtn, itinSaveBtn);
-            
+
             newBtn.onclick = () => {
                 const selectedFreq = document.querySelector('input[name="itinerary-frequency"]:checked')?.value;
                 const selectedDate = document.getElementById('itinerary-next-date')?.value;
-                
+
                 let selectedDays = [];
                 if (selectedFreq === 'weekly') {
                     document.querySelectorAll('input[name="itinerary-day"]:checked').forEach(cb => {
@@ -22085,7 +22110,7 @@ const supervisorGroups = new Map();
             bonusByMonth: new Map(), // Map<YYYY-MM, { value, items: [] }>
             ordersByMonth: new Map() // Map<YYYY-MM, Map<PEDIDO, {date, totalValue, products: Set, types: Set}>>
         };
-        
+
         const normalizeItem = (s) => ({
             d: parseDate(s.DTPED),
             val: Number(s.VLVENDA) || 0,
@@ -22099,12 +22124,12 @@ const supervisorGroups = new Map();
 
         const processSaleItem = (s) => {
             if (normalizeKey(s.CODCLI) !== normalizeKey(codeKey)) return;
-            
+
             const item = normalizeItem(s);
             if (!item.d) return;
-            
+
             const monthKey = `${item.d.getUTCFullYear()}-${String(item.d.getUTCMonth()+1).padStart(2,'0')}`;
-            
+
             // Track Orders
             if (item.pedido) {
                 let monthOrders = metrics.ordersByMonth.get(monthKey);
@@ -22117,11 +22142,11 @@ const supervisorGroups = new Map();
                     orderData = { date: item.d, totalValue: 0, products: new Set(), types: new Set() };
                     monthOrders.set(item.pedido, orderData);
                 }
-                
+
                 // For Perdas (5) and Bonificacoes (11), use item.bon or fallback to item.val
                 const itemTotal = (item.type === '5' || item.type === '11') ? (item.bon || item.val) : item.val;
                 if (itemTotal > 0) orderData.totalValue += itemTotal;
-                
+
                 if (item.type) orderData.types.add(item.type);
                 if (item.prod) orderData.products.add(item.prod);
             }
@@ -22130,15 +22155,15 @@ const supervisorGroups = new Map();
             if (item.val > 0) {
                 metrics.salesByMonth.set(monthKey, (metrics.salesByMonth.get(monthKey) || 0) + item.val);
             }
-            
+
             // Perdas (Type 5)
             if (item.type === '5') {
                 const entry = metrics.lossesByMonth.get(monthKey) || { value: 0, items: [] };
-                entry.value += (item.bon || item.val); 
+                entry.value += (item.bon || item.val);
                 entry.items.push(item);
                 metrics.lossesByMonth.set(monthKey, entry);
             }
-            
+
             // Bonificações (Type 11)
             if (item.type === '11') {
                 const entry = metrics.bonusByMonth.get(monthKey) || { value: 0, items: [] };
@@ -22169,7 +22194,7 @@ const supervisorGroups = new Map();
         }
 
         // 4. Render Tab Content
-        
+
         // General: Sales History Table
         const salesBody = document.getElementById('wallet-purchase-history-body');
         salesBody.innerHTML = '';
@@ -22181,19 +22206,19 @@ const supervisorGroups = new Map();
                 const val = metrics.salesByMonth.get(m) || 0;
                 const lossesObj = metrics.lossesByMonth.get(m);
                 const bonusObj = metrics.bonusByMonth.get(m);
-                
+
                 const lossesVal = lossesObj ? lossesObj.value : 0;
                 const bonusVal = bonusObj ? bonusObj.value : 0;
-                
+
                 const pPerc = val > 0 ? ((lossesVal / val) * 100).toFixed(1) + '%' : '0%';
                 const bPerc = val > 0 ? ((bonusVal / val) * 100).toFixed(1) + '%' : '0%';
-                
+
                 const [y, mo] = m.split('-');
                 const monthName = new Date(y, mo-1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-                
+
                 const tr = document.createElement('tr');
                 tr.className = "cursor-pointer hover:bg-slate-800/50 transition-colors border-b border-slate-800/50 last:border-0";
-                
+
                 tr.innerHTML = `
                     <td class="px-4 py-2 capitalize text-slate-300 w-1/3">
                         <div class="flex items-center gap-1">
@@ -22205,25 +22230,25 @@ const supervisorGroups = new Map();
                     <td class="px-2 py-2 text-center text-[10px] font-mono font-bold text-red-400">${pPerc}</td>
                     <td class="px-2 py-2 text-center text-[10px] font-mono font-bold text-blue-400">${bPerc}</td>
                 `;
-                
+
                 // Build Sub-row for Orders
                 const ordersRow = document.createElement('tr');
                 ordersRow.className = "hidden bg-slate-900/30";
                 const ordersCell = document.createElement('td');
                 ordersCell.colSpan = 4;
                 ordersCell.className = "p-0";
-                
+
                 const monthOrders = metrics.ordersByMonth.get(m);
                 if (monthOrders && monthOrders.size > 0) {
                     let ordersHtml = `<div class="py-2 px-4 border-t border-slate-800/50 space-y-2">`;
                     // Sort orders by date descending
                     const sortedOrders = Array.from(monthOrders.entries()).sort((a,b) => b[1].date - a[1].date);
-                    
+
                     sortedOrders.forEach(([pedidoId, orderData]) => {
                         const dateStr = orderData.date.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
                         const totalStr = orderData.totalValue.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
                         const mixCount = orderData.products.size;
-                        
+
                         // Extract type info if available
                         let typeLabels = '';
                         if (orderData.types && orderData.types.size > 0) {
@@ -22236,7 +22261,7 @@ const supervisorGroups = new Map();
                                 typeLabels = '<span class="text-[10px] text-slate-500 ml-2 font-normal">(Tipo ' + typesArr.join(', ') + ')</span>';
                             }
                         }
-                        
+
                         ordersHtml += `
                             <div class="flex items-center justify-between text-xs p-2 rounded bg-slate-800/40 border border-slate-700/50">
                                 <div class="flex flex-col">
@@ -22252,15 +22277,15 @@ const supervisorGroups = new Map();
                             </div>
                         `;
                     });
-                    
+
                     ordersHtml += `</div>`;
                     ordersCell.innerHTML = ordersHtml;
                 } else {
                     ordersCell.innerHTML = `<div class="py-2 px-4 text-xs text-center text-slate-500 border-t border-slate-800/50">Nenhum pedido encontrado.</div>`;
                 }
-                
+
                 ordersRow.appendChild(ordersCell);
-                
+
                 tr.onclick = () => {
                     const isHidden = ordersRow.classList.contains('hidden');
                     if (isHidden) {
@@ -22271,7 +22296,7 @@ const supervisorGroups = new Map();
                         tr.querySelector('svg').classList.remove('rotate-90');
                     }
                 };
-                
+
                 salesBody.appendChild(tr);
                 salesBody.appendChild(ordersRow);
             });
@@ -22282,10 +22307,10 @@ const supervisorGroups = new Map();
             const container = document.getElementById(containerId);
             const totalEl = document.getElementById(totalId);
             container.innerHTML = '';
-            
+
             const sorted = Array.from(mapData.keys()).sort().reverse();
             let totalVal = 0;
-            
+
             if (sorted.length === 0) {
                 container.innerHTML = `<div class="text-center text-slate-500 py-4 text-xs">${window.escapeHtml(emptyMsg)}</div>`;
                 totalEl.textContent = 'R$ 0,00';
@@ -22297,11 +22322,11 @@ const supervisorGroups = new Map();
                 totalVal += data.value;
                 const [y, mo] = m.split('-');
                 const monthName = new Date(y, mo-1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-                
+
                 // Create Month Header
                 const row = document.createElement('div');
                 row.className = 'glass-panel-heavy rounded-lg overflow-hidden border border-slate-700/50';
-                
+
                 const header = document.createElement('div');
                 header.className = 'p-3 flex justify-between items-center cursor-pointer hover:bg-slate-700 transition-colors';
                 header.innerHTML = `
@@ -22311,11 +22336,11 @@ const supervisorGroups = new Map();
                     </span>
                     <span class="text-sm font-mono font-bold text-white">${data.value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span>
                 `;
-                
+
                 // Create Detail Container
                 const details = document.createElement('div');
                 details.className = 'hidden bg-slate-900/50 border-t border-slate-700 p-2 text-xs';
-                
+
                 // Aggregate items by product to avoid huge lists
                 const prodMap = new Map();
                 data.items.forEach(it => {
@@ -22326,7 +22351,7 @@ const supervisorGroups = new Map();
                 });
 
 
-                
+
                 let detailsHtml = '<table class="w-full text-left text-slate-400 compact-mobile-table"><thead><tr class="text-[10px] uppercase border-b border-slate-700/50"><th class="py-1">Prod</th><th class="py-1 text-right">Qtd</th><th class="py-1 text-right">Valor</th></tr></thead><tbody>';
                 prodMap.forEach((v, k) => {
                     detailsHtml += `
@@ -22341,7 +22366,7 @@ const supervisorGroups = new Map();
 
                 detailsHtml += '</tbody></table>';
                 details.innerHTML = detailsHtml;
-                
+
                 // Toggle Logic
                 header.onclick = () => {
                     const isHidden = details.classList.contains('hidden');
@@ -22353,12 +22378,12 @@ const supervisorGroups = new Map();
                         header.querySelector('svg').classList.remove('rotate-90');
                     }
                 };
-                
+
                 row.appendChild(header);
                 row.appendChild(details);
                 container.appendChild(row);
             });
-            
+
             totalEl.textContent = totalVal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
         };
 
@@ -22371,16 +22396,16 @@ const supervisorGroups = new Map();
         const statusMsg = document.getElementById('wallet-modal-status-msg');
         const btn = document.getElementById('wallet-modal-action-btn');
         const btnText = document.getElementById('wallet-modal-action-text');
-        
+
         let currentOwner = null;
         if (embeddedData.clientPromotersMap) {
             const matches = embeddedData.clientPromotersMap.get(normalizeKey(codeKey));
             if (matches && matches.length > 0) currentOwner = matches[0].promoter_code;
         }
-        
+
         const myPromoter = walletState.selectedPromoter;
         const role = (window.userRole || '').trim().toUpperCase();
-        
+
         // Normalize for comparison
         const normCurrent = currentOwner ? String(currentOwner).trim().toUpperCase() : null;
         const normMy = myPromoter ? String(myPromoter).trim().toUpperCase() : null;
@@ -22392,15 +22417,15 @@ const supervisorGroups = new Map();
         statusArea.className = 'mt-4 p-4 rounded-lg hidden';
         btn.onclick = null;
         btn.disabled = false;
-        
+
         let isPromoterOnly = true;
         const h = embeddedData.hierarchy || [];
-        const me = h.find(x => 
-            (x.cod_coord && x.cod_coord.trim().toUpperCase() === role) || 
+        const me = h.find(x =>
+            (x.cod_coord && x.cod_coord.trim().toUpperCase() === role) ||
             (x.cod_cocoord && x.cod_cocoord.trim().toUpperCase() === role)
         );
         if (me || role === 'ADM' || window.userRole === 'adm') isPromoterOnly = false;
-        
+
         if (!myPromoter) {
             // UX Improvement: If Admin/Manager, show disabled button with hint instead of hiding
             if (walletState.canEdit) {
@@ -22437,7 +22462,7 @@ const supervisorGroups = new Map();
             btn.disabled = false;
             btn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-700', 'text-slate-400');
             btn.classList.add('bg-[#FF5E00]', 'hover:bg-[#CC4A00]', 'text-white', 'shadow-lg');
-            
+
              btn.classList.remove('hidden');
              statusArea.classList.remove('hidden');
 
@@ -22446,11 +22471,11 @@ const supervisorGroups = new Map();
                  statusTitle.textContent = 'Cliente na Carteira';
                  statusTitle.className = 'text-sm font-bold text-green-400 mb-1';
                  statusMsg.textContent = 'Este cliente já pertence à carteira selecionada.';
-                 
+
                  btnText.textContent = 'Remover';
                  btn.className = 'px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm';
                  btn.onclick = () => handleWalletAction(codeKey, 'remove');
-                 
+
              } else if (currentOwner) {
                  statusArea.className = 'mt-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30';
                  statusTitle.textContent = 'Conflito';
@@ -22461,7 +22486,7 @@ const supervisorGroups = new Map();
                      if (name) ownerName = ` - ${name}`;
                  }
                  statusMsg.textContent = `Pertence a: ${currentOwner}${ownerName}. Transferir?`;
-                 
+
                  btnText.textContent = 'Transferir';
                  btn.className = 'px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm';
                  btn.onclick = () => handleWalletAction(codeKey, 'upsert');
@@ -22482,31 +22507,31 @@ const supervisorGroups = new Map();
                          }
                      }
                  }
-                 
+
              } else {
                  statusArea.className = 'mt-4 p-4 rounded-lg bg-slate-700 border border-slate-600';
                  statusTitle.textContent = 'Disponível';
                  statusTitle.className = 'text-sm font-bold text-slate-300 mb-1';
                  statusMsg.textContent = 'Sem vínculo atual.';
-                 
+
                  btnText.textContent = 'Adicionar';
                  btn.className = 'px-4 py-2 bg-[#FF5E00] hover:bg-[#CC4A00] text-white rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-sm';
                  btn.onclick = () => handleWalletAction(codeKey, 'upsert');
              }
         }
-        
+
         if (isPromoterOnly) {
              btn.classList.add('hidden');
              statusMsg.textContent += ' (Modo Leitura)';
         }
-        
+
         modal.classList.remove('hidden');
     }
-    
+
     window.handleWalletAction = async function(clientCode, action) {
          const promoter = walletState.selectedPromoter;
          if (!promoter) return;
-         
+
          const clientCodeNorm = normalizeKey(clientCode);
          console.log(`[Wallet] Action: ${action} for ${clientCode} (Norm: ${clientCodeNorm})`);
 
@@ -22515,7 +22540,7 @@ const supervisorGroups = new Map();
          const oldTxt = txt.textContent;
          btn.disabled = true;
          txt.textContent = '...';
-         
+
          try {
              // Safety check for embeddedData
              if (!embeddedData.clientPromoters) embeddedData.clientPromoters = [];
@@ -22526,7 +22551,7 @@ const supervisorGroups = new Map();
                  const { error } = await window.supabaseClient.from('data_client_promoters')
                     .upsert({ client_code: clientCodeNorm, promoter_code: promoter }, { onConflict: 'client_code' });
                  if(error) throw error;
-                 
+
                  const existingEntries = embeddedData.clientPromotersMap.get(clientCodeNorm) || [];
                  if (existingEntries.length > 0) {
                      // Update all existing entries for this client in memory
@@ -22539,7 +22564,7 @@ const supervisorGroups = new Map();
                      embeddedData.clientPromoters.push(newEntry);
                      embeddedData.clientPromotersMap.set(clientCodeNorm, [newEntry]);
                  }
-                 
+
                  // Ensure client exists in local dataset (for display)
                  const dataset = allClientsData;
                  let exists = false;
@@ -22576,7 +22601,7 @@ const supervisorGroups = new Map();
                      }
                      if (dataset._normalizedCodeCache.has(clientCodeNorm)) exists = true;
                  }
-                 
+
                  if (!exists) {
                      console.log(`[Wallet] Client ${clientCodeNorm} not in cache. Fetching...`);
                      // Fetch and inject
@@ -22584,7 +22609,7 @@ const supervisorGroups = new Map();
                      // data_clients code should be normalized ideally but let's try 'ilike' or both?
                      // Or just query by codigo_cliente (which is text).
                      const { data: newClient } = await window.supabaseClient.from('data_clients').select('*').eq('codigo_cliente', clientCode).single();
-                     
+
                      if (newClient) {
                          const mapped = {
                              'Código': newClient.codigo_cliente,
@@ -22594,7 +22619,7 @@ const supervisorGroups = new Map();
                              'Cidade': newClient.cidade,
                              'PROMOTOR': promoter
                          };
-                         
+
                          if (dataset instanceof ColumnarDataset) {
                              dataset.columns.forEach(col => {
                                  let val = '';
@@ -22605,13 +22630,13 @@ const supervisorGroups = new Map();
                                  else if(c === 'CNPJ/CPF' || c === 'CNPJ') val = newClient.cnpj_cpf;
                                  else if(c === 'CIDADE') val = newClient.cidade;
                                  else if(c === 'PROMOTOR') val = promoter;
-                                 
+
                          if(dataset._data[col]) dataset._data[col].push(val);
                              });
 
 
                              dataset.length++;
-                             
+
                              // CRITICAL FIX: Update underlying embeddedData.clients.length if needed
                              // renderWalletTable iterates embeddedData.clients directly
                              if (embeddedData.clients && typeof embeddedData.clients.length === 'number' && !Array.isArray(embeddedData.clients)) {
@@ -22630,11 +22655,11 @@ const supervisorGroups = new Map();
                          }
                      }
                  }
-                 
+
              } else {
                  // Find all matching entries in memory to get IDs (if available) or check existence
                  const entries = embeddedData.clientPromotersMap.get(clientCodeNorm) || [];
-                 
+
                  if (entries.length > 0) {
                      const idsToDelete = entries.map(e => e.id).filter(id => id);
                      const codesToDelete = entries.length > idsToDelete.length ? [clientCodeNorm] : [];
@@ -22650,7 +22675,7 @@ const supervisorGroups = new Map();
                      if (codesToDelete.length > 0) {
                          // Fallback: Delete by client_code. Try Normalized first (standard).
                          let { error } = await window.supabaseClient.from('data_client_promoters').delete().eq('client_code', clientCodeNorm);
-                         
+
                          // If rows affected is 0? Supabase doesn't return count by default unless select().
                          // If we are dealing with legacy data (leading zeros), try raw code if different.
                          if (!error && clientCode !== clientCodeNorm) {
@@ -22675,10 +22700,10 @@ const supervisorGroups = new Map();
                      if(error) throw error;
                  }
              }
-             
+
              document.getElementById('wallet-client-modal').classList.add('hidden');
              renderWalletTable();
-             
+
          } catch (e) {
              console.error(e);
              window.showToast('error', 'Erro: ' + e.message);
@@ -22687,7 +22712,7 @@ const supervisorGroups = new Map();
              txt.textContent = oldTxt;
          }
     }
-    
+
     updateNavigationVisibility();
     window.renderView = renderView;
 
@@ -22718,10 +22743,10 @@ const supervisorGroups = new Map();
             btn.classList.remove('glass-panel-heavy', 'border-slate-700', 'hover:bg-slate-700');
             btn.querySelector('svg').classList.add('text-white');
             btn.querySelector('svg').classList.remove('text-purple-400');
-            
+
             roteiroContainer.classList.remove('hidden');
             listWrapper.classList.add('hidden');
-            
+
             // Enable Search for Smart Roteiro Search
             if(searchInput) {
                 searchInput.disabled = false;
@@ -22797,12 +22822,12 @@ const supervisorGroups = new Map();
                 // Reference Date Check:
                 // We must ensure the calculated date is >= refDate.
                 const potentialDate = utcFrom + (daysToAdd * 24 * 60 * 60 * 1000);
-                
+
                 if (potentialDate < utcRef) {
                     // If calculated date is before Ref Date, we must start search FROM Ref Date.
                     const refDateObj = new Date(utcRef);
                     const refDay = refDateObj.getUTCDay();
-                    
+
                     let nextDayRef = days.find(d => d >= refDay);
                     let add = 0;
                     if(nextDayRef !== undefined) {
@@ -22980,7 +23005,7 @@ const supervisorGroups = new Map();
         const strip = document.getElementById('roteiro-calendar-strip');
         const monthLabel = document.getElementById('roteiro-current-month');
         const dayNumber = document.getElementById('roteiro-day-number');
-        
+
         if (!strip) return;
         strip.innerHTML = '';
 
@@ -22997,10 +23022,10 @@ const supervisorGroups = new Map();
         for (let i = 0; i < 7; i++) {
             const d = new Date(start);
             d.setDate(d.getDate() + i);
-            
+
             const isSelected = d.getTime() === roteiroDate.getTime();
             const isToday = d.toDateString() === new Date().toDateString();
-            
+
 
             const todayRef = new Date();
             todayRef.setHours(0,0,0,0);
@@ -23012,12 +23037,12 @@ const supervisorGroups = new Map();
             const dayEl = document.createElement('div');
             dayEl.className = `flex flex-col items-center justify-center p-2 rounded-lg min-w-[50px] transition-colors ${isSelected ? 'bg-purple-600 text-white shadow-lg scale-110' : (isPast ? 'text-slate-600 opacity-50 cursor-not-allowed' : 'text-slate-400 hover:bg-white/5 cursor-pointer')}`;
 
-            
+
             dayEl.innerHTML = `
                 <span class="text-[10px] font-bold tracking-wider ${isToday && !isSelected ? 'text-purple-600' : ''}">${weekDays[d.getDay()]}</span>
                 <span class="text-lg font-bold ${isToday && !isSelected ? 'text-purple-600' : ''}">${d.getDate()}</span>
             `;
-            
+
 
             if (!isPast) {
                 dayEl.onclick = () => {
@@ -23026,14 +23051,14 @@ const supervisorGroups = new Map();
                 };
             }
 
-            
+
             strip.appendChild(dayEl);
         }
-        
+
         // Bind Nav Buttons logic only once? No, safe to rebind or check
         const prevBtn = document.getElementById('roteiro-prev-day');
         const nextBtn = document.getElementById('roteiro-next-day');
-        
+
         // Remove old listeners to avoid stacking (cloning trick)
         const newPrev = prevBtn.cloneNode(true);
         const newNext = nextBtn.cloneNode(true);
@@ -23088,7 +23113,7 @@ const supervisorGroups = new Map();
         const emptyState = document.getElementById('roteiro-empty-state');
         const statsPanel = document.getElementById('roteiro-stats-panel'); // Stats panel at bottom of card
         const searchInput = document.getElementById('clientes-search');
-        
+
         // Check for Off Route (Future Date)
         const today = new Date();
         today.setHours(0,0,0,0);
@@ -23222,12 +23247,12 @@ const supervisorGroups = new Map();
         }
 
         const scheduledClients = [];
-        
+
         clients.forEach(c => {
             const freq = c.ITINERARY_FREQUENCY || c.itinerary_frequency;
             const refDateStr = c.ITINERARY_NEXT_DATE || c.itinerary_next_date;
             const daysStr = String(c.ITINERARY_DAYS || c.itinerary_days || '').replace(/[\[\]\s]/g, '');
-            
+
             if (!freq || !refDateStr) {
                 // Not scheduled, but let's check if they have a visit
                 const cod = window.normalizeKey ? window.normalizeKey(c['Código'] || c['codigo_cliente']) : String(c['Código'] || c['codigo_cliente']).trim();
@@ -23248,7 +23273,7 @@ const supervisorGroups = new Map();
                 }
                 return;
             }
-            
+
             let utcRef;
             if (refDateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
                 const [y, m, d] = refDateStr.split('-').map(Number);
@@ -23256,18 +23281,18 @@ const supervisorGroups = new Map();
             } else {
                 const d = parseDate(refDateStr);
                 if (!d) return;
-                utcRef = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); 
+                utcRef = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
             }
-            
+
             const utcTarget = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-            
+
             let isScheduled = false;
 
             if (freq === 'weekly' && daysStr) {
                 // Multi-day logic
                 const days = daysStr.split(',').map(Number);
                 const targetDay = new Date(utcTarget).getUTCDay();
-                
+
                 // Only if target date is >= ref date
                 if (utcTarget >= utcRef) {
                     if (days.includes(targetDay)) {
@@ -23278,7 +23303,7 @@ const supervisorGroups = new Map();
                 // Interval logic (Standard)
                 const diffTime = utcTarget - utcRef;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
+
                 // Ensure date is >= Ref Date (No past scheduling relative to start)
                 if (diffDays >= 0) {
                     if (freq === 'weekly') {
@@ -23288,7 +23313,7 @@ const supervisorGroups = new Map();
                     }
                 }
             }
-            
+
             const cod = window.normalizeKey ? window.normalizeKey(c['Código'] || c['codigo_cliente']) : String(c['Código'] || c['codigo_cliente']).trim();
             const clientVisits = (typeof myMonthVisits !== 'undefined' && myMonthVisits) ? (myMonthVisits.get(cod) || []) : [];
             const todaysVisit = clientVisits.find(v => {
@@ -23313,7 +23338,7 @@ const supervisorGroups = new Map();
         // Metrics
         let visitedCount = 0;
         let surveyCount = 0;
-        
+
         // Render List
         if (scheduledClients.length === 0 || forceEmpty || isPast) {
             listContainer.innerHTML = '';
@@ -23341,7 +23366,7 @@ const supervisorGroups = new Map();
         } else {
             emptyState.classList.add('hidden');
             statsPanel.classList.remove('hidden');
-            
+
             scheduledClients.forEach(c => {
                 const cod = normalizeKey(c['Código'] || c['codigo_cliente']);
 
@@ -23414,7 +23439,7 @@ const supervisorGroups = new Map();
                         barColor = 'bg-orange-500';
                     }
                 }
-                
+
                 const div = document.createElement('div');
                 div.className = 'p-4 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors';
                 div.innerHTML = `
@@ -23441,14 +23466,14 @@ const supervisorGroups = new Map();
                 listContainer.appendChild(div);
             });
         }
-        
+
         // Update Progress Bars
         const visitPct = scheduledClients.length > 0 ? (visitedCount / scheduledClients.length) * 100 : 0;
         const surveyPct = scheduledClients.length > 0 ? (surveyCount / scheduledClients.length) * 100 : 0;
-        
+
         document.getElementById('roteiro-progress-visit-text').textContent = visitPct.toFixed(1) + '%';
         document.getElementById('roteiro-progress-visit-bar').style.width = visitPct + '%';
-        
+
         document.getElementById('roteiro-progress-pos-text').textContent = surveyPct.toFixed(1) + '%';
         document.getElementById('roteiro-progress-pos-bar').style.width = surveyPct + '%';
     }
@@ -23459,7 +23484,7 @@ const supervisorGroups = new Map();
             window.showToast('warning', 'Preencha todos os campos.');
             return;
         }
-        
+
         const btn = document.getElementById('save-itinerary-btn');
         const oldHtml = btn.innerHTML;
         btn.disabled = true;
@@ -23467,7 +23492,7 @@ const supervisorGroups = new Map();
 
         try {
             const clientCodeNorm = normalizeKey(clientCode);
-            
+
             // 1. Update Supabase (data_client_promoters)
             // Note: We update existing record. If it doesn't exist, we should theoretically insert, but user should be assigned first.
             // upsert is safer. We need the promoter code.
@@ -23481,12 +23506,12 @@ const supervisorGroups = new Map();
                     cachedEntries = matches;
                 }
             }
-            
-            // If no promoter assigned, we can't save itinerary comfortably in that table? 
+
+            // If no promoter assigned, we can't save itinerary comfortably in that table?
             // The prompt implies "Gestão de Carteira" access, so likely assigned.
-            // If not assigned, warn user? Or just upsert with null promoter? (Table might not allow null if we didn't check schema constraints, usually PK + columns). 
+            // If not assigned, warn user? Or just upsert with null promoter? (Table might not allow null if we didn't check schema constraints, usually PK + columns).
             // Schema: client_code PK, promoter_code text.
-            
+
             const payload = {
                 client_code: clientCodeNorm,
                 itinerary_frequency: frequency,
@@ -23534,7 +23559,7 @@ const supervisorGroups = new Map();
                     // Search backwards as new clients are likely at the end
                     // Try to find the correct column for code
                     let codeCol = allClientsData._data['Código'] || allClientsData._data['CODIGO_CLIENTE'] || allClientsData._data['codigo_cliente'];
-                    
+
                     if (codeCol) {
                         for(let i = allClientsData.length - 1; i >= 0; i--) {
                             // Ensure strict string comparison with normalization
@@ -23602,14 +23627,14 @@ const supervisorGroups = new Map();
             newBtn.onclick = (e) => {
                 toggleRoteiroMode();
             };
-            
+
             // Sync state visual
             if (isRoteiroMode) {
                 newBtn.classList.add('bg-purple-600', 'border-purple-500');
                 newBtn.classList.remove('glass-panel-heavy', 'border-slate-700', 'hover:bg-slate-700');
                 newBtn.querySelector('svg').classList.add('text-white');
                 newBtn.querySelector('svg').classList.remove('text-purple-400');
-                
+
                 // Enforce View State
                 const roteiroContainer = document.getElementById('roteiro-container');
                 const listWrapper = document.getElementById('clientes-list-view-wrapper');
@@ -23657,7 +23682,7 @@ const supervisorGroups = new Map();
 
         const renderList = (filterValue = null, isPagination = false) => {
             container.innerHTML = '';
-            
+
             if (!isPagination) {
                 // Reset to page 1 on new filter
                 clientsTableState.page = 1;
@@ -23689,7 +23714,7 @@ const supervisorGroups = new Map();
 
 
                 }
-                
+
                 // Sort by Name (using pre-stored name)
                 clientsTableState.filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
             }
@@ -23707,7 +23732,7 @@ const supervisorGroups = new Map();
 
             // Update Counts
             if (countEl) countEl.textContent = `${total} Clientes (Página ${clientsTableState.page} de ${totalPages})`;
-            
+
             // Update Pagination Buttons
             document.getElementById('client-prev-btn').disabled = clientsTableState.page === 1;
             document.getElementById('client-next-btn').disabled = clientsTableState.page >= totalPages;
@@ -23718,7 +23743,7 @@ const supervisorGroups = new Map();
                 const name = client.nomeCliente || 'Desconhecido';
                 const fantasia = client.fantasia || '';
                 const firstLetter = window.escapeHtml(name.charAt(0).toUpperCase());
-                
+
                 let days = '-';
                 if (client.ultimacompra) {
                     const d = parseDate(client.ultimacompra);
@@ -23736,7 +23761,7 @@ const supervisorGroups = new Map();
 
                 let statusColor = 'bg-green-500';
                 if (days !== '-' && parseInt(days) > 30) statusColor = 'bg-red-500';
-                
+
                 // Check Monthly Visit
                 const visitedThisMonth = myMonthVisits.has(normalizeKey(cod));
 
@@ -23899,15 +23924,15 @@ const supervisorGroups = new Map();
                 );
             }
 
-            
+
             // Set default dates (Current Month)
             const now = typeof lastSaleDate !== 'undefined' && lastSaleDate ? new Date(lastSaleDate) : new Date();
                     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
                     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-            
+
             const startEl = document.getElementById('history-date-start');
             const endEl = document.getElementById('history-date-end');
-            
+
             if (startEl && endEl) {
                 const toLocalDateInput = (date) => {
                     const year = date.getFullYear();
@@ -24039,7 +24064,7 @@ const supervisorGroups = new Map();
 
 
             }
-            
+
             // Pagination listeners
             document.getElementById('history-prev-page-btn').addEventListener('click', () => {
                 if(historyTableState.page > 1) {
@@ -24158,7 +24183,7 @@ const supervisorGroups = new Map();
 
         function processChunk() {
             const start = performance.now();
-            
+
             while (currentSourceIndex < sources.length) {
                 const source = sources[currentSourceIndex];
                 const total = source.length;
@@ -24167,7 +24192,7 @@ const supervisorGroups = new Map();
                 while (currentIndex < total) {
                     const s = isCol ? source.get(currentIndex) : source[currentIndex];
                     currentIndex++;
-                    
+
                     // --- INLINE CHECKS FOR PERFORMANCE ---
 
                     // 1. Date Check (Numeric)
@@ -24328,7 +24353,7 @@ const supervisorGroups = new Map();
         const countBadge = document.getElementById('history-count-badge');
         const emptyState = document.getElementById('history-empty-state');
         const pagination = document.getElementById('history-pagination-controls');
-        
+
         if (!tbody) return;
 
         // Cache empty state if available
@@ -24367,7 +24392,7 @@ const supervisorGroups = new Map();
 
         countBadge.textContent = total;
         pagination.classList.remove('hidden');
-        
+
         // Update Pagination Controls
         document.getElementById('history-prev-page-btn').disabled = historyTableState.page === 1;
         document.getElementById('history-next-page-btn').disabled = historyTableState.page >= totalPages;
@@ -24376,10 +24401,10 @@ const supervisorGroups = new Map();
         subset.forEach(order => {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-glass transition-colors border-b border-white/10 last:border-0';
-            
+
             const dateStr = formatDate(order.DTPED);
             const valStr = (order.VLVENDA || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            
+
             let statusColor = 'text-slate-400';
             let statusText = order.POSICAO;
             if (statusText === 'F') { statusText = 'Faturado'; statusColor = 'text-green-400 font-bold'; }
@@ -24431,7 +24456,7 @@ const supervisorGroups = new Map();
                     openModal(order.PEDIDO);
                 };
             });
-            
+
             tbody.appendChild(tr);
         });
     }
@@ -24448,7 +24473,7 @@ const supervisorGroups = new Map();
             container.innerHTML = '';
             // Get products
             let prodList = embeddedData.products || [];
-            
+
             const filtered = prodList.filter(p => {
                 if (!filter) return true;
                 const f = filter.toLowerCase();
@@ -24464,12 +24489,12 @@ const supervisorGroups = new Map();
             subset.forEach(prod => {
                 const code = prod.code;
                 const desc = prod.descricao || 'Sem Descrição';
-                const emb = prod.embalagem || 'UNIDADE'; 
+                const emb = prod.embalagem || 'UNIDADE';
                 // Stock
                 const stock05 = stockData05.get(code) || 0;
                 const stock08 = stockData08.get(code) || 0;
                 const totalStock = stock05 + stock08;
-                
+
                 let price = 'R$ --';
                 // Try to resolve price from available fields
                 const priceVal = prod.preco || prod.price || prod.PRECO || prod.PRICE || prod.preco_venda || prod.PRECO_VENDA;
@@ -24542,14 +24567,14 @@ const supervisorGroups = new Map();
             .from('visitas')
             .select('id, client_code, id_cliente, created_at, checkout_at, respostas')
             .gte('created_at', isoStart);
-            
+
         // Allow ADM, Co-Coordinator, and Coordinator to see all visits (limited by their base dataset later if needed)
         // Only restrict to user's own visits if they are explicitly a 'promotor'
         const isPromoterLevel = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor');
         if (window.userRole !== 'adm' && isPromoterLevel) {
             query = query.eq('id_promotor', user.id);
         }
-        
+
         // Add limit to prevent silent 1000 truncation for admins loading all users
         const { data, error } = await query.limit(50000);
 
@@ -24845,12 +24870,12 @@ const supervisorGroups = new Map();
 
 
 
-                geoUpdateFixedMarker = L.marker([existingCoord.lat, existingCoord.lng], { 
-                    draggable: false, 
+                geoUpdateFixedMarker = L.marker([existingCoord.lat, existingCoord.lng], {
+                    draggable: false,
                     title: "Localização Cadastrada",
                     icon: orangeIcon
                 }).addTo(geoUpdateMap);
-                
+
                 geoUpdateFixedMarker.bindPopup("Localização Cadastrada");
 
                 // Fit Bounds to include both
@@ -25086,12 +25111,12 @@ const supervisorGroups = new Map();
     let stockTableState = {
         main: { page: 1, limit: 100, data: [] }
     };
-    
+
     // Removed selectedStockRedes and related logic
     let selectedStockSuppliers = [];
     let selectedStockPastas = [];
     let selectedStockProducts = [];
-    
+
     function handleStockFilterChange(options = {}) {
         if (window.stockUpdateTimeout) clearTimeout(window.stockUpdateTimeout);
         window.stockUpdateTimeout = setTimeout(() => {
@@ -25099,7 +25124,7 @@ const supervisorGroups = new Map();
             updateStockView();
         }, 10);
     }
-    
+
     let _stockListenersInitialized = false;
 
     function updateAllStockFilters(options = {}) {
@@ -25166,7 +25191,7 @@ const supervisorGroups = new Map();
             // Try to find the wrapper. Usually inferred from button parent.
             const pastaBtn = document.getElementById('stock-pasta-filter-btn');
             const pastaWrapper = document.getElementById('stock-pasta-filter-wrapper') || (pastaBtn ? pastaBtn.parentElement : null);
-            
+
             if (pastaWrapper && !document.getElementById('stock-pasta-toggle-container')) {
                 // Determine initial state (default to PEPSICO)
                 let currentPasta = 'PEPSICO';
@@ -25185,7 +25210,7 @@ const supervisorGroups = new Map();
                     if (e.target.classList.contains('stock-pasta-btn')) {
                         const val = e.target.dataset.pasta;
                         selectedStockPastas = [val]; // Single select
-                        
+
                         // Update UI
                         pastaWrapper.querySelectorAll('.stock-pasta-btn').forEach(btn => {
                             if (btn.dataset.pasta === val) {
@@ -25371,10 +25396,10 @@ const supervisorGroups = new Map();
         if (skipFilter !== 'supplier') {
             const dropdown = document.getElementById('stock-supplier-filter-dropdown');
             const text = document.getElementById('stock-supplier-filter-text');
-            
+
             // Use global sales/history data to populate suppliers correctly (including virtuals like ELMA)
             const supplierDataSource = [...allSalesData, ...allHistoryData];
-            
+
             if(dropdown) {
                 selectedStockSuppliers = updateSupplierFilter(dropdown, text, selectedStockSuppliers, supplierDataSource, 'stock');
             }
@@ -25428,7 +25453,7 @@ const supervisorGroups = new Map();
     function updateStockProductFilter(dropdown, textElement, selectedSet, products) {
         const listContainer = document.getElementById('stock-product-list');
         const searchInput = document.getElementById('stock-product-search-input');
-        
+
         if (!listContainer) return selectedSet;
 
         const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
@@ -25436,7 +25461,7 @@ const supervisorGroups = new Map();
         // Ensure search listener is attached once
         if (searchInput && !searchInput._hasListener) {
              const debouncedSearch = debounce(() => {
-                 updateAllStockFilters(); 
+                 updateAllStockFilters();
              }, 300);
             searchInput.addEventListener('input', debouncedSearch);
             searchInput._hasListener = true;
@@ -25459,7 +25484,7 @@ const supervisorGroups = new Map();
              const nameA = String(a.descricao);
              const codeB = String(b.code);
              const nameB = String(b.descricao);
-             
+
              if (searchTerm.length > 0) {
                  // Relevance Sort
                  const nameALower = nameA.toLowerCase();
@@ -25476,12 +25501,12 @@ const supervisorGroups = new Map();
                  const startNameB = nameBLower.startsWith(searchTerm);
                  if (startNameA && !startNameB) return -1;
                  if (!startNameA && startNameB) return 1;
-                 
+
                  const startCodeA = codeALower.startsWith(searchTerm);
                  const startCodeB = codeBLower.startsWith(searchTerm);
                  if (startCodeA && !startCodeB) return -1;
                  if (!startCodeA && startCodeB) return 1;
-                 
+
                  return nameA.localeCompare(nameB);
              }
 
@@ -25493,9 +25518,9 @@ const supervisorGroups = new Map();
 
              return nameA.localeCompare(nameB);
         });
-        
+
         // Limit rendering for performance
-        const finalRender = renderList.slice(0, 500); 
+        const finalRender = renderList.slice(0, 500);
 
         let html = '';
         finalRender.forEach(p => {
@@ -25507,7 +25532,7 @@ const supervisorGroups = new Map();
                 </label>
             `;
         });
-        
+
         listContainer.innerHTML = html;
 
         // Bind Change Events
@@ -25537,7 +25562,7 @@ const supervisorGroups = new Map();
 
         return selectedSet;
     }
-    
+
     function getStockFilteredData(options = {}) {
         const { excludeFilter = null, returnClientsOnly = false } = options;
 
@@ -25570,7 +25595,7 @@ const supervisorGroups = new Map();
         } else {
             activeClients = getHierarchyFilteredClients('estoque', allClientsData);
         }
-        
+
         const activeClientCodes = new Set();
         const filteredClients = [];
 
@@ -25589,18 +25614,18 @@ const supervisorGroups = new Map();
              activeClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
              filteredClients.push(c);
         }
-        
+
         if (returnClientsOnly) return { clients: filteredClients };
-        
+
         // 3. Aggregate Sales (Current)
         const filialFilterElement = document.getElementById('stock-filial-filter');
         const filialFilter = filialFilterElement ? filialFilterElement.value : 'all';
 
-        const salesMap = new Map(); 
+        const salesMap = new Map();
         // Note: clientCodes already filtered by city above, so sales will be filtered implicitly
         const salesFilters = { clientCodes: activeClientCodes };
         const salesList = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, salesFilters);
-        
+
         salesList.forEach(s => {
             if (filialFilter !== 'all') {
                 const sFilial = String(s.FILIAL || '').padStart(2, '0');
@@ -25611,13 +25636,13 @@ const supervisorGroups = new Map();
             const pCode = s.PRODUTO;
             const resolvedProd = window.resolveDim('produtos', pCode);
             const qtdeMaster = (resolvedProd && resolvedProd.qtde_master && resolvedProd.qtde_master > 0) ? resolvedProd.qtde_master : 1;
-            
+
             if (!salesMap.has(pCode)) salesMap.set(pCode, { qty: 0, val: 0 });
             const entry = salesMap.get(pCode);
             entry.qty += ((Number(s.QTVENDA) || 0) / qtdeMaster);
             entry.val += (Number(s.VLVENDA) || 0);
         });
-        
+
         // 4. Aggregate History (for Avg)
         const historyMap = new Map();
         const historyList = getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, salesFilters);
@@ -25635,17 +25660,17 @@ const supervisorGroups = new Map();
              if (!historyMap.has(pCode)) historyMap.set(pCode, 0);
              historyMap.set(pCode, historyMap.get(pCode) + ((Number(h.QTVENDA) || 0) / qtdeMaster));
         });
-        
+
         // Normalize History to Monthly Average (assuming 3 months history loaded)
         for(const [k, v] of historyMap) {
             historyMap.set(k, v / 3);
         }
-        
+
         // 5. Iterate Products
         const products = embeddedData.products;
         const result = [];
         // filialFilterElement already defined above
-        
+
         const supplierSet = selectedStockSuppliers.length > 0 ? new Set(selectedStockSuppliers) : null;
         const pastaSet = selectedStockPastas.length > 0 ? new Set(selectedStockPastas) : null;
         const productSet = selectedStockProducts.length > 0 ? new Set(selectedStockProducts) : null;
@@ -25685,18 +25710,18 @@ const supervisorGroups = new Map();
             if (excludeFilter !== 'product' && productSet) {
                 if (!productSet.has(code)) return;
             }
-            
+
             const s05 = embeddedData.stockMap05[code] || 0;
             const s08 = embeddedData.stockMap08[code] || 0;
-            
+
             let stockQty = 0;
             if (filialFilter === 'all') stockQty = s05 + s08;
             else if (filialFilter === '05') stockQty = s05;
             else if (filialFilter === '08') stockQty = s08;
-            
+
             const currentSales = salesMap.get(code) || { qty: 0, val: 0 };
             const avgHistory = historyMap.get(code) || 0;
-            
+
             let status = 'neutral';
             let variation = 0;
 
@@ -25712,7 +25737,7 @@ const supervisorGroups = new Map();
             else if (currentSales.qty > 0 && avgHistory === 0) status = 'new';
             else if (currentSales.qty > avgHistory) status = 'growth';
             else if (currentSales.qty < avgHistory && currentSales.qty > 0) status = 'drop';
-            
+
             if (status !== 'neutral' || stockQty > 0 || currentSales.qty > 0) {
                 result.push({
                     code,
@@ -25729,35 +25754,35 @@ const supervisorGroups = new Map();
 
             }
         });
-        
+
         return result;
     }
-    
+
     function updateStockView() {
         const data = getStockFilteredData();
         stockTableState.filteredData = data;
-        
+
         // Populate Grid Tables
         const growth = data.filter(d => d.status === 'growth').sort((a,b) => b.sales - a.sales).slice(0, 50);
         const drop = data.filter(d => d.status === 'drop').sort((a,b) => b.avg - a.avg).slice(0, 50);
         const newData = data.filter(d => d.status === 'new').sort((a,b) => b.sales - a.sales).slice(0, 50);
         const lost = data.filter(d => d.status === 'lost' && d.stock > 0).sort((a,b) => b.stock - a.stock).slice(0, 50);
-        
+
         renderMiniStockTable('stock-growth-table', growth, 'growth');
         renderMiniStockTable('stock-drop-table', drop, 'drop');
         renderMiniStockTable('stock-new-table', newData, 'new');
         renderMiniStockTable('stock-lost-table', lost, 'lost');
-        
+
         document.getElementById('stock-lost-count').textContent = lost.length;
         renderStockMainTable(data);
     }
-    
+
     function renderMiniStockTable(tableId, data, type) {
         const table = document.getElementById(tableId);
         if(!table) return;
         const tbody = table.querySelector('tbody');
         tbody.innerHTML = '';
-        
+
         data.forEach(d => {
             const tr = document.createElement('tr');
             tr.className = "border-b border-slate-700/50 hover:bg-white/5";
@@ -25792,15 +25817,15 @@ const supervisorGroups = new Map();
             tbody.appendChild(tr);
         });
     }
-    
+
     function renderStockMainTable(data) {
         const tbody = document.getElementById('stock-main-table-body');
         if(!tbody) return;
         tbody.innerHTML = '';
-        
+
         data.sort((a,b) => b.val - a.val); // Default by value
-        const subset = data.slice(0, 200); 
-        
+        const subset = data.slice(0, 200);
+
         subset.forEach(d => {
              const tr = document.createElement('tr');
              tr.className = "border-b border-slate-700 hover:bg-slate-700/50 transition-colors cursor-pointer md:cursor-auto";
@@ -25809,7 +25834,7 @@ const supervisorGroups = new Map();
              tr.onclick = () => {
                  if(window.innerWidth < 768) window.handleProductAction('expand', d.code);
              };
-             
+
              let statusBadge = '';
              let varFormatted = d.variation.toFixed(0) + '%';
 
@@ -25820,7 +25845,7 @@ const supervisorGroups = new Map();
                  else if (d.variation < 0) statusBadge = `<span class="text-xs font-bold text-red-500">${varFormatted}</span>`;
                  else statusBadge = '<span class="text-xs text-slate-500">-</span>';
              }
-             
+
              tr.innerHTML = `
                 <!-- Product: Visible Mobile (Truncated) -->
                 <td class="px-2 py-2 text-[10px] md:text-xs text-white max-w-[120px] md:max-w-[200px]" title="${window.escapeHtml(d.name)}">
@@ -25860,7 +25885,7 @@ const supervisorGroups = new Map();
             selectedStockProducts = [];
             selectedStockCities = [];
             selectedStockCategories = [];
-            
+
             // Reset UI
             const stockFilialInput = document.getElementById('stock-filial-filter');
             const stockFilialText = document.getElementById('stock-filial-filter-text');
@@ -25883,7 +25908,7 @@ const supervisorGroups = new Map();
             const catDropdown = document.getElementById('stock-category-filter-dropdown');
             if (catDropdown) catDropdown.querySelectorAll('input').forEach(cb => cb.checked = false);
             document.getElementById('stock-category-filter-text').textContent = 'Todas';
-            
+
             // Re-render filters (Text and Checkboxes)
             const supplierDropdown = document.getElementById('stock-supplier-filter-dropdown');
             if (supplierDropdown) supplierDropdown.querySelectorAll('input').forEach(cb => cb.checked = false);
@@ -25898,13 +25923,13 @@ const supervisorGroups = new Map();
             const productDropdown = document.getElementById('stock-product-filter-dropdown');
             // Product list is dynamically rendered, just reset text
             document.getElementById('stock-product-filter-text').textContent = 'Todos';
-            
+
             // Update Data
             updateAllStockFilters();
             updateStockView();
         });
     }
-    
+
     function getBestDayPerWeekday(monthData) {
         const salesByDate = new Map();
         monthData.forEach(s => {
@@ -25941,7 +25966,7 @@ const supervisorGroups = new Map();
                     const checked = e.target.checked;
                     if (checked) selectedWeeklySupervisors.add(val);
                     else selectedWeeklySupervisors.delete(val);
-                    
+
                     updateWeeklyFilterText('weekly-supervisor-filter-text', selectedWeeklySupervisors, 'Todos');
                     // Reset Dependent
                     selectedWeeklyVendedores.clear();
@@ -25969,7 +25994,7 @@ const supervisorGroups = new Map();
                     const checked = e.target.checked;
                     if (checked) selectedWeeklyVendedores.add(val);
                     else selectedWeeklyVendedores.delete(val);
-                    
+
                     updateWeeklyFilterText('weekly-vendedor-filter-text', selectedWeeklyVendedores, 'Todos');
                     updateWeeklyView();
                 }
@@ -25994,7 +26019,7 @@ const supervisorGroups = new Map();
                     const checked = e.target.checked;
                     if (checked) selectedWeeklySuppliers.add(val);
                     else selectedWeeklySuppliers.delete(val);
-                    
+
                     updateWeeklyFilterText('weekly-fornecedor-filter-text', selectedWeeklySuppliers, 'Todos');
                     updateWeeklyView();
                 }
@@ -26169,7 +26194,7 @@ const supervisorGroups = new Map();
 
         const dataSource = [...allSalesData, ...allHistoryData];
         const validCodes = updateSupplierFilter(dd, txt, Array.from(selectedWeeklySuppliers), dataSource, 'main');
-        
+
         selectedWeeklySuppliers.clear();
         validCodes.forEach(code => selectedWeeklySuppliers.add(code));
     }
@@ -26225,7 +26250,7 @@ const supervisorGroups = new Map();
 
         const total = allSalesData.length;
         const colValues = isCol ? allSalesData._data : null;
-        
+
         for(let i=0; i<total; i++) {
             let keep = true;
             // Native Filters
@@ -26270,19 +26295,19 @@ const supervisorGroups = new Map();
         }
         return result;
     }
-    
+
     function updateWeeklyView() {
         const isPromotorUserLocal = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
         if (isPromotorUserLocal) return;
-        
+
         const filteredSales = getWeeklyFilteredData();
         const isPromoterMode = typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter';
-        
+
         const now = lastSaleDate ? new Date(lastSaleDate) : new Date();
         const weeks = getWorkingMonthWeeks(now.getFullYear(), now.getMonth());
-        
+
         const weeklyData = weeks.map(w => ({ ...w, total: 0, days: new Array(7).fill(0) }));
-        
+
         filteredSales.forEach(s => {
             const d = new Date(s.DTPED);
             const wIndex = weeks.findIndex(w => d >= w.start && d <= w.end);
@@ -26292,15 +26317,15 @@ const supervisorGroups = new Map();
                 weeklyData[wIndex].days[d.getDay()] += val;
             }
         });
-        
+
         // History Logic
         const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const prevMonthSales = [];
-        
+
         const isColHistory = allHistoryData instanceof ColumnarDataset;
         const colHist = isColHistory ? allHistoryData._data : null;
         const histLen = allHistoryData.length;
-        
+
         // Logic for History Filtering
         let historyClientCodes = null;
         if (isPromoterMode) {
@@ -26316,7 +26341,7 @@ const supervisorGroups = new Map();
         for(let i=0; i<histLen; i++) {
              const dtPed = isColHistory ? colHist['DTPED'][i] : allHistoryData[i].DTPED;
              let d = (typeof dtPed === 'number') ? new Date(dtPed) : parseDate(dtPed);
-             
+
              if (d && d.getMonth() === prevMonth.getMonth() && d.getFullYear() === prevMonth.getFullYear()) {
                  let keep = true;
 
@@ -26351,10 +26376,10 @@ const supervisorGroups = new Map();
                  }
              }
         }
-        
+
         const bestDays = getBestDayPerWeekday(prevMonthSales);
         renderWeeklyChart(weeklyData, bestDays);
-        
+
         const summaryTbody = document.getElementById('weekly-summary-table').querySelector('tbody');
         if(summaryTbody) {
             summaryTbody.innerHTML = weeklyData.map(w => `
@@ -26367,7 +26392,7 @@ const supervisorGroups = new Map();
 
         // Generate Rankings
         const sellerStats = new Map();
-        
+
         filteredSales.forEach(s => {
             let groupingCode = s.CODUSUR;
             let groupingName = null;
@@ -26384,13 +26409,13 @@ const supervisorGroups = new Map();
 
             const val = Number(s.VLVENDA) || 0;
             const client = s.CODCLI;
-            
+
             if (!sellerStats.has(groupingCode)) sellerStats.set(groupingCode, { val: 0, clients: new Set(), name: groupingName });
             const entry = sellerStats.get(groupingCode);
             entry.val += val;
             entry.clients.add(client);
         });
-        
+
         const rankingData = [];
         sellerStats.forEach((stats, code) => {
             let name = stats.name;
@@ -26399,12 +26424,12 @@ const supervisorGroups = new Map();
                 name = details ? (details.name || code) : code;
             }
             const formatName = (n) => n.split(' ')[0] + (n.split(' ').length > 1 ? ' ' + n.split(' ')[1].charAt(0) + '.' : '');
-            
-            rankingData.push({ 
-                code, 
-                name: typeof getFirstName === 'function' ? getFirstName(name) : formatName(name), 
-                val: stats.val, 
-                pos: stats.clients.size 
+
+            rankingData.push({
+                code,
+                name: typeof getFirstName === 'function' ? getFirstName(name) : formatName(name),
+                val: stats.val,
+                pos: stats.clients.size
             });
         });
 
@@ -26413,7 +26438,7 @@ const supervisorGroups = new Map();
         const posTitle = document.getElementById('weekly-ranking-pos-title');
         if (fatTitle) fatTitle.textContent = isPromoterMode ? 'Top Promotores (Fat)' : 'Top Vendedores (Fat)';
         if (posTitle) posTitle.textContent = isPromoterMode ? 'Top Positivação (Promotor)' : 'Top Positivação (Vendedor)';
-        
+
         // Render Fat Ranking
         rankingData.sort((a,b) => b.val - a.val);
         const topFat = rankingData.slice(0, 10);
@@ -26429,7 +26454,7 @@ const supervisorGroups = new Map();
                 </li>
             `).join('');
         }
-        
+
         // Render Pos Ranking
         rankingData.sort((a,b) => b.pos - a.pos);
         const topPos = rankingData.slice(0, 10);
@@ -26446,25 +26471,25 @@ const supervisorGroups = new Map();
             `).join('');
         }
     }
-    
+
     let weeklyChartInstance = null;
     function renderWeeklyChart(weeklyData, bestDays) {
         const ctx = document.getElementById('weeklySalesChart');
         if (!ctx) return;
-        
+
         const existingChart = Chart.getChart(ctx);
         if (existingChart) existingChart.destroy();
-        
+
         const labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
         const dayIndices = [1, 2, 3, 4, 5];
-        
+
         const datasets = weeklyData.map((w, i) => ({
             label: `Semana ${w.id}`,
             data: dayIndices.map(d => w.days[d]),
             backgroundColor: getWeekColor(i),
             // Removed stack: 'Stack 0' to allow grouped bars side-by-side
         }));
-        
+
         datasets.push({
             type: 'line',
             label: 'Melhor Dia (Mês Ant.)',
@@ -26475,7 +26500,7 @@ const supervisorGroups = new Map();
             tension: 0.3,
             pointRadius: 0
         });
-        
+
         weeklyChartInstance = new Chart(ctx, {
             type: 'bar',
             data: { labels, datasets },
@@ -26509,7 +26534,7 @@ const supervisorGroups = new Map();
             }
         });
     }
-    
+
     function getWeekColor(index) {
         const colors = ['#3b82f6', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'];
         return colors[index % colors.length];
@@ -26544,7 +26569,7 @@ const supervisorGroups = new Map();
             // clientData.categoryOrders is Map<Category, Set<OrderId>>
             const ordersMap = clientData.categoryOrders;
             const categories = [];
-            
+
             if (ordersMap) {
                 ordersMap.forEach((orders, cat) => {
                     categories.push({ name: cat, orders: Array.from(orders) });
@@ -26552,17 +26577,17 @@ const supervisorGroups = new Map();
 
 
             }
-            
+
             // Sort alphabetical
             categories.sort((a,b) => a.name.localeCompare(b.name));
 
             categories.forEach(c => {
                 const item = document.createElement('div');
                 item.className = 'glass-panel p-3 rounded-lg border border-slate-700/50';
-                
+
                 // Truncate list of orders if too long
                 const orderList = c.orders.join(', ');
-                
+
                 item.innerHTML = `
                     <div class="flex justify-between items-start mb-1">
                         <span class="text-sm font-bold text-white">${window.escapeHtml(c.name)}</span>
@@ -26582,7 +26607,7 @@ const supervisorGroups = new Map();
         closeBtn.onclick = () => {
             modal.classList.add('hidden');
         };
-        
+
         // Close on outside click (Generic Modal Handler usually handles this, but ensuring specific behavior)
         modal.onclick = (e) => {
             if (e.target === modal) modal.classList.add('hidden');
@@ -26629,7 +26654,7 @@ const supervisorGroups = new Map();
 
             const formData = new FormData(e.target);
             const respostas = Object.fromEntries(formData.entries());
-            
+
             // Remove internal fields if any
             const visitId = respostas.visita_id;
             delete respostas.visita_id;
@@ -26640,7 +26665,7 @@ const supervisorGroups = new Map();
 
             // Handle Múltiplas Fotos (Antes/Depois ou Geral)
             const fotosArray = [];
-            
+
             // Helper to upload a single file
             const uploadFile = async (file, prefix) => {
                 if (!file || file.size === 0) return null;
@@ -27178,7 +27203,7 @@ const supervisorGroups = new Map();
         // OPTIMIZATION: Disable Animated theme to improve FPS on low-end devices
         // if (am5themes_Animated) themes.push(am5themes_Animated.new(root));
         if (am5themes_Dark) themes.push(am5themes_Dark.new(root));
-        
+
         root.setThemes(themes);
 
         const series = root.container.children.push(
@@ -27208,7 +27233,7 @@ const supervisorGroups = new Map();
         series.links.template.set("strength", 0.5);
 
         series.data.setAll([rootData]);
-        
+
         // Safety: Only set selected item if data items exist
         if (series.dataItems && series.dataItems.length > 0) {
             series.set("selectedDataItem", series.dataItems[0]);
@@ -27258,9 +27283,9 @@ const supervisorGroups = new Map();
         const am5xy = window.am5xy;
         const am5radar = window.am5radar;
         const am5themes_Animated = window.am5themes_Animated;
-        
+
         const root = am5.Root.new("metasChartContainer");
-        
+
         if (root._logo) {
             root._logo.dispose();
         }
@@ -27385,9 +27410,9 @@ const supervisorGroups = new Map();
         const am5xy = window.am5xy;
         const am5radar = window.am5radar;
         const am5themes_Animated = window.am5themes_Animated;
-        
+
         const root = am5.Root.new("faturamentoPorFornecedorChartContainer");
-        
+
         if (root._logo) {
             root._logo.dispose();
         }
@@ -27604,7 +27629,7 @@ const supervisorGroups = new Map();
             // Use clone to prevent duplicate listeners if re-initialized
             const newOptionsBtn = optionsBtn.cloneNode(true);
             optionsBtn.parentNode.replaceChild(newOptionsBtn, optionsBtn);
-            
+
             newOptionsBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 dropdown.classList.toggle('hidden');
@@ -27630,7 +27655,7 @@ const supervisorGroups = new Map();
             closeBtn.addEventListener('click', () => {
                 modal.classList.add('hidden');
             });
-            
+
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
                     modal.classList.add('hidden');
@@ -27879,7 +27904,7 @@ const supervisorGroups = new Map();
                     selectedHistoryVendedores,
                     updateHistorySupervisorFilter,
                     updateHistoryVendedorFilter,
-                    () => { 
+                    () => {
                         if(historyTableState.hasSearched && typeof filterHistoryView === 'function') filterHistoryView();
                         else if(typeof renderHistoryView === 'function') renderHistoryView();
                     },
@@ -28171,7 +28196,7 @@ const supervisorGroups = new Map();
                     // Basic active check (similar to getActiveClientsData but simpler)
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                    
+
                     // FIX: Only filter orphans for Admins
                     if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue; // Skip strictly inactive
 
@@ -28845,10 +28870,10 @@ const supervisorGroups = new Map();
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                    
+
                     // FIX: Only filter orphans for Admins
                     if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
-                    
+
                     let keep = true;
                     if (hasSup || hasVend) {
                         const details = sellerDetailsMap.get(rca1);
@@ -28926,7 +28951,7 @@ const supervisorGroups = new Map();
             };
 
             let totalReceber = 0;
-            
+
             let countCritical = 0;
             const today = new Date();
             today.setHours(0,0,0,0);
@@ -28958,7 +28983,7 @@ const supervisorGroups = new Map();
                         // Calculate days overdue if past due
                         if (dtVenc < today) {
                              const diffTime = Math.abs(today - dtVenc);
-                             daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                             daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                         }
                     }
 
@@ -29214,7 +29239,7 @@ const supervisorGroups = new Map();
 
         // Re-implement simplified filtering logic just to get available researchers (Pre-Research Filter)
         let allowedClientCodes = new Set();
-        const clients = (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') 
+        const clients = (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller')
             ? (() => {
                     // Seller Mode Logic
                     const list = [];
@@ -29271,7 +29296,7 @@ const supervisorGroups = new Map();
             // Sort and Render
             const sortedResearchers = Array.from(researchers).sort();
             let html = '';
-            
+
             sortedResearchers.forEach(res => {
                 const rawPesquisador = (res || '').trim();
                 const normRes = window.normalizeResearcherCode(rawPesquisador);
@@ -29342,7 +29367,7 @@ const supervisorGroups = new Map();
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('landscape');
-        
+
         // Use the filtered data that's already in the view state
         const data = lpState.filteredData || [];
 
@@ -29354,7 +29379,7 @@ const supervisorGroups = new Map();
         data.forEach(row => {
             const resKey = window.normalizeResearcherCode(row.pesquisador);
             const isRowPromotor = resKey.toUpperCase().includes('PROMOTOR');
-            
+
             if (isPromoterMode && !isRowPromotor) return;
             if (!isPromoterMode && isRowPromotor) return;
 
@@ -29374,7 +29399,7 @@ const supervisorGroups = new Map();
                 agentCode = info.sellerCode;
                 let rawName = info.sellerName || info.sellerCode;
                 rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
-                
+
                 if (rawName && rawName !== info.sellerCode) {
                     agentName = rawName;
                 } else {
@@ -29437,7 +29462,7 @@ const supervisorGroups = new Map();
             const vend = document.getElementById('lp-seller-filter-text')?.textContent || 'Todos';
             filtersText = `Filtros Aplicados: Supervisor: ${sup} | Vendedor: ${vend}`;
         }
-        
+
         const pesquisador = document.getElementById('lp-researcher-filter-text')?.textContent || 'Todos';
         filtersText += ` | Pesquisador: ${pesquisador}`;
 
@@ -29632,7 +29657,7 @@ const supervisorGroups = new Map();
         if (lpGrid && !document.getElementById('lp-researcher-filter-wrapper')) {
             const wrapper = document.createElement('div');
             wrapper.id = 'lp-researcher-filter-wrapper';
-            wrapper.className = 'relative z-20'; 
+            wrapper.className = 'relative z-20';
             wrapper.innerHTML = `
                 <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Pesquisador</label>
                 <button id="lp-researcher-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] hover:bg-slate-750 transition-colors focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
@@ -29784,7 +29809,7 @@ const supervisorGroups = new Map();
         }
         const dd = document.getElementById('lp-rede-filter-dropdown');
         if(dd) dd.classList.add('hidden');
-        
+
         const ddRes = document.getElementById('lp-researcher-filter-dropdown');
         if(ddRes) ddRes.classList.add('hidden');
 
@@ -29926,7 +29951,7 @@ const supervisorGroups = new Map();
         const uniqueClientsAudited = new Set();
 
         filtered.forEach(item => {
-            totalScore += item.nota_media; 
+            totalScore += item.nota_media;
             totalAudits += item.auditorias;
             totalPerfectAudits += item.auditorias_perfeitas;
             if (item.nota_media >= 80 && item.codigo_cliente) uniquePerfectStores.add(normalizeKey(item.codigo_cliente));
@@ -29981,10 +30006,10 @@ const supervisorGroups = new Map();
 
         tbody.innerHTML = subset.map(t => {
             let colorStyle;
-            if (t.nota_media < 50) colorStyle = 'color: #ef4444 !important;'; 
+            if (t.nota_media < 50) colorStyle = 'color: #ef4444 !important;';
             else if (t.nota_media < 80) colorStyle = 'color: #eab308 !important;';
             else colorStyle = 'color: #22c55e !important;';
-            
+
             // Resolve Researcher Display
             let resDisplay = t.pesquisador;
             let resSub = t.pesquisador;
@@ -30061,7 +30086,7 @@ const supervisorGroups = new Map();
                     true, // isSellerFilter = true
                     typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
                 );
-                
+
                 // Summary Tab
                 window.setupGenericFilterHandlers(
                     'goals-summary',
@@ -30074,7 +30099,7 @@ const supervisorGroups = new Map();
                     true, // isSellerFilter = true
                     typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null
                 );
-                
+
                 // SV Tab (Supervisor only)
                 // Replaced repetitive dropdown toggle logic and cloneNode with generic checkbox filter handler
                 if (typeof window.setupGenericCheckboxFilterHandlers === 'function') {
@@ -30231,22 +30256,22 @@ const supervisorGroups = new Map();
         if (stockEl08) stockEl08.textContent = typeof s08 === 'number' ? s08.toLocaleString('pt-BR') : s08;
 
         // Since this modal is shared with Coverage view which has "Sales", we might need to handle those fields.
-        // In Innovations context, we don't usually have "Sales Value" readily available in the item object 
+        // In Innovations context, we don't usually have "Sales Value" readily available in the item object
         // (unless we enriched it from somewhere else). The current item structure in `updateInnovationsMonthView`
         // focuses on Clients Count (Positivação).
-        
+
         // Hide/Reset Sales Section if not applicable or set to '-'
         const salesPrevEl = document.getElementById('product-performance-prev');
         const salesCurrEl = document.getElementById('product-performance-curr');
         const salesVarEl = document.getElementById('product-performance-var');
-        
+
         if (salesPrevEl) salesPrevEl.textContent = '--';
         if (salesCurrEl) salesCurrEl.textContent = '--';
         if (salesVarEl) {
             salesVarEl.textContent = '--';
             salesVarEl.className = 'px-3 py-1 rounded-lg text-sm font-bold bg-slate-700 text-slate-300';
         }
-        
+
         // Update Label to reflect we might not be showing Sales Value
         const metricLabel = document.getElementById('product-performance-metric-label');
         if (metricLabel) metricLabel.textContent = 'Positivação'; // Or keep 'Valor' but data is missing
