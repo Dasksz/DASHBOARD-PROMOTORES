@@ -3734,12 +3734,12 @@
                     const razao = row.razao || row.name; // Fallback
                     const truncatedRazao = razao.length > 22 ? razao.substring(0, 22) + '...' : razao;
                     
-                    const mobileLine1 = `${row.codcli} - ${truncatedRazao}`;
+                    const mobileLine1 = `${window.escapeHtml(row.codcli)} - ${window.escapeHtml(truncatedRazao)}`;
                     const desktopLine1 = row.name; 
                     const line2 = row.fantasia || '';
 
                     return `
-                    <tr class="hover:bg-slate-700/50 border-b border-slate-500 last:border-0 cursor-pointer md:cursor-default" onclick="if(window.innerWidth < 768) openMixMobileModal('${row.codcli}')">
+                    <tr class="hover:bg-slate-700/50 border-b border-slate-500 last:border-0 cursor-pointer md:cursor-default" onclick="if(window.innerWidth < 768) openMixMobileModal(\'${window.escapeHtml(row.codcli)}\')">
                         <td data-label="Cód" class="px-2 py-2 md:px-4 md:py-2 font-medium text-slate-300 text-[10px] md:text-xs hidden md:table-cell">${escapeHtml(row.codcli)}</td>
                         
                         <td data-label="Cliente" class="px-2 py-2 md:px-4 md:py-2 text-left">
@@ -5947,7 +5947,7 @@
                     const colorClass = getAchievementColorClass(percent);
 
                     let desktopCells = `
-                        <td class="px-2 py-2 text-center text-slate-400 text-xs border-r border-b border-slate-700 hidden md:table-cell">${row.codcli}</td>
+                        <td class="px-2 py-2 text-center text-slate-400 text-xs border-r border-b border-slate-700 hidden md:table-cell">${window.escapeHtml(row.codcli)}</td>
                         <td class="px-3 py-2 text-xs font-medium text-slate-200 border-r border-b border-slate-700 truncate hidden md:table-cell" title="${escapeHtml(row.razaoSocial)}">${escapeHtml(row.razaoSocial)}</td>
                         <td class="px-3 py-2 text-xs text-slate-400 border-r border-b border-slate-700 truncate hidden md:table-cell">${escapeHtml(getFirstName(row.vendedor))}</td>
                         <td class="px-3 py-2 text-xs text-slate-400 border-r border-b border-slate-700 truncate hidden md:table-cell">${escapeHtml(row.cidade)}</td>
@@ -5972,7 +5972,7 @@
                     // Mobile Content (Compact List) - WRAPPED IN TD
                     const mobileContent = `
                         <td class="md:hidden w-full py-3 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${index}, 'client')">
-                            <div class="font-bold text-sm text-slate-200 mb-1 truncate">${row.codcli} - ${escapeHtml(row.razaoSocial)}</div>
+                            <div class="font-bold text-sm text-slate-200 mb-1 truncate">${window.escapeHtml(row.codcli)} - ${escapeHtml(row.razaoSocial)}</div>
                             <div class="flex justify-between items-center text-xs">
                                 <div class="text-slate-400">Meta: <span class="text-slate-200 font-medium">${metaTotalStr}</span></div>
                                 <div class="text-slate-400">Real: <span class="${colorClass} font-bold">${realTotalStr}</span></div>
@@ -8721,7 +8721,7 @@ const supervisorGroups = new Map();
 
                     sup.sellers.sort((a, b) => (b.data['total_elma']?.metaFat || 0) - (a.data['total_elma']?.metaFat || 0));
                     sup.sellers.forEach(seller => {
-                        bodyHTML += `<tr class="hover:bg-white/5 border-b border-white/10"><td class="px-2 py-1 text-center text-slate-400 font-mono">${seller.code}</td><td class="px-2 py-1 text-left text-white font-medium truncate max-w-[200px]" title="${window.escapeHtml(seller.name)}">${window.escapeHtml(getFirstName(seller.name))}</td>`;
+                        bodyHTML += `<tr class="hover:bg-white/5 border-b border-white/10"><td class="px-2 py-1 text-center text-slate-400 font-mono">${window.escapeHtml(seller.code)}</td><td class="px-2 py-1 text-left text-white font-medium truncate max-w-[200px]" title="${window.escapeHtml(seller.name)}">${window.escapeHtml(getFirstName(seller.name))}</td>`;
                         svColumns.forEach(col => {
                             const d = seller.data[col.id] || { metaFat: 0, metaVol: 0, metaPos: 0, avgVol: 0, avgMix: 0, metaMix: 0, avgFat: 0, monthlyValues: {} };
                             if (col.type === 'standard') {
@@ -8745,7 +8745,7 @@ const supervisorGroups = new Map();
 
 
 
-                    bodyHTML += `<tr class="glass-panel-heavy font-bold border-b border-slate-600"><td class="px-2 py-2 text-center text-slate-400 font-mono">${sup.code}</td><td class="px-2 py-2 text-left text-white uppercase tracking-wider">${sup.name}</td>`;
+                    bodyHTML += `<tr class="glass-panel-heavy font-bold border-b border-slate-600"><td class="px-2 py-2 text-center text-slate-400 font-mono">${window.escapeHtml(sup.code)}</td><td class="px-2 py-2 text-left text-white uppercase tracking-wider">${window.escapeHtml(sup.name)}</td>`;
                     svColumns.forEach(col => {
                         const d = sup.totals[col.id]; const color = col.id.includes('total') || col.type === 'tonnage' || col.type === 'mix' ? 'text-white' : 'text-slate-300';
                         if (col.type === 'standard') {

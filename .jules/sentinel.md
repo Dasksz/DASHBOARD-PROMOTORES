@@ -57,3 +57,8 @@
 **Vulnerability:** DOM-based Cross-Site Scripting (XSS) vulnerability found in `js/app/app.js` during the generation of the `goalsGvTableBody` table rows, where dynamic properties like `item.cod`, `item.name`, and `item.seller` were directly concatenated into the HTML string assigned to `innerHTML`.
 **Learning:** Even though `window.escapeHtml` is used in many parts of the application, there are specific views and helper functions (such as `getFirstName`) where dynamic user-provided data is evaluated but the outer interpolation omits escaping. The use of `.map().join('')` to generate large chunks of DOM elements often leads to overlooked missing sanitization on individual table cells.
 **Prevention:** Always verify that every single dynamic variable (`${...}`) within a template literal assigned to `.innerHTML` is wrapped in `window.escapeHtml()`, particularly in complex table rendering loops. Do not assume helper functions like `getFirstName` return safe HTML.
+
+## 2024-05-24 - [XSS via unescaped entity codes]
+**Vulnerability:** Several places in `js/app/app.js` render entity codes like `row.codcli`, `seller.code`, `sup.code`, and `sup.name` via `.innerHTML` string interpolation without calling `window.escapeHtml()`.
+**Learning:** Even though entity codes and identifiers are typically alphanumeric, they should always be sanitized before injection into `.innerHTML` templates because the root data source (e.g. database or API) could be manipulated by a malicious actor to contain an XSS payload.
+**Prevention:** Consistently apply `window.escapeHtml()` to all dynamically interpolated dataset properties injected into the DOM, even if they appear to be non-textual identifiers like codes or IDs.
