@@ -23210,12 +23210,14 @@ const supervisorGroups = new Map();
                 // Not scheduled, but let's check if they have a visit
                 const cod = window.normalizeKey ? window.normalizeKey(c['Código'] || c['codigo_cliente']) : String(c['Código'] || c['codigo_cliente']).trim();
                 const clientVisits = (typeof myMonthVisits !== 'undefined' && myMonthVisits) ? (myMonthVisits.get(cod) || []) : [];
-                const todaysVisit = clientVisits.find(v => {
+                const todaysVisits = clientVisits.filter(v => {
                     const vCreatedAt = String(v.created_at || "").endsWith("Z") || String(v.created_at || "").match(/[+-]\d{2}:\d{2}$/) ? v.created_at : v.created_at + "Z"; const d = new Date(vCreatedAt);
                     return d.getDate() === date.getDate() &&
                            d.getMonth() === date.getMonth() &&
                            d.getFullYear() === date.getFullYear();
                 });
+                todaysVisits.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                const todaysVisit = todaysVisits[0];
 
 
 
@@ -23269,12 +23271,14 @@ const supervisorGroups = new Map();
             
             const cod = window.normalizeKey ? window.normalizeKey(c['Código'] || c['codigo_cliente']) : String(c['Código'] || c['codigo_cliente']).trim();
             const clientVisits = (typeof myMonthVisits !== 'undefined' && myMonthVisits) ? (myMonthVisits.get(cod) || []) : [];
-            const todaysVisit = clientVisits.find(v => {
-                const vCreatedAt = String(v.created_at || "").endsWith("Z") || String(v.created_at || "").match(/[+-]\d{2}:\d{2}$/) ? v.created_at : v.created_at + "Z"; const d = new Date(vCreatedAt);
-                return d.getDate() === date.getDate() &&
-                       d.getMonth() === date.getMonth() &&
-                       d.getFullYear() === date.getFullYear();
-            });
+            const todaysVisits = clientVisits.filter(v => {
+                    const vCreatedAt = String(v.created_at || "").endsWith("Z") || String(v.created_at || "").match(/[+-]\d{2}:\d{2}$/) ? v.created_at : v.created_at + "Z"; const d = new Date(vCreatedAt);
+                    return d.getDate() === date.getDate() &&
+                           d.getMonth() === date.getMonth() &&
+                           d.getFullYear() === date.getFullYear();
+                });
+                todaysVisits.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                const todaysVisit = todaysVisits[0];
 
             if (isScheduled || !!todaysVisit) {
                 c._isScheduled = isScheduled;
@@ -23327,12 +23331,14 @@ const supervisorGroups = new Map();
                 const clientVisits = myMonthVisits.get(cod) || [];
 
                 // Find visit for THIS date (Local)
-                const todaysVisit = c._todaysVisit || clientVisits.find(v => {
+                const todaysVisits = clientVisits.filter(v => {
                     const vCreatedAt = String(v.created_at || "").endsWith("Z") || String(v.created_at || "").match(/[+-]\d{2}:\d{2}$/) ? v.created_at : v.created_at + "Z"; const d = new Date(vCreatedAt);
                     return d.getDate() === date.getDate() &&
                            d.getMonth() === date.getMonth() &&
                            d.getFullYear() === date.getFullYear();
                 });
+                todaysVisits.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                const todaysVisit = c._todaysVisit || todaysVisits[0];
 
 
 
