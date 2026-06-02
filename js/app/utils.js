@@ -1222,6 +1222,56 @@
         }
     };
 
+    /**
+     * Extracts and centralizes the logic for filtering clients based on seller hierarchies,
+     * reducing duplication across various view data fetching functions.
+     *
+     * @param {Object} options - Configuration options for the filter.
+     * @param {string} options.viewPrefix - The prefix for the view (e.g., 'mix', 'coverage').
+     * @param {Set} options.supervisorsSet - Set of selected supervisors.
+     * @param {Set} options.vendedoresSet - Set of selected sellers (vendedores).
+     * @param {Array|ColumnarDataset} options.sourceData - The original unfiltered client data.
+     * @param {Map} options.sellerDetailsMap - Map containing supervisor details for sellers.
+     * @param {string} options.userRole - The role of the current user.
+     * @param {string} options.adminViewMode - The current view mode (e.g., 'seller').
+     * @param {Function} options.getHierarchyFilteredClientsFn - Fallback function for non-seller views.
+     * @param {boolean} [options.skipAdminOrphanFilter=false] - Whether to skip the admin orphan filtering logic.
+     * @returns {Array} The filtered array of clients.
+     */
+    window.getGenericSellerHierarchyFilteredClients = function({ viewPrefix, supervisorsSet, vendedoresSet, sourceData, sellerDetailsMap, userRole, adminViewMode, getHierarchyFilteredClientsFn, skipAdminOrphanFilter = false }) {
+        if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+            const clients = [];
+            const hasSup = supervisorsSet.size > 0;
+            const hasVend = vendedoresSet.size > 0;
+            const len = sourceData.length;
+
+            for (let i = 0; i < len; i++) {
+                const c = (typeof sourceData.get === 'function') ? sourceData.get(i) : sourceData[i];
+                const rca1 = String(c.rca1 || '').trim();
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
+
+                if (!skipAdminOrphanFilter && userRole === 'adm' && !isAmericanas && rca1 === '') {
+                    continue;
+                }
+
+                let keep = true;
+                if (hasSup || hasVend) {
+                    const details = sellerDetailsMap.get(rca1);
+                    if (hasSup) {
+                        if (!details || !supervisorsSet.has(details.supervisor)) keep = false;
+                    }
+                    if (keep && hasVend) {
+                        if (!vendedoresSet.has(rca1)) keep = false;
+                    }
+                }
+                if (keep) clients.push(c);
+            }
+            return clients;
+        } else {
+            return getHierarchyFilteredClientsFn(viewPrefix, sourceData);
+        }
+    };
+
 })();
 
     window.setupGenericRedeFilterHandlers = function(prefix, stateObj, getFilteredDataFn, updateViewFn, updateRedeFilterFn) {
