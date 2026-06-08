@@ -15741,72 +15741,21 @@ const supervisorGroups = new Map();
 
                             // City Filter Setup
                             if (cityCityFilter && !cityCityFilter._hasListener) {
-                                const updateSuggestions = debounce(() => {
-                                    const val = cityCityFilter.value.trim().toLowerCase();
-                                    if (val.length < 1) {
-                                        cityCitySuggestions.classList.add('hidden');
-                                        return;
-                                    }
-                                    const { clients } = getCityFilteredData({ excludeFilter: 'city' });
-                                    const uniqueCities = new Set();
-                                    clients.forEach(c => {
-                                        if (c.cidade && c.cidade !== 'N/A') uniqueCities.add(c.cidade);
-                                    });
-
-
-                                    // ⚡ Bolt Optimization: Avoid Array.from().filter() intermediate allocations
-                                    const matches = [];
-                                    for (const c of uniqueCities) {
-                                        if (c.toLowerCase().includes(val)) matches.push(c);
-                                    }
-                                    matches.sort();
-
-                                    if (matches.length > 0) {
-                                        cityCitySuggestions.innerHTML = matches.slice(0, 10).map(c => {
-                                            const safeC = c.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-                                            return `<div class="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300" data-val="${safeC}">${safeC}</div>`;
-                                        }).join('');
-                                        cityCitySuggestions.classList.remove('hidden');
-                                    } else {
-                                        cityCitySuggestions.classList.add('hidden');
-                                    }
-                                }, 300);
-
-                                cityCityFilter.addEventListener('input', (e) => {
-                                    updateSuggestions();
-                                    if (!e.target.value) handleCityFilterChange({ excludeFilter: 'city' });
-                                });
-
-
-
-                                cityCityFilter.addEventListener('focus', () => {
-                                    if (cityCityFilter.value.trim().length >= 1) {
-                                         cityCitySuggestions.classList.remove('hidden');
-                                    }
-                                });
-
-
-
-                                cityCitySuggestions.addEventListener('click', (e) => {
-                                    const item = e.target.closest('div');
-                                    if (item && item.dataset.val) {
-                                        cityCityFilter.value = item.dataset.val;
-                                        cityCitySuggestions.classList.add('hidden');
-                                        handleCityFilterChange();
-                                    }
-                                });
-
-
-
-                                document.addEventListener('click', (e) => {
-                                    if (!cityCityFilter.contains(e.target) && !cityCitySuggestions.contains(e.target)) {
-                                        cityCitySuggestions.classList.add('hidden');
-                                    }
-                                });
-
-
-
-                                cityCityFilter._hasListener = true;
+                                if (typeof window.setupGenericCityTypeahead === 'function') {
+                                    window.setupGenericCityTypeahead(
+                                        'city-city-filter',
+                                        'city-city-suggestions',
+                                        () => {
+                                            const { clients } = getCityFilteredData({ excludeFilter: 'city' });
+                                            const uniqueCities = new Set();
+                                            clients.forEach(c => {
+                                                if (c.cidade && c.cidade !== 'N/A') uniqueCities.add(c.cidade);
+                                            });
+                                            return uniqueCities;
+                                        },
+                                        (info) => handleCityFilterChange(info || { excludeFilter: 'city' })
+                                    );
+                                }
                             }
 
                             updateAllCityFilters();
@@ -27878,76 +27827,21 @@ const supervisorGroups = new Map();
 
             // City Filter
             if (positivacaoCityFilter && !positivacaoCityFilter._hasListener) {
-                const updateSuggestions = debounce(() => {
-                    const val = positivacaoCityFilter.value.trim().toLowerCase();
-                    if (val.length < 1) {
-                        positivacaoCitySuggestions.classList.add('hidden');
-                        return;
-                    }
-
-                    const { clients } = getPositivacaoFilteredData({ excludeFilter: 'city' });
-                    const uniqueCities = new Set();
-                    clients.forEach(c => {
-                        if (c.cidade && c.cidade !== 'N/A') uniqueCities.add(c.cidade);
-                    });
-
-
-
-                    // ⚡ Bolt Optimization: Avoid Array.from().filter() intermediate allocations
-                    const matches = [];
-                    for (const c of uniqueCities) {
-                        if (c.toLowerCase().includes(val)) matches.push(c);
-                    }
-                    matches.sort();
-
-                    if (matches.length > 0) {
-                        positivacaoCitySuggestions.innerHTML = matches.slice(0, 10).map(c => {
-                            const safeC = c.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-                            return `<div class="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300" data-val="${safeC}">${safeC}</div>`;
-                        }).join('');
-                        positivacaoCitySuggestions.classList.remove('hidden');
-                    } else {
-                        positivacaoCitySuggestions.classList.add('hidden');
-                    }
-                }, 300);
-
-                positivacaoCityFilter.addEventListener('input', (e) => {
-                    updateSuggestions();
-                    if (!e.target.value) handlePositivacaoFilterChange();
-                });
-
-
-
-                positivacaoCityFilter.addEventListener('focus', () => {
-                    if (positivacaoCityFilter.value.trim().length >= 1) {
-                         positivacaoCitySuggestions.classList.remove('hidden');
-                    }
-                });
-
-
-
-                // Delegation for suggestions click
-                positivacaoCitySuggestions.addEventListener('click', (e) => {
-                    const item = e.target.closest('div');
-                    if (item && item.dataset.val) {
-                        positivacaoCityFilter.value = item.dataset.val;
-                        positivacaoCitySuggestions.classList.add('hidden');
-                        handlePositivacaoFilterChange();
-                    }
-                });
-
-
-
-                // Close suggestions on click outside
-                document.addEventListener('click', (e) => {
-                    if (!positivacaoCityFilter.contains(e.target) && !positivacaoCitySuggestions.contains(e.target)) {
-                        positivacaoCitySuggestions.classList.add('hidden');
-                    }
-                });
-
-
-
-                positivacaoCityFilter._hasListener = true;
+                if (typeof window.setupGenericCityTypeahead === 'function') {
+                    window.setupGenericCityTypeahead(
+                        'positivacao-city-filter',
+                        'positivacao-city-suggestions',
+                        () => {
+                            const { clients } = getPositivacaoFilteredData({ excludeFilter: 'city' });
+                            const uniqueCities = new Set();
+                            clients.forEach(c => {
+                                if (c.cidade && c.cidade !== 'N/A') uniqueCities.add(c.cidade);
+                            });
+                            return uniqueCities;
+                        },
+                        () => handlePositivacaoFilterChange()
+                    );
+                }
             }
 
             if (clearPositivacaoFiltersBtn && !clearPositivacaoFiltersBtn._hasListener) {
@@ -28489,87 +28383,23 @@ const supervisorGroups = new Map();
             if (cityInput && !cityInput._hasListener) {
                 const suggestions = document.getElementById('titulos-city-suggestions');
 
-                const updateSuggestions = debounce(() => {
-                    const val = cityInput.value.trim().toLowerCase();
-                    if (val.length < 1) {
-                        suggestions.classList.add('hidden');
-                        return;
-                    }
-
-                    // Get cities from Titulos data context
-                    const rawTitulos = embeddedData.titulos;
-                    if(!rawTitulos) return;
-
-                    const cities = new Set();
-                    // We need to scan all clients that have titles to build the suggestion list
-                    // Optimization: Use getHierarchyFilteredClients('titulos', allClientsData) but maybe too heavy for suggestions?
-                    // Let's just scan all clients that have titles.
-
-                    // Actually, simpler: Scan allClientsData since user might type any city.
-                    // But better to restrict to what's available.
-
-                    // Let's use filtered base clients logic from updateTitulosView but lighter.
-                    // Or just unique cities from all active clients.
-                    const clients = getHierarchyFilteredClients('titulos', allClientsData);
-                    clients.forEach(c => {
-                        if (c.cidade && c.cidade !== 'N/A') cities.add(c.cidade);
-                    });
-
-
-
-                    // ⚡ Bolt Optimization: Avoid Array.from().filter() intermediate allocations
-                    const matches = [];
-                    for (const c of cities) {
-                        if (c.toLowerCase().includes(val)) matches.push(c);
-                    }
-                    matches.sort();
-
-                    if (matches.length > 0) {
-                        suggestions.innerHTML = matches.slice(0, 10).map(c => {
-                             const safeC = c.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-                             return `<div class="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300" data-val="${safeC}">${safeC}</div>`;
-                        }).join('');
-                        suggestions.classList.remove('hidden');
-                    } else {
-                        suggestions.classList.add('hidden');
-                    }
-                }, 300);
-
-                cityInput.addEventListener('input', (e) => {
-                    updateSuggestions();
-                    if (!e.target.value) handleTitulosFilterChange();
-                });
-
-
-
-                cityInput.addEventListener('focus', () => {
-                    if (cityInput.value.trim().length >= 1) {
-                         suggestions.classList.remove('hidden');
-                    }
-                });
-
-
-
-                suggestions.addEventListener('click', (e) => {
-                    const item = e.target.closest('div');
-                    if (item && item.dataset.val) {
-                        cityInput.value = item.dataset.val;
-                        suggestions.classList.add('hidden');
-                        handleTitulosFilterChange();
-                    }
-                });
-
-
-
-                document.addEventListener('click', (e) => {
-                    if (!cityInput.contains(e.target) && !suggestions.contains(e.target)) {
-                        suggestions.classList.add('hidden');
-                    }
-                });
-
-
-
-                cityInput._hasListener = true;
+                if (typeof window.setupGenericCityTypeahead === 'function') {
+                    window.setupGenericCityTypeahead(
+                        'titulos-city-filter',
+                        'titulos-city-suggestions',
+                        () => {
+                            const rawTitulos = embeddedData.titulos;
+                            if(!rawTitulos) return null;
+                            const cities = new Set();
+                            const clients = getHierarchyFilteredClients('titulos', allClientsData);
+                            clients.forEach(c => {
+                                if (c.cidade && c.cidade !== 'N/A') cities.add(c.cidade);
+                            });
+                            return cities;
+                        },
+                        () => handleTitulosFilterChange()
+                    );
+                }
             }
 
             // Clear Btn

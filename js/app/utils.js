@@ -1288,3 +1288,76 @@
             });
         }
     };
+
+
+    window.setupGenericCityTypeahead = function(inputId, suggestionsId, getUniqueCitiesFn, onFilterChangeFn) {
+        const input = document.getElementById(inputId);
+        const suggestions = document.getElementById(suggestionsId);
+        if (!input || !suggestions || input._hasListener) return;
+
+        function localDebounce(func, delay = 300) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), delay);
+            };
+        }
+
+        const updateSuggestions = localDebounce(() => {
+            const val = input.value.trim().toLowerCase();
+            if (val.length < 1) {
+                suggestions.classList.add('hidden');
+                return;
+            }
+
+            const uniqueCities = getUniqueCitiesFn();
+            if (!uniqueCities) return;
+
+            // ⚡ Bolt Optimization: Avoid Array.from().filter() intermediate allocations
+            const matches = [];
+            for (const c of uniqueCities) {
+                if (c.toLowerCase().includes(val)) matches.push(c);
+            }
+            matches.sort();
+
+            if (matches.length > 0) {
+                suggestions.innerHTML = matches.slice(0, 10).map(c => {
+                    const safeC = window.escapeHtml ? window.escapeHtml(c) : c.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    return `<div class="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300" data-val="${safeC}">${safeC}</div>`;
+                }).join('');
+                suggestions.classList.remove('hidden');
+            } else {
+                suggestions.classList.add('hidden');
+            }
+        }, 300);
+
+        input.addEventListener('input', (e) => {
+            updateSuggestions();
+            if (!e.target.value) {
+                if (onFilterChangeFn) onFilterChangeFn({ excludeFilter: 'city' });
+            }
+        });
+
+        input.addEventListener('focus', () => {
+            if (input.value.trim().length >= 1) {
+                 suggestions.classList.remove('hidden');
+            }
+        });
+
+        suggestions.addEventListener('click', (e) => {
+            const item = e.target.closest('div');
+            if (item && item.dataset.val) {
+                input.value = item.dataset.val;
+                suggestions.classList.add('hidden');
+                if (onFilterChangeFn) onFilterChangeFn();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+                suggestions.classList.add('hidden');
+            }
+        });
+
+        input._hasListener = true;
+    };
