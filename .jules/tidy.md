@@ -24,3 +24,11 @@
 ## 2024-05-18 : (Setup Checkbox, Rede, Filial Filters - Weekly View Refactoring)
 **Aprendizado:** The `renderWeeklyView` component in `js/app/app.js` contained duplicate boilerplate logic for rendering dropdown components for `fornecedor`, `rede`, and `filial` inputs, directly attaching click listeners, z-index manipulations and updating lists manually.
 **Ação:** Refactored this by extracting them to rely completely on `window.setupGenericCheckboxFilterHandlers`, `window.setupGenericRedeFilterHandlers`, and `window.setupGenericFilialFilterHandlers` utilities from `js/app/utils.js`. Always search for manually recreated filter dropdown DOM logic in views and replace them with these centralized handlers to keep files clean and eliminate event listener leaks.
+
+## 2024/06/09 : (Extracted getStockFromMap utility)
+**Aprendizado:** The legacy file `js/app/app.js` contained completely duplicated nested arrow functions (like `getStockFromMap`) at multiple call sites.
+**Ação:** Extract such duplicated logic into `js/app/utils.js` as `window.<functionName> = ...` and update references. Avoid globally replacing regex for the definitions unless perfectly scoped, instead replace explicitly found occurrences to avoid breaking other logic.
+
+## 2024/06/09 : (Filter Setup Repetition)
+**Aprendizado:** `js/app/app.js` has over 15 duplicated block sets for `update<View>SupervisorFilter` that wrap a call to `window.updateGenericSupervisorFilter()`.
+**Ação:** While identifying large repetitive blocks is good, respect the "ONE small organizational improvement" constraint (< 100 lines) of the Tidy persona by not trying to refactor massive boilerplate blocks all at once. Address smaller nested duplicates like `getStockFromMap` instead for safe, single-PR improvements.
