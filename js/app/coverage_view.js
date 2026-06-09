@@ -53,6 +53,8 @@
             const prevMonthIdx = (currentMonth === 0) ? 11 : currentMonth - 1;
             const prevMonthYear = (currentMonth === 0) ? currentYear - 1 : currentYear;
 
+            const isCustomDate = typeof selectedCoverageDateRange !== 'undefined' && selectedCoverageDateRange.start !== null;
+
             // --- CRITICAL OPTIMIZATION: Pre-aggregate everything ---
 
             // Maps for Box Quantities: Map<PRODUTO, Number>
@@ -96,7 +98,7 @@
             const _isAltModeHist_1 = isAlternativeMode(selectedCoverageTiposVenda);
             history.forEach(s => {
                 const d = parseDate(s.DTPED);
-                const isPrevMonth = d && d.getUTCMonth() === prevMonthIdx && d.getUTCFullYear() === prevMonthYear;
+                const isPrevMonth = isCustomDate ? true : (d && d.getUTCMonth() === prevMonthIdx && d.getUTCFullYear() === prevMonthYear);
 
                 if (!_isAltModeHist_1 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
                 const val = getValueForSale(s, selectedCoverageTiposVenda);
