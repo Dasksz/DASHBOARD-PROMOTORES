@@ -198,6 +198,11 @@
             return !isNaN(parseBrazilianNumber(String(value)));
         }
 
+        function normalizeResearcherCode(c) {
+            if (!c) return '';
+            return String(c).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/\s+/g, '');
+        }
+
         function normalizeKey(key) {
             if (!key) return '';
             if (typeof key === 'number') return String(key);
@@ -786,7 +791,7 @@
                 
                 uniqueClientsFound.add(codCli);
 
-                const pesquisador = String(getVal(row, 'Pesquisador') || '').trim().toUpperCase();
+                const pesquisador = normalizeResearcherCode(getVal(row, 'Pesquisador'));
                 const key = `${codCli}_${pesquisador}`;
                 
                 const notaRaw = getVal(row, 'Nota Média') || getVal(row, 'Nota Media'); // Fuzzy
