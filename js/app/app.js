@@ -10003,19 +10003,6 @@ const supervisorGroups = new Map();
                 return resolveSupplierPasta(null, supplier);
             };
 
-            const getStockFromMap = (map, code) => {
-                let s = map.get(code);
-                if (s !== undefined) return s;
-                const num = parseInt(code, 10);
-                if (!isNaN(num)) {
-                    const sNoZeros = map.get(String(num));
-                    if (sNoZeros !== undefined) return sNoZeros;
-                }
-                const sString = String(code);
-                if (map.has(sString)) return map.get(sString);
-                return 0;
-            };
-
             // Aggregate Current Data (Already filtered)
             const _isAltMode_4 = isAlternativeMode(selectedTiposVenda);
             currentData.forEach(item => {
@@ -10097,8 +10084,8 @@ const supervisorGroups = new Map();
             const results = [];
             currentMap.forEach(item => {
                 // Check Stock > 1 Box (Strict)
-                const s05 = getStockFromMap(stockData05, item.code);
-                const s08 = getStockFromMap(stockData08, item.code);
+                const s05 = window.getStockFromMap(stockData05, item.code);
+                const s08 = window.getStockFromMap(stockData08, item.code);
                 const totalStock = s05 + s08;
 
                 if (totalStock <= 1) return; // Skip products with low stock
@@ -10266,24 +10253,9 @@ const supervisorGroups = new Map();
             if (codeEl) codeEl.textContent = `Cód: ${item.code}`;
 
             // Stock Logic (Robust Lookup)
-            const getStockFromMap = (map, code) => {
-                let s = map.get(code);
-                if (s !== undefined) return s;
-                // Try number string (remove leading zeros)
-                const num = parseInt(code, 10);
-                if (!isNaN(num)) {
-                    const sNoZeros = map.get(String(num));
-                    if (sNoZeros !== undefined) return sNoZeros;
-                }
-                // Try as-is string (in case code passed as number)
-                const sString = String(code);
-                if (map.has(sString)) return map.get(sString);
 
-                return 0;
-            };
-
-            const s05 = getStockFromMap(stockData05, item.code);
-            const s08 = getStockFromMap(stockData08, item.code);
+            const s05 = window.getStockFromMap(stockData05, item.code);
+            const s08 = window.getStockFromMap(stockData08, item.code);
             const totalStock = s05 + s08;
 
             const isFat = currentProductMetric === 'faturamento';
@@ -30062,20 +30034,8 @@ const supervisorGroups = new Map();
         // Vamos checar se window.stockData05 está disponível para fazer o lookup.
         let s05 = '--', s08 = '--';
         if (window.stockData05 && window.stockData08) {
-             const getStockFromMap = (map, code) => {
-                 let s = map.get(code);
-                 if (s !== undefined) return s;
-                 const num = parseInt(code, 10);
-                 if (!isNaN(num)) {
-                     const sNoZeros = map.get(String(num));
-                     if (sNoZeros !== undefined) return sNoZeros;
-                 }
-                 const sString = String(code);
-                 if (map.has(sString)) return map.get(sString);
-                 return 0;
-             };
-             s05 = getStockFromMap(window.stockData05, item.productCode);
-             s08 = getStockFromMap(window.stockData08, item.productCode);
+             s05 = window.getStockFromMap(window.stockData05, item.productCode);
+             s08 = window.getStockFromMap(window.stockData08, item.productCode);
         }
 
         if (stockEl05) stockEl05.textContent = typeof s05 === 'number' ? s05.toLocaleString('pt-BR') : s05;

@@ -1288,3 +1288,25 @@
             });
         }
     };
+
+/**
+ * Retrieves the stock amount from a given stock map for a specific product code.
+ * Handles string matching, number string matching (removing leading zeros),
+ * and exact string matching to ensure robust stock lookups.
+ *
+ * @param {Map} map - The map containing stock data.
+ * @param {string|number} code - The product code to look up.
+ * @returns {number} The stock amount, or 0 if not found.
+ */
+window.getStockFromMap = function(map, code) {
+    let s = map.get(code);
+    if (s !== undefined) return s;
+    const num = parseInt(code, 10);
+    if (!isNaN(num)) {
+        const sNoZeros = map.get(String(num));
+        if (sNoZeros !== undefined) return sNoZeros;
+    }
+    const sString = String(code);
+    if (map.has(sString)) return map.get(sString);
+    return 0;
+};
