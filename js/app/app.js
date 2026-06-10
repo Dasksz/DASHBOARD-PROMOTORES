@@ -1980,7 +1980,8 @@
                          const item = rawRel[i];
                          // Try both lowercase and snake_case keys just in case
                          const involvesCode = window.normalizeResearcherCode(item.involves_code || item.INVOLVES_CODE);
-                         const sellerCode = String(item.seller_code || item.SELLER_CODE || '').trim();
+                         const sellerCodeRaw = String(item.seller_code || item.SELLER_CODE || '').trim();
+                         const sellerCode = window.normalizeKey ? window.normalizeKey(sellerCodeRaw) : sellerCodeRaw.toUpperCase();
                          
                          if (involvesCode) {
                              const details = sellerDetailsMap.get(sellerCode);
@@ -29150,8 +29151,8 @@ const supervisorGroups = new Map();
                     subtext = info.sellerCode;
                 } else {
                     // Fallback
-                    label = rawPesquisador;
-                    subtext = rawPesquisador;
+                    label = rawPesquisador.toUpperCase();
+                    subtext = rawPesquisador.toUpperCase();
                 }
 
                 const checked = selectedLpResearchers.has(res) ? 'checked' : '';
@@ -29232,7 +29233,7 @@ const supervisorGroups = new Map();
                     agentName = info.sellerCode;
                 }
             } else {
-                agentName = rawPesquisador;
+                agentName = rawPesquisador.toUpperCase();
             }
 
             const filialKey = row.filial || 'DESCONHECIDA';
@@ -29870,8 +29871,8 @@ const supervisorGroups = new Map();
             }
             // 3. Fallback to raw value
             else {
-                resDisplay = rawPesquisador;
-                resSub = rawPesquisador;
+                resDisplay = rawPesquisador.toUpperCase();
+                resSub = rawPesquisador.toUpperCase();
             }
 
             const researcherHtml = `
