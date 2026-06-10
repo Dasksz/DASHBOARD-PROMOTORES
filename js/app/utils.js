@@ -1288,3 +1288,34 @@
             });
         }
     };
+
+/**
+ * Robust stock lookup from map, handling numeric strings and padding.
+ * @param {Map} map - Map of stock data
+ * @param {string|number} code - The code to look up
+ * @returns {number} The stock value or 0 if not found
+ */
+window.getStockFromMap = function(map, code) {
+    let s = map.get(code);
+    if (s !== undefined) return s;
+    const num = parseInt(code, 10);
+    if (!isNaN(num)) {
+        const sNoZeros = map.get(String(num));
+        if (sNoZeros !== undefined) return sNoZeros;
+    }
+    const sString = String(code);
+    if (map.has(sString)) return map.get(sString);
+    return 0;
+};
+
+/**
+ * Converts a Date object to a local YYYY-MM-DD string for input fields.
+ * @param {Date} date - The date to convert
+ * @returns {string} The formatted date string
+ */
+window.toLocalDateInput = function(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
