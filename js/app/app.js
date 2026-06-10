@@ -1984,10 +1984,20 @@
                          const sellerCode = window.normalizeKey ? window.normalizeKey(sellerCodeRaw) : sellerCodeRaw.toUpperCase();
                          
                          if (involvesCode) {
+                             let sellerName = sellerCode;
                              const details = sellerDetailsMap.get(sellerCode);
+                             if (details && details.name) {
+                                 sellerName = details.name;
+                             } else {
+                                 const dimName = window.resolveDim('vendedores', sellerCode);
+                                 if (dimName && dimName !== 'N/A' && dimName !== sellerCode) {
+                                     sellerName = dimName;
+                                 }
+                             }
+
                              lpResearcherMap.set(involvesCode, {
                                  sellerCode: sellerCode,
-                                 sellerName: details ? details.name : sellerCode
+                                 sellerName: sellerName
                              });
 
 
