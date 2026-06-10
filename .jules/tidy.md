@@ -24,3 +24,6 @@
 ## 2024-05-18 : (Setup Checkbox, Rede, Filial Filters - Weekly View Refactoring)
 **Aprendizado:** The `renderWeeklyView` component in `js/app/app.js` contained duplicate boilerplate logic for rendering dropdown components for `fornecedor`, `rede`, and `filial` inputs, directly attaching click listeners, z-index manipulations and updating lists manually.
 **Ação:** Refactored this by extracting them to rely completely on `window.setupGenericCheckboxFilterHandlers`, `window.setupGenericRedeFilterHandlers`, and `window.setupGenericFilialFilterHandlers` utilities from `js/app/utils.js`. Always search for manually recreated filter dropdown DOM logic in views and replace them with these centralized handlers to keep files clean and eliminate event listener leaks.
+## 2024-05-18 : (Extract Duplicated Internal Arrow Functions to Utils)
+**Aprendizado:** Internal arrow functions (like `getStockFromMap` and `toLocalDateInput`) are often duplicated multiple times across different functional closures in large monolithic files like `js/app/app.js`.
+**Ação:** Safely extract identically duplicated arrow functions to the global `window` object in `js/app/utils.js` (e.g. `window.getStockFromMap`) and replace their internal declarations and calls, which reduces lines of code and makes the utilities globally available.

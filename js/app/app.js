@@ -505,15 +505,8 @@
                     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
                     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-                    const toLocalDateInput = (date) => {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                    };
-
-                    startInput.value = toLocalDateInput(firstDay);
-                    endInput.value = toLocalDateInput(lastDay);
+                    startInput.value = window.toLocalDateInput(firstDay);
+                    endInput.value = window.toLocalDateInput(lastDay);
                 } else if (selectedCoverageDateRange.start) {
                     startInput.value = selectedCoverageDateRange.start;
                     endInput.value = selectedCoverageDateRange.end;
@@ -10003,19 +9996,6 @@ const supervisorGroups = new Map();
                 return resolveSupplierPasta(null, supplier);
             };
 
-            const getStockFromMap = (map, code) => {
-                let s = map.get(code);
-                if (s !== undefined) return s;
-                const num = parseInt(code, 10);
-                if (!isNaN(num)) {
-                    const sNoZeros = map.get(String(num));
-                    if (sNoZeros !== undefined) return sNoZeros;
-                }
-                const sString = String(code);
-                if (map.has(sString)) return map.get(sString);
-                return 0;
-            };
-
             // Aggregate Current Data (Already filtered)
             const _isAltMode_4 = isAlternativeMode(selectedTiposVenda);
             currentData.forEach(item => {
@@ -10097,8 +10077,8 @@ const supervisorGroups = new Map();
             const results = [];
             currentMap.forEach(item => {
                 // Check Stock > 1 Box (Strict)
-                const s05 = getStockFromMap(stockData05, item.code);
-                const s08 = getStockFromMap(stockData08, item.code);
+                const s05 = window.getStockFromMap(stockData05, item.code);
+                const s08 = window.getStockFromMap(stockData08, item.code);
                 const totalStock = s05 + s08;
 
                 if (totalStock <= 1) return; // Skip products with low stock
@@ -10266,24 +10246,9 @@ const supervisorGroups = new Map();
             if (codeEl) codeEl.textContent = `Cód: ${item.code}`;
 
             // Stock Logic (Robust Lookup)
-            const getStockFromMap = (map, code) => {
-                let s = map.get(code);
-                if (s !== undefined) return s;
-                // Try number string (remove leading zeros)
-                const num = parseInt(code, 10);
-                if (!isNaN(num)) {
-                    const sNoZeros = map.get(String(num));
-                    if (sNoZeros !== undefined) return sNoZeros;
-                }
-                // Try as-is string (in case code passed as number)
-                const sString = String(code);
-                if (map.has(sString)) return map.get(sString);
 
-                return 0;
-            };
-
-            const s05 = getStockFromMap(stockData05, item.code);
-            const s08 = getStockFromMap(stockData08, item.code);
+            const s05 = window.getStockFromMap(stockData05, item.code);
+            const s08 = window.getStockFromMap(stockData08, item.code);
             const totalStock = s05 + s08;
 
             const isFat = currentProductMetric === 'faturamento';
@@ -23895,14 +23860,8 @@ const supervisorGroups = new Map();
             const endEl = document.getElementById('history-date-end');
             
             if (startEl && endEl) {
-                const toLocalDateInput = (date) => {
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                };
-                startEl.value = toLocalDateInput(firstDay);
-                endEl.value = toLocalDateInput(lastDay);
+                startEl.value = window.toLocalDateInput(firstDay);
+                endEl.value = window.toLocalDateInput(lastDay);
             } else {
                 console.error("History date inputs not found!");
             }
@@ -24002,15 +23961,9 @@ const supervisorGroups = new Map();
                     const endEl = document.getElementById('history-date-end');
 
                     // Fix timezone issue by using local date strings
-                    const toLocalDateInput = (date) => {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                    };
 
-                    if (startEl) startEl.value = toLocalDateInput(firstDay);
-                    if (endEl) endEl.value = toLocalDateInput(lastDay);
+                    if (startEl) startEl.value = window.toLocalDateInput(firstDay);
+                    if (endEl) endEl.value = window.toLocalDateInput(lastDay);
 
                     setupHierarchyFilters('history');
                     updateHistorySupervisorFilter();
@@ -30062,20 +30015,8 @@ const supervisorGroups = new Map();
         // Vamos checar se window.stockData05 está disponível para fazer o lookup.
         let s05 = '--', s08 = '--';
         if (window.stockData05 && window.stockData08) {
-             const getStockFromMap = (map, code) => {
-                 let s = map.get(code);
-                 if (s !== undefined) return s;
-                 const num = parseInt(code, 10);
-                 if (!isNaN(num)) {
-                     const sNoZeros = map.get(String(num));
-                     if (sNoZeros !== undefined) return sNoZeros;
-                 }
-                 const sString = String(code);
-                 if (map.has(sString)) return map.get(sString);
-                 return 0;
-             };
-             s05 = getStockFromMap(window.stockData05, item.productCode);
-             s08 = getStockFromMap(window.stockData08, item.productCode);
+             s05 = window.getStockFromMap(window.stockData05, item.productCode);
+             s08 = window.getStockFromMap(window.stockData08, item.productCode);
         }
 
         if (stockEl05) stockEl05.textContent = typeof s05 === 'number' ? s05.toLocaleString('pt-BR') : s05;
