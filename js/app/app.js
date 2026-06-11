@@ -1999,6 +1999,7 @@
                                  sellerCode: sellerCode,
                                  sellerName: sellerName
                              });
+                             console.log(`[DEBUG] Mapeando Involves: ${involvesCode} -> Vendedor: ${sellerCode} (${sellerName})`);
 
 
                          }
@@ -29163,6 +29164,7 @@ const supervisorGroups = new Map();
                     // Fallback
                     label = rawPesquisador.toUpperCase();
                     subtext = rawPesquisador.toUpperCase();
+                    console.log(`[DEBUG] Fallback ativado para ${rawPesquisador} (normRes: ${normRes}, upperResKey: ${upperResKey})`);
                 }
 
                 const checked = selectedLpResearchers.has(res) ? 'checked' : '';
