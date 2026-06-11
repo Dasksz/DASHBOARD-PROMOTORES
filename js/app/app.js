@@ -1970,14 +1970,18 @@
             // Handled below but good to double check keys are strings.
 
             // --- LOJA PERFEITA MAPPING ---
+            console.log("[DEBUG] embeddedData.relacao_rota_involves array is array?", Array.isArray(embeddedData.relacao_rota_involves), "length:", embeddedData.relacao_rota_involves ? embeddedData.relacao_rota_involves.length : 'N/A');
             if (embeddedData.relacao_rota_involves) {
                 const rawRel = embeddedData.relacao_rota_involves;
-                const relArray = (rawRel instanceof ColumnarDataset) ? [] : rawRel; // Assuming standard array for now as fetchAll returns objects usually unless specified. JS init uses 'object' format.
+                // If it is columnar or array, iterate up to length.
+                let length = 0;
+                if (rawRel instanceof ColumnarDataset) length = rawRel.length;
+                else if (Array.isArray(rawRel)) length = rawRel.length;
+                else if (rawRel && typeof rawRel.length === 'number') length = rawRel.length; // Handle Proxies or pseudo-arrays
                 
-                // If it were columnar, we'd need to handle it, but init.js specified 'object'.
-                if (Array.isArray(rawRel)) {
-                    for (let i = 0; i < rawRel.length; i++) {
-                         const item = rawRel[i];
+                if (length > 0) {
+                    for (let i = 0; i < length; i++) {
+                         const item = (rawRel instanceof ColumnarDataset) ? rawRel.get(i) : rawRel[i];
                          // Try both lowercase and snake_case keys just in case
                          const involvesCode = window.normalizeResearcherCode(item.involves_code || item.INVOLVES_CODE);
                          const sellerCodeRaw = String(item.seller_code || item.SELLER_CODE || '').trim();
