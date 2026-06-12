@@ -25825,7 +25825,11 @@ const supervisorGroups = new Map();
         if(!tbody) return;
         tbody.innerHTML = '';
         
-        data.sort((a,b) => b.val - a.val); // Default by value
+        data.sort((a,b) => {
+            const trendA = isFinite(a.tendenciaDias) ? a.tendenciaDias : -1;
+            const trendB = isFinite(b.tendenciaDias) ? b.tendenciaDias : -1;
+            return trendB - trendA; // Sort by trend descending
+        });
         const subset = data.slice(0, 200); 
         
         subset.forEach(d => {
