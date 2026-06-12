@@ -25702,14 +25702,14 @@ const supervisorGroups = new Map();
             const passedWorkingDaysCurrentMonth = embeddedData.passedWorkingDaysCurrentMonth || 1;
             const pDetails = embeddedData.productDetailsMap ? embeddedData.productDetailsMap[code] : null;
             const dtCadastroTs = pDetails ? pDetails.dtCadastro : null;
-
+            
             let diasUteisConsiderados = passedWorkingDaysCurrentMonth;
-
+            
             // Adjust calculation window if product was registered this month
             if (dtCadastroTs) {
                 const productCadastroDate = new Date(dtCadastroTs);
                 const firstDayOfCurrentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-
+                
                 if (productCadastroDate >= firstDayOfCurrentMonth) {
                      // Since we don't have the exact getPassedWorkingDays function isolated per date cleanly here for this scope,
                      // we approximate or just use the passedWorkingDaysCurrentMonth. The exact behavior from PRIME relies on
@@ -25825,7 +25825,11 @@ const supervisorGroups = new Map();
         if(!tbody) return;
         tbody.innerHTML = '';
         
-        data.sort((a,b) => b.val - a.val); // Default by value
+        data.sort((a,b) => {
+            const trendA = isFinite(a.tendenciaDias) ? a.tendenciaDias : -1;
+            const trendB = isFinite(b.tendenciaDias) ? b.tendenciaDias : -1;
+            return trendB - trendA; // Sort by trend descending
+        });
         const subset = data.slice(0, 200); 
         
         subset.forEach(d => {
@@ -25859,7 +25863,7 @@ const supervisorGroups = new Map();
                  else trendColor = 'text-green-400';
                  trendText = `<span class="font-bold ${trendColor}">${trendDaysFloor} dias</span>`;
              }
-
+             
              tr.innerHTML = `
                 <!-- Product: Visible Mobile (Truncated) -->
                 <td class="px-2 py-2 text-[10px] md:text-xs text-white max-w-[120px] md:max-w-[200px]" title="${window.escapeHtml(d.name)}">
@@ -25880,10 +25884,10 @@ const supervisorGroups = new Map();
 
                 <!-- Avg: Hidden Mobile -->
                 <td class="px-4 py-2 text-xs text-right font-mono text-slate-500 hidden md:table-cell">${d.avg.toFixed(0)}</td>
-
+                
                 <!-- Media Diaria -->
                 <td class="px-4 py-2 text-xs text-right font-mono text-slate-400">${(d.mediaDiaria || 0).toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
-
+                
                 <!-- Tendencia -->
                 <td class="px-4 py-2 text-[10px] md:text-xs text-right">${trendText}</td>
 
