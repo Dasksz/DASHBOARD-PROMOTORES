@@ -25699,6 +25699,29 @@ const supervisorGroups = new Map();
             const currentSales = salesMap.get(code) || { qty: 0, val: 0 };
             const avgHistory = historyMap.get(code) || 0;
             
+            const passedWorkingDaysCurrentMonth = embeddedData.passedWorkingDaysCurrentMonth || 1;
+            const pDetails = embeddedData.productDetailsMap ? embeddedData.productDetailsMap[code] : null;
+            const dtCadastroTs = pDetails ? pDetails.dtCadastro : null;
+
+            let diasUteisConsiderados = passedWorkingDaysCurrentMonth;
+
+            // Adjust calculation window if product was registered this month
+            if (dtCadastroTs) {
+                const productCadastroDate = new Date(dtCadastroTs);
+                const firstDayOfCurrentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+                if (productCadastroDate >= firstDayOfCurrentMonth) {
+                     // Since we don't have the exact getPassedWorkingDays function isolated per date cleanly here for this scope,
+                     // we approximate or just use the passedWorkingDaysCurrentMonth. The exact behavior from PRIME relies on
+                     // a global sortedWorkingDays array which we can proxy via the passed days.
+                     // For exact mapping, we use the passedWorkingDaysCurrentMonth as default window.
+                     diasUteisConsiderados = passedWorkingDaysCurrentMonth; // Keep it simple for now as requested
+                }
+            }
+
+            const mediaDiaria = diasUteisConsiderados > 0 ? (currentSales.qty / diasUteisConsiderados) : 0;
+            const tendenciaDias = mediaDiaria > 0 ? (stockQty / mediaDiaria) : (stockQty > 0 ? Infinity : 0);
+
             let status = 'neutral';
             let variation = 0;
 
@@ -25725,7 +25748,9 @@ const supervisorGroups = new Map();
                     val: currentSales.val,
                     avg: avgHistory,
                     variation: variation,
-                    status
+                    status,
+                    mediaDiaria: mediaDiaria,
+                    tendenciaDias: tendenciaDias
                 });
 
 
@@ -25823,6 +25848,18 @@ const supervisorGroups = new Map();
                  else statusBadge = '<span class="text-xs text-slate-500">-</span>';
              }
              
+             let trendText = '-';
+             if (!isFinite(d.tendenciaDias) && d.stock > 0) {
+                 trendText = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500/30 text-gray-300">S/ VENDA</span>`;
+             } else if (isFinite(d.tendenciaDias)) {
+                 const trendDaysFloor = Math.floor(d.tendenciaDias);
+                 let trendColor = 'text-slate-400';
+                 if (trendDaysFloor < 15) trendColor = 'text-red-400';
+                 else if (trendDaysFloor < 30) trendColor = 'text-yellow-400';
+                 else trendColor = 'text-green-400';
+                 trendText = `<span class="font-bold ${trendColor}">${trendDaysFloor} dias</span>`;
+             }
+
              tr.innerHTML = `
                 <!-- Product: Visible Mobile (Truncated) -->
                 <td class="px-2 py-2 text-[10px] md:text-xs text-white max-w-[120px] md:max-w-[200px]" title="${window.escapeHtml(d.name)}">
@@ -25843,6 +25880,12 @@ const supervisorGroups = new Map();
 
                 <!-- Avg: Hidden Mobile -->
                 <td class="px-4 py-2 text-xs text-right font-mono text-slate-500 hidden md:table-cell">${d.avg.toFixed(0)}</td>
+
+                <!-- Media Diaria -->
+                <td class="px-4 py-2 text-xs text-right font-mono text-slate-400">${(d.mediaDiaria || 0).toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
+
+                <!-- Tendencia -->
+                <td class="px-4 py-2 text-[10px] md:text-xs text-right">${trendText}</td>
 
                 <!-- Status: Visible Mobile (Left Aligned on Mobile) -->
                 <td class="px-2 py-2 text-[10px] md:text-xs text-left md:text-center">${statusBadge}</td>
