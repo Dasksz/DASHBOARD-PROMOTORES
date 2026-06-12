@@ -11,25 +11,25 @@
         window.maps = maps;
 
         if (embeddedData.dim_vendedores) {
-            embeddedData.dim_vendedores.forEach(v => maps.vendedores.set(String(v.codigo).trim(), v.nome));
+            embeddedData.dim_vendedores.forEach(v => maps.vendedores.set(window.normalizeKey(v.codigo), v.nome));
         }
         if (embeddedData.dim_supervisores) {
-            embeddedData.dim_supervisores.forEach(s => maps.supervisores.set(String(s.codigo).trim(), s.nome));
+            embeddedData.dim_supervisores.forEach(s => maps.supervisores.set(window.normalizeKey(s.codigo), s.nome));
         }
         if (embeddedData.dim_fornecedores) {
             embeddedData.dim_fornecedores.forEach(f => {
                 // Store object to include 'pasta' if available
-                maps.fornecedores.set(String(f.codigo).trim(), { nome: f.nome, pasta: f.pasta });
+                maps.fornecedores.set(window.normalizeKey(f.codigo), { nome: f.nome, pasta: f.pasta });
             });
         }
         if (embeddedData.dim_produtos) {
-            embeddedData.dim_produtos.forEach(p => maps.produtos.set(String(p.codigo).trim(), p));
+            embeddedData.dim_produtos.forEach(p => maps.produtos.set(window.normalizeKey(p.codigo), p));
         }
 
         // Global Helper for resolving Dimensions
         window.resolveDim = (type, code) => {
             if (code === null || code === undefined) return 'N/A';
-            const cleanCode = String(code).trim();
+            const cleanCode = window.normalizeKey(code);
             if (cleanCode === '') return 'N/A';
 
             const map = maps[type];
@@ -56,7 +56,7 @@
         // Helper to resolve Pasta from Dimension directly
         window.resolveSupplierPastaFromDim = (code) => {
             if (!code) return null;
-            const cleanCode = String(code).trim();
+            const cleanCode = window.normalizeKey(code);
             const map = maps['fornecedores'];
             if (!map) return null;
             const val = map.get(cleanCode);
