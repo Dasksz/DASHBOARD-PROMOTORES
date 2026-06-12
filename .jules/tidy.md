@@ -27,3 +27,6 @@
 ## 2024-05-18 : (Extract Duplicated Internal Arrow Functions to Utils)
 **Aprendizado:** Internal arrow functions (like `getStockFromMap` and `toLocalDateInput`) are often duplicated multiple times across different functional closures in large monolithic files like `js/app/app.js`.
 **Ação:** Safely extract identically duplicated arrow functions to the global `window` object in `js/app/utils.js` (e.g. `window.getStockFromMap`) and replace their internal declarations and calls, which reduces lines of code and makes the utilities globally available.
+## 2026/06/12 : (Abstract Generic View Filters)
+**Aprendizado:** Many views duplicate the identical triplet of `setup<View>SupervisorFilterHandlers`, `update<View>SupervisorFilter`, and `update<View>VendedorFilter` to simply invoke the existing global filter initialization utility. This generates hundreds of lines of boilerplate.
+**Ação:** Replaced these repetitive triplets with a single configurable factory function `setupViewSupervisorFilters` that takes an initialization object, allowing 11 different views to initialize their UI generic filters in a single line without breaking scope.
