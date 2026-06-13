@@ -27,3 +27,6 @@
 ## 2024-05-18 : (Extract Duplicated Internal Arrow Functions to Utils)
 **Aprendizado:** Internal arrow functions (like `getStockFromMap` and `toLocalDateInput`) are often duplicated multiple times across different functional closures in large monolithic files like `js/app/app.js`.
 **Ação:** Safely extract identically duplicated arrow functions to the global `window` object in `js/app/utils.js` (e.g. `window.getStockFromMap`) and replace their internal declarations and calls, which reduces lines of code and makes the utilities globally available.
+## 2024/06/13 : (Refactoring duplicate view-specific update functions)
+**Aprendizado:** When extracting localized functions (like `updateCitySupervisorFilter`) into a factory function `setupViewSupervisorFilters` inside a large IIFE, completely removing the original function declarations breaks other components that dynamically call them via checks like `if (typeof updateCitySupervisorFilter === 'function')`. These calls will silently fail without throwing explicit errors.
+**Ação:** Use the factory function to return the closure instances and assign them back to module-scoped `let` variables (e.g., `let updateCitySupervisorFilter = () => {}; updateCitySupervisorFilter = handlers.updateSupervisorFilter;`). This preserves the public contract of the module while still drastically reducing the boilerplate code.
