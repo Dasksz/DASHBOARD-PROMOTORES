@@ -15989,6 +15989,21 @@ const supervisorGroups = new Map();
 
             const clearTable = async (table, pkColumn = 'id') => {
                 await retryOperation(async () => {
+                    // Helper function to check if table is empty
+                    const isTableEmpty = async () => {
+                        const { data, error } = await window.supabaseClient
+                            .from(table)
+                            .select(pkColumn)
+                            .limit(1);
+                        if (error) {
+                            console.warn(`Erro ao verificar contagem de ${table}: ${error.message}`);
+                            return false; // Assume not empty on error just in case
+                        }
+                        return !data || data.length === 0;
+                    };
+
+                    let cleared = false;
+
                     // 1. Tenta limpar usando a função RPC 'truncate_table' (Preferred - Fast)
                     try {
                         const rpcResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/truncate_table`, {
@@ -16001,10 +16016,12 @@ const supervisorGroups = new Map();
                             body: JSON.stringify({ table_name: table })
                         });
 
-
-
                         if (rpcResponse.ok) {
-                            return; // Success
+                            if (await isTableEmpty()) {
+                                cleared = true;
+                            } else {
+                                console.warn(`RPC truncate_table retornou OK, mas a tabela ${table} não está vazia.`);
+                            }
                         } else {
                             const errorText = await rpcResponse.text();
                             console.warn(`RPC truncate_table falhou para ${table} (Status: ${rpcResponse.status}). Msg: ${errorText}.`);
@@ -16012,6 +16029,8 @@ const supervisorGroups = new Map();
                     } catch (e) {
                         console.warn(`Erro ao chamar RPC truncate_table para ${table}.`, e);
                     }
+
+                    if (cleared) return;
 
                     // 2. Fallback: DELETE All (Conventional)
                     // Note: This might timeout for very large tables (e.g., data_history)
@@ -16026,10 +16045,12 @@ const supervisorGroups = new Map();
                             }
                         });
 
-
-
                         if (response.ok) {
-                            return; // Success
+                            if (await isTableEmpty()) {
+                                cleared = true;
+                            } else {
+                                console.warn(`DELETE convencional retornou OK, mas a tabela ${table} não está vazia.`);
+                            }
                         } else {
                             const errorText = await response.text();
                             console.warn(`DELETE convencional falhou para ${table}: ${errorText}. Tentando Chunked Delete...`);
@@ -16037,6 +16058,8 @@ const supervisorGroups = new Map();
                     } catch (e) {
                         console.warn(`DELETE convencional exceção para ${table}.`, e);
                     }
+
+                    if (cleared) return;
 
                     // 3. Last Resort: Chunked Delete (Slow but Reliable)
                     // Fetch IDs in batches and delete them
@@ -16055,8 +16078,6 @@ const supervisorGroups = new Map();
                                 'Content-Type': 'application/json'
                             }
                         });
-
-
 
                         if (!selectRes.ok) throw new Error(`Erro ao buscar IDs para exclusão em lote de ${table}`);
                         const rows = await selectRes.json();
@@ -16090,14 +16111,7 @@ const supervisorGroups = new Map();
 
                     // Final verification to ensure table is empty
                     try {
-                        const { data, error } = await window.supabaseClient
-                            .from(table)
-                            .select(pkColumn)
-                            .limit(1);
-                        if (error) {
-                            throw new Error(`Erro ao verificar contagem de ${table}: ${error.message}`);
-                        }
-                        if (data && data.length > 0) {
+                        if (!(await isTableEmpty())) {
                             throw new Error(`Falha crítica: A tabela ${table} não foi limpa com sucesso. Ainda existem registros.`);
                         }
                     } catch(e) {
