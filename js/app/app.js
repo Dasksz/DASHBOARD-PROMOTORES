@@ -6245,10 +6245,10 @@
             }
 
             // Apply Seller Filter (goals-summary)
-            if (selectedGoalsSummarySellers.size > 0) {
+            if (selectedGoalsSummaryVendedores.size > 0) {
                 filteredSummaryClients = filteredSummaryClients.filter(c => {
                     const rca1 = String(c.rca1 || '').trim();
-                    return selectedGoalsSummarySellers.has(rca1);
+                    return selectedGoalsSummaryVendedores.has(rca1);
                 });
             }
 
@@ -6281,7 +6281,7 @@
             });
 
             // 2. Determine if we are in Global Admin View (no filters)
-            const isGlobalAdminViewSummary = (window.userRole === 'adm' && selectedGoalsSummarySupervisors.size === 0 && selectedGoalsSummarySellers.size === 0);
+            const isGlobalAdminViewSummary = (window.userRole === 'adm' && selectedGoalsSummarySupervisors.size === 0 && selectedGoalsSummaryVendedores.size === 0);
 
             // Sum up Revenue/Volume targets from `globalClientGoals` (Standard logic)
             const summaryGoalsSums = {
