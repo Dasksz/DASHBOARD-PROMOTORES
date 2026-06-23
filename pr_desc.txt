@@ -1,0 +1,10 @@
+💡 O quê: Abstracted and replaced over 30 duplicated initialization functions across 11 different views into a single `setupViewSupervisorFilters` initialization factory function.
+
+🎯 Por quê: The application had hundreds of lines of boilerplate triplet logic (`setup<View>SupervisorFilterHandlers`, `update<View>SupervisorFilter`, `update<View>VendedorFilter`) strictly for initializing standard generic filters via existing utilities. This was a severe violation of DRY.
+
+♻️ Impacto: Removes ~265 net lines of identical setup code across the 11 generic views, making UI setup strictly declarative via a concise configuration object. Future components can now initialize UI filter dropdowns effortlessly in one line.
+
+🔬 Verificação:
+- Examined code structurally to ensure pass-by-reference logic for Sets (like `selectedCitySupervisors`) remains intact.
+- Verified AST generation with `node -c js/app/app.js` to assert structural JS safety.
+- Handled all custom logic boundaries (like Stock's custom DOM teardowns) correctly via the config.
