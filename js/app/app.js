@@ -13849,6 +13849,8 @@ const supervisorGroups = new Map();
 
             const city = innovationsMonthCityFilter.value.trim().toLowerCase();
             const filial = innovationsMonthFilialFilter.value;
+            const codCliFilterElem = document.getElementById('innovations-month-codcli-filter');
+            const clientFilter = codCliFilterElem ? codCliFilterElem.value.trim().toLowerCase() : '';
 
             // --- SELLER MODE / HIERARCHY MODE LOGIC ---
             let clients;
@@ -13893,6 +13895,16 @@ const supervisorGroups = new Map();
                 const c = clients[i];
                 if (filial !== 'ambas' && clientLastBranch.get(c['Código']) !== filial) continue;
                 if (excludeFilter !== 'city' && city && (!c.cidade || c.cidade.toLowerCase() !== city)) continue;
+
+                if (excludeFilter !== 'client' && clientFilter) {
+                    const code = String(c['Código'] || '').toLowerCase();
+                    const name = String(c.nomeCliente || c['Nome Fantasia'] || c.razaoSocial || '').toLowerCase();
+                    const cnpj = String(c['CNPJ/CPF'] || c.cnpj_cpf || '').replace(/\D/g, '');
+                    const cCity = String(c.cidade || '').toLowerCase();
+                    const cBairro = String(c.bairro || '').toLowerCase();
+                    if (!code.includes(clientFilter) && !name.includes(clientFilter) && !cnpj.includes(clientFilter) && !cCity.includes(clientFilter) && !cBairro.includes(clientFilter)) continue;
+                }
+
                 if (excludeFilter !== 'rede') {
                     if (innovationsMonthRedeGroupFilter === 'com_rede') {
                         if (!c.ramo || c.ramo === 'N/A') continue;
@@ -13909,6 +13921,9 @@ const supervisorGroups = new Map();
 
         function resetInnovationsMonthFilters() {
             innovationsMonthCityFilter.value = '';
+
+            const codCliFilterElem = document.getElementById('innovations-month-codcli-filter');
+            if (codCliFilterElem) codCliFilterElem.value = '';
 
             innovationsMonthFilialFilter.value = 'ambas';
             const filialText = document.getElementById('innovations-month-filial-filter-text');
