@@ -27,3 +27,6 @@
 ## 2024-05-18 : (Extract Duplicated Internal Arrow Functions to Utils)
 **Aprendizado:** Internal arrow functions (like `getStockFromMap` and `toLocalDateInput`) are often duplicated multiple times across different functional closures in large monolithic files like `js/app/app.js`.
 **Ação:** Safely extract identically duplicated arrow functions to the global `window` object in `js/app/utils.js` (e.g. `window.getStockFromMap`) and replace their internal declarations and calls, which reduces lines of code and makes the utilities globally available.
+## 2024-05-18 : (Setup View Supervisor Filters Factory Refactoring)
+**Aprendizado:** Extracted the massive boilerplate for setting up `window.setupGenericFilterHandlers` repeatedly across 12 views in `js/app/app.js` into a centralized `setupViewSupervisorFilters(config)` factory.
+**Ação:** Always use ES6 getters in configuration objects when building internal factory functions that wrap event listeners. This ensures the factory retrieves the latest `Set` and function references locally scoped in `app.js` at runtime, rather than locking into stale references at setup time. Avoid replacing explicit `function` declarations with factory-generated variable assignments to prevent breaking hoisted calls or dynamic `typeof` checks from other modules.
