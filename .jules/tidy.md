@@ -27,3 +27,6 @@
 ## 2024-05-18 : (Extract Duplicated Internal Arrow Functions to Utils)
 **Aprendizado:** Internal arrow functions (like `getStockFromMap` and `toLocalDateInput`) are often duplicated multiple times across different functional closures in large monolithic files like `js/app/app.js`.
 **Ação:** Safely extract identically duplicated arrow functions to the global `window` object in `js/app/utils.js` (e.g. `window.getStockFromMap`) and replace their internal declarations and calls, which reduces lines of code and makes the utilities globally available.
+## 2024-05-18 : (Temporal Dead Zone with ES6 factories)
+**Aprendizado:** When defining `const [name]Filters = factory()` where the factory wraps variables evaluated dynamically later, we must still respect the Temporal Dead Zone (TDZ). Initializing block-scoped variables (`const` or `let`) below the point where they are invoked inside nested setup functions causes `Uncaught ReferenceError: Cannot access '...' before initialization`.
+**Ação:** To avoid TDZ errors while keeping closures clean, group all factory initializations immediately below the factory definition at the top of the closure, strictly before any procedural execution happens.
