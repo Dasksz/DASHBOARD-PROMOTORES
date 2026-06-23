@@ -16679,6 +16679,8 @@ const supervisorGroups = new Map();
             const generateBtn = document.getElementById('generate-btn');
             if (generateBtn) {
                 generateBtn.addEventListener('click', () => {
+                    generateBtn.disabled = true;
+                    generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
                     const salesFile = document.getElementById('sales-file-input').files[0];
                     const clientsFile = document.getElementById('clients-file-input').files[0];
                     const productsFile = document.getElementById('products-file-input').files[0];
@@ -16691,6 +16693,8 @@ const supervisorGroups = new Map();
 
                     if (!salesFile && !historyFile && !hierarchyFile && !notaInvolves1File && !notaInvolves2File && !productsFile && !titulosFile && !innovationsFile) {
                         window.showToast('warning', "Pelo menos um arquivo é necessário para iniciar o processamento.");
+                        generateBtn.disabled = false;
+                        generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                         return;
                     }
 
@@ -16768,10 +16772,15 @@ const supervisorGroups = new Map();
                             if (data.nota_perfeita_count !== undefined && data.nota_perfeita_count > 0) {
                                 window.showToast('success', `${data.nota_perfeita_count} clientes identificados no arquivo 'Loja Perfeita'.`);
                             }
-                            enviarDadosParaSupabase(data);
+                            enviarDadosParaSupabase(data).finally(() => {
+                                generateBtn.disabled = false;
+                                generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                            });
                             worker.terminate();
                         } else if (type === 'error') {
                             window.showToast('error', 'Erro no processamento: ' + message);
+                            generateBtn.disabled = false;
+                            generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                             worker.terminate();
                         }
                     };
