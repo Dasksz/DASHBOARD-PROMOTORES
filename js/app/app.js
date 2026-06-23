@@ -29241,6 +29241,16 @@ const supervisorGroups = new Map();
                 } else if (lpResearcherMap.has(normRes)) {
                     const info = lpResearcherMap.get(normRes);
                     let rawName = info.sellerName || info.sellerCode;
+                    
+                    if (!rawName || rawName === info.sellerCode) {
+                        const dimName = window.resolveDim('vendedores', info.sellerCode);
+                        if (dimName && dimName !== 'N/A' && dimName !== info.sellerCode) {
+                            rawName = dimName;
+                        } else if (window.sellerDetailsMap && window.sellerDetailsMap.has(info.sellerCode)) {
+                            rawName = window.sellerDetailsMap.get(info.sellerCode).name || rawName;
+                        }
+                    }
+                    
                     rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
 
                     if (rawName && rawName !== info.sellerCode) {
@@ -29326,6 +29336,16 @@ const supervisorGroups = new Map();
                 const info = lpResearcherMap.get(resKey);
                 agentCode = info.sellerCode;
                 let rawName = info.sellerName || info.sellerCode;
+                
+                if (!rawName || rawName === info.sellerCode) {
+                    const dimName = window.resolveDim('vendedores', info.sellerCode);
+                    if (dimName && dimName !== 'N/A' && dimName !== info.sellerCode) {
+                        rawName = dimName;
+                    } else if (window.sellerDetailsMap && window.sellerDetailsMap.has(info.sellerCode)) {
+                        rawName = window.sellerDetailsMap.get(info.sellerCode).name || rawName;
+                    }
+                }
+                
                 rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
                 
                 if (rawName && rawName !== info.sellerCode) {
@@ -29753,6 +29773,42 @@ const supervisorGroups = new Map();
         lpRenderId++;
         const currentId = lpRenderId;
 
+        // Assegura que lpResearcherMap está corretamente populado, buscando nomes reais de vendedores caso tenham falhado na inicialização async.
+        if (typeof window.embeddedData !== 'undefined' && window.embeddedData.relacao_rota_involves) {
+            const rawRel = window.embeddedData.relacao_rota_involves;
+            let length = 0;
+            if (rawRel instanceof ColumnarDataset) length = rawRel.length;
+            else if (Array.isArray(rawRel)) length = rawRel.length;
+            else if (rawRel && typeof rawRel.length === 'number') length = rawRel.length;
+            
+            if (length > 0) {
+                for (let i = 0; i < length; i++) {
+                     const item = (rawRel instanceof ColumnarDataset) ? rawRel.get(i) : rawRel[i];
+                     const involvesCode = window.normalizeResearcherCode(item.involves_code || item.INVOLVES_CODE);
+                     const sellerCodeRaw = String(item.seller_code || item.SELLER_CODE || '').trim();
+                     const sellerCode = window.normalizeKey ? window.normalizeKey(sellerCodeRaw) : sellerCodeRaw.toUpperCase();
+                     
+                     if (involvesCode) {
+                         let sellerName = sellerCode;
+                         const details = sellerDetailsMap.get(sellerCode);
+                         if (details && details.name) {
+                             sellerName = details.name;
+                         } else {
+                             const dimName = window.resolveDim('vendedores', sellerCode);
+                             if (dimName && dimName !== 'N/A' && dimName !== sellerCode) {
+                                 sellerName = dimName;
+                             }
+                         }
+                         
+                         lpResearcherMap.set(involvesCode, {
+                             sellerCode: sellerCode,
+                             sellerName: sellerName
+                         });
+                     }
+                }
+            }
+        }
+
         // 1. Get Data
         const rawData = embeddedData.nota_perfeita;
         if (!rawData || !rawData.length) {
@@ -29957,6 +30013,16 @@ const supervisorGroups = new Map();
             else if (lpResearcherMap.has(resKey)) {
                 const info = lpResearcherMap.get(resKey);
                 let rawName = info.sellerName || info.sellerCode;
+                
+                if (!rawName || rawName === info.sellerCode) {
+                    const dimName = window.resolveDim('vendedores', info.sellerCode);
+                    if (dimName && dimName !== 'N/A' && dimName !== info.sellerCode) {
+                        rawName = dimName;
+                    } else if (window.sellerDetailsMap && window.sellerDetailsMap.has(info.sellerCode)) {
+                        rawName = window.sellerDetailsMap.get(info.sellerCode).name || rawName;
+                    }
+                }
+                
                 // remove prefixes just like in filter
                 rawName = rawName.replace(/^(PROMOT\.|RCA\s*|SUPERV\.|LIDER\s*)/i, '').trim();
 
