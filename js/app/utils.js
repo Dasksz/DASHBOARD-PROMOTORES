@@ -989,6 +989,47 @@
         }
     };
 
+    window.setupDynamicFilialFilterDOM = function(prefix, branchesConfig, updateCallbackFn) {
+        let filiais = new Set();
+        if (branchesConfig) {
+            branchesConfig.forEach(r => {
+                if (r.filial) filiais.add(r.filial.trim().toUpperCase());
+            });
+        }
+
+        const dropdown = document.getElementById(`${prefix}-filial-filter-dropdown`);
+        if (dropdown) {
+            let html = `
+                <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                    <span class="text-xs text-slate-300 group-hover:text-white transition-colors">Todas</span>
+                    <input type="radio" name="${prefix}-filial" value="all" checked class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+                </label>
+            `;
+
+            Array.from(filiais).sort().forEach(f => {
+                html += `
+                    <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                        <span class="text-xs text-slate-300 group-hover:text-white transition-colors">${f}</span>
+                        <input type="radio" name="${prefix}-filial" value="${f}" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+                    </label>
+                `;
+            });
+
+            html += `
+                <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                    <span class="text-xs text-slate-300 group-hover:text-white transition-colors">Desconhecida</span>
+                    <input type="radio" name="${prefix}-filial" value="desconhecida" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+                </label>
+            `;
+
+            dropdown.innerHTML = html;
+        }
+
+        if (typeof window.setupGenericFilialFilterHandlers === 'function') {
+            window.setupGenericFilialFilterHandlers(prefix, updateCallbackFn);
+        }
+    };
+
     window.setupGenericFilialFilterHandlers = function(prefix, updateCallbackFn, customCloseLogic) {
         const btn = document.getElementById(`${prefix}-filial-filter-btn`);
         const dropdown = document.getElementById(`${prefix}-filial-filter-dropdown`);
