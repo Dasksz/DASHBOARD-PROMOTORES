@@ -29049,49 +29049,6 @@ const supervisorGroups = new Map();
         modal.classList.remove('hidden');
     };
 
-        function setupLpFilialFilterHandlers() {
-            let filiais = new Set();
-            if (window.embeddedData && window.embeddedData.config_city_branches) {
-                window.embeddedData.config_city_branches.forEach(r => {
-                    if (r.filial) filiais.add(r.filial.trim().toUpperCase());
-                });
-            }
-
-            const dropdown = document.getElementById('lp-filial-filter-dropdown');
-            if (dropdown) {
-                let html = `
-                    <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                        <span class="text-xs text-slate-300 group-hover:text-white transition-colors">Todas</span>
-                        <input type="radio" name="lp-filial" value="all" checked class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
-                    </label>
-                `;
-
-                // Add known filiais (sorted)
-                Array.from(filiais).sort().forEach(f => {
-                    html += `
-                        <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                            <span class="text-xs text-slate-300 group-hover:text-white transition-colors">${f}</span>
-                            <input type="radio" name="lp-filial" value="${f}" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
-                        </label>
-                    `;
-                });
-
-                // Add fallback for Desconhecida
-                html += `
-                    <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                        <span class="text-xs text-slate-300 group-hover:text-white transition-colors">Desconhecida</span>
-                        <input type="radio" name="lp-filial" value="desconhecida" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
-                    </label>
-                `;
-
-                dropdown.innerHTML = html;
-            }
-
-            if (typeof window.setupGenericFilialFilterHandlers === 'function') {
-                window.setupGenericFilialFilterHandlers('lp', () => handleLpFilterChange({ excludeFilter: 'filial' }));
-            }
-        }
-
         function setupLpResearcherFilterHandlers() {
         if (typeof window.setupGenericCheckboxFilterHandlers === 'function') {
             window.setupGenericCheckboxFilterHandlers(
@@ -29550,7 +29507,9 @@ const supervisorGroups = new Map();
         }
 
         setupHierarchyFilters('lp', () => handleLpFilterChange({ excludeFilter: 'hierarchy' }));
-        setupLpFilialFilterHandlers();
+        if (typeof window.setupDynamicFilialFilterDOM === 'function') {
+            window.setupDynamicFilialFilterDOM('lp', window.embeddedData && window.embeddedData.config_city_branches, () => handleLpFilterChange({ excludeFilter: 'filial' }));
+        }
         setupLpSupervisorFilterHandlers();
         setupLpResearcherFilterHandlers();
 
