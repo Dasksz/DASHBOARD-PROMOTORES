@@ -140,41 +140,27 @@ const FeedVisitas = (() => {
                 citySugg.classList.add('hidden');
             }
         });
-        const filialRadios = document.querySelectorAll('input[name="feed-filial"]');
-        filialRadios.forEach(r => {
-            r.addEventListener('change', (e) => {
-                feedCurrentFilialFilter = e.target.value;
-                document.getElementById('feed-filial-filter-text').textContent = e.target.parentElement.textContent.trim();
-                document.getElementById('feed-filial-filter-dropdown').classList.add('hidden');
+        if (typeof window.setupGenericFilialFilterHandlers === 'function') {
+            window.setupGenericFilialFilterHandlers('feed', (val, label) => {
+                feedCurrentFilialFilter = val;
                 checkClearBtn();
                 loadFeed(true);
+            }, () => {
+                document.getElementById('feed-promotor-filter-dropdown')?.classList.add('hidden');
             });
-        });
-
-        // Setup drop filial toggle
-        const filialBtn = document.getElementById('feed-filial-filter-btn');
-        if(filialBtn) {
-            filialBtn.onclick = (e) => {
-                e.stopPropagation();
-                document.getElementById('feed-filial-filter-dropdown').classList.toggle('hidden');
-                document.getElementById('feed-promotor-filter-dropdown').classList.add('hidden');
-            };
         }
-        
-        // Setup drop promotor toggle
+
+        // Setup drop promotor toggle (standalone, since it's not a standard single dropdown yet)
         const promBtn = document.getElementById('feed-promotor-filter-btn');
-        if(promBtn) {
+        if (promBtn) {
             promBtn.onclick = (e) => {
                 e.stopPropagation();
-                document.getElementById('feed-promotor-filter-dropdown').classList.toggle('hidden');
-                document.getElementById('feed-filial-filter-dropdown').classList.add('hidden');
+                document.getElementById('feed-promotor-filter-dropdown')?.classList.toggle('hidden');
+                document.getElementById('feed-filial-filter-dropdown')?.classList.add('hidden');
             };
         }
 
         document.addEventListener('click', (e) => {
-            if(!e.target.closest('#feed-filial-filter-dropdown') && !e.target.closest('#feed-filial-filter-btn')) {
-                document.getElementById('feed-filial-filter-dropdown')?.classList.add('hidden');
-            }
             if(!e.target.closest('#feed-promotor-filter-dropdown') && !e.target.closest('#feed-promotor-filter-btn')) {
                 document.getElementById('feed-promotor-filter-dropdown')?.classList.add('hidden');
             }
