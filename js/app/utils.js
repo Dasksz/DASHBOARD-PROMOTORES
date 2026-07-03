@@ -1319,3 +1319,77 @@ window.toLocalDateInput = function(date) {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
+
+
+window.getDayForWorkingDays = (year, month, targetCount, holidays) => {
+    let count = 0;
+    // Iterate from 1st
+    const date = new Date(Date.UTC(year, month, 1));
+    while (date.getUTCMonth() === month) {
+        const dayOfWeek = date.getUTCDay();
+        if (dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(date, holidays)) {
+            count++;
+        }
+        if (count >= targetCount) return date.getUTCDate();
+        date.setUTCDate(date.getUTCDate() + 1);
+    }
+    return date.getUTCDate(); // Fallback to end of month
+};
+
+window.getWeekIndex = (date, weeks) => {
+    const d = typeof date === 'number' ? new Date(date) : window.parseDate(date);
+    if (!d) return -1;
+    // Check against ranges
+    for(let i=0; i<weeks.length; i++) {
+        // Week range is inclusive start, inclusive end
+        if (d >= weeks[i].start && d <= weeks[i].end) return i;
+    }
+    return -1;
+};
+
+window.shouldIncludeSale = (sale, supplier, brand) => {
+    const codFor = String(sale.CODFOR);
+    if (supplier === 'PEPSICO_ALL') {
+        // Includes everything
+        if (!window.SUPPLIER_CODES.PEPSICO.includes(codFor)) return false;
+    } else if (supplier === 'ELMA_ALL') {
+        if (!window.SUPPLIER_CODES.ELMA.includes(codFor)) return false;
+    } else if (supplier === 'FOODS_ALL') {
+        // Include all brands of 1119 that are in sub-tabs
+        if (codFor !== window.SUPPLIER_CODES.FOODS[0]) return false;
+        // No brand filtering here, assuming 1119 contains mostly Foods
+    } else {
+        if (codFor !== supplier) return false;
+        if (brand) {
+            const desc = window.normalizeKey(sale.DESCRICAO || '');
+            if (brand === 'TODDYNHO') {
+                if (!desc.includes('TODDYNHO')) return false;
+            } else if (brand === 'TODDY') {
+                if (!desc.includes('TODDY') || desc.includes('TODDYNHO')) return false;
+            } else if (brand === 'QUAKER_KEROCOCO') {
+                if (!desc.includes('QUAKER') && !desc.includes('KEROCOCO')) return false;
+            }
+        }
+    }
+    return true;
+};
+
+window.mapSupplierToKey = (s) => {
+    const sup = String(s).toUpperCase();
+    if (sup === 'PEPSICO') return ['PEPSICO_ALL'];
+    if (sup === 'ELMA CHIPS' || sup === 'ELMA') return ['ELMA_ALL'];
+    if (sup === 'FOODS') return ['FOODS_ALL'];
+
+    // Mappings for Descriptive Names (Virtual Categories)
+    if (sup === 'EXTRUSADOS') return [window.SUPPLIER_CODES.ELMA[0]];
+    if (sup === 'NÃO EXTRUSADOS' || sup === 'NAO EXTRUSADOS') return [window.SUPPLIER_CODES.ELMA[1]];
+    if (sup === 'TORCIDA') return [window.SUPPLIER_CODES.ELMA[2]];
+    if (sup === 'TODDYNHO') return [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO];
+    if (sup === 'TODDY') return [window.SUPPLIER_CODES.VIRTUAL.TODDY];
+    if (sup === 'QUAKER' || sup === 'KEROCOCO' || sup.includes('QUAKER')) return [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO];
+
+    if (window.globalGoalsMetrics && window.globalGoalsMetrics[sup]) return [sup];
+    if (window.SUPPLIER_CODES.ALL_GOALS.includes(sup)) return [sup];
+    if (sup === window.SUPPLIER_CODES.FOODS[0]) return ['FOODS_ALL'];
+    return [];
+};

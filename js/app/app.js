@@ -5260,16 +5260,7 @@
             const { weeks } = getMonthWeeksDistribution(lastSaleDate); // Use current global date context
 
             // Helper to find week index
-            const getWeekIndex = (date) => {
-                const d = typeof date === 'number' ? new Date(date) : parseDate(date);
-                if (!d) return -1;
-                // Check against ranges
-                for(let i=0; i<weeks.length; i++) {
-                    // Week range is inclusive start, inclusive end
-                    if (d >= weeks[i].start && d <= weeks[i].end) return i;
-                }
-                return -1;
-            };
+
 
             // Iterate Sales
             // Optimized: Use indices if needed, or simple iteration.
@@ -5352,7 +5343,7 @@
                 const sellerName = window.resolveDim('vendedores', s.CODUSUR);
                 const valFat = Number(s.VLVENDA) || 0;
                 const valVol = Number(s.TOTPESOLIQ) || 0;
-                const weekIdx = getWeekIndex(d);
+                const weekIdx = window.getWeekIndex(d, weeks);
 
                 if (!salesBySeller.has(sellerName)) {
                     salesBySeller.set(sellerName, { totalFat: 0, totalVol: 0, weeksFat: [0, 0, 0, 0, 0], weeksVol: [0, 0, 0, 0, 0], totalPos: 0 });
@@ -5984,14 +5975,7 @@
             // Filter Logic matches 'getMetaRealizadoFilteredData'
 
             // Helper for week index (Copied from getMetaRealizadoFilteredData scope, need to redefine or reuse)
-            const getWeekIndex = (date) => {
-                const d = typeof date === 'number' ? new Date(date) : parseDate(date);
-                if (!d) return -1;
-                for(let i=0; i<weeks.length; i++) {
-                    if (d >= weeks[i].start && d <= weeks[i].end) return i;
-                }
-                return -1;
-            };
+
 
             for(let i=0; i<allSalesData.length; i++) {
                 const s = allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i];
@@ -6038,7 +6022,7 @@
 
                 const entry = clientMap.get(codCli);
                 const val = Number(s.VLVENDA) || 0;
-                const weekIdx = getWeekIndex(d);
+                const weekIdx = window.getWeekIndex(d, weeks);
 
                 entry.salesTotal += val;
                 if (weekIdx !== -1) entry.salesWeeks[weekIdx] += val;
@@ -6827,32 +6811,7 @@
             let globalTotalAvgFat = 0;
             let globalTotalAvgVol = 0;
 
-            const shouldIncludeSale = (sale, supplier, brand) => {
-                const codFor = String(sale.CODFOR);
-                if (supplier === 'PEPSICO_ALL') {
-                    // Includes everything
-                    if (!window.SUPPLIER_CODES.PEPSICO.includes(codFor)) return false;
-                } else if (supplier === 'ELMA_ALL') {
-                    if (!window.SUPPLIER_CODES.ELMA.includes(codFor)) return false;
-                } else if (supplier === 'FOODS_ALL') {
-                    // Include all brands of 1119 that are in sub-tabs
-                    if (codFor !== window.SUPPLIER_CODES.FOODS[0]) return false;
-                    // No brand filtering here, assuming 1119 contains mostly Foods
-                } else {
-                    if (codFor !== supplier) return false;
-                    if (brand) {
-                        const desc = normalize(sale.DESCRICAO || '');
-                        if (brand === 'TODDYNHO') {
-                            if (!desc.includes('TODDYNHO')) return false;
-                        } else if (brand === 'TODDY') {
-                            if (!desc.includes('TODDY') || desc.includes('TODDYNHO')) return false;
-                        } else if (brand === 'QUAKER_KEROCOCO') {
-                            if (!desc.includes('QUAKER') && !desc.includes('KEROCOCO')) return false;
-                        }
-                    }
-                }
-                return true;
-            };
+
 
             if (globalGoalsTotalsCache[cacheKey]) {
                 globalTotalAvgFat = globalGoalsTotalsCache[cacheKey].fat;
@@ -6879,7 +6838,7 @@
                             // EXCEPTION: Exclude Balcão (53) sales for Client 9569 from Global Portfolio Totals
                             if (String(codCli).trim() === '9569' && (String(sale.CODUSUR).trim() === '53' || String(sale.CODUSUR).trim() === '053')) return;
 
-                            if (shouldIncludeSale(sale, currentGoalsSupplier, currentGoalsBrand)) {
+                            if (window.shouldIncludeSale(sale, currentGoalsSupplier, currentGoalsBrand)) {
                                 if (sale.TIPOVENDA === '1' || sale.TIPOVENDA === '9') {
                                     sumFat += sale.VLVENDA;
                                     sumVol += sale.TOTPESOLIQ;
@@ -6922,7 +6881,7 @@
                         // EXCEPTION: Exclude Balcão (53) sales for Client 9569 from Portfolio Average
                         if (String(codCli).trim() === '9569' && (String(sale.CODUSUR).trim() === '53' || String(sale.CODUSUR).trim() === '053')) return;
 
-                        if (shouldIncludeSale(sale, currentGoalsSupplier, currentGoalsBrand)) {
+                        if (window.shouldIncludeSale(sale, currentGoalsSupplier, currentGoalsBrand)) {
                             if (sale.TIPOVENDA === '1' || sale.TIPOVENDA === '9') {
                                 sumFat += sale.VLVENDA;
                                 sumVol += sale.TOTPESOLIQ;
@@ -7714,22 +7673,7 @@
             const prevMonthYear = prevMonthDate.getUTCFullYear();
 
             // Helper for inclusion check
-            const shouldIncludeSale = (sale, supplier, brand) => {
-                const codFor = String(sale.CODFOR);
-                if (supplier === 'PEPSICO_ALL') { if (!window.SUPPLIER_CODES.PEPSICO.includes(codFor)) return false; }
-                else if (supplier === 'ELMA_ALL') { if (!window.SUPPLIER_CODES.ELMA.includes(codFor)) return false; }
-                else if (supplier === 'FOODS_ALL') { if (codFor !== window.SUPPLIER_CODES.FOODS[0]) return false; }
-                else {
-                    if (codFor !== supplier) return false;
-                    if (brand) {
-                        const desc = normalize(sale.DESCRICAO || '');
-                        if (brand === 'TODDYNHO') { if (!desc.includes('TODDYNHO')) return false; }
-                        else if (brand === 'TODDY') { if (!desc.includes('TODDY') || desc.includes('TODDYNHO')) return false; }
-                        else if (brand === 'QUAKER_KEROCOCO') { if (!desc.includes('QUAKER') && !desc.includes('KEROCOCO')) return false; }
-                    }
-                }
-                return true;
-            };
+
 
             const globalTotalAvgFat = globalGoalsTotalsCache[cacheKey].fat;
             const globalTotalAvgVol = globalGoalsTotalsCache[cacheKey].vol;
@@ -7754,7 +7698,7 @@
                         // EXCEPTION: Exclude Balcão (53) sales for Client 9569 from Portfolio Average
                         if (String(codCli).trim() === '9569' && (String(sale.CODUSUR).trim() === '53' || String(sale.CODUSUR).trim() === '053')) return;
 
-                        if (shouldIncludeSale(sale, currentGoalsSupplier, currentGoalsBrand)) {
+                        if (window.shouldIncludeSale(sale, currentGoalsSupplier, currentGoalsBrand)) {
                             if (sale.TIPOVENDA === '1' || sale.TIPOVENDA === '9') {
                                 cSumFat += sale.VLVENDA;
                                 cSumVol += sale.TOTPESOLIQ;
@@ -10188,22 +10132,9 @@ const supervisorGroups = new Map();
             const targetWDPrev = Math.round(totalWDPrev * ratio);
 
             // Helper to find the day corresponding to target working days
-            const getDayForWorkingDays = (year, month, targetCount, holidays) => {
-                let count = 0;
-                // Iterate from 1st
-                const date = new Date(Date.UTC(year, month, 1));
-                while (date.getUTCMonth() === month) {
-                    const dayOfWeek = date.getUTCDay();
-                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays)) {
-                        count++;
-                    }
-                    if (count >= targetCount) return date.getUTCDate();
-                    date.setUTCDate(date.getUTCDate() + 1);
-                }
-                return date.getUTCDate(); // Fallback to end of month
-            };
 
-            const cutoffDayPrev = getDayForWorkingDays(prevMonthYear, prevMonthIndex, targetWDPrev, selectedHolidays);
+
+            const cutoffDayPrev = window.getDayForWorkingDays(prevMonthYear, prevMonthIndex, targetWDPrev, selectedHolidays);
             // ------------------------------------------------------------------------
 
             const currentMap = new Map();
@@ -10980,35 +10911,17 @@ const supervisorGroups = new Map();
                     // Determine Goal Keys based on Supplier Filters
                     const activeGoalKeys = new Set();
 
-                    const mapSupplierToKey = (s) => {
-                        const sup = String(s).toUpperCase();
-                        if (sup === 'PEPSICO') return ['PEPSICO_ALL'];
-                        if (sup === 'ELMA CHIPS' || sup === 'ELMA') return ['ELMA_ALL'];
-                        if (sup === 'FOODS') return ['FOODS_ALL'];
 
-                        // Mappings for Descriptive Names (Virtual Categories)
-                        if (sup === 'EXTRUSADOS') return [window.SUPPLIER_CODES.ELMA[0]];
-                        if (sup === 'NÃO EXTRUSADOS' || sup === 'NAO EXTRUSADOS') return [window.SUPPLIER_CODES.ELMA[1]];
-                        if (sup === 'TORCIDA') return [window.SUPPLIER_CODES.ELMA[2]];
-                        if (sup === 'TODDYNHO') return [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO];
-                        if (sup === 'TODDY') return [window.SUPPLIER_CODES.VIRTUAL.TODDY];
-                        if (sup === 'QUAKER' || sup === 'KEROCOCO' || sup.includes('QUAKER')) return [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO];
-
-                        if (window.globalGoalsMetrics && window.globalGoalsMetrics[sup]) return [sup];
-                        if (window.SUPPLIER_CODES.ALL_GOALS.includes(sup)) return [sup];
-                        if (sup === window.SUPPLIER_CODES.FOODS[0]) return ['FOODS_ALL'];
-                        return [];
-                    };
 
                     // Prioritize specific selected suppliers (Drill-down) over global folder filter
                     if (selectedMainSuppliers && selectedMainSuppliers.length > 0) {
                         selectedMainSuppliers.forEach(s => {
-                            mapSupplierToKey(s).forEach(k => activeGoalKeys.add(k));
+                            window.mapSupplierToKey(s).forEach(k => activeGoalKeys.add(k));
                         });
 
 
                     } else if (currentFornecedor) {
-                        mapSupplierToKey(currentFornecedor).forEach(k => activeGoalKeys.add(k));
+                        window.mapSupplierToKey(currentFornecedor).forEach(k => activeGoalKeys.add(k));
                     }
 
                     // Default to PEPSICO_ALL if no specific keys found
@@ -11281,26 +11194,11 @@ const supervisorGroups = new Map();
                 }
 
                 const activeGoalKeys = new Set();
-                const mapSupplierToKey = (s) => {
-                    const sup = String(s).toUpperCase();
-                    if (sup === 'PEPSICO') return ['PEPSICO_ALL'];
-                    if (sup === 'ELMA CHIPS' || sup === 'ELMA') return ['ELMA_ALL'];
-                    if (sup === 'FOODS') return ['FOODS_ALL'];
-                    if (sup === 'EXTRUSADOS') return [window.SUPPLIER_CODES.ELMA[0]];
-                    if (sup === 'NÃO EXTRUSADOS' || sup === 'NAO EXTRUSADOS') return [window.SUPPLIER_CODES.ELMA[1]];
-                    if (sup === 'TORCIDA') return [window.SUPPLIER_CODES.ELMA[2]];
-                    if (sup === 'TODDYNHO') return [window.SUPPLIER_CODES.VIRTUAL.TODDYNHO];
-                    if (sup === 'TODDY') return [window.SUPPLIER_CODES.VIRTUAL.TODDY];
-                    if (sup === 'QUAKER' || sup === 'KEROCOCO' || sup.includes('QUAKER')) return [window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO];
-                    if (window.globalGoalsMetrics && window.globalGoalsMetrics[sup]) return [sup];
-                    if (window.SUPPLIER_CODES.ALL_GOALS.includes(sup)) return [sup];
-                    if (sup === window.SUPPLIER_CODES.FOODS[0]) return ['FOODS_ALL'];
-                    return [];
-                };
+
                 if (selectedMainSuppliers && selectedMainSuppliers.length > 0) {
-                    selectedMainSuppliers.forEach(s => mapSupplierToKey(s).forEach(k => activeGoalKeys.add(k)));
+                    selectedMainSuppliers.forEach(s => window.mapSupplierToKey(s).forEach(k => activeGoalKeys.add(k)));
                 } else if (currentFornecedor) {
-                    mapSupplierToKey(currentFornecedor).forEach(k => activeGoalKeys.add(k));
+                    window.mapSupplierToKey(currentFornecedor).forEach(k => activeGoalKeys.add(k));
                 }
                 if (activeGoalKeys.size === 0) activeGoalKeys.add('PEPSICO_ALL');
 
@@ -27628,20 +27526,8 @@ const supervisorGroups = new Map();
             const totalWDPrev = getWorkingDaysInMonth(prevMonthYear, prevMonthIndex, selectedHolidays);
             const targetWDPrev = Math.round(totalWDPrev * ratio);
 
-            const getDayForWorkingDays = (year, month, targetCount, holidays) => {
-                let count = 0;
-                const date = new Date(Date.UTC(year, month, 1));
-                while (date.getUTCMonth() === month) {
-                    const dayOfWeek = date.getUTCDay();
-                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays)) {
-                        count++;
-                    }
-                    if (count >= targetCount) return date.getUTCDate();
-                    date.setUTCDate(date.getUTCDate() + 1);
-                }
-                return date.getUTCDate();
-            };
-            const cutoffDayPrev = getDayForWorkingDays(prevMonthYear, prevMonthIndex, targetWDPrev, selectedHolidays);
+
+            const cutoffDayPrev = window.getDayForWorkingDays(prevMonthYear, prevMonthIndex, targetWDPrev, selectedHolidays);
 
             let prevVal = 0;
             let prevQty = 0;
