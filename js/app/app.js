@@ -505,15 +505,8 @@
                     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
                     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-                    const toLocalDateInput = (date) => {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                    };
-
-                    startInput.value = toLocalDateInput(firstDay);
-                    endInput.value = toLocalDateInput(lastDay);
+                    startInput.value = window.toLocalDateInput(firstDay);
+                    endInput.value = window.toLocalDateInput(lastDay);
                 } else if (selectedCoverageDateRange.start) {
                     startInput.value = selectedCoverageDateRange.start;
                     endInput.value = selectedCoverageDateRange.end;
@@ -10177,14 +10170,14 @@ const supervisorGroups = new Map();
             const currentMonth = refDate.getUTCMonth();
             
             // Calculate Current Month Progress
-            const totalWDCurrent = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+            const totalWDCurrent = window.getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
             // Use lastSaleDate (UTC) to match check
-            const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, refDate);
+            const passedWDCurrent = window.getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, refDate);
             
             const ratio = totalWDCurrent > 0 ? (passedWDCurrent / totalWDCurrent) : 1;
 
             // Calculate Target Cutoff for Previous Month
-            const totalWDPrev = getWorkingDaysInMonth(prevMonthYear, prevMonthIndex, selectedHolidays);
+            const totalWDPrev = window.getWorkingDaysInMonth(prevMonthYear, prevMonthIndex, selectedHolidays);
             const targetWDPrev = Math.round(totalWDPrev * ratio);
 
             // Helper to find the day corresponding to target working days
@@ -10194,7 +10187,7 @@ const supervisorGroups = new Map();
                 const date = new Date(Date.UTC(year, month, 1));
                 while (date.getUTCMonth() === month) {
                     const dayOfWeek = date.getUTCDay();
-                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays)) {
+                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(date, holidays)) {
                         count++;
                     }
                     if (count >= targetCount) return date.getUTCDate();
@@ -10586,66 +10579,6 @@ const supervisorGroups = new Map();
 
         // Renamed/Wrapper for compatibility if needed, or update updateAllVisuals directly
         // updateProductBarChart was replaced.
-
-        function isHoliday(date, holidays) {
-            if (!holidays || !Array.isArray(holidays)) return false;
-            // Assuming holidays are stored as 'YYYY-MM-DD' strings (from UTC date)
-            const dateString = date.toISOString().split('T')[0];
-            return holidays.includes(dateString);
-        }
-
-        function getWorkingDaysInMonth(year, month, holidays) {
-            let count = 0;
-            const date = new Date(Date.UTC(year, month, 1));
-            while (date.getUTCMonth() === month) {
-                const dayOfWeek = date.getUTCDay();
-                if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays)) {
-                    count++;
-                }
-                date.setUTCDate(date.getUTCDate() + 1);
-            }
-            return count;
-        }
-
-        function getPassedWorkingDaysInMonth(year, month, holidays, today) {
-            let count = 0;
-            const date = new Date(Date.UTC(year, month, 1));
-            // Ensure today is treated as UTC for comparison
-            const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-
-            while (date <= todayUTC && date.getUTCMonth() === month) {
-                const dayOfWeek = date.getUTCDay();
-                if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays)) {
-                    count++;
-                }
-                date.setUTCDate(date.getUTCDate() + 1);
-            }
-            return count > 0 ? count : 1;
-        }
-
-        function isWorkingDay(date, holidays) {
-            const dayOfWeek = date.getUTCDay();
-            return dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays);
-        }
-
-        function getWorkingDayIndex(date, holidays) {
-            if (!isWorkingDay(date, holidays)) return -1;
-
-            const month = date.getUTCMonth();
-            const year = date.getUTCFullYear();
-            let index = 0;
-            const d = new Date(Date.UTC(year, month, 1));
-
-            while (d <= date) {
-                if (isWorkingDay(d, holidays)) {
-                    index++;
-                }
-                d.setUTCDate(d.getUTCDate() + 1);
-            }
-            return index;
-        }
-
-
 
         function updateAllVisuals() {
             const posicao = posicaoFilter.value;
@@ -13524,8 +13457,8 @@ const supervisorGroups = new Map();
 
                     // --- NEW TENDENCY COMPARISON FOR KPIS AND SUPERVISORS ---
                     if (useTendencyComparison) {
-                        const totalDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-                        const passedDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
+                        const totalDays = window.getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+                        const passedDays = window.getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
                         
                         if (totalDays > 0 && passedDays > 0 && passedDays < totalDays) {
                             const ratio = totalDays / passedDays;
@@ -13563,8 +13496,8 @@ const supervisorGroups = new Map();
                     metrics.history.avgPerdas = historyPerdas / QUARTERLY_DIVISOR;
 
                     if (useTendencyComparison) {
-                        const totalDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-                        const passedDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
+                        const totalDays = window.getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+                        const passedDays = window.getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
                         if (totalDays > 0 && passedDays > 0 && passedDays < totalDays) {
                             metrics.current.perdas *= (totalDays / passedDays);
                         }
@@ -13595,7 +13528,7 @@ const supervisorGroups = new Map();
                                 let workingDaysPassed = 0; let totalWorkingDays = 0;
                                 for (let d = new Date(currentWeek.start); d <= currentWeek.end; d.setUTCDate(d.getUTCDate() + 1)) {
                                     const dayOfWeek = d.getUTCDay();
-                                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(d, selectedHolidays)) {
+                                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(d, selectedHolidays)) {
                                         totalWorkingDays++;
                                         if (d <= today) workingDaysPassed++;
                                     }
@@ -13669,7 +13602,7 @@ const supervisorGroups = new Map();
                         // We iterate all days to determine the axis
                         for (let d = 1; d <= daysInMonth; d++) {
                             const dateObj = new Date(Date.UTC(currentYear, currentMonth, d));
-                            const isWDay = isWorkingDay(dateObj, selectedHolidays);
+                            const isWDay = window.isWorkingDay(dateObj, selectedHolidays);
 
                             // Check if sales exist for this specific day
                             // We can check metrics.charts.weeklyCurrent but that's aggregated.
@@ -13743,7 +13676,7 @@ const supervisorGroups = new Map();
 
                             for (let d = 1; d <= daysInM; d++) {
                                 const dateObj = new Date(Date.UTC(y, m, d));
-                                if (isWorkingDay(dateObj, selectedHolidays)) {
+                                if (window.isWorkingDay(dateObj, selectedHolidays)) {
                                     wdIndex++;
                                     const val = historySalesByMonthDay.get(dateObj.toISOString().split('T')[0]) || 0;
 
@@ -13768,7 +13701,7 @@ const supervisorGroups = new Map();
 
                         for (let d = 1; d <= daysInMonth; d++) {
                             const dateObj = new Date(Date.UTC(currentYear, currentMonth, d));
-                            const isWDay = isWorkingDay(dateObj, selectedHolidays);
+                            const isWDay = window.isWorkingDay(dateObj, selectedHolidays);
                             const val = currentSalesByDay[d];
                             const hasSales = val > 0;
 
@@ -13838,7 +13771,7 @@ const supervisorGroups = new Map();
                                             // Let's try to map strictly to the *end* of the previous series.
                                             // But we don't know how many *more* days we will have total.
                                             // Actually we do: `getWorkingDaysInMonth` for current month.
-                                            const totalCurrentWorkingDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+                                            const totalCurrentWorkingDays = window.getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
                                             const overflowCount = totalCurrentWorkingDays - prevMonthMaxWDIndex;
 
                                             if (overflowCount > 0) {
@@ -13902,7 +13835,7 @@ const supervisorGroups = new Map();
 
                             for (let d = new Date(currentWeek.start); d <= currentWeek.end; d.setUTCDate(d.getUTCDate() + 1)) {
                                 const dayOfWeek = d.getUTCDay();
-                                if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(d, selectedHolidays)) {
+                                if (dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(d, selectedHolidays)) {
                                     totalWorkingDays++;
                                     if (d <= today) workingDaysPassed++;
                                     else remainingDaysIndices.push(dayOfWeek);
@@ -24095,14 +24028,8 @@ const supervisorGroups = new Map();
             const endEl = document.getElementById('history-date-end');
             
             if (startEl && endEl) {
-                const toLocalDateInput = (date) => {
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                };
-                startEl.value = toLocalDateInput(firstDay);
-                endEl.value = toLocalDateInput(lastDay);
+                startEl.value = window.toLocalDateInput(firstDay);
+                endEl.value = window.toLocalDateInput(lastDay);
             } else {
                 console.error("History date inputs not found!");
             }
@@ -24202,15 +24129,8 @@ const supervisorGroups = new Map();
                     const endEl = document.getElementById('history-date-end');
 
                     // Fix timezone issue by using local date strings
-                    const toLocalDateInput = (date) => {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                    };
-
-                    if (startEl) startEl.value = toLocalDateInput(firstDay);
-                    if (endEl) endEl.value = toLocalDateInput(lastDay);
+                    if (startEl) startEl.value = window.toLocalDateInput(firstDay);
+                    if (endEl) endEl.value = window.toLocalDateInput(lastDay);
 
                     setupHierarchyFilters('history');
                     updateHistorySupervisorFilter();
@@ -27622,10 +27542,10 @@ const supervisorGroups = new Map();
             const refDate = (typeof lastSaleDate !== 'undefined' && lastSaleDate) ? new Date(lastSaleDate) : new Date();
             const currentYear = refDate.getUTCFullYear();
             const currentMonth = refDate.getUTCMonth();
-            const totalWDCurrent = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-            const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, refDate);
+            const totalWDCurrent = window.getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+            const passedWDCurrent = window.getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, refDate);
             const ratio = totalWDCurrent > 0 ? (passedWDCurrent / totalWDCurrent) : 1;
-            const totalWDPrev = getWorkingDaysInMonth(prevMonthYear, prevMonthIndex, selectedHolidays);
+            const totalWDPrev = window.getWorkingDaysInMonth(prevMonthYear, prevMonthIndex, selectedHolidays);
             const targetWDPrev = Math.round(totalWDPrev * ratio);
 
             const getDayForWorkingDays = (year, month, targetCount, holidays) => {
@@ -27633,7 +27553,7 @@ const supervisorGroups = new Map();
                 const date = new Date(Date.UTC(year, month, 1));
                 while (date.getUTCMonth() === month) {
                     const dayOfWeek = date.getUTCDay();
-                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays)) {
+                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(date, holidays)) {
                         count++;
                     }
                     if (count >= targetCount) return date.getUTCDate();

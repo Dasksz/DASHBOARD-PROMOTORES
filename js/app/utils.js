@@ -1319,3 +1319,93 @@ window.toLocalDateInput = function(date) {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
+
+
+/**
+ * Checks if a given date string is a holiday.
+ * @param {Date} date - The date to check.
+ * @param {Array} holidays - Array of holiday date strings ('YYYY-MM-DD').
+ * @returns {boolean} True if holiday, false otherwise.
+ */
+window.isHoliday = function(date, holidays) {
+    if (!holidays || !Array.isArray(holidays)) return false;
+    const dateString = date.toISOString().split('T')[0];
+    return holidays.includes(dateString);
+};
+
+/**
+ * Calculates the total number of working days in a specific month.
+ * @param {number} year - The year.
+ * @param {number} month - The month (0-11).
+ * @param {Array} holidays - Array of holiday date strings ('YYYY-MM-DD').
+ * @returns {number} The count of working days.
+ */
+window.getWorkingDaysInMonth = function(year, month, holidays) {
+    let count = 0;
+    const date = new Date(Date.UTC(year, month, 1));
+    while (date.getUTCMonth() === month) {
+        const dayOfWeek = date.getUTCDay();
+        if (dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(date, holidays)) {
+            count++;
+        }
+        date.setUTCDate(date.getUTCDate() + 1);
+    }
+    return count;
+};
+
+/**
+ * Calculates the passed working days in a month up to today.
+ * @param {number} year - The year.
+ * @param {number} month - The month (0-11).
+ * @param {Array} holidays - Array of holiday date strings ('YYYY-MM-DD').
+ * @param {Date} today - The current date limit.
+ * @returns {number} The count of passed working days (minimum 1).
+ */
+window.getPassedWorkingDaysInMonth = function(year, month, holidays, today) {
+    let count = 0;
+    const date = new Date(Date.UTC(year, month, 1));
+    const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+
+    while (date <= todayUTC && date.getUTCMonth() === month) {
+        const dayOfWeek = date.getUTCDay();
+        if (dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(date, holidays)) {
+            count++;
+        }
+        date.setUTCDate(date.getUTCDate() + 1);
+    }
+    return count > 0 ? count : 1;
+};
+
+/**
+ * Checks if a given date is a working day (Monday-Friday and not a holiday).
+ * @param {Date} date - The date to check.
+ * @param {Array} holidays - Array of holiday date strings ('YYYY-MM-DD').
+ * @returns {boolean} True if working day, false otherwise.
+ */
+window.isWorkingDay = function(date, holidays) {
+    const dayOfWeek = date.getUTCDay();
+    return dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(date, holidays);
+};
+
+/**
+ * Gets the index of the working day in the month (e.g. 1st working day, 5th working day).
+ * @param {Date} date - The date to get the index for.
+ * @param {Array} holidays - Array of holiday date strings ('YYYY-MM-DD').
+ * @returns {number} The working day index, or -1 if not a working day.
+ */
+window.getWorkingDayIndex = function(date, holidays) {
+    if (!window.isWorkingDay(date, holidays)) return -1;
+
+    const month = date.getUTCMonth();
+    const year = date.getUTCFullYear();
+    let index = 0;
+    const d = new Date(Date.UTC(year, month, 1));
+
+    while (d <= date) {
+        if (window.isWorkingDay(d, holidays)) {
+            index++;
+        }
+        d.setUTCDate(d.getUTCDate() + 1);
+    }
+    return index;
+};
