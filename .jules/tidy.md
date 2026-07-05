@@ -27,3 +27,6 @@
 ## 2024-05-18 : (Extract Duplicated Internal Arrow Functions to Utils)
 **Aprendizado:** Internal arrow functions (like `getStockFromMap` and `toLocalDateInput`) are often duplicated multiple times across different functional closures in large monolithic files like `js/app/app.js`.
 **Ação:** Safely extract identically duplicated arrow functions to the global `window` object in `js/app/utils.js` (e.g. `window.getStockFromMap`) and replace their internal declarations and calls, which reduces lines of code and makes the utilities globally available.
+## 2026/07/05 : (Extract Duplicated Date Logic and Arrow Functions to Utils)
+**Aprendizado:** Found duplicated date logic blocks (`isHoliday`, `getWorkingDaysInMonth`, etc.) directly inside `js/app/app.js` which inflated the main file and hid generic utilities. Also found `toLocalDateInput` duplicated multiple times as an internal arrow function.
+**Ação:** Safely extracted date logic functions and replaced them with `window.*` versions inside `js/app/utils.js`. Always verify exact replacements and usages using tools like `grep` to ensure no hidden references remain that could throw `ReferenceError`.
