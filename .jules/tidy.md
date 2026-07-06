@@ -27,3 +27,6 @@
 ## 2024-05-18 : (Extract Duplicated Internal Arrow Functions to Utils)
 **Aprendizado:** Internal arrow functions (like `getStockFromMap` and `toLocalDateInput`) are often duplicated multiple times across different functional closures in large monolithic files like `js/app/app.js`.
 **Ação:** Safely extract identically duplicated arrow functions to the global `window` object in `js/app/utils.js` (e.g. `window.getStockFromMap`) and replace their internal declarations and calls, which reduces lines of code and makes the utilities globally available.
+## 2026/04/18 : (Generic Rede Filter Dropdown Standardization for LP and Titulos)
+**Aprendizado:** Views like 'Loja Perfeita' (lp) and 'Titulos' often have repetitive dropdown setup logic for 'Rede' filtering (`-rede-group-container` and its related listeners) inside their render view functions. Since this logic involves the same repetitive DOM interactions (toggling hidden classes, matching clicked buttons, etc.), it leads to bloated code and potential event listener duplications.
+**Ação:** Replace inline dropdown toggling code by registering them centrally using `window.setupGenericRedeFilterHandlers` during global initialization. Ensure the callbacks handle view-specific data fetching (`getHierarchyFilteredClients`) and UI state updates properly.
