@@ -19067,6 +19067,20 @@ const supervisorGroups = new Map();
         setupHierarchyFilters('weekly', updateWeeklyView);
         setupMetaRealizadoSupervisorFilterHandlers();
 
+        window.setupGenericRedeFilterHandlers('titulos',
+            { get groupFilter() { return titulosRedeGroupFilter; }, set groupFilter(v) { titulosRedeGroupFilter = v; },
+              get selectedRedes() { return selectedTitulosRedes; }, set selectedRedes(v) { selectedTitulosRedes = v; } },
+            () => getHierarchyFilteredClients('titulos', allClientsData),
+            handleTitulosFilterChange,
+            updateRedeFilter
+        );
+        window.setupGenericRedeFilterHandlers('lp',
+            { get groupFilter() { return lpRedeGroupFilter; }, set groupFilter(v) { lpRedeGroupFilter = v; },
+              get selectedRedes() { return selectedLpRedes; }, set selectedRedes(v) { selectedLpRedes = v; } },
+            () => getHierarchyFilteredClients('lp', allClientsData),
+            handleLpFilterChange,
+            updateRedeFilter
+        );
         // Initialize Other Filters
         selectedMainSuppliers = updateSupplierFilter(document.getElementById('fornecedor-filter-dropdown'), document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, [...allSalesData, ...allHistoryData], 'main');
         updateTipoVendaFilter(tipoVendaFilterDropdown, tipoVendaFilterText, selectedTiposVenda, allSalesData);
@@ -28497,27 +28511,7 @@ const supervisorGroups = new Map();
             const comRedeBtnText = document.getElementById('titulos-com-rede-btn-text');
             const redeDropdown = document.getElementById('titulos-rede-filter-dropdown');
 
-            if (redeGroupContainer && !redeGroupContainer._hasListener) {
-                redeGroupContainer.addEventListener('click', (e) => {
-                    const btn = e.target.closest('button');
-                    if (!btn) return;
-                    const group = btn.dataset.group;
-                    titulosRedeGroupFilter = group;
-                    redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    if (group === 'com_rede') redeDropdown.classList.remove('hidden');
-                    else redeDropdown.classList.add('hidden');
-                    handleTitulosFilterChange();
-                });
 
-
-                redeGroupContainer._hasListener = true;
-            }
-
-            if (redeDropdown && !redeDropdown._hasListener) {
-                redeDropdown.addEventListener('change', () => handleTitulosFilterChange());
-                redeDropdown._hasListener = true;
-            }
 
             // Client Search
             setupClientTypeahead('titulos-codcli-filter', 'titulos-codcli-filter-suggestions', (code) => {
@@ -29560,25 +29554,7 @@ const supervisorGroups = new Map();
         const comRedeBtnText = document.getElementById('lp-com-rede-btn-text');
         const redeDropdown = document.getElementById('lp-rede-filter-dropdown');
 
-        if (redeGroupContainer && !redeGroupContainer._hasListener) {
-            redeGroupContainer.addEventListener('click', (e) => {
-                const btn = e.target.closest('button');
-                if (!btn) return;
-                const group = btn.dataset.group;
-                lpRedeGroupFilter = group;
-                redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                if (group === 'com_rede') redeDropdown.classList.remove('hidden');
-                else redeDropdown.classList.add('hidden');
-                handleLpFilterChange();
-            });
-            redeGroupContainer._hasListener = true;
-        }
 
-        if (redeDropdown && !redeDropdown._hasListener) {
-            redeDropdown.addEventListener('change', () => handleLpFilterChange());
-            redeDropdown._hasListener = true;
-        }
 
         // Client Search
         setupClientTypeahead('lp-codcli-filter', 'lp-codcli-filter-suggestions', (code) => {
