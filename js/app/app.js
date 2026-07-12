@@ -3530,33 +3530,7 @@
             // --- SELLER MODE / HIERARCHY MODE LOGIC ---
             let clients;
             if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                clients = [];
-                const hasSup = selectedMixSupervisors.size > 0;
-                const hasVend = selectedMixVendedores.size > 0;
-
-                const source = allClientsData;
-                const len = source.length;
-
-                for(let i=0; i<len; i++) {
-                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
-                    const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-
-                    // FIX: Only filter orphans for Admins
-                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
-
-                    let keep = true;
-                    if (hasSup || hasVend) {
-                        const details = sellerDetailsMap.get(rca1);
-                        if (hasSup) {
-                            if (!details || !selectedMixSupervisors.has(details.supervisor)) keep = false;
-                        }
-                        if (keep && hasVend) {
-                            if (!selectedMixVendedores.has(rca1)) keep = false;
-                        }
-                    }
-                    if (keep) clients.push(c);
-                }
+                clients = getGenericSellerHierarchyFilteredClients(selectedMixSupervisors, selectedMixVendedores, allClientsData, sellerDetailsMap, false);
             } else {
                 clients = getHierarchyFilteredClients('mix', allClientsData);
             }
@@ -9086,28 +9060,7 @@ const supervisorGroups = new Map();
             // New Hierarchy Logic applied to Active Clients
             let clients;
             if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                clients = [];
-                const hasSup = selectedCoverageSupervisors.size > 0;
-                const hasVend = selectedCoverageVendedores.size > 0;
-
-                const source = getActiveClientsData(); // Apply Active filtering first
-                const len = source.length;
-
-                for(let i=0; i<len; i++) {
-                    const c = source[i];
-                    const rca1 = String(c.rca1 || '').trim();
-                    let keep = true;
-                    if (hasSup || hasVend) {
-                        const details = sellerDetailsMap.get(rca1);
-                        if (hasSup) {
-                            if (!details || !selectedCoverageSupervisors.has(details.supervisor)) keep = false;
-                        }
-                        if (keep && hasVend) {
-                            if (!selectedCoverageVendedores.has(rca1)) keep = false;
-                        }
-                    }
-                    if (keep) clients.push(c);
-                }
+                clients = getGenericSellerHierarchyFilteredClients(selectedCoverageSupervisors, selectedCoverageVendedores, getActiveClientsData(), sellerDetailsMap, true);
             } else {
                 clients = getHierarchyFilteredClients('coverage', getActiveClientsData());
             }
@@ -11743,33 +11696,7 @@ const supervisorGroups = new Map();
             // New Hierarchy Logic (with Seller Support)
             let clients;
             if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                clients = [];
-                const hasSup = selectedCitySupervisors.size > 0;
-                const hasVend = selectedCityVendedores.size > 0;
-
-                const source = allClientsData;
-                const len = source.length;
-
-                for(let i=0; i<len; i++) {
-                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
-                    const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                    
-                    // FIX: Only filter orphans for Admins
-                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
-
-                    let keep = true;
-                    if (hasSup || hasVend) {
-                        const details = sellerDetailsMap.get(rca1);
-                        if (hasSup) {
-                            if (!details || !selectedCitySupervisors.has(details.supervisor)) keep = false;
-                        }
-                        if (keep && hasVend) {
-                            if (!selectedCityVendedores.has(rca1)) keep = false;
-                        }
-                    }
-                    if (keep) clients.push(c);
-                }
+                clients = getGenericSellerHierarchyFilteredClients(selectedCitySupervisors, selectedCityVendedores, allClientsData, sellerDetailsMap, false);
             } else {
                 clients = getHierarchyFilteredClients('city', allClientsData);
             }
@@ -13129,35 +13056,7 @@ const supervisorGroups = new Map();
 
             let clients;
             if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                clients = [];
-                const hasSup = selectedComparisonSupervisors.size > 0;
-                const hasVend = selectedComparisonVendedores.size > 0;
-
-                const source = allClientsData;
-                const len = source.length;
-
-                for(let i=0; i<len; i++) {
-                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
-                    // Basic active check (similar to getActiveClientsData but simpler)
-                    const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-
-                    // FIX: Only filter orphans for Admins
-                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue; // Skip strictly inactive
-
-                    let keep = true;
-                    if (hasSup || hasVend) {
-                        const details = sellerDetailsMap.get(rca1);
-                        if (hasSup) {
-                            if (!details || !selectedComparisonSupervisors.has(details.supervisor)) keep = false;
-                        }
-                        if (keep && hasVend) {
-                            if (!selectedComparisonVendedores.has(rca1)) keep = false;
-                        }
-                    }
-
-                    if (keep) clients.push(c);
-                }
+                clients = getGenericSellerHierarchyFilteredClients(selectedComparisonSupervisors, selectedComparisonVendedores, allClientsData, sellerDetailsMap, false);
             } else {
                 clients = getHierarchyFilteredClients('comparison', allClientsData);
             }
@@ -14001,33 +13900,7 @@ const supervisorGroups = new Map();
             // --- SELLER MODE / HIERARCHY MODE LOGIC ---
             let clients;
             if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                clients = [];
-                const hasSup = selectedInnovationsMonthSupervisors.size > 0;
-                const hasVend = selectedInnovationsMonthVendedores.size > 0;
-
-                const source = allClientsData;
-                const len = source.length;
-
-                for(let i=0; i<len; i++) {
-                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
-                    const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-
-                    // FIX: Only filter orphans for Admins
-                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
-
-                    let keep = true;
-                    if (hasSup || hasVend) {
-                        const details = sellerDetailsMap.get(rca1);
-                        if (hasSup) {
-                            if (!details || !selectedInnovationsMonthSupervisors.has(details.supervisor)) keep = false;
-                        }
-                        if (keep && hasVend) {
-                            if (!selectedInnovationsMonthVendedores.has(rca1)) keep = false;
-                        }
-                    }
-                    if (keep) clients.push(c);
-                }
+                clients = getGenericSellerHierarchyFilteredClients(selectedInnovationsMonthSupervisors, selectedInnovationsMonthVendedores, allClientsData, sellerDetailsMap, false);
             } else {
                 clients = getHierarchyFilteredClients('innovations-month', allClientsData);
             }
@@ -24283,32 +24156,10 @@ const supervisorGroups = new Map();
         // 1. Get Base Data (Hierarchy)
         let clients;
         if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-            clients = [];
-            const hasSup = selectedHistorySupervisors.size > 0;
-            const hasVend = selectedHistoryVendedores.size > 0;
-            const source = allClientsData;
-            const len = source.length;
-            for(let i=0; i<len; i++) {
-                const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
-                const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                // FIX: Only filter orphans for Admins
-                if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
-                let keep = true;
-                if (hasSup || hasVend) {
-                    const details = sellerDetailsMap.get(rca1);
-                    if (hasSup) {
-                        if (!details || !selectedHistorySupervisors.has(details.supervisor)) keep = false;
-                    }
-                    if (keep && hasVend) {
-                        if (!selectedHistoryVendedores.has(rca1)) keep = false;
-                    }
-                }
-                if (keep) clients.push(c);
+                clients = getGenericSellerHierarchyFilteredClients(selectedHistorySupervisors, selectedHistoryVendedores, allClientsData, sellerDetailsMap, false);
+            } else {
+                clients = getHierarchyFilteredClients('history', allClientsData);
             }
-        } else {
-            clients = getHierarchyFilteredClients('history', allClientsData);
-        }
 
         // Optimize: Use Set of Strings
         const validClientCodes = new Set();
@@ -25730,32 +25581,10 @@ const supervisorGroups = new Map();
         // 1. Get Base Clients (Hierarchy)
         let activeClients;
         if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-            activeClients = [];
-            const hasSup = selectedStockSupervisors.size > 0;
-            const hasVend = selectedStockVendedores.size > 0;
-            const source = allClientsData;
-            const len = source.length;
-            for(let i=0; i<len; i++) {
-                const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
-                const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                // FIX: Only filter orphans for Admins
-                if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
-                let keep = true;
-                if (hasSup || hasVend) {
-                    const details = sellerDetailsMap.get(rca1);
-                    if (hasSup) {
-                        if (!details || !selectedStockSupervisors.has(details.supervisor)) keep = false;
-                    }
-                    if (keep && hasVend) {
-                        if (!selectedStockVendedores.has(rca1)) keep = false;
-                    }
-                }
-                if (keep) activeClients.push(c);
+                activeClients = getGenericSellerHierarchyFilteredClients(selectedStockSupervisors, selectedStockVendedores, allClientsData, sellerDetailsMap, false);
+            } else {
+                activeClients = getHierarchyFilteredClients('estoque', allClientsData);
             }
-        } else {
-            activeClients = getHierarchyFilteredClients('estoque', allClientsData);
-        }
         
         const activeClientCodes = new Set();
         const filteredClients = [];
@@ -28057,35 +27886,7 @@ const supervisorGroups = new Map();
             // 1. Base Clients (Hierarchy vs Seller)
             let clients;
             if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                clients = [];
-                const hasSup = selectedPositivacaoSupervisors.size > 0;
-                const hasVend = selectedPositivacaoVendedores.size > 0;
-
-                const source = allClientsData;
-                const len = source.length;
-
-                for(let i=0; i<len; i++) {
-                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
-                    // Basic active check (similar to getActiveClientsData but simpler)
-                    const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                    
-                    // FIX: Only filter orphans for Admins
-                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue; // Skip strictly inactive
-
-                    let keep = true;
-                    if (hasSup || hasVend) {
-                        const details = sellerDetailsMap.get(rca1);
-                        if (hasSup) {
-                            if (!details || !selectedPositivacaoSupervisors.has(details.supervisor)) keep = false;
-                        }
-                        if (keep && hasVend) {
-                            if (!selectedPositivacaoVendedores.has(rca1)) keep = false;
-                        }
-                    }
-
-                    if (keep) clients.push(c);
-                }
+                clients = getGenericSellerHierarchyFilteredClients(selectedPositivacaoSupervisors, selectedPositivacaoVendedores, allClientsData, sellerDetailsMap, false);
             } else {
                 clients = getHierarchyFilteredClients('positivacao', allClientsData);
             }
@@ -28734,31 +28535,7 @@ const supervisorGroups = new Map();
             // Use Hierarchy Filter
             let allowedClients;
             if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                allowedClients = [];
-                const hasSup = selectedTitulosSupervisors.size > 0;
-                const hasVend = selectedTitulosVendedores.size > 0;
-                const source = allClientsData;
-                const len = source.length;
-                for(let i=0; i<len; i++) {
-                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
-                    const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                    
-                    // FIX: Only filter orphans for Admins
-                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
-                    
-                    let keep = true;
-                    if (hasSup || hasVend) {
-                        const details = sellerDetailsMap.get(rca1);
-                        if (hasSup) {
-                            if (!details || !selectedTitulosSupervisors.has(details.supervisor)) keep = false;
-                        }
-                        if (keep && hasVend) {
-                            if (!selectedTitulosVendedores.has(rca1)) keep = false;
-                        }
-                    }
-                    if (keep) allowedClients.push(c);
-                }
+                allowedClients = getGenericSellerHierarchyFilteredClients(selectedTitulosSupervisors, selectedTitulosVendedores, allClientsData, sellerDetailsMap, false);
             } else {
                 allowedClients = getHierarchyFilteredClients('titulos', allClientsData);
             }
@@ -29712,32 +29489,10 @@ const supervisorGroups = new Map();
         // 2. Filter Clients Base (Hierarchy + Rede)
         let allowedClients;
         if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-            allowedClients = [];
-            const hasSup = selectedLpSupervisors.size > 0;
-            const hasVend = selectedLpVendedores.size > 0;
-            const source = allClientsData;
-            const len = source.length;
-            for(let i=0; i<len; i++) {
-                const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
-                const rca1 = String(c.rca1 || '').trim();
-                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                // FIX: Only filter orphans for Admins
-                if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
-                let keep = true;
-                if (hasSup || hasVend) {
-                    const details = sellerDetailsMap.get(rca1);
-                    if (hasSup) {
-                        if (!details || !selectedLpSupervisors.has(details.supervisor)) keep = false;
-                    }
-                    if (keep && hasVend) {
-                        if (!selectedLpVendedores.has(rca1)) keep = false;
-                    }
-                }
-                if (keep) allowedClients.push(c);
+                allowedClients = getGenericSellerHierarchyFilteredClients(selectedLpSupervisors, selectedLpVendedores, allClientsData, sellerDetailsMap, false);
+            } else {
+                allowedClients = getHierarchyFilteredClients('lp', allClientsData);
             }
-        } else {
-            allowedClients = getHierarchyFilteredClients('lp', allClientsData);
-        }
 
 
         // Apply Rede Filter

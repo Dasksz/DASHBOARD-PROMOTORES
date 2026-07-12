@@ -1319,3 +1319,31 @@ window.toLocalDateInput = function(date) {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
+
+    window.getGenericSellerHierarchyFilteredClients = function(supervisorsSet, vendedoresSet, sourceClients, sellerDetailsMap, skipAdminOrphanFilter = false) {
+        const clients = [];
+        const hasSup = supervisorsSet.size > 0;
+        const hasVend = vendedoresSet.size > 0;
+        const len = sourceClients.length;
+
+        for(let i=0; i<len; i++) {
+            const c = typeof sourceClients.get === 'function' ? sourceClients.get(i) : sourceClients[i];
+            const rca1 = String(c.rca1 || '').trim();
+            const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
+
+            if (!skipAdminOrphanFilter && window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
+
+            let keep = true;
+            if (hasSup || hasVend) {
+                const details = sellerDetailsMap.get(rca1);
+                if (hasSup) {
+                    if (!details || !supervisorsSet.has(details.supervisor)) keep = false;
+                }
+                if (keep && hasVend) {
+                    if (!vendedoresSet.has(rca1)) keep = false;
+                }
+            }
+            if (keep) clients.push(c);
+        }
+        return clients;
+    };
