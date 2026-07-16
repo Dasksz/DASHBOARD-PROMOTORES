@@ -17327,7 +17327,6 @@ const supervisorGroups = new Map();
 
                 if (comparisonComRedeBtn && comparisonRedeFilterDropdown && !comparisonComRedeBtn.contains(e.target) && !comparisonRedeFilterDropdown.contains(e.target)) comparisonRedeFilterDropdown.classList.add('hidden');
                 if (comparisonTipoVendaFilterBtn && comparisonTipoVendaFilterDropdown && !comparisonTipoVendaFilterBtn.contains(e.target) && !comparisonTipoVendaFilterDropdown.contains(e.target)) comparisonTipoVendaFilterDropdown.classList.add('hidden');
-                if (comparisonSupplierFilterBtn && comparisonSupplierFilterDropdown && !comparisonSupplierFilterBtn.contains(e.target) && !comparisonSupplierFilterDropdown.contains(e.target)) comparisonSupplierFilterDropdown.classList.add('hidden');
                 if (comparisonProductFilterBtn && comparisonProductFilterDropdown && !comparisonProductFilterBtn.contains(e.target) && !comparisonProductFilterDropdown.contains(e.target)) comparisonProductFilterDropdown.classList.add('hidden');
 
 
@@ -17379,8 +17378,13 @@ const supervisorGroups = new Map();
                 }
             });
             comparisonFornecedorToggleContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { const fornecedor = e.target.dataset.fornecedor; if (currentComparisonFornecedor === fornecedor) { currentComparisonFornecedor = ''; e.target.classList.remove('active'); } else { currentComparisonFornecedor = fornecedor; comparisonFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); } handleComparisonFilterChange(); } });
-            comparisonSupplierFilterBtn.addEventListener('click', () => comparisonSupplierFilterDropdown.classList.toggle('hidden'));
-            comparisonSupplierFilterDropdown.addEventListener('change', (e) => { if (e.target.type === 'checkbox' && e.target.dataset.filterType === 'comparison') { const { value, checked } = e.target; if (checked) selectedComparisonSuppliers.push(value); else selectedComparisonSuppliers = selectedComparisonSuppliers.filter(s => s !== value); handleComparisonFilterChange(); } });
+            if (typeof window.setupGenericCheckboxFilterHandlers === 'function') {
+                const stateSet = new Set(selectedComparisonSuppliers);
+                window.setupGenericCheckboxFilterHandlers('comparison-supplier', stateSet, () => {
+                    selectedComparisonSuppliers = Array.from(stateSet);
+                    handleComparisonFilterChange();
+                });
+            }
 
             comparisonComRedeBtn.addEventListener('click', () => comparisonRedeFilterDropdown.classList.toggle('hidden'));
             comparisonRedeGroupContainer.addEventListener('click', (e) => {
@@ -17557,7 +17561,8 @@ const supervisorGroups = new Map();
                 return false;
             }
 
-            comparisonProductFilterBtn.addEventListener('click', () => {
+            comparisonProductFilterBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 updateComparisonProductFilter();
                 comparisonProductFilterDropdown.classList.toggle('hidden');
             });
@@ -27838,48 +27843,13 @@ const supervisorGroups = new Map();
             setupPositivacaoSupervisorFilterHandlers();
 
             // Supplier Filter (New)
-            if (positivacaoSupplierFilterDropdown && !positivacaoSupplierFilterDropdown._hasListener) {
-                if (positivacaoSupplierFilterBtn) {
-                    // Fetch the current text element BEFORE cloning, so we don't lose reference to the original
-                    let currentTextEl = document.getElementById('positivacao-supplier-filter-text');
-
-                    const newBtn = positivacaoSupplierFilterBtn.cloneNode(true);
-                    positivacaoSupplierFilterBtn.parentNode.replaceChild(newBtn, positivacaoSupplierFilterBtn);
-
-                    // Re-assign the global reference to the cloned elements to prevent modifying detached DOM nodes
-                    positivacaoSupplierFilterBtn = newBtn;
-                    positivacaoSupplierFilterText = newBtn.querySelector('#positivacao-supplier-filter-text') || currentTextEl;
-
-                    newBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        positivacaoSupplierFilterDropdown.classList.toggle('hidden');
-                    });
-
-
-
-                    // Close on click outside
-                    document.addEventListener('click', (e) => {
-                        if (!newBtn.contains(e.target) && !positivacaoSupplierFilterDropdown.contains(e.target)) {
-                            positivacaoSupplierFilterDropdown.classList.add('hidden');
-                        }
-                    });
-
-
-                }
-
-                positivacaoSupplierFilterDropdown.addEventListener('change', (e) => {
-                    if (e.target.type === 'checkbox') {
-                        const val = e.target.value;
-                        if (e.target.checked) selectedPositivacaoSuppliers.push(val);
-                        else selectedPositivacaoSuppliers = selectedPositivacaoSuppliers.filter(s => s !== val);
-
-                        selectedPositivacaoSuppliers = updateSupplierFilter(positivacaoSupplierFilterDropdown, positivacaoSupplierFilterText, selectedPositivacaoSuppliers, [...allSalesData, ...allHistoryData], 'positivacao');
-                        handlePositivacaoFilterChange({ excludeFilter: 'supplier' });
-                    }
+            if (typeof window.setupGenericCheckboxFilterHandlers === 'function') {
+                const stateSet = new Set(selectedPositivacaoSuppliers);
+                window.setupGenericCheckboxFilterHandlers('positivacao-supplier', stateSet, () => {
+                    selectedPositivacaoSuppliers = Array.from(stateSet);
+                    selectedPositivacaoSuppliers = updateSupplierFilter(positivacaoSupplierFilterDropdown, positivacaoSupplierFilterText, selectedPositivacaoSuppliers, [...allSalesData, ...allHistoryData], 'positivacao');
+                    handlePositivacaoFilterChange({ excludeFilter: 'supplier' });
                 });
-
-
-                positivacaoSupplierFilterDropdown._hasListener = true;
             }
 
             // Setup other filters listeners
