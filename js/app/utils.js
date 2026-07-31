@@ -1319,3 +1319,91 @@ window.toLocalDateInput = function(date) {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
+
+
+window.isHoliday = function(date, holidays) {
+    if (!holidays || !Array.isArray(holidays)) return false;
+    const dateString = date.toISOString().split('T')[0];
+    return holidays.includes(dateString);
+};
+
+window.getWorkingDaysInMonth = function(year, month, holidays) {
+    let count = 0;
+    const date = new Date(Date.UTC(year, month, 1));
+    while (date.getUTCMonth() === month) {
+        const dayOfWeek = date.getUTCDay();
+        if (dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(date, holidays)) {
+            count++;
+        }
+        date.setUTCDate(date.getUTCDate() + 1);
+    }
+    return count;
+};
+
+window.getPassedWorkingDaysInMonth = function(year, month, holidays, today) {
+    let count = 0;
+    const date = new Date(Date.UTC(year, month, 1));
+    const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+
+    while (date <= todayUTC && date.getUTCMonth() === month) {
+        const dayOfWeek = date.getUTCDay();
+        if (dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(date, holidays)) {
+            count++;
+        }
+        date.setUTCDate(date.getUTCDate() + 1);
+    }
+    return count > 0 ? count : 1;
+};
+
+window.normalizeString = function(str) {
+    return str
+        ? String(str).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toUpperCase()
+        : '';
+};
+
+window.getDayForWorkingDays = function(year, month, targetCount, holidays) {
+    let count = 0;
+    const date = new Date(Date.UTC(year, month, 1));
+    while (date.getUTCMonth() === month) {
+        const dayOfWeek = date.getUTCDay();
+        if (dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(date, holidays)) {
+            count++;
+        }
+        if (count >= targetCount) return date.getUTCDate();
+        date.setUTCDate(date.getUTCDate() + 1);
+    }
+    return date.getUTCDate();
+};
+
+window.shouldIncludeSale = function(sale, supplier, brand) {
+    const codFor = String(sale.CODFOR);
+    if (supplier === 'PEPSICO_ALL') {
+        if (!window.SUPPLIER_CODES.PEPSICO.includes(codFor)) return false;
+    } else if (supplier === 'ELMA_ALL') {
+        if (!window.SUPPLIER_CODES.ELMA.includes(codFor)) return false;
+    } else if (supplier === 'FOODS_ALL') {
+        if (codFor !== window.SUPPLIER_CODES.FOODS[0]) return false;
+    } else {
+        if (codFor !== supplier) return false;
+        if (brand) {
+            const desc = window.normalizeString(sale.DESCRICAO || '');
+            if (brand === 'TODDYNHO') {
+                if (!desc.includes('TODDYNHO')) return false;
+            } else if (brand === 'TODDY') {
+                if (!desc.includes('TODDY') || desc.includes('TODDYNHO')) return false;
+            } else if (brand === 'QUAKER_KEROCOCO') {
+                if (!desc.includes('QUAKER') && !desc.includes('KEROCOCO')) return false;
+            }
+        }
+    }
+    return true;
+};
+
+window.getWeekIndex = function(date, weeks) {
+    const d = typeof date === 'number' ? new Date(date) : window.parseDate(date);
+    if (!d) return -1;
+    for(let i=0; i<weeks.length; i++) {
+        if (d >= weeks[i].start && d <= weeks[i].end) return i;
+    }
+    return -1;
+};
