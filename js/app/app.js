@@ -24767,6 +24767,8 @@ const supervisorGroups = new Map();
             .select('id, id_cliente, client_code')
             .eq('id_promotor', user.id)
             .is('checkout_at', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
             .maybeSingle();
 
         if (data) {
