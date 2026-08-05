@@ -1018,3 +1018,16 @@ CREATE TRIGGER trg_normalize_cidade
 BEFORE INSERT OR UPDATE ON public.config_city_branches
 FOR EACH ROW
 EXECUTE FUNCTION public.normalize_cidade();
+
+-- ==============================================================================
+-- 7. SCHEDULED TASKS (CRON)
+-- ==============================================================================
+-- Ensure pg_cron extension is enabled
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
+
+-- Auto-checkout unclosed visits at midnight
+SELECT cron.schedule('auto-checkout-midnight', '0 0 * * *', $$
+    UPDATE visitas
+    SET checkout_at = current_timestamp
+    WHERE checkout_at IS NULL
+$$);
