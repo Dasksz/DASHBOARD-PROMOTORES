@@ -3079,6 +3079,7 @@
         let weeklyRedeGroupFilter = '';
         let selectedWeeklyRedes = [];
         let weeklyFilialFilter = 'all';
+        let selectedWeeklyMonth = 'current';
 
         // Stock
         let selectedStockCities = [];
@@ -26156,7 +26157,80 @@ const supervisorGroups = new Map();
         return bestByWeekday;
     }
 
+    function populateWeeklyMonthFilter() {
+        const dropdown = document.getElementById('weekly-month-filter-dropdown');
+        if (!dropdown) return;
+
+        const monthsSet = new Set();
+        const addMonth = (dateVal) => {
+            const d = window.parseDate(dateVal);
+            if (d && !isNaN(d.getTime())) {
+                const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                monthsSet.add(ym);
+            }
+        };
+
+        // Extract from allHistoryData
+        const isColHistory = allHistoryData instanceof ColumnarDataset;
+        const totalHist = allHistoryData.length;
+        const dtPedCol = isColHistory ? (allHistoryData._data['DTPED'] || allHistoryData._data['dtped'] || []) : null;
+
+        for (let i = 0; i < totalHist; i++) {
+            const dtPed = isColHistory ? dtPedCol[i] : allHistoryData[i].DTPED;
+            addMonth(dtPed);
+        }
+
+        // We could also extract from allSalesData if needed, but current month is handled specially
+        // as "Mês Atual". Let's extract from allSalesData to ensure it's there, but we'll use 'current' for the latest.
+        const isColSales = allSalesData instanceof ColumnarDataset;
+        const totalSales = allSalesData.length;
+        const dtPedSalesCol = isColSales ? (allSalesData._data['DTPED'] || allSalesData._data['dtped'] || []) : null;
+
+        for (let i = 0; i < totalSales; i++) {
+            const dtPed = isColSales ? dtPedSalesCol[i] : allSalesData[i].DTPED;
+            addMonth(dtPed);
+        }
+
+        const monthsArr = Array.from(monthsSet).sort().reverse();
+        const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+        let html = `
+            <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                <span class="text-xs text-slate-300 group-hover:text-white transition-colors">Mês Atual</span>
+                <input type="radio" name="weekly-month" value="current" ${selectedWeeklyMonth === 'current' ? 'checked' : ''} class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+            </label>
+        `;
+
+        monthsArr.forEach(ym => {
+            const [y, m] = ym.split('-');
+            const label = `${monthNames[parseInt(m) - 1]} ${y}`;
+            html += `
+                <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
+                    <span class="text-xs text-slate-300 group-hover:text-white transition-colors">${label}</span>
+                    <input type="radio" name="weekly-month" value="${ym}" ${selectedWeeklyMonth === ym ? 'checked' : ''} class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+                </label>
+            `;
+        });
+
+        dropdown.innerHTML = html;
+
+        // Attach handlers
+        dropdown.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                selectedWeeklyMonth = e.target.value;
+                document.getElementById('weekly-month-filter').value = selectedWeeklyMonth;
+                const textSpan = document.getElementById('weekly-month-filter-text');
+                if (textSpan) {
+                    textSpan.textContent = e.target.closest('label').querySelector('span').textContent;
+                }
+                dropdown.classList.add('hidden');
+                updateWeeklyView();
+            });
+        });
+    }
+
     function renderWeeklyView() {
+        populateWeeklyMonthFilter();
         // Init Filters logic (Simplificado e Robusto)
         window.setupGenericFilterHandlers(
             'weekly',
@@ -26186,6 +26260,21 @@ const supervisorGroups = new Map();
             },
             updateWeeklyView, updateRedeFilter
         );
+
+
+        const monthFilterBtn = document.getElementById('weekly-month-filter-btn');
+        const monthFilterDropdown = document.getElementById('weekly-month-filter-dropdown');
+        if (monthFilterBtn && monthFilterDropdown) {
+            monthFilterBtn.onclick = (e) => {
+                e.stopPropagation();
+                monthFilterDropdown.classList.toggle('hidden');
+            };
+            document.addEventListener('click', (e) => {
+                if (!monthFilterBtn.contains(e.target) && !monthFilterDropdown.contains(e.target)) {
+                    monthFilterDropdown.classList.add('hidden');
+                }
+            });
+        }
 
         window.setupGenericFilialFilterHandlers('weekly', (val, label) => {
             weeklyFilialFilter = val;
@@ -26224,6 +26313,11 @@ const supervisorGroups = new Map();
                 if (comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
 
                 weeklyFilialFilter = 'all';
+                selectedWeeklyMonth = 'current';
+                const monthText = document.getElementById('weekly-month-filter-text');
+                if (monthText) monthText.textContent = 'Mês Atual';
+                const monthRadios = document.getElementsByName('weekly-month');
+                monthRadios.forEach(r => r.checked = r.value === 'current');
                 if (filialText) filialText.textContent = 'Ambas';
                 // Reset radios
                 const radios = document.getElementsByName('weekly-filial');
@@ -26276,7 +26370,9 @@ const supervisorGroups = new Map();
 
     function getWeeklyFilteredData() {
         const isPromoterMode = typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter';
-        const isCol = allSalesData instanceof ColumnarDataset;
+        const isCurrent = selectedWeeklyMonth === 'current';
+        const dataSource = isCurrent ? allSalesData : allHistoryData;
+        const isCol = dataSource instanceof ColumnarDataset;
         const result = [];
 
         // Rede / Filial filters
@@ -26308,8 +26404,15 @@ const supervisorGroups = new Map();
             const clientCodes = new Set(); for(let i=0; i<filteredClients.length; i++) clientCodes.add(normalizeKey(filteredClients[i]['Código'] || filteredClients[i]['codigo_cliente']));
             const hasSupp = selectedWeeklySuppliers.size > 0;
 
-            for(let i=0; i<allSalesData.length; i++) {
-                const s = isCol ? allSalesData.get(i) : allSalesData[i];
+            for(let i=0; i<dataSource.length; i++) {
+                const s = isCol ? dataSource.get(i) : dataSource[i];
+                if (!isCurrent) {
+                    const dtPed = s.DTPED;
+                    const d = window.parseDate(dtPed);
+                    if (!d || isNaN(d.getTime())) continue;
+                    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    if (ym !== selectedWeeklyMonth) continue;
+                }
                 if (!clientCodes.has(normalizeKey(s.CODCLI))) continue;
                 if (hasSupp && !selectedWeeklySuppliers.has(String(s.CODFOR))) continue;
                 if (checkFilial && String(s.FILIAL) !== weeklyFilialFilter) continue;
@@ -26323,33 +26426,44 @@ const supervisorGroups = new Map();
         const hasVend = selectedWeeklyVendedores.size > 0;
         const hasSupp = selectedWeeklySuppliers.size > 0;
 
-        const total = allSalesData.length;
-        const colValues = isCol ? allSalesData._data : null;
+        const total = dataSource.length;
+        const colValues = isCol ? dataSource._data : null;
         
         for(let i=0; i<total; i++) {
             let keep = true;
+
+            if (!isCurrent) {
+                const dtPed = isCol ? (colValues['DTPED'] ? colValues['DTPED'][i] : null) : dataSource[i].DTPED;
+                const d = window.parseDate(dtPed);
+                if (!d || isNaN(d.getTime())) keep = false;
+                else {
+                    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    if (ym !== selectedWeeklyMonth) keep = false;
+                }
+            }
+
             // Native Filters
-            if (hasSup) {
-                const supCode = isCol ? (colValues['CODSUPERVISOR'] ? colValues['CODSUPERVISOR'][i] : '') : (allSalesData[i].CODSUPERVISOR || '');
+            if (keep && hasSup) {
+                const supCode = isCol ? (colValues['CODSUPERVISOR'] ? colValues['CODSUPERVISOR'][i] : '') : (dataSource[i].CODSUPERVISOR || '');
                 const sup = window.resolveDim('supervisores', supCode);
                 if (!selectedWeeklySupervisors.has(sup)) keep = false;
             }
             if (keep && hasVend) {
-                const codUsur = isCol ? colValues['CODUSUR'][i] : allSalesData[i].CODUSUR;
+                const codUsur = isCol ? colValues['CODUSUR'][i] : dataSource[i].CODUSUR;
                 if (!selectedWeeklyVendedores.has(codUsur)) keep = false;
             }
             if (keep && hasSupp) {
-                const supp = isCol ? colValues['CODFOR'][i] : allSalesData[i].CODFOR;
+                const supp = isCol ? colValues['CODFOR'][i] : dataSource[i].CODFOR;
                 if (!selectedWeeklySuppliers.has(supp)) keep = false;
             }
             if (keep && checkFilial) {
-                const fil = isCol ? colValues['FILIAL'][i] : allSalesData[i].FILIAL;
+                const fil = isCol ? colValues['FILIAL'][i] : dataSource[i].FILIAL;
                 if (String(fil) !== weeklyFilialFilter) keep = false;
             }
 
             // Rede Filter (Expensive Lookup)
             if (keep && checkRede) {
-                const codCli = isCol ? colValues['CODCLI'][i] : allSalesData[i].CODCLI;
+                const codCli = isCol ? colValues['CODCLI'][i] : dataSource[i].CODCLI;
                 const client = clientMapForKPIs.get(normalizeKey(codCli));
                 if (client) {
                     if (isComRede) {
@@ -26365,7 +26479,7 @@ const supervisorGroups = new Map();
             }
 
             if (keep) {
-                result.push(isCol ? allSalesData.get(i) : allSalesData[i]);
+                result.push(isCol ? dataSource.get(i) : dataSource[i]);
             }
         }
         return result;
@@ -26378,8 +26492,13 @@ const supervisorGroups = new Map();
         const filteredSales = getWeeklyFilteredData();
         const isPromoterMode = typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter';
         
-        const now = lastSaleDate ? new Date(lastSaleDate) : new Date();
-        const weeks = getWorkingMonthWeeks(now.getFullYear(), now.getMonth());
+        let targetMonthDate = lastSaleDate ? new Date(lastSaleDate) : new Date();
+        if (selectedWeeklyMonth !== 'current') {
+            const [y, m] = selectedWeeklyMonth.split('-');
+            targetMonthDate = new Date(parseInt(y), parseInt(m) - 1, 15); // middle of the selected month
+        }
+
+        const weeks = getWorkingMonthWeeks(targetMonthDate.getFullYear(), targetMonthDate.getMonth());
         
         const weeklyData = weeks.map(w => ({ ...w, total: 0, days: new Array(7).fill(0) }));
         
@@ -26394,7 +26513,7 @@ const supervisorGroups = new Map();
         });
         
         // History Logic
-        const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const prevMonth = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth() - 1, 1);
         const prevMonthSales = [];
         
         const isColHistory = allHistoryData instanceof ColumnarDataset;
