@@ -26165,7 +26165,7 @@ const supervisorGroups = new Map();
         const addMonth = (dateVal) => {
             const d = window.parseDate(dateVal);
             if (d && !isNaN(d.getTime())) {
-                const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
                 monthsSet.add(ym);
             }
         };
@@ -26213,7 +26213,7 @@ const supervisorGroups = new Map();
         });
 
         dropdown.innerHTML = html;
-
+        
         // Attach handlers
         dropdown.querySelectorAll('input[type="radio"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
@@ -26410,7 +26410,7 @@ const supervisorGroups = new Map();
                     const dtPed = s.DTPED;
                     const d = window.parseDate(dtPed);
                     if (!d || isNaN(d.getTime())) continue;
-                    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
                     if (ym !== selectedWeeklyMonth) continue;
                 }
                 if (!clientCodes.has(normalizeKey(s.CODCLI))) continue;
@@ -26431,13 +26431,13 @@ const supervisorGroups = new Map();
         
         for(let i=0; i<total; i++) {
             let keep = true;
-
+            
             if (!isCurrent) {
                 const dtPed = isCol ? (colValues['DTPED'] ? colValues['DTPED'][i] : null) : dataSource[i].DTPED;
                 const d = window.parseDate(dtPed);
                 if (!d || isNaN(d.getTime())) keep = false;
                 else {
-                    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
                     if (ym !== selectedWeeklyMonth) keep = false;
                 }
             }
@@ -26497,18 +26497,21 @@ const supervisorGroups = new Map();
             const [y, m] = selectedWeeklyMonth.split('-');
             targetMonthDate = new Date(parseInt(y), parseInt(m) - 1, 15); // middle of the selected month
         }
-
+        
         const weeks = getWorkingMonthWeeks(targetMonthDate.getFullYear(), targetMonthDate.getMonth());
         
         const weeklyData = weeks.map(w => ({ ...w, total: 0, days: new Array(7).fill(0) }));
         
         filteredSales.forEach(s => {
-            const d = new Date(s.DTPED);
-            const wIndex = weeks.findIndex(w => d >= w.start && d <= w.end);
+            const d = window.parseDate(s.DTPED);
+            if (!d || isNaN(d.getTime())) return;
+            const dateOnlyUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+            
+            const wIndex = weeks.findIndex(w => dateOnlyUTC >= w.start && dateOnlyUTC <= w.end);
             if (wIndex !== -1) {
                 const val = Number(s.VLVENDA) || 0;
                 weeklyData[wIndex].total += val;
-                weeklyData[wIndex].days[d.getDay()] += val;
+                weeklyData[wIndex].days[dateOnlyUTC.getUTCDay()] += val;
             }
         });
         
@@ -26534,9 +26537,9 @@ const supervisorGroups = new Map();
 
         for(let i=0; i<histLen; i++) {
              const dtPed = isColHistory ? colHist['DTPED'][i] : allHistoryData[i].DTPED;
-             let d = (typeof dtPed === 'number') ? new Date(dtPed) : parseDate(dtPed);
+             let d = window.parseDate(dtPed);
              
-             if (d && d.getMonth() === prevMonth.getMonth() && d.getFullYear() === prevMonth.getFullYear()) {
+             if (d && !isNaN(d.getTime()) && d.getUTCMonth() === prevMonth.getMonth() && d.getUTCFullYear() === prevMonth.getFullYear()) {
                  let keep = true;
 
                  if (isPromoterMode) {
