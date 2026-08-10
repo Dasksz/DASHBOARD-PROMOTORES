@@ -26305,11 +26305,15 @@ const supervisorGroups = new Map();
 
                 weeklyRedeGroupFilter = '';
                 selectedWeeklyRedes = [];
+                const redeGroupContainer = document.getElementById('weekly-rede-group-container');
                 if (redeGroupContainer) {
                     redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    redeGroupContainer.querySelector('button[data-group=""]').classList.add('active');
+                    const btnTodos = redeGroupContainer.querySelector('button[data-group=""]');
+                    if (btnTodos) btnTodos.classList.add('active');
                 }
+                const redeDropdown = document.getElementById('weekly-rede-filter-dropdown');
                 if (redeDropdown) redeDropdown.classList.add('hidden');
+                const comRedeBtnText = document.getElementById('weekly-com-rede-btn-text');
                 if (comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
 
                 weeklyFilialFilter = 'all';
