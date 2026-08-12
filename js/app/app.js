@@ -2404,7 +2404,7 @@
                             const desc = String(productInfo.descricao || '').toUpperCase();
                             let virtualKey = null;
                             if (desc.includes('TODDYNHO')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
-                            else if (desc.includes('TODDY')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                            else if (desc.includes('TODDY') && !desc.includes('TODDYNHO')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                             else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) virtualKey = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
 
                             if (virtualKey) {
@@ -3223,7 +3223,7 @@
                             else if (window.isFoods(codFor)) {
                                 const desc = normalize(historyValues['DESCRICAO'][idx] || '');
                                 if (desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
-                                else if (desc.includes('TODDY')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                                else if (desc.includes('TODDY') && !desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                                 else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
                             }
 
@@ -3285,7 +3285,7 @@
                             else if (window.isFoods(codFor)) {
                                 const desc = normalize(sale.DESCRICAO || '');
                                 if (desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
-                                else if (desc.includes('TODDY')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                                else if (desc.includes('TODDY') && !desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                                 else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
                             }
 
@@ -4245,7 +4245,7 @@
                             else if (subCat === window.SUPPLIER_CODES.ELMA[2] && codFor === window.SUPPLIER_CODES.ELMA[2]) isMatch = true;
                             else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
                                 if (subCat === window.SUPPLIER_CODES.VIRTUAL.TODDYNHO && desc.includes('TODDYNHO')) isMatch = true;
-                                else if (subCat === window.SUPPLIER_CODES.VIRTUAL.TODDY && desc.includes('TODDY')) isMatch = true;
+                                else if (subCat === window.SUPPLIER_CODES.VIRTUAL.TODDY && desc.includes('TODDY') && !desc.includes('TODDYNHO')) isMatch = true;
                                 else if (subCat === window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO && (desc.includes('QUAKER') || desc.includes('KEROCOCO'))) isMatch = true;
                             }
 
@@ -6254,7 +6254,7 @@
                         else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
                             const desc = normalize(sale.DESCRICAO || '');
                             if (desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
-                            else if (desc.includes('TODDY')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                            else if (desc.includes('TODDY') && !desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                             else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
                         }
 
@@ -7097,7 +7097,7 @@
                             if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
                                 const desc = normalize(sale.DESCRICAO || '');
                                 if (desc.includes('TODDYNHO')) saleKey = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
-                                else if (desc.includes('TODDY')) saleKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                                else if (desc.includes('TODDY') && !desc.includes('TODDYNHO')) saleKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                                 else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) saleKey = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
                                 else if (targetKey.startsWith('1119_')) saleKey = null; // If targeting a sub-brand but this product doesn't match, exclude it
                             }
@@ -8453,7 +8453,7 @@
                         else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
                             const desc = norm(sale.DESCRICAO || '');
                             if (desc.includes('TODDYNHO')) matchedCats.push(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO);
-                            else if (desc.includes('TODDY')) matchedCats.push(window.SUPPLIER_CODES.VIRTUAL.TODDY);
+                            else if (desc.includes('TODDY') && !desc.includes('TODDYNHO')) matchedCats.push(window.SUPPLIER_CODES.VIRTUAL.TODDY);
                             else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) matchedCats.push(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO);
                         }
 
@@ -10004,7 +10004,7 @@ const supervisorGroups = new Map();
                         fornecedorLabel = 'Torcida';
                     } else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
                         if (desc.includes('TODDYNHO')) fornecedorLabel = 'Toddynho';
-                        else if (desc.includes('TODDY')) fornecedorLabel = 'Toddy';
+                        else if (desc.includes('TODDY') && !desc.includes('TODDYNHO')) fornecedorLabel = 'Toddy';
                         else if (desc.includes('QUAKER')) fornecedorLabel = 'Quaker';
                         else if (desc.includes('KEROCOCO')) fornecedorLabel = 'Kero Coco';
                         else fornecedorLabel = 'Outros Foods';
@@ -11185,7 +11185,7 @@ const supervisorGroups = new Map();
                         // Foods Logic
                         const desc = (productInfo.descricao || '').toUpperCase();
                         if (desc.includes('TODDYNHO')) return window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
-                        if (desc.includes('TODDY')) return window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                        if (desc.includes('TODDY') && !desc.includes('TODDYNHO')) return window.SUPPLIER_CODES.VIRTUAL.TODDY;
                         return window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
                     }
                 };
@@ -19363,7 +19363,7 @@ const supervisorGroups = new Map();
                 if (catKey.includes('EXTRUSADOS')) return window.SUPPLIER_CODES.ELMA[0];
                 if (catKey.includes('TORCIDA')) return window.SUPPLIER_CODES.ELMA[2];
                 if (catKey.includes('TODDYNHO')) return window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
-                if (catKey.includes('TODDY')) return window.SUPPLIER_CODES.VIRTUAL.TODDY;
+                if (catKey.includes('TODDY') && !catKey.includes('TODDYNHO')) return window.SUPPLIER_CODES.VIRTUAL.TODDY;
                 if (catKey.includes('QUAKER') || catKey.includes('KEROCOCO')) return window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
                 if (catKey === 'KG ELMA' || catKey === 'KG_ELMA') return 'tonelada_elma';
                 if (catKey === 'KG FOODS' || catKey === 'KG_FOODS') return 'tonelada_foods';
@@ -19442,7 +19442,7 @@ const supervisorGroups = new Map();
                         else if (catKey.includes('EXTRUSADOS')) catKey = '707';
                         else if (catKey.includes('TORCIDA')) catKey = '752';
                         else if (catKey.includes('TODDYNHO')) catKey = '1119_TODDYNHO';
-                        else if (catKey.includes('TODDY')) catKey = '1119_TODDY';
+                        else if (catKey.includes('TODDY') && !catKey.includes('TODDYNHO')) catKey = '1119_TODDY';
                         else if (catKey.includes('QUAKER') || catKey.includes('KEROCOCO')) catKey = '1119_QUAKER_KEROCOCO';
                         else if (catKey === 'KG ELMA') catKey = 'tonelada_elma';
                         else if (catKey === 'KG FOODS') catKey = 'tonelada_foods';
