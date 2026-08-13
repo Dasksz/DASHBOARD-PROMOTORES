@@ -20416,14 +20416,19 @@ const supervisorGroups = new Map();
                     pendingImportUpdates.forEach(u => {
                         importedSellers.add(u.seller);
                         if (u.type === 'rev') {
-                            distributeSellerGoal(u.seller, u.category, u.val, 'fat');
+                            // Do not distribute aggregated targets to clients, as it overwrites explicit leaf targets
+                            if (u.category !== 'total_elma' && u.category !== 'total_foods' && u.category !== 'pepsico_all') {
+                                distributeSellerGoal(u.seller, u.category, u.val, 'fat');
+                            }
                             // Save Override
                             if (!goalsSellerTargets.has(u.seller)) goalsSellerTargets.set(u.seller, {});
                             const t = goalsSellerTargets.get(u.seller);
                             t[`${u.category}_FAT`] = u.val;
                             countRev++;
                         } else if (u.type === 'vol') {
-                            distributeSellerGoal(u.seller, u.category, u.val, 'vol');
+                            if (u.category !== 'pepsico_all') {
+                                distributeSellerGoal(u.seller, u.category, u.val, 'vol');
+                            }
                             // Save Override
                             if (!goalsSellerTargets.has(u.seller)) goalsSellerTargets.set(u.seller, {});
                             const t = goalsSellerTargets.get(u.seller);
