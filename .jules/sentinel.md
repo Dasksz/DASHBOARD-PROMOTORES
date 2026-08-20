@@ -61,3 +61,8 @@
 **Vulnerability:** A variable used to check filter conditions (`selectedGoalsSummarySellers.size > 0`) was misspelled relative to its global definition (`selectedGoalsSummaryVendedores`). This caused a `ReferenceError` during evaluation, crashing the rendering of the UI and resulting in an empty or "zeroed" view in the application.
 **Learning:** Undefined variable crashes in critical UI rendering paths can silently break whole views without alerting the user, leading to confusion and bug reports (e.g., "why is the summary tab zeroed out?"). While not a direct security vulnerability, this is a major reliability and correctness issue.
 **Prevention:** Avoid blindly copy-pasting variable names across scopes without verifying their definition. Utilize `node -c` (or ideally a linter/bundler) to catch undeclared variables before committing changes.
+
+## 2024-05-17 - Fix Radar Chart Logic
+**Vulnerability:** None.
+**Learning:** Business Logic bug due to metric switching context and undefined target values.
+**Prevention:** Always validate metric types (`currentProductMetric`) when computing targets that might come in different dimensions (Volume vs Value).
