@@ -11137,7 +11137,8 @@ const supervisorGroups = new Map();
                         if (clientGoals) {
                             for (const key in categoryGoals) {
                                 if (clientGoals.has(key)) {
-                                    categoryGoals[key] += (clientGoals.get(key).fat || 0);
+                                    const val = (typeof currentProductMetric !== 'undefined' && currentProductMetric === 'peso') ? (clientGoals.get(key).vol || 0) : (clientGoals.get(key).fat || 0);
+                                    categoryGoals[key] += val;
                                 }
                             }
                         }
@@ -11196,7 +11197,7 @@ const supervisorGroups = new Map();
                         const sale = (filteredSalesData instanceof ColumnarDataset) ? filteredSalesData.get(i) : filteredSalesData[i];
                         const catKey = classifyForChart(sale);
                         if (catKey) {
-                            const val = Number(sale.VLVENDA) || 0;
+                            const val = (typeof currentProductMetric !== 'undefined' && currentProductMetric === 'peso') ? (Number(sale.TOTPESOLIQ) || 0) : (Number(sale.VLVENDA) || 0);
                             tempCategoryTotals[catKey] += val;
                         }
                     }
@@ -11232,7 +11233,14 @@ const supervisorGroups = new Map();
                     0x10b981  // Emerald
                 ];
 
-                const orderedKeys = window.SUPPLIER_CODES.ALL_GOALS;
+                const orderedKeys = [
+                    window.SUPPLIER_CODES.ELMA[0],
+                    window.SUPPLIER_CODES.ELMA[1],
+                    window.SUPPLIER_CODES.ELMA[2],
+                    window.SUPPLIER_CODES.VIRTUAL.TODDYNHO,
+                    window.SUPPLIER_CODES.VIRTUAL.TODDY,
+                    window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO
+                ];
                 
                 orderedKeys.forEach((key, index) => {
                     const goal = categoryGoals[key];
