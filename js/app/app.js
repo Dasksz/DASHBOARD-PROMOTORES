@@ -17989,11 +17989,14 @@ const supervisorGroups = new Map();
                             let gToddy = getGoal(window.SUPPLIER_CODES.VIRTUAL.TODDY);
                             let gQuaker = getGoal(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO);
 
-                            const genericFoods = getGoal('1119');
+                            // `total_foods` is the key parsed from Excel if it's aggregated
+                            let genericFoods = getGoal('total_foods');
+                            if (genericFoods.fat === 0 && genericFoods.vol === 0) genericFoods = getGoal('FOODS_ALL');
+                            if (genericFoods.fat === 0 && genericFoods.vol === 0) genericFoods = getGoal('1119');
 
-                            // If we have generic 1119 goals but the specific ones are 0, it means
+                            // If we have generic goals but the specific ones are 0, it means
                             // the system aggregated them incorrectly or saved them in bulk.
-                            if (genericFoods.fat > 0 && gToddynho.fat === 0 && gToddy.fat === 0 && gQuaker.fat === 0) {
+                            if ((genericFoods.fat > 0 || genericFoods.vol > 0) && gToddynho.fat === 0 && gToddy.fat === 0 && gQuaker.fat === 0) {
                                 // Just for the radar chart to work, put it all in one, or divide by 3
                                 gToddynho = { fat: genericFoods.fat * 0.5, vol: genericFoods.vol * 0.5 };
                                 gToddy = { fat: genericFoods.fat * 0.3, vol: genericFoods.vol * 0.3 };
