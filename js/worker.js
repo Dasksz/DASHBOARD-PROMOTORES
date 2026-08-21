@@ -1477,16 +1477,20 @@
 
                 // 2. DIM_SUPERVISORES
                 const dimSupervisoresMap = new Map();
+
+                // Força valores fixos padrão primeiro para evitar que erros na planilha (ex: supervisor 8 com nome de outro) sobrescrevam.
+                dimSupervisoresMap.set('8', { codigo: '8', nome: 'BALCAO' });
+                dimSupervisoresMap.set('99', { codigo: '99', nome: 'INATIVOS' });
+
                 newRcaSupervisorMap.forEach((info) => {
                     const codSup = info.CODSUPERVISOR;
                     if (codSup && codSup !== '' && info.SUPERV) {
-                        dimSupervisoresMap.set(codSup, { codigo: codSup, nome: info.SUPERV });
+                        // Não sobrescreve se já existe no mapa, para evitar que uma linha avulsa corrompa o nome correto
+                        if (!dimSupervisoresMap.has(codSup)) {
+                            dimSupervisoresMap.set(codSup, { codigo: codSup, nome: info.SUPERV });
+                        }
                     }
                 });
-                // Ensure manual "99 - INATIVOS" / "8 - BALCAO" if strictly needed, though logic covers it if present in sales
-                if (!dimSupervisoresMap.has('8')) {
-                    dimSupervisoresMap.set('8', { codigo: '8', nome: 'BALCAO' });
-                }
 
                 const finalDimSupervisores = Array.from(dimSupervisoresMap.values());
 
