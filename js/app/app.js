@@ -11137,7 +11137,7 @@ const supervisorGroups = new Map();
                         if (clientGoals) {
                             for (const key in categoryGoals) {
                                 if (clientGoals.has(key)) {
-                                    const val = (typeof currentProductMetric !== 'undefined' && currentProductMetric === 'peso') ? (clientGoals.get(key).vol || 0) : (clientGoals.get(key).fat || 0);
+                                    const val = (clientGoals.get(key).fat || 0);
                                     categoryGoals[key] += val;
                                 }
                             }
@@ -11197,7 +11197,7 @@ const supervisorGroups = new Map();
                         const sale = (filteredSalesData instanceof ColumnarDataset) ? filteredSalesData.get(i) : filteredSalesData[i];
                         const catKey = classifyForChart(sale);
                         if (catKey) {
-                            const val = (typeof currentProductMetric !== 'undefined' && currentProductMetric === 'peso') ? (Number(sale.TOTPESOLIQ) || 0) : (Number(sale.VLVENDA) || 0);
+                            const val = Number(sale.VLVENDA) || 0;
                             tempCategoryTotals[catKey] += val;
                         }
                     }
