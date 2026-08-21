@@ -13223,6 +13223,12 @@ const supervisorGroups = new Map();
 
         
         
+        function handleComparisonFilterChange() {
+            markDirty("comparativo");
+            updateAllComparisonFilters();
+            updateComparisonView();
+        }
+
         function updateAllComparisonFilters() {
             const { currentSales: supplierCurrent, historySales: supplierHistory } = getComparisonFilteredData({ excludeFilter: 'supplier' });
             const supplierOptionsData = [...supplierCurrent, ...supplierHistory];
@@ -17371,13 +17377,7 @@ const supervisorGroups = new Map();
 
             });
 
-            const updateComparison = () => {
-                markDirty('comparativo');
-                updateAllComparisonFilters();
-                updateComparisonView();
-            };
 
-            const handleComparisonFilterChange = updateComparison;
 
             comparisonTipoVendaFilterBtn.addEventListener('click', () => comparisonTipoVendaFilterDropdown.classList.toggle('hidden'));
             comparisonTipoVendaFilterDropdown.addEventListener('change', (e) => {
@@ -17597,7 +17597,7 @@ const supervisorGroups = new Map();
                 comparisonTendencyToggle.classList.toggle('hover:bg-orange-500');
                 comparisonTendencyToggle.classList.toggle('bg-purple-600');
                 comparisonTendencyToggle.classList.toggle('hover:bg-purple-500');
-                updateComparison();
+                handleComparisonFilterChange();
             });
 
             const updateToggleStyles = (activeBtn, ...others) => {
@@ -17652,7 +17652,7 @@ const supervisorGroups = new Map();
                     comparisonMonthlyMetric = 'faturamento';
                     toggleMonthlyFatBtn.classList.add('active');
                     toggleMonthlyClientsBtn.classList.remove('active');
-                    updateComparison();
+                    handleComparisonFilterChange();
                 });
 
 
@@ -17661,7 +17661,7 @@ const supervisorGroups = new Map();
                     comparisonMonthlyMetric = 'clientes';
                     toggleMonthlyClientsBtn.classList.add('active');
                     toggleMonthlyFatBtn.classList.remove('active');
-                    updateComparison();
+                    handleComparisonFilterChange();
                 });
 
 
@@ -17692,7 +17692,7 @@ const supervisorGroups = new Map();
                     const holidayBtnText = selectedHolidays.length > 0 ? `${selectedHolidays.length} feriado(s)` : 'Selecionar Feriados';
                     if (comparisonHolidayPickerBtn) comparisonHolidayPickerBtn.textContent = holidayBtnText;
                     if (mainHolidayPickerBtn) mainHolidayPickerBtn.textContent = holidayBtnText;
-                    updateComparison();
+                    handleComparisonFilterChange();
                     updateDashboard();
                 });
 
