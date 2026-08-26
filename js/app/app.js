@@ -5124,13 +5124,13 @@
 
             // Skip applying manual seller goals entirely when looking at specific promotors
             // The goal of a promotor should only be the sum of their assigned clients.
-            if (adminViewMode !== 'promotor') {
+            const isHierarchyFiltered = (hierarchyState['meta-realizado'] && (hierarchyState['meta-realizado'].coords.size > 0 || hierarchyState['meta-realizado'].cocoords.size > 0 || hierarchyState['meta-realizado'].promotors.size > 0));
+            if (adminViewMode !== 'promotor' && !isHierarchyFiltered) {
 
                 // --- FIX: Ensure all sellers with Manual Targets are present in goalsBySeller ---
                 goalsSellerTargets.forEach((targets, sellerName) => {
                     // Determine if strict filters are active
-                    const isHierarchyFiltered = (hierarchyState['meta-realizado'] && (hierarchyState['meta-realizado'].coords.size > 0 || hierarchyState['meta-realizado'].cocoords.size > 0 || hierarchyState['meta-realizado'].promotors.size > 0));
-                    const hasFilters = (adminViewMode === 'seller' && (selectedMetaRealizadoVendedores.size > 0 || selectedMetaRealizadoSupervisors.size > 0)) || (adminViewMode !== 'seller' && isHierarchyFiltered);
+                    const hasFilters = (adminViewMode === 'seller' && (selectedMetaRealizadoVendedores.size > 0 || selectedMetaRealizadoSupervisors.size > 0));
 
                     if (hasFilters) {
                         // Strictly respect the filtered set
@@ -5155,7 +5155,7 @@
 
             goalsBySeller.forEach((goals, sellerName) => {
                 const targets = goalsSellerTargets.get(sellerName);
-                if (targets && adminViewMode !== 'promotor') {
+                if (targets && adminViewMode !== 'promotor' && !isHierarchyFiltered) {
                     // 1. Positivação Overrides
                     let overrideKey = null;
 
