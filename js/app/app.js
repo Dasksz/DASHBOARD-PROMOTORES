@@ -5073,7 +5073,7 @@
             // To ensure consistency, both the base client list and the goal calculation must respect all active filters.
 
             // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
-            const filteredClientCodes = new Set(); for(let i=0; i<clients.length; i++) filteredClientCodes.add(String(clients[i]['Código'] || clients[i]['codigo_cliente']));
+            const filteredClientCodes = new Set(); for(let i=0; i<clients.length; i++) filteredClientCodes.add(normalizeKey(String(clients[i]['Código'] || clients[i]['codigo_cliente'])));
 
             // 2. Goals Aggregation (By Seller)
             // Structure: Map<SellerName, TotalGoal>
@@ -5129,7 +5129,8 @@
                 // --- FIX: Ensure all sellers with Manual Targets are present in goalsBySeller ---
                 goalsSellerTargets.forEach((targets, sellerName) => {
                     // Determine if strict filters are active
-                    const hasFilters = (adminViewMode === 'seller' && (selectedMetaRealizadoVendedores.size > 0 || selectedMetaRealizadoSupervisors.size > 0));
+                    const isHierarchyFiltered = (hierarchyState['meta-realizado'] && (hierarchyState['meta-realizado'].coords.size > 0 || hierarchyState['meta-realizado'].cocoords.size > 0 || hierarchyState['meta-realizado'].promotors.size > 0));
+                    const hasFilters = (adminViewMode === 'seller' && (selectedMetaRealizadoVendedores.size > 0 || selectedMetaRealizadoSupervisors.size > 0)) || (adminViewMode !== 'seller' && isHierarchyFiltered);
 
                     if (hasFilters) {
                         // Strictly respect the filtered set
@@ -5326,7 +5327,7 @@
 
 
                 // Client Filter: Ensure sale belongs to the same set of clients used for goals
-                if (!filteredClientCodes.has(String(s.CODCLI))) continue;
+                if (!filteredClientCodes.has(normalizeKey(String(s.CODCLI)))) continue;
 
                 // Enhanced Supplier Logic to handle Virtual Foods Categories
                 if (suppliersSet.size > 0) {
@@ -5952,7 +5953,7 @@
 
             // Optimization: Create Set of Client Codes
             // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
-            const allowedClientCodes = new Set(); for(let i=0; i<clients.length; i++) allowedClientCodes.add(String(clients[i]['Código'] || clients[i]['codigo_cliente']));
+            const allowedClientCodes = new Set(); for(let i=0; i<clients.length; i++) allowedClientCodes.add(normalizeKey(String(clients[i]['Código'] || clients[i]['codigo_cliente'])));
 
             // 2. Aggregate Data per Client
             const clientMap = new Map(); // Map<CodCli, { clientObj, goal: 0, salesTotal: 0, salesWeeks: [] }>
@@ -6018,6 +6019,7 @@
                 if (suppliersSet.size > 0 && !suppliersSet.has(s.CODFOR)) continue;
 
                 const codCli = normalizeKey(String(s.CODCLI));
+                if (!allowedClientCodes.has(codCli)) continue;
                 // Check if client is in allowed list (Active/Filtered)
                 // Note: User said "todos os clientes que possuírem metas OU vendas".
                 // If a client has sales but was filtered out by "Active" check (e.g. Inactive RCA), should they appear?
