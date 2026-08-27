@@ -13,7 +13,9 @@
             history: ['CODCLI', 'NOME', 'SUPERV', 'PEDIDO', 'CODUSUR', 'CODSUPERVISOR', 'DTPED', 'DTSAIDA', 'PRODUTO', 'DESCRICAO', 'FORNECEDOR', 'OBSERVACAOFOR', 'CODFOR', 'QTVENDA', 'VLVENDA', 'VLBONIFIC', 'TOTPESOLIQ', 'POSICAO', 'ESTOQUEUNIT', 'TIPOVENDA', 'FILIAL', 'ESTOQUECX'],
             hierarchy: ['COD COORD.', 'COORDENADOR', 'COD CO-COORD.', 'CO-COORDENADOR', 'COD PROMOTOR', 'PROMOTOR'],
             titulos: ['CODCLI', 'VLRECEBER', 'DTVENC', 'VLTITULOS', 'QTTITRECEBER', 'QTTITULOS'],
-            nota_perfeita: [] // Validation handled internally with fuzzy matching
+            nota_perfeita: [], // Validation handled internally with fuzzy matching
+            metas_pesquisas: [],
+            metas_lojaperfeita: []
         };
 
         const columnFormats = {
@@ -68,7 +70,9 @@
             },
             nota_perfeita: {
                 // Relaxed validation due to fuzzy matching in logic
-            }
+            },
+            metas_pesquisas: {},
+            metas_lojaperfeita: {}
         };
 
         // --- Helper Functions for Data Preservation ---
@@ -846,11 +850,11 @@
         }
 
         self.onmessage = async (event) => {
-            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolvesFile1, notaInvolvesFile2, referenceData, fallbackData, fallbackDimensions } = event.data;
+            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolvesFile1, notaInvolvesFile2, metasPesquisasFile, metasLojaPerfeitaFile, referenceData, fallbackData, fallbackDimensions } = event.data;
 
             try {
                 self.postMessage({ type: 'progress', status: 'Lendo arquivos...', percentage: 10 });
-                const [salesDataRaw, clientsDataRaw, productsDataRaw, historyDataRaw, innovationsDataRaw, hierarchyDataRaw, titulosDataRaw, nota1DataRaw, nota2DataRaw] = await Promise.all([
+                const [salesDataRaw, clientsDataRaw, productsDataRaw, historyDataRaw, innovationsDataRaw, hierarchyDataRaw, titulosDataRaw, nota1DataRaw, nota2DataRaw, metasPesquisasRaw, metasLojaPerfeitaRaw] = await Promise.all([
                     readFile(salesFile, 'sales'),
                     readFile(clientsFile, 'clients'),
                     readFile(productsFile, 'products'),
@@ -859,7 +863,9 @@
                     readFile(hierarchyFile, 'hierarchy'),
                     readFile(titulosFile, 'titulos'),
                     readFile(notaInvolvesFile1, 'nota_perfeita').catch(() => []), // Optional
-                    readFile(notaInvolvesFile2, 'nota_perfeita').catch(() => [])  // Optional
+                    readFile(notaInvolvesFile2, 'nota_perfeita').catch(() => []),  // Optional
+                    readFile(metasPesquisasFile, 'metas_pesquisas').catch(() => []), // Optional
+                    readFile(metasLojaPerfeitaFile, 'metas_lojaperfeita').catch(() => []) // Optional
                 ]);
 
                 // --- DATA PRESERVATION LOGIC ---
@@ -1608,6 +1614,8 @@
                         hierarchy: finalHierarchyData,
                         titulos: finalTitulosData,
                         nota_perfeita: finalNotaPerfeitaData,
+                        metas_pesquisas: metasPesquisasRaw,
+                        metas_lojaperfeita: metasLojaPerfeitaRaw,
                         nota_perfeita_count: finalNotaPerfeitaCount, // Pass explicitly for easier access
                         product_details: finalProductDetailsData,
                         active_products: finalActiveProductsData,
