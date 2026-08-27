@@ -5943,11 +5943,18 @@
                     
                     if (clientCodes.has(normCode)) {
                         lpClients.add(normCode);
-                        // Fields from involves are mostly `pontos` and `pontos_maximos`
-                        // Checking possible field names based on other parts of the code
-                        const points = Number(row.pontos_realizados || row.pontos || 0);
-                        const maxPoints = Number(row.pontos_maximos || row.maximo_pontos || 1);
-                        const score = maxPoints > 0 ? (points / maxPoints) * 100 : 0;
+                        // Resolve fields from involves row
+                        let points = Number(row.pontos_realizados || row.pontos || row.nota || 0);
+                        let maxPoints = Number(row.pontos_maximos || row.maximo_pontos || 0);
+                        let score = 0;
+                        
+                        // Some systems output "pontos" as the percentage directly if maxPoints is omitted.
+                        if (maxPoints > 0) {
+                            score = (points / maxPoints) * 100;
+                        } else {
+                            score = points; // Assume points is already out of 100 if no max points provided
+                        }
+                        
                         if (score >= 80) {
                             perfectClients.add(normCode);
                         }
