@@ -7155,6 +7155,41 @@
 
             });
 
+
+            // --- TRAVA CLIENTE 3297 ---
+            // Replicar a meta do 3297 dividida por 3 para os clientes 541, 544 e 546
+            const client3297 = globalClientGoals.get(normalizeKey('3297'));
+            if (client3297) {
+                const targetClients = ['541', '544', '546'].map(c => normalizeKey(c));
+
+                keysToProcess.forEach(key => {
+                    if (client3297.has(key)) {
+                        const goal3297 = client3297.get(key);
+                        const fractionFat = goal3297.fat / 3;
+                        const fractionVol = goal3297.vol / 3;
+
+                        targetClients.forEach(targetCodCli => {
+                            if (!globalClientGoals.has(targetCodCli)) {
+                                globalClientGoals.set(targetCodCli, new Map());
+                            }
+                            const targetClientMap = globalClientGoals.get(targetCodCli);
+
+                            if (!targetClientMap.has(key)) {
+                                targetClientMap.set(key, { fat: 0, vol: 0 });
+                            }
+
+                            const targetGoal = targetClientMap.get(key);
+                            if (type === 'fat') {
+                                targetGoal.fat += fractionFat;
+                            } else {
+                                targetGoal.vol += fractionVol;
+                            }
+                        });
+                    }
+                });
+            }
+            // --------------------------
+
             recalculateTotalGoals();
             updateGoalsView();
         }
