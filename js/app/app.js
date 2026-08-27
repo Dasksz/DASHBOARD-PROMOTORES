@@ -7158,7 +7158,9 @@
 
             // --- TRAVA CLIENTE 3297 ---
             // Replicar a meta do 3297 dividida por 3 para os clientes 541, 544 e 546
+            // Mesmo que os clientes (541, 544, 546) estejam no supervisor 53 e sejam ocultos por padrão, forçamos a injeção da meta deles aqui no mapa global.
             const client3297 = globalClientGoals.get(normalizeKey('3297'));
+
             if (client3297) {
                 const targetClients = ['541', '544', '546'].map(c => normalizeKey(c));
 
