@@ -5858,7 +5858,9 @@
             // Wait, getComparisonFilteredData uses Comparison filters. We need Meta Realizado filters.
 
             // Let's manually calculate based on active filter state.
-            const filial = currentMetaRealizadoFilial;
+            // currentMetaRealizadoFilial não existe no escopo global (é um possível bug de cópia do Comparison).
+            // Usaremos 'ambas' por default caso não haja filtro de filial global no Meta Realizado.
+            const filial = (typeof currentMetaRealizadoFilial !== 'undefined') ? currentMetaRealizadoFilial : 'ambas';
             const pasta = currentMetaRealizadoPasta;
             const clientCodes = new Set();
             for(let i=0; i<clientsDataForKpiHelper.length; i++) clientCodes.add(normalizeKey(clientsDataForKpiHelper[i]['Código'] || clientsDataForKpiHelper[i]['codigo_cliente']));
