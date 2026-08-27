@@ -5844,7 +5844,7 @@
             // 3. Render Sellers Table & Chart
             renderMetaRealizadoTable(rowData, weeks, totalWorkingDays);
             renderMetaRealizadoChart(rowData); // Chart 1 (Selected Metric)
-
+            
             // Build clients array for KPIs
             const clientsDataForKpiHelper = getHierarchyFilteredClients('meta-realizado', allClientsData);
             renderMetaRealizadoPosChart(rowData); // Chart 2 (Positivação)
@@ -5852,30 +5852,32 @@
             // 3.5. KPIs de Pesquisas, Loja Perfeita e Perda
             let totalFatMetas = 0;
             let totalPerdas = 0;
-
+            
             // Re-fetch raw sales just for Perdas (tipo 5) based on same filters
-            const { currentSales, perdasSales } = getComparisonFilteredData();
+            const { currentSales, perdasSales } = getComparisonFilteredData(); 
             // Wait, getComparisonFilteredData uses Comparison filters. We need Meta Realizado filters.
-
+            
             // Let's manually calculate based on active filter state.
-            const filial = currentMetaRealizadoFilial;
+            // currentMetaRealizadoFilial não existe no escopo global (é um possível bug de cópia do Comparison).
+            // Usaremos 'ambas' por default caso não haja filtro de filial global no Meta Realizado.
+            const filial = (typeof currentMetaRealizadoFilial !== 'undefined') ? currentMetaRealizadoFilial : 'ambas';
             const pasta = currentMetaRealizadoPasta;
             const clientCodes = new Set();
             for(let i=0; i<clientsDataForKpiHelper.length; i++) clientCodes.add(normalizeKey(clientsDataForKpiHelper[i]['Código'] || clientsDataForKpiHelper[i]['codigo_cliente']));
-
+            
             const metasFilters = {
                 filial,
                 pasta,
                 clientCodes
             };
-
+            
             // Add tipo 5
             const perdasFiltersMetas = { ...metasFilters, tipoVenda: new Set(['5']) };
             const salesFiltersMetas = { ...metasFilters };
-
+            
             const rawPerdas = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, perdasFiltersMetas);
             const rawSales = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, salesFiltersMetas);
-
+            
             for(let i=0; i<rawPerdas.length; i++) {
                 totalPerdas += (rawPerdas[i].VLBONIFIC || rawPerdas[i].VLVENDA || 0);
             }
@@ -5885,26 +5887,26 @@
                     totalFatMetas += (rawSales[i].VLVENDA || 0);
                 }
             }
-
+            
             const perdasPercent = totalFatMetas > 0 ? (totalPerdas / totalFatMetas) * 100 : 0;
-
+            
             const elPerdasReal = document.getElementById('kpi-metas-perda-real');
             const elPerdasPerc = document.getElementById('kpi-metas-perda-percent');
             if (elPerdasReal) elPerdasReal.textContent = window.escapeHtml(totalPerdas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
             if (elPerdasPerc) elPerdasPerc.textContent = window.escapeHtml(perdasPercent.toFixed(2) + '%');
-
+            
             // Pesquisas and Loja Perfeita KPIs
             let qtdPesquisasReal = 0;
             let qtdLpReal = 0;
-
+            
             if (window.embeddedData && window.embeddedData.nota_perfeita) {
                 const lpClients = new Set();
                 const perfectClients = new Set();
-
+                
                 for(let i=0; i<window.embeddedData.nota_perfeita.length; i++) {
                     const row = window.embeddedData.nota_perfeita[i];
                     const normCode = normalizeKey(row.codigo_cliente);
-
+                    
                     if (clientCodes.has(normCode)) {
                         lpClients.add(normCode);
                         const points = Number(row.pontos_realizados || 0);
@@ -5918,12 +5920,12 @@
                 qtdPesquisasReal = lpClients.size;
                 qtdLpReal = perfectClients.size;
             }
-
+            
             const elPesqReal = document.getElementById('kpi-metas-pesquisas-real');
             const elPesqMeta = document.getElementById('kpi-metas-pesquisas-meta');
             const elLpReal = document.getElementById('kpi-metas-lojaperfeita-real');
             const elLpMeta = document.getElementById('kpi-metas-lojaperfeita-meta');
-
+            
             if (elPesqReal) elPesqReal.textContent = window.escapeHtml(qtdPesquisasReal.toLocaleString('pt-BR'));
             if (elPesqMeta) elPesqMeta.textContent = "0"; // To be loaded from Supabase soon
             if (elLpReal) elLpReal.textContent = window.escapeHtml(qtdLpReal.toLocaleString('pt-BR'));
