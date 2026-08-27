@@ -359,6 +359,40 @@
         let selectedLpResearchers = new Set();
         let lpResearcherMap = new Map(); // involves_code (normalized) -> { sellerCode, sellerName }
 
+                window.generateMetasTemplate = function(typeStr) {
+            if (!optimizedData || !optimizedData.promotorMap) {
+                window.showToast('error', 'Aguarde o carregamento inicial dos dados ou importe uma base válida primeiro.');
+                return;
+            }
+
+            const now = new Date();
+            let nextMonth = now.getMonth() + 2; // +1 for next month, +1 because getMonth is 0-indexed
+            let year = now.getFullYear();
+            if (nextMonth > 12) {
+                nextMonth = 1;
+                year += 1;
+            }
+
+            const data = [];
+            optimizedData.promotorMap.forEach((name, code) => {
+                data.push({
+                    promotor_code: code,
+                    nome: name,
+                    mes: nextMonth,
+                    ano: year,
+                    valor_meta: 0
+                });
+            });
+            
+            // Sort by nome
+            data.sort((a, b) => a.nome.localeCompare(b.nome));
+
+            const sheets = {};
+            sheets[typeStr] = data;
+            
+            exportToExcel(sheets, `Template_Metas_${typeStr}_${nextMonth}_${year}`);
+        };
+
         // --- EXPORT HELPERS ---
         function exportToExcel(sheets, fileName) {
             if (typeof XLSX === 'undefined') {
@@ -5909,8 +5943,10 @@
                     
                     if (clientCodes.has(normCode)) {
                         lpClients.add(normCode);
-                        const points = Number(row.pontos_realizados || 0);
-                        const maxPoints = Number(row.pontos_maximos || 1);
+                        // Fields from involves are mostly `pontos` and `pontos_maximos`
+                        // Checking possible field names based on other parts of the code
+                        const points = Number(row.pontos_realizados || row.pontos || 0);
+                        const maxPoints = Number(row.pontos_maximos || row.maximo_pontos || 1);
                         const score = maxPoints > 0 ? (points / maxPoints) * 100 : 0;
                         if (score >= 80) {
                             perfectClients.add(normCode);
@@ -17037,6 +17073,12 @@ const supervisorGroups = new Map();
 
             }
 
+            const btnPesquisas = document.getElementById('btn-template-pesquisas');
+            if (btnPesquisas) btnPesquisas.addEventListener('click', () => window.generateMetasTemplate('Pesquisas'));
+            
+            const btnLojaPerfeita = document.getElementById('btn-template-lojaperfeita');
+            if (btnLojaPerfeita) btnLojaPerfeita.addEventListener('click', () => window.generateMetasTemplate('LojaPerfeita'));
+            
             const generateBtn = document.getElementById('generate-btn');
             if (generateBtn) {
                 generateBtn.addEventListener('click', () => {
