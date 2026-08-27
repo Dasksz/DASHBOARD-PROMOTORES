@@ -4296,9 +4296,51 @@
                     if (metric === 'fat') target.fat = goalVal;
                     else if (metric === 'vol') target.vol = goalVal;
                 });
-
-
             });
+
+            // --- TRAVA CLIENTE 3297 (APLICADA NA IMPORTAÇÃO DE PLANILHA/VENDEDOR) ---
+            const client3297 = globalClientGoals.get(normalizeKey('3297'));
+            if (client3297) {
+                const targetClients = ['541', '544', '546'].map(c => normalizeKey(c));
+                
+                targetCategories.forEach(subCat => {
+                    if (client3297.has(subCat)) {
+                        const goal3297 = client3297.get(subCat);
+                        
+                        // We recalculate and override the targets fractions explicitly 
+                        // because this function processes one seller/category at a time
+                        if ((metric === 'fat' && goal3297.fat > 0) || (metric === 'vol' && goal3297.vol > 0)) {
+                            const fractionFat = goal3297.fat / 3;
+                            const fractionVol = goal3297.vol / 3;
+
+                            targetClients.forEach(targetCodCli => {
+                                if (!globalClientGoals.has(targetCodCli)) {
+                                    globalClientGoals.set(targetCodCli, new Map());
+                                }
+                                const targetClientMap = globalClientGoals.get(targetCodCli);
+                                
+                                if (!targetClientMap.has(subCat)) {
+                                    targetClientMap.set(subCat, { fat: 0, vol: 0 });
+                                }
+                                
+                                const targetGoal = targetClientMap.get(subCat);
+                                if (metric === 'fat') {
+                                    // Use assignment = instead of += if we assume the seller has exclusive rights
+                                    // However, goals might accumulate if multiple updates hit. += is safer if it resets first, but distributeSellerGoal sets it globally.
+                                    // Wait, distributeSellerGoal currently assigns: target.fat = goalVal.
+                                    // But it runs PER SELLER. A client belongs to one seller in this context.
+                                    // So assigning the fraction directly is correct.
+                                    targetGoal.fat = fractionFat;
+                                } else {
+                                    targetGoal.vol = fractionVol;
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+            // -----------------------------------------------------------------
+
             console.log(`[Goals] Distributed ${newTotalValue} (${metric}) for ${sellerName} / ${categoryId} (Cascade: ${targetCategories.join(',')})`);
         }
 
