@@ -1040,13 +1040,13 @@
                             }
                         },
                         plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
+                            legend: { 
+                                position: 'top', 
+                                labels: { 
                                     color: '#cbd5e1',
                                     usePointStyle: true,
                                     boxWidth: 10
-                                }
+                                } 
                             },
                             tooltip: {
                                 backgroundColor: 'rgba(15, 23, 42, 0.9)',
@@ -1073,7 +1073,7 @@
                         scales: {
                             y: {
                                 beginAtZero: true,
-                                grace: '10%',
+                                grace: '20%',
                                 grid: { color: 'rgba(51, 65, 85, 0.4)', drawBorder: false },
                                 ticks: { color: '#94a3b8', padding: 10 }
                             },
@@ -5766,13 +5766,13 @@
                             }
                         },
                         plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
+                            legend: { 
+                                position: 'top', 
+                                labels: { 
                                     color: '#cbd5e1',
                                     usePointStyle: true,
                                     boxWidth: 10
-                                }
+                                } 
                             },
                             tooltip: {
                                 backgroundColor: 'rgba(15, 23, 42, 0.9)',
@@ -5807,7 +5807,7 @@
                         scales: {
                             y: {
                                 beginAtZero: true,
-                                grace: '10%',
+                                grace: '20%',
                                 grid: { color: 'rgba(51, 65, 85, 0.4)', drawBorder: false },
                                 ticks: { color: '#94a3b8', padding: 10 }
                             },
@@ -5929,7 +5929,14 @@
             const filial = (typeof currentMetaRealizadoFilial !== 'undefined') ? currentMetaRealizadoFilial : 'ambas';
             const pasta = currentMetaRealizadoPasta;
             const clientCodes = new Set();
-            for(let i=0; i<clientsDataForKpiHelper.length; i++) clientCodes.add(normalizeKey(clientsDataForKpiHelper[i]['Código'] || clientsDataForKpiHelper[i]['codigo_cliente']));
+            for(let i=0; i<clientsDataForKpiHelper.length; i++) {
+                // Ensure we get the correct client code from the object.
+                // The dataset properties might differ. Often they are 'codigo_cliente' or 'Código'.
+                let code = clientsDataForKpiHelper[i]['Código'] || clientsDataForKpiHelper[i]['codigo_cliente'] || clientsDataForKpiHelper[i]['codcli'] || clientsDataForKpiHelper[i]['CODCLI'];
+                if(code) {
+                     clientCodes.add(normalizeKey(code));
+                }
+            }
             
             const metasFilters = {
                 filial,
@@ -5974,15 +5981,18 @@
                     
                     if (clientCodes.has(normCode)) {
                         // Resolve fields from involves row
-                        let points = Number(row.pontos_realizados || row.pontos || row.nota || 0);
-                        let maxPoints = Number(row.pontos_maximos || row.maximo_pontos || 0);
+                        // Data from nota_perfeita dataset uses 'nota_media' pre-calculated if available
                         let score = 0;
-                        
-                        // Some systems output "pontos" as the percentage directly if maxPoints is omitted.
-                        if (maxPoints > 0) {
-                            score = (points / maxPoints) * 100;
+                        if (row.nota_media !== undefined && row.nota_media !== null) {
+                             score = Number(row.nota_media);
                         } else {
-                            score = points; // Assume points is already out of 100 if no max points provided
+                             let points = Number(row.pontos_realizados || row.pontos || row.nota || 0);
+                             let maxPoints = Number(row.pontos_maximos || row.maximo_pontos || 0);
+                             if (maxPoints > 0) {
+                                 score = (points / maxPoints) * 100;
+                             } else {
+                                 score = points;
+                             }
                         }
                         
                         let clientStats = clientScoresMap.get(normCode);
@@ -5994,9 +6004,9 @@
                         clientStats.count += 1;
                     }
                 }
-
+                
                 qtdPesquisasReal = clientScoresMap.size;
-
+                
                 let perfectCount = 0;
                 for (const stats of clientScoresMap.values()) {
                     const averageScore = stats.totalScore / stats.count;
