@@ -1016,16 +1016,18 @@
                             {
                                 label: 'Meta',
                                 data: [totalGoal],
-                                backgroundColor: '#a855f7', // Purple
-                                barPercentage: 0.6,
-                                categoryPercentage: 0.8
+                                backgroundColor: '#3b82f6', // Cool Blue
+                                borderRadius: 6,
+                                barPercentage: 0.5,
+                                categoryPercentage: 0.7
                             },
                             {
                                 label: 'Realizado',
                                 data: [totalReal],
-                                backgroundColor: '#22c55e', // Green
-                                barPercentage: 0.6,
-                                categoryPercentage: 0.8
+                                backgroundColor: '#0ea5e9', // Cool Sky Blue
+                                borderRadius: 6,
+                                barPercentage: 0.5,
+                                categoryPercentage: 0.7
                             }
                         ]
                     },
@@ -1038,8 +1040,22 @@
                             }
                         },
                         plugins: {
-                            legend: { position: 'top', labels: { color: '#cbd5e1' } },
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: '#cbd5e1',
+                                    usePointStyle: true,
+                                    boxWidth: 10
+                                }
+                            },
                             tooltip: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                titleColor: '#f1f5f9',
+                                bodyColor: '#cbd5e1',
+                                borderColor: 'rgba(51, 65, 85, 0.5)',
+                                borderWidth: 1,
+                                padding: 12,
+                                cornerRadius: 8,
                                 callbacks: {
                                     label: function(context) {
                                         return `${context.dataset.label}: ${context.parsed.y} Clientes`;
@@ -1047,23 +1063,23 @@
                                 }
                             },
                             datalabels: {
-                                color: '#fff',
+                                color: '#e2e8f0',
                                 anchor: 'end',
                                 align: 'top',
                                 formatter: (value) => value,
-                                font: { weight: 'bold' }
+                                font: { weight: 'bold', size: 12 }
                             }
                         },
                         scales: {
                             y: {
                                 beginAtZero: true,
                                 grace: '10%',
-                                grid: { color: '#334155' },
-                                ticks: { color: '#94a3b8' }
+                                grid: { color: 'rgba(51, 65, 85, 0.4)', drawBorder: false },
+                                ticks: { color: '#94a3b8', padding: 10 }
                             },
                             x: {
                                 grid: { display: false },
-                                ticks: { color: '#94a3b8' }
+                                ticks: { color: '#94a3b8', padding: 10 }
                             }
                         }
                     }
@@ -5726,16 +5742,18 @@
                             {
                                 label: 'Meta',
                                 data: [displayTotalMeta],
-                                backgroundColor: '#14b8a6', // Teal
-                                barPercentage: 0.6,
-                                categoryPercentage: 0.8
+                                backgroundColor: '#3b82f6', // Cool Blue
+                                borderRadius: 6,
+                                barPercentage: 0.5,
+                                categoryPercentage: 0.7
                             },
                             {
                                 label: 'Realizado',
                                 data: [displayTotalReal],
-                                backgroundColor: '#f59e0b', // Amber/Yellow
-                                barPercentage: 0.6,
-                                categoryPercentage: 0.8
+                                backgroundColor: '#0ea5e9', // Cool Sky Blue
+                                borderRadius: 6,
+                                barPercentage: 0.5,
+                                categoryPercentage: 0.7
                             }
                         ]
                     },
@@ -5748,8 +5766,22 @@
                             }
                         },
                         plugins: {
-                            legend: { position: 'top', labels: { color: '#cbd5e1' } },
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: '#cbd5e1',
+                                    usePointStyle: true,
+                                    boxWidth: 10
+                                }
+                            },
                             tooltip: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                titleColor: '#f1f5f9',
+                                bodyColor: '#cbd5e1',
+                                borderColor: 'rgba(51, 65, 85, 0.5)',
+                                borderWidth: 1,
+                                padding: 12,
+                                cornerRadius: 8,
                                 callbacks: {
                                     label: function(context) {
                                         let label = context.dataset.label || '';
@@ -5765,23 +5797,23 @@
                             },
                             datalabels: {
                                 display: true,
-                                color: '#fff',
+                                color: '#e2e8f0',
                                 anchor: 'end',
                                 align: 'top',
                                 formatter: formatValue,
-                                font: { weight: 'bold' }
+                                font: { weight: 'bold', size: 12 }
                             }
                         },
                         scales: {
                             y: {
                                 beginAtZero: true,
                                 grace: '10%',
-                                grid: { color: '#334155' },
-                                ticks: { color: '#94a3b8' }
+                                grid: { color: 'rgba(51, 65, 85, 0.4)', drawBorder: false },
+                                ticks: { color: '#94a3b8', padding: 10 }
                             },
                             x: {
                                 grid: { display: false },
-                                ticks: { color: '#94a3b8' }
+                                ticks: { color: '#94a3b8', padding: 10 }
                             }
                         }
                     }
@@ -5934,15 +5966,13 @@
             let qtdLpReal = 0;
             
             if (window.embeddedData && window.embeddedData.nota_perfeita) {
-                const lpClients = new Set();
-                const perfectClients = new Set();
+                const clientScoresMap = new Map();
                 
                 for(let i=0; i<window.embeddedData.nota_perfeita.length; i++) {
                     const row = window.embeddedData.nota_perfeita[i];
                     const normCode = normalizeKey(row.codigo_cliente);
                     
                     if (clientCodes.has(normCode)) {
-                        lpClients.add(normCode);
                         // Resolve fields from involves row
                         let points = Number(row.pontos_realizados || row.pontos || row.nota || 0);
                         let maxPoints = Number(row.pontos_maximos || row.maximo_pontos || 0);
@@ -5955,13 +5985,26 @@
                             score = points; // Assume points is already out of 100 if no max points provided
                         }
                         
-                        if (score >= 80) {
-                            perfectClients.add(normCode);
+                        let clientStats = clientScoresMap.get(normCode);
+                        if (!clientStats) {
+                            clientStats = { totalScore: 0, count: 0 };
+                            clientScoresMap.set(normCode, clientStats);
                         }
+                        clientStats.totalScore += score;
+                        clientStats.count += 1;
                     }
                 }
-                qtdPesquisasReal = lpClients.size;
-                qtdLpReal = perfectClients.size;
+
+                qtdPesquisasReal = clientScoresMap.size;
+
+                let perfectCount = 0;
+                for (const stats of clientScoresMap.values()) {
+                    const averageScore = stats.totalScore / stats.count;
+                    if (averageScore >= 80) {
+                        perfectCount++;
+                    }
+                }
+                qtdLpReal = perfectCount;
             }
             
             const elPesqReal = document.getElementById('kpi-metas-pesquisas-real');
