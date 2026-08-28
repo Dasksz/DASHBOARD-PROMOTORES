@@ -5996,11 +5996,42 @@
             if (window.embeddedData && window.embeddedData.nota_perfeita) {
                 const clientScoresMap = new Map();
                 
+                // Identify all existing clients in master DB to distinguish orphans
+                const allExistingCodes = new Set();
+                const lenMaster = allClientsData.length;
+                for(let i=0; i<lenMaster; i++) {
+                    const c = allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i];
+                    allExistingCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+                }
+                
                 for(let i=0; i<window.embeddedData.nota_perfeita.length; i++) {
                     const row = window.embeddedData.nota_perfeita[i];
                     const normCode = normalizeKey(row.codigo_cliente);
                     
-                    if (clientCodes.has(normCode)) {
+                    let isAllowed = clientCodes.has(normCode);
+                    
+                    if (!isAllowed) {
+                        // If it's a true orphan (doesn't exist in master DB)
+                        if (!allExistingCodes.has(normCode)) {
+                            let keepOrphan = true;
+                            
+                            // 1. Filial Filter in Metas View
+                            if (filial !== 'ambas' && filial !== 'desconhecida') {
+                                keepOrphan = false; // Orphans are 'desconhecida'
+                            }
+                            
+                            // 2. Hierarchy Filter (Supervisors/Vendedores) in Metas View
+                            if (selectedMetaRealizadoSupervisors.size > 0 || selectedMetaRealizadoVendedores.size > 0) {
+                                keepOrphan = false; 
+                            }
+                            
+                            if (keepOrphan) {
+                                isAllowed = true;
+                            }
+                        }
+                    }
+                    
+                    if (isAllowed) {
                         // Resolve fields from involves row
                         // Data from nota_perfeita dataset uses 'nota_media' pre-calculated if available
                         let score = 0;
@@ -29854,10 +29885,10 @@ const supervisorGroups = new Map();
 
         // Let's find the filial for all allowed clients
         const allAllowedClients = getHierarchyFilteredClients('lp', allClientsData);
-
+        
         // Keep track of which clients we mapped, to handle orphans safely
         const mappedClients = new Set();
-
+        
         for(let i=0; i<allAllowedClients.length; i++) {
              const c = allAllowedClients[i];
              const code = normalizeKey(c['Código'] || c['codigo_cliente']);
@@ -29875,7 +29906,7 @@ const supervisorGroups = new Map();
                  filialCounts.get(cFilial).add(code);
              }
         }
-
+        
         // Assign orphans to DESCONHECIDA
         uniqueClientsOverallPDF.forEach(code => {
             if (!mappedClients.has(code)) {
@@ -30308,34 +30339,34 @@ const supervisorGroups = new Map();
         for (let i = 0; i < rawData.length; i++) {
             const row = rawData[i];
             const normCode = normalizeKey(row.codigo_cliente);
-
+            
             let isAllowed = allowedClientCodes.has(normCode) || orphansToAdd.has(normCode);
-
+            
             if (!isAllowed) {
                 // If it exists in master DB, it was filtered out by Hierarchy or Client Filters -> DROP
                 if (allExistingCodes.has(normCode)) {
                     continue;
                 }
-
+                
                 // It's a true orphan (doesn't exist in master DB). Apply active UI filters manually:
                 let keepOrphan = true;
-
+                
                 // 1. Rede
                 if (isComRede) keepOrphan = false; // Orphans have no Rede
-
+                
                 // 2. Filial
                 if (selectedFilial !== 'all' && selectedFilial !== 'desconhecida') keepOrphan = false; // Orphans are 'desconhecida'
-
+                
                 // 3. Search
                 if (clientSearch && !normCode.includes(clientSearch)) keepOrphan = false;
-
+                
                 // 4. Seller Hierarchy mode
                 if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
                     if (selectedLpSupervisors.size > 0 || selectedLpVendedores.size > 0) keepOrphan = false;
                 }
-
+                
                 if (!keepOrphan) continue;
-
+                
                 // Orphan passed filters, add it
                 isAllowed = true;
                 orphansToAdd.add(normCode);
@@ -30354,7 +30385,7 @@ const supervisorGroups = new Map();
                  filial: c ? c.calculatedFilial : 'desconhecida'
             });
         }
-
+        
         // Merge allowed orphans into allowedClientCodes so KPIs and PDF logic are consistent
         orphansToAdd.forEach(code => allowedClientCodes.add(code));
 
@@ -30362,23 +30393,37 @@ const supervisorGroups = new Map();
         let totalScore = 0;
         let totalAudits = 0;
         let totalPerfectAudits = 0;
-        const uniquePerfectStores = new Set();
+        const clientScoresMap = new Map();
         const uniqueClientsAudited = new Set();
 
         filtered.forEach(item => {
             totalScore += item.nota_media; 
             totalAudits += item.auditorias;
             totalPerfectAudits += item.auditorias_perfeitas;
-            if (item.nota_media >= 80 && item.codigo_cliente) uniquePerfectStores.add(normalizeKey(item.codigo_cliente));
+            
             if (item.codigo_cliente) {
-                uniqueClientsAudited.add(normalizeKey(item.codigo_cliente));
+                const code = normalizeKey(item.codigo_cliente);
+                uniqueClientsAudited.add(code);
+                
+                let stats = clientScoresMap.get(code);
+                if (!stats) {
+                    stats = { totalScore: 0, count: 0 };
+                    clientScoresMap.set(code, stats);
+                }
+                stats.totalScore += item.nota_media;
+                stats.count += 1;
             }
         });
 
+        let perfectStoresCount = 0;
+        for (const stats of clientScoresMap.values()) {
+            if ((stats.totalScore / stats.count) >= 80) {
+                perfectStoresCount++;
+            }
+        }
+
         const avgScore = filtered.length > 0 ? (totalScore / filtered.length) : 0;
-        // Perfect Store %: (Perfect Audits / Total Audits) * 100
         // Perfect Store %: (Perfect Stores Count / Total Distinct Audits) * 100
-        const perfectStoresCount = uniquePerfectStores.size;
         const perfectPct = uniqueClientsAudited.size > 0 ? (perfectStoresCount / uniqueClientsAudited.size) * 100 : 0;
 
         // Total Auditorias now uses distinct client count as requested
