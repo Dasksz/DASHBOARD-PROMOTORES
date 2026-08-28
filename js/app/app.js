@@ -994,6 +994,14 @@
             }
 
             const chartId = 'metaRealizadoPosChartInstance';
+            let existingChart = Chart.getChart(canvas);
+            if (existingChart && charts[chartId] !== existingChart) {
+                existingChart.destroy();
+            }
+            if (charts[chartId] && charts[chartId].canvas !== canvas) {
+                charts[chartId].destroy();
+                charts[chartId] = null;
+            }
 
             // Aggregate Totals for Positivação
             let totalGoal = 0;
@@ -5698,7 +5706,16 @@
                 ctx.appendChild(canvas);
             }
 
+            // Fix "Canvas is already in use" error
             const chartId = 'metaRealizadoChartInstance';
+            let existingChart = Chart.getChart(canvas);
+            if (existingChart && charts[chartId] !== existingChart) {
+                existingChart.destroy();
+            }
+            if (charts[chartId] && charts[chartId].canvas !== canvas) {
+                charts[chartId].destroy();
+                charts[chartId] = null;
+            }
 
             // Aggregate totals for the chart (Total Meta vs Total Realizado)
             let totalMeta = 0;
