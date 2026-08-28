@@ -5912,26 +5912,47 @@
             renderMetaRealizadoChart(rowData); // Chart 1 (Selected Metric)
             
             // Build clients array for KPIs
-            const clientsDataForKpiHelper = getHierarchyFilteredClients('meta-realizado', allClientsData);
+            const baseClientsForKpis = getHierarchyFilteredClients('meta-realizado', allClientsData);
+            const clientsDataForKpiHelper = [];
+            const isSellerModeKpi = adminViewMode === 'seller' || adminViewMode === 'adm';
+            const hasSupKpi = selectedMetaRealizadoSupervisors.size > 0;
+            const hasVendKpi = selectedMetaRealizadoVendedores.size > 0;
+
+            for (let i = 0; i < baseClientsForKpis.length; i++) {
+                const c = baseClientsForKpis[i];
+                const rca1 = String(c.rca1 || '').trim();
+                const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
+                
+                // Allow Orphans for admins if no filters
+                if (adminViewMode === 'adm' && !isAmericanas && rca1 === '' && !hasSupKpi && !hasVendKpi) {
+                    clientsDataForKpiHelper.push(c);
+                    continue;
+                }
+
+                if (!isActiveClient(c) && !isAmericanas) continue;
+
+                if (isSellerModeKpi) {
+                    if (hasVendKpi) {
+                        if (!selectedMetaRealizadoVendedores.has(rca1)) continue;
+                    } else if (hasSupKpi) {
+                        const details = sellerDetailsMap.get(rca1);
+                        if (!details || !selectedMetaRealizadoSupervisors.has(details.supervisor)) continue;
+                    }
+                }
+                clientsDataForKpiHelper.push(c);
+            }
+
             renderMetaRealizadoPosChart(rowData); // Chart 2 (Positivação)
 
             // 3.5. KPIs de Pesquisas, Loja Perfeita e Perda
             let totalFatMetas = 0;
             let totalPerdas = 0;
             
-            // Re-fetch raw sales just for Perdas (tipo 5) based on same filters
-            const { currentSales, perdasSales } = getComparisonFilteredData(); 
-            // Wait, getComparisonFilteredData uses Comparison filters. We need Meta Realizado filters.
-            
-            // Let's manually calculate based on active filter state.
-            // currentMetaRealizadoFilial não existe no escopo global (é um possível bug de cópia do Comparison).
-            // Usaremos 'ambas' por default caso não haja filtro de filial global no Meta Realizado.
             const filial = (typeof currentMetaRealizadoFilial !== 'undefined') ? currentMetaRealizadoFilial : 'ambas';
             const pasta = currentMetaRealizadoPasta;
             const clientCodes = new Set();
             for(let i=0; i<clientsDataForKpiHelper.length; i++) {
                 // Ensure we get the correct client code from the object.
-                // The dataset properties might differ. Often they are 'codigo_cliente' or 'Código'.
                 let code = clientsDataForKpiHelper[i]['Código'] || clientsDataForKpiHelper[i]['codigo_cliente'] || clientsDataForKpiHelper[i]['codcli'] || clientsDataForKpiHelper[i]['CODCLI'];
                 if(code) {
                      clientCodes.add(normalizeKey(code));
