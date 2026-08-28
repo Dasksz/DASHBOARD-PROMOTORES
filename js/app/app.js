@@ -4832,6 +4832,7 @@
             XLSX.writeFile(wb, "Metas_Fechamento_SV.xlsx");
         }
 
+        window.isActiveClient = isActiveClient;
         function isActiveClient(c) {
             const rca1 = String(c.rca1 || '').trim();
             const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
