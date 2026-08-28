@@ -791,7 +791,10 @@
                     }
                 }
 
-                if (!codCli) return; // Skip if client not found
+                // Fallback: If still not found, use the CNPJ itself as the fictitious client code
+                if (!codCli) {
+                    codCli = finalCnpj;
+                }
                 
                 uniqueClientsFound.add(codCli);
 
