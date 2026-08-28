@@ -992,6 +992,16 @@
                 canvas = document.createElement('canvas');
                 container.appendChild(canvas);
             }
+            
+            // chartId declared above
+            let existingChart = Chart.getChart(canvas);
+            if (existingChart && charts[chartId] !== existingChart) {
+                existingChart.destroy();
+            }
+            if (charts[chartId] && charts[chartId].canvas !== canvas) {
+                charts[chartId].destroy();
+                charts[chartId] = null;
+            }
 
             const chartId = 'metaRealizadoPosChartInstance';
 
@@ -5696,6 +5706,17 @@
             if (!canvas) {
                 canvas = document.createElement('canvas');
                 ctx.appendChild(canvas);
+            }
+            
+            // Fix "Canvas is already in use" error
+            // chartId declared above
+            let existingChart = Chart.getChart(canvas);
+            if (existingChart && charts[chartId] !== existingChart) {
+                existingChart.destroy();
+            }
+            if (charts[chartId] && charts[chartId].canvas !== canvas) {
+                charts[chartId].destroy();
+                charts[chartId] = null;
             }
 
             const chartId = 'metaRealizadoChartInstance';
