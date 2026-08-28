@@ -6047,14 +6047,26 @@
                         } else {
                              score = points;
                         }
-                        
-                        let clientStats = clientScoresMap.get(normCode);
-                        if (!clientStats) {
-                            clientStats = { totalScore: 0, count: 0 };
-                            clientScoresMap.set(normCode, clientStats);
+
+                        let uniqueKey = null;
+                        if (row.cnpj) {
+                            uniqueKey = String(row.cnpj).replace(/\D/g, '');
+                        } else if (row.cnpj_cpf) {
+                            uniqueKey = String(row.cnpj_cpf).replace(/\D/g, '');
                         }
-                        clientStats.totalScore += score;
-                        clientStats.count += 1;
+                        if (!uniqueKey && row.codigo_cliente) {
+                            uniqueKey = normalizeKey(row.codigo_cliente);
+                        }
+                        
+                        if (uniqueKey) {
+                            let clientStats = clientScoresMap.get(uniqueKey);
+                            if (!clientStats) {
+                                clientStats = { totalScore: 0, count: 0 };
+                                clientScoresMap.set(uniqueKey, clientStats);
+                            }
+                            clientStats.totalScore += score;
+                            clientStats.count += 1;
+                        }
                     }
                 }
                 
@@ -30432,14 +30444,23 @@ const supervisorGroups = new Map();
             totalAudits += item.auditorias;
             totalPerfectAudits += item.auditorias_perfeitas;
             
-            if (item.codigo_cliente) {
-                const code = normalizeKey(item.codigo_cliente);
-                uniqueClientsAudited.add(code);
+            let uniqueKey = null;
+            if (item.cnpj) {
+                uniqueKey = String(item.cnpj).replace(/\D/g, '');
+            } else if (item.cnpj_cpf) {
+                uniqueKey = String(item.cnpj_cpf).replace(/\D/g, '');
+            }
+            if (!uniqueKey && item.codigo_cliente) {
+                uniqueKey = normalizeKey(item.codigo_cliente);
+            }
+
+            if (uniqueKey) {
+                uniqueClientsAudited.add(uniqueKey);
                 
-                let stats = clientScoresMap.get(code);
+                let stats = clientScoresMap.get(uniqueKey);
                 if (!stats) {
                     stats = { totalScore: 0, count: 0 };
-                    clientScoresMap.set(code, stats);
+                    clientScoresMap.set(uniqueKey, stats);
                 }
                 stats.totalScore += score;
                 stats.count += 1;
