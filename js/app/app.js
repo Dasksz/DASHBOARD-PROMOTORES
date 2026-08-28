@@ -5923,13 +5923,15 @@
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 
-                // Allow Orphans for admins if no filters
-                if (adminViewMode === 'adm' && !isAmericanas && rca1 === '' && !hasSupKpi && !hasVendKpi) {
-                    clientsDataForKpiHelper.push(c);
-                    continue;
+                // Match LP view orphan logic exactly
+                // Allow Orphans for admins if no filters, otherwise drop them
+                if (adminViewMode === 'adm' && !isAmericanas && rca1 === '') {
+                    if (hasSupKpi || hasVendKpi) {
+                        continue;
+                    }
+                } else if (!window.isActiveClient(c) && !isAmericanas) {
+                    continue; // LP view now does this too
                 }
-
-                if (!isActiveClient(c) && !isAmericanas) continue;
 
                 if (isSellerModeKpi) {
                     if (hasVendKpi) {
@@ -6035,16 +6037,14 @@
                         // Resolve fields from involves row
                         // Data from nota_perfeita dataset uses 'nota_media' pre-calculated if available
                         let score = 0;
-                        if (row.nota_media !== undefined && row.nota_media !== null) {
+                        let points = Number(row.pontos_realizados || row.pontos || row.nota || 0);
+                        let maxPoints = Number(row.pontos_maximos || row.maximo_pontos || 0);
+                        if (maxPoints > 0) {
+                             score = (points / maxPoints) * 100;
+                        } else if (row.nota_media !== undefined && row.nota_media !== null) {
                              score = Number(row.nota_media);
                         } else {
-                             let points = Number(row.pontos_realizados || row.pontos || row.nota || 0);
-                             let maxPoints = Number(row.pontos_maximos || row.maximo_pontos || 0);
-                             if (maxPoints > 0) {
-                                 score = (points / maxPoints) * 100;
-                             } else {
-                                 score = points;
-                             }
+                             score = points;
                         }
                         
                         let clientStats = clientScoresMap.get(normCode);
@@ -24679,8 +24679,14 @@ const supervisorGroups = new Map();
                 const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                // FIX: Only filter orphans for Admins
-                if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
+                // FIX: Match Metas logic: Drop inactive unless Americanas. Keep orphans if no filter.
+                if (window.userRole === 'adm' && !isAmericanas && rca1 === '') {
+                    if (hasSup || hasVend) {
+                        continue;
+                    }
+                } else if (!window.isActiveClient(c) && !isAmericanas) {
+                    continue;
+                }
                 let keep = true;
                 if (hasSup || hasVend) {
                     const details = sellerDetailsMap.get(rca1);
@@ -26128,8 +26134,14 @@ const supervisorGroups = new Map();
                 const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                // FIX: Only filter orphans for Admins
-                if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
+                // FIX: Match Metas logic: Drop inactive unless Americanas. Keep orphans if no filter.
+                if (window.userRole === 'adm' && !isAmericanas && rca1 === '') {
+                    if (hasSup || hasVend) {
+                        continue;
+                    }
+                } else if (!window.isActiveClient(c) && !isAmericanas) {
+                    continue;
+                }
                 let keep = true;
                 if (hasSup || hasVend) {
                     const details = sellerDetailsMap.get(rca1);
@@ -30248,8 +30260,14 @@ const supervisorGroups = new Map();
                 const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                // FIX: Only filter orphans for Admins
-                if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
+                // FIX: Match Metas logic: Drop inactive unless Americanas. Keep orphans if no filter.
+                if (window.userRole === 'adm' && !isAmericanas && rca1 === '') {
+                    if (hasSup || hasVend) {
+                        continue;
+                    }
+                } else if (!window.isActiveClient(c) && !isAmericanas) {
+                    continue;
+                }
                 let keep = true;
                 if (hasSup || hasVend) {
                     const details = sellerDetailsMap.get(rca1);
@@ -30397,7 +30415,19 @@ const supervisorGroups = new Map();
         const uniqueClientsAudited = new Set();
 
         filtered.forEach(item => {
-            totalScore += item.nota_media; 
+            let score = 0;
+            let points = Number(item.pontos_realizados || item.pontos || item.nota || 0);
+            let maxPoints = Number(item.pontos_maximos || item.maximo_pontos || 0);
+
+            if (maxPoints > 0) {
+                score = (points / maxPoints) * 100;
+            } else if (item.nota_media !== undefined && item.nota_media !== null) {
+                score = Number(item.nota_media);
+            } else {
+                score = points;
+            }
+
+            totalScore += score;
             totalAudits += item.auditorias;
             totalPerfectAudits += item.auditorias_perfeitas;
             
@@ -30410,7 +30440,7 @@ const supervisorGroups = new Map();
                     stats = { totalScore: 0, count: 0 };
                     clientScoresMap.set(code, stats);
                 }
-                stats.totalScore += item.nota_media;
+                stats.totalScore += score;
                 stats.count += 1;
             }
         });
