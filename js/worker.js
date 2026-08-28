@@ -799,7 +799,8 @@
                 uniqueClientsFound.add(codCli);
 
                 const pesquisador = normalizeResearcherCode(getVal(row, 'Pesquisador'));
-                const key = `${codCli}_${pesquisador}`;
+                // Do not group by codCli_pesquisador to preserve all surveys. Use a unique index.
+                const key = `${codCli}_${pesquisador}_${Math.random().toString(36).substr(2, 9)}`;
                 
                 const notaRaw = getVal(row, 'Nota Média') || getVal(row, 'Nota Media'); // Fuzzy
                 const nota = typeof notaRaw === 'number' ? notaRaw : parseFloat(String(notaRaw || '0').replace(',', '.'));
