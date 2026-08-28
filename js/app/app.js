@@ -4832,6 +4832,7 @@
             XLSX.writeFile(wb, "Metas_Fechamento_SV.xlsx");
         }
 
+        window.isActiveClient = isActiveClient;
         function isActiveClient(c) {
             const rca1 = String(c.rca1 || '').trim();
             const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
@@ -30418,7 +30419,7 @@ const supervisorGroups = new Map();
             let score = 0;
             let points = Number(item.pontos_realizados || item.pontos || item.nota || 0);
             let maxPoints = Number(item.pontos_maximos || item.maximo_pontos || 0);
-
+            
             if (maxPoints > 0) {
                 score = (points / maxPoints) * 100;
             } else if (item.nota_media !== undefined && item.nota_media !== null) {
@@ -30427,7 +30428,7 @@ const supervisorGroups = new Map();
                 score = points;
             }
 
-            totalScore += score;
+            totalScore += score; 
             totalAudits += item.auditorias;
             totalPerfectAudits += item.auditorias_perfeitas;
             
