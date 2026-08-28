@@ -6011,23 +6011,55 @@
                     const row = window.embeddedData.nota_perfeita[i];
                     const normCode = normalizeKey(row.codigo_cliente);
                     
-                    let isAllowed = clientCodes.has(normCode);
-                    
-                    if (!isAllowed) {
-                        // If it's a true orphan (doesn't exist in master DB)
-                        if (!allExistingCodes.has(normCode)) {
+                    let isAllowed = false;
+                    const hasSup = selectedMetaRealizadoSupervisors.size > 0;
+                    const hasVend = selectedMetaRealizadoVendedores.size > 0;
+
+                    if (adminViewMode === 'seller' && (hasSup || hasVend)) {
+                        // Focus exclusively on the Researcher, bypassing client base limits
+                        const rawPesquisador = row.pesquisador;
+                        if (rawPesquisador) {
+                            const resKey = window.normalizeResearcherCode(rawPesquisador);
+                            
+                            // First try optimizedData.promotorMap
+                            let matchedCode = null;
+                            const upperResKey = String(rawPesquisador).toUpperCase().trim();
+                            if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                                matchedCode = upperResKey; // in promotorMap the key is usually the code but sometimes the value.
+                                // wait, promotorMap is code -> name. The rawPesquisador could be name.
+                                // Actually, lpResearcherMap handles exactly this mapping:
+                            }
+
+                            const info = lpResearcherMap.get(resKey);
+                            let rca = null;
+
+                            if (info && info.sellerCode) {
+                                rca = info.sellerCode;
+                            } else {
+                                // Fallback: try finding code directly
+                                if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                                     rca = upperResKey;
+                                }
+                            }
+
+                            if (rca) {
+                                const sup = sellerDetailsMap.get(rca) ? sellerDetailsMap.get(rca).supervisor : null;
+
+                                if (hasVend) {
+                                    isAllowed = selectedMetaRealizadoVendedores.has(rca);
+                                } else if (hasSup) {
+                                    isAllowed = !!(sup && selectedMetaRealizadoSupervisors.has(sup));
+                                }
+                            }
+                        }
+                    } else {
+                        // Standard behavior based on client base
+                        isAllowed = clientCodes.has(normCode);
+                        if (!isAllowed && !allExistingCodes.has(normCode)) {
                             let keepOrphan = true;
-                            
-                            // 1. Filial Filter in Metas View
                             if (filial !== 'ambas' && filial !== 'desconhecida') {
-                                keepOrphan = false; // Orphans are 'desconhecida'
+                                keepOrphan = false;
                             }
-                            
-                            // 2. Hierarchy Filter (Supervisors/Vendedores) in Metas View
-                            if (selectedMetaRealizadoSupervisors.size > 0 || selectedMetaRealizadoVendedores.size > 0) {
-                                keepOrphan = false; 
-                            }
-                            
                             if (keepOrphan) {
                                 isAllowed = true;
                             }
