@@ -6004,11 +6004,35 @@
                     allExistingCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
                 }
 
+                // Build a separate allowed list specifically for LP so it's not restricted by isActiveClient
+                const lpAllowedCodes = new Set();
+                for (let i = 0; i < baseClientsForKpis.length; i++) {
+                    const c = baseClientsForKpis[i];
+                    const rca1 = String(c.rca1 || '').trim();
+                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
+
+                    // Allow Orphans for admins
+                    if (adminViewMode === 'adm' && !isAmericanas && rca1 === '' && !hasSupKpi && !hasVendKpi) {
+                        lpAllowedCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+                        continue;
+                    }
+
+                    if (isSellerModeKpi) {
+                        if (hasVendKpi) {
+                            if (!selectedMetaRealizadoVendedores.has(rca1)) continue;
+                        } else if (hasSupKpi) {
+                            const details = sellerDetailsMap.get(rca1);
+                            if (!details || !selectedMetaRealizadoSupervisors.has(details.supervisor)) continue;
+                        }
+                    }
+                    lpAllowedCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+                }
+
                 for(let i=0; i<window.embeddedData.nota_perfeita.length; i++) {
                     const row = window.embeddedData.nota_perfeita[i];
                     const normCode = normalizeKey(row.codigo_cliente);
                     
-                    let isAllowed = clientCodes.has(normCode);
+                    let isAllowed = lpAllowedCodes.has(normCode);
 
                     if (!isAllowed) {
                         // If it's a true orphan (doesn't exist in master DB)
@@ -6021,8 +6045,10 @@
                             }
 
                             // 2. Hierarchy Filter (Supervisors/Vendedores) in Metas View
-                            if (selectedMetaRealizadoSupervisors.size > 0 || selectedMetaRealizadoVendedores.size > 0) {
-                                keepOrphan = false;
+                            if (adminViewMode === 'seller' || adminViewMode === 'adm') {
+                                if (selectedMetaRealizadoSupervisors.size > 0 || selectedMetaRealizadoVendedores.size > 0) {
+                                    keepOrphan = false;
+                                }
                             }
 
                             if (keepOrphan) {
@@ -6032,8 +6058,6 @@
                     }
 
                     if (isAllowed) {
-                        // Resolve fields from involves row
-                        // Data from nota_perfeita dataset uses 'nota_media' pre-calculated if available
                         let score = 0;
                         if (row.nota_media !== undefined && row.nota_media !== null) {
                              score = Number(row.nota_media);
