@@ -29854,10 +29854,15 @@ const supervisorGroups = new Map();
 
         // Let's find the filial for all allowed clients
         const allAllowedClients = getHierarchyFilteredClients('lp', allClientsData);
+
+        // Keep track of which clients we mapped, to handle orphans safely
+        const mappedClients = new Set();
+
         for(let i=0; i<allAllowedClients.length; i++) {
              const c = allAllowedClients[i];
              const code = normalizeKey(c['Código'] || c['codigo_cliente']);
              if (uniqueClientsOverallPDF.has(code)) {
+                 mappedClients.add(code);
                  let cFilial = 'DESCONHECIDA';
                  if (c.cidade) {
                      const normCity = normalizeCity(c.cidade);
@@ -29870,6 +29875,14 @@ const supervisorGroups = new Map();
                  filialCounts.get(cFilial).add(code);
              }
         }
+
+        // Assign orphans to DESCONHECIDA
+        uniqueClientsOverallPDF.forEach(code => {
+            if (!mappedClients.has(code)) {
+                if (!filialCounts.has('DESCONHECIDA')) filialCounts.set('DESCONHECIDA', new Set());
+                filialCounts.get('DESCONHECIDA').add(code);
+            }
+        });
 
         const kpiTotalOverall = uniqueClientsOverallPDF.size;
 
@@ -30277,6 +30290,17 @@ const supervisorGroups = new Map();
             clientMap.set(code, c);
         }
 
+        // Identify all existing clients in master DB to distinguish orphans
+        const allExistingCodes = new Set();
+        const lenMaster = allClientsData.length;
+        for(let i=0; i<lenMaster; i++) {
+            const c = allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i];
+            allExistingCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+        }
+
+        // We will dynamically add true orphans to allowedClientCodes so PDF logic matches
+        const orphansToAdd = new Set();
+
         lpState.allowedClientCodes = allowedClientCodes;
 
         // 3. Filter Data
@@ -30284,7 +30308,38 @@ const supervisorGroups = new Map();
         for (let i = 0; i < rawData.length; i++) {
             const row = rawData[i];
             const normCode = normalizeKey(row.codigo_cliente);
-            if (!allowedClientCodes.has(normCode)) continue;
+
+            let isAllowed = allowedClientCodes.has(normCode) || orphansToAdd.has(normCode);
+
+            if (!isAllowed) {
+                // If it exists in master DB, it was filtered out by Hierarchy or Client Filters -> DROP
+                if (allExistingCodes.has(normCode)) {
+                    continue;
+                }
+
+                // It's a true orphan (doesn't exist in master DB). Apply active UI filters manually:
+                let keepOrphan = true;
+
+                // 1. Rede
+                if (isComRede) keepOrphan = false; // Orphans have no Rede
+
+                // 2. Filial
+                if (selectedFilial !== 'all' && selectedFilial !== 'desconhecida') keepOrphan = false; // Orphans are 'desconhecida'
+
+                // 3. Search
+                if (clientSearch && !normCode.includes(clientSearch)) keepOrphan = false;
+
+                // 4. Seller Hierarchy mode
+                if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+                    if (selectedLpSupervisors.size > 0 || selectedLpVendedores.size > 0) keepOrphan = false;
+                }
+
+                if (!keepOrphan) continue;
+
+                // Orphan passed filters, add it
+                isAllowed = true;
+                orphansToAdd.add(normCode);
+            }
 
             // Researcher Filter
             if (selectedLpResearchers.size > 0) {
@@ -30299,6 +30354,9 @@ const supervisorGroups = new Map();
                  filial: c ? c.calculatedFilial : 'desconhecida'
             });
         }
+
+        // Merge allowed orphans into allowedClientCodes so KPIs and PDF logic are consistent
+        orphansToAdd.forEach(code => allowedClientCodes.add(code));
 
         // 4. Update KPIs
         let totalScore = 0;
