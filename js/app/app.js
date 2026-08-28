@@ -6021,35 +6021,57 @@
                         if (rawPesquisador) {
                             const resKey = window.normalizeResearcherCode(rawPesquisador);
                             
-                            // First try optimizedData.promotorMap
-                            let matchedCode = null;
-                            const upperResKey = String(rawPesquisador).toUpperCase().trim();
-                            if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
-                                matchedCode = upperResKey; // in promotorMap the key is usually the code but sometimes the value. 
-                                // wait, promotorMap is code -> name. The rawPesquisador could be name.
-                                // Actually, lpResearcherMap handles exactly this mapping:
-                            }
-
-                            const info = lpResearcherMap.get(resKey);
-                            let rca = null;
-
-                            if (info && info.sellerCode) {
-                                rca = info.sellerCode;
-                            } else {
-                                // Fallback: try finding code directly
-                                if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
-                                     rca = upperResKey;
-                                }
-                            }
-
-                            if (rca) {
-                                const sup = sellerDetailsMap.get(rca) ? sellerDetailsMap.get(rca).supervisor : null;
+                            // Strict Match for Researcher (Pesquisas/Loja Perfeita KPIs ONLY)
+                            // We do a direct check against the selected sellers to prevent cross-mapping (e.g. Rota 8 -> Promotor 2)
+                            
+                            // 1. Direct match: resKey ("promotor2") matches selected RCA ("PROMOTOR2" normalized)
+                            let directMatch = false;
+                            
+                            if (hasVend) {
+                                selectedMetaRealizadoVendedores.forEach(v => {
+                                    if (window.normalizeResearcherCode(v) === resKey) {
+                                        directMatch = true;
+                                    }
+                                });
                                 
-                                if (hasVend) {
-                                    isAllowed = selectedMetaRealizadoVendedores.has(rca);
-                                } else if (hasSup) {
-                                    isAllowed = !!(sup && selectedMetaRealizadoSupervisors.has(sup));
+                                if (!directMatch) {
+                                    // 2. Fallback to mapped sellerCode only if it matches exactly what was selected
+                                    const info = lpResearcherMap.get(resKey);
+                                    if (info && info.sellerCode && selectedMetaRealizadoVendedores.has(info.sellerCode)) {
+                                        // Wait: if "rota8" maps to "PROMOTOR2", info.sellerCode will be "PROMOTOR2".
+                                        // If we allow this, Rota 8 will still be counted for Promotor 2!
+                                        // To prevent this, we ONLY accept it if the resKey itself loosely matches the seller name or code.
+                                        // But if the user selected 'PROMOTOR2', they ONLY want 'PROMOTOR 2' surveys.
+                                        // Let's rely strictly on direct string match of the code or name.
+                                        
+                                        // Only allow map fallback if it's a known safe alias or if we strictly want to trust the map.
+                                        // Since trusting the map caused the Rota 8 issue, we will ignore the map for Vendedores filter
+                                        // UNLESS the map's involves_code literally matches the RCA. 
+                                        if (window.normalizeResearcherCode(info.sellerCode) === resKey) {
+                                            directMatch = true;
+                                        }
+                                    }
                                 }
+                                isAllowed = directMatch;
+                                
+                            } else if (hasSup) {
+                                // For Supervisors, we can use the map to find the seller, then check if that seller belongs to the supervisor.
+                                const info = lpResearcherMap.get(resKey);
+                                let rca = null;
+                                if (info && info.sellerCode) {
+                                    rca = info.sellerCode;
+                                } else {
+                                    const upperResKey = String(rawPesquisador).toUpperCase().trim();
+                                    if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                                         rca = upperResKey;
+                                    }
+                                }
+                                
+                                // If we couldn't map it, assume the resKey is the RCA
+                                if (!rca) rca = resKey.toUpperCase(); 
+
+                                const sup = sellerDetailsMap.get(rca) ? sellerDetailsMap.get(rca).supervisor : null;
+                                isAllowed = !!(sup && selectedMetaRealizadoSupervisors.has(sup));
                             }
                         }
                     } else {
