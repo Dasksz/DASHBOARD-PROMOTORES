@@ -6011,23 +6011,55 @@
                     const row = window.embeddedData.nota_perfeita[i];
                     const normCode = normalizeKey(row.codigo_cliente);
                     
-                    let isAllowed = clientCodes.has(normCode);
-                    
-                    if (!isAllowed) {
-                        // If it's a true orphan (doesn't exist in master DB)
-                        if (!allExistingCodes.has(normCode)) {
+                    let isAllowed = false;
+                    const hasSup = selectedMetaRealizadoSupervisors.size > 0;
+                    const hasVend = selectedMetaRealizadoVendedores.size > 0;
+
+                    if (adminViewMode === 'seller' && (hasSup || hasVend)) {
+                        // Focus exclusively on the Researcher, bypassing client base limits
+                        const rawPesquisador = row.pesquisador;
+                        if (rawPesquisador) {
+                            const resKey = window.normalizeResearcherCode(rawPesquisador);
+                            
+                            // First try optimizedData.promotorMap
+                            let matchedCode = null;
+                            const upperResKey = String(rawPesquisador).toUpperCase().trim();
+                            if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                                matchedCode = upperResKey; // in promotorMap the key is usually the code but sometimes the value. 
+                                // wait, promotorMap is code -> name. The rawPesquisador could be name.
+                                // Actually, lpResearcherMap handles exactly this mapping:
+                            }
+
+                            const info = lpResearcherMap.get(resKey);
+                            let rca = null;
+
+                            if (info && info.sellerCode) {
+                                rca = info.sellerCode;
+                            } else {
+                                // Fallback: try finding code directly
+                                if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
+                                     rca = upperResKey;
+                                }
+                            }
+
+                            if (rca) {
+                                const sup = sellerDetailsMap.get(rca) ? sellerDetailsMap.get(rca).supervisor : null;
+                                
+                                if (hasVend) {
+                                    isAllowed = selectedMetaRealizadoVendedores.has(rca);
+                                } else if (hasSup) {
+                                    isAllowed = !!(sup && selectedMetaRealizadoSupervisors.has(sup));
+                                }
+                            }
+                        }
+                    } else {
+                        // Standard behavior based on client base
+                        isAllowed = clientCodes.has(normCode);
+                        if (!isAllowed && !allExistingCodes.has(normCode)) {
                             let keepOrphan = true;
-                            
-                            // 1. Filial Filter in Metas View
                             if (filial !== 'ambas' && filial !== 'desconhecida') {
-                                keepOrphan = false; // Orphans are 'desconhecida'
+                                keepOrphan = false;
                             }
-                            
-                            // 2. Hierarchy Filter (Supervisors/Vendedores) in Metas View
-                            if (selectedMetaRealizadoSupervisors.size > 0 || selectedMetaRealizadoVendedores.size > 0) {
-                                keepOrphan = false; 
-                            }
-                            
                             if (keepOrphan) {
                                 isAllowed = true;
                             }
@@ -6049,10 +6081,30 @@
                         }
                         
                         let uniqueKey = null;
-                        if (row.cnpj) {
-                            uniqueKey = String(row.cnpj).replace(/\D/g, '');
-                        } else if (row.cnpj_cpf) {
-                            uniqueKey = String(row.cnpj_cpf).replace(/\D/g, '');
+                        const lookupCode = normalizeKey(row.codigo_cliente);
+                        let clientObj = null;
+                        
+                        // Need to look up client in allClientsData if row doesn't have cnpj directly
+                        if (!row.cnpj && !row.cnpj_cpf) {
+                             if (window.allClientsData) {
+                                 const len = window.allClientsData.length;
+                                 for(let i=0; i<len; i++) {
+                                     const c = window.allClientsData instanceof window.ColumnarDataset ? window.allClientsData.get(i) : window.allClientsData[i];
+                                     if (normalizeKey(c['Código'] || c.codigo_cliente) === lookupCode) {
+                                         clientObj = c;
+                                         break;
+                                     }
+                                 }
+                             }
+                        }
+
+                        let targetCnpj = row.cnpj || (clientObj && clientObj.cnpj);
+                        let targetCnpjCpf = row.cnpj_cpf || (clientObj && clientObj.cnpj_cpf);
+                        
+                        if (targetCnpj) {
+                            uniqueKey = String(targetCnpj).replace(/\D/g, '');
+                        } else if (targetCnpjCpf) {
+                            uniqueKey = String(targetCnpjCpf).replace(/\D/g, '');
                         }
                         if (!uniqueKey && row.codigo_cliente) {
                             uniqueKey = normalizeKey(row.codigo_cliente);
@@ -30445,10 +30497,16 @@ const supervisorGroups = new Map();
             totalPerfectAudits += item.auditorias_perfeitas;
             
             let uniqueKey = null;
-            if (item.cnpj) {
-                uniqueKey = String(item.cnpj).replace(/\D/g, '');
-            } else if (item.cnpj_cpf) {
-                uniqueKey = String(item.cnpj_cpf).replace(/\D/g, '');
+            const lookupCode2 = normalizeKey(item.codigo_cliente);
+            const clientObj2 = clientMap.get(lookupCode2);
+            
+            let targetCnpj2 = item.cnpj || (clientObj2 && clientObj2.cnpj);
+            let targetCnpjCpf2 = item.cnpj_cpf || (clientObj2 && clientObj2.cnpj_cpf);
+            
+            if (targetCnpj2) {
+                uniqueKey = String(targetCnpj2).replace(/\D/g, '');
+            } else if (targetCnpjCpf2) {
+                uniqueKey = String(targetCnpjCpf2).replace(/\D/g, '');
             }
             if (!uniqueKey && item.codigo_cliente) {
                 uniqueKey = normalizeKey(item.codigo_cliente);
