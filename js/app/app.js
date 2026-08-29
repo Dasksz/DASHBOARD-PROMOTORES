@@ -375,12 +375,34 @@
 
             const data = [];
             optimizedData.promotorMap.forEach((name, code) => {
+                const clients = optimizedData.clientsByRca ? (optimizedData.clientsByRca.get(code) || []) : [];
+
+                // Get active client codes from the global active clients cache if available
+                const activeCodesSet = (typeof getActiveClientCodes === 'function') ? getActiveClientCodes() : null;
+
+                let baseClientesValidos = 0;
+                if (activeCodesSet) {
+                    // Fast path: use cached active codes set (handles all specific active client business logic)
+                    baseClientesValidos = clients.filter(c => {
+                        const cod = String(c.codCli || c.CodCli || '').trim();
+                        return cod && activeCodesSet.has(cod);
+                    }).length;
+                } else {
+                    // Fallback logic if cache is not available
+                    baseClientesValidos = clients.filter(c => {
+                        const isNotInactive = !String(c.status || '').toUpperCase().includes('INATIVO');
+                        return isNotInactive;
+                    }).length;
+                }
+
+                const metaSugerida = baseClientesValidos > 0 ? baseClientesValidos : 0;
+
                 data.push({
                     promotor_code: code,
                     nome: name,
                     mes: nextMonth,
                     ano: year,
-                    valor_meta: 0
+                    valor_meta: metaSugerida
                 });
             });
             
