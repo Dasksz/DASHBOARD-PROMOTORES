@@ -539,15 +539,9 @@
                     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
                     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-                    const toLocalDateInput = (date) => {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                    };
 
-                    startInput.value = toLocalDateInput(firstDay);
-                    endInput.value = toLocalDateInput(lastDay);
+                    startInput.value = window.toLocalDateInput(firstDay);
+                    endInput.value = window.toLocalDateInput(lastDay);
                 } else if (selectedCoverageDateRange.start) {
                     startInput.value = selectedCoverageDateRange.start;
                     endInput.value = selectedCoverageDateRange.end;
@@ -3279,7 +3273,7 @@
                             else if (codFor === window.SUPPLIER_CODES.ELMA[1]) key = window.SUPPLIER_CODES.ELMA[1];
                             else if (codFor === window.SUPPLIER_CODES.ELMA[2]) key = window.SUPPLIER_CODES.ELMA[2];
                             else if (window.isFoods(codFor)) {
-                                const desc = normalize(historyValues['DESCRICAO'][idx] || '');
+                                const desc = window.normalizeString(historyValues['DESCRICAO'][idx] || '');
                                 if (desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
                                 else if (desc.includes('TODDY') && !desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                                 else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
@@ -3341,7 +3335,7 @@
                             else if (codFor === window.SUPPLIER_CODES.ELMA[1]) key = window.SUPPLIER_CODES.ELMA[1];
                             else if (codFor === window.SUPPLIER_CODES.ELMA[2]) key = window.SUPPLIER_CODES.ELMA[2];
                             else if (window.isFoods(codFor)) {
-                                const desc = normalize(sale.DESCRICAO || '');
+                                const desc = window.normalizeString(sale.DESCRICAO || '');
                                 if (desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
                                 else if (desc.includes('TODDY') && !desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                                 else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
@@ -3790,7 +3784,7 @@
                     if (netValue >= 1) {
                         const prodData = clientProductDesc.get(prodCode);
                         // Fallback to empty string if missing
-                        const desc = normalize((prodData && prodData.descricao) ? prodData.descricao : '');
+                        const desc = window.normalizeString((prodData && prodData.descricao) ? prodData.descricao : '');
                         const mixMarca = (prodData && prodData.mix_marca) ? String(prodData.mix_marca).toUpperCase() : '';
 
                         const orders = clientProductOrders.get(codCli)?.get(prodCode) || new Set();
@@ -4293,7 +4287,7 @@
                     historyIds.forEach(id => {
                         const sale = optimizedData.historyById.get(id);
                         const codFor = String(sale.CODFOR);
-                        const desc = normalize(sale.DESCRICAO || '');
+                        const desc = window.normalizeString(sale.DESCRICAO || '');
 
                         // Check against all target categories
                         targetCategories.forEach(subCat => {
@@ -4922,7 +4916,7 @@
                             if (!monthlySales.has(monthKey)) monthlySales.set(monthKey, new Set());
 
                             // Check brand/category match
-                            const desc = normalize(sale.DESCRICAO || '');
+                            const desc = window.normalizeString(sale.DESCRICAO || '');
                             targetCategories.forEach(cat => {
                                 if (desc.includes(cat)) {
                                     monthlySales.get(monthKey).add(cat);
@@ -5363,16 +5357,6 @@
             const { weeks } = getMonthWeeksDistribution(lastSaleDate); // Use current global date context
 
             // Helper to find week index
-            const getWeekIndex = (date) => {
-                const d = typeof date === 'number' ? new Date(date) : parseDate(date);
-                if (!d) return -1;
-                // Check against ranges
-                for(let i=0; i<weeks.length; i++) {
-                    // Week range is inclusive start, inclusive end
-                    if (d >= weeks[i].start && d <= weeks[i].end) return i;
-                }
-                return -1;
-            };
 
             // Iterate Sales
             // Optimized: Use indices if needed, or simple iteration.
@@ -5443,7 +5427,7 @@
                     else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
                         // Resolve Description
                         const pObj = window.resolveDim('produtos', s.PRODUTO);
-                        const desc = normalize((typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || ''));
+                        const desc = window.normalizeString((typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || ''));
                         if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO) && desc.includes('TODDYNHO')) supplierMatch = true;
                         else if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.TODDY) && desc.includes('TODDY') && !desc.includes('TODDYNHO')) supplierMatch = true;
                         else if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO) && (desc.includes('QUAKER') || desc.includes('KEROCOCO'))) supplierMatch = true;
@@ -5455,7 +5439,7 @@
                 const sellerName = window.resolveDim('vendedores', s.CODUSUR);
                 const valFat = Number(s.VLVENDA) || 0;
                 const valVol = Number(s.TOTPESOLIQ) || 0;
-                const weekIdx = getWeekIndex(d);
+                const weekIdx = window.getWeekIndex(d, weeks);
 
                 if (!salesBySeller.has(sellerName)) {
                     salesBySeller.set(sellerName, { totalFat: 0, totalVol: 0, weeksFat: [0, 0, 0, 0, 0], weeksVol: [0, 0, 0, 0, 0], totalPos: 0 });
@@ -6365,14 +6349,6 @@
             // Filter Logic matches 'getMetaRealizadoFilteredData'
 
             // Helper for week index (Copied from getMetaRealizadoFilteredData scope, need to redefine or reuse)
-            const getWeekIndex = (date) => {
-                const d = typeof date === 'number' ? new Date(date) : parseDate(date);
-                if (!d) return -1;
-                for(let i=0; i<weeks.length; i++) {
-                    if (d >= weeks[i].start && d <= weeks[i].end) return i;
-                }
-                return -1;
-            };
 
             for(let i=0; i<allSalesData.length; i++) {
                 const s = allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i];
@@ -6420,7 +6396,7 @@
 
                 const entry = clientMap.get(codCli);
                 const val = Number(s.VLVENDA) || 0;
-                const weekIdx = getWeekIndex(d);
+                const weekIdx = window.getWeekIndex(d, weeks);
 
                 entry.salesTotal += val;
                 if (weekIdx !== -1) entry.salesWeeks[weekIdx] += val;
@@ -6633,7 +6609,7 @@
                         else if (codFor === window.SUPPLIER_CODES.ELMA[1]) key = window.SUPPLIER_CODES.ELMA[1];
                         else if (codFor === window.SUPPLIER_CODES.ELMA[2]) key = window.SUPPLIER_CODES.ELMA[2];
                         else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
-                            const desc = normalize(sale.DESCRICAO || '');
+                            const desc = window.normalizeString(sale.DESCRICAO || '');
                             if (desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
                             else if (desc.includes('TODDY') && !desc.includes('TODDYNHO')) key = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                             else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) key = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
@@ -7209,32 +7185,6 @@
             let globalTotalAvgFat = 0;
             let globalTotalAvgVol = 0;
 
-            const shouldIncludeSale = (sale, supplier, brand) => {
-                const codFor = String(sale.CODFOR);
-                if (supplier === 'PEPSICO_ALL') {
-                    // Includes everything
-                    if (!window.SUPPLIER_CODES.PEPSICO.includes(codFor)) return false;
-                } else if (supplier === 'ELMA_ALL') {
-                    if (!window.SUPPLIER_CODES.ELMA.includes(codFor)) return false;
-                } else if (supplier === 'FOODS_ALL') {
-                    // Include all brands of 1119 that are in sub-tabs
-                    if (codFor !== window.SUPPLIER_CODES.FOODS[0]) return false;
-                    // No brand filtering here, assuming 1119 contains mostly Foods
-                } else {
-                    if (codFor !== supplier) return false;
-                    if (brand) {
-                        const desc = normalize(sale.DESCRICAO || '');
-                        if (brand === 'TODDYNHO') {
-                            if (!desc.includes('TODDYNHO')) return false;
-                        } else if (brand === 'TODDY') {
-                            if (!desc.includes('TODDY') || desc.includes('TODDYNHO')) return false;
-                        } else if (brand === 'QUAKER_KEROCOCO') {
-                            if (!desc.includes('QUAKER') && !desc.includes('KEROCOCO')) return false;
-                        }
-                    }
-                }
-                return true;
-            };
 
             if (globalGoalsTotalsCache[cacheKey]) {
                 globalTotalAvgFat = globalGoalsTotalsCache[cacheKey].fat;
@@ -7261,7 +7211,7 @@
                             // EXCEPTION: Exclude Balcão (53) sales for Client 9569 from Global Portfolio Totals
                             if (String(codCli).trim() === '9569' && (String(sale.CODUSUR).trim() === '53' || String(sale.CODUSUR).trim() === '053')) return;
 
-                            if (shouldIncludeSale(sale, currentGoalsSupplier, currentGoalsBrand)) {
+                            if (window.shouldIncludeSale(sale, currentGoalsSupplier, currentGoalsBrand)) {
                                 if (sale.TIPOVENDA === '1' || sale.TIPOVENDA === '9') {
                                     sumFat += sale.VLVENDA;
                                     sumVol += sale.TOTPESOLIQ;
@@ -7304,7 +7254,7 @@
                         // EXCEPTION: Exclude Balcão (53) sales for Client 9569 from Portfolio Average
                         if (String(codCli).trim() === '9569' && (String(sale.CODUSUR).trim() === '53' || String(sale.CODUSUR).trim() === '053')) return;
 
-                        if (shouldIncludeSale(sale, currentGoalsSupplier, currentGoalsBrand)) {
+                        if (window.shouldIncludeSale(sale, currentGoalsSupplier, currentGoalsBrand)) {
                             if (sale.TIPOVENDA === '1' || sale.TIPOVENDA === '9') {
                                 sumFat += sale.VLVENDA;
                                 sumVol += sale.TOTPESOLIQ;
@@ -7476,7 +7426,7 @@
 
                             // Special handling for broken down categories (FOODS)
                             if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
-                                const desc = normalize(sale.DESCRICAO || '');
+                                const desc = window.normalizeString(sale.DESCRICAO || '');
                                 if (desc.includes('TODDYNHO')) saleKey = window.SUPPLIER_CODES.VIRTUAL.TODDYNHO;
                                 else if (desc.includes('TODDY') && !desc.includes('TODDYNHO')) saleKey = window.SUPPLIER_CODES.VIRTUAL.TODDY;
                                 else if (desc.includes('QUAKER') || desc.includes('KEROCOCO')) saleKey = window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO;
@@ -7925,7 +7875,7 @@
                     for (let id of historyIds) {
                         const sale = optimizedData.historyById.get(id);
                         const codFor = String(sale.CODFOR);
-                        const desc = normalize(sale.DESCRICAO || '');
+                        const desc = window.normalizeString(sale.DESCRICAO || '');
 
                         // Check Rev Type only? Usually yes for Positivação.
                         if ((sale.TIPOVENDA === '1' || sale.TIPOVENDA === '9') && checkSale(codFor, desc)) {
@@ -8133,22 +8083,6 @@
             const prevMonthYear = prevMonthDate.getUTCFullYear();
 
             // Helper for inclusion check
-            const shouldIncludeSale = (sale, supplier, brand) => {
-                const codFor = String(sale.CODFOR);
-                if (supplier === 'PEPSICO_ALL') { if (!window.SUPPLIER_CODES.PEPSICO.includes(codFor)) return false; }
-                else if (supplier === 'ELMA_ALL') { if (!window.SUPPLIER_CODES.ELMA.includes(codFor)) return false; }
-                else if (supplier === 'FOODS_ALL') { if (codFor !== window.SUPPLIER_CODES.FOODS[0]) return false; }
-                else {
-                    if (codFor !== supplier) return false;
-                    if (brand) {
-                        const desc = normalize(sale.DESCRICAO || '');
-                        if (brand === 'TODDYNHO') { if (!desc.includes('TODDYNHO')) return false; }
-                        else if (brand === 'TODDY') { if (!desc.includes('TODDY') || desc.includes('TODDYNHO')) return false; }
-                        else if (brand === 'QUAKER_KEROCOCO') { if (!desc.includes('QUAKER') && !desc.includes('KEROCOCO')) return false; }
-                    }
-                }
-                return true;
-            };
 
             const globalTotalAvgFat = globalGoalsTotalsCache[cacheKey].fat;
             const globalTotalAvgVol = globalGoalsTotalsCache[cacheKey].vol;
@@ -8173,7 +8107,7 @@
                         // EXCEPTION: Exclude Balcão (53) sales for Client 9569 from Portfolio Average
                         if (String(codCli).trim() === '9569' && (String(sale.CODUSUR).trim() === '53' || String(sale.CODUSUR).trim() === '053')) return;
 
-                        if (shouldIncludeSale(sale, currentGoalsSupplier, currentGoalsBrand)) {
+                        if (window.shouldIncludeSale(sale, currentGoalsSupplier, currentGoalsBrand)) {
                             if (sale.TIPOVENDA === '1' || sale.TIPOVENDA === '9') {
                                 cSumFat += sale.VLVENDA;
                                 cSumVol += sale.TOTPESOLIQ;
@@ -10412,7 +10346,7 @@ const supervisorGroups = new Map();
                 const rowPasta = item.OBSERVACAOFOR;
                 if (rowPasta === 'PEPSICO') {
                     const codFor = String(item.CODFOR);
-                    const desc = normalize(item.DESCRICAO || '');
+                    const desc = window.normalizeString(item.DESCRICAO || '');
 
                     if (codFor === window.SUPPLIER_CODES.ELMA[0]) {
                         fornecedorLabel = 'Extrusados';
@@ -10596,33 +10530,19 @@ const supervisorGroups = new Map();
             const currentMonth = refDate.getUTCMonth();
             
             // Calculate Current Month Progress
-            const totalWDCurrent = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+            const totalWDCurrent = window.getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
             // Use lastSaleDate (UTC) to match check
-            const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, refDate);
+            const passedWDCurrent = window.getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, refDate);
             
             const ratio = totalWDCurrent > 0 ? (passedWDCurrent / totalWDCurrent) : 1;
 
             // Calculate Target Cutoff for Previous Month
-            const totalWDPrev = getWorkingDaysInMonth(prevMonthYear, prevMonthIndex, selectedHolidays);
+            const totalWDPrev = window.getWorkingDaysInMonth(prevMonthYear, prevMonthIndex, selectedHolidays);
             const targetWDPrev = Math.round(totalWDPrev * ratio);
 
             // Helper to find the day corresponding to target working days
-            const getDayForWorkingDays = (year, month, targetCount, holidays) => {
-                let count = 0;
-                // Iterate from 1st
-                const date = new Date(Date.UTC(year, month, 1));
-                while (date.getUTCMonth() === month) {
-                    const dayOfWeek = date.getUTCDay();
-                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays)) {
-                        count++;
-                    }
-                    if (count >= targetCount) return date.getUTCDate();
-                    date.setUTCDate(date.getUTCDate() + 1);
-                }
-                return date.getUTCDate(); // Fallback to end of month
-            };
 
-            const cutoffDayPrev = getDayForWorkingDays(prevMonthYear, prevMonthIndex, targetWDPrev, selectedHolidays);
+            const cutoffDayPrev = window.getDayForWorkingDays(prevMonthYear, prevMonthIndex, targetWDPrev, selectedHolidays);
             // ------------------------------------------------------------------------
 
             const currentMap = new Map();
@@ -10632,18 +10552,6 @@ const supervisorGroups = new Map();
                 return resolveSupplierPasta(null, supplier);
             };
 
-            const getStockFromMap = (map, code) => {
-                let s = map.get(code);
-                if (s !== undefined) return s;
-                const num = parseInt(code, 10);
-                if (!isNaN(num)) {
-                    const sNoZeros = map.get(String(num));
-                    if (sNoZeros !== undefined) return sNoZeros;
-                }
-                const sString = String(code);
-                if (map.has(sString)) return map.get(sString);
-                return 0;
-            };
 
             // Aggregate Current Data (Already filtered)
             const _isAltMode_4 = isAlternativeMode(selectedTiposVenda);
@@ -10726,8 +10634,8 @@ const supervisorGroups = new Map();
             const results = [];
             currentMap.forEach(item => {
                 // Check Stock > 1 Box (Strict)
-                const s05 = getStockFromMap(stockData05, item.code);
-                const s08 = getStockFromMap(stockData08, item.code);
+                const s05 = window.getStockFromMap(stockData05, item.code);
+                const s08 = window.getStockFromMap(stockData08, item.code);
                 const totalStock = s05 + s08;
 
                 if (totalStock <= 1) return; // Skip products with low stock
@@ -10895,24 +10803,9 @@ const supervisorGroups = new Map();
             if (codeEl) codeEl.textContent = `Cód: ${item.code}`;
 
             // Stock Logic (Robust Lookup)
-            const getStockFromMap = (map, code) => {
-                let s = map.get(code);
-                if (s !== undefined) return s;
-                // Try number string (remove leading zeros)
-                const num = parseInt(code, 10);
-                if (!isNaN(num)) {
-                    const sNoZeros = map.get(String(num));
-                    if (sNoZeros !== undefined) return sNoZeros;
-                }
-                // Try as-is string (in case code passed as number)
-                const sString = String(code);
-                if (map.has(sString)) return map.get(sString);
 
-                return 0;
-            };
-
-            const s05 = getStockFromMap(stockData05, item.code);
-            const s08 = getStockFromMap(stockData08, item.code);
+            const s05 = window.getStockFromMap(stockData05, item.code);
+            const s08 = window.getStockFromMap(stockData08, item.code);
             const totalStock = s05 + s08;
 
             const isFat = currentProductMetric === 'faturamento';
@@ -11006,45 +10899,12 @@ const supervisorGroups = new Map();
         // Renamed/Wrapper for compatibility if needed, or update updateAllVisuals directly
         // updateProductBarChart was replaced.
 
-        function isHoliday(date, holidays) {
-            if (!holidays || !Array.isArray(holidays)) return false;
-            // Assuming holidays are stored as 'YYYY-MM-DD' strings (from UTC date)
-            const dateString = date.toISOString().split('T')[0];
-            return holidays.includes(dateString);
-        }
 
-        function getWorkingDaysInMonth(year, month, holidays) {
-            let count = 0;
-            const date = new Date(Date.UTC(year, month, 1));
-            while (date.getUTCMonth() === month) {
-                const dayOfWeek = date.getUTCDay();
-                if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays)) {
-                    count++;
-                }
-                date.setUTCDate(date.getUTCDate() + 1);
-            }
-            return count;
-        }
 
-        function getPassedWorkingDaysInMonth(year, month, holidays, today) {
-            let count = 0;
-            const date = new Date(Date.UTC(year, month, 1));
-            // Ensure today is treated as UTC for comparison
-            const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-
-            while (date <= todayUTC && date.getUTCMonth() === month) {
-                const dayOfWeek = date.getUTCDay();
-                if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays)) {
-                    count++;
-                }
-                date.setUTCDate(date.getUTCDate() + 1);
-            }
-            return count > 0 ? count : 1;
-        }
 
         function isWorkingDay(date, holidays) {
             const dayOfWeek = date.getUTCDay();
-            return dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays);
+            return dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(date, holidays);
         }
 
         function getWorkingDayIndex(date, holidays) {
@@ -12802,11 +12662,6 @@ const supervisorGroups = new Map();
             return weeks;
         }
 
-        function normalize(str) {
-            return str
-                ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toUpperCase()
-                : '';
-        }
 
         function getPositiveClientsWithNewLogic(salesData) {
             const salesByClient = new Map();
@@ -12939,7 +12794,7 @@ const supervisorGroups = new Map();
             for (const [codcli, products] of clientProductNetSales.entries()) {
                 for (const data of products.values()) {
                     if (data.netValue >= 1) {
-                        const normalizedDescription = normalize(data.description);
+                        const normalizedDescription = window.normalizeString(data.description);
                         for (const category of normalizedCategories) {
                             if (normalizedDescription.includes(category)) {
                                 if (!clientPurchasedCategories.has(codcli)) {
@@ -13962,8 +13817,8 @@ const supervisorGroups = new Map();
 
                     // --- NEW TENDENCY COMPARISON FOR KPIS AND SUPERVISORS ---
                     if (useTendencyComparison) {
-                        const totalDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-                        const passedDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
+                        const totalDays = window.getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+                        const passedDays = window.getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
                         
                         if (totalDays > 0 && passedDays > 0 && passedDays < totalDays) {
                             const ratio = totalDays / passedDays;
@@ -14001,8 +13856,8 @@ const supervisorGroups = new Map();
                     metrics.history.avgPerdas = historyPerdas / QUARTERLY_DIVISOR;
 
                     if (useTendencyComparison) {
-                        const totalDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-                        const passedDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
+                        const totalDays = window.getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+                        const passedDays = window.getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
                         if (totalDays > 0 && passedDays > 0 && passedDays < totalDays) {
                             metrics.current.perdas *= (totalDays / passedDays);
                         }
@@ -14033,7 +13888,7 @@ const supervisorGroups = new Map();
                                 let workingDaysPassed = 0; let totalWorkingDays = 0;
                                 for (let d = new Date(currentWeek.start); d <= currentWeek.end; d.setUTCDate(d.getUTCDate() + 1)) {
                                     const dayOfWeek = d.getUTCDay();
-                                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(d, selectedHolidays)) {
+                                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(d, selectedHolidays)) {
                                         totalWorkingDays++;
                                         if (d <= today) workingDaysPassed++;
                                     }
@@ -14276,7 +14131,7 @@ const supervisorGroups = new Map();
                                             // Let's try to map strictly to the *end* of the previous series.
                                             // But we don't know how many *more* days we will have total.
                                             // Actually we do: `getWorkingDaysInMonth` for current month.
-                                            const totalCurrentWorkingDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+                                            const totalCurrentWorkingDays = window.getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
                                             const overflowCount = totalCurrentWorkingDays - prevMonthMaxWDIndex;
 
                                             if (overflowCount > 0) {
@@ -14340,7 +14195,7 @@ const supervisorGroups = new Map();
 
                             for (let d = new Date(currentWeek.start); d <= currentWeek.end; d.setUTCDate(d.getUTCDate() + 1)) {
                                 const dayOfWeek = d.getUTCDay();
-                                if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(d, selectedHolidays)) {
+                                if (dayOfWeek >= 1 && dayOfWeek <= 5 && !window.isHoliday(d, selectedHolidays)) {
                                     totalWorkingDays++;
                                     if (d <= today) workingDaysPassed++;
                                     else remainingDaysIndices.push(dayOfWeek);
@@ -24586,14 +24441,8 @@ const supervisorGroups = new Map();
             const endEl = document.getElementById('history-date-end');
             
             if (startEl && endEl) {
-                const toLocalDateInput = (date) => {
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                };
-                startEl.value = toLocalDateInput(firstDay);
-                endEl.value = toLocalDateInput(lastDay);
+                startEl.value = window.toLocalDateInput(firstDay);
+                endEl.value = window.toLocalDateInput(lastDay);
             } else {
                 console.error("History date inputs not found!");
             }
@@ -24693,15 +24542,9 @@ const supervisorGroups = new Map();
                     const endEl = document.getElementById('history-date-end');
 
                     // Fix timezone issue by using local date strings
-                    const toLocalDateInput = (date) => {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                    };
 
-                    if (startEl) startEl.value = toLocalDateInput(firstDay);
-                    if (endEl) endEl.value = toLocalDateInput(lastDay);
+                    if (startEl) startEl.value = window.toLocalDateInput(firstDay);
+                    if (endEl) endEl.value = window.toLocalDateInput(lastDay);
 
                     setupHierarchyFilters('history');
                     updateHistorySupervisorFilter();
@@ -28252,26 +28095,13 @@ const supervisorGroups = new Map();
             const refDate = (typeof lastSaleDate !== 'undefined' && lastSaleDate) ? new Date(lastSaleDate) : new Date();
             const currentYear = refDate.getUTCFullYear();
             const currentMonth = refDate.getUTCMonth();
-            const totalWDCurrent = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-            const passedWDCurrent = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, refDate);
+            const totalWDCurrent = window.getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
+            const passedWDCurrent = window.getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, refDate);
             const ratio = totalWDCurrent > 0 ? (passedWDCurrent / totalWDCurrent) : 1;
-            const totalWDPrev = getWorkingDaysInMonth(prevMonthYear, prevMonthIndex, selectedHolidays);
+            const totalWDPrev = window.getWorkingDaysInMonth(prevMonthYear, prevMonthIndex, selectedHolidays);
             const targetWDPrev = Math.round(totalWDPrev * ratio);
 
-            const getDayForWorkingDays = (year, month, targetCount, holidays) => {
-                let count = 0;
-                const date = new Date(Date.UTC(year, month, 1));
-                while (date.getUTCMonth() === month) {
-                    const dayOfWeek = date.getUTCDay();
-                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date, holidays)) {
-                        count++;
-                    }
-                    if (count >= targetCount) return date.getUTCDate();
-                    date.setUTCDate(date.getUTCDate() + 1);
-                }
-                return date.getUTCDate();
-            };
-            const cutoffDayPrev = getDayForWorkingDays(prevMonthYear, prevMonthIndex, targetWDPrev, selectedHolidays);
+            const cutoffDayPrev = window.getDayForWorkingDays(prevMonthYear, prevMonthIndex, targetWDPrev, selectedHolidays);
 
             let prevVal = 0;
             let prevQty = 0;
@@ -30845,20 +30675,8 @@ const supervisorGroups = new Map();
         // Vamos checar se window.stockData05 está disponível para fazer o lookup.
         let s05 = '--', s08 = '--';
         if (window.stockData05 && window.stockData08) {
-             const getStockFromMap = (map, code) => {
-                 let s = map.get(code);
-                 if (s !== undefined) return s;
-                 const num = parseInt(code, 10);
-                 if (!isNaN(num)) {
-                     const sNoZeros = map.get(String(num));
-                     if (sNoZeros !== undefined) return sNoZeros;
-                 }
-                 const sString = String(code);
-                 if (map.has(sString)) return map.get(sString);
-                 return 0;
-             };
-             s05 = getStockFromMap(window.stockData05, item.productCode);
-             s08 = getStockFromMap(window.stockData08, item.productCode);
+             s05 = window.getStockFromMap(window.stockData05, item.productCode);
+             s08 = window.getStockFromMap(window.stockData08, item.productCode);
         }
 
         if (stockEl05) stockEl05.textContent = typeof s05 === 'number' ? s05.toLocaleString('pt-BR') : s05;
