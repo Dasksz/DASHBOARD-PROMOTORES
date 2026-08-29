@@ -381,20 +381,30 @@
                 const activeCodesSet = (typeof getActiveClientCodes === 'function') ? getActiveClientCodes() : null;
 
                 let baseClientesValidos = 0;
+
+                // Use a Set to ensure we don't count duplicate client codes for a promotor
+                const uniqueClientCodes = new Set();
+
                 if (activeCodesSet) {
                     // Fast path: use cached active codes set (handles all specific active client business logic)
-                    baseClientesValidos = clients.filter(c => {
-                        const cod = String(c.codCli || c.CodCli || '').trim();
-                        return cod && activeCodesSet.has(cod);
-                    }).length;
+                    clients.forEach(c => {
+                        const cod = String(c.codCli || c.CodCli || c['Código Cliente'] || c['Cod. Cli'] || '').trim();
+                        if (cod && activeCodesSet.has(cod)) {
+                            uniqueClientCodes.add(cod);
+                        }
+                    });
                 } else {
                     // Fallback logic if cache is not available
-                    baseClientesValidos = clients.filter(c => {
-                        const isNotInactive = !String(c.status || '').toUpperCase().includes('INATIVO');
-                        return isNotInactive;
-                    }).length;
+                    clients.forEach(c => {
+                        const isNotInactive = !String(c.status || c.Status || '').toUpperCase().includes('INATIVO');
+                        if (isNotInactive) {
+                            const cod = String(c.codCli || c.CodCli || c['Código Cliente'] || c['Cod. Cli'] || '').trim();
+                            if (cod) uniqueClientCodes.add(cod);
+                        }
+                    });
                 }
 
+                baseClientesValidos = uniqueClientCodes.size;
                 const metaSugerida = baseClientesValidos > 0 ? baseClientesValidos : 0;
 
                 data.push({
