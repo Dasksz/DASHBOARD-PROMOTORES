@@ -591,7 +591,19 @@ BEGIN
     END LOOP;
 END $$;
 
--- 4.2.1 Special Policy for data_client_promoters (Allow Write for Approved Users)
+-- 4.2.1 Special Policy for data_client_coordinates (Allow Write for Approved Users)
+-- We explicitly drop the Admin-only policies created in the loop above for this specific table
+DROP POLICY IF EXISTS "Acesso Escrita Admin (Insert)" ON public.data_client_coordinates;
+DROP POLICY IF EXISTS "Acesso Escrita Admin (Update)" ON public.data_client_coordinates;
+
+-- Create permissive policies for Approved Users to manage client locations
+DROP POLICY IF EXISTS "Acesso Escrita Aprovados (Insert)" ON public.data_client_coordinates;
+CREATE POLICY "Acesso Escrita Aprovados (Insert)" ON public.data_client_coordinates FOR INSERT TO authenticated WITH CHECK (public.is_approved());
+
+DROP POLICY IF EXISTS "Acesso Escrita Aprovados (Update)" ON public.data_client_coordinates;
+CREATE POLICY "Acesso Escrita Aprovados (Update)" ON public.data_client_coordinates FOR UPDATE TO authenticated USING (public.is_approved()) WITH CHECK (public.is_approved());
+
+-- 4.2.2 Special Policy for data_client_promoters (Allow Write for Approved Users)
 -- We explicitly drop the Admin-only policies created in the loop above for this specific table
 DROP POLICY IF EXISTS "Acesso Escrita Admin (Insert)" ON public.data_client_promoters;
 DROP POLICY IF EXISTS "Acesso Escrita Admin (Update)" ON public.data_client_promoters;
