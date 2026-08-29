@@ -6031,39 +6031,66 @@
                     let isAllowed = false;
                     const hasSup = selectedMetaRealizadoSupervisors.size > 0;
                     const hasVend = selectedMetaRealizadoVendedores.size > 0;
+                    
+                    let activeResearcherFilter = new Set();
+                    let isHierarchyFiltered = false;
+                    let isSupMode = false;
 
-                    if (adminViewMode === 'seller' && (hasSup || hasVend)) {
+                    if (adminViewMode === 'seller') {
+                        if (hasVend) {
+                            activeResearcherFilter = selectedMetaRealizadoVendedores;
+                            isHierarchyFiltered = true;
+                        } else if (hasSup) {
+                            isHierarchyFiltered = true;
+                            isSupMode = true;
+                        }
+                    } else if (adminViewMode === 'promoter') {
+                        const hState = hierarchyState['meta-realizado'];
+                        if (hState && (hState.promotors.size > 0 || hState.cocoords.size > 0 || hState.coords.size > 0)) {
+                            isHierarchyFiltered = true;
+                            if (hState.promotors.size > 0) {
+                                hState.promotors.forEach(p => activeResearcherFilter.add(p));
+                            } else if (hState.cocoords.size > 0) {
+                                hState.cocoords.forEach(cc => {
+                                    const children = optimizedData.promotorsByCocoord.get(cc);
+                                    if (children) children.forEach(p => activeResearcherFilter.add(p));
+                                });
+                            } else if (hState.coords.size > 0) {
+                                hState.coords.forEach(c => {
+                                    const cocoords = optimizedData.cocoordsByCoord.get(c);
+                                    if (cocoords) {
+                                        cocoords.forEach(cc => {
+                                            const children = optimizedData.promotorsByCocoord.get(cc);
+                                            if (children) children.forEach(p => activeResearcherFilter.add(p));
+                                        });
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    if (isHierarchyFiltered) {
                         // Focus exclusively on the Researcher, bypassing client base limits
                         const rawPesquisador = row.pesquisador;
                         if (rawPesquisador) {
                             const resKey = window.normalizeResearcherCode(rawPesquisador);
                             
                             // Strict Match for Researcher (Pesquisas/Loja Perfeita KPIs ONLY)
-                            // We do a direct check against the selected sellers to prevent cross-mapping (e.g. Rota 8 -> Promotor 2)
+                            // We do a direct check against the selected sellers/promoters to prevent cross-mapping
                             
-                            // 1. Direct match: resKey ("promotor2") matches selected RCA ("PROMOTOR2" normalized)
-                            let directMatch = false;
-                            
-                            if (hasVend) {
-                                selectedMetaRealizadoVendedores.forEach(v => {
+                            if (!isSupMode) {
+                                let directMatch = false;
+                                activeResearcherFilter.forEach(v => {
                                     if (window.normalizeResearcherCode(v) === resKey) {
                                         directMatch = true;
                                     }
                                 });
                                 
                                 if (!directMatch) {
-                                    // 2. Fallback to mapped sellerCode only if it matches exactly what was selected
+                                    // Fallback to mapped sellerCode only if it matches exactly what was selected
                                     const info = lpResearcherMap.get(resKey);
-                                    if (info && info.sellerCode && selectedMetaRealizadoVendedores.has(info.sellerCode)) {
-                                        // Wait: if "rota8" maps to "PROMOTOR2", info.sellerCode will be "PROMOTOR2".
-                                        // If we allow this, Rota 8 will still be counted for Promotor 2!
-                                        // To prevent this, we ONLY accept it if the resKey itself loosely matches the seller name or code.
-                                        // But if the user selected 'PROMOTOR2', they ONLY want 'PROMOTOR 2' surveys.
-                                        // Let's rely strictly on direct string match of the code or name.
-                                        
-                                        // Only allow map fallback if it's a known safe alias or if we strictly want to trust the map.
-                                        // Since trusting the map caused the Rota 8 issue, we will ignore the map for Vendedores filter
-                                        // UNLESS the map's involves_code literally matches the RCA. 
+                                    if (info && info.sellerCode && activeResearcherFilter.has(info.sellerCode)) {
+                                        // Ignore the map for Vendedores filter UNLESS the map's involves_code literally matches the RCA. 
                                         if (window.normalizeResearcherCode(info.sellerCode) === resKey) {
                                             directMatch = true;
                                         }
@@ -6071,8 +6098,8 @@
                                 }
                                 isAllowed = directMatch;
                                 
-                            } else if (hasSup) {
-                                // For Supervisors, we can use the map to find the seller, then check if that seller belongs to the supervisor.
+                            } else {
+                                // For Supervisors (Seller Mode only), map to find seller, then check supervisor
                                 const info = lpResearcherMap.get(resKey);
                                 let rca = null;
                                 if (info && info.sellerCode) {
@@ -6084,7 +6111,6 @@
                                     }
                                 }
                                 
-                                // If we couldn't map it, assume the resKey is the RCA
                                 if (!rca) rca = resKey.toUpperCase(); 
 
                                 const sup = sellerDetailsMap.get(rca) ? sellerDetailsMap.get(rca).supervisor : null;
