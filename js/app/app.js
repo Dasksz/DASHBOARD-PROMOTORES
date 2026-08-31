@@ -6025,12 +6025,24 @@
             const rawSales = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, salesFiltersMetas);
             
             for(let i=0; i<rawPerdas.length; i++) {
-                totalPerdas += (rawPerdas[i].VLBONIFIC || rawPerdas[i].VLVENDA || 0);
+                const sale = rawPerdas[i];
+                const clientCode = normalizeKey(sale.CODCLI);
+                const ramo = (clientRamoMap.get(clientCode) || '').toUpperCase();
+                if (!ramo.includes('AMERICANAS') && !ramo.includes('BH')) {
+                    totalPerdas += (sale.VLBONIFIC || sale.VLVENDA || 0);
+                }
             }
             for(let i=0; i<rawSales.length; i++) {
-                const tipo = String(rawSales[i].TIPOVENDA);
+                const sale = rawSales[i];
+                const tipo = String(sale.TIPOVENDA);
+                
+                // Only consider valid sales (exclude loss and donation)
                 if (tipo !== '5' && tipo !== '11') {
-                    totalFatMetas += (rawSales[i].VLVENDA || 0);
+                    const clientCode = normalizeKey(sale.CODCLI);
+                    const ramo = (clientRamoMap.get(clientCode) || '').toUpperCase();
+                    if (!ramo.includes('AMERICANAS') && !ramo.includes('BH')) {
+                        totalFatMetas += (sale.VLVENDA || 0);
+                    }
                 }
             }
             
@@ -14044,8 +14056,13 @@ const supervisorGroups = new Map();
                     let currentPerdas = 0;
                     if (perdasSales && perdasSales.length > 0) {
                         for(let i=0; i<perdasSales.length; i++) {
-                            // Force Alternative Mode (VLBONIFIC) for Perdas (Type 5)
-                            currentPerdas += getValueForSale(perdasSales[i], ['5']);
+                            const sale = perdasSales[i];
+                            const clientCode = normalizeKey(sale.CODCLI);
+                            const ramo = (clientRamoMap.get(clientCode) || '').toUpperCase();
+                            if (!ramo.includes('AMERICANAS') && !ramo.includes('BH')) {
+                                // Force Alternative Mode (VLBONIFIC) for Perdas (Type 5)
+                                currentPerdas += getValueForSale(sale, ['5']);
+                            }
                         }
                     }
                     metrics.current.perdas = currentPerdas;
@@ -14053,7 +14070,12 @@ const supervisorGroups = new Map();
                     let historyPerdas = 0;
                     if (perdasHistory && perdasHistory.length > 0) {
                         for(let i=0; i<perdasHistory.length; i++) {
-                            historyPerdas += getValueForSale(perdasHistory[i], ['5']);
+                            const sale = perdasHistory[i];
+                            const clientCode = normalizeKey(sale.CODCLI);
+                            const ramo = (clientRamoMap.get(clientCode) || '').toUpperCase();
+                            if (!ramo.includes('AMERICANAS') && !ramo.includes('BH')) {
+                                historyPerdas += getValueForSale(sale, ['5']);
+                            }
                         }
                     }
                     metrics.history.avgPerdas = historyPerdas / QUARTERLY_DIVISOR;
