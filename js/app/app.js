@@ -388,7 +388,7 @@
                 if (activeCodesSet) {
                     // Fast path: use cached active codes set (handles all specific active client business logic)
                     clients.forEach(c => {
-                        const cod = String(c.codCli || c.CodCli || c['Código Cliente'] || c['Cod. Cli'] || '').trim();
+                        const cod = String(c['Código'] || c['codigo_cliente'] || c.codCli || c.CodCli || c['Código Cliente'] || c['Cod. Cli'] || '').trim();
                         if (cod && activeCodesSet.has(cod)) {
                             uniqueClientCodes.add(cod);
                         }
@@ -398,7 +398,7 @@
                     clients.forEach(c => {
                         const isNotInactive = !String(c.status || c.Status || '').toUpperCase().includes('INATIVO');
                         if (isNotInactive) {
-                            const cod = String(c.codCli || c.CodCli || c['Código Cliente'] || c['Cod. Cli'] || '').trim();
+                            const cod = String(c['Código'] || c['codigo_cliente'] || c.codCli || c.CodCli || c['Código Cliente'] || c['Cod. Cli'] || '').trim();
                             if (cod) uniqueClientCodes.add(cod);
                         }
                     });
