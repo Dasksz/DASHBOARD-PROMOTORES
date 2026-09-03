@@ -374,37 +374,54 @@
             }
 
             const data = [];
-            optimizedData.promotorMap.forEach((name, code) => {
-                const clients = optimizedData.clientsByRca ? (optimizedData.clientsByRca.get(code) || []) : [];
-                
-                // Get active client codes from the global active clients cache if available
-                const activeCodesSet = (typeof getActiveClientCodes === 'function') ? getActiveClientCodes() : null;
-                
-                let baseClientesValidos = 0;
-                
-                // Use a Set to ensure we don't count duplicate client codes for a promotor
-                const uniqueClientCodes = new Set();
-                
-                if (activeCodesSet) {
-                    // Fast path: use cached active codes set (handles all specific active client business logic)
-                    clients.forEach(c => {
+            // Pre-calculate active clients belonging to each promotor
+            const activePromotorClients = new Map(); // promotor_code -> Set of client_codes
+
+            // Get active client codes from the global active clients cache if available
+            const activeCodesSet = (typeof getActiveClientCodes === 'function') ? getActiveClientCodes() : null;
+
+            if (activeCodesSet && optimizedData.clientHierarchyMap) {
+                activeCodesSet.forEach(clientCode => {
+                    const normCode = typeof normalizeKey === 'function' ? normalizeKey(clientCode) : String(clientCode).trim();
+                    const hierarchyNode = optimizedData.clientHierarchyMap.get(normCode);
+
+                    if (hierarchyNode && hierarchyNode.promotor && hierarchyNode.promotor.code) {
+                        const pCode = hierarchyNode.promotor.code;
+                        if (!activePromotorClients.has(pCode)) {
+                            activePromotorClients.set(pCode, new Set());
+                        }
+                        activePromotorClients.get(pCode).add(normCode);
+                    }
+                });
+            } else if (optimizedData.clientHierarchyMap) {
+                // Fallback if activeCodesSet is not available (e.g. initial load without cache)
+                const clients = allClientsData || [];
+                const isColumnar = typeof ColumnarDataset !== 'undefined' && clients instanceof ColumnarDataset;
+                const len = isColumnar ? clients.length : clients.length;
+
+                for(let i = 0; i < len; i++) {
+                    const c = isColumnar ? clients.get(i) : clients[i];
+                    const isNotInactive = !String(c.status || c.Status || '').toUpperCase().includes('INATIVO');
+                    if (isNotInactive) {
                         const cod = String(c['Código'] || c['codigo_cliente'] || c.codCli || c.CodCli || c['Código Cliente'] || c['Cod. Cli'] || '').trim();
-                        if (cod && activeCodesSet.has(cod)) {
-                            uniqueClientCodes.add(cod);
+                        if (cod) {
+                            const normCode = typeof normalizeKey === 'function' ? normalizeKey(cod) : cod;
+                            const hierarchyNode = optimizedData.clientHierarchyMap.get(normCode);
+                            if (hierarchyNode && hierarchyNode.promotor && hierarchyNode.promotor.code) {
+                                const pCode = hierarchyNode.promotor.code;
+                                if (!activePromotorClients.has(pCode)) {
+                                    activePromotorClients.set(pCode, new Set());
+                                }
+                                activePromotorClients.get(pCode).add(normCode);
+                            }
                         }
-                    });
-                } else {
-                    // Fallback logic if cache is not available
-                    clients.forEach(c => {
-                        const isNotInactive = !String(c.status || c.Status || '').toUpperCase().includes('INATIVO');
-                        if (isNotInactive) {
-                            const cod = String(c['Código'] || c['codigo_cliente'] || c.codCli || c.CodCli || c['Código Cliente'] || c['Cod. Cli'] || '').trim();
-                            if (cod) uniqueClientCodes.add(cod);
-                        }
-                    });
+                    }
                 }
-                
-                baseClientesValidos = uniqueClientCodes.size;
+            }
+
+            optimizedData.promotorMap.forEach((name, code) => {
+                const uniqueClientCodes = activePromotorClients.get(code) || new Set();
+                const baseClientesValidos = uniqueClientCodes.size;
                 const metaSugerida = baseClientesValidos > 0 ? baseClientesValidos : 0;
                 
                 data.push({
