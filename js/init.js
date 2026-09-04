@@ -893,7 +893,6 @@
                     getOrFetch('data_product_details', null, null, 'object', 'code', null, 'products', 'Atualizando catálogo...'),
                     getOrFetch('data_active_products', null, null, 'object', 'code', null, 'activeProds', 'Verificando mix ativo...'),
                     getOrFetch('data_stock', colsStock, 'stock', 'columnar', 'id', null, 'stock', 'Sincronizando estoque...'),
-                    getOrFetch(null, null, 'object', 'id', null, 'innovations', 'Baixando inovações...'),
                     fetchWithLabel('data_metadata', null, null, 'object', 'key', null, 'Verificando metadados...'), // Always fetch metadata fresh
                     getOrFetch('data_orders', colsOrders, 'orders', 'object', 'id', applyClientFilter, 'orders', 'Verificando pedidos...'),
                     fetchWithLabel('data_client_coordinates', null, null, 'object', 'client_code', null, 'Atualizando geolocalização...'),
