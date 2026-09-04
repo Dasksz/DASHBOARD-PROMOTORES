@@ -181,7 +181,7 @@
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', toastHTML);
-
+            
             document.getElementById('update-toast').addEventListener('click', () => {
                 location.reload();
             });
@@ -362,7 +362,7 @@
             // 3. Granular Cache Check Logic
             const tablesToFetch = new Set();
             let staleWhileRevalidate = false;
-
+            
             if (!isPromoter && cachedData && metadataRemote) {
                 // Determine which specific tables need to be updated based on hash comparison
                 const checkTable = (tableName, hashKey, dataKeyInCache) => {
@@ -826,7 +826,7 @@
 
                 // Helper to decide source (Cache vs Fetch)
                 const getOrFetch = (tableName, cols, type, format, pk, filter, cacheKey, loadingLabel) => {
-                    if (tablesToFetch.has(tableName)) {
+                    if (tablesToFetch.has(tableName)) { 
                         if (loadingLabel && !staleWhileRevalidate) addLoadingLabel(loadingLabel);
                         return fetchAll(tableName, cols, type, format, pk, filter).then(res => {
                             if (loadingLabel && !staleWhileRevalidate) removeLoadingLabel(loadingLabel);
@@ -874,7 +874,7 @@
                     dim_fornecedores = cachedData.dim_fornecedores;
                     dim_produtos = cachedData.dim_produtos;
                     config_city_branches = cachedData.config_city_branches;
-
+                    
                     window.dashboardData = { detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches };
                     window.dashboardDataLoaded = true;
 
@@ -893,7 +893,6 @@
                     getOrFetch('data_product_details', null, null, 'object', 'code', null, 'products', 'Atualizando catálogo...'),
                     getOrFetch('data_active_products', null, null, 'object', 'code', null, 'activeProds', 'Verificando mix ativo...'),
                     getOrFetch('data_stock', colsStock, 'stock', 'columnar', 'id', null, 'stock', 'Sincronizando estoque...'),
-                    getOrFetch(null, null, 'object', 'id', null, 'innovations', 'Baixando inovações...'),
                     fetchWithLabel('data_metadata', null, null, 'object', 'key', null, 'Verificando metadados...'), // Always fetch metadata fresh
                     getOrFetch('data_orders', colsOrders, 'orders', 'object', 'id', applyClientFilter, 'orders', 'Verificando pedidos...'),
                     fetchWithLabel('data_client_coordinates', null, null, 'object', 'client_code', null, 'Atualizando geolocalização...'),
