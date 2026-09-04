@@ -370,7 +370,7 @@
                     const localHash = cachedData.metadata ? cachedData.metadata.find(m => m.key === hashKey)?.value : null;
 
                     // If no remote hash (legacy data), or hash mismatch, or data missing in cache -> Fetch
-                    if (!remoteHash || remoteHash !== localHash || !cachedData[dataKeyInCache]) {
+                    if (!cachedData[dataKeyInCache] || (remoteHash && remoteHash !== localHash)) {
                         console.log(`[Cache] ${tableName} needs update (Remote: ${remoteHash}, Local: ${localHash})`);
                         tablesToFetch.add(tableName);
                     } else {
