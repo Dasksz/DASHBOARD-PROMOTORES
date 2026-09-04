@@ -370,7 +370,8 @@
                     const localHash = cachedData.metadata ? cachedData.metadata.find(m => m.key === hashKey)?.value : null;
 
                     // If no remote hash (legacy data), or hash mismatch, or data missing in cache -> Fetch
-                    if (!remoteHash || remoteHash !== localHash || !cachedData[dataKeyInCache]) {
+                    // FIX: If remoteHash is undefined/null on server, we shouldn't infinitely fetch it if we already have it in cache.
+                    if ((remoteHash && remoteHash !== localHash) || !cachedData[dataKeyInCache]) {
                         console.log(`[Cache] ${tableName} needs update (Remote: ${remoteHash}, Local: ${localHash})`);
                         tablesToFetch.add(tableName);
                     } else {
@@ -930,6 +931,11 @@
                     });
                 }
                 config_city_branches = configCityBranchesFetched;
+
+                // Preserve lazy-loaded tables from cache so we don't wipe them on sync
+                titulos = cachedData ? cachedData.titulos : null;
+                nota_perfeita = cachedData ? cachedData.nota_perfeita : null;
+                innovations = cachedData ? cachedData.innovations : null;
 
                 // Update Cache with Merged Data
                 const dataToCache = {
