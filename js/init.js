@@ -388,6 +388,7 @@
                 checkTable('data_hierarchy', 'hash_hierarchy', 'hierarchy');
                 checkTable('data_client_promoters', 'hash_client_promoters', 'clientPromoters');
                 // Títulos, Nota Perfeita and Inovations will be lazy loaded later. We'll leave them here for now and fix in step 3.
+                checkTable('data_nota_perfeita', 'hash_nota_perfeita', 'nota_perfeita');
                 checkTable('relacao_rota_involves', 'hash_relacao_rota_involves', 'relacao_rota_involves');
                 checkTable('dim_vendedores', 'hash_dim_vendedores', 'dim_vendedores');
                 checkTable('dim_supervisores', 'hash_dim_supervisores', 'dim_supervisores');
@@ -408,7 +409,7 @@
             } else if (!cachedData) {
                 // Full Fetch required
                 console.log("Cache vazio. Baixando tudo...");
-                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_hierarchy', 'data_client_promoters', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos', 'config_city_branches'].forEach(t => tablesToFetch.add(t));
+                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_hierarchy', 'data_client_promoters', 'data_nota_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos', 'config_city_branches'].forEach(t => tablesToFetch.add(t));
             }
 
             if (useCache) {
@@ -886,7 +887,7 @@
                     if (dashboardView) dashboardView.classList.remove('hidden');
                 }
 
-                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, relacaoRotaInvolvesFetched, dimVendedoresFetched, dimSupervisoresFetched, dimFornecedoresFetched, dimProdutosFetched, configCityBranchesFetched] = await Promise.all([
+                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, notaPerfeitaFetched, relacaoRotaInvolvesFetched, dimVendedoresFetched, dimSupervisoresFetched, dimFornecedoresFetched, dimProdutosFetched, configCityBranchesFetched] = await Promise.all([
                     getOrFetch('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter, 'detailed', 'Sincronizando vendas...'),
                     getOrFetch('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter, 'history', 'Carregando histórico...'),
                     getOrFetch('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter, 'clients', 'Baixando base de clientes...'),
@@ -898,6 +899,7 @@
                     fetchWithLabel('data_client_coordinates', null, null, 'object', 'client_code', null, 'Atualizando geolocalização...'),
                     getOrFetch('data_hierarchy', null, null, 'object', 'id', null, 'hierarchy', 'Carregando hierarquia...'),
                     getOrFetch('data_client_promoters', null, null, 'object', 'client_code', null, 'clientPromoters', 'Sincronizando roteiros...'),
+                    getOrFetch('data_nota_perfeita', null, null, 'object', 'id', null, 'nota_perfeita', 'Atualizando nota perfeita...'),
                     getOrFetch('relacao_rota_involves', null, null, 'object', 'id', null, 'relacao_rota_involves', 'Carregando rotas...'),
                     getOrFetch('dim_vendedores', null, null, 'object', 'codigo', null, 'dim_vendedores', 'Baixando vendedores...'),
                     getOrFetch('dim_supervisores', null, null, 'object', 'codigo', null, 'dim_supervisores', 'Baixando supervisores...'),
@@ -917,6 +919,7 @@
                 clientCoordinates = clientCoordinatesFetched;
                 hierarchy = hierarchyFetched;
                 clientPromoters = clientPromotersFetched;
+                nota_perfeita = notaPerfeitaFetched;
                 relacao_rota_involves = relacaoRotaInvolvesFetched;
                 dim_vendedores = dimVendedoresFetched;
                 dim_supervisores = dimSupervisoresFetched;
