@@ -168,6 +168,25 @@
             // We'll call updateLoadingText() manually on add/remove.
         };
 
+
+
+        function showUpdateToast() {
+            // Check if toast already exists
+            if (document.getElementById('update-toast')) return;
+
+            const toastHTML = `
+                <div id="update-toast" class="fixed bottom-4 right-4 bg-blue-600 text-white px-6 py-3 rounded shadow-lg flex items-center gap-4 z-[9999] cursor-pointer hover:bg-blue-700 transition-colors duration-200">
+                    <span>Novos dados disponíveis. Clique para atualizar.</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', toastHTML);
+
+            document.getElementById('update-toast').addEventListener('click', () => {
+                location.reload();
+            });
+        }
+
         const addLoadingLabel = (label) => {
             if (!label) return;
             activeLoadingLabels.add(label);
@@ -342,6 +361,8 @@
 
             // 3. Granular Cache Check Logic
             const tablesToFetch = new Set();
+            let staleWhileRevalidate = false;
+
             if (!isPromoter && cachedData && metadataRemote) {
                 // Determine which specific tables need to be updated based on hash comparison
                 const checkTable = (tableName, hashKey, dataKeyInCache) => {
@@ -364,11 +385,9 @@
                 checkTable('data_stock', 'hash_stock', 'stock');
                 checkTable('data_active_products', 'hash_active_products', 'activeProds');
                 checkTable('data_product_details', 'hash_product_details', 'products');
-                checkTable('data_innovations', 'hash_innovations', 'innovations');
                 checkTable('data_hierarchy', 'hash_hierarchy', 'hierarchy');
                 checkTable('data_client_promoters', 'hash_client_promoters', 'clientPromoters');
-                checkTable('data_titulos', 'hash_titulos', 'titulos');
-                checkTable('data_nota_perfeita', 'hash_nota_perfeita', 'nota_perfeita');
+                // Títulos, Nota Perfeita and Inovations will be lazy loaded later. We'll leave them here for now and fix in step 3.
                 checkTable('relacao_rota_involves', 'hash_relacao_rota_involves', 'relacao_rota_involves');
                 checkTable('dim_vendedores', 'hash_dim_vendedores', 'dim_vendedores');
                 checkTable('dim_supervisores', 'hash_dim_supervisores', 'dim_supervisores');
@@ -384,19 +403,20 @@
                     console.log(`Cache parcial. Baixando ${tablesToFetch.size} tabelas atualizadas...`);
                     // We don't set useCache=true here because we need to enter the "fetch" block,
                     // but we will intelligently merge cached data inside that block.
+                    staleWhileRevalidate = true;
                 }
             } else if (!cachedData) {
                 // Full Fetch required
                 console.log("Cache vazio. Baixando tudo...");
-                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_innovations', 'data_hierarchy', 'data_client_promoters', 'data_titulos', 'data_nota_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos', 'config_city_branches'].forEach(t => tablesToFetch.add(t));
+                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_hierarchy', 'data_client_promoters', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos', 'config_city_branches'].forEach(t => tablesToFetch.add(t));
             }
 
             if (useCache) {
-                 // loaderText.textContent = 'Processando cache...';
-                 // Handled by addLoadingLabel
-                 addLoadingLabel('Carregando cache local...');
+                 // addLoadingLabel('Carregando cache local...');
+            } else if (staleWhileRevalidate) {
+                 // Do not show full blocking loader if we have cache, we will render dashboard and sync in background
+                 console.log("[SWR] Inicialização assíncrona iniciada.");
             } else {
-                 // loaderText.textContent = 'Buscando dados...';
                  addLoadingLabel('Iniciando sincronização...');
             }
 
@@ -806,50 +826,79 @@
 
                 // Helper to decide source (Cache vs Fetch)
                 const getOrFetch = (tableName, cols, type, format, pk, filter, cacheKey, loadingLabel) => {
-                    if (tablesToFetch.has(tableName)) { // Removed || isPromoter so it respects hashes
-                        // console.log(`[Fetch] Fetching ${tableName}...`);
-                        if (loadingLabel) addLoadingLabel(loadingLabel);
+                    if (tablesToFetch.has(tableName)) {
+                        if (loadingLabel && !staleWhileRevalidate) addLoadingLabel(loadingLabel);
                         return fetchAll(tableName, cols, type, format, pk, filter).then(res => {
-                            if (loadingLabel) removeLoadingLabel(loadingLabel);
+                            if (loadingLabel && !staleWhileRevalidate) removeLoadingLabel(loadingLabel);
                             return res;
                         }).catch(err => {
-                            if (loadingLabel) removeLoadingLabel(loadingLabel);
+                            if (loadingLabel && !staleWhileRevalidate) removeLoadingLabel(loadingLabel);
                             throw err;
                         });
                     } else {
-                        // console.log(`[Fetch] Using cached ${tableName}`);
-                        // Return wrapped in promise to match Promise.all structure
                         return Promise.resolve(cachedData[cacheKey]);
                     }
                 };
 
                 // Wrapper for direct fetchAll to handle labels
                 const fetchWithLabel = (table, cols, type, fmt, pk, filter, label) => {
-                    if (label) addLoadingLabel(label);
+                    if (label && !staleWhileRevalidate) addLoadingLabel(label);
                     return fetchAll(table, cols, type, fmt, pk, filter).then(res => {
-                        if (label) removeLoadingLabel(label);
+                        if (label && !staleWhileRevalidate) removeLoadingLabel(label);
                         return res;
                     }).catch(err => {
-                        if (label) removeLoadingLabel(label);
+                        if (label && !staleWhileRevalidate) removeLoadingLabel(label);
                         throw err;
                     });
                 };
 
-                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, innovationsFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, titulosFetched, notaPerfeitaFetched, relacaoRotaInvolvesFetched, dimVendedoresFetched, dimSupervisoresFetched, dimFornecedoresFetched, dimProdutosFetched, configCityBranchesFetched] = await Promise.all([
+                if (staleWhileRevalidate) {
+                    console.log("[SWR] Iniciando painel com cache local enquanto carrega...");
+                    detailed = cachedData.detailed;
+                    history = cachedData.history;
+                    clients = cachedData.clients;
+                    products = cachedData.products;
+                    activeProds = cachedData.activeProds;
+                    stock = cachedData.stock;
+                    innovations = cachedData.innovations;
+                    metadata = cachedData.metadata;
+                    orders = cachedData.orders;
+                    hierarchy = cachedData.hierarchy;
+                    clientPromoters = cachedData.clientPromoters || [];
+                    clientCoordinates = cachedData.clientCoordinates || [];
+                    titulos = cachedData.titulos;
+                    nota_perfeita = cachedData.nota_perfeita;
+                    relacao_rota_involves = cachedData.relacao_rota_involves;
+                    dim_vendedores = cachedData.dim_vendedores;
+                    dim_supervisores = cachedData.dim_supervisores;
+                    dim_fornecedores = cachedData.dim_fornecedores;
+                    dim_produtos = cachedData.dim_produtos;
+                    config_city_branches = cachedData.config_city_branches;
+
+                    window.dashboardData = { detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches };
+                    window.dashboardDataLoaded = true;
+
+                    // Trigger immediate render
+                    const event = new CustomEvent('dashboardDataReady', { detail: { useCache: true, staleWhileRevalidate: true } });
+                    document.dispatchEvent(event);
+
+                    if (loader) loader.classList.add('hidden');
+                    if (dashboardView) dashboardView.classList.remove('hidden');
+                }
+
+                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, relacaoRotaInvolvesFetched, dimVendedoresFetched, dimSupervisoresFetched, dimFornecedoresFetched, dimProdutosFetched, configCityBranchesFetched] = await Promise.all([
                     getOrFetch('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter, 'detailed', 'Sincronizando vendas...'),
                     getOrFetch('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter, 'history', 'Carregando histórico...'),
                     getOrFetch('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter, 'clients', 'Baixando base de clientes...'),
                     getOrFetch('data_product_details', null, null, 'object', 'code', null, 'products', 'Atualizando catálogo...'),
                     getOrFetch('data_active_products', null, null, 'object', 'code', null, 'activeProds', 'Verificando mix ativo...'),
                     getOrFetch('data_stock', colsStock, 'stock', 'columnar', 'id', null, 'stock', 'Sincronizando estoque...'),
-                    getOrFetch('data_innovations', null, null, 'object', 'id', null, 'innovations', 'Baixando inovações...'),
+                    getOrFetch(null, null, 'object', 'id', null, 'innovations', 'Baixando inovações...'),
                     fetchWithLabel('data_metadata', null, null, 'object', 'key', null, 'Verificando metadados...'), // Always fetch metadata fresh
                     getOrFetch('data_orders', colsOrders, 'orders', 'object', 'id', applyClientFilter, 'orders', 'Verificando pedidos...'),
                     fetchWithLabel('data_client_coordinates', null, null, 'object', 'client_code', null, 'Atualizando geolocalização...'),
                     getOrFetch('data_hierarchy', null, null, 'object', 'id', null, 'hierarchy', 'Carregando hierarquia...'),
                     getOrFetch('data_client_promoters', null, null, 'object', 'client_code', null, 'clientPromoters', 'Sincronizando roteiros...'),
-                    getOrFetch('data_titulos', null, null, 'object', 'id', null, 'titulos', 'Baixando títulos...'),
-                    getOrFetch('data_nota_perfeita', null, null, 'object', 'id', null, 'nota_perfeita', 'Verificando loja perfeita...'),
                     getOrFetch('relacao_rota_involves', null, null, 'object', 'id', null, 'relacao_rota_involves', 'Carregando rotas...'),
                     getOrFetch('dim_vendedores', null, null, 'object', 'codigo', null, 'dim_vendedores', 'Baixando vendedores...'),
                     getOrFetch('dim_supervisores', null, null, 'object', 'codigo', null, 'dim_supervisores', 'Baixando supervisores...'),
@@ -864,21 +913,11 @@
                 products = productsFetched;
                 activeProds = activeProdsFetched;
                 stock = stockFetched;
-                innovations = innovationsFetched;
                 metadata = metadataFetched;
                 orders = ordersUpper;
                 clientCoordinates = clientCoordinatesFetched;
                 hierarchy = hierarchyFetched;
                 clientPromoters = clientPromotersFetched;
-                titulos = titulosFetched;
-                if (notaPerfeitaFetched && notaPerfeitaFetched.length > 0) {
-                    notaPerfeitaFetched.forEach(row => {
-                        if (row.pesquisador) {
-                            row.pesquisador = String(row.pesquisador).toUpperCase().replace(/\s+/g, '');
-                        }
-                    });
-                }
-                nota_perfeita = notaPerfeitaFetched;
                 relacao_rota_involves = relacaoRotaInvolvesFetched;
                 dim_vendedores = dimVendedoresFetched;
                 dim_supervisores = dimSupervisoresFetched;
@@ -897,7 +936,12 @@
                 const dataToCache = {
                         detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches
                     };
-                    saveToCache('dashboardData', dataToCache).then(() => console.log('Dados atualizados salvos no cache.'));
+                    saveToCache('dashboardData', dataToCache).then(() => {
+                        console.log('Dados atualizados salvos no cache.');
+                        if (staleWhileRevalidate) {
+                            showUpdateToast();
+                        }
+                    });
             }
 
             // Clear loading states (optional, but good practice)

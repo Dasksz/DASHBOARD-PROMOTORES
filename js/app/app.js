@@ -14671,7 +14671,27 @@ const supervisorGroups = new Map();
             updateInnovationsMonthView();
         }
 
-        function updateInnovationsMonthView() {
+        async function updateInnovationsMonthView() {
+            // Lazy Load Data
+            if (!window.innovations) {
+                const container = document.getElementById('innovations-month-kpis');
+                if (container) container.innerHTML = '<div class="col-span-full text-center py-10 text-slate-400">Baixando dados de Inovações...</div>';
+
+                try {
+                    const { data, error } = await window.supabaseClient.from('data_innovations').select('*');
+                    if (error) throw error;
+                    window.innovations = data || [];
+
+                    // Update cache asynchronously
+                    window.cachedData = window.cachedData || {};
+                    window.cachedData.innovations = window.innovations;
+                } catch (e) {
+                    console.error("Erro ao carregar inovações lazy:", e);
+                    if (container) container.innerHTML = '<div class="col-span-full text-center py-10 text-red-500">Erro ao carregar inovações.</div>';
+                    return;
+                }
+            }
+
             const selectedCategory = innovationsMonthCategoryFilter.value;
 
             // Initialize Global Categories if not already done (Optimization)
@@ -29239,7 +29259,30 @@ const supervisorGroups = new Map();
         let titulosRedeGroupFilter = '';
         let titulosRenderId = 0;
 
-        function renderTitulosView() {
+        async function renderTitulosView() {
+            // Lazy Load Data
+            if (!window.titulos) {
+                const container = document.getElementById('titulos-kpis');
+                if (container) container.innerHTML = '<div class="col-span-full text-center py-10 text-slate-400">Baixando dados de títulos...</div>';
+
+                try {
+                    const { data, error } = await window.supabaseClient.from('data_titulos').select('*');
+                    if (error) throw error;
+                    window.titulos = data || [];
+
+                    // Update cache asynchronously
+                    window.cachedData = window.cachedData || {};
+                    window.cachedData.titulos = window.titulos;
+                    // Trigger a cache save in background if function is available (from init.js)
+                    // We assume dataToCache structure exists, or we just save specific key if needed,
+                    // but for now, assigning to window.titulos is enough for the session.
+                } catch (e) {
+                    console.error("Erro ao carregar títulos lazy:", e);
+                    if (container) container.innerHTML = '<div class="col-span-full text-center py-10 text-red-500">Erro ao carregar títulos.</div>';
+                    return;
+                }
+            }
+
             setupHierarchyFilters('titulos', () => handleTitulosFilterChange());
             setupTitulosSupervisorFilterHandlers();
 
@@ -30290,7 +30333,36 @@ const supervisorGroups = new Map();
         if (window.showToast) window.showToast('error', 'Erro ao gerar o PDF.');
     }
 }
-    function renderLojaPerfeitaView() {
+    async function renderLojaPerfeitaView() {
+        // Lazy Load Data
+        if (!window.nota_perfeita) {
+            const container = document.getElementById('lp-kpis-grid');
+            if (container) container.innerHTML = '<div class="col-span-full text-center py-10 text-slate-400">Baixando dados de Loja Perfeita...</div>';
+
+            try {
+                const { data, error } = await window.supabaseClient.from('data_nota_perfeita').select('*');
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    data.forEach(row => {
+                        if (row.pesquisador) {
+                            row.pesquisador = String(row.pesquisador).toUpperCase().replace(/\s+/g, '');
+                        }
+                    });
+                }
+
+                window.nota_perfeita = data || [];
+
+                // Update cache asynchronously
+                window.cachedData = window.cachedData || {};
+                window.cachedData.nota_perfeita = window.nota_perfeita;
+            } catch (e) {
+                console.error("Erro ao carregar Loja Perfeita lazy:", e);
+                if (container) container.innerHTML = '<div class="col-span-full text-center py-10 text-red-500">Erro ao carregar dados.</div>';
+                return;
+            }
+        }
+
         // Inject Researcher Filter (New)
         const lpGrid = document.querySelector('#loja-perfeita-view .sticky-filters .grid');
         if (lpGrid && !document.getElementById('lp-researcher-filter-wrapper')) {
