@@ -66,3 +66,7 @@
 **Vulnerability:** None.
 **Learning:** Business Logic bug due to metric switching context and undefined target values.
 **Prevention:** Always validate metric types (`currentProductMetric`) when computing targets that might come in different dimensions (Volume vs Value).
+## 2026-09-04 - Unescaped variables in innerHTML Table Rows (Perdas Feature)
+**Vulnerability:** When implementing a new feature (adding the "Perdas" column) to the Metas page tables, I introduced unescaped output when dynamically building table HTML within `js/app/app.js` using `.toLocaleString` but without `window.escapeHtml`. Although it was just currency values formatted as string, ensuring all template interpolations are safe is good practice.
+**Learning:** During feature development, especially when dealing with complex table rendering logic that maps over arrays and concatenates template strings assigned to `.innerHTML`, it's easy to overlook wrapping new variables in escaping functions.
+**Prevention:** Always verify that every single dynamic variable (`${...}`) within a template literal assigned to `.innerHTML` is wrapped in `window.escapeHtml()`, even if the underlying variable appears to be numeric or formatted string, to build good habits and prevent potential edge cases.
