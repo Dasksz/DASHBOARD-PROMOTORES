@@ -5439,9 +5439,9 @@
                 const d = typeof s.DTPED === 'number' ? new Date(s.DTPED) : parseDate(s.DTPED);
                 if (!d || d.getUTCMonth() !== currentMonthIndex || d.getUTCFullYear() !== currentYear) continue;
 
-                // Type Filter (Types 5 and 11 excluded)
+                // Type Filter (Types 11 excluded, 5 handled separately for Perdas)
                 const tipo = String(s.TIPOVENDA);
-                if (tipo === '5' || tipo === '11') continue;
+                if (tipo === '11') continue;
 
                 // Pasta Filter (OBSERVACAOFOR) logic for Pepsico/Elma/Foods
                 // 1. Determine if row is PEPSICO/MULTIMARCAS
@@ -5507,9 +5507,15 @@
                 const weekIdx = getWeekIndex(d);
 
                 if (!salesBySeller.has(sellerName)) {
-                    salesBySeller.set(sellerName, { totalFat: 0, totalVol: 0, weeksFat: [0, 0, 0, 0, 0], weeksVol: [0, 0, 0, 0, 0], totalPos: 0 });
+                    salesBySeller.set(sellerName, { totalFat: 0, totalVol: 0, perdas: 0, weeksFat: [0, 0, 0, 0, 0], weeksVol: [0, 0, 0, 0, 0], totalPos: 0 });
                 }
                 const entry = salesBySeller.get(sellerName);
+
+                if (tipo === '5') {
+                    // Accumulate Perdas (Type 5) using VLBONIFIC or VLVENDA
+                    entry.perdas += (Number(s.VLBONIFIC) || valFat || 0);
+                    continue; // Skip adding to total sales/volume
+                }
 
                 entry.totalFat += valFat;
                 entry.totalVol += valVol;
@@ -5542,6 +5548,7 @@
             let headerHTML = `
                 <tr>
                     <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy z-50 sticky left-0 border-r border-b border-slate-700 w-32 shadow-lg hidden md:table-cell">VENDEDOR</th>
+                    <th rowspan="2" class="px-2 py-1 text-center bg-red-900/30 text-red-400 border-r border-b border-slate-700 w-24 hidden md:table-cell text-xs">PERDAS</th>
                     <th colspan="2" class="px-2 py-1 text-center bg-blue-900/30 text-blue-400 border-r border-slate-700 border-b-0 hidden md:table-cell">GERAL</th>
             `;
 
@@ -5574,6 +5581,7 @@
             const rowsHTML = data.map((row, index) => {
                 const metaTotalStr = row.metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const realTotalStr = row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const perdasStr = (row.perdas || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
                 // Achievement Color Logic
                 const percent = row.metaTotal > 0 ? (row.realTotal / row.metaTotal) * 100 : 0;
@@ -5587,6 +5595,7 @@
                 // Desktop Cells
                 let desktopCells = `
                     <td class="px-3 py-2 font-medium text-slate-200 border-r border-b border-slate-700 sticky left-0 glass-panel-heavy z-30 truncate hidden md:table-cell" title="${window.escapeHtml(row.name)}">${window.escapeHtml(getFirstName(row.name))}</td>
+                    <td class="px-2 py-2 text-right bg-red-900/10 text-red-400 font-bold border-r border-b border-slate-700 text-xs hidden md:table-cell">${perdasStr}</td>
                     <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs hidden md:table-cell" title="Meta Contratual Mensal">${metaTotalStr}</td>
                     <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs hidden md:table-cell">${realTotalStr}</td>
                 `;
@@ -5610,6 +5619,9 @@
                 const mobileContent = `
                     <td class="md:hidden w-full py-3 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${index}, 'seller')">
                         <div class="font-bold text-sm text-slate-200 mb-1 truncate">${window.escapeHtml(row.codusur || '')} - ${window.escapeHtml(row.name)}</div>
+                        <div class="flex justify-between items-center text-xs mb-1">
+                            <div class="text-slate-400">Perdas: <span class="text-red-400 font-medium">${perdasStr}</span></div>
+                        </div>
                         <div class="flex justify-between items-center text-xs">
                             <div class="text-slate-400">Meta: <span class="text-slate-200 font-medium">${metaTotalStr}</span></div>
                             <div class="text-slate-400">Real: <span class="${colorClass} font-bold">${realTotalStr}</span></div>
@@ -5921,7 +5933,7 @@
 
             allSellers.forEach(sellerName => {
                 const goals = goalsBySeller.get(sellerName) || { totalFat: 0, totalVol: 0, totalPos: 0 };
-                const sales = salesBySeller.get(sellerName) || { totalFat: 0, totalVol: 0, weeksFat: [], weeksVol: [], totalPos: 0 };
+                const sales = salesBySeller.get(sellerName) || { totalFat: 0, totalVol: 0, perdas: 0, weeksFat: [], weeksVol: [], totalPos: 0 };
 
                 // Determine which metric to use for the main chart/table
                 // Note: The Table logic (renderMetaRealizadoTable) seems built for ONE metric (previously just Revenue).
@@ -5962,6 +5974,7 @@
                     name: sellerName,
                     metaTotal: targetTotalGoal,
                     realTotal: targetRealizedTotal,
+                    perdas: sales.perdas || 0,
                     weekData: weekData,
                     // Additional Data for Positivação Chart
                     posGoal: posGoal,
@@ -6434,7 +6447,7 @@
             clients.forEach(client => {
                 const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 if (!clientMap.has(codCli)) {
-                    clientMap.set(codCli, { clientObj: client, goal: 0, salesTotal: 0, salesWeeks: new Array(weeks.length).fill(0) });
+                    clientMap.set(codCli, { clientObj: client, goal: 0, salesTotal: 0, perdas: 0, salesWeeks: new Array(weeks.length).fill(0) });
                 }
                 const entry = clientMap.get(codCli);
 
@@ -6468,7 +6481,7 @@
                 // Basic Filters
                 if (!d || d.getUTCMonth() !== currentMonthIndex || d.getUTCFullYear() !== currentYear) continue;
                 const tipo = String(s.TIPOVENDA);
-                if (tipo === '5' || tipo === '11') continue;
+                if (tipo === '11') continue;
 
                 // Pasta Filter
                 let rowPasta = s.OBSERVACAOFOR;
@@ -6502,12 +6515,17 @@
                     const clientObj = clientMapForKPIs.get(codCli) || { 'Código': codCli, nomeCliente: 'DESCONHECIDO', cidade: 'N/A', rca1: 'N/A' };
                     // If we apply STRICT Supervisor/Seller filter, we should check if this sale matches.
                     // We already checked sale attributes above. So this sale is valid for the view.
-                    clientMap.set(codCli, { clientObj: clientObj, goal: 0, salesTotal: 0, salesWeeks: new Array(weeks.length).fill(0) });
+                    clientMap.set(codCli, { clientObj: clientObj, goal: 0, salesTotal: 0, perdas: 0, salesWeeks: new Array(weeks.length).fill(0) });
                 }
 
                 const entry = clientMap.get(codCli);
                 const val = Number(s.VLVENDA) || 0;
                 const weekIdx = getWeekIndex(d);
+
+                if (tipo === '5') {
+                    entry.perdas = (entry.perdas || 0) + (Number(s.VLBONIFIC) || val || 0);
+                    continue; // Skip adding to normal sales total
+                }
 
                 entry.salesTotal += val;
                 if (weekIdx !== -1) entry.salesWeeks[weekIdx] += val;
@@ -6550,6 +6568,7 @@
                     vendedor: vendorName,
                     metaTotal: data.goal,
                     realTotal: data.salesTotal,
+                    perdas: data.perdas || 0,
                     weekData: weekData
                 });
 
@@ -6586,6 +6605,7 @@
                     <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 min-w-[200px] hidden md:table-cell">CLIENTE</th>
                     <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 w-32 hidden md:table-cell">VENDEDOR</th>
                     <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 w-32 hidden md:table-cell">CIDADE</th>
+                    <th rowspan="2" class="px-2 py-1 text-center bg-red-900/30 text-red-400 border-r border-b border-slate-700 w-24 hidden md:table-cell text-xs">PERDAS</th>
                     <th colspan="2" class="px-2 py-1 text-center bg-blue-900/30 text-blue-400 border-r border-slate-700 border-b-0 hidden md:table-cell">GERAL</th>
             `;
 
@@ -6621,6 +6641,7 @@
                 const rowsHTML = pageData.map((row, index) => {
                     const metaTotalStr = row.metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     const realTotalStr = row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const perdasStr = (row.perdas || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     
                     const percent = row.metaTotal > 0 ? (row.realTotal / row.metaTotal) * 100 : 0;
                     const colorClass = getAchievementColorClass(percent);
@@ -6630,6 +6651,7 @@
                         <td class="px-3 py-2 text-xs font-medium text-slate-200 border-r border-b border-slate-700 truncate hidden md:table-cell" title="${escapeHtml(row.razaoSocial)}">${escapeHtml(row.razaoSocial)}</td>
                         <td class="px-3 py-2 text-xs text-slate-400 border-r border-b border-slate-700 truncate hidden md:table-cell">${escapeHtml(getFirstName(row.vendedor))}</td>
                         <td class="px-3 py-2 text-xs text-slate-400 border-r border-b border-slate-700 truncate hidden md:table-cell">${escapeHtml(row.cidade)}</td>
+                        <td class="px-2 py-2 text-right bg-red-900/10 text-red-400 font-bold border-r border-b border-slate-700 text-xs hidden md:table-cell">${perdasStr}</td>
                         <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs hidden md:table-cell" title="Meta Contratual Mensal">${metaTotalStr}</td>
                         <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs hidden md:table-cell">${realTotalStr}</td>
                     `;
@@ -6652,6 +6674,9 @@
                     const mobileContent = `
                         <td class="md:hidden w-full py-3 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${index}, 'client')">
                             <div class="font-bold text-sm text-slate-200 mb-1 truncate">${row.codcli} - ${escapeHtml(row.razaoSocial)}</div>
+                            <div class="flex justify-between items-center text-xs mb-1">
+                                <div class="text-slate-400">Perdas: <span class="text-red-400 font-medium">${perdasStr}</span></div>
+                            </div>
                             <div class="flex justify-between items-center text-xs">
                                 <div class="text-slate-400">Meta: <span class="text-slate-200 font-medium">${metaTotalStr}</span></div>
                                 <div class="text-slate-400">Real: <span class="${colorClass} font-bold">${realTotalStr}</span></div>
