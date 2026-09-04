@@ -30387,6 +30387,8 @@ const supervisorGroups = new Map();
                 // Update cache asynchronously
                 window.cachedData = window.cachedData || {};
                 window.cachedData.nota_perfeita = window.nota_perfeita;
+                if (window.embeddedData) window.embeddedData.nota_perfeita = window.nota_perfeita;
+                if (typeof embeddedData !== 'undefined' && embeddedData) embeddedData.nota_perfeita = window.nota_perfeita;
             } catch (e) {
                 console.error("Erro ao carregar Loja Perfeita lazy:", e);
                 if (container) container.innerHTML = '<div class="col-span-full text-center py-10 text-red-500">Erro ao carregar dados.</div>';
