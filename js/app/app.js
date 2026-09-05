@@ -5234,7 +5234,12 @@
             clients.forEach(client => {
                 const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const rcaCode = String(client.rca1 || '');
-                const rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode; // Map code to name for grouping
+                let rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode; // Map code to name for grouping
+                
+                // Force BALCAO for specific clients
+                if (['541', '544', '546'].includes(codCli)) {
+                    rcaName = 'BALCAO';
+                }
 
                 // Filtering "Garbage" Sellers to fix Total Positivação (1965 vs 1977)
                 if (isGarbageSeller(rcaName)) return;
@@ -5505,15 +5510,13 @@
                 const is3297 = normalizeKey(String(s.CODCLI)) === '3297';
                 
                 // --- RATEIO CLIENTE 3297 ---
-                // Se a venda for do cliente 3297, dividimos por 3 e atribuímos aos clientes 541, 544, 546
-                // (que pertencem ao vendedor 'BALCAO' ou vendedor 53).
                 const targetSellers = [];
                 const origValFat = Number(s.VLVENDA) || 0;
                 const origValVol = Number(s.TOTPESOLIQ) || 0;
                 const origPerda = Number(s.VLBONIFIC) || origValFat || 0;
                 
                 if (is3297) {
-                    const seller53 = window.resolveDim('vendedores', '53') || 'BALCAO';
+                    const seller53 = 'BALCAO';
                     targetSellers.push({
                         name: seller53,
                         fat: origValFat / 3,
