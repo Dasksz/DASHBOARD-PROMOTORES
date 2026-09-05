@@ -4895,7 +4895,7 @@
             const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
             if (isAmericanas) return true;
             // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS
-            if (window.userRole === 'adm' && rca1 === '53') return false;
+            if (window.userRole === 'adm' && rca1 === '53' && !['541','544','546'].includes(String(c['Código'] || c.codigo_cliente).trim())) return false;
             // FIX: Only exclude INATIVOS for Admins. Non-admins see everything in their wallet.
             if (window.userRole === 'adm' && rca1 === '') return false; 
             return true;
@@ -5204,7 +5204,7 @@
                 // Active logic
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 if (!isAmericanas) {
-                    if (window.userRole === 'adm' && rca1 === '53') continue;
+                    if (window.userRole === 'adm' && rca1 === '53' && !['541','544','546'].includes(String(c['Código'] || c.codigo_cliente).trim())) continue;
                     if (rca1 === '') continue;
                 }
 
@@ -5234,7 +5234,12 @@
             clients.forEach(client => {
                 const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 const rcaCode = String(client.rca1 || '');
-                const rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode; // Map code to name for grouping
+                let rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode; // Map code to name for grouping
+
+                // Force BALCAO for specific clients
+                if (['541', '544', '546'].includes(codCli)) {
+                    rcaName = 'BALCAO';
+                }
 
                 // Filtering "Garbage" Sellers to fix Total Positivação (1965 vs 1977)
                 if (isGarbageSeller(rcaName)) return;
@@ -5501,33 +5506,58 @@
                     if (!supplierMatch) continue;
                 }
 
-                const sellerName = window.resolveDim('vendedores', s.CODUSUR);
-                const valFat = Number(s.VLVENDA) || 0;
-                const valVol = Number(s.TOTPESOLIQ) || 0;
+                const origSellerName = window.resolveDim('vendedores', s.CODUSUR);
+                const is3297 = normalizeKey(String(s.CODCLI)) === '3297';
+
+                // --- RATEIO CLIENTE 3297 ---
+                const targetSellers = [];
+                const origValFat = Number(s.VLVENDA) || 0;
+                const origValVol = Number(s.TOTPESOLIQ) || 0;
+                const origPerda = Number(s.VLBONIFIC) || origValFat || 0;
+
+                if (is3297) {
+                    const seller53 = 'BALCAO';
+                    targetSellers.push({
+                        name: seller53,
+                        fat: origValFat / 3,
+                        vol: origValVol / 3,
+                        perda: origPerda / 3,
+                        clients: ['541', '544', '546']
+                    });
+                } else {
+                    targetSellers.push({
+                        name: origSellerName,
+                        fat: origValFat,
+                        vol: origValVol,
+                        perda: origPerda,
+                        clients: [String(s.CODCLI)]
+                    });
+                }
+
                 const weekIdx = getWeekIndex(d);
 
-                if (!salesBySeller.has(sellerName)) {
-                    salesBySeller.set(sellerName, { totalFat: 0, totalVol: 0, perdas: 0, weeksFat: [0, 0, 0, 0, 0], weeksVol: [0, 0, 0, 0, 0], totalPos: 0 });
+                for (const ts of targetSellers) {
+                    if (!salesBySeller.has(ts.name)) {
+                        salesBySeller.set(ts.name, { totalFat: 0, totalVol: 0, perdas: 0, weeksFat: [0, 0, 0, 0, 0], weeksVol: [0, 0, 0, 0, 0], totalPos: 0 });
+                    }
+                    const entry = salesBySeller.get(ts.name);
+
+                    if (tipo === '5') {
+                        entry.perdas += ts.perda;
+                        continue;
+                    }
+
+                    entry.totalFat += ts.fat;
+                    entry.totalVol += ts.vol;
+
+                    if (weekIdx !== -1 && weekIdx < 5) {
+                        entry.weeksFat[weekIdx] += ts.fat;
+                        entry.weeksVol[weekIdx] += ts.vol;
+                    }
+
+                    if (!sellerClients.has(ts.name)) sellerClients.set(ts.name, new Set());
+                    ts.clients.forEach(c => sellerClients.get(ts.name).add(c));
                 }
-                const entry = salesBySeller.get(sellerName);
-
-                if (tipo === '5') {
-                    // Accumulate Perdas (Type 5) using VLBONIFIC or VLVENDA
-                    entry.perdas += (Number(s.VLBONIFIC) || valFat || 0);
-                    continue; // Skip adding to total sales/volume
-                }
-
-                entry.totalFat += valFat;
-                entry.totalVol += valVol;
-
-                if (weekIdx !== -1 && weekIdx < 5) {
-                    entry.weeksFat[weekIdx] += valFat;
-                    entry.weeksVol[weekIdx] += valVol;
-                }
-
-                // Positivação Logic (Accumulate Clients)
-                if (!sellerClients.has(sellerName)) sellerClients.set(sellerName, new Set());
-                sellerClients.get(sellerName).add(String(s.CODCLI));
             }
 
             // Finalize Positivação Counts
@@ -6416,7 +6446,7 @@
                 // Active logic
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 if (!isAmericanas) {
-                    if (window.userRole === 'adm' && rca1 === '53') continue;
+                    if (window.userRole === 'adm' && rca1 === '53' && !['541','544','546'].includes(String(c['Código'] || c.codigo_cliente).trim())) continue;
                     if (rca1 === '') continue;
                 }
 
@@ -6497,38 +6527,42 @@
 
                 if (suppliersSet.size > 0 && !suppliersSet.has(s.CODFOR)) continue;
 
-                const codCli = normalizeKey(String(s.CODCLI));
-                if (!allowedClientCodes.has(codCli)) continue;
-                // Check if client is in allowed list (Active/Filtered)
-                // Note: User said "todos os clientes que possuírem metas OU vendas".
-                // If a client has sales but was filtered out by "Active" check (e.g. Inactive RCA), should they appear?
-                // Usually yes, sales override status.
-                // However, we are filtering by Supervisor/Seller above.
+                const origCodCli = normalizeKey(String(s.CODCLI));
+                const is3297 = origCodCli === '3297';
 
-                // Logic: If I filtered by Supervisor X, and Sale is by Supervisor X, I include it.
-                // But do I include the Client Object?
-                // If the client wasn't in 'clients' array (e.g. RCA 53?), we might miss metadata.
-                // We should fetch client metadata from allClientsData map if missing.
+                const targetClientsSales = [];
+                const origValFat = Number(s.VLVENDA) || 0;
+                const origPerda = Number(s.VLBONIFIC) || origValFat || 0;
 
-                if (!clientMap.has(codCli)) {
-                    // Try to find client object
-                    const clientObj = clientMapForKPIs.get(codCli) || { 'Código': codCli, nomeCliente: 'DESCONHECIDO', cidade: 'N/A', rca1: 'N/A' };
-                    // If we apply STRICT Supervisor/Seller filter, we should check if this sale matches.
-                    // We already checked sale attributes above. So this sale is valid for the view.
-                    clientMap.set(codCli, { clientObj: clientObj, goal: 0, salesTotal: 0, perdas: 0, salesWeeks: new Array(weeks.length).fill(0) });
+                if (is3297) {
+                    targetClientsSales.push({ codCli: '541', fat: origValFat / 3, perda: origPerda / 3 });
+                    targetClientsSales.push({ codCli: '544', fat: origValFat / 3, perda: origPerda / 3 });
+                    targetClientsSales.push({ codCli: '546', fat: origValFat / 3, perda: origPerda / 3 });
+                } else {
+                    targetClientsSales.push({ codCli: origCodCli, fat: origValFat, perda: origPerda });
                 }
 
-                const entry = clientMap.get(codCli);
-                const val = Number(s.VLVENDA) || 0;
-                const weekIdx = getWeekIndex(d);
+                for (const targetSale of targetClientsSales) {
+                    const codCli = targetSale.codCli;
+                    if (!allowedClientCodes.has(codCli)) continue;
 
-                if (tipo === '5') {
-                    entry.perdas = (entry.perdas || 0) + (Number(s.VLBONIFIC) || val || 0);
-                    continue; // Skip adding to normal sales total
+                    if (!clientMap.has(codCli)) {
+                        const clientObj = clientMapForKPIs.get(codCli) || { 'Código': codCli, nomeCliente: 'DESCONHECIDO', cidade: 'N/A', rca1: 'N/A' };
+                        clientMap.set(codCli, { clientObj: clientObj, goal: 0, salesTotal: 0, perdas: 0, salesWeeks: new Array(weeks.length).fill(0) });
+                    }
+
+                    const entry = clientMap.get(codCli);
+                    const val = targetSale.fat;
+                    const weekIdx = getWeekIndex(d);
+
+                    if (tipo === '5') {
+                        entry.perdas = (entry.perdas || 0) + targetSale.perda;
+                        continue;
+                    }
+
+                    entry.salesTotal += val;
+                    if (weekIdx !== -1) entry.salesWeeks[weekIdx] += val;
                 }
-
-                entry.salesTotal += val;
-                if (weekIdx !== -1) entry.salesWeeks[weekIdx] += val;
             }
 
             // 3. Transform to Array and Calculate Dynamic Goals
@@ -6918,7 +6952,7 @@
                 const rca1 = String(c.rca1 || '').trim();
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 if (isAmericanas) return true;
-                if (rca1 === '53') return false; // Exclude virtual inactive code if necessary
+                if (rca1 === '53' && !['541','544','546'].includes(String(c['Código'] || c.codigo_cliente).trim())) return false; // Exclude virtual inactive code if necessary
                 if (rca1 === '') return false;
                 return true;
             });
@@ -7745,7 +7779,7 @@
                 // Is client active check (Same as others)
                 // Exclude Americanas explicitly from this calculation as per requirement
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                if (isAmericanas || (window.userRole === 'adm' && (rca1 === '53' || rca1 === '053' || rca1 === '' || rca1 === 'INATIVOS'))) continue;
+                if (isAmericanas || (window.userRole === 'adm' && (rca1 === '53' || rca1 === '053' || rca1 === '' || rca1 === 'INATIVOS') && !['541','544','546'].includes(String(c['Código'] || c.codigo_cliente).trim()))) continue;
 
                 // Does client belong to seller? (Current Hierarchy)
                 if (c.rcas && c.rcas.includes(sellerCode)) {
@@ -8752,7 +8786,7 @@
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 if (isAmericanas) return true;
                 // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS
-                if (window.userRole === 'adm' && rca1 === '53') return false;
+                if (window.userRole === 'adm' && rca1 === '53' && !['541','544','546'].includes(String(c['Código'] || c.codigo_cliente).trim())) return false;
                 if (rca1 === '') return false; // Exclude INATIVOS
                 return true;
             });
