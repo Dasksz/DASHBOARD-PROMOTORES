@@ -5482,7 +5482,8 @@
 
 
                 // Client Filter: Ensure sale belongs to the same set of clients used for goals
-                if (!filteredClientCodes.has(normalizeKey(String(s.CODCLI)))) continue;
+                const tempCodCli = normalizeKey(String(s.CODCLI));
+                if (tempCodCli !== '3297' && !filteredClientCodes.has(tempCodCli)) continue;
 
                 // Enhanced Supplier Logic to handle Virtual Foods Categories
                 if (suppliersSet.size > 0) {
@@ -6545,7 +6546,7 @@
 
                 for (const targetSale of targetClientsSales) {
                     const codCli = targetSale.codCli;
-                    if (!allowedClientCodes.has(codCli)) continue;
+                    if (!['541', '544', '546'].includes(codCli) && !allowedClientCodes.has(codCli)) continue;
 
                     if (!clientMap.has(codCli)) {
                         const clientObj = clientMapForKPIs.get(codCli) || { 'Código': codCli, nomeCliente: 'DESCONHECIDO', cidade: 'N/A', rca1: 'N/A' };
