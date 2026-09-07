@@ -5238,7 +5238,7 @@
 
                 // Force BALCAO for specific clients
                 if (['541', '544', '546'].includes(codCli)) {
-                    rcaName = 'BALCAO';
+                    rcaName = 'BALCÃO';
                 }
 
                 // Filtering "Garbage" Sellers to fix Total Positivação (1965 vs 1977)
@@ -5482,7 +5482,8 @@
 
 
                 // Client Filter: Ensure sale belongs to the same set of clients used for goals
-                if (!filteredClientCodes.has(normalizeKey(String(s.CODCLI)))) continue;
+                const tempCodCli = normalizeKey(String(s.CODCLI));
+                if (tempCodCli !== '3297' && !filteredClientCodes.has(tempCodCli)) continue;
 
                 // Enhanced Supplier Logic to handle Virtual Foods Categories
                 if (suppliersSet.size > 0) {
@@ -5513,7 +5514,7 @@
                 const targetSellers = [];
                 const origValFat = Number(s.VLVENDA) || 0;
                 const origValVol = Number(s.TOTPESOLIQ) || 0;
-                const origPerda = Number(s.VLBONIFIC) || origValFat || 0;
+                const origPerda = Number(s.VLBONIFIC) || (String(s.TIPOVENDA) === '5' ? origValFat : 0);
 
                 if (is3297) {
                     const seller53 = 'BALCAO';
@@ -5549,6 +5550,7 @@
 
                     entry.totalFat += ts.fat;
                     entry.totalVol += ts.vol;
+                    entry.perdas += ts.perda || 0;
 
                     if (weekIdx !== -1 && weekIdx < 5) {
                         entry.weeksFat[weekIdx] += ts.fat;
@@ -6532,7 +6534,7 @@
 
                 const targetClientsSales = [];
                 const origValFat = Number(s.VLVENDA) || 0;
-                const origPerda = Number(s.VLBONIFIC) || origValFat || 0;
+                const origPerda = Number(s.VLBONIFIC) || (String(s.TIPOVENDA) === '5' ? origValFat : 0);
 
                 if (is3297) {
                     targetClientsSales.push({ codCli: '541', fat: origValFat / 3, perda: origPerda / 3 });
@@ -6544,7 +6546,7 @@
 
                 for (const targetSale of targetClientsSales) {
                     const codCli = targetSale.codCli;
-                    if (!allowedClientCodes.has(codCli)) continue;
+                    if (!['541', '544', '546'].includes(codCli) && !allowedClientCodes.has(codCli)) continue;
 
                     if (!clientMap.has(codCli)) {
                         const clientObj = clientMapForKPIs.get(codCli) || { 'Código': codCli, nomeCliente: 'DESCONHECIDO', cidade: 'N/A', rca1: 'N/A' };
@@ -6561,6 +6563,7 @@
                     }
 
                     entry.salesTotal += val;
+                    entry.perdas = (entry.perdas || 0) + (targetSale.perda || 0);
                     if (weekIdx !== -1) entry.salesWeeks[weekIdx] += val;
                 }
             }
