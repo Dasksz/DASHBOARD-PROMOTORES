@@ -59,7 +59,7 @@
         return rowPasta;
     };
 
-    window.GARBAGE_SELLER_KEYWORDS = ['TOTAL', 'GERAL', 'SUPERVISOR', 'BALCAO'];
+    window.GARBAGE_SELLER_KEYWORDS = ['TOTAL', 'GERAL', 'SUPERVISOR'];
     window.GARBAGE_SELLER_EXACT = ['INATIVOS', 'N/A'];
 
     window.isGarbageSeller = function(name) {
