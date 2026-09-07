@@ -5513,7 +5513,7 @@
                 const targetSellers = [];
                 const origValFat = Number(s.VLVENDA) || 0;
                 const origValVol = Number(s.TOTPESOLIQ) || 0;
-                const origPerda = Number(s.VLBONIFIC) || origValFat || 0;
+                const origPerda = Number(s.VLBONIFIC) || (String(s.TIPOVENDA) === '5' ? origValFat : 0);
                 
                 if (is3297) {
                     const seller53 = 'BALCAO';
@@ -5549,6 +5549,7 @@
 
                     entry.totalFat += ts.fat;
                     entry.totalVol += ts.vol;
+                    entry.perdas += ts.perda || 0;
 
                     if (weekIdx !== -1 && weekIdx < 5) {
                         entry.weeksFat[weekIdx] += ts.fat;
@@ -6532,7 +6533,7 @@
                 
                 const targetClientsSales = [];
                 const origValFat = Number(s.VLVENDA) || 0;
-                const origPerda = Number(s.VLBONIFIC) || origValFat || 0;
+                const origPerda = Number(s.VLBONIFIC) || (String(s.TIPOVENDA) === '5' ? origValFat : 0);
 
                 if (is3297) {
                     targetClientsSales.push({ codCli: '541', fat: origValFat / 3, perda: origPerda / 3 });
@@ -6561,6 +6562,7 @@
                     }
 
                     entry.salesTotal += val;
+                    entry.perdas = (entry.perdas || 0) + (targetSale.perda || 0);
                     if (weekIdx !== -1) entry.salesWeeks[weekIdx] += val;
                 }
             }
