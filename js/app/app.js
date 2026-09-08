@@ -6073,6 +6073,11 @@
                 }
             }
             
+            // Se qualquer um dos clientes que recebem rateio estiver no filtro, injetar o 3297 para puxar os dados brutos dele.
+            if (clientCodes.has('541') || clientCodes.has('544') || clientCodes.has('546')) {
+                clientCodes.add('3297');
+            }
+
             const metasFilters = {
                 filial,
                 pasta,
@@ -6089,6 +6094,25 @@
             for(let i=0; i<rawPerdas.length; i++) {
                 const sale = rawPerdas[i];
                 const clientCode = normalizeKey(sale.CODCLI);
+
+                // Rateio do 3297 para o KPI
+                if (clientCode === '3297') {
+                    // O valor total de perda do 3297 é dividido e atribuído aos clientes 541, 544, 546.
+                    // Como os clientes 541, 544, 546 não são Americanas nem BH, a perda deles contabiliza no KPI.
+                    // Mas precisamos checar se 541, 544 ou 546 estão nos filtros atuais (clientCodes)
+                    const perda3297 = (sale.VLBONIFIC || sale.VLVENDA || 0);
+                    let validTargets = 0;
+                    if (clientCodes.has('541')) validTargets++;
+                    if (clientCodes.has('544')) validTargets++;
+                    if (clientCodes.has('546')) validTargets++;
+
+                    if (validTargets > 0) {
+                        // Rateia e adiciona apenas a porção correspondente aos clientes que estão no filtro
+                        totalPerdas += (perda3297 / 3) * validTargets;
+                    }
+                    continue;
+                }
+
                 const ramo = (clientRamoMap.get(clientCode) || '').toUpperCase();
                 if (!ramo.includes('AMERICANAS') && !ramo.includes('BH')) {
                     totalPerdas += (sale.VLBONIFIC || sale.VLVENDA || 0);
@@ -6101,6 +6125,21 @@
                 // Only consider valid sales (exclude loss and donation)
                 if (tipo !== '5' && tipo !== '11') {
                     const clientCode = normalizeKey(sale.CODCLI);
+
+                    // Rateio do 3297 para o KPI de Faturamento
+                    if (clientCode === '3297') {
+                        const venda3297 = (sale.VLVENDA || 0);
+                        let validTargets = 0;
+                        if (clientCodes.has('541')) validTargets++;
+                        if (clientCodes.has('544')) validTargets++;
+                        if (clientCodes.has('546')) validTargets++;
+
+                        if (validTargets > 0) {
+                            totalFatMetas += (venda3297 / 3) * validTargets;
+                        }
+                        continue;
+                    }
+
                     const ramo = (clientRamoMap.get(clientCode) || '').toUpperCase();
                     if (!ramo.includes('AMERICANAS') && !ramo.includes('BH')) {
                         totalFatMetas += (sale.VLVENDA || 0);
