@@ -5238,7 +5238,7 @@
 
                 // Force BALCAO for specific clients
                 if (['541', '544', '546'].includes(codCli)) {
-                    rcaName = 'BALCÃO';
+                    rcaName = 'BALCAO';
                 }
 
                 // Filtering "Garbage" Sellers to fix Total Positivação (1965 vs 1977)
