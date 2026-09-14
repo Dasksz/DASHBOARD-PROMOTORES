@@ -6585,7 +6585,7 @@
 
                 for (const targetSale of targetClientsSales) {
                     const codCli = targetSale.codCli;
-                    if (!['541', '544', '546', '12034'].includes(codCli) && !allowedClientCodes.has(codCli)) continue;
+                    if (!allowedClientCodes.has(codCli)) continue;
 
                     if (!clientMap.has(codCli)) {
                         const clientObj = clientMapForKPIs.get(codCli) || { 'Código': codCli, nomeCliente: 'DESCONHECIDO', cidade: 'N/A', rca1: 'N/A' };
