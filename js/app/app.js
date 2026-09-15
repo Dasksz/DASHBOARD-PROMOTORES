@@ -1844,7 +1844,8 @@
                         sellerDetailsMap,
                         typeof updateFilterButtonText === 'function' ? updateFilterButtonText : null,
                         'Todos',
-                        config.vendedorColorClass || 'text-orange-500'
+                        config.vendedorColorClass || 'text-orange-500',
+                        (d, code) => d && typeof d.name === 'string' && isNaN(Number(d.name))
                     );
                 }
             };
@@ -27076,7 +27077,7 @@ const supervisorGroups = new Map();
 
     function updateWeeklyVendedorFilter() {
             if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('weekly-vendedor-filter-dropdown', 'weekly-vendedor-filter-text', selectedWeeklySupervisors, selectedWeeklyVendedores, sellerDetailsMap, updateWeeklyFilterText, 'Todos', 'text-orange-500');
+                window.updateGenericVendedorFilter('weekly-vendedor-filter-dropdown', 'weekly-vendedor-filter-text', selectedWeeklySupervisors, selectedWeeklyVendedores, sellerDetailsMap, updateWeeklyFilterText, 'Todos', 'text-orange-500', (d, code) => d && typeof d.name === 'string' && isNaN(Number(d.name)));
             }
         }
 
@@ -31003,7 +31004,7 @@ const supervisorGroups = new Map();
 
         function updateGoalsGvVendedorFilter() {
             if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('goals-gv-seller-filter-dropdown', 'goals-gv-seller-filter-text', selectedGoalsGvSupervisors, selectedGoalsGvVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
+                window.updateGenericVendedorFilter('goals-gv-seller-filter-dropdown', 'goals-gv-seller-filter-text', selectedGoalsGvSupervisors, selectedGoalsGvVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500', (d, code) => d && typeof d.name === 'string' && isNaN(Number(d.name)));
             }
         }
 
@@ -31015,7 +31016,7 @@ const supervisorGroups = new Map();
 
         function updateGoalsSummaryVendedorFilter() {
             if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('goals-summary-seller-filter-dropdown', 'goals-summary-seller-filter-text', selectedGoalsSummarySupervisors, selectedGoalsSummaryVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500');
+                window.updateGenericVendedorFilter('goals-summary-seller-filter-dropdown', 'goals-summary-seller-filter-text', selectedGoalsSummarySupervisors, selectedGoalsSummaryVendedores, sellerDetailsMap, updateFilterButtonText, 'Todos', 'text-teal-500', (d, code) => d && typeof d.name === 'string' && isNaN(Number(d.name)));
             }
         }
 
