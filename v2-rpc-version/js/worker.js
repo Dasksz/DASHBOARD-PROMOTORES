@@ -1582,7 +1582,9 @@
                     computeHash(finalDimVendedores),
                     computeHash(finalDimSupervisores),
                     computeHash(finalDimFornecedores),
-                    computeHash(finalDimProdutos)
+                    computeHash(finalDimProdutos),
+                    computeHash(metasPesquisasRaw),
+                    computeHash(metasLojaPerfeitaRaw)
                 ]);
 
                 finalMetadata.push({ key: 'hash_detailed', value: hashes[0] });
@@ -1601,6 +1603,8 @@
                 finalMetadata.push({ key: 'hash_dim_supervisores', value: hashes[12] });
                 finalMetadata.push({ key: 'hash_dim_fornecedores', value: hashes[13] });
                 finalMetadata.push({ key: 'hash_dim_produtos', value: hashes[14] });
+                finalMetadata.push({ key: 'hash_metas_pesquisas', value: hashes[15] });
+                finalMetadata.push({ key: 'hash_metas_loja_perfeita', value: hashes[16] });
 
 
                 self.postMessage({ type: 'progress', status: 'Pronto!', percentage: 100 });
