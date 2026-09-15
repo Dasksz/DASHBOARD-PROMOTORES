@@ -17112,16 +17112,16 @@ const supervisorGroups = new Map();
 
                 // Upload Metas - Pesquisas
                 if (data.metas_pesquisas && data.metas_pesquisas.length > 0) {
-                    const { error } = await supabaseClient.from('data_metas_pesquisas').insert(data.metas_pesquisas);
-                    if (error) console.error("Error inserting data_metas_pesquisas:", error);
-                    else console.log("[Upload] Uploaded data_metas_pesquisas successfully.");
+                    await conditionalUpload('data_metas_pesquisas', data.metas_pesquisas, 'hash_metas_pesquisas', false);
+                } else {
+                    console.log("[Upload] Skipping Metas Pesquisas (No data provided).");
                 }
 
                 // Upload Metas - Loja Perfeita
                 if (data.metas_lojaperfeita && data.metas_lojaperfeita.length > 0) {
-                    const { error } = await supabaseClient.from('data_metas_loja_perfeita').insert(data.metas_lojaperfeita);
-                    if (error) console.error("Error inserting data_metas_loja_perfeita:", error);
-                    else console.log("[Upload] Uploaded data_metas_loja_perfeita successfully.");
+                    await conditionalUpload('data_metas_loja_perfeita', data.metas_lojaperfeita, 'hash_metas_loja_perfeita', false);
+                } else {
+                    console.log("[Upload] Skipping Metas Loja Perfeita (No data provided).");
                 }
 
                 if (data.metadata && data.metadata.length > 0) {
