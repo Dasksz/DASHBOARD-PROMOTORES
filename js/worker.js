@@ -872,6 +872,20 @@
                     readFile(metasLojaPerfeitaFile, 'metas_lojaperfeita').catch(() => []) // Optional
                 ]);
 
+                // Sanitize metas directly to remove visual 'nome' column to match Supabase schema
+                const sanitizeMetas = (metasArray) => {
+                    if (!metasArray || metasArray.length === 0) return [];
+                    return metasArray.map(m => ({
+                        promotor_code: m.promotor_code,
+                        mes: m.mes,
+                        ano: m.ano,
+                        valor_meta: m.valor_meta
+                    }));
+                };
+                
+                const sanitizedMetasPesquisas = sanitizeMetas(metasPesquisasRaw);
+                const sanitizedMetasLojaPerfeita = sanitizeMetas(metasLojaPerfeitaRaw);
+
                 // --- DATA PRESERVATION LOGIC ---
                 // Helper to hydrate missing dimensions in fallback data
                 const hydrateDimensions = (data) => {
@@ -1583,8 +1597,8 @@
                     computeHash(finalDimSupervisores),
                     computeHash(finalDimFornecedores),
                     computeHash(finalDimProdutos),
-                    computeHash(metasPesquisasRaw),
-                    computeHash(metasLojaPerfeitaRaw)
+                    computeHash(sanitizedMetasPesquisas),
+                    computeHash(sanitizedMetasLojaPerfeita)
                 ]);
 
                 finalMetadata.push({ key: 'hash_detailed', value: hashes[0] });
@@ -1622,8 +1636,8 @@
                         hierarchy: finalHierarchyData,
                         titulos: finalTitulosData,
                         nota_perfeita: finalNotaPerfeitaData,
-                        metas_pesquisas: metasPesquisasRaw,
-                        metas_lojaperfeita: metasLojaPerfeitaRaw,
+                        metas_pesquisas: sanitizedMetasPesquisas,
+                        metas_lojaperfeita: sanitizedMetasLojaPerfeita,
                         nota_perfeita_count: finalNotaPerfeitaCount, // Pass explicitly for easier access
                         product_details: finalProductDetailsData,
                         active_products: finalActiveProductsData,
