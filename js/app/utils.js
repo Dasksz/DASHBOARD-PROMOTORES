@@ -458,17 +458,21 @@
     /**
      * Reusable generic function to render a seller filter dropdown.
      */
-    window.updateGenericVendedorFilter = function(dropdownId, textId, supervisorsSet, vendedoresSet, sellerDetailsMap, updateTextFn, defaultLabel = 'Todos', checkboxColorClass = 'text-orange-500') {
+    window.updateGenericVendedorFilter = function(dropdownId, textId, supervisorsSet, vendedoresSet, sellerDetailsMap, updateTextFn, defaultLabel = 'Todos', checkboxColorClass = 'text-orange-500', filterFn = null) {
         const dropdown = document.getElementById(dropdownId);
         if(!dropdown) return;
 
         const validRcas = new Set();
         if (supervisorsSet.size > 0) {
             sellerDetailsMap.forEach((d, code) => {
-                if (supervisorsSet.has(d.supervisor)) validRcas.add(code);
+                if (supervisorsSet.has(d.supervisor)) {
+                    if (typeof filterFn !== 'function' || filterFn(d, code)) validRcas.add(code);
+                }
             });
         } else {
-            sellerDetailsMap.forEach((d, code) => validRcas.add(code));
+            sellerDetailsMap.forEach((d, code) => {
+                if (typeof filterFn !== 'function' || filterFn(d, code)) validRcas.add(code);
+            });
         }
 
         let options = [];
