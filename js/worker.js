@@ -310,7 +310,7 @@
             return new Promise((resolve, reject) => {
                 if (!file) {
                     // Make specific file types optional
-                    const optionalTypes = ['innovations', 'history', 'hierarchy', 'titulos', 'products'];
+                    const optionalTypes = ['innovations', 'history', 'hierarchy', 'titulos', 'products', 'metas_pesquisas', 'metas_lojaperfeita', 'nota_perfeita'];
                     if (optionalTypes.includes(fileType)) {
                          resolve([]);
                          return;
@@ -873,14 +873,25 @@
                 ]);
 
                 // Sanitize metas directly to remove visual 'nome' column to match Supabase schema
+                // Handle different potential casings from Excel
                 const sanitizeMetas = (metasArray) => {
                     if (!metasArray || metasArray.length === 0) return [];
-                    return metasArray.map(m => ({
-                        promotor_code: m.promotor_code,
-                        mes: m.mes,
-                        ano: m.ano,
-                        valor_meta: m.valor_meta
-                    }));
+                    return metasArray.map(m => {
+                        const keys = Object.keys(m);
+                        const getVal = (possibleKeys) => {
+                            for (let p of possibleKeys) {
+                                const found = keys.find(k => k.toLowerCase() === p);
+                                if (found) return m[found];
+                            }
+                            return null;
+                        };
+                        return {
+                            promotor_code: getVal(['promotor_code', 'promotor', 'codigo', 'cod']),
+                            mes: getVal(['mes', 'mês']),
+                            ano: getVal(['ano']),
+                            valor_meta: getVal(['valor_meta', 'valor', 'meta', 'valormeta'])
+                        };
+                    });
                 };
                 
                 const sanitizedMetasPesquisas = sanitizeMetas(metasPesquisasRaw);
