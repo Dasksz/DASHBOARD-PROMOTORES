@@ -5518,7 +5518,7 @@
                 if (['541', '544', '546', '12034'].includes(tempCodCliToResolve)) {
                     origSellerName = 'BALCAO';
                 } else {
-                    const mappedRca1 = clientMap && clientMap.has(tempCodCliToResolve) ? clientMap.get(tempCodCliToResolve).clientObj.rca1 : null;
+                    const mappedRca1 = optimizedData && optimizedData.clientsMap && optimizedData.clientsMap.has(tempCodCliToResolve) ? optimizedData.clientsMap.get(tempCodCliToResolve).rca1 : null;
                     if (mappedRca1) {
                          const mappedRcaName = optimizedData.rcaNameByCode.get(String(mappedRca1).trim());
                          if (mappedRcaName && mappedRcaName !== '0' && mappedRcaName !== 'N/A') {
