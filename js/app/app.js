@@ -22604,6 +22604,15 @@ const supervisorGroups = new Map();
                  orClause += `,cnpj_cpf.ilike.%${cleanTerm}%,codigo_cliente.ilike.%${cleanTerm}%`;
              }
              
+             // If the term is a numeric sequence of 11 or 14 digits (unformatted CPF/CNPJ),
+             // also search for its formatted version to match database records.
+             if (window.formatCnpjCpf && (cleanTerm.length === 11 || cleanTerm.length === 14)) {
+                 const formattedTerm = window.formatCnpjCpf(cleanTerm);
+                 if (formattedTerm) {
+                     orClause += `,cnpj_cpf.ilike.%${formattedTerm}%`;
+                 }
+             }
+
              dbQuery = dbQuery.or(orClause);
         });
 
