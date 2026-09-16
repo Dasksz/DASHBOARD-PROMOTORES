@@ -1420,6 +1420,10 @@
                         if (!hasFilters) {
                             result.push(client);
                         }
+                    } else if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller' && userHierarchyContext.role !== 'promotor') {
+                        // Fix for BALCAO missing: Allow orphans for Gerentes in seller mode so they can be processed
+                        // by the subsequent RCA/Seller filters instead of being dropped by the hierarchy map
+                        result.push(client);
                     } else {
                         result.push(client);
                     }
@@ -4896,7 +4900,7 @@
             const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
             if (isAmericanas) return true;
             // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS
-            if (window.userRole === 'adm' && rca1 === '53' && !['541','544','546','12034'].includes(String(c['Código'] || c.codigo_cliente).trim())) return false;
+            if ((window.userRole === 'adm' || (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller' && window.userRole === 'gerente merchan')) && rca1 === '53' && !['541','544','546','12034'].includes(String(c['Código'] || c.codigo_cliente).trim())) return false;
             // FIX: Only exclude INATIVOS for Admins. Non-admins see everything in their wallet.
             if (window.userRole === 'adm' && rca1 === '') return false; 
             return true;
@@ -5508,7 +5512,23 @@
                     if (!supplierMatch) continue;
                 }
 
-                const origSellerName = window.resolveDim('vendedores', s.CODUSUR);
+                let origSellerName = window.resolveDim('vendedores', s.CODUSUR);
+                // Fix: Force mapping to the actual configured seller for specific clients to prevent
+                // data crossing over to wrong sellers in the UI if the spreadsheet CODUSUR is wrong.
+                const tempCodCliToResolve = normalizeKey(String(s.CODCLI));
+                if (['541', '544', '546', '12034'].includes(tempCodCliToResolve)) {
+                    origSellerName = 'BALCAO';
+                } else {
+                    const mappedRca1 = clientMap && clientMap.has(tempCodCliToResolve) ? clientMap.get(tempCodCliToResolve).clientObj.rca1 : null;
+                    if (mappedRca1) {
+                         const mappedRcaName = optimizedData.rcaNameByCode.get(String(mappedRca1).trim());
+                         if (mappedRcaName && mappedRcaName !== '0' && mappedRcaName !== 'N/A') {
+                             origSellerName = mappedRcaName;
+                         } else {
+                             origSellerName = String(mappedRca1).trim();
+                         }
+                    }
+                }
                 const is3297 = normalizeKey(String(s.CODCLI)) === '3297';
                 
                 // --- RATEIO CLIENTE 3297 ---
@@ -6103,9 +6123,10 @@
                     // Mas precisamos checar se 541, 544 ou 546 estão nos filtros atuais (clientCodes)
                     const perda3297 = (sale.VLBONIFIC || sale.VLVENDA || 0);
                     let validTargets = 0;
-                    if (clientCodes.has('541')) validTargets++;
-                    if (clientCodes.has('544')) validTargets++;
-                    if (clientCodes.has('546')) validTargets++;
+                    // FIX: Always count the 3 targets for 3297 if the user has access to Balcao or Americanas
+                    if (clientCodes.has('541') || clientCodes.has('544') || clientCodes.has('546')) {
+                        validTargets = 3;
+                    }
                     
                     if (validTargets > 0) {
                         // Rateia e adiciona apenas a porção correspondente aos clientes que estão no filtro
@@ -6131,9 +6152,10 @@
                     if (clientCode === '3297') {
                         const venda3297 = (sale.VLVENDA || 0);
                         let validTargets = 0;
-                        if (clientCodes.has('541')) validTargets++;
-                        if (clientCodes.has('544')) validTargets++;
-                        if (clientCodes.has('546')) validTargets++;
+                        // FIX: Always count the 3 targets for 3297 if the user has access to Balcao or Americanas
+                        if (clientCodes.has('541') || clientCodes.has('544') || clientCodes.has('546')) {
+                            validTargets = 3;
+                        }
                         
                         if (validTargets > 0) {
                             totalFatMetas += (venda3297 / 3) * validTargets;
@@ -6576,6 +6598,7 @@
                 const origValFat = Number(s.VLVENDA) || 0;
                 const origPerda = Number(s.VLBONIFIC) || (String(s.TIPOVENDA) === '5' ? origValFat : 0);
 
+                // FIX: Ensure 3297 sales are divided correctly without being dropped
                 if (is3297) {
                     targetClientsSales.push({ codCli: '541', fat: origValFat / 3, perda: origPerda / 3 });
                     targetClientsSales.push({ codCli: '544', fat: origValFat / 3, perda: origPerda / 3 });
@@ -8829,7 +8852,7 @@
                 const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
                 if (isAmericanas) return true;
                 // STRICT FILTER: Exclude RCA 53 (Balcão) and INATIVOS
-                if (window.userRole === 'adm' && rca1 === '53' && !['541','544','546','12034'].includes(String(c['Código'] || c.codigo_cliente).trim())) return false;
+                if ((window.userRole === 'adm' || (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller' && window.userRole === 'gerente merchan')) && rca1 === '53' && !['541','544','546','12034'].includes(String(c['Código'] || c.codigo_cliente).trim())) return false;
                 if (rca1 === '') return false; // Exclude INATIVOS
                 return true;
             });
