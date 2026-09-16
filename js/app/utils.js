@@ -1323,3 +1323,20 @@ window.toLocalDateInput = function(date) {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
+
+
+/**
+ * Formats a numeric string into CPF or CNPJ format.
+ * @param {string} value The value to format
+ * @returns {string|null} The formatted CPF/CNPJ, or null if invalid length
+ */
+window.formatCnpjCpf = function(value) {
+    if (!value) return null;
+    const numeric = String(value).replace(/\D/g, '');
+    if (numeric.length === 11) {
+        return numeric.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    } else if (numeric.length === 14) {
+        return numeric.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    }
+    return null;
+};
