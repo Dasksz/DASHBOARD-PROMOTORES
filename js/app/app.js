@@ -14298,7 +14298,7 @@ const supervisorGroups = new Map();
                         let currentMonthLabel = 'Mês Atual';
                         if (currentSales.length > 0) {
                             const firstSaleDate = parseDate(currentSales[0].DTPED) || new Date();
-                            currentMonthLabel = firstSaleDate.toLocaleString('pt-BR', { month: 'short', year: '2-digit' });
+                            currentMonthLabel = firstSaleDate.toLocaleString('pt-BR', { month: 'short', year: '2-digit', timeZone: 'UTC' });
                         }
                         let currentVal = isFat ? m.current.fat : m.current.clients;
                         monthLabels.push(currentMonthLabel);
