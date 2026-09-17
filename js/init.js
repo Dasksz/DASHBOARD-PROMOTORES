@@ -389,6 +389,8 @@
                 checkTable('data_client_promoters', 'hash_client_promoters', 'clientPromoters');
                 // Títulos, Nota Perfeita and Inovations will be lazy loaded later. We'll leave them here for now and fix in step 3.
                 checkTable('data_nota_perfeita', 'hash_nota_perfeita', 'nota_perfeita');
+                checkTable('data_metas_pesquisas', 'hash_metas_pesquisas', 'metas_pesquisas');
+                checkTable('data_metas_loja_perfeita', 'hash_metas_loja_perfeita', 'metas_lojaperfeita');
                 checkTable('relacao_rota_involves', 'hash_relacao_rota_involves', 'relacao_rota_involves');
                 checkTable('dim_vendedores', 'hash_dim_vendedores', 'dim_vendedores');
                 checkTable('dim_supervisores', 'hash_dim_supervisores', 'dim_supervisores');
@@ -409,7 +411,7 @@
             } else if (!cachedData) {
                 // Full Fetch required
                 console.log("Cache vazio. Baixando tudo...");
-                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_hierarchy', 'data_client_promoters', 'data_nota_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos', 'config_city_branches'].forEach(t => tablesToFetch.add(t));
+                ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_hierarchy', 'data_client_promoters', 'data_nota_perfeita', 'data_metas_pesquisas', 'data_metas_loja_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos', 'config_city_branches'].forEach(t => tablesToFetch.add(t));
             }
 
             if (useCache) {
@@ -748,7 +750,7 @@
                 });
             };
 
-            let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientPromoters, titulos, nota_perfeita, relacao_rota_involves;
+            let detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientPromoters, titulos, nota_perfeita, metas_pesquisas, metas_lojaperfeita, relacao_rota_involves;
             let dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches;
             let clientCoordinates;
 
@@ -774,6 +776,8 @@
                 clientCoordinates = cachedData.clientCoordinates || [];
                 titulos = cachedData.titulos;
                 nota_perfeita = cachedData.nota_perfeita;
+                metas_pesquisas = cachedData.metas_pesquisas;
+                metas_lojaperfeita = cachedData.metas_lojaperfeita;
                 relacao_rota_involves = cachedData.relacao_rota_involves;
                 dim_vendedores = cachedData.dim_vendedores;
                 dim_supervisores = cachedData.dim_supervisores;
@@ -869,6 +873,8 @@
                     clientCoordinates = cachedData.clientCoordinates || [];
                     titulos = cachedData.titulos;
                     nota_perfeita = cachedData.nota_perfeita;
+                    metas_pesquisas = cachedData.metas_pesquisas;
+                    metas_lojaperfeita = cachedData.metas_lojaperfeita;
                     relacao_rota_involves = cachedData.relacao_rota_involves;
                     dim_vendedores = cachedData.dim_vendedores;
                     dim_supervisores = cachedData.dim_supervisores;
@@ -876,7 +882,7 @@
                     dim_produtos = cachedData.dim_produtos;
                     config_city_branches = cachedData.config_city_branches;
                     
-                    window.dashboardData = { detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches };
+                    window.dashboardData = { detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, metas_pesquisas, metas_lojaperfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches };
                     window.dashboardDataLoaded = true;
 
                     // Trigger immediate render
@@ -887,7 +893,7 @@
                     if (dashboardView) dashboardView.classList.remove('hidden');
                 }
 
-                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, notaPerfeitaFetched, relacaoRotaInvolvesFetched, dimVendedoresFetched, dimSupervisoresFetched, dimFornecedoresFetched, dimProdutosFetched, configCityBranchesFetched] = await Promise.all([
+                const [detailedUpper, historyUpper, clientsUpper, productsFetched, activeProdsFetched, stockFetched, metadataFetched, ordersUpper, clientCoordinatesFetched, hierarchyFetched, clientPromotersFetched, notaPerfeitaFetched, metasPesquisasFetched, metasLojaPerfeitaFetched, relacaoRotaInvolvesFetched, dimVendedoresFetched, dimSupervisoresFetched, dimFornecedoresFetched, dimProdutosFetched, configCityBranchesFetched] = await Promise.all([
                     getOrFetch('data_detailed', colsDetailed, 'sales', 'columnar', 'id', applyClientFilter, 'detailed', 'Sincronizando vendas...'),
                     getOrFetch('data_history', colsDetailed, 'history', 'columnar', 'id', applyClientFilter, 'history', 'Carregando histórico...'),
                     getOrFetch('data_clients', colsClients, 'clients', 'columnar', 'id', applyClientTableFilter, 'clients', 'Baixando base de clientes...'),
@@ -900,6 +906,8 @@
                     getOrFetch('data_hierarchy', null, null, 'object', 'id', null, 'hierarchy', 'Carregando hierarquia...'),
                     getOrFetch('data_client_promoters', null, null, 'object', 'client_code', null, 'clientPromoters', 'Sincronizando roteiros...'),
                     getOrFetch('data_nota_perfeita', null, null, 'object', 'id', null, 'nota_perfeita', 'Atualizando nota perfeita...'),
+                    getOrFetch('data_metas_pesquisas', null, null, 'object', 'id', null, 'metas_pesquisas', 'Baixando metas de pesquisas...'),
+                    getOrFetch('data_metas_loja_perfeita', null, null, 'object', 'id', null, 'metas_lojaperfeita', 'Baixando metas de loja perfeita...'),
                     getOrFetch('relacao_rota_involves', null, null, 'object', 'id', null, 'relacao_rota_involves', 'Carregando rotas...'),
                     getOrFetch('dim_vendedores', null, null, 'object', 'codigo', null, 'dim_vendedores', 'Baixando vendedores...'),
                     getOrFetch('dim_supervisores', null, null, 'object', 'codigo', null, 'dim_supervisores', 'Baixando supervisores...'),
@@ -920,6 +928,8 @@
                 hierarchy = hierarchyFetched;
                 clientPromoters = clientPromotersFetched;
                 nota_perfeita = notaPerfeitaFetched;
+                metas_pesquisas = metasPesquisasFetched;
+                metas_lojaperfeita = metasLojaPerfeitaFetched;
                 relacao_rota_involves = relacaoRotaInvolvesFetched;
                 dim_vendedores = dimVendedoresFetched;
                 dim_supervisores = dimSupervisoresFetched;
@@ -936,7 +946,7 @@
 
                 // Update Cache with Merged Data
                 const dataToCache = {
-                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches
+                        detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, metas_pesquisas, metas_lojaperfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches
                     };
                     saveToCache('dashboardData', dataToCache).then(() => {
                         console.log('Dados atualizados salvos no cache.');
@@ -1348,6 +1358,8 @@
                 clientCoordinates: clientCoordinates,
                 titulos: titulos,
                 nota_perfeita: nota_perfeita,
+                metas_pesquisas: metas_pesquisas,
+                metas_lojaperfeita: metas_lojaperfeita,
                 relacao_rota_involves: relacao_rota_involves,
                 dim_vendedores: dim_vendedores,
                 dim_supervisores: dim_supervisores,
