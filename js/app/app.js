@@ -17554,7 +17554,7 @@ const supervisorGroups = new Map();
                     const metasPesquisasFile = document.getElementById('metas-pesquisas-input') ? document.getElementById('metas-pesquisas-input').files[0] : null;
                     const metasLojaPerfeitaFile = document.getElementById('metas-lojaperfeita-input') ? document.getElementById('metas-lojaperfeita-input').files[0] : null;
 
-                    if (!salesFile && !historyFile && !hierarchyFile && !notaInvolves1File && !notaInvolves2File && !productsFile && !titulosFile && !innovationsFile) {
+                    if (!salesFile && !historyFile && !hierarchyFile && !notaInvolves1File && !notaInvolves2File && !productsFile && !titulosFile && !innovationsFile && !metasPesquisasFile && !metasLojaPerfeitaFile) {
                         window.showToast('warning', "Pelo menos um arquivo é necessário para iniciar o processamento.");
                         generateBtn.disabled = false;
                         generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -17620,6 +17620,8 @@ const supervisorGroups = new Map();
                         titulosFile, 
                         notaInvolvesFile1: notaInvolves1File, 
                         notaInvolvesFile2: notaInvolves2File,
+                        metasPesquisasFile,
+                        metasLojaPerfeitaFile,
                         referenceData: referenceData, // Pass the map
                         fallbackData: fallbackData // Pass existing data for preservation
                     });
