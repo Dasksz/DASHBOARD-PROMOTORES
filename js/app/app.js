@@ -6432,7 +6432,7 @@
             if (window.embeddedData && window.embeddedData.metas_pesquisas) {
                 for (let i = 0; i < window.embeddedData.metas_pesquisas.length; i++) {
                     const meta = window.embeddedData.metas_pesquisas[i];
-                    if (String(meta.mes) === currentMonthKey && String(meta.ano) === currentYearKey) {
+                    if (String(meta.mes).padStart(2, '0') === currentMonthKey && String(meta.ano) === currentYearKey) {
                         const promotorCode = String(meta.promotor_code).toUpperCase().trim();
                         // Se não houver filtro e for ADM, soma tudo
                         if (currentActiveResearcherFilter.size === 0 && window.userRole === 'adm') {
@@ -6456,7 +6456,7 @@
             if (window.embeddedData && window.embeddedData.metas_lojaperfeita) {
                 for (let i = 0; i < window.embeddedData.metas_lojaperfeita.length; i++) {
                     const meta = window.embeddedData.metas_lojaperfeita[i];
-                    if (String(meta.mes) === currentMonthKey && String(meta.ano) === currentYearKey) {
+                    if (String(meta.mes).padStart(2, '0') === currentMonthKey && String(meta.ano) === currentYearKey) {
                         const promotorCode = String(meta.promotor_code).toUpperCase().trim();
                         // Se não houver filtro e for ADM, soma tudo
                         if (currentActiveResearcherFilter.size === 0 && window.userRole === 'adm') {
