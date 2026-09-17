@@ -6367,15 +6367,125 @@
                 qtdLpReal = perfectCount;
             }
             
+
+
+            // Retrieve Goals from Global State
+            let totalPesqMeta = 0;
+            let totalLpMeta = 0;
+            const currentMonthKey = String(new Date().getMonth() + 1).padStart(2, '0');
+            const currentYearKey = String(new Date().getFullYear());
+
+            // Build the active researcher filter out of the loop so we can reuse it
+            let currentActiveResearcherFilter = new Set();
+            const hasSup = selectedMetaRealizadoSupervisors.size > 0;
+            const hasVend = selectedMetaRealizadoVendedores.size > 0;
+
+            if (adminViewMode === 'seller') {
+                if (hasVend) {
+                    currentActiveResearcherFilter = selectedMetaRealizadoVendedores;
+                }
+            } else if (adminViewMode === 'promoter') {
+                const hState = hierarchyState['meta-realizado'];
+                if (hState && (hState.promotors.size > 0 || hState.cocoords.size > 0 || hState.coords.size > 0)) {
+                    if (hState.promotors.size > 0) {
+                        hState.promotors.forEach(p => currentActiveResearcherFilter.add(p));
+                    } else if (hState.cocoords.size > 0) {
+                        hState.cocoords.forEach(cc => {
+                            const children = optimizedData.promotorsByCocoord.get(cc);
+                            if (children) children.forEach(p => currentActiveResearcherFilter.add(p));
+                        });
+                    } else if (hState.coords.size > 0) {
+                        hState.coords.forEach(c => {
+                            const cocoords = optimizedData.cocoordsByCoord.get(c);
+                            if (cocoords) {
+                                cocoords.forEach(cc => {
+                                    const children = optimizedData.promotorsByCocoord.get(cc);
+                                    if (children) children.forEach(p => currentActiveResearcherFilter.add(p));
+                                });
+                            }
+                        });
+                    }
+                }
+            }
+            // Add user's promoter if in promoter mode and no filters are set
+            if (window.userRole !== 'adm' && userHierarchyContext.role === 'promotor' && currentActiveResearcherFilter.size === 0) {
+                currentActiveResearcherFilter.add(userHierarchyContext.promotor);
+            }
+            // For Coordinators/Co-coordinators when they don't have filters, they should see their entire team.
+            // That is covered by `getMetaRealizadoFilteredData()` logic implicitly by filtering data,
+            // but for Goals, we need to manually add all their promoters to the filter if size is 0
+            if (window.userRole !== 'adm' && currentActiveResearcherFilter.size === 0) {
+                 if (userHierarchyContext.role === 'coord') {
+                     const cocoords = optimizedData.cocoordsByCoord.get(userHierarchyContext.coord);
+                     if (cocoords) {
+                         cocoords.forEach(cc => {
+                             const children = optimizedData.promotorsByCocoord.get(cc);
+                             if (children) children.forEach(p => currentActiveResearcherFilter.add(p));
+                         });
+                     }
+                 } else if (userHierarchyContext.role === 'cocoord') {
+                     const children = optimizedData.promotorsByCocoord.get(userHierarchyContext.cocoord);
+                     if (children) children.forEach(p => currentActiveResearcherFilter.add(p));
+                 }
+            }
+
+            if (window.embeddedData && window.embeddedData.metas_pesquisas) {
+                for (let i = 0; i < window.embeddedData.metas_pesquisas.length; i++) {
+                    const meta = window.embeddedData.metas_pesquisas[i];
+                    if (String(meta.mes) === currentMonthKey && String(meta.ano) === currentYearKey) {
+                        const promotorCode = String(meta.promotor_code).toUpperCase().trim();
+                        // Se não houver filtro e for ADM, soma tudo
+                        if (currentActiveResearcherFilter.size === 0 && window.userRole === 'adm') {
+                            totalPesqMeta += (Number(meta.valor_meta) || 0);
+                        } else {
+                            // Se houver filtro, verifica se o promotor está selecionado
+                            let match = false;
+                            currentActiveResearcherFilter.forEach(v => {
+                                if (window.normalizeResearcherCode(v) === window.normalizeResearcherCode(promotorCode)) {
+                                    match = true;
+                                }
+                            });
+                            if (match) {
+                                totalPesqMeta += (Number(meta.valor_meta) || 0);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (window.embeddedData && window.embeddedData.metas_lojaperfeita) {
+                for (let i = 0; i < window.embeddedData.metas_lojaperfeita.length; i++) {
+                    const meta = window.embeddedData.metas_lojaperfeita[i];
+                    if (String(meta.mes) === currentMonthKey && String(meta.ano) === currentYearKey) {
+                        const promotorCode = String(meta.promotor_code).toUpperCase().trim();
+                        // Se não houver filtro e for ADM, soma tudo
+                        if (currentActiveResearcherFilter.size === 0 && window.userRole === 'adm') {
+                            totalLpMeta += (Number(meta.valor_meta) || 0);
+                        } else {
+                            // Se houver filtro, verifica se o promotor está selecionado
+                            let match = false;
+                            currentActiveResearcherFilter.forEach(v => {
+                                if (window.normalizeResearcherCode(v) === window.normalizeResearcherCode(promotorCode)) {
+                                    match = true;
+                                }
+                            });
+                            if (match) {
+                                totalLpMeta += (Number(meta.valor_meta) || 0);
+                            }
+                        }
+                    }
+                }
+            }
+
             const elPesqReal = document.getElementById('kpi-metas-pesquisas-real');
             const elPesqMeta = document.getElementById('kpi-metas-pesquisas-meta');
             const elLpReal = document.getElementById('kpi-metas-lojaperfeita-real');
             const elLpMeta = document.getElementById('kpi-metas-lojaperfeita-meta');
             
             if (elPesqReal) elPesqReal.textContent = window.escapeHtml(qtdPesquisasReal.toLocaleString('pt-BR'));
-            if (elPesqMeta) elPesqMeta.textContent = "0"; // To be loaded from Supabase soon
+            if (elPesqMeta) elPesqMeta.textContent = window.escapeHtml(totalPesqMeta.toLocaleString('pt-BR'));
             if (elLpReal) elLpReal.textContent = window.escapeHtml(qtdLpReal.toLocaleString('pt-BR'));
-            if (elLpMeta) elLpMeta.textContent = "0"; // To be loaded from Supabase soon
+            if (elLpMeta) elLpMeta.textContent = window.escapeHtml(totalLpMeta.toLocaleString('pt-BR'));
 
             // 4. Clients Table Processing
             const clientsData = getMetaRealizadoClientsData(weeks);
