@@ -5490,7 +5490,11 @@
 
                 // Client Filter: Ensure sale belongs to the same set of clients used for goals
                 const tempCodCli = normalizeKey(String(s.CODCLI));
-                if (tempCodCli !== '3297' && !filteredClientCodes.has(tempCodCli)) continue;
+                if (tempCodCli === '3297') {
+                    if (!filteredClientCodes.has('541') && !filteredClientCodes.has('544') && !filteredClientCodes.has('546')) continue;
+                } else if (!filteredClientCodes.has(tempCodCli)) {
+                    continue;
+                }
 
                 // Enhanced Supplier Logic to handle Virtual Foods Categories
                 if (suppliersSet.size > 0) {
@@ -5541,13 +5545,16 @@
                 
                 if (is3297) {
                     const seller53 = 'BALCAO';
-                    targetSellers.push({
-                        name: seller53,
-                        fat: origValFat / 3,
-                        vol: origValVol / 3,
-                        perda: origPerda / 3,
-                        clients: ['541', '544', '546']
-                    });
+                    const validTargets = ['541', '544', '546'].filter(c => filteredClientCodes.has(c));
+                    if (validTargets.length > 0) {
+                        targetSellers.push({
+                            name: seller53,
+                            fat: (origValFat / 3) * validTargets.length,
+                            vol: (origValVol / 3) * validTargets.length,
+                            perda: (origPerda / 3) * validTargets.length,
+                            clients: validTargets
+                        });
+                    }
                 } else {
                     targetSellers.push({
                         name: origSellerName,
@@ -6124,11 +6131,7 @@
                     // Como os clientes 541, 544, 546 não são Americanas nem BH, a perda deles contabiliza no KPI.
                     // Mas precisamos checar se 541, 544 ou 546 estão nos filtros atuais (clientCodes)
                     const perda3297 = (sale.VLBONIFIC || sale.VLVENDA || 0);
-                    let validTargets = 0;
-                    // FIX: Always count the 3 targets for 3297 if the user has access to Balcao or Americanas
-                    if (clientCodes.has('541') || clientCodes.has('544') || clientCodes.has('546')) {
-                        validTargets = 3;
-                    }
+                    const validTargets = ['541', '544', '546'].filter(c => clientCodes.has(c)).length;
                     
                     if (validTargets > 0) {
                         // Rateia e adiciona apenas a porção correspondente aos clientes que estão no filtro
@@ -6153,11 +6156,7 @@
                     // Rateio do 3297 para o KPI de Faturamento
                     if (clientCode === '3297') {
                         const venda3297 = (sale.VLVENDA || 0);
-                        let validTargets = 0;
-                        // FIX: Always count the 3 targets for 3297 if the user has access to Balcao or Americanas
-                        if (clientCodes.has('541') || clientCodes.has('544') || clientCodes.has('546')) {
-                            validTargets = 3;
-                        }
+                        const validTargets = ['541', '544', '546'].filter(c => clientCodes.has(c)).length;
                         
                         if (validTargets > 0) {
                             totalFatMetas += (venda3297 / 3) * validTargets;
