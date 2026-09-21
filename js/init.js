@@ -102,6 +102,7 @@
                     if (newKey === 'RCA2') newKey = 'RCA 2';
                     if (newKey === 'NOMECLIENTE') newKey = 'Cliente';
                     if (newKey === 'RAZAOSOCIAL') newKey = 'razaoSocial'; // Fix: Separate key
+                    if (newKey === 'FANTASIA') newKey = 'fantasia';
                     if (newKey === 'ULTIMACOMPRA') newKey = 'Data da Última Compra';
                     if (newKey === 'DATACADASTRO') newKey = 'Data e Hora de Cadastro';
                     if (newKey === 'INSCRICAOESTADUAL') newKey = 'Insc. Est. / Produtor';
