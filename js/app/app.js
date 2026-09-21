@@ -2161,6 +2161,7 @@
                 client.cidade = client.cidade || client.CIDADE || 'N/A';
                 client.bairro = client.bairro || client.BAIRRO || 'N/A';
                 client.ramo = client.ramo || client.RAMO || 'N/A';
+                client.fantasia = client.fantasia || client.FANTASIA || client.Fantasia || client['Nome Fantasia'] || client['NOME_FANTASIA'] || '';
 
                 // Name Normalization
                 // mapKeysToUpper maps 'NOMECLIENTE' -> 'Cliente'. Local/Worker might produce 'nomeCliente'.
@@ -2225,6 +2226,7 @@
                     code: codCli,
                     name: client.nomeCliente || '', // Store original name for sorting
                     nameLower: (client.nomeCliente || '').toLowerCase(),
+                    fantasiaLower: (client.fantasia || '').toLowerCase(),
                     cityLower: (client.cidade || '').toLowerCase(),
                     bairroLower: (client.bairro || '').toLowerCase(),
                     cnpj: cleanCnpj,
@@ -17344,6 +17346,7 @@ const supervisorGroups = new Map();
                     return (
                         (idx.code && idx.code.includes(cleanTerm)) ||
                         (idx.nameLower && idx.nameLower.includes(term)) ||
+                        (idx.fantasiaLower && idx.fantasiaLower.includes(term)) ||
                         (idx.cnpj && idx.cnpj.includes(cleanTerm)) ||
                         (idx.cityLower && idx.cityLower.includes(term)) ||
                         (idx.bairroLower && idx.bairroLower.includes(term))
@@ -24719,6 +24722,7 @@ const supervisorGroups = new Map();
                         return terms.every(term => {
                             return c.code.includes(term) ||
                                    c.nameLower.includes(term) ||
+                                   (c.fantasiaLower && c.fantasiaLower.includes(term)) ||
                                    c.cityLower.includes(term) ||
                                    c.bairroLower.includes(term) ||
                                    c.cnpj.includes(term);
@@ -24756,7 +24760,7 @@ const supervisorGroups = new Map();
             subset.forEach((client) => {
                 const cod = String(client['Código'] || client['codigo_cliente']);
                 const name = client.nomeCliente || 'Desconhecido';
-                const fantasia = client.fantasia || '';
+                const fantasia = client.fantasia || client.FANTASIA || client.Fantasia || client['Nome Fantasia'] || client.razaoSocial || client.nomeCliente || '';
                 const firstLetter = window.escapeHtml(name.charAt(0).toUpperCase());
                 
                 let days = '-';
@@ -29438,7 +29442,7 @@ const supervisorGroups = new Map();
                 const novoLabel = client.isNewForInactiveLabel ? `<span class="ml-2 text-[9px] md:text-xs font-semibold text-purple-400 bg-purple-900/50 px-1 py-0.5 rounded-full">NOVO</span>` : '';
                 const rcaVal = (client.rcas && client.rcas.length > 0) ? client.rcas[0] : '-';
                 const razaoSocial = client.nomeCliente || 'N/A';
-                const fantasia = client.fantasia || '';
+                const fantasia = client.fantasia || client.FANTASIA || client.Fantasia || client['Nome Fantasia'] || client.razaoSocial || client.nomeCliente || '';
                 const cidade = client.cidade || 'N/A';
                 const bairro = client.bairro || 'N/A';
                 const ultCompra = client.ultimaCompra || client['Data da Última Compra'];
