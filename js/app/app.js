@@ -5679,8 +5679,8 @@
 
                 // Mobile Content (Compact List) - WRAPPED IN TD
                 const mobileContent = `
-                    <td class="md:hidden w-full py-3 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${index}, 'seller')">
-                        <div class="font-bold text-sm text-slate-200 mb-1 truncate">${window.escapeHtml(row.codusur || '')} - ${window.escapeHtml(row.name)}</div>
+                    <td class="md:hidden w-full py-3 pr-2 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${index}, 'seller')">
+                        <div class="font-bold text-sm text-slate-200 mb-1 truncate max-w-full">${window.escapeHtml(row.codusur || '')} - ${window.escapeHtml((row.name || '').length > 21 ? (row.name || '').slice(0, 21) + '...' : (row.name || ''))}</div>
                         <div class="flex justify-between items-center text-xs mb-1">
                             <div class="text-slate-400">Perdas: <span class="text-red-400 font-medium">${perdasStr}</span></div>
                         </div>
@@ -6883,8 +6883,8 @@
 
                     // Mobile Content (Compact List) - WRAPPED IN TD
                     const mobileContent = `
-                        <td class="md:hidden w-full py-3 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${index}, 'client')">
-                            <div class="font-bold text-sm text-slate-200 mb-1 truncate">${row.codcli} - ${escapeHtml(row.razaoSocial)}</div>
+                        <td class="md:hidden w-full py-3 pr-2 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${index}, 'client')">
+                            <div class="font-bold text-sm text-slate-200 mb-1 truncate max-w-full">${row.codcli} - ${escapeHtml((row.razaoSocial || '').length > 21 ? (row.razaoSocial || '').slice(0, 21) + '...' : (row.razaoSocial || ''))}</div>
                             <div class="flex justify-between items-center text-xs mb-1">
                                 <div class="text-slate-400">Perdas: <span class="text-red-400 font-medium">${perdasStr}</span></div>
                             </div>
@@ -29975,8 +29975,8 @@ const supervisorGroups = new Map();
 
                 // Truncate client name to 24 characters max (excluding code)
                 let mobileClientName = (t.clientName || '').trim();
-                if (mobileClientName.length > 24) {
-                    mobileClientName = mobileClientName.substring(0, 24) + '...';
+                if (mobileClientName.length > 21) {
+                    mobileClientName = mobileClientName.substring(0, 21) + '...';
                 }
 
                 let statusDesktop;
