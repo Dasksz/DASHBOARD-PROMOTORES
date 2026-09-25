@@ -1175,6 +1175,7 @@ CREATE TABLE IF NOT EXISTS public.data_metas_pesquisas (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+ALTER TABLE public.data_metas_pesquisas ADD COLUMN IF NOT EXISTS cod_vendedor TEXT;
 CREATE INDEX IF NOT EXISTS idx_data_metas_pesquisas_vendedor ON public.data_metas_pesquisas (cod_vendedor);
 CREATE INDEX IF NOT EXISTS idx_data_metas_pesquisas_mes_ano ON public.data_metas_pesquisas (mes, ano);
 
@@ -1200,6 +1201,7 @@ CREATE TABLE IF NOT EXISTS public.data_metas_loja_perfeita (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+ALTER TABLE public.data_metas_loja_perfeita ADD COLUMN IF NOT EXISTS cod_vendedor TEXT;
 CREATE INDEX IF NOT EXISTS idx_data_metas_loja_perfeita_vendedor ON public.data_metas_loja_perfeita (cod_vendedor);
 CREATE INDEX IF NOT EXISTS idx_data_metas_loja_perfeita_mes_ano ON public.data_metas_loja_perfeita (mes, ano);
 
