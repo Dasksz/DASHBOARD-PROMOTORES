@@ -74,6 +74,7 @@ create table if not exists public.data_history (
 create table if not exists public.data_clients (
   id uuid default uuid_generate_v4 () primary key,
   codigo_cliente text unique,
+  cod_cliente text,
   rca1 text,
   rca2 text,
   rcas text[], -- Array de RCAs
@@ -92,7 +93,14 @@ create table if not exists public.data_clients (
   ultimacompra timestamp with time zone,
   datacadastro timestamp with time zone,
   bloqueio text,
-  inscricaoestadual text
+  inscricaoestadual text,
+  filial text,
+  supervisor text,
+  cod_supervisor text,
+  vendedor text,
+  cod_vendedor text,
+  vendedor_nome text,
+  vendedor_codigo text
 );
 
 -- 1.4 Tabela de Pedidos Agregados
@@ -299,6 +307,16 @@ BEGIN
     ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS name text;
     ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone text;
     ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url text;
+
+    -- Ensure data_clients columns exist
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS cod_cliente text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS filial text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS supervisor text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS cod_supervisor text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS vendedor text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS cod_vendedor text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS vendedor_nome text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS vendedor_codigo text;
 
     -- promotor column removed from data_clients in new schema
 END $$;
@@ -1062,30 +1080,31 @@ DECLARE
 BEGIN
     -- Temporary filtered set of titles joining client info
     CREATE TEMP TABLE temp_titulos_filtered ON COMMIT DROP AS
-    SELECT
+    SELECT 
         t.cod_cliente,
         t.vl_titulos,
         t.vl_receber,
         t.dt_vencimento,
-        COALESCE(c.nomecliente, c.razaosocial, c.fantasia) AS nomecliente,
-        c.cidade,
-        c.vendedor_nome,
+        COALESCE(c.nomecliente, c.razaosocial, c.fantasia, 'Desconhecido') AS nomecliente,
+        COALESCE(c.cidade, 'N/A') AS cidade,
+        COALESCE(c.rca1, 'N/A') AS vendedor_nome,
         c.ramo
     FROM public.data_titulos t
-    LEFT JOIN public.data_clients c ON t.cod_cliente::text = c.cod_cliente::text
-    WHERE (p_filial IS NULL OR c.filial = ANY(p_filial))
-      AND (p_cidade IS NULL OR c.cidade = ANY(p_cidade))
-      AND (p_supervisor IS NULL OR c.supervisor = ANY(p_supervisor))
-      AND (p_vendedor IS NULL OR c.vendedor = ANY(p_vendedor) OR c.vendedor_codigo = ANY(p_vendedor))
+    LEFT JOIN public.data_clients c ON COALESCE(c.codigo_cliente, c.cod_cliente, '')::text = t.cod_cliente::text
+    WHERE (p_cidade IS NULL OR c.cidade = ANY(p_cidade))
       AND (
-          p_rede IS NULL
+          p_vendedor IS NULL 
+          OR c.rca1 = ANY(p_vendedor)
+      )
+      AND (
+          p_rede IS NULL 
           OR (array_position(p_rede, 'C/ REDE') IS NOT NULL AND (c.ramo IS NOT NULL AND c.ramo <> '' AND c.ramo <> 'N/A'))
           OR (array_position(p_rede, 'S/ REDE') IS NOT NULL AND (c.ramo IS NULL OR c.ramo = '' OR c.ramo = 'N/A'))
           OR (c.ramo = ANY(p_rede))
       )
       AND (
-          p_search IS NULL
-          OR p_search = ''
+          p_search IS NULL 
+          OR p_search = '' 
           OR t.cod_cliente::text ILIKE '%' || p_search || '%'
           OR c.nomecliente ILIKE '%' || p_search || '%'
           OR c.razaosocial ILIKE '%' || p_search || '%'
@@ -1093,12 +1112,12 @@ BEGIN
       );
 
     -- Aggregation KPIs
-    SELECT
+    SELECT 
         COUNT(*),
         COALESCE(SUM(vl_receber), 0),
         COALESCE(SUM(CASE WHEN dt_vencimento < v_critical_date AND vl_receber > 0 THEN vl_receber ELSE 0 END), 0),
         COUNT(DISTINCT CASE WHEN dt_vencimento < v_critical_date AND vl_receber > 0 THEN cod_cliente END)
-    INTO
+    INTO 
         v_total_rows,
         v_total_receber,
         v_critical_receber,
@@ -1108,7 +1127,7 @@ BEGIN
     -- Paginated Rows
     SELECT COALESCE(json_agg(r), '[]'::json) INTO v_rows
     FROM (
-        SELECT
+        SELECT 
             cod_cliente,
             vl_titulos,
             vl_receber,
@@ -1156,6 +1175,7 @@ CREATE TABLE IF NOT EXISTS public.data_metas_pesquisas (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+ALTER TABLE public.data_metas_pesquisas ADD COLUMN IF NOT EXISTS cod_vendedor TEXT;
 CREATE INDEX IF NOT EXISTS idx_data_metas_pesquisas_vendedor ON public.data_metas_pesquisas (cod_vendedor);
 CREATE INDEX IF NOT EXISTS idx_data_metas_pesquisas_mes_ano ON public.data_metas_pesquisas (mes, ano);
 
@@ -1181,6 +1201,7 @@ CREATE TABLE IF NOT EXISTS public.data_metas_loja_perfeita (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+ALTER TABLE public.data_metas_loja_perfeita ADD COLUMN IF NOT EXISTS cod_vendedor TEXT;
 CREATE INDEX IF NOT EXISTS idx_data_metas_loja_perfeita_vendedor ON public.data_metas_loja_perfeita (cod_vendedor);
 CREATE INDEX IF NOT EXISTS idx_data_metas_loja_perfeita_mes_ano ON public.data_metas_loja_perfeita (mes, ano);
 
