@@ -308,6 +308,16 @@ BEGIN
     ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone text;
     ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url text;
 
+    -- Ensure data_clients columns exist
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS cod_cliente text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS filial text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS supervisor text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS cod_supervisor text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS vendedor text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS cod_vendedor text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS vendedor_nome text;
+    ALTER TABLE public.data_clients ADD COLUMN IF NOT EXISTS vendedor_codigo text;
+
     -- promotor column removed from data_clients in new schema
 END $$;
 
@@ -1075,21 +1085,15 @@ BEGIN
         t.vl_titulos,
         t.vl_receber,
         t.dt_vencimento,
-        COALESCE(c.nomecliente, c.razaosocial, c.fantasia) AS nomecliente,
+        COALESCE(c.nomecliente, c.razaosocial, c.fantasia, 'Desconhecido') AS nomecliente,
         COALESCE(c.cidade, 'N/A') AS cidade,
-        COALESCE(c.vendedor_nome, c.rca1, 'N/A') AS vendedor_nome,
+        COALESCE(c.rca1, 'N/A') AS vendedor_nome,
         c.ramo
     FROM public.data_titulos t
-    LEFT JOIN public.data_clients c ON COALESCE(c.codigo_cliente, c.cod_cliente)::text = t.cod_cliente::text
-    WHERE (p_filial IS NULL OR c.filial = ANY(p_filial))
-      AND (p_cidade IS NULL OR c.cidade = ANY(p_cidade))
-      AND (p_supervisor IS NULL OR c.supervisor = ANY(p_supervisor) OR c.cod_supervisor = ANY(p_supervisor))
+    LEFT JOIN public.data_clients c ON COALESCE(c.codigo_cliente, c.cod_cliente, '')::text = t.cod_cliente::text
+    WHERE (p_cidade IS NULL OR c.cidade = ANY(p_cidade))
       AND (
           p_vendedor IS NULL
-          OR c.vendedor = ANY(p_vendedor)
-          OR c.cod_vendedor = ANY(p_vendedor)
-          OR c.vendedor_nome = ANY(p_vendedor)
-          OR c.vendedor_codigo = ANY(p_vendedor)
           OR c.rca1 = ANY(p_vendedor)
       )
       AND (
