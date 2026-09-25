@@ -29963,6 +29963,49 @@ const supervisorGroups = new Map();
                 allowedClients = getHierarchyFilteredClients('titulos', allClientsData);
             }
 
+            const filialInput = document.getElementById('titulos-filial-filter');
+            const filialVal = filialInput ? filialInput.value : 'all';
+            const hasFilial = filialVal && filialVal !== 'all' && filialVal !== 'ambas';
+            const selectedFilialStr = hasFilial ? String(filialVal).trim() : null;
+            const unpaddedFilial = hasFilial ? selectedFilialStr.replace(/^0+/, '') : null;
+
+            const hasSupFilter = selectedTitulosSupervisors && selectedTitulosSupervisors.size > 0;
+
+            if (hasFilial || hasSupFilter) {
+                const filteredList = [];
+                for (let i = 0; i < allowedClients.length; i++) {
+                    const c = allowedClients[i];
+                    if (hasFilial) {
+                        const cFilial = String(c.filial || c.Filial || '').trim();
+                        const cFilialUnpadded = cFilial.replace(/^0+/, '');
+                        if (cFilial !== selectedFilialStr && cFilialUnpadded !== unpaddedFilial) {
+                            continue;
+                        }
+                    }
+                    if (hasSupFilter) {
+                        const rca1 = String(c.rca1 || c.RCA1 || '').trim();
+                        const details = sellerDetailsMap ? sellerDetailsMap.get(rca1) : null;
+                        const cSup = c.supervisor || c.Supervisor || (details ? details.supervisor : '');
+                        let matchSup = false;
+                        if (cSup && selectedTitulosSupervisors.has(cSup)) {
+                            matchSup = true;
+                        } else if (details && details.supervisor && selectedTitulosSupervisors.has(details.supervisor)) {
+                            matchSup = true;
+                        } else if (cSup) {
+                            for (let s of selectedTitulosSupervisors) {
+                                if (cSup.toUpperCase().includes(s.toUpperCase()) || s.toUpperCase().includes(cSup.toUpperCase())) {
+                                    matchSup = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!matchSup) continue;
+                    }
+                    filteredList.push(c);
+                }
+                allowedClients = filteredList;
+            }
+
             const isComRede = titulosRedeGroupFilter === 'com_rede';
             const isSemRede = titulosRedeGroupFilter === 'sem_rede';
             const redeSet = (isComRede && selectedTitulosRedes.length > 0) ? new Set(selectedTitulosRedes) : null;
