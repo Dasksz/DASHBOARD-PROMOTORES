@@ -1077,7 +1077,7 @@ DECLARE
     v_today date := CURRENT_DATE;
     v_critical_date date := CURRENT_DATE - INTERVAL '60 days';
 BEGIN
-    -- Temporary filtered set of titles joining client info
+    -- Tabela temporária filtrada e unida com clientes
     CREATE TEMP TABLE temp_titulos_filtered ON COMMIT DROP AS
     SELECT 
         t.cod_cliente,
@@ -1119,7 +1119,7 @@ BEGIN
           OR c.fantasia ILIKE '%' || p_search || '%'
       );
 
-    -- Aggregation KPIs
+    -- Agregação dos KPIs
     SELECT 
         COUNT(*),
         COALESCE(SUM(vl_receber), 0),
@@ -1132,7 +1132,7 @@ BEGIN
         v_critical_clients
     FROM temp_titulos_filtered;
 
-    -- Paginated Rows
+    -- Linhas paginadas
     SELECT COALESCE(json_agg(r), '[]'::json) INTO v_rows
     FROM (
         SELECT 
@@ -1150,7 +1150,7 @@ BEGIN
         LIMIT p_limit
     ) r;
 
-    -- Build final response object
+    -- Monta o JSON final de resposta
     v_result := json_build_object(
         'kpis', json_build_object(
             'total_rows', v_total_rows,
@@ -1189,6 +1189,7 @@ CREATE INDEX IF NOT EXISTS idx_data_metas_pesquisas_mes_ano ON public.data_metas
 
 ALTER TABLE public.data_metas_pesquisas ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Enable read access for authenticated users" ON public.data_metas_pesquisas;
 CREATE POLICY "Enable read access for authenticated users" ON public.data_metas_pesquisas
     FOR SELECT TO authenticated USING (true);
 
@@ -1215,5 +1216,6 @@ CREATE INDEX IF NOT EXISTS idx_data_metas_loja_perfeita_mes_ano ON public.data_m
 
 ALTER TABLE public.data_metas_loja_perfeita ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Enable read access for authenticated users" ON public.data_metas_loja_perfeita;
 CREATE POLICY "Enable read access for authenticated users" ON public.data_metas_loja_perfeita
     FOR SELECT TO authenticated USING (true);
