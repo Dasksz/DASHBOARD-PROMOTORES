@@ -29483,9 +29483,76 @@ const supervisorGroups = new Map();
         let titulosRedeGroupFilter = '';
         let titulosRenderId = 0;
 
-                async function renderTitulosView() {
+        function getTitulosUserRole() {
+            let role = (window.userRole || '').trim().toLowerCase();
+            if (!role && window.userHierarchyContext) {
+                role = (window.userHierarchyContext.role || '').trim().toLowerCase();
+            }
+            if (window.userIsSupervisor) return 'supervisor';
+            if (window.userIsSeller) return 'seller';
+
+            if (role === 'adm' || role === 'admin') return 'adm';
+            if (role === 'coord' || role === 'coordenador') return 'coord';
+            if (role === 'cocoord' || role === 'co-coordenador' || role === 'cocoordenador') return 'cocoord';
+            if (role === 'supervisor') return 'supervisor';
+            if (role === 'promotor' || role === 'vendedor' || role === 'user' || role === 'seller') return 'promotor';
+
+            return 'adm';
+        }
+
+        function applyTitulosFilterVisibilityRules() {
+            const role = getTitulosUserRole();
+
+            const filialWrapper = document.getElementById('titulos-filial-filter-wrapper');
+            const coordWrapper = document.getElementById('titulos-coord-filter-wrapper');
+            const cocoordWrapper = document.getElementById('titulos-cocoord-filter-wrapper');
+            const supervisorWrapper = document.getElementById('titulos-supervisor-filter-wrapper');
+            const promotorWrapper = document.getElementById('titulos-promotor-filter-wrapper');
+            const vendedorWrapper = document.getElementById('titulos-vendedor-filter-wrapper');
+            const redeWrapper = document.getElementById('titulos-rede-filter-wrapper');
+
+            // Filial & Rede: Sempre visíveis
+            if (filialWrapper) filialWrapper.classList.remove('hidden');
+            if (redeWrapper) redeWrapper.classList.remove('hidden');
+
+            if (role === 'adm') {
+                // Administrador: Exibir Filial, Coordenador, Co-Coordenador, Supervisor, Promotor, Rede, Cliente (Busca) e Cidade
+                if (coordWrapper) coordWrapper.classList.remove('hidden');
+                if (cocoordWrapper) cocoordWrapper.classList.remove('hidden');
+                if (supervisorWrapper) supervisorWrapper.classList.remove('hidden');
+                if (promotorWrapper) promotorWrapper.classList.remove('hidden');
+                if (vendedorWrapper) vendedorWrapper.classList.remove('hidden');
+            } else if (role === 'coord') {
+                // Coordenador: Exibir Filial, Co-Coordenador, Promotor, Rede, Cliente (Busca) e Cidade (Ocultar Supervisor e Coordenador)
+                if (coordWrapper) coordWrapper.classList.add('hidden');
+                if (cocoordWrapper) cocoordWrapper.classList.remove('hidden');
+                if (supervisorWrapper) supervisorWrapper.classList.add('hidden');
+                if (promotorWrapper) promotorWrapper.classList.remove('hidden');
+                if (vendedorWrapper) vendedorWrapper.classList.add('hidden');
+            } else if (role === 'cocoord') {
+                // Co-Coordenador: Exibir Filial, Promotor, Rede, Cliente (Busca) e Cidade (Ocultar Coordenador e Supervisor)
+                if (coordWrapper) coordWrapper.classList.add('hidden');
+                if (cocoordWrapper) cocoordWrapper.classList.add('hidden');
+                if (supervisorWrapper) supervisorWrapper.classList.add('hidden');
+                if (promotorWrapper) promotorWrapper.classList.remove('hidden');
+                if (vendedorWrapper) vendedorWrapper.classList.add('hidden');
+            } else {
+                // Supervisor ou Promotor / User: Exibir Filial, Rede, Cliente (Busca) e Cidade (Ocultar filtros hierárquicos superiores)
+                if (coordWrapper) coordWrapper.classList.add('hidden');
+                if (cocoordWrapper) cocoordWrapper.classList.add('hidden');
+                if (supervisorWrapper) supervisorWrapper.classList.add('hidden');
+                if (promotorWrapper) promotorWrapper.classList.add('hidden');
+                if (vendedorWrapper) vendedorWrapper.classList.add('hidden');
+            }
+        }
+
+        async function renderTitulosView() {
+            applyTitulosFilterVisibilityRules();
             setupHierarchyFilters('titulos', () => handleTitulosFilterChange());
             setupTitulosSupervisorFilterHandlers();
+            if (typeof setupGenericFilialFilterHandlers === 'function') {
+                setupGenericFilialFilterHandlers('titulos', () => handleTitulosFilterChange());
+            }
 
             // Rede Filters
             const redeGroupContainer = document.getElementById('titulos-rede-group-container');
@@ -29651,6 +29718,15 @@ const supervisorGroups = new Map();
             document.getElementById('titulos-codcli-filter').value = '';
             if(document.getElementById('titulos-city-filter')) document.getElementById('titulos-city-filter').value = '';
 
+            const filialInput = document.getElementById('titulos-filial-filter');
+            if (filialInput) filialInput.value = 'all';
+            const filialText = document.getElementById('titulos-filial-filter-text');
+            if (filialText) filialText.textContent = 'Todas (05 + 08)';
+            const filialRadios = document.querySelectorAll('input[name="titulos-filial"]');
+            if (filialRadios) {
+                filialRadios.forEach(r => r.checked = (r.value === 'all'));
+            }
+
             if (hierarchyState['titulos']) {
                 hierarchyState['titulos'].coords.clear();
                 hierarchyState['titulos'].cocoords.clear();
@@ -29672,6 +29748,7 @@ const supervisorGroups = new Map();
             if(dd) dd.classList.add('hidden');
 
             setupHierarchyFilters('titulos');
+            applyTitulosFilterVisibilityRules();
             updateTitulosRedeFilter();
             titulosTableState.page = 1;
             updateTitulosView();
@@ -29684,7 +29761,18 @@ const supervisorGroups = new Map();
             const tbody = document.getElementById('titulos-table-body');
             if (tbody) tbody.innerHTML = getSkeletonRows(8, 5);
 
-            // Extract Filter Params
+            applyTitulosFilterVisibilityRules();
+
+            // Extract Filter Params based on visible filter elements
+            const filialWrapper = document.getElementById('titulos-filial-filter-wrapper');
+            const isFilialVisible = filialWrapper && !filialWrapper.classList.contains('hidden');
+            const filialInput = document.getElementById('titulos-filial-filter');
+            const filialVal = filialInput ? filialInput.value : 'all';
+            let p_filial = null;
+            if (isFilialVisible && filialVal && filialVal !== 'all' && filialVal !== 'ambas') {
+                p_filial = [filialVal];
+            }
+
             const cityInput = document.getElementById('titulos-city-filter');
             const cityVal = cityInput ? cityInput.value.trim() : '';
             const p_cidade = cityVal ? [cityVal] : null;
@@ -29693,21 +29781,52 @@ const supervisorGroups = new Map();
             const searchVal = clientInput ? clientInput.value.trim() : '';
             const p_search = searchVal || null;
 
+            const redeWrapper = document.getElementById('titulos-rede-filter-wrapper');
+            const isRedeVisible = redeWrapper && !redeWrapper.classList.contains('hidden');
             let p_rede = null;
-            if (titulosRedeGroupFilter === 'com_rede') {
-                p_rede = selectedTitulosRedes.length > 0 ? selectedTitulosRedes : ['C/ REDE'];
-            } else if (titulosRedeGroupFilter === 'sem_rede') {
-                p_rede = ['S/ REDE'];
+            if (isRedeVisible) {
+                if (titulosRedeGroupFilter === 'com_rede') {
+                    p_rede = selectedTitulosRedes.length > 0 ? selectedTitulosRedes : ['C/ REDE'];
+                } else if (titulosRedeGroupFilter === 'sem_rede') {
+                    p_rede = ['S/ REDE'];
+                }
             }
 
+            const coordWrapper = document.getElementById('titulos-coord-filter-wrapper');
+            const isCoordVisible = coordWrapper && !coordWrapper.classList.contains('hidden');
+            let p_coordenador = null;
+            if (isCoordVisible && hierarchyState['titulos']?.coords && hierarchyState['titulos'].coords.size > 0) {
+                p_coordenador = Array.from(hierarchyState['titulos'].coords);
+            }
+
+            const cocoordWrapper = document.getElementById('titulos-cocoord-filter-wrapper');
+            const isCoCoordVisible = cocoordWrapper && !cocoordWrapper.classList.contains('hidden');
+            let p_cocoordenador = null;
+            if (isCoCoordVisible && hierarchyState['titulos']?.cocoords && hierarchyState['titulos'].cocoords.size > 0) {
+                p_cocoordenador = Array.from(hierarchyState['titulos'].cocoords);
+            }
+
+            const supervisorWrapper = document.getElementById('titulos-supervisor-filter-wrapper');
+            const isSupervisorVisible = supervisorWrapper && !supervisorWrapper.classList.contains('hidden');
             let p_supervisor = null;
+            if (isSupervisorVisible && selectedTitulosSupervisors && selectedTitulosSupervisors.size > 0) {
+                p_supervisor = Array.from(selectedTitulosSupervisors);
+            }
+
+            const promotorWrapper = document.getElementById('titulos-promotor-filter-wrapper');
+            const vendedorWrapper = document.getElementById('titulos-vendedor-filter-wrapper');
+            const isPromotorVisible = (promotorWrapper && !promotorWrapper.classList.contains('hidden')) || (vendedorWrapper && !vendedorWrapper.classList.contains('hidden'));
             let p_vendedor = null;
-            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                if (selectedTitulosSupervisors && selectedTitulosSupervisors.size > 0) {
-                    p_supervisor = Array.from(selectedTitulosSupervisors);
+            if (isPromotorVisible) {
+                const vendedorSet = new Set();
+                if (hierarchyState['titulos']?.promotors) {
+                    hierarchyState['titulos'].promotors.forEach(p => vendedorSet.add(p));
                 }
-                if (selectedTitulosVendedores && selectedTitulosVendedores.size > 0) {
-                    p_vendedor = Array.from(selectedTitulosVendedores);
+                if (selectedTitulosVendedores) {
+                    selectedTitulosVendedores.forEach(v => vendedorSet.add(v));
+                }
+                if (vendedorSet.size > 0) {
+                    p_vendedor = Array.from(vendedorSet);
                 }
             }
 
@@ -29716,10 +29835,12 @@ const supervisorGroups = new Map();
 
             try {
                 const { data, error } = await window.supabaseClient.rpc('get_titulos_view_data', {
-                    p_filial: null,
+                    p_filial: p_filial,
                     p_cidade: p_cidade,
                     p_supervisor: p_supervisor,
                     p_vendedor: p_vendedor,
+                    p_coordenador: p_coordenador,
+                    p_cocoordenador: p_cocoordenador,
                     p_rede: p_rede,
                     p_search: p_search,
                     p_page: pageParam,

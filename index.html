@@ -3029,6 +3029,30 @@
         <div class="filter-wrapper-sentinel">
             <div class="sticky-filters mb-6 p-6 glass-filter-box rounded-2xl border border-slate-800/50 shadow-lg">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <!-- Filial Filter -->
+                    <div id="titulos-filial-filter-wrapper" class="relative z-20">
+                        <label for="titulos-filial-filter-btn" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Filial</label>
+                        <button id="titulos-filial-filter-btn" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+                            <span id="titulos-filial-filter-text">Todas (05 + 08)</span>
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <input type="hidden" id="titulos-filial-filter" value="all">
+                        <div id="titulos-filial-filter-dropdown" class="hidden absolute z-30 w-full mt-2 glass-panel rounded-xl shadow-2xl p-2">
+                            <label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
+                                <input type="radio" name="titulos-filial" value="all" checked class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+                                <span class="ml-2 text-sm text-slate-300">Todas (05 + 08)</span>
+                            </label>
+                            <label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
+                                <input type="radio" name="titulos-filial" value="05" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+                                <span class="ml-2 text-sm text-slate-300">Filial 05</span>
+                            </label>
+                            <label class="flex items-center p-2 hover:bg-slate-700 rounded cursor-pointer">
+                                <input type="radio" name="titulos-filial" value="08" class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+                                <span class="ml-2 text-sm text-slate-300">Filial 08</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Hierarchy Filters -->
                     <div id="titulos-coord-filter-wrapper" class="relative">
                         <label for="titulos-coord-filter-btn" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Coordenador</label>
