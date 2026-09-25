@@ -1112,6 +1112,20 @@ BEGIN
               SELECT 1 FROM unnest(p_filial) elem
               WHERE c.filial ILIKE '%' || elem || '%'
           )
+          OR EXISTS (
+              SELECT 1 FROM public.config_city_branches ccb
+              WHERE UPPER(unaccent(ccb.cidade)) = UPPER(unaccent(COALESCE(c.cidade, '')))
+                AND (
+                    ccb.filial = ANY(p_filial)
+                    OR TRIM(ccb.filial) = ANY(p_filial)
+                    OR TRIM(LEADING '0' FROM COALESCE(ccb.filial, '')) = ANY(
+                        SELECT TRIM(LEADING '0' FROM elem) FROM unnest(p_filial) AS elem
+                    )
+                    OR LPAD(TRIM(COALESCE(ccb.filial, '')), 2, '0') = ANY(
+                        SELECT LPAD(TRIM(elem), 2, '0') FROM unnest(p_filial) AS elem
+                    )
+                )
+          )
       )
       AND (
           p_supervisor IS NULL 
