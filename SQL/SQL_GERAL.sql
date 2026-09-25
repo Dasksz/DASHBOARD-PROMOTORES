@@ -1055,18 +1055,17 @@ $$);
 -- FUNCTION: public.get_titulos_view_data
 -- ==========================================
 CREATE OR REPLACE FUNCTION public.get_titulos_view_data(
-    p_filial text[] DEFAULT NULL,
-    p_cidade text[] DEFAULT NULL,
-    p_supervisor text[] DEFAULT NULL,
-    p_vendedor text[] DEFAULT NULL,
-    p_rede text[] DEFAULT NULL,
-    p_search text DEFAULT NULL,
+    p_filial text[] DEFAULT NULL::text[],
+    p_cidade text[] DEFAULT NULL::text[],
+    p_supervisor text[] DEFAULT NULL::text[],
+    p_vendedor text[] DEFAULT NULL::text[],
+    p_rede text[] DEFAULT NULL::text[],
+    p_search text DEFAULT NULL::text,
     p_page integer DEFAULT 0,
     p_limit integer DEFAULT 50
 )
 RETURNS json
 LANGUAGE plpgsql
-SECURITY DEFINER
 AS $$
 DECLARE
     v_total_rows bigint;
@@ -1088,13 +1087,22 @@ BEGIN
         COALESCE(c.nomecliente, c.razaosocial, c.fantasia, 'Desconhecido') AS nomecliente,
         COALESCE(c.cidade, 'N/A') AS cidade,
         COALESCE(c.rca1, 'N/A') AS vendedor_nome,
-        c.ramo
+        c.ramo,
+        c.filial,
+        c.supervisor
     FROM public.data_titulos t
     LEFT JOIN public.data_clients c ON COALESCE(c.codigo_cliente, c.cod_cliente, '')::text = t.cod_cliente::text
     WHERE (p_cidade IS NULL OR c.cidade = ANY(p_cidade))
+      AND (p_filial IS NULL OR c.filial = ANY(p_filial))
+      AND (
+          p_supervisor IS NULL 
+          OR c.supervisor = ANY(p_supervisor)
+          OR c.cod_supervisor = ANY(p_supervisor)
+      )
       AND (
           p_vendedor IS NULL 
           OR c.rca1 = ANY(p_vendedor)
+          OR c.vendedor = ANY(p_vendedor)
       )
       AND (
           p_rede IS NULL 
