@@ -1093,10 +1093,13 @@ BEGIN
         c.filial,
         c.supervisor
     FROM public.data_titulos t
-    LEFT JOIN public.data_clients c ON COALESCE(c.codigo_cliente, c.cod_cliente, '')::text = t.cod_cliente::text
+    LEFT JOIN public.data_clients c ON (
+        COALESCE(c.codigo_cliente, c.cod_cliente, '')::text = t.cod_cliente::text
+        OR TRIM(LEADING '0' FROM COALESCE(c.codigo_cliente, c.cod_cliente, '')::text) = TRIM(LEADING '0' FROM t.cod_cliente::text)
+    )
     WHERE (p_cidade IS NULL OR c.cidade = ANY(p_cidade))
       AND (
-          p_filial IS NULL
+          p_filial IS NULL 
           OR c.filial = ANY(p_filial)
           OR TRIM(c.filial) = ANY(p_filial)
           OR TRIM(LEADING '0' FROM COALESCE(c.filial, '')) = ANY(
@@ -1105,6 +1108,10 @@ BEGIN
           OR LPAD(TRIM(COALESCE(c.filial, '')), 2, '0') = ANY(
               SELECT LPAD(TRIM(elem), 2, '0') FROM unnest(p_filial) AS elem
           )
+          OR EXISTS (
+              SELECT 1 FROM unnest(p_filial) elem 
+              WHERE c.filial ILIKE '%' || elem || '%'
+          )
       )
       AND (
           p_supervisor IS NULL 
@@ -1112,6 +1119,23 @@ BEGIN
           OR c.cod_supervisor = ANY(p_supervisor)
           OR UPPER(TRIM(COALESCE(c.supervisor, ''))) = ANY(SELECT UPPER(TRIM(elem)) FROM unnest(p_supervisor) AS elem)
           OR UPPER(TRIM(COALESCE(c.cod_supervisor, ''))) = ANY(SELECT UPPER(TRIM(elem)) FROM unnest(p_supervisor) AS elem)
+          OR EXISTS (
+              SELECT 1 FROM unnest(p_supervisor) elem
+              WHERE c.supervisor ILIKE '%' || elem || '%'
+                 OR elem ILIKE '%' || c.supervisor || '%'
+          )
+          OR EXISTS (
+              SELECT 1 FROM public.data_clients c2
+              WHERE (
+                  (c2.rca1 IS NOT NULL AND c2.rca1 <> '' AND c2.rca1 = c.rca1)
+                  OR (c2.vendedor_codigo IS NOT NULL AND c2.vendedor_codigo <> '' AND c2.vendedor_codigo = c.vendedor_codigo)
+              )
+              AND (
+                  c2.supervisor = ANY(p_supervisor)
+                  OR c2.cod_supervisor = ANY(p_supervisor)
+                  OR UPPER(TRIM(COALESCE(c2.supervisor, ''))) = ANY(SELECT UPPER(TRIM(elem)) FROM unnest(p_supervisor) AS elem)
+              )
+          )
       )
       AND (
           p_vendedor IS NULL 
