@@ -29971,12 +29971,29 @@ const supervisorGroups = new Map();
 
             const hasSupFilter = selectedTitulosSupervisors && selectedTitulosSupervisors.size > 0;
 
+            const cityToBranchMap = new Map();
+            if (hasFilial && window.embeddedData && window.embeddedData.config_city_branches) {
+                window.embeddedData.config_city_branches.forEach(r => {
+                    if (r.cidade && r.filial) {
+                        const normCity = String(r.cidade).normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().trim();
+                        cityToBranchMap.set(normCity, String(r.filial).trim());
+                    }
+                });
+            }
+
             if (hasFilial || hasSupFilter) {
                 const filteredList = [];
                 for (let i = 0; i < allowedClients.length; i++) {
                     const c = allowedClients[i];
                     if (hasFilial) {
-                        const cFilial = String(c.filial || c.Filial || '').trim();
+                        let cFilial = String(c.filial || c.Filial || '').trim();
+                        if (!cFilial) {
+                            const rawCity = String(c.cidade || c.Cidade || '').trim();
+                            if (rawCity) {
+                                const normCity = rawCity.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().trim();
+                                cFilial = cityToBranchMap.get(normCity) || '';
+                            }
+                        }
                         const cFilialUnpadded = cFilial.replace(/^0+/, '');
                         if (cFilial !== selectedFilialStr && cFilialUnpadded !== unpaddedFilial) {
                             continue;
