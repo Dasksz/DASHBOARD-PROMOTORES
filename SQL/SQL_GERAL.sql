@@ -1061,6 +1061,8 @@ CREATE OR REPLACE FUNCTION public.get_titulos_view_data(
     p_vendedor text[] DEFAULT NULL::text[],
     p_rede text[] DEFAULT NULL::text[],
     p_search text DEFAULT NULL::text,
+    p_coordenador text[] DEFAULT NULL::text[],
+    p_cocoordenador text[] DEFAULT NULL::text[],
     p_page integer DEFAULT 0,
     p_limit integer DEFAULT 50
 )
@@ -1103,6 +1105,33 @@ BEGIN
           p_vendedor IS NULL 
           OR c.rca1 = ANY(p_vendedor)
           OR c.vendedor = ANY(p_vendedor)
+          OR c.vendedor_codigo = ANY(p_vendedor)
+      )
+      AND (
+          p_coordenador IS NULL
+          OR EXISTS (
+              SELECT 1 FROM public.data_hierarchy dh
+              LEFT JOIN public.data_client_promoters dcp ON dcp.promoter_code = dh.cod_promotor
+              WHERE (dh.nome_coord = ANY(p_coordenador) OR dh.cod_coord = ANY(p_coordenador))
+                AND (
+                    dcp.client_code = COALESCE(c.codigo_cliente, c.cod_cliente)
+                    OR dh.cod_promotor = c.rca1
+                    OR dh.cod_promotor = c.vendedor_codigo
+                )
+          )
+      )
+      AND (
+          p_cocoordenador IS NULL
+          OR EXISTS (
+              SELECT 1 FROM public.data_hierarchy dh
+              LEFT JOIN public.data_client_promoters dcp ON dcp.promoter_code = dh.cod_promotor
+              WHERE (dh.nome_cocoord = ANY(p_cocoordenador) OR dh.cod_cocoord = ANY(p_cocoordenador))
+                AND (
+                    dcp.client_code = COALESCE(c.codigo_cliente, c.cod_cliente)
+                    OR dh.cod_promotor = c.rca1
+                    OR dh.cod_promotor = c.vendedor_codigo
+                )
+          )
       )
       AND (
           p_rede IS NULL 
@@ -1164,7 +1193,6 @@ BEGIN
     RETURN v_result;
 END;
 $$;
-
 
 -- ==========================================
 -- TABLE: public.data_metas_pesquisas
