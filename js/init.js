@@ -796,38 +796,142 @@
             } else {
                  // PARTIAL OR FULL FETCH
 
-                // Promoter Filtering Setup
-                let clientFilterCodes = null;
-                if (isPromoter) {
-                    const role = window.userRole.trim();
-                    console.log(`[Init] Fetching assigned clients for promoter ${role}...`);
-                    // Always fetch fresh promoter assignments for Promoters
-                    const myPromoterData = await fetchAll('data_client_promoters', null, null, 'object', 'client_code', (q) => q.ilike('promoter_code', role));
+                // --- PRE-FETCH DIMENSIONS & HIERARCHY FOR ROLE RESOLUTION ---
+                const role = (window.userRole || "").trim();
+                const normRole = role.toLowerCase();
+                const isAdm = normRole === "adm";
 
-                    if (myPromoterData && myPromoterData.length > 0) {
-                        clientFilterCodes = myPromoterData.map(p => normalizeKey(p.client_code)).filter(c => c);
-                        console.log(`[Init] Found ${clientFilterCodes.length} assigned clients.`);
+                let scopedClientCodes = null; // Set of normalized client codes or null (if ADM)
+                let scopedSellerCodes = null; // Set of seller/RCA codes or null
+
+                if (!isAdm) {
+                    console.log("[Init] Resolving scoped portfolio for role '" + role + "' before heavy fetches...");
+
+                    // Pre-fetch hierarchy & dimension tables concurrently
+                    const [preHierarchy, preClientPromoters, preDimVend, preDimSup] = await Promise.all([
+                        fetchAll('data_hierarchy', null, null, 'object', 'id', null),
+                        fetchAll('data_client_promoters', null, null, 'object', 'client_code', null),
+                        fetchAll('dim_vendedores', null, null, 'object', 'codigo', null),
+                        fetchAll('dim_supervisores', null, null, 'object', 'codigo', null)
+                    ]);
+
+                    const allowedPromoters = new Set();
+                    const supervisedSellers = new Set();
+                    let isSupervisorRole = false;
+                    let isSellerRole = false;
+
+                    // 1. Check Supervisor in dim_supervisores or dim_vendedores
+                    if (preDimVend && preDimVend.length > 0) {
+                        preDimVend.forEach(v => {
+                            const supCode = String(v.codsupervisor || v.supervisor || '').trim().toLowerCase();
+                            const vendCode = String(v.codigo || v.codusur || '').trim().toLowerCase();
+                            if (supCode === normRole) {
+                                isSupervisorRole = true;
+                                if (vendCode) supervisedSellers.add(vendCode);
+                            }
+                        });
+                    }
+                    if (preDimSup && preDimSup.length > 0) {
+                        preDimSup.forEach(s => {
+                            const supCode = String(s.codigo || s.codsupervisor || '').trim().toLowerCase();
+                            if (supCode === normRole) isSupervisorRole = true;
+                        });
+                    }
+
+                    // 2. Check Trade Hierarchy (Coordinator, Co-Coordinator, Promoter)
+                    if (preHierarchy && preHierarchy.length > 0) {
+                        preHierarchy.forEach(h => {
+                            const coord = String(h.cod_coord || '').trim().toLowerCase();
+                            const cocoord = String(h.cod_cocoord || '').trim().toLowerCase();
+                            const promotor = String(h.cod_promotor || '').trim().toLowerCase();
+
+                            if (coord === normRole || cocoord === normRole || promotor === normRole) {
+                                if (promotor) allowedPromoters.add(promotor);
+                            }
+                        });
+                    }
+
+                    // 3. Check Seller Role directly
+                    if (!isSupervisorRole && allowedPromoters.size === 0) {
+                        if (preDimVend && preDimVend.length > 0) {
+                            const matchSeller = preDimVend.find(v => String(v.codigo || v.codusur || '').trim().toLowerCase() === normRole);
+                            if (matchSeller) isSellerRole = true;
+                        }
+                    }
+
+                    const walletClients = new Set();
+
+                    // Map Promoters -> Clients via data_client_promoters
+                    if (allowedPromoters.size > 0 && preClientPromoters && preClientPromoters.length > 0) {
+                        preClientPromoters.forEach(cp => {
+                            const pCode = String(cp.promoter_code || '').trim().toLowerCase();
+                            if (allowedPromoters.has(pCode) && cp.client_code) {
+                                walletClients.add(normalizeKey(cp.client_code));
+                            }
+                        });
+                    }
+
+                    if (allowedPromoters.size > 0) {
+                        console.log("[Init] Role '" + role + "' resolved as Trade (Promoters: " + allowedPromoters.size + "). Wallet clients: " + walletClients.size);
+                        scopedClientCodes = walletClients;
+                    } else if (isSupervisorRole) {
+                        console.log("[Init] Role '" + role + "' resolved as Supervisor. Subordinate Sellers: " + supervisedSellers.size);
+                        scopedSellerCodes = supervisedSellers;
+                    } else if (isSellerRole) {
+                        console.log("[Init] Role '" + role + "' resolved as Seller / RCA.");
+                        scopedSellerCodes = new Set([normRole]);
                     } else {
-                        console.warn(`[Init] No clients found for ${role}. Fetching empty set.`);
-                        clientFilterCodes = [];
+                        // Fallback: Check if user is mapped directly in client_promoters
+                        if (preClientPromoters && preClientPromoters.length > 0) {
+                            preClientPromoters.forEach(cp => {
+                                if (String(cp.promoter_code || '').trim().toLowerCase() === normRole && cp.client_code) {
+                                    walletClients.add(normalizeKey(cp.client_code));
+                                }
+                            });
+                        }
+                        if (walletClients.size > 0) {
+                            console.log("[Init] Role '" + role + "' matched " + walletClients.size + " direct clients in client_promoters.");
+                            scopedClientCodes = walletClients;
+                        } else {
+                            console.warn("[Init] Role '" + role + "' did not match specific hierarchy bounds. Proceeding with seller code.");
+                            scopedSellerCodes = new Set([normRole]);
+                        }
                     }
                 }
 
-                // Filter Functions
+                // Filter Functions for Supabase Queries
                 const applyClientFilter = (q) => {
-                    if (isPromoter && clientFilterCodes !== null) {
-                        if (clientFilterCodes.length === 0) return q.eq('id', '00000000-0000-0000-0000-000000000000');
-                        return q.in('codcli', clientFilterCodes);
+                    if (isAdm) return q;
+                    if (scopedClientCodes !== null) {
+                        if (scopedClientCodes.size === 0) return q.eq('id', '00000000-0000-0000-0000-000000000000');
+                        const codesArray = Array.from(scopedClientCodes);
+                        return q.in('codcli', codesArray);
+                    }
+                    if (scopedSellerCodes !== null && scopedSellerCodes.size > 0) {
+                        const sellersArray = Array.from(scopedSellerCodes);
+                        if (sellersArray.length === 1) {
+                            return q.eq('codusur', sellersArray[0]);
+                        }
+                        return q.in('codusur', sellersArray);
                     }
                     return q;
                 };
 
                 const applyClientTableFilter = (q) => {
-                     if (isPromoter && clientFilterCodes !== null) {
-                        if (clientFilterCodes.length === 0) return q.eq('id', '00000000-0000-0000-0000-000000000000');
-                        return q.in('codigo_cliente', clientFilterCodes);
-                     }
-                     return q;
+                    if (isAdm) return q;
+                    if (scopedClientCodes !== null) {
+                        if (scopedClientCodes.size === 0) return q.eq('id', '00000000-0000-0000-0000-000000000000');
+                        const codesArray = Array.from(scopedClientCodes);
+                        return q.in('codigo_cliente', codesArray);
+                    }
+                    if (scopedSellerCodes !== null && scopedSellerCodes.size > 0) {
+                        const sellersArray = Array.from(scopedSellerCodes);
+                        if (sellersArray.length === 1) {
+                            return q.eq('rca1', sellersArray[0]);
+                        }
+                        return q.in('rca1', sellersArray);
+                    }
+                    return q;
                 };
 
                 // Helper to decide source (Cache vs Fetch)
