@@ -1031,3 +1031,160 @@ SELECT cron.schedule('auto-checkout-midnight', '0 0 * * *', $$
     SET checkout_at = current_timestamp
     WHERE checkout_at IS NULL
 $$);
+
+
+-- ==========================================
+-- FUNCTION: public.get_titulos_view_data
+-- ==========================================
+CREATE OR REPLACE FUNCTION public.get_titulos_view_data(
+    p_filial text[] DEFAULT NULL,
+    p_cidade text[] DEFAULT NULL,
+    p_supervisor text[] DEFAULT NULL,
+    p_vendedor text[] DEFAULT NULL,
+    p_rede text[] DEFAULT NULL,
+    p_search text DEFAULT NULL,
+    p_page integer DEFAULT 0,
+    p_limit integer DEFAULT 50
+)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_total_rows bigint;
+    v_total_receber numeric;
+    v_critical_receber numeric;
+    v_critical_clients bigint;
+    v_rows json;
+    v_result json;
+    v_today date := CURRENT_DATE;
+    v_critical_date date := CURRENT_DATE - INTERVAL '60 days';
+BEGIN
+    -- Temporary filtered set of titles joining client info
+    CREATE TEMP TABLE temp_titulos_filtered ON COMMIT DROP AS
+    SELECT
+        t.cod_cliente,
+        t.vl_titulos,
+        t.vl_receber,
+        t.dt_vencimento,
+        COALESCE(c.nomecliente, c.razaosocial, c.fantasia) AS nomecliente,
+        c.cidade,
+        c.vendedor_nome,
+        c.ramo
+    FROM public.data_titulos t
+    LEFT JOIN public.data_clients c ON t.cod_cliente::text = c.cod_cliente::text
+    WHERE (p_filial IS NULL OR c.filial = ANY(p_filial))
+      AND (p_cidade IS NULL OR c.cidade = ANY(p_cidade))
+      AND (p_supervisor IS NULL OR c.supervisor = ANY(p_supervisor))
+      AND (p_vendedor IS NULL OR c.vendedor = ANY(p_vendedor) OR c.vendedor_codigo = ANY(p_vendedor))
+      AND (
+          p_rede IS NULL
+          OR (array_position(p_rede, 'C/ REDE') IS NOT NULL AND (c.ramo IS NOT NULL AND c.ramo <> '' AND c.ramo <> 'N/A'))
+          OR (array_position(p_rede, 'S/ REDE') IS NOT NULL AND (c.ramo IS NULL OR c.ramo = '' OR c.ramo = 'N/A'))
+          OR (c.ramo = ANY(p_rede))
+      )
+      AND (
+          p_search IS NULL
+          OR p_search = ''
+          OR t.cod_cliente::text ILIKE '%' || p_search || '%'
+          OR c.nomecliente ILIKE '%' || p_search || '%'
+          OR c.razaosocial ILIKE '%' || p_search || '%'
+          OR c.fantasia ILIKE '%' || p_search || '%'
+      );
+
+    -- Aggregation KPIs
+    SELECT
+        COUNT(*),
+        COALESCE(SUM(vl_receber), 0),
+        COALESCE(SUM(CASE WHEN dt_vencimento < v_critical_date AND vl_receber > 0 THEN vl_receber ELSE 0 END), 0),
+        COUNT(DISTINCT CASE WHEN dt_vencimento < v_critical_date AND vl_receber > 0 THEN cod_cliente END)
+    INTO
+        v_total_rows,
+        v_total_receber,
+        v_critical_receber,
+        v_critical_clients
+    FROM temp_titulos_filtered;
+
+    -- Paginated Rows
+    SELECT COALESCE(json_agg(r), '[]'::json) INTO v_rows
+    FROM (
+        SELECT
+            cod_cliente,
+            vl_titulos,
+            vl_receber,
+            dt_vencimento,
+            nomecliente,
+            cidade,
+            vendedor_nome,
+            ramo
+        FROM temp_titulos_filtered
+        ORDER BY dt_vencimento ASC NULLS LAST, cod_cliente ASC
+        OFFSET (p_page * p_limit)
+        LIMIT p_limit
+    ) r;
+
+    -- Build final response object
+    v_result := json_build_object(
+        'kpis', json_build_object(
+            'total_rows', v_total_rows,
+            'total_vl_receber', v_total_receber,
+            'critical_vl_receber', v_critical_receber,
+            'critical_clients', v_critical_clients
+        ),
+        'rows', v_rows
+    );
+
+    RETURN v_result;
+END;
+$$;
+
+
+-- ==========================================
+-- TABLE: public.data_metas_pesquisas
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.data_metas_pesquisas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    filial TEXT,
+    cod_supervisor TEXT,
+    supervisor TEXT,
+    cod_vendedor TEXT,
+    vendedor TEXT,
+    meta_pesquisas INTEGER,
+    mes INTEGER,
+    ano INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_data_metas_pesquisas_vendedor ON public.data_metas_pesquisas (cod_vendedor);
+CREATE INDEX IF NOT EXISTS idx_data_metas_pesquisas_mes_ano ON public.data_metas_pesquisas (mes, ano);
+
+ALTER TABLE public.data_metas_pesquisas ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Enable read access for authenticated users" ON public.data_metas_pesquisas
+    FOR SELECT TO authenticated USING (true);
+
+
+-- ==========================================
+-- TABLE: public.data_metas_loja_perfeita
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.data_metas_loja_perfeita (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    filial TEXT,
+    cod_vendedor TEXT,
+    vendedor TEXT,
+    meta_lojas INTEGER,
+    meta_auditorias INTEGER,
+    mes INTEGER,
+    ano INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_data_metas_loja_perfeita_vendedor ON public.data_metas_loja_perfeita (cod_vendedor);
+CREATE INDEX IF NOT EXISTS idx_data_metas_loja_perfeita_mes_ano ON public.data_metas_loja_perfeita (mes, ano);
+
+ALTER TABLE public.data_metas_loja_perfeita ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Enable read access for authenticated users" ON public.data_metas_loja_perfeita
+    FOR SELECT TO authenticated USING (true);
