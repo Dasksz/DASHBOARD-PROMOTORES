@@ -74,6 +74,7 @@ create table if not exists public.data_history (
 create table if not exists public.data_clients (
   id uuid default uuid_generate_v4 () primary key,
   codigo_cliente text unique,
+  cod_cliente text,
   rca1 text,
   rca2 text,
   rcas text[], -- Array de RCAs
@@ -92,7 +93,14 @@ create table if not exists public.data_clients (
   ultimacompra timestamp with time zone,
   datacadastro timestamp with time zone,
   bloqueio text,
-  inscricaoestadual text
+  inscricaoestadual text,
+  filial text,
+  supervisor text,
+  cod_supervisor text,
+  vendedor text,
+  cod_vendedor text,
+  vendedor_nome text,
+  vendedor_codigo text
 );
 
 -- 1.4 Tabela de Pedidos Agregados
@@ -1068,15 +1076,22 @@ BEGIN
         t.vl_receber,
         t.dt_vencimento,
         COALESCE(c.nomecliente, c.razaosocial, c.fantasia) AS nomecliente,
-        c.cidade,
-        c.vendedor_nome,
+        COALESCE(c.cidade, 'N/A') AS cidade,
+        COALESCE(c.vendedor_nome, c.rca1, 'N/A') AS vendedor_nome,
         c.ramo
     FROM public.data_titulos t
-    LEFT JOIN public.data_clients c ON t.cod_cliente::text = c.cod_cliente::text
+    LEFT JOIN public.data_clients c ON COALESCE(c.codigo_cliente, c.cod_cliente)::text = t.cod_cliente::text
     WHERE (p_filial IS NULL OR c.filial = ANY(p_filial))
       AND (p_cidade IS NULL OR c.cidade = ANY(p_cidade))
-      AND (p_supervisor IS NULL OR c.supervisor = ANY(p_supervisor))
-      AND (p_vendedor IS NULL OR c.vendedor = ANY(p_vendedor) OR c.vendedor_codigo = ANY(p_vendedor))
+      AND (p_supervisor IS NULL OR c.supervisor = ANY(p_supervisor) OR c.cod_supervisor = ANY(p_supervisor))
+      AND (
+          p_vendedor IS NULL
+          OR c.vendedor = ANY(p_vendedor)
+          OR c.cod_vendedor = ANY(p_vendedor)
+          OR c.vendedor_nome = ANY(p_vendedor)
+          OR c.vendedor_codigo = ANY(p_vendedor)
+          OR c.rca1 = ANY(p_vendedor)
+      )
       AND (
           p_rede IS NULL
           OR (array_position(p_rede, 'C/ REDE') IS NOT NULL AND (c.ramo IS NOT NULL AND c.ramo <> '' AND c.ramo <> 'N/A'))
