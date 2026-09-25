@@ -29484,12 +29484,13 @@ const supervisorGroups = new Map();
         let titulosRenderId = 0;
 
         function getTitulosUserRole() {
-            let role = (window.userRole || '').trim().toLowerCase();
-            if (!role && window.userHierarchyContext) {
-                role = (window.userHierarchyContext.role || '').trim().toLowerCase();
-            }
             if (window.userIsSupervisor) return 'supervisor';
             if (window.userIsSeller) return 'seller';
+
+            let role = (window.userHierarchyContext?.role || '').trim().toLowerCase();
+            if (!role) {
+                role = (window.userRole || '').trim().toLowerCase();
+            }
 
             if (role === 'adm' || role === 'admin') return 'adm';
             if (role === 'coord' || role === 'coordenador') return 'coord';
@@ -29770,7 +29771,9 @@ const supervisorGroups = new Map();
             const filialVal = filialInput ? filialInput.value : 'all';
             let p_filial = null;
             if (isFilialVisible && filialVal && filialVal !== 'all' && filialVal !== 'ambas') {
-                p_filial = [filialVal];
+                const unpadded = filialVal.replace(/^0+/, '') || filialVal;
+                const padded = filialVal.length < 2 ? filialVal.padStart(2, '0') : filialVal;
+                p_filial = Array.from(new Set([filialVal, unpadded, padded]));
             }
 
             const cityInput = document.getElementById('titulos-city-filter');

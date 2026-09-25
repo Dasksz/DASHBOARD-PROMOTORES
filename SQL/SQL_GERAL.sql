@@ -1095,11 +1095,23 @@ BEGIN
     FROM public.data_titulos t
     LEFT JOIN public.data_clients c ON COALESCE(c.codigo_cliente, c.cod_cliente, '')::text = t.cod_cliente::text
     WHERE (p_cidade IS NULL OR c.cidade = ANY(p_cidade))
-      AND (p_filial IS NULL OR c.filial = ANY(p_filial))
+      AND (
+          p_filial IS NULL
+          OR c.filial = ANY(p_filial)
+          OR TRIM(c.filial) = ANY(p_filial)
+          OR TRIM(LEADING '0' FROM COALESCE(c.filial, '')) = ANY(
+              SELECT TRIM(LEADING '0' FROM elem) FROM unnest(p_filial) AS elem
+          )
+          OR LPAD(TRIM(COALESCE(c.filial, '')), 2, '0') = ANY(
+              SELECT LPAD(TRIM(elem), 2, '0') FROM unnest(p_filial) AS elem
+          )
+      )
       AND (
           p_supervisor IS NULL 
           OR c.supervisor = ANY(p_supervisor)
           OR c.cod_supervisor = ANY(p_supervisor)
+          OR UPPER(TRIM(COALESCE(c.supervisor, ''))) = ANY(SELECT UPPER(TRIM(elem)) FROM unnest(p_supervisor) AS elem)
+          OR UPPER(TRIM(COALESCE(c.cod_supervisor, ''))) = ANY(SELECT UPPER(TRIM(elem)) FROM unnest(p_supervisor) AS elem)
       )
       AND (
           p_vendedor IS NULL 
