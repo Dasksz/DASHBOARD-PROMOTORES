@@ -29483,30 +29483,7 @@ const supervisorGroups = new Map();
         let titulosRedeGroupFilter = '';
         let titulosRenderId = 0;
 
-        async function renderTitulosView() {
-            // Lazy Load Data
-            if (!window.titulos) {
-                const container = document.getElementById('titulos-kpis');
-                if (container) container.innerHTML = '<div class="col-span-full text-center py-10 text-slate-400">Baixando dados de títulos...</div>';
-
-                try {
-                    const { data, error } = await window.supabaseClient.from('data_titulos').select('*');
-                    if (error) throw error;
-                    window.titulos = data || [];
-
-                    // Update cache asynchronously
-                    window.cachedData = window.cachedData || {};
-                    window.cachedData.titulos = window.titulos;
-                    // Trigger a cache save in background if function is available (from init.js)
-                    // We assume dataToCache structure exists, or we just save specific key if needed,
-                    // but for now, assigning to window.titulos is enough for the session.
-                } catch (e) {
-                    console.error("Erro ao carregar títulos lazy:", e);
-                    if (container) container.innerHTML = '<div class="col-span-full text-center py-10 text-red-500">Erro ao carregar títulos.</div>';
-                    return;
-                }
-            }
-
+                async function renderTitulosView() {
             setupHierarchyFilters('titulos', () => handleTitulosFilterChange());
             setupTitulosSupervisorFilterHandlers();
 
@@ -29528,8 +29505,6 @@ const supervisorGroups = new Map();
                     else redeDropdown.classList.add('hidden');
                     handleTitulosFilterChange();
                 });
-
-
                 redeGroupContainer._hasListener = true;
             }
 
@@ -29547,8 +29522,6 @@ const supervisorGroups = new Map();
                 clientInput.addEventListener('input', (e) => {
                      if (!e.target.value) handleTitulosFilterChange();
                 });
-
-
                 clientInput._hasListener = true;
             }
 
@@ -29564,28 +29537,12 @@ const supervisorGroups = new Map();
                         return;
                     }
 
-                    // Get cities from Titulos data context
-                    const rawTitulos = embeddedData.titulos;
-                    if(!rawTitulos) return;
-
                     const cities = new Set();
-                    // We need to scan all clients that have titles to build the suggestion list
-                    // Optimization: Use getHierarchyFilteredClients('titulos', allClientsData) but maybe too heavy for suggestions?
-                    // Let's just scan all clients that have titles.
-
-                    // Actually, simpler: Scan allClientsData since user might type any city.
-                    // But better to restrict to what's available.
-
-                    // Let's use filtered base clients logic from updateTitulosView but lighter.
-                    // Or just unique cities from all active clients.
                     const clients = getHierarchyFilteredClients('titulos', allClientsData);
                     clients.forEach(c => {
                         if (c.cidade && c.cidade !== 'N/A') cities.add(c.cidade);
                     });
 
-
-
-                    // ⚡ Bolt Optimization: Avoid Array.from().filter() intermediate allocations
                     const matches = [];
                     for (const c of cities) {
                         if (c.toLowerCase().includes(val)) matches.push(c);
@@ -29608,15 +29565,11 @@ const supervisorGroups = new Map();
                     if (!e.target.value) handleTitulosFilterChange();
                 });
 
-
-
                 cityInput.addEventListener('focus', () => {
                     if (cityInput.value.trim().length >= 1) {
                          suggestions.classList.remove('hidden');
                     }
                 });
-
-
 
                 suggestions.addEventListener('click', (e) => {
                     const item = e.target.closest('div');
@@ -29627,15 +29580,11 @@ const supervisorGroups = new Map();
                     }
                 });
 
-
-
                 document.addEventListener('click', (e) => {
                     if (!cityInput.contains(e.target) && !suggestions.contains(e.target)) {
                         suggestions.classList.add('hidden');
                     }
                 });
-
-
 
                 cityInput._hasListener = true;
             }
@@ -29646,8 +29595,6 @@ const supervisorGroups = new Map();
                 clearBtn.addEventListener('click', () => {
                      resetTitulosFilters();
                 });
-
-
                 clearBtn._hasListener = true;
             }
 
@@ -29658,23 +29605,19 @@ const supervisorGroups = new Map();
                 prevBtn.addEventListener('click', () => {
                     if(titulosTableState.page > 1) {
                         titulosTableState.page--;
-                        renderTitulosTable();
+                        updateTitulosView();
                     }
                 });
-
-
                 prevBtn._hasListener = true;
             }
             if(nextBtn && !nextBtn._hasListener) {
                 nextBtn.addEventListener('click', () => {
-                    const max = Math.ceil(titulosTableState.filteredData.length / titulosTableState.limit);
+                    const max = Math.ceil(titulosTableState.totalRows / titulosTableState.limit);
                     if(titulosTableState.page < max) {
                         titulosTableState.page++;
-                        renderTitulosTable();
+                        updateTitulosView();
                     }
                 });
-
-
                 nextBtn._hasListener = true;
             }
 
@@ -29686,9 +29629,6 @@ const supervisorGroups = new Map();
         }
 
         function updateTitulosRedeFilter() {
-            // Get available networks from clients that have titles? Or all clients?
-            // Usually from filtered base.
-            // For simplicity, we use the hierarchy filtered clients to populate red dropdown.
             const clients = getHierarchyFilteredClients('titulos', allClientsData);
             const dropdown = document.getElementById('titulos-rede-filter-dropdown');
             const btnText = document.getElementById('titulos-com-rede-btn-text');
@@ -29698,6 +29638,7 @@ const supervisorGroups = new Map();
         }
 
         function handleTitulosFilterChange() {
+             titulosTableState.page = 1;
              if(window.titulosUpdateTimeout) clearTimeout(window.titulosUpdateTimeout);
              window.titulosUpdateTimeout = setTimeout(() => {
                  updateTitulosView();
@@ -29730,27 +29671,146 @@ const supervisorGroups = new Map();
             const dd = document.getElementById('titulos-rede-filter-dropdown');
             if(dd) dd.classList.add('hidden');
 
-            setupHierarchyFilters('titulos'); // Reset hierarchy
+            setupHierarchyFilters('titulos');
             updateTitulosRedeFilter();
+            titulosTableState.page = 1;
             updateTitulosView();
         }
 
-        function updateTitulosView() {
+        async function updateTitulosView() {
             titulosRenderId++;
             const currentId = titulosRenderId;
 
-            // 1. Get Data
-            const rawTitulos = embeddedData.titulos; // Columnar
+            const tbody = document.getElementById('titulos-table-body');
+            if (tbody) tbody.innerHTML = getSkeletonRows(8, 5);
+
+            // Extract Filter Params
+            const cityInput = document.getElementById('titulos-city-filter');
+            const cityVal = cityInput ? cityInput.value.trim() : '';
+            const p_cidade = cityVal ? [cityVal] : null;
+
+            const clientInput = document.getElementById('titulos-codcli-filter');
+            const searchVal = clientInput ? clientInput.value.trim() : '';
+            const p_search = searchVal || null;
+
+            let p_rede = null;
+            if (titulosRedeGroupFilter === 'com_rede') {
+                p_rede = selectedTitulosRedes.length > 0 ? selectedTitulosRedes : ['C/ REDE'];
+            } else if (titulosRedeGroupFilter === 'sem_rede') {
+                p_rede = ['S/ REDE'];
+            }
+
+            let p_supervisor = null;
+            let p_vendedor = null;
+            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
+                if (selectedTitulosSupervisors && selectedTitulosSupervisors.size > 0) {
+                    p_supervisor = Array.from(selectedTitulosSupervisors);
+                }
+                if (selectedTitulosVendedores && selectedTitulosVendedores.size > 0) {
+                    p_vendedor = Array.from(selectedTitulosVendedores);
+                }
+            }
+
+            const pageParam = (titulosTableState.page || 1) - 1;
+            const limitParam = titulosTableState.limit || 50;
+
+            try {
+                const { data, error } = await window.supabaseClient.rpc('get_titulos_view_data', {
+                    p_filial: null,
+                    p_cidade: p_cidade,
+                    p_supervisor: p_supervisor,
+                    p_vendedor: p_vendedor,
+                    p_rede: p_rede,
+                    p_search: p_search,
+                    p_page: pageParam,
+                    p_limit: limitParam
+                });
+
+                if (currentId !== titulosRenderId) return;
+
+                if (error) {
+                    console.warn('[Titulos RPC] Error:', error);
+                    fallbackLocalTitulosView();
+                    return;
+                }
+
+                const res = typeof data === 'string' ? JSON.parse(data) : data;
+                const kpis = res.kpis || {};
+                const rows = res.rows || [];
+
+                titulosTableState.totalRows = kpis.total_rows || 0;
+
+                // Process rows into titulosTableState.filteredData format
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const criticalDate = new Date();
+                criticalDate.setDate(today.getDate() - 60);
+
+                let criticalDebt = 0;
+                const uniqueClientsCriticalSet = new Set();
+
+                titulosTableState.filteredData = rows.map(r => {
+                    const dtVenc = r.dt_vencimento ? parseDate(r.dt_vencimento) : null;
+                    const valReceber = Number(r.vl_receber) || 0;
+                    const valOriginal = Number(r.vl_titulos) || 0;
+
+                    let isCritical = false;
+                    let daysOverdue = 0;
+
+                    if (dtVenc && valReceber > 0) {
+                        if (dtVenc < criticalDate) {
+                            isCritical = true;
+                        }
+                        if (dtVenc < today) {
+                            const diffTime = Math.abs(today - dtVenc);
+                            daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        }
+                    }
+
+                    if (isCritical) {
+                        criticalDebt += valReceber;
+                        if (r.cod_cliente) uniqueClientsCriticalSet.add(r.cod_cliente);
+                    }
+
+                    return {
+                        codCli: r.cod_cliente || 'N/A',
+                        clientName: r.nomecliente || r.razaosocial || r.fantasia || 'Desconhecido',
+                        rcaName: r.vendedor_nome || 'N/A',
+                        city: r.cidade || 'N/A',
+                        dtVenc: dtVenc,
+                        valReceber: valReceber,
+                        valOriginal: valOriginal,
+                        isCritical: isCritical,
+                        daysOverdue: daysOverdue
+                    };
+                });
+
+                renderTitulosKPIs(
+                    kpis.total_vl_receber || 0,
+                    criticalDebt,
+                    uniqueClientsCriticalSet.size,
+                    kpis.total_rows || 0
+                );
+                renderTitulosRpcTable(rows);
+
+            } catch (err) {
+                console.error('[Titulos RPC] Exception:', err);
+                if (currentId === titulosRenderId) {
+                    fallbackLocalTitulosView();
+                }
+            }
+        }
+
+        function fallbackLocalTitulosView() {
+            const rawTitulos = embeddedData.titulos;
             if (!rawTitulos || !rawTitulos.length) {
-                // Empty state
                 renderTitulosKPIs(0, 0, 0, 0);
                 titulosTableState.filteredData = [];
+                titulosTableState.totalRows = 0;
                 renderTitulosTable();
                 return;
             }
 
-            // 2. Filter Clients Base (Hierarchy + Rede)
-            // Use Hierarchy Filter
             let allowedClients;
             if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
                 allowedClients = [];
@@ -29762,10 +29822,7 @@ const supervisorGroups = new Map();
                     const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
                     const rca1 = String(c.rca1 || '').trim();
                     const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-                    
-                    // FIX: Only filter orphans for Admins
                     if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue;
-                    
                     let keep = true;
                     if (hasSup || hasVend) {
                         const details = sellerDetailsMap.get(rca1);
@@ -29782,7 +29839,6 @@ const supervisorGroups = new Map();
                 allowedClients = getHierarchyFilteredClients('titulos', allClientsData);
             }
 
-            // Apply Rede Filter
             const isComRede = titulosRedeGroupFilter === 'com_rede';
             const isSemRede = titulosRedeGroupFilter === 'sem_rede';
             const redeSet = (isComRede && selectedTitulosRedes.length > 0) ? new Set(selectedTitulosRedes) : null;
@@ -29790,41 +29846,25 @@ const supervisorGroups = new Map();
 
             const allowedClientCodes = new Set();
             for(let i=0; i<allowedClients.length; i++) {
-                const c = allowedClients[i]; // Proxy or Object
-
-                // Rede Check
+                const c = allowedClients[i];
                 if (isComRede) {
                     if (!c.ramo || c.ramo === 'N/A') continue;
                     if (redeSet && !redeSet.has(c.ramo)) continue;
                 } else if (isSemRede) {
                     if (c.ramo && c.ramo !== 'N/A') continue;
                 }
-
-                // Search Check (Name/Code) - Optimization: Check here to reduce set size
                 if (clientSearch) {
                     const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
                     const name = (c.nomeCliente || '').toLowerCase();
                     if (!code.includes(clientSearch) && !name.includes(clientSearch)) continue;
                 }
-
                 allowedClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
             }
 
-            // 3. Filter Titulos based on Allowed Client Codes
             const filteredTitulos = [];
             const isCol = rawTitulos instanceof ColumnarDataset;
             const len = rawTitulos.length;
 
-            // Indices
-            // We assume column names from SQL: cod_cliente, vl_receber, etc.
-            // But 'embeddedData.titulos' comes from 'fetchAll' which uses CSV parser.
-            // The CSV parser uppercases headers. So: COD_CLIENTE, VL_RECEBER, etc.
-
-            // Let's verify column names dynamically or assume standard
-            // Standard from CSV parser: keys are UPPERCASE of DB columns.
-            // DB: cod_cliente -> CSV: COD_CLIENTE
-
-            // Pre-resolve arrays if columnar
             let colCodCliente, colVlReceber, colVlTitulos, colDtVencimento;
             if (isCol && rawTitulos._data) {
                 colCodCliente = rawTitulos._data['cod_cliente'] || rawTitulos._data['COD_CLIENTE'];
@@ -29833,22 +29873,17 @@ const supervisorGroups = new Map();
                 colDtVencimento = rawTitulos._data['dt_vencimento'] || rawTitulos._data['DT_VENCIMENTO'];
             }
 
-            // Optimized read with Dual Case Check (Lowercase and Uppercase)
             const getVal = (i, col) => {
                 const val = isCol ? (rawTitulos._data[col] ? rawTitulos._data[col][i] : undefined) : rawTitulos[i][col];
                 if (val !== undefined) return val;
-                // Try Uppercase
                 const colUpper = col.toUpperCase();
                 return isCol ? (rawTitulos._data[colUpper] ? rawTitulos._data[colUpper][i] : undefined) : rawTitulos[i][colUpper];
             };
 
             let totalReceber = 0;
-            
             let countCritical = 0;
             const today = new Date();
             today.setHours(0,0,0,0);
-
-            // Critical Date: 60 days ago
             const criticalDate = new Date();
             criticalDate.setDate(today.getDate() - 60);
 
@@ -29857,13 +29892,11 @@ const supervisorGroups = new Map();
                 const codCli = normalizeKey(rawCodCli);
 
                 if (allowedClientCodes.has(codCli)) {
-                    // Match!
                     const valReceber = Number(colVlReceber ? colVlReceber[i] : getVal(i, 'vl_receber')) || 0;
                     const valOriginal = Number(colVlTitulos ? colVlTitulos[i] : getVal(i, 'vl_titulos')) || 0;
                     const dtVenc = parseDate(colDtVencimento ? colDtVencimento[i] : getVal(i, 'dt_vencimento'));
 
                     totalReceber += valReceber;
-
                     let isCritical = false;
                     let daysOverdue = 0;
 
@@ -29872,35 +29905,28 @@ const supervisorGroups = new Map();
                             isCritical = true;
                             countCritical++;
                         }
-                        // Calculate days overdue if past due
                         if (dtVenc < today) {
-                             const diffTime = Math.abs(today - dtVenc);
-                             daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                            const diffTime = Math.abs(today - dtVenc);
+                            daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                         }
                     }
 
-                    // Enrich Data for Table
-                    // Resolve Client Name and RCA
                     const clientObj = clientMapForKPIs.get(codCli);
                     let clientName = 'Desconhecido';
                     let rcaName = 'N/A';
                     let city = 'N/A';
 
                     if (clientObj) {
-                         let c = clientObj;
-                         if (typeof clientObj === 'number') {
-                             c = allClientsData.get(clientObj);
-                         }
-
-                         clientName = c.nomeCliente || c.fantasia || 'N/A';
-                         city = c.cidade || 'N/A';
-                         const rcaCode = String(c.rca1 || '').trim();
-                         // Resolve RCA Name
-                         if (optimizedData.rcaNameByCode && optimizedData.rcaNameByCode.has(rcaCode)) {
-                             rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode;
-                         } else {
-                             rcaName = rcaCode;
-                         }
+                        let c = clientObj;
+                        if (typeof clientObj === 'number') c = allClientsData.get(clientObj);
+                        clientName = c.nomeCliente || c.fantasia || 'N/A';
+                        city = c.cidade || 'N/A';
+                        const rcaCode = String(c.rca1 || '').trim();
+                        if (optimizedData.rcaNameByCode && optimizedData.rcaNameByCode.has(rcaCode)) {
+                            rcaName = optimizedData.rcaNameByCode.get(rcaCode) || rcaCode;
+                        } else {
+                            rcaName = rcaCode;
+                        }
                     }
 
                     filteredTitulos.push({
@@ -29914,19 +29940,13 @@ const supervisorGroups = new Map();
                         isCritical,
                         daysOverdue
                     });
-
-
                 }
             }
 
-            // Update State
             titulosTableState.filteredData = filteredTitulos;
-            titulosTableState.page = 1;
-
-            // Sort by Date Ascending (Oldest first usually for debt)
+            titulosTableState.totalRows = filteredTitulos.length;
             titulosTableState.filteredData.sort((a,b) => (a.dtVenc || 0) - (b.dtVenc || 0));
 
-            // KPIs
             const totalCount = filteredTitulos.length;
             let criticalDebt = 0;
             const uniqueClientsCriticalSet = new Set();
@@ -29937,9 +29957,8 @@ const supervisorGroups = new Map();
                     uniqueClientsCriticalSet.add(t.codCli);
                 }
             }
-            const uniqueClientsCritical = uniqueClientsCriticalSet.size;
 
-            renderTitulosKPIs(totalReceber, criticalDebt, uniqueClientsCritical, totalCount);
+            renderTitulosKPIs(totalReceber, criticalDebt, uniqueClientsCriticalSet.size, totalCount);
             renderTitulosTable();
         }
 
@@ -29950,12 +29969,112 @@ const supervisorGroups = new Map();
             document.getElementById('titulos-kpi-count').textContent = count;
         }
 
+        function renderTitulosRpcTable(rows) {
+            const tbody = document.getElementById('titulos-table-body');
+            if(!tbody) return;
+
+            const total = titulosTableState.totalRows || rows.length;
+            const limit = titulosTableState.limit || 50;
+            const page = titulosTableState.page || 1;
+            const start = (page - 1) * limit;
+            const end = start + rows.length;
+            const totalPages = Math.ceil(total / limit) || 1;
+
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-500">Nenhum título encontrado.</td></tr>';
+                document.getElementById('titulos-page-info-text').textContent = '0 de 0';
+                return;
+            }
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const criticalDate = new Date();
+            criticalDate.setDate(today.getDate() - 60);
+
+            tbody.innerHTML = rows.map((r, localIndex) => {
+                const dtVenc = r.dt_vencimento ? parseDate(r.dt_vencimento) : null;
+                const valReceber = Number(r.vl_receber) || 0;
+                const valOriginal = Number(r.vl_titulos) || 0;
+
+                let isCritical = false;
+                let daysOverdue = 0;
+
+                if (dtVenc && valReceber > 0) {
+                    if (dtVenc < criticalDate) isCritical = true;
+                    if (dtVenc < today) {
+                        const diffTime = Math.abs(today - dtVenc);
+                        daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    }
+                }
+
+                const dateStr = dtVenc ? dtVenc.toLocaleDateString('pt-BR') : '-';
+                const valOrig = valOriginal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const valOpen = valReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                const clientName = r.nomecliente || r.razaosocial || r.fantasia || 'Desconhecido';
+                let mobileClientName = clientName.trim();
+                if (mobileClientName.length > 21) {
+                    mobileClientName = mobileClientName.substring(0, 21) + '...';
+                }
+
+                let statusDesktop = isCritical
+                    ? `<span class="px-2 py-1 bg-red-900/50 text-red-300 text-[10px] font-bold rounded-full border border-red-800">${daysOverdue} Dias</span>`
+                    : `<span class="px-2 py-1 bg-green-900/50 text-green-300 text-[10px] font-bold rounded-full border border-green-800">Em Aberto</span>`;
+
+                let statusMobile = isCritical
+                    ? `<span class="px-2 py-0.5 bg-red-900/50 text-red-300 text-[10px] font-bold rounded-full border border-red-800">${daysOverdue} Dias</span>`
+                    : `<span class="px-2 py-0.5 bg-green-900/50 text-green-300 text-[10px] font-bold rounded-full border border-green-800">Em Aberto</span>`;
+
+                const codCli = r.cod_cliente || 'N/A';
+                const rcaName = r.vendedor_nome || 'N/A';
+                const city = r.cidade || 'N/A';
+
+                return `
+                    <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors cursor-pointer md:cursor-default" onclick="if(window.innerWidth < 768) openTitulosMobileModal(${localIndex})">
+                        <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(codCli)}</td>
+                        <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] hidden md:table-cell" title="${window.escapeHtml(clientName)}">${window.escapeHtml(clientName)}</td>
+                        <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${window.escapeHtml(rcaName)}</td>
+                        <td class="px-4 py-3 text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(city)}</td>
+                        <td class="px-4 py-3 text-xs text-white text-center font-mono hidden md:table-cell">${dateStr}</td>
+                        <td class="px-4 py-3 text-xs text-slate-500 text-right hidden md:table-cell">${valOrig}</td>
+                        <td class="px-4 py-3 text-sm text-white font-bold text-right hidden md:table-cell">${valOpen}</td>
+                        <td class="px-4 py-3 text-center hidden md:table-cell">${statusDesktop}</td>
+
+                        <td class="md:hidden mobile-card-header w-full text-left" colspan="8">
+                            <div class="flex flex-col gap-2 text-left">
+                                <div class="flex justify-between items-center text-left">
+                                    <span class="text-xs font-bold text-white leading-tight truncate mr-2 text-left">
+                                        ${window.escapeHtml(codCli)} - ${window.escapeHtml(mobileClientName)}
+                                    </span>
+                                    <div class="shrink-0">
+                                        ${statusMobile}
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center text-left">
+                                    <span class="text-sm font-bold text-white text-left">
+                                        ${valOpen}
+                                    </span>
+                                    <span class="text-sm text-slate-400 font-mono">
+                                        ${dateStr}
+                                    </span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('titulos-prev-page-btn').disabled = page === 1;
+            document.getElementById('titulos-next-page-btn').disabled = page >= totalPages;
+            document.getElementById('titulos-page-info-text').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
+        }
+
         function renderTitulosTable() {
             const tbody = document.getElementById('titulos-table-body');
             if(!tbody) return;
 
             const { page, limit, filteredData } = titulosTableState;
-            const total = filteredData.length;
+            const total = titulosTableState.totalRows || filteredData.length;
             const start = (page - 1) * limit;
             const end = start + limit;
             const subset = filteredData.slice(start, end);
@@ -29973,7 +30092,6 @@ const supervisorGroups = new Map();
                 const valOrig = t.valOriginal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const valOpen = t.valReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                // Truncate client name to 24 characters max (excluding code)
                 let mobileClientName = (t.clientName || '').trim();
                 if (mobileClientName.length > 21) {
                     mobileClientName = mobileClientName.substring(0, 21) + '...';
@@ -29991,8 +30109,7 @@ const supervisorGroups = new Map();
                 }
 
                 return `
-                    <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors cursor-pointer md:cursor-default" onclick="if(window.innerWidth < 768) openTitulosMobileModal(${globalIndex})">
-                        <!-- Desktop Columns (Hidden on Mobile) -->
+                    <tr class="hover:bg-slate-700/50 border-b border-white/5 transition-colors cursor-pointer md:cursor-default" onclick="if(window.innerWidth < 768) openTitulosMobileModal(${localIndex})">
                         <td class="px-4 py-3 font-mono text-xs text-slate-400 hidden md:table-cell">${window.escapeHtml(t.codCli)}</td>
                         <td class="px-4 py-3 text-sm text-white font-medium truncate max-w-[200px] hidden md:table-cell" title="${window.escapeHtml(t.clientName)}">${window.escapeHtml(t.clientName)}</td>
                         <td class="px-4 py-3 text-xs text-slate-300 hidden md:table-cell">${window.escapeHtml(t.rcaName)}</td>
@@ -30002,7 +30119,6 @@ const supervisorGroups = new Map();
                         <td class="px-4 py-3 text-sm text-white font-bold text-right hidden md:table-cell">${valOpen}</td>
                         <td class="px-4 py-3 text-center hidden md:table-cell">${statusDesktop}</td>
 
-                        <!-- Mobile Layout (Single Cell) -->
                         <td class="md:hidden mobile-card-header w-full text-left" colspan="8">
                             <div class="flex flex-col gap-2 text-left">
                                 <div class="flex justify-between items-center text-left">
@@ -30027,7 +30143,6 @@ const supervisorGroups = new Map();
                 `;
             }).join('');
 
-            // Pagination UI
             document.getElementById('titulos-prev-page-btn').disabled = page === 1;
             document.getElementById('titulos-next-page-btn').disabled = page >= totalPages;
             document.getElementById('titulos-page-info-text').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
