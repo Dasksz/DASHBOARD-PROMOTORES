@@ -440,11 +440,11 @@ const FeedVisitas = (() => {
 
         try {
             const { count, error } = await window.supabaseClient
-                .from('visitas')
+                .from('view_visitas_expanded')
                 .select('id', { count: 'estimated', head: true })
                 .filter('favoritado_por', 'cs', `{${window.userId}}`)
-                .gte('created_at', currentStartBound.toISOString())
-                .lte('created_at', currentEndBound.toISOString())
+                .gte('data_visita', currentStartBound.toISOString())
+                .lte('data_visita', currentEndBound.toISOString())
                 .not('respostas', 'is', null)
                 .neq('respostas', '""')
                 .neq('respostas', '{}')
@@ -582,12 +582,12 @@ const FeedVisitas = (() => {
         try {
             // Buscando datas extremas do BD
             const [{ data: minData }, { data: maxData }] = await Promise.all([
-                window.supabaseClient.from('visitas').select('created_at').order('created_at', { ascending: true }).limit(1).maybeSingle(),
-                window.supabaseClient.from('visitas').select('created_at').order('created_at', { ascending: false }).limit(1).maybeSingle()
+                window.supabaseClient.from('view_visitas_expanded').select('data_visita').order('data_visita', { ascending: true }).limit(1).maybeSingle(),
+                window.supabaseClient.from('view_visitas_expanded').select('data_visita').order('data_visita', { ascending: false }).limit(1).maybeSingle()
             ]);
 
-            let minDate = minData ? new Date(minData.created_at) : new Date();
-            let maxDate = maxData ? new Date(maxData.created_at) : new Date();
+            let minDate = minData && minData.data_visita ? new Date(minData.data_visita) : new Date();
+            let maxDate = maxData && maxData.data_visita ? new Date(maxData.data_visita) : new Date();
 
             // Instanciando Flatpickr
             const input = document.getElementById('feed-date-filter');
@@ -747,15 +747,23 @@ const FeedVisitas = (() => {
         const to = from + PAGE_SIZE - 1;
 
         let query = window.supabaseClient
-            .from('visitas')
-            .select(`id, created_at, checkout_at, client_code, observacao, respostas, status, id_promotor, profiles:id_promotor(name, role, avatar_url), favoritado_por, latitude, longitude, promotor_name`)
-            .gte('created_at', currentStartBound.toISOString())
-            .lte('created_at', currentEndBound.toISOString())
+            .from('view_visitas_expanded')
+            .select('*')
+            .gte('data_visita', currentStartBound.toISOString())
+            .lte('data_visita', currentEndBound.toISOString())
             .not('respostas', 'is', null)
             .neq('respostas', '""')
             .neq('respostas', '{}')
             .neq('respostas', '[]')
-            .order('created_at', { ascending: false });
+            .order('data_visita', { ascending: false });
+
+        if (feedCurrentFilialFilter && feedCurrentFilialFilter !== 'all') {
+            query = query.eq('client_filial', feedCurrentFilialFilter);
+        }
+
+        if (feedCurrentPromotorFilter) {
+            query = query.or(`profile_promotor_name.eq."${feedCurrentPromotorFilter}",hierarchy_nome_promotor.eq."${feedCurrentPromotorFilter}"`);
+        }
 
         if (showOnlyFavorites && window.userId) {
             query = query.filter('favoritado_por', 'cs', `{${window.userId}}`);
@@ -920,11 +928,12 @@ const FeedVisitas = (() => {
 
                 // Try to resolve client info from fetched data_clients map, fallback to code
                 
-                // Try to resolve client info from fetched data_clients map, fallback to code
-                let clientName = 'Cliente Desconhecido';
+                // Enriched attributes from view_visitas_expanded
                 let clientInfo = null;
-                let clientCity = '';
+                let clientCity = visit.client_cidade || '';
                 let clientCnpj = '';
+                let clientFilial = visit.client_filial || '';
+
                 if (visit.client_code) {
                     const cleanCode = String(visit.client_code).trim();
                     if (clientNamesMap.has(cleanCode) && clientNamesMap.get(cleanCode)) {
@@ -936,19 +945,17 @@ const FeedVisitas = (() => {
                             registeredLat: cached.registeredLat,
                             registeredLng: cached.registeredLng
                         };
-                        clientName = clientInfo.nome;
-                        clientCity = clientInfo.cidade || '';
                         clientCnpj = clientInfo.cnpj || '';
-                    } else {
-                        clientName = `Cód: ${visit.client_code}`;
+                        if (!clientCity) clientCity = clientInfo.cidade || '';
                     }
                 }
 
-                let promotorName = visit.promotor_name || (visit.profiles ? visit.profiles.name : 'Promotor');
+                let clientName = visit.client_fantasia || visit.client_nome || (clientInfo ? clientInfo.nome : '') || (visit.client_code ? `Cód: ${visit.client_code}` : 'Cliente Desconhecido');
+                let promotorName = visit.hierarchy_nome_promotor || visit.profile_promotor_name || visit.promotor_name || (visit.profiles ? visit.profiles.name : 'Promotor');
 
-                // --- FEED FILTERS ---
+                // --- FEED FILTERS (In-memory fallback & Client/City text search) ---
                 if (feedCurrentClientFilter) {
-                    const searchStr = `${clientName} ${visit.client_code} ${clientCnpj}`.toLowerCase();
+                    const searchStr = `${clientName} ${visit.client_code || ''} ${clientCnpj}`.toLowerCase();
                     if (!searchStr.includes(feedCurrentClientFilter)) return;
                 }
 
@@ -957,18 +964,16 @@ const FeedVisitas = (() => {
                 }
 
                 if (feedCurrentPromotorFilter) {
-                    if (promotorName !== feedCurrentPromotorFilter) return;
+                    const matchPromoter = (
+                        (visit.hierarchy_nome_promotor && visit.hierarchy_nome_promotor === feedCurrentPromotorFilter) ||
+                        (visit.profile_promotor_name && visit.profile_promotor_name === feedCurrentPromotorFilter) ||
+                        (promotorName === feedCurrentPromotorFilter)
+                    );
+                    if (!matchPromoter) return;
                 }
 
-                if (feedCurrentFilialFilter !== 'all') {
-                    // Try to discover Filial from City using config_city_branches
-                    let foundFilial = '';
-                    if (clientCity && window.embeddedData && window.embeddedData.config_city_branches) {
-                        const cityNorm = clientCity.trim().toUpperCase();
-                        const configRow = window.embeddedData.config_city_branches.find(r => (r.cidade || '').trim().toUpperCase() === cityNorm);
-                        if (configRow) foundFilial = configRow.filial;
-                    }
-                    if (foundFilial !== feedCurrentFilialFilter) return;
+                if (feedCurrentFilialFilter && feedCurrentFilialFilter !== 'all') {
+                    if (clientFilial && String(clientFilial) !== String(feedCurrentFilialFilter)) return;
                 }
 
                 let avatarUrl = visit.profiles ? visit.profiles.avatar_url : null;
@@ -1160,7 +1165,7 @@ const FeedVisitas = (() => {
 
 
                 // Adjust date to BRT timezone manually
-                let visitDate = new Date(visit.created_at);
+                let visitDate = new Date(visit.data_visita || visit.created_at);
                 visitDate = new Date(visitDate.getTime() - (3 * 60 * 60 * 1000));
 
                 const formattedDate = visitDate.getUTCDate().toString().padStart(2, '0') + '/' +
