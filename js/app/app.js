@@ -29501,7 +29501,11 @@ const supervisorGroups = new Map();
             return 'adm';
         }
 
-        function applyTitulosFilterVisibilityRules() {
+                function applyTitulosFilterVisibilityRules() {
+            if (typeof updateHierarchyFiltersVisibility === 'function') {
+                updateHierarchyFiltersVisibility();
+                return;
+            }
             const role = getTitulosUserRole();
 
             const filialWrapper = document.getElementById('titulos-filial-filter-wrapper');
@@ -29516,29 +29520,27 @@ const supervisorGroups = new Map();
             if (filialWrapper) filialWrapper.classList.remove('hidden');
             if (redeWrapper) redeWrapper.classList.remove('hidden');
 
+            const isSellerMode = typeof adminViewMode !== 'undefined' && adminViewMode === 'seller';
+
             if (role === 'adm') {
-                // Administrador: Exibir Filial, Coordenador, Co-Coordenador, Supervisor, Promotor, Rede, Cliente (Busca) e Cidade
-                if (coordWrapper) coordWrapper.classList.remove('hidden');
-                if (cocoordWrapper) cocoordWrapper.classList.remove('hidden');
-                if (supervisorWrapper) supervisorWrapper.classList.remove('hidden');
-                if (promotorWrapper) promotorWrapper.classList.remove('hidden');
-                if (vendedorWrapper) vendedorWrapper.classList.remove('hidden');
+                if (coordWrapper) coordWrapper.classList.toggle('hidden', isSellerMode);
+                if (cocoordWrapper) cocoordWrapper.classList.toggle('hidden', isSellerMode);
+                if (promotorWrapper) promotorWrapper.classList.toggle('hidden', isSellerMode);
+                if (supervisorWrapper) supervisorWrapper.classList.toggle('hidden', !isSellerMode);
+                if (vendedorWrapper) vendedorWrapper.classList.toggle('hidden', !isSellerMode);
             } else if (role === 'coord') {
-                // Coordenador: Exibir Filial, Co-Coordenador, Promotor, Rede, Cliente (Busca) e Cidade (Ocultar Supervisor e Coordenador)
                 if (coordWrapper) coordWrapper.classList.add('hidden');
-                if (cocoordWrapper) cocoordWrapper.classList.remove('hidden');
-                if (supervisorWrapper) supervisorWrapper.classList.add('hidden');
-                if (promotorWrapper) promotorWrapper.classList.remove('hidden');
-                if (vendedorWrapper) vendedorWrapper.classList.add('hidden');
+                if (cocoordWrapper) cocoordWrapper.classList.toggle('hidden', isSellerMode);
+                if (promotorWrapper) promotorWrapper.classList.toggle('hidden', isSellerMode);
+                if (supervisorWrapper) supervisorWrapper.classList.toggle('hidden', !isSellerMode);
+                if (vendedorWrapper) vendedorWrapper.classList.toggle('hidden', !isSellerMode);
             } else if (role === 'cocoord') {
-                // Co-Coordenador: Exibir Filial, Promotor, Rede, Cliente (Busca) e Cidade (Ocultar Coordenador e Supervisor)
                 if (coordWrapper) coordWrapper.classList.add('hidden');
                 if (cocoordWrapper) cocoordWrapper.classList.add('hidden');
+                if (promotorWrapper) promotorWrapper.classList.toggle('hidden', isSellerMode);
                 if (supervisorWrapper) supervisorWrapper.classList.add('hidden');
-                if (promotorWrapper) promotorWrapper.classList.remove('hidden');
-                if (vendedorWrapper) vendedorWrapper.classList.add('hidden');
+                if (vendedorWrapper) vendedorWrapper.classList.toggle('hidden', !isSellerMode);
             } else {
-                // Supervisor ou Promotor / User: Exibir Filial, Rede, Cliente (Busca) e Cidade (Ocultar filtros hierárquicos superiores)
                 if (coordWrapper) coordWrapper.classList.add('hidden');
                 if (cocoordWrapper) cocoordWrapper.classList.add('hidden');
                 if (supervisorWrapper) supervisorWrapper.classList.add('hidden');
@@ -29951,7 +29953,22 @@ const supervisorGroups = new Map();
                     if (hasSup || hasVend) {
                         const details = sellerDetailsMap.get(rca1);
                         if (hasSup) {
-                            if (!details || !selectedTitulosSupervisors.has(details.supervisor)) keep = false;
+                            const cSup = c.supervisor || c.Supervisor || (details ? details.supervisor : '');
+                            let matchSup = false;
+                            if (cSup && selectedTitulosSupervisors.has(cSup)) {
+                                matchSup = true;
+                            } else if (details && details.supervisor && selectedTitulosSupervisors.has(details.supervisor)) {
+                                matchSup = true;
+                            } else if (cSup || (details && details.supervisor)) {
+                                const supName = cSup || (details ? details.supervisor : '');
+                                for (let s of selectedTitulosSupervisors) {
+                                    if (supName.toUpperCase().includes(s.toUpperCase()) || s.toUpperCase().includes(supName.toUpperCase())) {
+                                        matchSup = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!matchSup) keep = false;
                         }
                         if (keep && hasVend) {
                             if (!selectedTitulosVendedores.has(rca1)) keep = false;
