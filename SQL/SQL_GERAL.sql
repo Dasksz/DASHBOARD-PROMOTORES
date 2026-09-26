@@ -1114,7 +1114,7 @@ BEGIN
           )
           OR EXISTS (
               SELECT 1 FROM public.config_city_branches ccb
-              WHERE UPPER(unaccent(ccb.cidade)) = UPPER(unaccent(COALESCE(c.cidade, '')))
+              WHERE UPPER(ccb.cidade) = UPPER(COALESCE(c.cidade, ''))
                 AND (
                     ccb.filial = ANY(p_filial)
                     OR TRIM(ccb.filial) = ANY(p_filial)
@@ -1135,8 +1135,12 @@ BEGIN
           OR UPPER(TRIM(COALESCE(c.cod_supervisor, ''))) = ANY(SELECT UPPER(TRIM(elem)) FROM unnest(p_supervisor) AS elem)
           OR EXISTS (
               SELECT 1 FROM unnest(p_supervisor) elem
-              WHERE c.supervisor ILIKE '%' || elem || '%'
-                 OR elem ILIKE '%' || c.supervisor || '%'
+              WHERE (c.supervisor IS NOT NULL AND (c.supervisor ILIKE '%' || elem || '%' OR elem ILIKE '%' || c.supervisor || '%'))
+                 OR (c.cod_supervisor IS NOT NULL AND (c.cod_supervisor ILIKE '%' || elem || '%' OR elem ILIKE '%' || c.cod_supervisor || '%'))
+                 OR (elem LIKE '% - %' AND (
+                     c.supervisor ILIKE '%' || trim(split_part(elem, ' - ', 2)) || '%'
+                     OR c.cod_supervisor = trim(split_part(elem, ' - ', 1))
+                 ))
           )
           OR EXISTS (
               SELECT 1 FROM public.data_clients c2
@@ -1148,7 +1152,33 @@ BEGIN
                   c2.supervisor = ANY(p_supervisor)
                   OR c2.cod_supervisor = ANY(p_supervisor)
                   OR UPPER(TRIM(COALESCE(c2.supervisor, ''))) = ANY(SELECT UPPER(TRIM(elem)) FROM unnest(p_supervisor) AS elem)
+                  OR EXISTS (
+                      SELECT 1 FROM unnest(p_supervisor) elem
+                      WHERE c2.supervisor ILIKE '%' || elem || '%'
+                         OR elem ILIKE '%' || c2.supervisor || '%'
+                         OR (elem LIKE '% - %' AND (
+                             c2.supervisor ILIKE '%' || trim(split_part(elem, ' - ', 2)) || '%'
+                             OR c2.cod_supervisor = trim(split_part(elem, ' - ', 1))
+                         ))
+                  )
               )
+          )
+          OR EXISTS (
+              SELECT 1 FROM public.data_orders o
+              WHERE (o.codcli = c.codigo_cliente OR o.codcli = c.cod_cliente OR o.codusur = c.rca1 OR o.codusur = c.vendedor_codigo)
+                AND (
+                    o.superv = ANY(p_supervisor)
+                    OR o.codsupervisor = ANY(p_supervisor)
+                    OR EXISTS (
+                        SELECT 1 FROM unnest(p_supervisor) elem
+                        WHERE o.superv ILIKE '%' || elem || '%'
+                           OR elem ILIKE '%' || o.superv || '%'
+                           OR (elem LIKE '% - %' AND (
+                               o.superv ILIKE '%' || trim(split_part(elem, ' - ', 2)) || '%'
+                               OR o.codsupervisor = trim(split_part(elem, ' - ', 1))
+                           ))
+                    )
+                )
           )
       )
       AND (

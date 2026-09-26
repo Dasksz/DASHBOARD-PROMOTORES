@@ -29501,7 +29501,11 @@ const supervisorGroups = new Map();
             return 'adm';
         }
 
-        function applyTitulosFilterVisibilityRules() {
+                function applyTitulosFilterVisibilityRules() {
+            if (typeof updateHierarchyFiltersVisibility === 'function') {
+                updateHierarchyFiltersVisibility();
+                return;
+            }
             const role = getTitulosUserRole();
 
             const filialWrapper = document.getElementById('titulos-filial-filter-wrapper');
@@ -29516,29 +29520,27 @@ const supervisorGroups = new Map();
             if (filialWrapper) filialWrapper.classList.remove('hidden');
             if (redeWrapper) redeWrapper.classList.remove('hidden');
 
+            const isSellerMode = typeof adminViewMode !== 'undefined' && adminViewMode === 'seller';
+
             if (role === 'adm') {
-                // Administrador: Exibir Filial, Coordenador, Co-Coordenador, Supervisor, Promotor, Rede, Cliente (Busca) e Cidade
-                if (coordWrapper) coordWrapper.classList.remove('hidden');
-                if (cocoordWrapper) cocoordWrapper.classList.remove('hidden');
-                if (supervisorWrapper) supervisorWrapper.classList.remove('hidden');
-                if (promotorWrapper) promotorWrapper.classList.remove('hidden');
-                if (vendedorWrapper) vendedorWrapper.classList.remove('hidden');
+                if (coordWrapper) coordWrapper.classList.toggle('hidden', isSellerMode);
+                if (cocoordWrapper) cocoordWrapper.classList.toggle('hidden', isSellerMode);
+                if (promotorWrapper) promotorWrapper.classList.toggle('hidden', isSellerMode);
+                if (supervisorWrapper) supervisorWrapper.classList.toggle('hidden', !isSellerMode);
+                if (vendedorWrapper) vendedorWrapper.classList.toggle('hidden', !isSellerMode);
             } else if (role === 'coord') {
-                // Coordenador: Exibir Filial, Co-Coordenador, Promotor, Rede, Cliente (Busca) e Cidade (Ocultar Supervisor e Coordenador)
                 if (coordWrapper) coordWrapper.classList.add('hidden');
-                if (cocoordWrapper) cocoordWrapper.classList.remove('hidden');
-                if (supervisorWrapper) supervisorWrapper.classList.add('hidden');
-                if (promotorWrapper) promotorWrapper.classList.remove('hidden');
-                if (vendedorWrapper) vendedorWrapper.classList.add('hidden');
+                if (cocoordWrapper) cocoordWrapper.classList.toggle('hidden', isSellerMode);
+                if (promotorWrapper) promotorWrapper.classList.toggle('hidden', isSellerMode);
+                if (supervisorWrapper) supervisorWrapper.classList.toggle('hidden', !isSellerMode);
+                if (vendedorWrapper) vendedorWrapper.classList.toggle('hidden', !isSellerMode);
             } else if (role === 'cocoord') {
-                // Co-Coordenador: Exibir Filial, Promotor, Rede, Cliente (Busca) e Cidade (Ocultar Coordenador e Supervisor)
                 if (coordWrapper) coordWrapper.classList.add('hidden');
                 if (cocoordWrapper) cocoordWrapper.classList.add('hidden');
+                if (promotorWrapper) promotorWrapper.classList.toggle('hidden', isSellerMode);
                 if (supervisorWrapper) supervisorWrapper.classList.add('hidden');
-                if (promotorWrapper) promotorWrapper.classList.remove('hidden');
-                if (vendedorWrapper) vendedorWrapper.classList.add('hidden');
+                if (vendedorWrapper) vendedorWrapper.classList.toggle('hidden', !isSellerMode);
             } else {
-                // Supervisor ou Promotor / User: Exibir Filial, Rede, Cliente (Busca) e Cidade (Ocultar filtros hierárquicos superiores)
                 if (coordWrapper) coordWrapper.classList.add('hidden');
                 if (cocoordWrapper) cocoordWrapper.classList.add('hidden');
                 if (supervisorWrapper) supervisorWrapper.classList.add('hidden');
@@ -29837,18 +29839,20 @@ const supervisorGroups = new Map();
             const limitParam = titulosTableState.limit || 50;
 
             try {
-                const { data, error } = await window.supabaseClient.rpc('get_titulos_view_data', {
-                    p_filial: p_filial,
-                    p_cidade: p_cidade,
-                    p_supervisor: p_supervisor,
-                    p_vendedor: p_vendedor,
-                    p_coordenador: p_coordenador,
-                    p_cocoordenador: p_cocoordenador,
-                    p_rede: p_rede,
-                    p_search: p_search,
+                const rpcParams = {
                     p_page: pageParam,
                     p_limit: limitParam
-                });
+                };
+                if (p_filial !== null && p_filial !== undefined) rpcParams.p_filial = p_filial;
+                if (p_cidade !== null && p_cidade !== undefined) rpcParams.p_cidade = p_cidade;
+                if (p_supervisor !== null && p_supervisor !== undefined) rpcParams.p_supervisor = p_supervisor;
+                if (p_vendedor !== null && p_vendedor !== undefined) rpcParams.p_vendedor = p_vendedor;
+                if (p_coordenador !== null && p_coordenador !== undefined) rpcParams.p_coordenador = p_coordenador;
+                if (p_cocoordenador !== null && p_cocoordenador !== undefined) rpcParams.p_cocoordenador = p_cocoordenador;
+                if (p_rede !== null && p_rede !== undefined) rpcParams.p_rede = p_rede;
+                if (p_search !== null && p_search !== undefined) rpcParams.p_search = p_search;
+
+                const { data, error } = await window.supabaseClient.rpc('get_titulos_view_data', rpcParams);
 
                 if (currentId !== titulosRenderId) return;
 
@@ -29910,9 +29914,9 @@ const supervisorGroups = new Map();
                 });
 
                 renderTitulosKPIs(
-                    kpis.total_vl_receber || 0,
-                    criticalDebt,
-                    uniqueClientsCriticalSet.size,
+                    kpis.total_receber !== undefined ? kpis.total_receber : (kpis.total_vl_receber || 0),
+                    kpis.critical_receber !== undefined ? kpis.critical_receber : criticalDebt,
+                    kpis.critical_clients !== undefined ? kpis.critical_clients : uniqueClientsCriticalSet.size,
                     kpis.total_rows || 0
                 );
                 renderTitulosRpcTable(rows);
@@ -29951,7 +29955,22 @@ const supervisorGroups = new Map();
                     if (hasSup || hasVend) {
                         const details = sellerDetailsMap.get(rca1);
                         if (hasSup) {
-                            if (!details || !selectedTitulosSupervisors.has(details.supervisor)) keep = false;
+                            const cSup = c.supervisor || c.Supervisor || (details ? details.supervisor : '');
+                            let matchSup = false;
+                            if (cSup && selectedTitulosSupervisors.has(cSup)) {
+                                matchSup = true;
+                            } else if (details && details.supervisor && selectedTitulosSupervisors.has(details.supervisor)) {
+                                matchSup = true;
+                            } else if (cSup || (details && details.supervisor)) {
+                                const supName = cSup || (details ? details.supervisor : '');
+                                for (let s of selectedTitulosSupervisors) {
+                                    if (supName.toUpperCase().includes(s.toUpperCase()) || s.toUpperCase().includes(supName.toUpperCase())) {
+                                        matchSup = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!matchSup) keep = false;
                         }
                         if (keep && hasVend) {
                             if (!selectedTitulosVendedores.has(rca1)) keep = false;
