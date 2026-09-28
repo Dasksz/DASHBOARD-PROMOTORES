@@ -1114,7 +1114,7 @@ BEGIN
           )
           OR EXISTS (
               SELECT 1 FROM public.config_city_branches ccb
-              WHERE UPPER(unaccent(ccb.cidade)) = UPPER(unaccent(COALESCE(c.cidade, '')))
+              WHERE UPPER(ccb.cidade) = UPPER(COALESCE(c.cidade, ''))
                 AND (
                     ccb.filial = ANY(p_filial)
                     OR TRIM(ccb.filial) = ANY(p_filial)
