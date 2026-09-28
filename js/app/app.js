@@ -29839,18 +29839,20 @@ const supervisorGroups = new Map();
             const limitParam = titulosTableState.limit || 50;
 
             try {
-                const { data, error } = await window.supabaseClient.rpc('get_titulos_view_data', {
-                    p_filial: p_filial,
-                    p_cidade: p_cidade,
-                    p_supervisor: p_supervisor,
-                    p_vendedor: p_vendedor,
-                    p_coordenador: p_coordenador,
-                    p_cocoordenador: p_cocoordenador,
-                    p_rede: p_rede,
-                    p_search: p_search,
+                const rpcParams = {
                     p_page: pageParam,
                     p_limit: limitParam
-                });
+                };
+                if (p_filial !== null && p_filial !== undefined) rpcParams.p_filial = p_filial;
+                if (p_cidade !== null && p_cidade !== undefined) rpcParams.p_cidade = p_cidade;
+                if (p_supervisor !== null && p_supervisor !== undefined) rpcParams.p_supervisor = p_supervisor;
+                if (p_vendedor !== null && p_vendedor !== undefined) rpcParams.p_vendedor = p_vendedor;
+                if (p_coordenador !== null && p_coordenador !== undefined) rpcParams.p_coordenador = p_coordenador;
+                if (p_cocoordenador !== null && p_cocoordenador !== undefined) rpcParams.p_cocoordenador = p_cocoordenador;
+                if (p_rede !== null && p_rede !== undefined) rpcParams.p_rede = p_rede;
+                if (p_search !== null && p_search !== undefined) rpcParams.p_search = p_search;
+
+                const { data, error } = await window.supabaseClient.rpc('get_titulos_view_data', rpcParams);
 
                 if (currentId !== titulosRenderId) return;
 
@@ -29912,9 +29914,9 @@ const supervisorGroups = new Map();
                 });
 
                 renderTitulosKPIs(
-                    kpis.total_vl_receber || 0,
-                    criticalDebt,
-                    uniqueClientsCriticalSet.size,
+                    kpis.total_receber !== undefined ? kpis.total_receber : (kpis.total_vl_receber || 0),
+                    kpis.critical_receber !== undefined ? kpis.critical_receber : criticalDebt,
+                    kpis.critical_clients !== undefined ? kpis.critical_clients : uniqueClientsCriticalSet.size,
                     kpis.total_rows || 0
                 );
                 renderTitulosRpcTable(rows);
