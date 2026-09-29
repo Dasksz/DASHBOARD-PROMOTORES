@@ -1163,19 +1163,17 @@ BEGIN
                   )
               )
           )
-          OR EXISTS (
+                    OR EXISTS (
               SELECT 1 FROM public.data_orders o
-              WHERE (o.codcli = c.codigo_cliente OR o.codcli = c.cod_cliente OR o.codusur = c.rca1 OR o.codusur = c.vendedor_codigo)
+              WHERE (o.codcli = COALESCE(c.codigo_cliente, c.cod_cliente, ''))
                 AND (
                     o.superv = ANY(p_supervisor)
-                    OR o.codsupervisor = ANY(p_supervisor)
                     OR EXISTS (
                         SELECT 1 FROM unnest(p_supervisor) elem
                         WHERE o.superv ILIKE '%' || elem || '%'
                            OR elem ILIKE '%' || o.superv || '%'
                            OR (elem LIKE '% - %' AND (
                                o.superv ILIKE '%' || trim(split_part(elem, ' - ', 2)) || '%'
-                               OR o.codsupervisor = trim(split_part(elem, ' - ', 1))
                            ))
                     )
                 )

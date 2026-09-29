@@ -30057,11 +30057,13 @@ const supervisorGroups = new Map();
                     if (c.ramo && c.ramo !== 'N/A') continue;
                 }
                 if (clientSearch) {
-                    const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
-                    const name = (c.nomeCliente || '').toLowerCase();
+                    const clientCodeVal = c.cod_cliente || c.codigo_cliente || c['Código'] || c.codigo || c.codCli || '';
+                    const code = String(clientCodeVal).toLowerCase();
+                    const name = String(c.nomeCliente || c.nomecliente || c.razaoSocial || c.razaosocial || '').toLowerCase();
                     if (!code.includes(clientSearch) && !name.includes(clientSearch)) continue;
                 }
-                allowedClientCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
+                const clientCodeKey = c.cod_cliente || c.codigo_cliente || c['Código'] || c.codigo || c.codCli;
+                allowedClientCodes.add(normalizeKey(clientCodeKey));
             }
 
             const filteredTitulos = [];
