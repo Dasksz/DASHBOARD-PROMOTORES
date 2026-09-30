@@ -1325,3 +1325,65 @@ ALTER TABLE public.data_metas_loja_perfeita ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Enable read access for authenticated users" ON public.data_metas_loja_perfeita;
 CREATE POLICY "Enable read access for authenticated users" ON public.data_metas_loja_perfeita
     FOR SELECT TO authenticated USING (true);
+
+-- ==============================================================================
+-- AUTOMATED STORAGE CLEANUP (30-day retention for visit photos)
+-- ==============================================================================
+
+-- 1. Enable pg_cron & pg_net extensions if available
+CREATE EXTENSION IF NOT EXISTS "pg_cron" WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA extensions;
+
+-- 2. Function to invoke Edge Function 'cleanup-visit-images' via HTTP POST
+CREATE OR REPLACE FUNCTION public.invoke_cleanup_visit_images()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_url text := 'https://dldsocponbjthqxhmttj.supabase.co/functions/v1/cleanup-visit-images';
+  v_api_key text := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZHNvY3BvbmJqdGhxeGhtdHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MzgzMzgsImV4cCI6MjA4NTAxNDMzOH0.IGxUEd977uIdhWvMzjDM8ygfISB_Frcf_2air8e3aOs';
+  v_payload jsonb := jsonb_build_object('days', 30);
+  v_request_id int;
+BEGIN
+  SELECT net.http_post(
+    url := v_url,
+    body := v_payload,
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || v_api_key
+    )
+  ) INTO v_request_id;
+
+  RAISE NOTICE 'Scheduled cleanup invoked via pg_net. Request ID: %', v_request_id;
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'Failed to trigger cleanup function: %', SQLERRM;
+END;
+$$;
+
+-- 3. Schedule daily cron job at 03:00 AM UTC
+-- Note: Run in Supabase SQL Editor if pg_cron is enabled in your project extensions.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    -- Unschedule existing job if present
+    PERFORM cron.unschedule('daily-visit-images-cleanup');
+    -- Schedule job for 03:00 AM daily
+    PERFORM cron.schedule(
+      'daily-visit-images-cleanup',
+      '0 3 * * *',
+      'SELECT public.invoke_cleanup_visit_images();'
+    );
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'pg_cron schedule notice: %', SQLERRM;
+END;
+$$;
+
+-- 4. Manual / Immediate Cleanup Query (Optional Direct SQL)
+-- Can be executed directly to immediately clear photo keys in DB for visits older than 30 days
+-- UPDATE public.visitas
+-- SET respostas = respostas - 'fotos'
+-- WHERE (data_visita < NOW() - INTERVAL '30 days' OR (data_visita IS NULL AND created_at < NOW() - INTERVAL '30 days'))
+--   AND respostas ? 'fotos';
