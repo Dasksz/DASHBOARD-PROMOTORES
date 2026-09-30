@@ -12,52 +12,66 @@ serve(async (req) => {
     }
 
     try {
-        const payload = await req.json()
-        const record = payload.record
-        const client_code = record?.client_code
-
-        if (!client_code) {
-            return new Response(
-                JSON.stringify({ error: 'Missing client_code in record payload.' }),
-                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-            )
+        let payload: any = {}
+        try {
+            payload = await req.json()
+        } catch (_) {
+            // Allow empty body (e.g. GET or simple POST from cron)
         }
+
+        const record = payload?.record
+        const client_code = payload?.client_code || record?.client_code
+        // Default retention period is 30 days
+        const daysThreshold = typeof payload?.days === 'number' ? payload.days : 30
 
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!
         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
         const supabase = createClient(supabaseUrl, supabaseKey)
 
-        // Find ALL visits for this specific client, ordered from newest to oldest
-        const { data: visits, error: fetchError } = await supabase
+        // Calculate cutoff date (e.g. 30 days ago)
+        const cutoffDate = new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000).toISOString()
+
+        console.log(`[CLEANUP] Running cleanup for visits older than ${daysThreshold} days (Cutoff: ${cutoffDate})`)
+
+        // Build query
+        let query = supabase
             .from('visitas')
-            .select('id, client_code, data_visita, respostas')
-            .eq('client_code', client_code)
+            .select('id, client_code, data_visita, created_at, respostas')
             .not('respostas', 'is', null)
-            .order('data_visita', { ascending: false })
+
+        if (client_code) {
+            query = query.eq('client_code', client_code)
+        }
+
+        // Fetch visits older than threshold (comparing against data_visita or created_at)
+        // We use or condition or filter directly
+        query = query.or(`data_visita.lt.${cutoffDate},and(data_visita.is.null,created_at.lt.${cutoffDate})`)
+
+        const { data: visits, error: fetchError } = await query
 
         if (fetchError) {
-            console.error('Error fetching visits:', fetchError)
+            console.error('[CLEANUP] Error fetching visits:', fetchError)
             throw fetchError
         }
 
         if (!visits || visits.length === 0) {
             return new Response(
-                JSON.stringify({ message: 'No visits found for this client.' }),
+                JSON.stringify({ message: `No visits older than ${daysThreshold} days found.`, totalCleaned: 0 }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
             )
         }
 
-        // Filter exactly visits that HAVE photos in respostas->fotos array OR keys with 'foto'
+        // Filter visits that actually HAVE photos
         const visitsWithPhotos = visits.filter(visit => {
             const respostas = visit.respostas
             if (!respostas || typeof respostas !== 'object') return false;
 
-            // Check for modern array format
+            // Check modern array format
             if (respostas.fotos && Array.isArray(respostas.fotos) && respostas.fotos.length > 0) {
                 return true
             }
 
-            // Check for legacy flat format (e.g. foto_antes_1, foto_depois)
+            // Check legacy flat format
             for (const [key, value] of Object.entries(respostas)) {
                 if (key.toLowerCase().includes('foto') && value && !Array.isArray(value)) {
                     return true;
@@ -67,30 +81,31 @@ serve(async (req) => {
             return false
         })
 
-        if (visitsWithPhotos.length <= 2) {
+        if (visitsWithPhotos.length === 0) {
             return new Response(
-                JSON.stringify({ message: 'Client has 2 or fewer visits with photos. No cleanup needed.' }),
+                JSON.stringify({ message: `No visits older than ${daysThreshold} days with photos found.`, totalCleaned: 0 }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
             )
         }
 
-        // Identify older visits to clean up (all except the newest 2)
-        const visitsToCleanup = visitsWithPhotos.slice(2)
+        console.log(`[CLEANUP] Found ${visitsWithPhotos.length} visits with photos older than ${daysThreshold} days to clean.`)
+
         let totalFilesDeleted = 0
-        const filesFailedToDelete = []
-        const visitsUpdated = []
+        const filesFailedToDelete: any[] = []
+        const visitsUpdated: any[] = []
 
-        console.log(`[CLEANUP] Found ${visitsToCleanup.length} old visits to cleanup for client ${client_code}.`)
-
-        const cleanupPromises = visitsToCleanup.map(async (oldVisit) => {
+        // Batch process visits
+        const cleanupPromises = visitsWithPhotos.map(async (oldVisit) => {
             const respostas = oldVisit.respostas
-            const filesToDeleteFromStorage = []
+            const filesToDeleteFromStorage: string[] = []
 
             // Extract modern array URLs
             if (respostas.fotos && Array.isArray(respostas.fotos)) {
                 for (const foto of respostas.fotos) {
-                    if (foto.url && typeof foto.url === 'string') {
-                         filesToDeleteFromStorage.push(foto.url)
+                    if (foto && typeof foto === 'object' && foto.url && typeof foto.url === 'string') {
+                        filesToDeleteFromStorage.push(foto.url)
+                    } else if (typeof foto === 'string') {
+                        filesToDeleteFromStorage.push(foto)
                     }
                 }
             }
@@ -102,32 +117,28 @@ serve(async (req) => {
                 }
             }
 
-            // Parse URLs to get Storage file paths
-            const finalStoragePaths = []
+            // Parse URLs to extract storage file paths in 'visitas-images' bucket
+            const finalStoragePaths: string[] = []
             for (const rawUrl of filesToDeleteFromStorage) {
-                 try {
-                     if (rawUrl.startsWith('http')) {
-                         const urlObj = new URL(rawUrl)
-                         const parts = urlObj.pathname.split('/visitas-images/')
-                         if (parts.length > 1) {
-                             finalStoragePaths.push(parts[1]) // File path inside bucket
-                         } else {
-                             // Fallback if not matching standard format
-                             finalStoragePaths.push(rawUrl)
-                         }
-                     } else {
-                         // It might be stored just as filename string
-                         finalStoragePaths.push(rawUrl)
-                     }
-                 } catch (e) {
-                     finalStoragePaths.push(rawUrl)
-                 }
+                try {
+                    if (rawUrl.startsWith('http')) {
+                        const urlObj = new URL(rawUrl)
+                        const parts = urlObj.pathname.split('/visitas-images/')
+                        if (parts.length > 1) {
+                            finalStoragePaths.push(decodeURIComponent(parts[1]))
+                        }
+                    } else {
+                        finalStoragePaths.push(rawUrl)
+                    }
+                } catch (_) {
+                    finalStoragePaths.push(rawUrl)
+                }
             }
 
             let filesDeletedCount = 0
             let deleteErrorResult = null
 
-            // A. Delete from Storage bucket
+            // A. Delete files from Storage bucket
             if (finalStoragePaths.length > 0) {
                 const { error: deleteError } = await supabase
                     .storage
@@ -143,11 +154,10 @@ serve(async (req) => {
                 }
             }
 
-            // B. Update visit record: remove 'fotos' and all keys containing 'foto'
+            // B. Update visit record: remove 'fotos' array and legacy keys containing 'foto'
             const updatedRespostas = { ...oldVisit.respostas }
-            delete updatedRespostas.fotos // remove modern array
+            delete updatedRespostas.fotos
 
-            // remove legacy flat keys
             for (const key of Object.keys(updatedRespostas)) {
                 if (key.toLowerCase().includes('foto')) {
                     delete updatedRespostas[key]
@@ -164,7 +174,7 @@ serve(async (req) => {
                 console.error(`[CLEANUP] Failed to update DB record for visit ${oldVisit.id}:`, updateError)
             } else {
                 visitUpdatedId = oldVisit.id
-                console.log(`[CLEANUP] Updated JSON for visit ${oldVisit.id}.`)
+                console.log(`[CLEANUP] Cleaned JSON for visit ${oldVisit.id}.`)
             }
 
             return {
@@ -189,16 +199,17 @@ serve(async (req) => {
 
         return new Response(
             JSON.stringify({
-                message: 'Cleanup successful',
-                client_code,
-                totalOldVisitsProcessed: visitsToCleanup.length,
+                message: `Cleanup successful for visits older than ${daysThreshold} days.`,
+                cutoffDate,
+                totalOldVisitsProcessed: visitsWithPhotos.length,
                 totalFilesDeleted,
+                visitsUpdatedCount: visitsUpdated.length,
                 visitsUpdated,
                 filesFailedToDelete
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         )
-    } catch (error) {
+    } catch (error: any) {
         console.error('[CLEANUP] Critical Error:', error)
         return new Response(
             JSON.stringify({ error: error.message || 'Internal server error' }),
