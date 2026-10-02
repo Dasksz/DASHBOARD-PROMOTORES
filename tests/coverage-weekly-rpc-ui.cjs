@@ -25,6 +25,7 @@ const start=source.indexOf('        // RPC pages:');const end=source.indexOf('  
 vm.runInContext(source.slice(start,end),ctx);
 const cov=source.indexOf('        function updateCoverageView()');const covEnd=source.indexOf('        // <!-- FIM DO CÓDIGO RESTAURADO -->',cov);
 vm.runInContext(source.slice(cov,covEnd),ctx);
+const resetStart=source.indexOf('        function resetCoverageFilters() {');vm.runInContext(source.slice(resetStart,cov),ctx);
 const wk=source.indexOf('    function updateWeeklyView()');const wkEnd=source.indexOf('    let weeklyChartInstance',wk);vm.runInContext(source.slice(wk,wkEnd),ctx);
 // Regression: setupEventListeners must bind the legacy price input to the RPC path.
 const bindingStart=source.indexOf('            const updateCoverage = () => {');
@@ -70,6 +71,22 @@ function resolveBatch(from,data){for(const req of requests.slice(from))req.resol
  ctx.selectedCoverageSuppliers=[];
  const fi=requests.length;ctx.updateCoverageView();const bad=launch();requests[fi].resolve({data:null,error:{message:'timeout'}});await bad;assert.ok(el('coverage-view').status);assert.match(el('coverage-view').status.innerHTML,/Tentar novamente/);
  el('coverage-view').status.querySelector('button').listeners.click[0]();const retryFrom=requests.length,retry=launch();resolveBatch(retryFrom,coverage(3));await retry;assert.equal(el('coverage-view').status,null);
+ // Click the actual Clear handler while a filtered request is still pending.
+ ctx.setupRpcPageFilters('coverage');
+ ctx.hierarchyState.coverage.promotors.add('promotor7');ctx.selectedCoverageSuppliers=['707'];
+ ctx.selectedCoverageProducts=['1'];ctx.selectedCoverageTiposVenda=['5'];
+ ctx.coverageTrendFilter='low';ctx.customWorkingDaysCoverage=20;ctx.selectedCoveragePriceMin=2;
+ ctx.coverageCityFilter.value='Jequié';ctx.coverageFilialFilter.value='08';
+ const oldFrom=requests.length;ctx.updateCoverageView();const oldRequest=launch();
+ ctx.clearCoverageFiltersBtn.listeners.click[0]();
+ assert.ok(requests[oldFrom].signal.aborted,'limpar cancela consulta filtrada');
+ const clearFrom=requests.length,clearedRequest=launch();
+ const resetFilters=requests[clearFrom].args.p_filters;
+ for(const key of ['coords','cocoords','promotors','suppliers','products','types','supervisors','sellers','redes']) assert.equal(resetFilters[key].length,0,key+' limpo na RPC');
+ assert.equal(resetFilters.city,'');assert.equal(resetFilters.filial,'ambas');assert.equal(resetFilters.trend,'all');assert.equal(resetFilters.price_min,null);assert.equal(resetFilters.working_days,0);
+ resolveBatch(clearFrom,coverage(88));await clearedRequest;
+ for(const req of requests.slice(oldFrom,clearFrom))req.resolve({error:null,data:req.name==='get_dashboard_filters_v1'?facet:coverage(4)});
+ await oldRequest;assert.match(el('coverage-chart-total-kpi').textContent,/88/,'resposta antiga não reaplica o filtro');
  const row={code:'1',descricao:'(1) <img src=x onerror=alert(1)>',stockQty:1,boxesSoldCurrentMonth:1,boxesSoldPreviousMonth:0,boxesVariation:null,pdvVariation:null,trendDays:null,clientsPreviousCount:0,clientsCurrentCount:1,coverageCurrent:50};
  const data=coverage(102);data.rows=Array.from({length:102},(_,i)=>({...row,code:String(i)}));ctx.validateDashboardPayload('coverage',data);ctx.renderCoverageRpc(data,ctx.dashboardPageFilters('coverage'));
  assert.equal(ctx.coverageTableDataForExport.length,102,'exportação inclui todos os resultados');assert.equal(ctx.coverageTableDataForExport[0].boxesVariation,Infinity,'marcador Novo');assert.match(ctx.coverageTableBody.innerHTML,/&lt;img/);assert.doesNotMatch(ctx.coverageTableBody.innerHTML,/<img src=x/);assert.equal((ctx.coverageTableBody.innerHTML.match(/Exibindo os primeiros/g)||[]).length,1,'sem rodapé duplicado');

@@ -10063,53 +10063,28 @@ const supervisorGroups = new Map();
         }
 
         function resetCoverageFilters() {
+            // Reset the complete RPC state before refreshing any dropdown or requesting data.
+            clearTimeout(window.coverageUpdateTimeout);
             coverageCityFilter.value = '';
             coverageFilialFilter.value = 'ambas';
-
-            // New Filters Reset
-            selectedCoveragePriceMin = null;
-            selectedCoveragePriceMax = null;
-            const pMin = document.getElementById('coverage-price-min');
-            const pMax = document.getElementById('coverage-price-max');
-            if(pMin) pMin.value = '';
-            if(pMax) pMax.value = '';
-
+            selectedCoveragePriceMin = null; selectedCoveragePriceMax = null;
             selectedCoverageDateRange = { start: null, end: null, label: 'Mês Atual' };
-            const dateBtnText = document.getElementById('coverage-date-filter-text');
-            if(dateBtnText) dateBtnText.textContent = 'Mês Atual';
-
-            coverageRedeGroupFilter = '';
-            selectedCoverageRedes = [];
-            const redeGroupContainer = document.getElementById('coverage-rede-group-container');
-            if (redeGroupContainer) {
-                redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                redeGroupContainer.querySelector('button[data-group=""]').classList.add('active');
+            coverageRedeGroupFilter = ''; selectedCoverageRedes = [];
+            selectedCoverageSuppliers = []; selectedCoverageProducts = []; selectedCoverageTiposVenda = [];
+            selectedCoverageSupervisors.clear(); selectedCoverageVendedores.clear();
+            for (const selection of Object.values(hierarchyState.coverage || {})) selection.clear();
+            coverageTrendFilter = 'all'; customWorkingDaysCoverage = 0;
+            for (const id of ['coverage-price-min','coverage-price-max','coverage-unit-price-filter']) {
+                const input = document.getElementById(id); if (input) input.value = '';
             }
-            const redeDropdown = document.getElementById('coverage-rede-filter-dropdown');
-            if (redeDropdown) redeDropdown.classList.add('hidden');
-
-            const workingDaysInput = document.getElementById('coverage-working-days-input');
-            if(workingDaysInput) workingDaysInput.value = customWorkingDaysCoverage;
-
-            selectedCoverageSuppliers = [];
-            selectedCoverageProducts = [];
-            selectedCoverageTiposVenda = [];
-
-            // Reset Supervisor/Seller
-            selectedCoverageSupervisors.clear();
-            selectedCoverageVendedores.clear();
-            updateCoverageSupervisorFilter();
-            updateCoverageVendedorFilter();
-
-            // Reset Hierarchy
-            if (hierarchyState['coverage']) {
-                hierarchyState['coverage'].coords.clear();
-                hierarchyState['coverage'].cocoords.clear();
-                hierarchyState['coverage'].promotors.clear();
-                setupHierarchyFilters('coverage', updateCoverageView);
-            }
-
-            updateAllCoverageFilters();
+            const daysInput = document.getElementById('coverage-working-days-input'); if (daysInput) daysInput.value = 0;
+            const dateText = document.getElementById('coverage-date-filter-text'); if (dateText) dateText.textContent = 'Mês Atual';
+            const root = document.getElementById('coverage-view');
+            root?.querySelectorAll('[id$="-filter-dropdown"]').forEach(dd => dd.classList.add('hidden'));
+            coverageCitySuggestions.classList.add('hidden');
+            markDirty('cobertura');
+            refreshRpcFacetUI('coverage');
+            // This invalidates/aborts the previous request, including a still-pending filtered result.
             updateCoverageView();
         }
 

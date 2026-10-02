@@ -124,7 +124,7 @@ $$;
 -- Settings restore automatically on function exit; authorization/RLS remain unchanged.
 -- As opções são pequenas projeções; nunca retornam linhas de vendas ao navegador.
 CREATE OR REPLACE FUNCTION public.get_dashboard_filters_v1(p_page text,p_filters jsonb DEFAULT '{}'::jsonb)
-RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' SET statement_timeout='15s' SET jit='off' SET work_mem='32MB' AS $$
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' SET statement_timeout='15s' SET plan_cache_mode='force_custom_plan' SET jit='off' SET work_mem='32MB' AS $$
 DECLARE s jsonb:=dashboard_private.scope_v1(); result jsonb; f jsonb:=p_filters;
 BEGIN
  IF p_page NOT IN('coverage','weekly') OR jsonb_typeof(f)<>'object' THEN RAISE EXCEPTION 'Página ou filtros inválidos' USING ERRCODE='22023'; END IF;
@@ -171,7 +171,7 @@ BEGIN
 END $$;
 
 CREATE OR REPLACE FUNCTION public.get_weekly_page_v1(p_filters jsonb DEFAULT '{}'::jsonb)
-RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' SET statement_timeout='15s' SET jit='off' SET work_mem='32MB' SET enable_mergejoin='off' AS $$
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' SET statement_timeout='15s' SET plan_cache_mode='force_custom_plan' SET jit='off' SET work_mem='32MB' SET enable_mergejoin='off' AS $$
 DECLARE s jsonb:=dashboard_private.scope_v1(); f jsonb:=p_filters; ref date; target date; result jsonb;
 BEGIN
  IF jsonb_typeof(f)<>'object' THEN RAISE EXCEPTION 'Filtros inválidos' USING ERRCODE='22023'; END IF;
@@ -249,7 +249,7 @@ WITH clients AS MATERIALIZED(SELECT * FROM dashboard_private.clients_v1(s)),
 END $$;
 
 CREATE OR REPLACE FUNCTION public.get_coverage_page_v1(p_filters jsonb DEFAULT '{}'::jsonb)
-RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' SET statement_timeout='15s' SET jit='off' SET work_mem='32MB' SET enable_mergejoin='off' AS $$
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' SET statement_timeout='15s' SET plan_cache_mode='force_custom_plan' SET jit='off' SET work_mem='32MB' SET enable_mergejoin='off' AS $$
 DECLARE s jsonb:=dashboard_private.scope_v1(); f jsonb:=p_filters; ref date; start_date date; end_date date; prev_start date; prev_end date;
  custom_date boolean; alt boolean; result jsonb; days integer:=greatest(coalesce((f->>'working_days')::int,0),0);
 BEGIN

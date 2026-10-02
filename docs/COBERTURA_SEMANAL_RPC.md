@@ -73,3 +73,11 @@ A resposta das opções de filtros deixou de bloquear a apresentação dos núme
 Medições amplas, como administrador, sem filtros: **Cobertura ~1,87 s**, **Semanal ~0,69 s** no banco. São medições pontuais de `EXPLAIN ANALYZE`; não incluem rede, boot global ou renderização. A consulta ampla percorre cerca de 129 mil linhas atuais/históricas.
 
 Verificações: 17 cenários SQL e autorização passaram; 2.260 valores operacionais conferidos com o cálculo JavaScript; comparação completa antes/depois em 10 seleções confirmou **2.957 valores numéricos**, incluindo estoque e tendência. O teste de frontend garante números visíveis antes das opções e preservação dos dados quando a RPC de opções falha.
+
+## Plano reutilizado entre filtros
+
+Na investigação posterior da demora ao limpar, a consulta ampla foi medida sob `force_generic_plan`: **26,8 s**, contra **2,2 s** sob `force_custom_plan`. Isso reproduz o risco dos planos genéricos que o PostgreSQL pode escolher após chamadas sucessivas com seleções muito diferentes. As três RPCs públicas agora definem `plan_cache_mode=force_custom_plan` apenas durante sua execução, para planejar com os filtros e a carteira reais. A configuração externa da sessão é restaurada automaticamente. Não se alterou o timeout.
+
+Depois da mudança, a mesma consulta sob uma sessão forçada a reutilizar planos concluiu em **2,34 s**; o Semanal em **1,10 s**. Medições somente no banco, variáveis conforme cache/carga. `SQL/tests/coverage_weekly_plan_reuse.sql` executa 8 seleções sucessivas e confere que Limpar retorna exatamente o JSON geral inicial, incluindo tabela/gráficos, e que o ajuste de planejamento não vaza para a sessão.
+
+O botão Limpar também reinicializa todo o estado de seleção em uma etapa e cancela a resposta filtrada pendente. Nenhuma consulta local de histórico é necessária para essa limpeza. O boot global ainda baixa as tabelas exigidas pelas demais páginas; esta alteração resolve o planejamento das RPCs, não remove aqueles downloads.
