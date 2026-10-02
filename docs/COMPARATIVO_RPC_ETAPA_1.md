@@ -4,7 +4,7 @@ Implementação em 02/10/2026 no banco PROMOTOR's e no frontend.
 
 ## Escopo entregue
 
-Os oito cartões do Comparativo consomem `get_comparison_kpis_v1(p_filters jsonb)`: faturamento, peso, clientes, ticket, mix Pepsico, mix Salty, mix Foods e perdas. A tendência dos cartões também é calculada no banco. O gráfico mensal usa os indicadores atuais devolvidos pela RPC. O processamento local de mix e perdas foi retirado deste fluxo.
+Os oito cartões do Comparativo consomem `get_comparison_kpis_v1(p_filters jsonb)`: faturamento, peso, clientes, ticket, mix Pepsico, mix Salty, mix Foods e perdas. A tendência dos cartões também é calculada no banco. O gráfico mensal conserva seu cálculo local nesta etapa. O processamento local de mix e perdas foi retirado deste fluxo.
 
 Filtros, séries semanal/mensal/diária, agrupamento de coordenador/promotor/supervisor, tabela semanal e calendário das séries continuam parcialmente locais. Os downloads e o boot de `js/init.js` permanecem. Esta etapa NÃO é a migração completa da página e NÃO elimina a carga inicial do histórico.
 
@@ -36,7 +36,7 @@ Função `SECURITY INVOKER`, `search_path` fixo, EXECUTE revogado de PUBLIC/anon
 
 Existe uma limitação anterior importante: o vínculo de supervisor a vendedor ainda não tem uma fonte completa nas dimensões. A RPC não inventa esse vínculo nem libera toda a base como alternativa. O problema anterior de autoedição de `profiles.role/status` também continua pendente; usar o papel do perfil não corrige essa vulnerabilidade. As políticas amplas de leitura direta das tabelas ainda precisam de uma etapa própria de autorização.
 
-O frontend reúne alterações durante 150 ms, cancela a requisição anterior, ignora respostas antigas, valida o contrato e oferece retry em erro. Erro não é convertido em zero. Os cartões não são recalculados a partir das tabelas locais. Os gráficos seguem após a resposta válida da RPC.
+O frontend reúne alterações durante 150 ms, cancela a requisição anterior, ignora respostas antigas, valida o contrato e oferece retry em erro. Erro não é convertido em zero. Os cartões não são recalculados a partir das tabelas locais. Os gráficos começam a atualizar em paralelo à RPC. Os cartões existentes permanecem na grade durante a atualização; a indicação de carregamento usa opacidade, sem recolher a altura da grade. Em caso de erro, o aviso e retry são sobrepostos aos cartões. As animações de entrada de 1,1 segundo foram retiradas dos gráficos do Comparativo.
 
 As sete políticas de leitura usadas pela RPC mantêm a mesma expressão de autorização, mas `is_admin`/`is_approved` são avaliadas por subconsulta, uma vez por consulta. Papéis e políticas de escrita foram preservados.
 
@@ -66,3 +66,11 @@ Também foi observado armazenamento de credenciais de serviços em `data_metadat
 ## Reversão
 
 Reverter o commit de frontend e consolidado para recuperar o consumidor anterior. A RPC adicional pode permanecer sem consumidores. Para retornar exatamente ao custo anterior das sete políticas, substituir as duas subconsultas pela expressão anterior `public.is_admin() OR public.is_approved()`. Não apagar tabelas nem reimportar dados para reverter esta etapa.
+
+## Otimização da troca de filtros (02/10/2026)
+
+A RPC agora evita materializar sucessivamente as mesmas linhas brutas e enriquecidas, trabalha com projeção menor e calcula a classificação de marcas uma vez por produto, utilizando máscaras para reunir as marcas compradas. A lista selecionada de clientes é deduplicada antes da filtragem. A seleção dos últimos meses usa agregação, evitando ordenar todas as linhas do histórico para obter somente três meses. Foram preservadas as regras e os privilégios.
+
+O frontend conserva o DOM dos cartões durante o carregamento, inicia os gráficos locais sem esperar pela RPC e elimina a animação de entrada de 1.000 ms mais 100 ms de atraso a cada filtro. Cancelamento e descarte de resultados antigos continuam ativos.
+
+Medições isoladas durante a otimização: aproximadamente 1,55–1,89 segundo para seleção administrativa ampla com PEPSICO; 97 ms para seleção de 36 clientes de um promotor. Esses valores medem somente o banco, não rede/renderização. A página ainda não tem todas as séries por RPC; o processamento local de gráficos continua sendo uma limitação a remover na próxima etapa.

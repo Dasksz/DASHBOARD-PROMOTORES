@@ -34,11 +34,11 @@ vm.runInContext(
   between('        function isHoliday(', '        function getWorkingDayIndex(') +
   between('        function renderComparisonLegacyCharts(', '        function getInnovationsMonthFilteredData'), context);
 const k = { fat: 10, peso: 1, clients: 1, mixPepsico: 1, positivacaoSalty: 0, positivacaoFoods: 0, perdas: 0 };
-for (const tendency of [false, true]) for (const type of ['weekly', 'monthly', 'daily']) {
+for (const fromRpc of [false, true]) for (const tendency of [false, true]) for (const type of ['weekly', 'monthly', 'daily']) {
   context.useTendencyComparison = tendency;
   context.comparisonChartType = type;
-  context.renderComparisonLegacyCharts(1, { current: k, history: k });
+  context.renderComparisonLegacyCharts(1, fromRpc ? { current: k, history: k } : null);
 }
-assert.equal(draws, 6);
+assert.equal(draws, 12);
 assert.match(element('weeklySummaryTableBody').innerHTML, /Total do Mês/);
 console.log('Gráficos semanal, mensal e diário, com e sem tendência: OK');

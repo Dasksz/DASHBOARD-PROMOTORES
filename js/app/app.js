@@ -14034,13 +14034,19 @@ const supervisorGroups = new Map();
             if (comparisonRpcController) comparisonRpcController.abort();
             const container = document.getElementById('comparison-kpi-container');
             container.setAttribute('aria-busy', 'true');
-            container.innerHTML = '<p class="col-span-full text-slate-300" role="status">Atualizando indicadores…</p>';
+            // Preserva os cartões e a altura da grade durante a atualização.
+            container.style.position = 'relative';
+            container.style.opacity = '0.6';
+            container.querySelector('#comparison-rpc-error')?.remove();
             comparisonRpcTimer = setTimeout(async () => {
                 const controller = new AbortController();
                 comparisonRpcController = controller;
                 const timeout = setTimeout(() => controller.abort(), 20000);
                 try {
                     const filters = getComparisonSelectionFilters();
+                    setTimeout(() => {
+                        if (currentRenderId === comparisonRenderId) renderComparisonLegacyCharts(currentRenderId);
+                    }, 0);
                     const { data, error } = await window.supabaseClient.rpc('get_comparison_kpis_v1', {
                         p_filters: {
                             client_codes: Array.from(filters.clientCodes, String),
@@ -14073,21 +14079,29 @@ const supervisorGroups = new Map();
                         return { title, current: current[key] / divisor, history: history[key] / divisor, format };
                     });
                     renderKpiCards(cards);
-                    renderComparisonLegacyCharts(currentRenderId, data.kpis);
+                    // Gráficos iniciam em paralelo, sem esperar pelos indicadores.
                 } catch (error) {
                     if (currentRenderId !== comparisonRenderId) return;
                     console.error('[Comparativo RPC] Falha ao carregar indicadores', error.message || error.code);
-                    container.innerHTML = '<div class="col-span-full text-amber-300" role="alert">Não foi possível atualizar o Comparativo. <button type="button" class="underline ml-2">Tentar novamente</button></div>';
-                    container.querySelector('button').addEventListener('click', updateComparisonView);
+                    const alert = document.createElement('div');
+                    alert.id = 'comparison-rpc-error';
+                    alert.className = 'absolute top-0 right-0 z-10 rounded bg-slate-900 px-3 py-2 text-sm text-amber-300';
+                    alert.setAttribute('role', 'alert');
+                    alert.innerHTML = 'Indicadores não atualizados. <button type="button" class="underline ml-2">Tentar novamente</button>';
+                    container.appendChild(alert);
+                    alert.querySelector('button').addEventListener('click', updateComparisonView);
                 } finally {
                     clearTimeout(timeout);
-                    if (currentRenderId === comparisonRenderId) container.setAttribute('aria-busy', 'false');
+                    if (currentRenderId === comparisonRenderId) {
+                        container.setAttribute('aria-busy', 'false');
+                        container.style.opacity = '1';
+                    }
                     if (comparisonRpcController === controller) comparisonRpcController = null;
                 }
             }, 150);
         }
 
-        function renderComparisonLegacyCharts(currentRenderId, rpcKpis) {
+        function renderComparisonLegacyCharts(currentRenderId, rpcKpis = null) {
             const { currentSales, historySales } = getComparisonFilteredData();
 
             // Show Loading State on Charts (only if no chart exists)
@@ -14121,6 +14135,7 @@ const supervisorGroups = new Map();
             const firstOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
             const hasOverlap = firstWeekStart < firstOfMonth;
             // Mapas locais apenas para o gráfico mensal de clientes.
+            const currentClients = new Map();
             const historyMonths = new Map();
             const monthWeeksCache = new Map();
 
@@ -14134,6 +14149,7 @@ const supervisorGroups = new Map();
 
                 metrics.current.fat += val;
                 metrics.current.peso += s.TOTPESOLIQ;
+                if (s.CODCLI) currentClients.set(s.CODCLI, (currentClients.get(s.CODCLI) || 0) + val);
 
                 // Dynamic Grouping Key
                 let groupKey = window.resolveDim('supervisores', s.CODSUPERVISOR);
@@ -14256,8 +14272,9 @@ const supervisorGroups = new Map();
 
 
 
-                    Object.assign(metrics.current, rpcKpis.current);
-                    Object.assign(metrics.history, {
+                    if (rpcKpis) Object.assign(metrics.current, rpcKpis.current);
+                    else metrics.current.clients = Array.from(currentClients.values()).filter(v => v >= 1).length;
+                    if (rpcKpis) Object.assign(metrics.history, {
                         avgFat: rpcKpis.history.fat, avgPeso: rpcKpis.history.peso,
                         avgClients: rpcKpis.history.clients, avgMixPepsico: rpcKpis.history.mixPepsico,
                         avgPositivacaoSalty: rpcKpis.history.positivacaoSalty,
@@ -14267,7 +14284,9 @@ const supervisorGroups = new Map();
                         const totalDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
                         const passedDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
                         if (totalDays > 0 && passedDays > 0 && passedDays < totalDays) {
-                            Object.values(metrics.charts.supervisorData).forEach(supData => { supData.current *= totalDays / passedDays; });
+                            const ratio = totalDays / passedDays;
+                            if (!rpcKpis) { metrics.current.fat *= ratio; metrics.current.clients = Math.round(metrics.current.clients * ratio); }
+                            Object.values(metrics.charts.supervisorData).forEach(supData => { supData.current *= ratio; });
                         }
                     }
 
@@ -27853,7 +27872,6 @@ const supervisorGroups = new Map();
         }
 
         root.setThemes([
-            am5themes_Animated.new(root),
             am5themes_Dark.new(root)
         ]);
 
@@ -27974,9 +27992,9 @@ const supervisorGroups = new Map();
         legend.data.setAll(chart.series.values);
 
         // Animation
-        series1.appear(1000, 100);
-        series2.appear(1000, 100);
-        chart.appear(1000, 100);
+        series1.appear(0, 0);
+        series2.appear(0, 0);
+        chart.appear(0, 0);
     }
 
     function renderMonthlyComparisonAmChart(labels, dataValues, labelName, colorHex) {
@@ -28008,7 +28026,6 @@ const supervisorGroups = new Map();
         if (root._logo) root._logo.dispose();
 
         root.setThemes([
-            am5themes_Animated.new(root),
             am5themes_Dark.new(root)
         ]);
 
@@ -28080,8 +28097,8 @@ const supervisorGroups = new Map();
         }));
         cursor.lineY.set("visible", false);
 
-        series.appear(1000, 100);
-        chart.appear(1000, 100);
+        series.appear(0, 0);
+        chart.appear(0, 0);
     }
 
     function renderLiquidGauge(containerId, value, goal, label) {
