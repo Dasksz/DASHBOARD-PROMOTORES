@@ -16912,6 +16912,13 @@ const supervisorGroups = new Map();
                     }
                 }
 
+                updateStatus('Atualizando resumos do painel...', 98);
+                const { data: summaryRefresh, error: summaryRefreshError } = await window.supabaseClient.rpc('refresh_dashboard_summaries_v1');
+                if (summaryRefreshError) throw summaryRefreshError;
+                if (!summaryRefresh || !['current', 'refreshed'].includes(summaryRefresh.status)) {
+                    throw new Error('Os dados foram enviados, mas a atualização dos resumos não foi concluída. Tente novamente.');
+                }
+
                 updateStatus('Upload Concluído com Sucesso!', 100);
                 window.showToast('success', 'Dados enviados com sucesso!');
                 setTimeout(() => statusContainer.classList.add('hidden'), 3000);
