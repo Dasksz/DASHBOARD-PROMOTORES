@@ -4026,7 +4026,18 @@
         </div>
     </div>
     <!-- Holidays -->
-    <div id="holiday-modal" class="modal-overlay hidden"><div class="bg-modal-content"><button id="holiday-modal-close-btn" aria-label="Fechar" class=" focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"></button><div id="calendar-container"></div><button id="holiday-modal-done-btn" aria-label="Concluir seleção de feriados" class=" focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"></button></div></div>
+    <div id="holiday-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="holiday-modal-title">
+        <div class="bg-modal-content w-full max-w-md m-4 p-6 rounded-2xl border border-slate-700 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between gap-4 mb-4">
+                <h3 id="holiday-modal-title" class="text-lg font-bold text-white">Feriados do mês</h3>
+                <button id="holiday-modal-close-btn" type="button" aria-label="Fechar" class="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none">
+                    <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="calendar-container"></div>
+            <button id="holiday-modal-done-btn" type="button" aria-label="Concluir seleção de feriados" class="mt-4 w-full py-2 px-4 rounded-lg bg-[#FF5E00] text-white font-semibold focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">Concluir seleção</button>
+        </div>
+    </div>
     <!-- Confirmation -->
     <!-- Confirmation Modal -->
     <div id="confirmation-modal" class="modal-overlay hidden z-[3000]">
