@@ -19264,6 +19264,11 @@ const supervisorGroups = new Map();
 
             setupRpcPageFilters('coverage');
 
+            const updateCoverage = () => {
+                markDirty('cobertura');
+                handleCoverageFilterChange();
+            };
+
             const coverageUnitPriceInput = document.getElementById('coverage-unit-price-filter');
             if (coverageUnitPriceInput) {
                 coverageUnitPriceInput.addEventListener('keydown', (e) => {
