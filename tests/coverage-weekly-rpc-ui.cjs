@@ -40,7 +40,7 @@ price.listeners.blur[0]();
 price.listeners.keydown[0]({key:'Enter',target:{blur(){blurCalls++;}}});
 assert.equal(dirtyCalls,2);assert.equal(filterCalls,2);assert.equal(blurCalls,1);
 const launch=()=>{const [id,t]=[...timers].find(([,t])=>t.delay===150)||[];assert.ok(t);timers.delete(id);return t.fn();};
-const facet={schema_version:1,suppliers:[{code:'707',label:'PEPSICO'}],products:[],types:[],sellers:[],supervisors:[],coords:[],cocoords:[],promotors:[],redes:[],months:['2026-10'],cities:['Ilhéus']};
+const facet={schema_version:1,reference_date:"2026-10-02",suppliers:[{code:'707',label:'PEPSICO'}],products:[],types:[],sellers:[],supervisors:[],coords:[],cocoords:[],promotors:[],redes:[],months:['2026-10','2026-09'],cities:['Ilhéus']};
 const coverage=n=>({schema_version:1,active_clients:2,active_3m:2,current_clients:1,previous_clients:1,total_boxes:n,chart_total:n,top:null,rows:[],cities:[{name:'Ilhéus',value:n}],ranking:[{name:'PROM TESTE',value:n}]});
 const weekly=n=>({schema_version:1,weeks:[{id:1,start:'2026-10-01',end:'2026-10-04',total:n,days:[0,0,0,0,n,0,0]}],best_days:[0,1,2,3,4,5,0],ranking_fat:[{code:'1',name:'JOÃO TESTE',val:n,pos:2}],ranking_pos:[{code:'1',name:'JOÃO TESTE',val:n,pos:2}]});
 function resolveBatch(from,data){for(const req of requests.slice(from))req.resolve({error:null,data:req.name==='get_dashboard_filters_v1'?facet:data});}
@@ -52,6 +52,9 @@ function resolveBatch(from,data){for(const req of requests.slice(from))req.resol
  const from=requests.length;ctx.updateCoverageView();const cached=launch();assert.equal(requests.length-from,1,'opções em cache, sem vendas locais');resolveBatch(from,coverage(2));await cached;
  assert.match(el('coverage-chart-total-kpi').textContent,/2/);assert.equal(ctx.coverageTableDataForExport.length,0,'exportação vazia atualizada');
  ctx.updateWeeklyView();const wi=requests.length,work=launch();resolveBatch(wi,weekly(9));await work;assert.match(el('weekly-summary-table').tbody.innerHTML,/9,00/);assert.match(el('weekly-ranking-fat').innerHTML,/JOÃO/);
+ assert.doesNotMatch(el('weekly-month-filter-dropdown').innerHTML,/value="2026-10"/,'mês atual sem duplicação');
+ assert.match(el('weekly-month-filter-dropdown').innerHTML,/value="2026-09"/,'mês anterior preservado');
+ assert.match(el('weekly-month-filter-dropdown').innerHTML,/value="current"/);
  ctx.setupRpcPageFilters('weekly');ctx.setupRpcPageFilters('weekly');const fd=el('weekly-filial-filter-dropdown');assert.equal(fd.listeners.change.length,1,'handlers únicos');
  fd.listeners.change[0]({target:{type:'radio',value:'08',closest:()=>({querySelector:()=>({textContent:'Filial 08'})})}});
  const bi=requests.length,branch=launch();assert.equal(requests[bi].args.p_filters.filial,'08','filial enviada corretamente à RPC');resolveBatch(bi,weekly(8));await branch;

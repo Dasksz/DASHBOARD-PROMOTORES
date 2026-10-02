@@ -9949,7 +9949,9 @@ const supervisorGroups = new Map();
             groups?.querySelectorAll('[data-group]').forEach(btn => btn.classList.toggle('active',btn.dataset.group === (page === 'coverage' ? coverageRedeGroupFilter : weeklyRedeGroupFilter)));
             if (page === 'weekly') {
                 const dropdown = document.getElementById('weekly-month-filter-dropdown');
-                const labels = [{ code:'current',label:'Mês Atual' },...(facets.months || []).map(code => ({ code,label:new Date(code+'-15T12:00:00Z').toLocaleDateString('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}) }))];
+                const currentMonth = facets.reference_date?.slice(0,7);
+                if (selectedWeeklyMonth === currentMonth) selectedWeeklyMonth = 'current';
+                const labels = [{ code:'current',label:'Mês Atual' },...(facets.months || []).filter(code => code !== currentMonth).map(code => ({ code,label:new Date(code+'-15T12:00:00Z').toLocaleDateString('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}) }))];
                 if (dropdown) dropdown.innerHTML = labels.map(o => `<label class="flex items-center justify-between p-2 rounded hover:bg-slate-700"><span class="text-xs text-slate-300">${escape(o.label)}</span><input type="radio" name="weekly-month" value="${escape(o.code)}" ${selectedWeeklyMonth===o.code?'checked':''}></label>`).join('');
                 const text = document.getElementById('weekly-month-filter-text'); if (text) text.textContent = labels.find(o => o.code===selectedWeeklyMonth)?.label || selectedWeeklyMonth;
             }
