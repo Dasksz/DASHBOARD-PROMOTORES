@@ -55,6 +55,16 @@ function resolveBatch(from,data){for(const req of requests.slice(from))req.resol
  ctx.setupRpcPageFilters('weekly');ctx.setupRpcPageFilters('weekly');const fd=el('weekly-filial-filter-dropdown');assert.equal(fd.listeners.change.length,1,'handlers únicos');
  fd.listeners.change[0]({target:{type:'radio',value:'08',closest:()=>({querySelector:()=>({textContent:'Filial 08'})})}});
  const bi=requests.length,branch=launch();assert.equal(requests[bi].args.p_filters.filial,'08','filial enviada corretamente à RPC');resolveBatch(bi,weekly(8));await branch;
+ // Numbers render before options finish; facet errors do not discard valid page data.
+ ctx.selectedCoverageSuppliers=['707'];
+ const slowFrom=requests.length;ctx.updateCoverageView();const slow=launch();
+ requests[slowFrom].resolve({error:null,data:coverage(77)});
+ for(let i=0;i<10;i++) await Promise.resolve();
+ assert.match(el('coverage-chart-total-kpi').textContent,/77/,'dados visíveis sem aguardar opções');
+ assert.equal(el('coverage-view')['aria-busy'],'false');
+ requests[slowFrom+1].resolve({error:{message:'facet timeout'},data:null});await slow;
+ assert.ok(!el('coverage-view').status,'falha das opções não oculta dados válidos');
+ ctx.selectedCoverageSuppliers=[];
  const fi=requests.length;ctx.updateCoverageView();const bad=launch();requests[fi].resolve({data:null,error:{message:'timeout'}});await bad;assert.ok(el('coverage-view').status);assert.match(el('coverage-view').status.innerHTML,/Tentar novamente/);
  el('coverage-view').status.querySelector('button').listeners.click[0]();const retryFrom=requests.length,retry=launch();resolveBatch(retryFrom,coverage(3));await retry;assert.equal(el('coverage-view').status,null);
  const row={code:'1',descricao:'(1) <img src=x onerror=alert(1)>',stockQty:1,boxesSoldCurrentMonth:1,boxesSoldPreviousMonth:0,boxesVariation:null,pdvVariation:null,trendDays:null,clientsPreviousCount:0,clientsCurrentCount:1,coverageCurrent:50};

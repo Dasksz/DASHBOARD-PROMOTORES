@@ -61,3 +61,15 @@ O advisor de segurança não apontou avisos para os novos endpoints/helpers. Per
 - Testes existentes do Comparativo (interface e gráficos) continuam passando.
 
 Medições pontuais com `EXPLAIN ANALYZE`, sem rede/renderização: Semanal amplo com fornecedor 707 passou de ~4,6 s na primeira implementação para ~0,9 s; Cobertura com seleção de promotor/fornecedor foi medida em ~0,82 s; opções amplas em ~1,66 s, depois reutilizadas pelo cache da interface. As medidas variam com cache/carga e não representam o tempo completo da página.
+
+## Otimização após timeout em 02/10/2026
+
+A consulta ampla de Cobertura foi reproduzida cancelando após 18 s. A versão anterior recalculava a soma de tendência em leituras correlacionadas do histórico por produto; a expansão dos CTEs repetia trabalho e gerava arquivos temporários. Agora produto/dia é agregado uma vez, divisores são materializados e a tendência usa junção com esse resumo. Os períodos personalizados sobrepostos conservam as duplicações necessárias. O histórico que alimenta apenas tendência é compactado; preço continua aplicado a cada venda original.
+
+O SQL de origem é projetado dentro das páginas para o otimizador eliminar colunas não utilizadas, evitando a resposta interna larga de `rows_v1`. Cobertura não faz mais a junção de supervisor por venda: a atribuição continua disponível na base da carteira para os filtros de supervisor/filial. JIT foi desativado nestes três endpoints; `work_mem` de 32 MB e hash joins nas duas páginas são ajustes locais às funções, restaurados ao retornar. Não foi aumentado o timeout nem alterada a permissão de acesso.
+
+A resposta das opções de filtros deixou de bloquear a apresentação dos números/gráficos. As duas consultas continuam paralelas; opções atualizam separadamente. Uma falha das opções é registrada e permite nova tentativa na próxima atualização, sem descartar dados válidos da página.
+
+Medições amplas, como administrador, sem filtros: **Cobertura ~1,87 s**, **Semanal ~0,69 s** no banco. São medições pontuais de `EXPLAIN ANALYZE`; não incluem rede, boot global ou renderização. A consulta ampla percorre cerca de 129 mil linhas atuais/históricas.
+
+Verificações: 17 cenários SQL e autorização passaram; 2.260 valores operacionais conferidos com o cálculo JavaScript; comparação completa antes/depois em 10 seleções confirmou **2.957 valores numéricos**, incluindo estoque e tendência. O teste de frontend garante números visíveis antes das opções e preservação dos dados quando a RPC de opções falha.

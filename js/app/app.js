@@ -9872,19 +9872,25 @@ const supervisorGroups = new Map();
                     const { products, types, date_start, date_end, price_min, price_max, working_days, trend, metric, month, ...facetFilters } = filters;
                     const facetKey = JSON.stringify(facetFilters);
                     const facetsNeeded = !state.facets || state.facetKey !== facetKey || Date.now()-state.facetTime > 60000;
-                    const calls = [window.supabaseClient.rpc(rpcName,{ p_filters: filters }).abortSignal(controller.signal)];
-                    if (facetsNeeded) calls.push(window.supabaseClient.rpc('get_dashboard_filters_v1',{ p_page: page,p_filters: facetFilters }).abortSignal(controller.signal));
-                    const [response,facetResponse] = await Promise.all(calls);
+                    const dataRequest = window.supabaseClient.rpc(rpcName,{ p_filters: filters }).abortSignal(controller.signal);
+                    // Filter options update independently: a slow/erroring facet response must not hide valid numbers.
+                    const facetTask = facetsNeeded
+                        ? window.supabaseClient.rpc('get_dashboard_filters_v1',{ p_page: page,p_filters: facetFilters }).abortSignal(controller.signal)
+                            .then(response => {
+                                if (id !== state.id) return;
+                                if (response.error) throw response.error;
+                                if (response.data?.schema_version !== 1) throw new Error('Filtros RPC inválidos');
+                                state.facets = response.data; state.facetKey = facetKey; state.facetTime = Date.now();
+                                refreshRpcFacetUI(page);
+                            }).catch(error => { if (id === state.id) console.error(`[${page} filtros RPC]`,error); })
+                        : Promise.resolve();
+                    const response = await dataRequest;
                     if (id !== state.id) return;
                     if (response.error) throw response.error;
-                    if (facetResponse?.error) throw facetResponse.error;
                     validateDashboardPayload(page,response.data);
-                    if (facetResponse) {
-                        if (facetResponse.data?.schema_version !== 1) throw new Error('Filtros RPC inválidos');
-                        state.facets = facetResponse.data; state.facetKey = facetKey; state.facetTime = Date.now();
-                    }
-                    refreshRpcFacetUI(page);
                     render(response.data,filters);
+                    root?.setAttribute('aria-busy','false');
+                    await facetTask;
                 } catch (error) {
                     if (id !== state.id) return;
                     console.error(`[${page} RPC]`,error);
