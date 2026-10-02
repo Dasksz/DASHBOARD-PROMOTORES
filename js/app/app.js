@@ -13870,9 +13870,7 @@ const supervisorGroups = new Map();
             return result;
         };
 
-        function getComparisonFilteredData(options = {}) {
-            const { excludeFilter = null } = options;
-
+        function getComparisonSelectionFilters() {
             const suppliersSet = new Set(selectedComparisonSuppliers);
             const productsSet = new Set(selectedComparisonProducts);
             const tiposVendaSet = new Set(selectedComparisonTiposVenda);
@@ -13949,13 +13947,15 @@ const supervisorGroups = new Map();
                 clientCodes
             };
 
-            const perdasFilters = { ...filters, tipoVenda: new Set(['5']) };
+            return filters;
+        }
 
+        function getComparisonFilteredData(options = {}) {
+            const { excludeFilter = null } = options;
+            const filters = getComparisonSelectionFilters();
             return {
                 currentSales: getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters, excludeFilter),
-                historySales: getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters, excludeFilter),
-                perdasSales: getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, perdasFilters, excludeFilter),
-                perdasHistory: getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, perdasFilters, excludeFilter)
+                historySales: getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters, excludeFilter)
             };
         }
 
@@ -14024,10 +14024,71 @@ const supervisorGroups = new Map();
         }
 
 
+        let comparisonRpcTimer = null;
+        let comparisonRpcController = null;
+
+        // Etapa 1: os oito cartões vêm da RPC. Gráficos/filtros seguem no fluxo legado.
         function updateComparisonView() {
-            comparisonRenderId++;
-            const currentRenderId = comparisonRenderId;
-            const { currentSales, historySales, perdasSales, perdasHistory } = getComparisonFilteredData();
+            const currentRenderId = ++comparisonRenderId;
+            clearTimeout(comparisonRpcTimer);
+            if (comparisonRpcController) comparisonRpcController.abort();
+            const container = document.getElementById('comparison-kpi-container');
+            container.setAttribute('aria-busy', 'true');
+            container.innerHTML = '<p class="col-span-full text-slate-300" role="status">Atualizando indicadores…</p>';
+            comparisonRpcTimer = setTimeout(async () => {
+                const controller = new AbortController();
+                comparisonRpcController = controller;
+                const timeout = setTimeout(() => controller.abort(), 20000);
+                try {
+                    const filters = getComparisonSelectionFilters();
+                    const { data, error } = await window.supabaseClient.rpc('get_comparison_kpis_v1', {
+                        p_filters: {
+                            client_codes: Array.from(filters.clientCodes, String),
+                            filial: filters.filial || 'ambas', city: filters.city, pasta: filters.pasta,
+                            suppliers: Array.from(filters.supplier), products: Array.from(filters.product),
+                            types: Array.from(filters.tipoVenda), reference_date: lastSaleDate.toISOString().slice(0, 10),
+                            holidays: selectedHolidays.slice(), tendency: useTendencyComparison
+                        }
+                    }).abortSignal(controller.signal);
+                    if (currentRenderId !== comparisonRenderId) return;
+                    if (error) throw error;
+                    if (!data || data.schema_version !== 1 || !data.kpis) throw new Error('Resposta inválida do Comparativo');
+                    const current = data.kpis.current;
+                    const history = data.kpis.history;
+                    const definitions = [
+                        ['Faturamento Total', 'fat', 'currency', 1],
+                        ['Peso Total (Ton)', 'peso', 'decimal', 1000],
+                        ['Clientes Atendidos', 'clients', 'integer', 1],
+                        ['Ticket Médio', 'ticket', 'currency', 1],
+                        ['Mix por PDV (Pepsico)', 'mixPepsico', 'mix', 1],
+                        ['Mix Salty', 'positivacaoSalty', 'integer', 1],
+                        ['Mix Foods', 'positivacaoFoods', 'integer', 1],
+                        ['Perdas', 'perdas', 'currency', 1]
+                    ];
+                    const cards = definitions.map(([title, key, format, divisor]) => {
+                        if (typeof current?.[key] !== 'number' || typeof history?.[key] !== 'number' ||
+                            !Number.isFinite(current[key]) || !Number.isFinite(history[key])) {
+                            throw new Error('Indicador inválido do Comparativo');
+                        }
+                        return { title, current: current[key] / divisor, history: history[key] / divisor, format };
+                    });
+                    renderKpiCards(cards);
+                    renderComparisonLegacyCharts(currentRenderId, data.kpis);
+                } catch (error) {
+                    if (currentRenderId !== comparisonRenderId) return;
+                    console.error('[Comparativo RPC] Falha ao carregar indicadores', error.message || error.code);
+                    container.innerHTML = '<div class="col-span-full text-amber-300" role="alert">Não foi possível atualizar o Comparativo. <button type="button" class="underline ml-2">Tentar novamente</button></div>';
+                    container.querySelector('button').addEventListener('click', updateComparisonView);
+                } finally {
+                    clearTimeout(timeout);
+                    if (currentRenderId === comparisonRenderId) container.setAttribute('aria-busy', 'false');
+                    if (comparisonRpcController === controller) comparisonRpcController = null;
+                }
+            }, 150);
+        }
+
+        function renderComparisonLegacyCharts(currentRenderId, rpcKpis) {
+            const { currentSales, historySales } = getComparisonFilteredData();
 
             // Show Loading State on Charts (only if no chart exists)
             const chartContainers = ['weeklyComparisonChart', 'monthlyComparisonChart'];
@@ -14059,16 +14120,7 @@ const supervisorGroups = new Map();
             const firstWeekStart = currentMonthWeeks[0].start;
             const firstOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
             const hasOverlap = firstWeekStart < firstOfMonth;
-            const pepsicoCodfors = new Set([window.SUPPLIER_CODES.ELMA[0], window.SUPPLIER_CODES.ELMA[1], window.SUPPLIER_CODES.ELMA[2]]);
-            const saltyCategories = ['CHEETOS', 'DORITOS', 'FANDANGOS', 'RUFFLES', 'TORCIDA'];
-            const foodsCategories = ['TODDYNHO', 'TODDY ', 'QUAKER', 'KEROCOCO'];
-            const norm = (s) => s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase() : '';
-
-            // Temp structures for Current processing
-            const currentClientProductMap = new Map();
-            const currentClientsSet = new Map();
-
-            // Temp structures for History processing
+            // Mapas locais apenas para o gráfico mensal de clientes.
             const historyMonths = new Map();
             const monthWeeksCache = new Map();
 
@@ -14083,17 +14135,6 @@ const supervisorGroups = new Map();
                 metrics.current.fat += val;
                 metrics.current.peso += s.TOTPESOLIQ;
 
-                if (s.CODCLI) {
-                    currentClientsSet.set(s.CODCLI, (currentClientsSet.get(s.CODCLI) || 0) + val);
-                    if (!currentClientProductMap.has(s.CODCLI)) currentClientProductMap.set(s.CODCLI, new Map());
-                    const cMap = currentClientProductMap.get(s.CODCLI);
-                    if (!cMap.has(s.PRODUTO)) {
-                        const pObj = window.resolveDim('produtos', s.PRODUTO);
-                        const pDesc = (typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || '');
-                        cMap.set(s.PRODUTO, { val: 0, desc: pDesc, codfor: String(s.CODFOR) });
-                    }
-                    cMap.get(s.PRODUTO).val += val;
-                }
                 // Dynamic Grouping Key
                 let groupKey = window.resolveDim('supervisores', s.CODSUPERVISOR);
                 if (typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter') {
@@ -14121,36 +14162,6 @@ const supervisorGroups = new Map();
                     metrics.currentDayTotals[d.getUTCDay()] += val;
                 }
             }, () => {
-                // 1.1 Finalize Current KPIs
-                let currentPositiveClients = 0;
-                currentClientsSet.forEach(val => { if (val >= 1) currentPositiveClients++; });
-                metrics.current.clients = currentPositiveClients;
-
-                let sumMix = 0; let countMixClients = 0; let countSalty = 0; let countFoods = 0;
-                currentClientProductMap.forEach((prods) => {
-                    let pepsicoCount = 0;
-                    const boughtCatsSalty = new Set();
-                    const boughtCatsFoods = new Set();
-                    prods.forEach(pData => {
-                        if (pData.val >= 1) {
-                            if (pepsicoCodfors.has(pData.codfor)) pepsicoCount++;
-                            const desc = norm(pData.desc);
-                            saltyCategories.forEach(cat => { if (desc.includes(cat)) boughtCatsSalty.add(cat); });
-                            foodsCategories.forEach(cat => { if (desc.includes(cat)) boughtCatsFoods.add(cat); });
-                        }
-                    });
-
-
-                    if (pepsicoCount > 0) { sumMix += pepsicoCount; countMixClients++; }
-                    if (boughtCatsSalty.size >= saltyCategories.length) countSalty++;
-                    if (boughtCatsFoods.size >= foodsCategories.length) countFoods++;
-                });
-
-
-                metrics.current.mixPepsico = countMixClients > 0 ? sumMix / countMixClients : 0;
-                metrics.current.positivacaoSalty = countSalty;
-                metrics.current.positivacaoFoods = countFoods;
-
                 if (currentRenderId !== comparisonRenderId) return;
 
                 // 2. Process History Sales
@@ -14166,21 +14177,13 @@ const supervisorGroups = new Map();
                     if (!d) return;
 
                     const monthKey = `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
-                    if (!historyMonths.has(monthKey)) historyMonths.set(monthKey, { fat: 0, clients: new Map(), productMap: new Map() });
+                    if (!historyMonths.has(monthKey)) historyMonths.set(monthKey, { fat: 0, clients: new Map() });
                     const mData = historyMonths.get(monthKey);
 
                     mData.fat += val;
 
                     if (s.CODCLI) {
                         mData.clients.set(s.CODCLI, (mData.clients.get(s.CODCLI) || 0) + val);
-                        if (!mData.productMap.has(s.CODCLI)) mData.productMap.set(s.CODCLI, new Map());
-                        const cMap = mData.productMap.get(s.CODCLI);
-                        if (!cMap.has(s.PRODUTO)) {
-                            const pObj = window.resolveDim('produtos', s.PRODUTO);
-                            const pDesc = (typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || '');
-                            cMap.set(s.PRODUTO, { val: 0, desc: pDesc, codfor: String(s.CODFOR) });
-                        }
-                        cMap.get(s.PRODUTO).val += val;
                     }
 
                     // Dynamic Grouping Key History
@@ -14238,38 +14241,13 @@ const supervisorGroups = new Map();
                         const [y2, m2] = b.split('-').map(Number);
                         return (y1 * 12 + m1) - (y2 * 12 + m2);
                     }).slice(-3);
-                    let sumClients = 0; let sumMixPep = 0; let sumPosSalty = 0; let sumPosFoods = 0;
+                    let sumClients = 0;
 
                     sortedMonths.forEach(mKey => {
                         const mData = historyMonths.get(mKey);
                         let posClients = 0;
                         mData.clients.forEach(v => { if(v >= 1) posClients++; });
                         sumClients += posClients;
-
-                        let mSumMix = 0; let mCountMixClients = 0; let mCountSalty = 0; let mCountFoods = 0;
-                        mData.productMap.forEach((prods) => {
-                            let pepsicoCount = 0;
-                            const boughtCatsSalty = new Set();
-                            const boughtCatsFoods = new Set();
-                            prods.forEach(pData => {
-                                if (pData.val >= 1) {
-                                    if (pepsicoCodfors.has(pData.codfor)) pepsicoCount++;
-                                    const desc = norm(pData.desc);
-                                    saltyCategories.forEach(cat => { if (desc.includes(cat)) boughtCatsSalty.add(cat); });
-                                    foodsCategories.forEach(cat => { if (desc.includes(cat)) boughtCatsFoods.add(cat); });
-                                }
-                            });
-
-
-                            if (pepsicoCount > 0) { mSumMix += pepsicoCount; mCountMixClients++; }
-                            if (boughtCatsSalty.size >= saltyCategories.length) mCountSalty++;
-                            if (boughtCatsFoods.size >= foodsCategories.length) mCountFoods++;
-                        });
-
-
-                        sumMixPep += (mCountMixClients > 0 ? mSumMix / mCountMixClients : 0);
-                        sumPosSalty += mCountSalty;
-                        sumPosFoods += mCountFoods;
 
                         const [y, m] = mKey.split('-');
                         const label = new Date(Date.UTC(parseInt(y), parseInt(m), 1)).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit', timeZone: 'UTC' });
@@ -14278,81 +14256,24 @@ const supervisorGroups = new Map();
 
 
 
-                    metrics.history.avgClients = sumClients / QUARTERLY_DIVISOR;
-                    metrics.history.avgMixPepsico = sumMixPep / QUARTERLY_DIVISOR;
-                    metrics.history.avgPositivacaoSalty = sumPosSalty / QUARTERLY_DIVISOR;
-                    metrics.history.avgPositivacaoFoods = sumPosFoods / QUARTERLY_DIVISOR;
-
-                    // --- NEW TENDENCY COMPARISON FOR KPIS AND SUPERVISORS ---
-                    if (useTendencyComparison) {
-                        const totalDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-                        const passedDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
-                        
-                        if (totalDays > 0 && passedDays > 0 && passedDays < totalDays) {
-                            const ratio = totalDays / passedDays;
-                            
-                            // 1. Project Global KPIs
-                            metrics.current.fat *= ratio;
-                            metrics.current.peso *= ratio;
-                            metrics.current.clients = Math.round(metrics.current.clients * ratio);
-                            metrics.current.positivacaoSalty = Math.round(metrics.current.positivacaoSalty * ratio);
-                            metrics.current.positivacaoFoods = Math.round(metrics.current.positivacaoFoods * ratio);
-                            
-                            // 2. Project Supervisor Data
-                            Object.values(metrics.charts.supervisorData).forEach(supData => {
-                                supData.current *= ratio;
-                            });
-                        }
-                    }
-
-                    // Calculate Perdas KPI
-                    let currentPerdas = 0;
-                    if (perdasSales && perdasSales.length > 0) {
-                        for(let i=0; i<perdasSales.length; i++) {
-                            const sale = perdasSales[i];
-                            const clientCode = normalizeKey(sale.CODCLI);
-                            const ramo = (clientRamoMap.get(clientCode) || '').toUpperCase();
-                            if (!ramo.includes('AMERICANAS') && !ramo.includes('BH')) {
-                                // Force Alternative Mode (VLBONIFIC) for Perdas (Type 5)
-                                currentPerdas += getValueForSale(sale, ['5']);
-                            }
-                        }
-                    }
-                    metrics.current.perdas = currentPerdas;
-
-                    let historyPerdas = 0;
-                    if (perdasHistory && perdasHistory.length > 0) {
-                        for(let i=0; i<perdasHistory.length; i++) {
-                            const sale = perdasHistory[i];
-                            const clientCode = normalizeKey(sale.CODCLI);
-                            const ramo = (clientRamoMap.get(clientCode) || '').toUpperCase();
-                            if (!ramo.includes('AMERICANAS') && !ramo.includes('BH')) {
-                                historyPerdas += getValueForSale(sale, ['5']);
-                            }
-                        }
-                    }
-                    metrics.history.avgPerdas = historyPerdas / QUARTERLY_DIVISOR;
-
+                    Object.assign(metrics.current, rpcKpis.current);
+                    Object.assign(metrics.history, {
+                        avgFat: rpcKpis.history.fat, avgPeso: rpcKpis.history.peso,
+                        avgClients: rpcKpis.history.clients, avgMixPepsico: rpcKpis.history.mixPepsico,
+                        avgPositivacaoSalty: rpcKpis.history.positivacaoSalty,
+                        avgPositivacaoFoods: rpcKpis.history.positivacaoFoods, avgPerdas: rpcKpis.history.perdas
+                    });
                     if (useTendencyComparison) {
                         const totalDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
                         const passedDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
                         if (totalDays > 0 && passedDays > 0 && passedDays < totalDays) {
-                            metrics.current.perdas *= (totalDays / passedDays);
+                            Object.values(metrics.charts.supervisorData).forEach(supData => { supData.current *= totalDays / passedDays; });
                         }
                     }
 
                     // 3. Render Views
                     const m = metrics;
-                    renderKpiCards([
-                        { title: 'Faturamento Total', current: m.current.fat, history: m.history.avgFat, format: 'currency' },
-                        { title: 'Peso Total (Ton)', current: m.current.peso / 1000, history: m.history.avgPeso / 1000, format: 'decimal' },
-                        { title: 'Clientes Atendidos', current: m.current.clients, history: m.history.avgClients, format: 'integer' },
-                        { title: 'Ticket Médio', current: m.current.clients > 0 ? m.current.fat / m.current.clients : 0, history: m.history.avgClients > 0 ? m.history.avgFat / m.history.avgClients : 0, format: 'currency' },
-                        { title: 'Mix por PDV (Pepsico)', current: m.current.mixPepsico, history: m.history.avgMixPepsico, format: 'mix' },
-                        { title: 'Mix Salty', current: m.current.positivacaoSalty, history: m.history.avgPositivacaoSalty, format: 'integer' },
-                        { title: 'Mix Foods', current: m.current.positivacaoFoods, history: m.history.avgPositivacaoFoods, format: 'integer' },
-                        { title: 'Perdas', current: m.current.perdas, history: m.history.avgPerdas, format: 'currency' }
-                    ]);
+                    // Os cartões são renderizados exclusivamente pela RPC, acima.
 
                     // Weekly Chart Logic with Tendency
                     let weeklyCurrentData = [...m.charts.weeklyCurrent];
