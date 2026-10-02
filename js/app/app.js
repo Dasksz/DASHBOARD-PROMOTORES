@@ -1554,6 +1554,7 @@
         }
 
         function updateHierarchyDropdown(viewPrefix, level) {
+            if (viewPrefix === 'coverage' || viewPrefix === 'weekly') { refreshRpcFacetUI(viewPrefix); return; }
             const state = hierarchyState[viewPrefix];
             const els = {
                 coord: { dd: document.getElementById(`${viewPrefix}-coord-filter-dropdown`), text: document.getElementById(`${viewPrefix}-coord-filter-text`) },
@@ -1798,6 +1799,8 @@
                 if (typeof updateCoverageSupervisorFilter === 'function') updateCoverageSupervisorFilter();
                 if (typeof updateCoverageVendedorFilter === 'function') updateCoverageVendedorFilter();
                 updateCoverageView();
+            } else if (currentActiveView === 'weekly' && typeof updateWeeklyView === 'function') {
+                updateWeeklyView();
             } else if (currentActiveView === 'meta-realizado' && typeof updateMetaRealizadoView === 'function') {
                 if (typeof updateMetaRealizadoSupervisorFilter === 'function') updateMetaRealizadoSupervisorFilter();
                 if (typeof updateMetaRealizadoVendedorFilter === 'function') updateMetaRealizadoVendedorFilter();
@@ -1929,19 +1932,9 @@
         function updatePositivacaoSupervisorFilter() { positivacaoFilters.updateSupervisor(); }
         function updatePositivacaoVendedorFilter() { positivacaoFilters.updateVendedor(); }
 
-        const coverageFilters = setupViewSupervisorFilters({
-            prefix: 'coverage',
-            get supervisorsSet() { return selectedCoverageSupervisors; },
-            get vendedoresSet() { return selectedCoverageVendedores; },
-            onChangeCallback: () => { handleCoverageFilterChange(); },
-            customCloseLogic: null,
-            supervisorColorClass: 'text-orange-500',
-            vendedorColorClass: 'text-orange-500'
-        });
-
-        function setupCoverageSupervisorFilterHandlers() { coverageFilters.setup(); }
-        function updateCoverageSupervisorFilter() { coverageFilters.updateSupervisor(); }
-        function updateCoverageVendedorFilter() { coverageFilters.updateVendedor(); }
+        function setupCoverageSupervisorFilterHandlers() { setupRpcPageFilters('coverage'); }
+        function updateCoverageSupervisorFilter() { refreshRpcFacetUI('coverage'); }
+        function updateCoverageVendedorFilter() { refreshRpcFacetUI('coverage'); }
 
         const mixFilters = setupViewSupervisorFilters({
             prefix: 'mix',
@@ -2043,6 +2036,7 @@
 
 
         function setupHierarchyFilters(viewPrefix, onUpdate) {
+            if (viewPrefix === 'coverage' || viewPrefix === 'weekly') { setupRpcPageFilters(viewPrefix); return; }
             // Init State
             if (!hierarchyState[viewPrefix]) {
                 hierarchyState[viewPrefix] = { coords: new Set(), cocoords: new Set(), promotors: new Set() };
@@ -9815,176 +9809,240 @@ const supervisorGroups = new Map();
 
         // <!-- INÍCIO DO CÓDIGO RESTAURADO -->
 
-        function getCoverageFilteredData(options = {}) {
-            const { excludeFilter = null } = options;
-            const isExcluded = (f) => excludeFilter === f || (Array.isArray(excludeFilter) && excludeFilter.includes(f));
+        // RPC pages: this state stores responses only, never local sales datasets.
+        const dashboardRpcState = {
+            coverage: { id: 0, timer: null, controller: null, facets: null, facetKey: '', facetTime: 0 },
+            weekly: { id: 0, timer: null, controller: null, facets: null, facetKey: '', facetTime: 0 }
+        };
 
-            const city = coverageCityFilter.value.trim().toLowerCase();
-            const filial = coverageFilialFilter.value;
-            const suppliersSet = new Set(selectedCoverageSuppliers);
-            const productsSet = new Set(selectedCoverageProducts);
-            const tiposVendaSet = new Set(selectedCoverageTiposVenda);
-
-            // New Hierarchy Logic applied to Active Clients
-            let clients;
-            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                clients = [];
-                const hasSup = selectedCoverageSupervisors.size > 0;
-                const hasVend = selectedCoverageVendedores.size > 0;
-
-                const source = getActiveClientsData(); // Apply Active filtering first
-                const len = source.length;
-
-                for(let i=0; i<len; i++) {
-                    const c = source[i];
-                    const rca1 = String(c.rca1 || '').trim();
-                    let keep = true;
-                    if (hasSup || hasVend) {
-                        const details = sellerDetailsMap.get(rca1);
-                        if (hasSup) {
-                            if (!details || !selectedCoverageSupervisors.has(details.supervisor)) keep = false;
-                        }
-                        if (keep && hasVend) {
-                            if (!selectedCoverageVendedores.has(rca1)) keep = false;
-                        }
-                    }
-                    if (keep) clients.push(c);
-                }
-            } else {
-                clients = getHierarchyFilteredClients('coverage', getActiveClientsData());
-            }
-
-            if (filial !== 'ambas' || city || !isExcluded('rede')) {
-                const redeSet = (coverageRedeGroupFilter === 'com_rede' && selectedCoverageRedes.length > 0) ? new Set(selectedCoverageRedes) : null;
-
-                clients = clients.filter(c => {
-                    let pass = true;
-                    if (filial !== 'ambas') {
-                        if (clientLastBranch.get(c['Código']) !== filial) pass = false;
-                    }
-                    if (pass && !isExcluded('city') && city) {
-                        if ((c.cidade || '').toLowerCase() !== city) pass = false;
-                    }
-                    if (pass && !isExcluded('rede')) {
-                        if (coverageRedeGroupFilter === 'com_rede') {
-                            if (!c.ramo || c.ramo === 'N/A') pass = false;
-                            else if (redeSet && !redeSet.has(c.ramo)) pass = false;
-                        } else if (coverageRedeGroupFilter === 'sem_rede') {
-                            if (c.ramo && c.ramo !== 'N/A') pass = false;
-                        }
-                    }
-                    return pass;
-                });
-
-
-            }
-
-            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
-            const clientCodes = new Set(); for(let i=0; i<clients.length; i++) clientCodes.add(normalizeKey(clients[i]['Código'] || clients[i]['codigo_cliente']));
-
-            const filters = {
-                filial,
-                city,
-                tipoVenda: tiposVendaSet,
-                supplier: suppliersSet,
-                product: productsSet,
-                clientCodes
+        function dashboardPageFilters(page) {
+            const h = hierarchyState[page] || { coords: new Set(), cocoords: new Set(), promotors: new Set() };
+            const coverage = page === 'coverage';
+            return {
+                mode: adminViewMode === 'seller' ? 'seller' : 'promoter',
+                coords: Array.from(h.coords), cocoords: Array.from(h.cocoords), promotors: Array.from(h.promotors),
+                supervisors: Array.from(coverage ? selectedCoverageSupervisors : selectedWeeklySupervisors),
+                sellers: Array.from(coverage ? selectedCoverageVendedores : selectedWeeklyVendedores),
+                suppliers: Array.from(coverage ? selectedCoverageSuppliers : selectedWeeklySuppliers),
+                filial: coverage ? coverageFilialFilter.value : weeklyFilialFilter,
+                rede_group: coverage ? coverageRedeGroupFilter : weeklyRedeGroupFilter,
+                redes: coverage ? selectedCoverageRedes.slice() : selectedWeeklyRedes.slice(),
+                ...(coverage ? {
+                    products: selectedCoverageProducts.slice(), types: selectedCoverageTiposVenda.slice(),
+                    city: coverageCityFilter.value.trim().toLowerCase(),
+                    date_start: selectedCoverageDateRange.start, date_end: selectedCoverageDateRange.end,
+                    price_min: selectedCoveragePriceMin, price_max: selectedCoveragePriceMax,
+                    working_days: customWorkingDaysCoverage, trend: coverageTrendFilter, metric: currentCoverageMetricMode
+                } : { month: selectedWeeklyMonth })
             };
-
-            let sales = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters, excludeFilter);
-            let history = getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters, excludeFilter);
-
-            // Date Filter (Proportional)
-            // Assumes sales have DTPED (timestamp or date string)
-            // selectedCoverageDateRange = { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' }
-            if (!isExcluded('date') && selectedCoverageDateRange.start && selectedCoverageDateRange.end) {
-                // Ensure the start date is 00:00:00.000 in UTC to align with database DTPED
-                const [startYear, startMonth, startDay] = selectedCoverageDateRange.start.split('-');
-                const start = Date.UTC(parseInt(startYear), parseInt(startMonth) - 1, parseInt(startDay), 0, 0, 0, 0);
-
-                // Ensure the end date is 23:59:59.999 in UTC to include all sales on the last day
-                const [endYear, endMonth, endDay] = selectedCoverageDateRange.end.split('-');
-                const end = Date.UTC(parseInt(endYear), parseInt(endMonth) - 1, parseInt(endDay), 23, 59, 59, 999);
-
-                // Calculate Proportional Previous Month Range
-                // Re-calculate strictly based on UTC
-                const [sYear, sMonth, sDay] = selectedCoverageDateRange.start.split('-').map(Number);
-                const [eYear, eMonth, eDay] = selectedCoverageDateRange.end.split('-').map(Number);
-
-                let pStartYear = sYear;
-                let pStartMonth = sMonth - 1 - 1; // 0-indexed, minus 1 month
-                if (pStartMonth < 0) { pStartMonth += 12; pStartYear--; }
-
-                // Get days in prev month for start date clamping
-                const daysInPrevStartMonth = new Date(Date.UTC(pStartYear, pStartMonth + 1, 0)).getUTCDate();
-                const clampedStartDay = Math.min(sDay, daysInPrevStartMonth);
-                const pStart = Date.UTC(pStartYear, pStartMonth, clampedStartDay, 0, 0, 0, 0);
-
-                let pEndYear = eYear;
-                let pEndMonth = eMonth - 1 - 1; // 0-indexed, minus 1 month
-                if (pEndMonth < 0) { pEndMonth += 12; pEndYear--; }
-
-                // Get days in prev month for end date clamping
-                const daysInPrevEndMonth = new Date(Date.UTC(pEndYear, pEndMonth + 1, 0)).getUTCDate();
-                const clampedEndDay = Math.min(eDay, daysInPrevEndMonth);
-                const pEnd = Date.UTC(pEndYear, pEndMonth, clampedEndDay, 23, 59, 59, 999);
-
-                // ⚡ Bolt Optimization: Replace chained .filter() array allocations with a single O(N) pass loop
-                const newSales = [];
-                const newHistory = [];
-
-                const processArray = (arr) => {
-                    for (let i = 0; i < arr.length; i++) {
-                        const s = arr[i];
-                        let d = s.DTPED;
-                        if (typeof d !== 'number') d = parseDate(d)?.getTime() || 0;
-                        if (d >= start && d <= end) {
-                            newSales.push(s);
-                        }
-                        if (d >= pStart && d <= pEnd) {
-                            newHistory.push(s);
-                        }
-                    }
-                };
-
-                processArray(sales);
-                processArray(history);
-
-                sales = newSales;
-                history = newHistory;
-            }
-
-            // Price Filter (Min/Max Unit Price)
-            if (!isExcluded('price') && (selectedCoveragePriceMin !== null || selectedCoveragePriceMax !== null)) {
-                const checkPrice = (s) => {
-                    if (!s.QTVENDA || s.QTVENDA === 0) return false;
-                    const price = s.VLVENDA / s.QTVENDA;
-                    if (selectedCoveragePriceMin !== null && price < selectedCoveragePriceMin) return false;
-                    if (selectedCoveragePriceMax !== null && price > selectedCoveragePriceMax) return false;
-                    return true;
-                };
-                sales = sales.filter(checkPrice);
-                history = history.filter(checkPrice);
-            }
-
-            
-            // Return history data (unfiltered by date) to allow calculating 3-month active clients
-            const allHistoryUnfiltered = getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters, excludeFilter);
-            
-            return { sales, history, clients, allHistoryUnfiltered };
         }
 
-        function updateAllCoverageFilters(options = {}) {
-            const { skipFilter = null } = options;
+        function validateDashboardPayload(page, data) {
+            const numbers = page === 'coverage' ? ['active_clients','active_3m','current_clients','previous_clients','total_boxes','chart_total'] : [];
+            const arrays = page === 'coverage' ? ['rows','cities','ranking'] : ['weeks','best_days','ranking_fat','ranking_pos'];
+            if (!data || data.schema_version !== 1 || numbers.some(k => !Number.isFinite(data[k])) || arrays.some(k => !Array.isArray(data[k]))) throw new Error('Resposta RPC inválida');
+            if (page === 'coverage') {
+                for (const row of data.rows) {
+                    if (typeof row.descricao !== 'string' || ['stockQty','boxesSoldCurrentMonth','boxesSoldPreviousMonth','clientsPreviousCount','clientsCurrentCount','coverageCurrent'].some(k => !Number.isFinite(row[k])) || ['boxesVariation','pdvVariation','trendDays'].some(k => row[k] !== null && !Number.isFinite(row[k]))) throw new Error('Produto RPC inválido');
+                }
+                for (const row of [...data.cities,...data.ranking]) if (typeof row.name !== 'string' || !Number.isFinite(row.value)) throw new Error('Gráfico RPC inválido');
+            } else {
+                if (data.best_days.length !== 7 || data.best_days.some(v => !Number.isFinite(v))) throw new Error('Histórico RPC inválido');
+                for (const w of data.weeks) if (!Number.isFinite(w.id) || !Number.isFinite(w.total) || w.days.length !== 7 || w.days.some(v => !Number.isFinite(v))) throw new Error('Semana RPC inválida');
+                for (const r of [...data.ranking_fat,...data.ranking_pos]) if (typeof r.name !== 'string' || !Number.isFinite(r.val) || !Number.isFinite(r.pos)) throw new Error('Ranking RPC inválido');
+            }
+        }
 
-            const { sales: salesSupplier, history: historySupplier } = getCoverageFilteredData({ excludeFilter: ['supplier', 'product'] });
-            selectedCoverageSuppliers = updateSupplierFilter(coverageSupplierFilterDropdown, coverageSupplierFilterText, selectedCoverageSuppliers, [...salesSupplier, ...historySupplier], 'coverage', skipFilter === 'supplier');
+        function requestDashboardPage(page, rpcName, render) {
+            const state = dashboardRpcState[page];
+            const id = ++state.id;
+            clearTimeout(state.timer);
+            state.controller?.abort();
+            const filters = dashboardPageFilters(page);
+            const root = document.getElementById(page === 'coverage' ? 'coverage-view' : 'weekly-view');
+            if (root) {
+                root.setAttribute('aria-busy','true');
+                root.querySelector('.dashboard-rpc-status')?.remove();
+            }
+            state.timer = setTimeout(async () => {
+                const controller = new AbortController(); state.controller = controller;
+                const timeout = setTimeout(() => controller.abort(),20000);
+                try {
+                    // Facets are keyed by their SQL inputs and cached briefly; charts/values always refresh.
+                    const { products, types, date_start, date_end, price_min, price_max, working_days, trend, metric, month, ...facetFilters } = filters;
+                    const facetKey = JSON.stringify(facetFilters);
+                    const facetsNeeded = !state.facets || state.facetKey !== facetKey || Date.now()-state.facetTime > 60000;
+                    const calls = [window.supabaseClient.rpc(rpcName,{ p_filters: filters }).abortSignal(controller.signal)];
+                    if (facetsNeeded) calls.push(window.supabaseClient.rpc('get_dashboard_filters_v1',{ p_page: page,p_filters: facetFilters }).abortSignal(controller.signal));
+                    const [response,facetResponse] = await Promise.all(calls);
+                    if (id !== state.id) return;
+                    if (response.error) throw response.error;
+                    if (facetResponse?.error) throw facetResponse.error;
+                    validateDashboardPayload(page,response.data);
+                    if (facetResponse) {
+                        if (facetResponse.data?.schema_version !== 1) throw new Error('Filtros RPC inválidos');
+                        state.facets = facetResponse.data; state.facetKey = facetKey; state.facetTime = Date.now();
+                    }
+                    refreshRpcFacetUI(page);
+                    render(response.data,filters);
+                } catch (error) {
+                    if (id !== state.id) return;
+                    console.error(`[${page} RPC]`,error);
+                    if (root) {
+                        const status = document.createElement('div');
+                        status.className = 'dashboard-rpc-status p-3 text-sm text-amber-300'; status.setAttribute('role','alert');
+                        status.innerHTML = 'Não foi possível atualizar os dados. <button type="button" class="underline font-bold">Tentar novamente</button>';
+                        status.querySelector('button').addEventListener('click',() => requestDashboardPage(page,rpcName,render));
+                        root.prepend(status);
+                    }
+                } finally {
+                    clearTimeout(timeout);
+                    if (id === state.id) root?.setAttribute('aria-busy','false');
+                    if (state.controller === controller) state.controller = null;
+                }
+            },150);
+        }
 
-            const { sales: salesProd, history: historyProd } = getCoverageFilteredData({ excludeFilter: 'product' });
-            selectedCoverageProducts = updateProductFilter(coverageProductFilterDropdown, coverageProductFilterText, selectedCoverageProducts, [...salesProd, ...historyProd], 'coverage', skipFilter === 'product');
+        function rpcFilterDefinitions(page) {
+            const coverage = page === 'coverage';
+            const h = hierarchyState[page] || (hierarchyState[page] = { coords: new Set(), cocoords: new Set(), promotors: new Set() });
+            return [
+                { key:'coords', stem:'coord', get:() => h.coords, cascade:['cocoords','promotors'] },
+                { key:'cocoords', stem:'cocoord', get:() => h.cocoords, cascade:['promotors'] },
+                { key:'promotors', stem:'promotor', get:() => h.promotors },
+                { key:'supervisors', stem:'supervisor', get:() => coverage ? selectedCoverageSupervisors : selectedWeeklySupervisors, cascade:['sellers'] },
+                { key:'sellers', stem:'vendedor', get:() => coverage ? selectedCoverageVendedores : selectedWeeklyVendedores },
+                { key:'suppliers', stem:coverage ? 'supplier' : 'fornecedor', get:() => coverage ? selectedCoverageSuppliers : selectedWeeklySuppliers },
+                ...(coverage ? [
+                    { key:'products',stem:'product',get:() => selectedCoverageProducts },
+                    { key:'types',stem:'tipo-venda',get:() => selectedCoverageTiposVenda }
+                ] : []),
+                { key:'redes',stem:'rede',get:() => coverage ? selectedCoverageRedes : selectedWeeklyRedes,text:page+'-com-rede-btn-text' }
+            ];
+        }
 
-            const { sales: salesTV, history: historyTV } = getCoverageFilteredData({ excludeFilter: 'tipoVenda' });
-            selectedCoverageTiposVenda = updateTipoVendaFilter(coverageTipoVendaFilterDropdown, coverageTipoVendaFilterText, selectedCoverageTiposVenda, [...salesTV, ...historyTV], skipFilter === 'tipoVenda');
+        function refreshRpcFacetUI(page) {
+            const facets = dashboardRpcState[page]?.facets;
+            if (!facets) return;
+            const escape = window.escapeHtml;
+            for (const def of rpcFilterDefinitions(page)) {
+                const dropdown = document.getElementById(`${page}-${def.stem}-filter-dropdown`);
+                const text = document.getElementById(def.text || `${page}-${def.stem}-filter-text`);
+                const selected = new Set(def.get());
+                const options = facets[def.key] || [];
+                const search = dropdown?.querySelector('input[type="search"]')?.value || '';
+                if (dropdown) {
+                    const searchBox = def.key === 'products' ? `<input type="search" aria-label="Pesquisar produto" class="w-full bg-slate-800 text-white p-2 rounded mb-2" value="${escape(search)}">` : '';
+                    dropdown.innerHTML = searchBox + options.map(opt => `<label class="flex items-center gap-2 p-2 hover:bg-slate-700 rounded cursor-pointer" data-rpc-label="${escape(opt.label.toLowerCase())}"><input type="checkbox" value="${escape(opt.code)}" ${selected.has(opt.code) ? 'checked' : ''}><span class="text-xs text-slate-300">${escape(opt.label)}</span></label>`).join('');
+                    // Preserve selections absent from the options, so a restrictive filter cannot silently reset.
+                    for (const code of selected) if (!options.some(o => o.code === code)) dropdown.insertAdjacentHTML('beforeend',`<label class="flex items-center gap-2 p-2"><input type="checkbox" value="${escape(code)}" checked><span class="text-xs text-slate-300">${escape(code)}</span></label>`);
+                }
+                if (text) text.textContent = !selected.size ? (def.key === 'redes' ? 'C/Rede' : 'Todos') : selected.size === 1 ? (options.find(o => selected.has(o.code))?.label || Array.from(selected)[0]) : `${selected.size} selecionados`;
+            }
+            const groups = document.getElementById(`${page}-rede-group-container`);
+            groups?.querySelectorAll('[data-group]').forEach(btn => btn.classList.toggle('active',btn.dataset.group === (page === 'coverage' ? coverageRedeGroupFilter : weeklyRedeGroupFilter)));
+            if (page === 'weekly') {
+                const dropdown = document.getElementById('weekly-month-filter-dropdown');
+                const labels = [{ code:'current',label:'Mês Atual' },...(facets.months || []).map(code => ({ code,label:new Date(code+'-15T12:00:00Z').toLocaleDateString('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}) }))];
+                if (dropdown) dropdown.innerHTML = labels.map(o => `<label class="flex items-center justify-between p-2 rounded hover:bg-slate-700"><span class="text-xs text-slate-300">${escape(o.label)}</span><input type="radio" name="weekly-month" value="${escape(o.code)}" ${selectedWeeklyMonth===o.code?'checked':''}></label>`).join('');
+                const text = document.getElementById('weekly-month-filter-text'); if (text) text.textContent = labels.find(o => o.code===selectedWeeklyMonth)?.label || selectedWeeklyMonth;
+            }
+        }
+
+        function setupRpcPageFilters(page) {
+            const update = page === 'coverage' ? updateCoverageView : updateWeeklyView;
+            for (const def of rpcFilterDefinitions(page)) {
+                const dropdown = document.getElementById(`${page}-${def.stem}-filter-dropdown`);
+                const button = document.getElementById(`${page}-${def.stem}-filter-btn`);
+                if (button && !button._rpcBound) {
+                    button.addEventListener('click',e => { e.stopPropagation(); dropdown?.classList.toggle('hidden'); }); button._rpcBound = true;
+                }
+                if (dropdown && !dropdown._rpcBound) {
+                    dropdown.addEventListener('change',e => {
+                        if (e.target.type !== 'checkbox') return;
+                        const selected = def.get(); const { value,checked } = e.target;
+                        if (selected instanceof Set) { if (checked) selected.add(value); else selected.delete(value); }
+                        else { const i = selected.indexOf(value); if (checked && i<0) selected.push(value); else if (!checked && i>=0) selected.splice(i,1); }
+                        for (const key of def.cascade || []) {
+                            const child = rpcFilterDefinitions(page).find(d => d.key===key)?.get(); if (child instanceof Set) child.clear(); else if (child) child.length=0;
+                        }
+                        update();
+                    });
+                    dropdown.addEventListener('input',e => {
+                        if (e.target.type === 'search') dropdown.querySelectorAll('[data-rpc-label]').forEach(label => label.classList.toggle('hidden',!label.dataset.rpcLabel.includes(e.target.value.trim().toLowerCase())));
+                    });
+                    dropdown._rpcBound = true;
+                }
+            }
+            const group = document.getElementById(`${page}-rede-group-container`);
+            if (group && !group._rpcBound) {
+                group.addEventListener('click',e => {
+                    const button = e.target.closest('[data-group]'); if (!button) return;
+                    const value = button.dataset.group;
+                    if (page === 'coverage') { coverageRedeGroupFilter=value; if(value!=='com_rede') selectedCoverageRedes=[]; }
+                    else { weeklyRedeGroupFilter=value; if(value!=='com_rede') selectedWeeklyRedes=[]; }
+                    const dd = document.getElementById(`${page}-rede-filter-dropdown`);
+                    if (value==='com_rede') dd?.classList.toggle('hidden'); else dd?.classList.add('hidden');
+                    update();
+                }); group._rpcBound=true;
+            }
+            const root = document.getElementById(page==='coverage'?'coverage-view':'weekly-view');
+            if (root && !root._rpcOutsideBound) {
+                document.addEventListener('click',e => {
+                    if (!root.contains(e.target)) return;
+                    root.querySelectorAll('[id$="-filter-dropdown"]').forEach(dd => { if (!dd.parentElement.contains(e.target)) dd.classList.add('hidden'); });
+                }); root._rpcOutsideBound=true;
+            }
+            if (page === 'coverage') {
+                if (!coverageCityFilter._rpcBound) {
+                    const suggestions = () => {
+                        const cities=dashboardRpcState.coverage.facets?.cities || [];
+                        const needle=coverageCityFilter.value.trim().toLowerCase();
+                        coverageCitySuggestions.innerHTML=cities.filter(city => city.toLowerCase().includes(needle)).map(city => `<div class="p-2 cursor-pointer hover:bg-slate-700">${window.escapeHtml(city)}</div>`).join('');
+                        coverageCitySuggestions.classList.remove('hidden');
+                    };
+                    coverageCityFilter.addEventListener('input',suggestions); coverageCityFilter.addEventListener('focus',suggestions);
+                    coverageCityFilter.addEventListener('keydown',e => { if(e.key==='Enter') { coverageCitySuggestions.classList.add('hidden'); update(); } });
+                    coverageCityFilter.addEventListener('blur',() => setTimeout(() => coverageCitySuggestions.classList.add('hidden'),150));
+                    coverageCitySuggestions.addEventListener('click',e => { if(e.target.tagName==='DIV') { coverageCityFilter.value=e.target.textContent; coverageCitySuggestions.classList.add('hidden'); update(); } });
+                    coverageFilialFilter.addEventListener('change',update);
+                    clearCoverageFiltersBtn.addEventListener('click',resetCoverageFilters);
+                    coverageCityFilter._rpcBound=true;
+                }
+            } else {
+                const month = document.getElementById('weekly-month-filter-dropdown');
+                const button = document.getElementById('weekly-month-filter-btn');
+                if (month && !month._rpcBound) {
+                    button?.addEventListener('click',e => { e.stopPropagation(); month.classList.toggle('hidden'); });
+                    month.addEventListener('change',e => { if(e.target.type==='radio') { selectedWeeklyMonth=e.target.value; const input=document.getElementById('weekly-month-filter'); if(input) input.value=selectedWeeklyMonth; month.classList.add('hidden'); update(); } }); month._rpcBound=true;
+                }
+                const filialDropdown = document.getElementById('weekly-filial-filter-dropdown');
+                const filialButton = document.getElementById('weekly-filial-filter-btn');
+                if (filialDropdown && !filialDropdown._rpcBound) {
+                    filialButton?.addEventListener('click',e => { e.stopPropagation(); filialDropdown.classList.toggle('hidden'); });
+                    filialDropdown.addEventListener('change',e => {
+                        if(e.target.type!=='radio') return;
+                        weeklyFilialFilter=e.target.value;
+                        const input=document.getElementById('weekly-filial-filter'); if(input) input.value=weeklyFilialFilter;
+                        const text=document.getElementById('weekly-filial-filter-text'); if(text) text.textContent=e.target.closest('label')?.querySelector('span')?.textContent || weeklyFilialFilter;
+                        filialDropdown.classList.add('hidden'); update();
+                    }); filialDropdown._rpcBound=true;
+                }
+                const clear = document.getElementById('clear-weekly-filters-btn');
+                if (clear) clear.onclick=() => {
+                    selectedWeeklySupervisors.clear(); selectedWeeklyVendedores.clear(); selectedWeeklySuppliers.clear();
+                    for(const set of Object.values(hierarchyState.weekly)) set.clear();
+                    weeklyRedeGroupFilter=''; selectedWeeklyRedes=[]; weeklyFilialFilter='all'; selectedWeeklyMonth='current';
+                    const filialText=document.getElementById('weekly-filial-filter-text'); if(filialText) filialText.textContent='Ambas';
+                    const monthInput=document.getElementById('weekly-month-filter'); if(monthInput) monthInput.value='current';
+                    document.getElementsByName('weekly-filial').forEach(r => r.checked=r.value==='all'); update();
+                };
+            }
+            refreshRpcFacetUI(page);
+        }
+
+        function updateAllCoverageFilters() {
+            refreshRpcFacetUI('coverage');
         }
 
         function handleCoverageFilterChange(options = {}) {
@@ -10048,346 +10106,33 @@ const supervisorGroups = new Map();
         }
 
         function updateCoverageView() {
-            coverageRenderId++;
-            const currentRenderId = coverageRenderId;
+            requestDashboardPage('coverage', 'get_coverage_page_v1', renderCoverageRpc);
+        }
 
-            const { clients, sales, history, allHistoryUnfiltered } = getCoverageFilteredData();
-            // ⚡ Bolt Optimization: Replaced intermediate array allocations from .map() and spread operators with direct Set insertions for performance.
-            const productsToAnalyzeSet = new Set();
-            for(let i=0; i<sales.length; i++) productsToAnalyzeSet.add(sales[i].PRODUTO);
-            for(let i=0; i<history.length; i++) productsToAnalyzeSet.add(history[i].PRODUTO);
-            const productsToAnalyze = Array.from(productsToAnalyzeSet);
-
-            const activeClientsForCoverage = clients;
-            const activeClientsCount = activeClientsForCoverage.length;
-            // Normalize keys for robust Set matching
-            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
-            const activeClientCodes = new Set(); for(let i=0; i<activeClientsForCoverage.length; i++) activeClientCodes.add(normalizeKey(activeClientsForCoverage[i]['Código'] || activeClientsForCoverage[i]['codigo_cliente']));
-
-            // Calculate active clients in last 3 months
-            const clientHistorySum = new Map();
-            for (let i = 0; i < allHistoryUnfiltered.length; i++) {
-                const s = allHistoryUnfiltered[i];
-                const cod = normalizeKey(s.CODCLI);
-                const val = parseFloat(s.VLVENDA) || 0;
-                clientHistorySum.set(cod, (clientHistorySum.get(cod) || 0) + val);
-            }
-            
-            const activeClientCodes3M = new Set();
-            clientHistorySum.forEach((total, cod) => {
-                if (total >= 1) {
-                    activeClientCodes3M.add(cod);
-                }
-            });
-            
-            let active3MCount = 0;
-            activeClientCodes.forEach(code => {
-                if (activeClientCodes3M.has(code)) {
-                    active3MCount++;
-                }
-            });
-
+        function renderCoverageRpc(payload, filters) {
+            const activeClientsCount = payload.active_clients;
+            const active3MCount = payload.active_3m;
             coverageActiveClientsKpi.textContent = activeClientsCount.toLocaleString('pt-BR');
-            const coverageActiveClients3MKpi = document.getElementById('coverage-active-clients-3m-kpi');
-            if (coverageActiveClients3MKpi) {
-                coverageActiveClients3MKpi.textContent = active3MCount.toLocaleString('pt-BR');
+            const active3mEl = document.getElementById('coverage-active-clients-3m-kpi');
+            if (active3mEl) active3mEl.textContent = active3MCount.toLocaleString('pt-BR');
+            const top = payload.top;
+            coverageTopCoverageValueKpi.textContent = `${(top?.coverageCurrent || 0).toFixed(2)}%`;
+            coverageTopCoverageProductKpi.textContent = top?.descricao || '-';
+            coverageTopCoverageProductKpi.title = top?.descricao || '-';
+            if (coverageTopCoverageCountKpi) {
+                coverageTopCoverageCountKpi.textContent = `${(top?.clientsCurrentCount || 0).toLocaleString('pt-BR')} clientes | ${(active3MCount > 0 ? (top?.clientsCurrentCount || 0) / active3MCount * 100 : 0).toFixed(1)}% dos clientes ativos`;
+                coverageTopCoverageCountKpi.classList.remove('hidden');
             }
-
-            // Show Loading State in Table
-            coverageTableBody.innerHTML = getSkeletonRows(8, 10);
-
-            if (productsToAnalyze.length === 0) {
-                coverageSelectionCoverageValueKpi.textContent = '0%';
-                coverageSelectionCoverageCountKpi.textContent = `0 de ${active3MCount.toLocaleString('pt-BR')} clientes`;
-                coverageSelectionCoverageValueKpiPrevious.textContent = '0%';
-                coverageSelectionCoverageCountKpiPrevious.textContent = `0 de ${active3MCount.toLocaleString('pt-BR')} clientes`;
-                coverageTopCoverageValueKpi.textContent = '0%';
-                coverageTopCoverageProductKpi.textContent = '-';
-                const coverageTopCoverageCountKpi = document.getElementById('coverage-top-coverage-count-kpi');
-                if (coverageTopCoverageCountKpi) {
-                    coverageTopCoverageCountKpi.textContent = `0 clientes | 0% dos clientes ativos`;
-                    coverageTopCoverageCountKpi.classList.remove('hidden');
-                }
-                coverageTableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-slate-500">Nenhum produto selecionado ou encontrado para os filtros.</td></tr>';
-                showNoDataMessage('coverageCityChart', 'Nenhum dado encontrado para o período ou filtros selecionados.');
-                return;
-            }
-
-            const tableData = [];
-            const clientSelectionValueCurrent = new Map(); // Map<CODCLI, Value>
-            const clientSelectionValuePrevious = new Map(); // Map<CODCLI, Value>
-            let topCoverageItem = { name: '-', coverage: 0, clients: 0 };
-            const activeStockMap = getActiveStockMap(coverageFilialFilter.value);
-
-            const currentMonth = lastSaleDate.getUTCMonth();
-            const currentYear = lastSaleDate.getUTCFullYear();
-            const prevMonthIdx = (currentMonth === 0) ? 11 : currentMonth - 1;
-            const prevMonthYear = (currentMonth === 0) ? currentYear - 1 : currentYear;
-
-            const isCustomDate = typeof selectedCoverageDateRange !== 'undefined' && selectedCoverageDateRange.start !== null;
-
-            // --- CRITICAL OPTIMIZATION: Pre-aggregate everything ---
-
-            // Maps for Box Quantities: Map<PRODUTO, Number>
-            const boxesSoldCurrentMap = new Map();
-            const boxesSoldPreviousMap = new Map();
-
-            // Index for Trend Calculation: Map<PRODUTO, Array<Sale>>
-            // We group all sales (current + history) by product to calculate trend efficiently
-            const trendSalesMap = new Map();
-
-            // Process Current Sales (O(N))
-            // --- OTIMIZAÇÃO: Mapa invertido para performance O(1) no cálculo de cobertura ---
-            const productClientsCurrent = new Map(); // Map<PRODUTO, Map<CODCLI, Value>>
-            const productClientsPrevious = new Map(); // Map<PRODUTO, Map<CODCLI, Value>>
-
-            // Use synchronous loops for initial map building as iterating sales (linear) is generally fast enough
-            // (e.g. 50k sales ~ 50ms). Splitting this would require complex state management.
-            // The bottleneck is the nested Product * Client check loop later.
-
-            // OTIMIZAÇÃO: Set lookup O(1) inside loop
-            const hasCoverageTiposVenda = selectedCoverageTiposVenda && selectedCoverageTiposVenda.length > 0;
-            const selectedCoverageTiposVendaSet = new Set(selectedCoverageTiposVenda || []);
-
-            sales.forEach(s => {
-                if (hasCoverageTiposVenda) {
-                    if (!selectedCoverageTiposVendaSet.has(String(s.TIPOVENDA))) return;
-                }
-                const val = getValueForSale(s, selectedCoverageTiposVenda);
-
-                // Coverage Map (Inverted for Performance)
-                if (!productClientsCurrent.has(s.PRODUTO)) productClientsCurrent.set(s.PRODUTO, new Map());
-                const clientMap = productClientsCurrent.get(s.PRODUTO);
-                // Use normalized key for consistency
-                const buyerKey = normalizeKey(s.CODCLI);
-                clientMap.set(buyerKey, (clientMap.get(buyerKey) || 0) + val);
-
-                // Box Quantity Map
-                const resolvedProd = window.resolveDim('produtos', s.PRODUTO);
-                const qtdeMaster = (resolvedProd && resolvedProd.qtde_master && resolvedProd.qtde_master > 0) ? resolvedProd.qtde_master : 1;
-                const boxesSold = (Number(s.QTVENDA) || 0) / qtdeMaster;
-                boxesSoldCurrentMap.set(s.PRODUTO, (boxesSoldCurrentMap.get(s.PRODUTO) || 0) + boxesSold);
-
-                // Trend Map
-                if (!trendSalesMap.has(s.PRODUTO)) trendSalesMap.set(s.PRODUTO, []);
-                trendSalesMap.get(s.PRODUTO).push(s);
-            });
-
-            // Process History Sales (O(N))
-            history.forEach(s => {
-                const d = parseDate(s.DTPED);
-                const isPrevMonth = isCustomDate ? true : (d && d.getUTCMonth() === prevMonthIdx && d.getUTCFullYear() === prevMonthYear);
-
-                if (hasCoverageTiposVenda) {
-                    if (!selectedCoverageTiposVendaSet.has(String(s.TIPOVENDA))) return;
-                }
-                const val = getValueForSale(s, selectedCoverageTiposVenda);
-
-                // Coverage Map (only if prev month)
-                if (isPrevMonth) {
-                    // Coverage Map (Inverted for Performance)
-                    if (!productClientsPrevious.has(s.PRODUTO)) productClientsPrevious.set(s.PRODUTO, new Map());
-                    const clientMap = productClientsPrevious.get(s.PRODUTO);
-                    // Use normalized key for consistency
-                    const buyerKey = normalizeKey(s.CODCLI);
-                    clientMap.set(buyerKey, (clientMap.get(buyerKey) || 0) + val);
-
-                    // Box Quantity Map (only if prev month)
-                    const resolvedProdHistory = window.resolveDim('produtos', s.PRODUTO);
-                    const qtdeMasterHistory = (resolvedProdHistory && resolvedProdHistory.qtde_master && resolvedProdHistory.qtde_master > 0) ? resolvedProdHistory.qtde_master : 1;
-                    const boxesSoldHistory = (Number(s.QTVENDA) || 0) / qtdeMasterHistory;
-                    boxesSoldPreviousMap.set(s.PRODUTO, (boxesSoldPreviousMap.get(s.PRODUTO) || 0) + boxesSoldHistory);
-                }
-
-                // Trend Map (All history)
-                if (!trendSalesMap.has(s.PRODUTO)) trendSalesMap.set(s.PRODUTO, []);
-                trendSalesMap.get(s.PRODUTO).push(s);
-            });
-
-            // Pre-calculate global dates for Trend
-            const endDate = parseDate(sortedWorkingDays[sortedWorkingDays.length - 1]);
-
-            // --- ASYNC CHUNKED PROCESSING ---
-            runAsyncChunked(productsToAnalyze, (productCode) => {
-                const productInfo = productDetailsMap.get(productCode) || { descricao: `Produto ${productCode}`};
-
-                let clientsWhoGotProductCurrent = 0;
-                let clientsWhoGotProductPrevious = 0;
-
-                // --- OTIMIZAÇÃO CRÍTICA: Iterar apenas os compradores do produto em vez de todos os clientes ativos ---
-
-                // Check Current
-                const buyersCurrentMap = productClientsCurrent.get(productCode);
-                if (buyersCurrentMap) {
-                    buyersCurrentMap.forEach((val, buyer) => {
-                        if (activeClientCodes.has(buyer)) {
-                            if (val >= 1) clientsWhoGotProductCurrent++;
-                            clientSelectionValueCurrent.set(buyer, (clientSelectionValueCurrent.get(buyer) || 0) + val);
-                        }
-                    });
-
-
-                }
-
-                // Check Previous
-                const buyersPreviousMap = productClientsPrevious.get(productCode);
-                if (buyersPreviousMap) {
-                    buyersPreviousMap.forEach((val, buyer) => {
-                        if (activeClientCodes.has(buyer)) {
-                            if (val >= 1) clientsWhoGotProductPrevious++;
-                            clientSelectionValuePrevious.set(buyer, (clientSelectionValuePrevious.get(buyer) || 0) + val);
-                        }
-                    });
-
-
-                }
-
-                const coverageCurrent = activeClientsCount > 0 ? (clientsWhoGotProductCurrent / activeClientsCount) * 100 : 0;
-
-                if (coverageCurrent > topCoverageItem.coverage) {
-                    topCoverageItem = {
-                        name: `(${productCode}) ${productInfo.descricao}`,
-                        coverage: coverageCurrent,
-                        clients: clientsWhoGotProductCurrent
-                    };
-                }
-
-                const stockQty = activeStockMap.get(productCode) || 0;
-
-                // Trend Calculation
-                const productAllSales = trendSalesMap.get(productCode) || [];
-
-                const productCadastroDate = parseDate(productInfo.dtCadastro);
-                let productFirstWorkingDayIndex = 0;
-                if (productCadastroDate) {
-                    const cadastroDateString = productCadastroDate.toISOString().split('T')[0];
-                    productFirstWorkingDayIndex = sortedWorkingDays.findIndex(d => d >= cadastroDateString);
-                    if (productFirstWorkingDayIndex === -1) productFirstWorkingDayIndex = sortedWorkingDays.length;
-                }
-                const productMaxLifeInWorkingDays = sortedWorkingDays.length - productFirstWorkingDayIndex;
-
-                const hasHistory = productAllSales.some(s => {
-                    const d = parseDate(s.DTPED);
-                    return d && (d.getUTCFullYear() < currentYear || (d.getUTCFullYear() === currentYear && d.getUTCMonth() < currentMonth));
-                });
-
-
-                const soldThisMonth = (boxesSoldCurrentMap.get(productCode) || 0) > 0;
-                const isFactuallyNewOrReactivated = (!hasHistory && soldThisMonth);
-
-                const daysFromBox = customWorkingDaysCoverage;
-                let effectiveDaysToCalculate;
-
-                if (isFactuallyNewOrReactivated) {
-                    const daysToConsider = (daysFromBox > 0) ? daysFromBox : passedWorkingDaysCurrentMonth;
-                    effectiveDaysToCalculate = Math.min(passedWorkingDaysCurrentMonth, daysToConsider);
-                } else {
-                    if (daysFromBox > 0) {
-                        effectiveDaysToCalculate = Math.min(daysFromBox, productMaxLifeInWorkingDays);
-                    } else {
-                        effectiveDaysToCalculate = productMaxLifeInWorkingDays;
-                    }
-                }
-
-                const daysDivisor = effectiveDaysToCalculate > 0 ? effectiveDaysToCalculate : 1;
-                const targetIndex = Math.max(0, sortedWorkingDays.length - daysDivisor);
-                const startDate = parseDate(sortedWorkingDays[targetIndex]);
-
-                let totalQtySoldInRange = 0;
-                // Optimized loop: only iterating relevant sales for this product
-                productAllSales.forEach(sale => {
-                    const saleDate = parseDate(sale.DTPED);
-                    if (saleDate && saleDate >= startDate && saleDate <= endDate) {
-                        const resolvedProdSale = window.resolveDim('produtos', sale.PRODUTO);
-                        const qtdeMasterSale = (resolvedProdSale && resolvedProdSale.qtde_master && resolvedProdSale.qtde_master > 0) ? resolvedProdSale.qtde_master : 1;
-                        totalQtySoldInRange += ((Number(sale.QTVENDA) || 0) / qtdeMasterSale);
-                    }
-                });
-
-
-
-                const dailyAvgSale = totalQtySoldInRange / daysDivisor;
-                const trendDays = dailyAvgSale > 0 ? (stockQty / dailyAvgSale) : (stockQty > 0 ? Infinity : 0);
-
-                // Box Quantities (Pre-calculated)
-                const boxesSoldCurrentMonth = boxesSoldCurrentMap.get(productCode) || 0;
-                const boxesSoldPreviousMonth = boxesSoldPreviousMap.get(productCode) || 0;
-
-                const boxesVariation = boxesSoldPreviousMonth > 0
-                    ? ((boxesSoldCurrentMonth - boxesSoldPreviousMonth) / boxesSoldPreviousMonth) * 100
-                    : (boxesSoldCurrentMonth > 0 ? Infinity : 0);
-
-                const pdvVariation = clientsWhoGotProductPrevious > 0
-                    ? ((clientsWhoGotProductCurrent - clientsWhoGotProductPrevious) / clientsWhoGotProductPrevious) * 100
-                    : (clientsWhoGotProductCurrent > 0 ? Infinity : 0);
-
-                tableData.push({
-                    descricao: `(${productCode}) ${productInfo.descricao}`,
-                    stockQty: stockQty,
-                    boxesSoldCurrentMonth: boxesSoldCurrentMonth,
-                    boxesSoldPreviousMonth: boxesSoldPreviousMonth,
-                    boxesVariation: boxesVariation,
-                    pdvVariation: pdvVariation,
-                    trendDays: trendDays,
-                    clientsPreviousCount: clientsWhoGotProductPrevious,
-                    clientsCurrentCount: clientsWhoGotProductCurrent,
-                    coverageCurrent: coverageCurrent
-                });
-
-
-            }, () => {
-                // --- ON COMPLETE CALLBACK (Render UI) ---
-                if (currentRenderId !== coverageRenderId) return;
-
-                coverageTopCoverageValueKpi.textContent = `${topCoverageItem.coverage.toFixed(2)}%`;
-                coverageTopCoverageProductKpi.textContent = topCoverageItem.name;
-                coverageTopCoverageProductKpi.title = topCoverageItem.name;
-                if (coverageTopCoverageCountKpi) {
-                    const topActivePercent = active3MCount > 0 ? (topCoverageItem.clients / active3MCount) * 100 : 0;
-                    coverageTopCoverageCountKpi.textContent = `${topCoverageItem.clients.toLocaleString('pt-BR')} clientes | ${topActivePercent.toFixed(1)}% dos clientes ativos`;
-                    coverageTopCoverageCountKpi.classList.remove('hidden');
-                }
-
-                let selectionCoveredCountCurrent = 0;
-                clientSelectionValueCurrent.forEach(val => { if (val >= 1) selectionCoveredCountCurrent++; });
-                const selectionCoveragePercentCurrent = active3MCount > 0 ? (selectionCoveredCountCurrent / active3MCount) * 100 : 0;
-                coverageSelectionCoverageValueKpi.textContent = `${selectionCoveragePercentCurrent.toFixed(2)}%`;
-                coverageSelectionCoverageCountKpi.textContent = `${selectionCoveredCountCurrent.toLocaleString('pt-BR')} de ${active3MCount.toLocaleString('pt-BR')} clientes ativos`;
-
-                let selectionCoveredCountPrevious = 0;
-                clientSelectionValuePrevious.forEach(val => { if (val >= 1) selectionCoveredCountPrevious++; });
-                const selectionCoveragePercentPrevious = active3MCount > 0 ? (selectionCoveredCountPrevious / active3MCount) * 100 : 0;
-                coverageSelectionCoverageValueKpiPrevious.textContent = `${selectionCoveragePercentPrevious.toFixed(2)}%`;
-                coverageSelectionCoverageCountKpiPrevious.textContent = `${selectionCoveredCountPrevious.toLocaleString('pt-BR')} de ${active3MCount.toLocaleString('pt-BR')} clientes ativos`;
-
-                tableData.sort((a, b) => {
-                    return b.stockQty - a.stockQty;
-                });
-
-
-
-                let filteredTableData = tableData.filter(item => item.boxesSoldCurrentMonth > 0);
-
-                if (coverageTrendFilter !== 'all') {
-                    filteredTableData = filteredTableData.filter(item => {
-                        const trend = item.trendDays;
-                        if (coverageTrendFilter === 'low') return isFinite(trend) && trend < 15;
-                        if (coverageTrendFilter === 'medium') return isFinite(trend) && trend >= 15 && trend < 30;
-                        if (coverageTrendFilter === 'good') return isFinite(trend) && trend >= 30;
-                        return false;
-                    });
-
-
-                }
-
-                let totalBoxesFiltered = 0;
-                for (let i = 0; i < filteredTableData.length; i++) {
-                    totalBoxesFiltered += filteredTableData[i].boxesSoldCurrentMonth;
-                }
-                if (coverageTotalBoxesEl) {
-                    coverageTotalBoxesEl.textContent = totalBoxesFiltered.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
-                }
-
+            coverageSelectionCoverageValueKpi.textContent = `${(active3MCount > 0 ? payload.current_clients / active3MCount * 100 : 0).toFixed(2)}%`;
+            coverageSelectionCoverageCountKpi.textContent = `${payload.current_clients.toLocaleString('pt-BR')} de ${active3MCount.toLocaleString('pt-BR')} clientes ativos`;
+            coverageSelectionCoverageValueKpiPrevious.textContent = `${(active3MCount > 0 ? payload.previous_clients / active3MCount * 100 : 0).toFixed(2)}%`;
+            coverageSelectionCoverageCountKpiPrevious.textContent = `${payload.previous_clients.toLocaleString('pt-BR')} de ${active3MCount.toLocaleString('pt-BR')} clientes ativos`;
+                const filteredTableData = payload.rows.map(row => ({ ...row,
+                    boxesVariation: row.boxesVariation === null ? Infinity : row.boxesVariation,
+                    pdvVariation: row.pdvVariation === null ? Infinity : row.pdvVariation,
+                    trendDays: row.trendDays === null ? Infinity : row.trendDays
+                }));
+                if (coverageTotalBoxesEl) coverageTotalBoxesEl.textContent = payload.total_boxes.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
                 coverageTableDataForExport = filteredTableData;
 
                 coverageTableBody.innerHTML = filteredTableData.slice(0, 100).map((item, index) => {
@@ -10420,10 +10165,10 @@ const supervisorGroups = new Map();
 
                     // Split Descricao for Mobile (Code - Name)
                     // Format: "(CODE) Name" -> "CODE - Name" (Truncated)
-                    let mobileTitle = item.descricao;
+                    let mobileTitle = window.escapeHtml(item.descricao);
                     const codeMatch = item.descricao.match(/^\((.*?)\)\s*(.*)/);
                     if (codeMatch) {
-                        mobileTitle = `<span class="text-slate-200">${codeMatch[1]}</span> - ${codeMatch[2]}`;
+                        mobileTitle = `<span class="text-slate-200">${window.escapeHtml(codeMatch[1])}</span> - ${window.escapeHtml(codeMatch[2])}`;
                     }
 
                     return `
@@ -10451,7 +10196,7 @@ const supervisorGroups = new Map();
                             </td>
 
                             <!-- Desktop Layout (Hidden on Mobile) -->
-                            <td data-label="Produto" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[120px] md:max-w-xs hidden md:table-cell" title="${item.descricao}">${item.descricao}</td>
+                            <td data-label="Produto" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs truncate max-w-[120px] md:max-w-xs hidden md:table-cell" title="${window.escapeHtml(item.descricao)}">${window.escapeHtml(item.descricao)}</td>
                             <td data-label="Estoque" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.stockQty.toLocaleString('pt-BR')}</td>
                             <td data-label="Vol Ant (Cx)" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.boxesSoldPreviousMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
                             <td data-label="Vol Atual (Cx)" class="px-2 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs text-right hidden md:table-cell">${item.boxesSoldCurrentMonth.toLocaleString('pt-BR', {maximumFractionDigits: 2})}</td>
@@ -10463,77 +10208,20 @@ const supervisorGroups = new Map();
                     `;
                 }).join('');
                 if (filteredTableData.length > 100) {
-                    coverageTableBody.insertAdjacentHTML('beforeend', `<tr><td colspan="7" class="text-center p-4 text-slate-500 text-xs italic">Exibindo os primeiros 100 resultados de ${filteredTableData.length}. Utilize os filtros ou exporte para ver mais.</td></tr>`);
-                }
-                if (filteredTableData.length > 100) {
-                    coverageTableBody.insertAdjacentHTML('beforeend', `<tr><td colspan="7" class="text-center p-4 text-slate-500 text-xs italic">Exibindo os primeiros 100 resultados de ${filteredTableData.length}. Utilize os filtros ou exporte para ver mais.</td></tr>`);
+                    coverageTableBody.insertAdjacentHTML('beforeend', `<tr><td colspan="8" class="text-center p-4 text-slate-500 text-xs italic">Exibindo os primeiros 100 resultados de ${filteredTableData.length}. Utilize os filtros ou exporte para ver mais.</td></tr>`);
                 }
 
-                // Render Top 10 Cities Chart
-                const salesByCity = {};
-                const salesBySeller = {};
-                const salesByPromotor = {};
-
-                // Determine context: Should we show Promoters or Sellers?
-                const promotorWrapper = document.getElementById('coverage-promotor-filter-wrapper');
-                const isPromotorFilterVisible = promotorWrapper && !promotorWrapper.classList.contains('hidden');
-
-                sales.forEach(s => {
-                    if (selectedCoverageTiposVenda && selectedCoverageTiposVenda.length > 0) {
-                        if (!selectedCoverageTiposVenda.includes(String(s.TIPOVENDA))) return;
-                    }
-
-                    const client = clientMapForKPIs.get(String(s.CODCLI));
-                    const city = client ? (client.cidade || client['Nome da Cidade'] || 'N/A') : 'N/A';
-                    
-                    const resolvedProdChart = window.resolveDim('produtos', s.PRODUTO);
-                    const qtdeMasterChart = (resolvedProdChart && resolvedProdChart.qtde_master && resolvedProdChart.qtde_master > 0) ? resolvedProdChart.qtde_master : 1;
-                    const qty = currentCoverageMetricMode === "boxes" ? ((Number(s.QTVENDA) || 0) / qtdeMasterChart) : getValueForSale(s, selectedCoverageTiposVenda);
-
-                    salesByCity[city] = (salesByCity[city] || 0) + qty;
-
-                    if (isPromotorFilterVisible) {
-                        const clientCode = String(s.CODCLI);
-                        const hierarchy = optimizedData.clientHierarchyMap.get(clientCode);
-                        const promotorName = (hierarchy && hierarchy.promotor) ? hierarchy.promotor.name : 'N/A';
-                        salesByPromotor[promotorName] = (salesByPromotor[promotorName] || 0) + qty;
-                    } else {
-                        const seller = window.resolveDim('vendedores', s.CODUSUR);
-                        salesBySeller[seller] = (salesBySeller[seller] || 0) + qty;
-                    }
-                });
-
-
-
-                // 1. Chart Data for Cities
-                const isMobile = window.innerWidth < 768;
-                const chartLimit = isMobile ? 5 : 10;
-
-                let totalCaixas = 0;
-                const cityVals = Object.values(salesByCity);
-                for (let i = 0; i < cityVals.length; i++) {
-                    totalCaixas += cityVals[i];
-                }
-                const totalKpiEl = document.getElementById("coverage-chart-total-kpi");
+                const isPromotorFilterVisible = filters.mode === 'promoter';
+                const chartLimit = window.innerWidth < 768 ? 5 : 10;
+                const sortedCities = payload.cities.slice(0, chartLimit).map(r => [r.name, r.value]);
+                const sortedRanking = payload.ranking.slice(0, chartLimit).map(r => [r.name, r.value]);
+                const totalKpiEl = document.getElementById('coverage-chart-total-kpi');
                 if (totalKpiEl) {
-                    if (currentCoverageMetricMode === 'boxes') {
-                        totalKpiEl.textContent = `Total Caixas: ${totalCaixas.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}`;
-                    } else {
-                        totalKpiEl.textContent = `Total Faturamento: ${totalCaixas.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`;
-                    }
-                    totalKpiEl.classList.remove("hidden");
+                    totalKpiEl.textContent = currentCoverageMetricMode === 'boxes'
+                        ? `Total Caixas: ${payload.chart_total.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}`
+                        : `Total Faturamento: ${payload.chart_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+                    totalKpiEl.classList.remove('hidden');
                 }
-
-                const sortedCities = Object.entries(salesByCity)
-                    .sort(([,a], [,b]) => b - a)
-                    .slice(0, chartLimit);
-
-                // 2. Chart Data for Sellers OR Promoters
-                const sourceMap = isPromotorFilterVisible ? salesByPromotor : salesBySeller;
-                const sortedRanking = Object.entries(sourceMap)
-                    .sort(([,a], [,b]) => b - a)
-                    .slice(0, chartLimit);
-
                 const commonChartOptions = {
                     indexAxis: 'x',
                     plugins: {
@@ -10573,6 +10261,8 @@ const supervisorGroups = new Map();
                     showNoDataMessage('coverageSellerChart', 'Nenhum dado encontrado para o período ou filtros selecionados.');
                 }
 
+                if (!filteredTableData.length) coverageTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-slate-500">Nenhum produto encontrado para os filtros.</td></tr>';
+
                 // Visibility Toggle Logic
                 const cityContainer = document.getElementById('coverageCityChartContainer');
                 const sellerContainer = document.getElementById('coverageSellerChartContainer');
@@ -10610,7 +10300,6 @@ const supervisorGroups = new Map();
                         if (chartTitle) chartTitle.innerHTML = `<span>Ranking de ${window.escapeHtml(targetLabel)}${currentCoverageMetricMode === "revenue" ? " - Faturamento" : ""}</span> <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-current opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>`;
                     }
                 }
-            }, () => currentRenderId !== coverageRenderId);
         }
 
         // <!-- FIM DO CÓDIGO RESTAURADO -->
@@ -19573,100 +19262,7 @@ const supervisorGroups = new Map();
                 safeClose('mix-com-rede-btn', 'mix-rede-filter-dropdown');
             });
 
-            // --- Coverage View Filters ---
-            const updateCoverage = () => {
-                markDirty('cobertura');
-                handleCoverageFilterChange();
-            };
-
-            const debouncedHandleCoverageChange = debounce(updateCoverage, 400);
-
-            coverageFilialFilter.addEventListener('change', updateCoverage);
-
-            const debouncedCoverageCityUpdate = debounce(() => {
-                const { clients } = getCoverageFilteredData({ excludeFilter: 'city' });
-                coverageCitySuggestions.classList.remove('manual-hide');
-                updateCitySuggestions(coverageCityFilter, coverageCitySuggestions, clients);
-            }, 300);
-
-            if (coverageCityFilter) coverageCityFilter.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/[0-9]/g, '');
-                debouncedCoverageCityUpdate();
-            });
-            coverageCityFilter.addEventListener('focus', () => {
-                const { clients } = getCoverageFilteredData({ excludeFilter: 'city' });
-                coverageCitySuggestions.classList.remove('manual-hide');
-                updateCitySuggestions(coverageCityFilter, coverageCitySuggestions, clients);
-            });
-            coverageCityFilter.addEventListener('blur', () => setTimeout(() => coverageCitySuggestions.classList.add('hidden'), 150));
-            coverageCityFilter.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    coverageCitySuggestions.classList.add('hidden', 'manual-hide');
-                    updateCoverage();
-                    e.target.blur();
-                }
-            });
-            coverageCitySuggestions.addEventListener('click', (e) => {
-                if (e.target.tagName === 'DIV') {
-                    coverageCityFilter.value = e.target.textContent;
-                    coverageCitySuggestions.classList.add('hidden');
-                    updateCoverage();
-                }
-            });
-
-            coverageTipoVendaFilterBtn.addEventListener('click', () => coverageTipoVendaFilterDropdown.classList.toggle('hidden'));
-            coverageTipoVendaFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) {
-                        if (!selectedCoverageTiposVenda.includes(value)) selectedCoverageTiposVenda.push(value);
-                    } else {
-                        selectedCoverageTiposVenda = selectedCoverageTiposVenda.filter(s => s !== value);
-                    }
-                    updateCoverage();
-                }
-            });
-
-            clearCoverageFiltersBtn.addEventListener('click', () => { resetCoverageFilters(); markDirty('cobertura'); });
-
-            coverageSupplierFilterBtn.addEventListener('click', () => coverageSupplierFilterDropdown.classList.toggle('hidden'));
-            coverageSupplierFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox' && e.target.dataset.filterType === 'coverage') {
-                    const { value, checked } = e.target;
-                    if (checked) {
-                        if (!selectedCoverageSuppliers.includes(value)) selectedCoverageSuppliers.push(value);
-                    } else {
-                        selectedCoverageSuppliers = selectedCoverageSuppliers.filter(s => s !== value);
-                    }
-
-                    markDirty('cobertura');
-                    handleCoverageFilterChange({ skipFilter: 'supplier' });
-                }
-            });
-
-            coverageProductFilterBtn.addEventListener('click', () => {
-                const { sales, history } = getCoverageFilteredData({ excludeFilter: 'product' });
-                selectedCoverageProducts = updateProductFilter(coverageProductFilterDropdown, coverageProductFilterText, selectedCoverageProducts, [...sales, ...history], 'coverage');
-                coverageProductFilterDropdown.classList.toggle('hidden');
-            });
-
-            const debouncedCoverageProductUpdate = debounce(() => {
-                 const { sales, history } = getCoverageFilteredData({ excludeFilter: 'product' });
-                 selectedCoverageProducts = updateProductFilter(coverageProductFilterDropdown, coverageProductFilterText, selectedCoverageProducts, [...sales, ...history], 'coverage');
-            }, 250);
-
-            coverageProductFilterDropdown.addEventListener('input', (e) => {
-                if (e.target.id === 'coverage-product-search-input') {
-                    debouncedCoverageProductUpdate();
-                }
-            });
-
-            coverageProductFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.dataset.filterType === 'coverage' && handleProductFilterChange(e, selectedCoverageProducts)) {
-                    markDirty('cobertura');
-                    handleCoverageFilterChange({ skipFilter: 'product' });
-                }
-            });
+            setupRpcPageFilters('coverage');
 
             const coverageUnitPriceInput = document.getElementById('coverage-unit-price-filter');
             if (coverageUnitPriceInput) {
@@ -19832,13 +19428,6 @@ const supervisorGroups = new Map();
         setupHierarchyFilters('meta-realizado', updateMetaRealizadoView);
         setupHierarchyFilters('coverage', updateCoverageView);
         setupCoverageSupervisorFilterHandlers(); // Initialize Coverage Supervisor Filters
-        window.setupGenericRedeFilterHandlers('coverage',
-            { get groupFilter() { return coverageRedeGroupFilter; }, set groupFilter(v) { coverageRedeGroupFilter = v; },
-              get selectedRedes() { return selectedCoverageRedes; }, set selectedRedes(v) { selectedCoverageRedes = v; } },
-            getCoverageFilteredData,
-            updateCoverageView,
-            updateRedeFilter
-        );
         setupCoveragePriceFilterHandlers();
         setupCoverageDateFilterHandlers();
         setupHierarchyFilters('goals-gv', updateGoalsView);
@@ -26965,188 +26554,8 @@ const supervisorGroups = new Map();
         return bestByWeekday;
     }
 
-    function populateWeeklyMonthFilter() {
-        const dropdown = document.getElementById('weekly-month-filter-dropdown');
-        if (!dropdown) return;
-
-        const monthsSet = new Set();
-        const addMonth = (dateVal) => {
-            const d = window.parseDate(dateVal);
-            if (d && !isNaN(d.getTime())) {
-                const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-                monthsSet.add(ym);
-            }
-        };
-
-        // Extract from allHistoryData
-        const isColHistory = allHistoryData instanceof ColumnarDataset;
-        const totalHist = allHistoryData.length;
-        const dtPedCol = isColHistory ? (allHistoryData._data['DTPED'] || allHistoryData._data['dtped'] || []) : null;
-
-        for (let i = 0; i < totalHist; i++) {
-            const dtPed = isColHistory ? dtPedCol[i] : allHistoryData[i].DTPED;
-            addMonth(dtPed);
-        }
-
-        // We could also extract from allSalesData if needed, but current month is handled specially
-        // as "Mês Atual". Let's extract from allSalesData to ensure it's there, but we'll use 'current' for the latest.
-        const isColSales = allSalesData instanceof ColumnarDataset;
-        const totalSales = allSalesData.length;
-        const dtPedSalesCol = isColSales ? (allSalesData._data['DTPED'] || allSalesData._data['dtped'] || []) : null;
-
-        for (let i = 0; i < totalSales; i++) {
-            const dtPed = isColSales ? dtPedSalesCol[i] : allSalesData[i].DTPED;
-            addMonth(dtPed);
-        }
-
-        const monthsArr = Array.from(monthsSet).sort().reverse();
-        const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-
-        let html = `
-            <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                <span class="text-xs text-slate-300 group-hover:text-white transition-colors">Mês Atual</span>
-                <input type="radio" name="weekly-month" value="current" ${selectedWeeklyMonth === 'current' ? 'checked' : ''} class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
-            </label>
-        `;
-
-        monthsArr.forEach(ym => {
-            const [y, m] = ym.split('-');
-            const label = `${monthNames[parseInt(m) - 1]} ${y}`;
-            html += `
-                <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                    <span class="text-xs text-slate-300 group-hover:text-white transition-colors">${label}</span>
-                    <input type="radio" name="weekly-month" value="${ym}" ${selectedWeeklyMonth === ym ? 'checked' : ''} class="form-radio h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
-                </label>
-            `;
-        });
-
-        dropdown.innerHTML = html;
-        
-        // Attach handlers
-        dropdown.querySelectorAll('input[type="radio"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                selectedWeeklyMonth = e.target.value;
-                document.getElementById('weekly-month-filter').value = selectedWeeklyMonth;
-                const textSpan = document.getElementById('weekly-month-filter-text');
-                if (textSpan) {
-                    textSpan.textContent = e.target.closest('label').querySelector('span').textContent;
-                }
-                dropdown.classList.add('hidden');
-                updateWeeklyView();
-            });
-        });
-    }
-
-    function renderWeeklyView() {
-        populateWeeklyMonthFilter();
-        // Init Filters logic (Simplificado e Robusto)
-        window.setupGenericFilterHandlers(
-            'weekly',
-            selectedWeeklySupervisors,
-            selectedWeeklyVendedores,
-            updateWeeklySupervisorFilter,
-            updateWeeklyVendedorFilter,
-            () => updateWeeklyView(),
-            () => {
-                document.getElementById('weekly-fornecedor-filter-dropdown')?.classList.add('hidden');
-            },
-            false,
-            updateWeeklyFilterText
-        );
-
-        window.setupGenericCheckboxFilterHandlers('weekly-fornecedor', selectedWeeklySuppliers, () => updateWeeklyView());
-
-        window.setupGenericRedeFilterHandlers('weekly',
-            { get groupFilter() { return weeklyRedeGroupFilter; }, set groupFilter(v) { weeklyRedeGroupFilter = v; },
-              get selectedRedes() { return selectedWeeklyRedes; }, set selectedRedes(v) { selectedWeeklyRedes = v; } },
-            () => {
-                let clients = [];
-                if (typeof getHierarchyFilteredClients === 'function') {
-                    clients = getHierarchyFilteredClients('weekly', allClientsData);
-                }
-                return clients;
-            },
-            updateWeeklyView, updateRedeFilter
-        );
-
-
-        const monthFilterBtn = document.getElementById('weekly-month-filter-btn');
-        const monthFilterDropdown = document.getElementById('weekly-month-filter-dropdown');
-        if (monthFilterBtn && monthFilterDropdown) {
-            monthFilterBtn.onclick = (e) => {
-                e.stopPropagation();
-                monthFilterDropdown.classList.toggle('hidden');
-            };
-            document.addEventListener('click', (e) => {
-                if (!monthFilterBtn.contains(e.target) && !monthFilterDropdown.contains(e.target)) {
-                    monthFilterDropdown.classList.add('hidden');
-                }
-            });
-        }
-
-        window.setupGenericFilialFilterHandlers('weekly', (val, label) => {
-            weeklyFilialFilter = val;
-            const filialText = document.getElementById('weekly-filial-filter-text');
-            if (filialText) filialText.textContent = label;
-            updateWeeklyView();
-        });
-
-
-
-        const clearBtn = document.getElementById('clear-weekly-filters-btn');
-        if (clearBtn) {
-            clearBtn.onclick = () => {
-                selectedWeeklySupervisors.clear();
-                selectedWeeklyVendedores.clear();
-                selectedWeeklySuppliers.clear();
-
-                const resetUI = (id, textId) => {
-                    const dd = document.getElementById(id);
-                    if (dd) dd.querySelectorAll('input').forEach(cb => cb.checked = false);
-                    const text = document.getElementById(textId);
-                    // FIX: Ensure Filter Button Text resets to 'Todos'
-                    if (text) text.textContent = 'Todos';
-                };
-
-                resetUI('weekly-supervisor-filter-dropdown', 'weekly-supervisor-filter-text');
-                resetUI('weekly-vendedor-filter-dropdown', 'weekly-vendedor-filter-text');
-
-                weeklyRedeGroupFilter = '';
-                selectedWeeklyRedes = [];
-                const redeGroupContainer = document.getElementById('weekly-rede-group-container');
-                if (redeGroupContainer) {
-                    redeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    const btnTodos = redeGroupContainer.querySelector('button[data-group=""]');
-                    if (btnTodos) btnTodos.classList.add('active');
-                }
-                const redeDropdown = document.getElementById('weekly-rede-filter-dropdown');
-                if (redeDropdown) redeDropdown.classList.add('hidden');
-                const comRedeBtnText = document.getElementById('weekly-com-rede-btn-text');
-                if (comRedeBtnText) comRedeBtnText.textContent = 'C/Rede';
-
-                weeklyFilialFilter = 'all';
-                selectedWeeklyMonth = 'current';
-                const monthText = document.getElementById('weekly-month-filter-text');
-                if (monthText) monthText.textContent = 'Mês Atual';
-                const monthRadios = document.getElementsByName('weekly-month');
-                monthRadios.forEach(r => r.checked = r.value === 'current');
-                if (filialText) filialText.textContent = 'Ambas';
-                // Reset radios
-                const radios = document.getElementsByName('weekly-filial');
-                radios.forEach(r => r.checked = r.value === 'all');
-
-                updateWeeklySupervisorFilter();
-                updateWeeklyVendedorFilter();
-                updateWeeklySupplierFilter();
-                updateWeeklyView();
-            };
-        }
-
-        // Populate Filters
-        updateWeeklySupervisorFilter();
-        updateWeeklyVendedorFilter();
-        updateWeeklySupplierFilter();
-    }
+    function populateWeeklyMonthFilter() { refreshRpcFacetUI('weekly'); }
+    function renderWeeklyView() { setupRpcPageFilters('weekly'); }
 
     function updateWeeklyFilterText(elementIdOrElement, set, defaultText) {
         const el = typeof elementIdOrElement === 'string' ? document.getElementById(elementIdOrElement) : elementIdOrElement;
@@ -27156,292 +26565,20 @@ const supervisorGroups = new Map();
         else el.textContent = `${set.size} selecionados`;
     }
 
-    function updateWeeklySupervisorFilter() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter('weekly-supervisor-filter-dropdown', 'weekly-supervisor-filter-text', selectedWeeklySupervisors, sellerDetailsMap, updateWeeklyFilterText, 'Todos', 'text-orange-500');
-            }
-        }
+    function updateWeeklySupervisorFilter() { refreshRpcFacetUI('weekly'); }
+    function updateWeeklyVendedorFilter() { refreshRpcFacetUI('weekly'); }
+    function updateWeeklySupplierFilter() { refreshRpcFacetUI('weekly'); }
 
-    function updateWeeklyVendedorFilter() {
-            if (typeof window.updateGenericVendedorFilter === 'function') {
-                window.updateGenericVendedorFilter('weekly-vendedor-filter-dropdown', 'weekly-vendedor-filter-text', selectedWeeklySupervisors, selectedWeeklyVendedores, sellerDetailsMap, updateWeeklyFilterText, 'Todos', 'text-orange-500', (d, code) => d && typeof d.name === 'string' && isNaN(Number(d.name)));
-            }
-        }
-
-    function updateWeeklySupplierFilter() {
-        const dd = document.getElementById('weekly-fornecedor-filter-dropdown');
-        const txt = document.getElementById('weekly-fornecedor-filter-text');
-        if (!dd) return;
-
-        const dataSource = [...allSalesData, ...allHistoryData];
-        const validCodes = updateSupplierFilter(dd, txt, Array.from(selectedWeeklySuppliers), dataSource, 'main');
-        
-        selectedWeeklySuppliers.clear();
-        validCodes.forEach(code => selectedWeeklySuppliers.add(code));
-    }
-
-    function getWeeklyFilteredData() {
-        const isPromoterMode = typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter';
-        const isCurrent = selectedWeeklyMonth === 'current';
-        const dataSource = isCurrent ? allSalesData : allHistoryData;
-        const isCol = dataSource instanceof ColumnarDataset;
-        const result = [];
-
-        // Rede / Filial filters
-        const checkRede = weeklyRedeGroupFilter !== '';
-        const isComRede = weeklyRedeGroupFilter === 'com_rede';
-        const isSemRede = weeklyRedeGroupFilter === 'sem_rede';
-        const redeSet = (isComRede && selectedWeeklyRedes.length > 0) ? new Set(selectedWeeklyRedes) : null;
-        const checkFilial = weeklyFilialFilter !== 'all';
-
-        if (isPromoterMode) {
-            let filteredClients = getHierarchyFilteredClients('weekly', allClientsData);
-
-            // Apply Rede Filter on Clients first
-            if (checkRede) {
-                filteredClients = filteredClients.filter(c => {
-                    if (isComRede) {
-                        if (!c.ramo || c.ramo === 'N/A') return false;
-                        if (redeSet && !redeSet.has(c.ramo)) return false;
-                    } else if (isSemRede) {
-                        if (c.ramo && c.ramo !== 'N/A') return false;
-                    }
-                    return true;
-                });
-
-
-            }
-
-            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
-            const clientCodes = new Set(); for(let i=0; i<filteredClients.length; i++) clientCodes.add(normalizeKey(filteredClients[i]['Código'] || filteredClients[i]['codigo_cliente']));
-            const hasSupp = selectedWeeklySuppliers.size > 0;
-
-            for(let i=0; i<dataSource.length; i++) {
-                const s = isCol ? dataSource.get(i) : dataSource[i];
-                if (!isCurrent) {
-                    const dtPed = s.DTPED;
-                    const d = window.parseDate(dtPed);
-                    if (!d || isNaN(d.getTime())) continue;
-                    const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-                    if (ym !== selectedWeeklyMonth) continue;
-                }
-                if (!clientCodes.has(normalizeKey(s.CODCLI))) continue;
-                if (hasSupp && !selectedWeeklySuppliers.has(String(s.CODFOR))) continue;
-                if (checkFilial && String(s.FILIAL) !== weeklyFilialFilter) continue;
-                result.push(s);
-            }
-            return result;
-        }
-
-        // Seller Mode
-        const hasSup = selectedWeeklySupervisors.size > 0;
-        const hasVend = selectedWeeklyVendedores.size > 0;
-        const hasSupp = selectedWeeklySuppliers.size > 0;
-
-        const total = dataSource.length;
-        const colValues = isCol ? dataSource._data : null;
-        
-        for(let i=0; i<total; i++) {
-            let keep = true;
-            
-            if (!isCurrent) {
-                const dtPed = isCol ? (colValues['DTPED'] ? colValues['DTPED'][i] : null) : dataSource[i].DTPED;
-                const d = window.parseDate(dtPed);
-                if (!d || isNaN(d.getTime())) keep = false;
-                else {
-                    const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-                    if (ym !== selectedWeeklyMonth) keep = false;
-                }
-            }
-
-            // Native Filters
-            if (keep && hasSup) {
-                const supCode = isCol ? (colValues['CODSUPERVISOR'] ? colValues['CODSUPERVISOR'][i] : '') : (dataSource[i].CODSUPERVISOR || '');
-                const sup = window.resolveDim('supervisores', supCode);
-                if (!selectedWeeklySupervisors.has(sup)) keep = false;
-            }
-            if (keep && hasVend) {
-                const codUsur = isCol ? colValues['CODUSUR'][i] : dataSource[i].CODUSUR;
-                if (!selectedWeeklyVendedores.has(codUsur)) keep = false;
-            }
-            if (keep && hasSupp) {
-                const supp = isCol ? colValues['CODFOR'][i] : dataSource[i].CODFOR;
-                if (!selectedWeeklySuppliers.has(supp)) keep = false;
-            }
-            if (keep && checkFilial) {
-                const fil = isCol ? colValues['FILIAL'][i] : dataSource[i].FILIAL;
-                if (String(fil) !== weeklyFilialFilter) keep = false;
-            }
-
-            // Rede Filter (Expensive Lookup)
-            if (keep && checkRede) {
-                const codCli = isCol ? colValues['CODCLI'][i] : dataSource[i].CODCLI;
-                const client = clientMapForKPIs.get(normalizeKey(codCli));
-                if (client) {
-                    if (isComRede) {
-                        if (!client.ramo || client.ramo === 'N/A') keep = false;
-                        else if (redeSet && !redeSet.has(client.ramo)) keep = false;
-                    } else if (isSemRede) {
-                        if (client.ramo && client.ramo !== 'N/A') keep = false;
-                    }
-                } else {
-                    // Default behavior for unknown clients
-                    if (isComRede) keep = false;
-                }
-            }
-
-            if (keep) {
-                result.push(isCol ? dataSource.get(i) : dataSource[i]);
-            }
-        }
-        return result;
-    }
-    
     function updateWeeklyView() {
-        const isPromotorUserLocal = (typeof userHierarchyContext !== 'undefined' && userHierarchyContext.role === 'promotor') || (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has((window.userRole || '').trim().toUpperCase()));
-        if (isPromotorUserLocal) return;
-        
-        const filteredSales = getWeeklyFilteredData();
-        const isPromoterMode = typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter';
-        
-        let targetMonthDate = lastSaleDate ? new Date(lastSaleDate) : new Date();
-        if (selectedWeeklyMonth !== 'current') {
-            const [y, m] = selectedWeeklyMonth.split('-');
-            targetMonthDate = new Date(parseInt(y), parseInt(m) - 1, 15); // middle of the selected month
-        }
-        
-        const weeks = getWorkingMonthWeeks(targetMonthDate.getFullYear(), targetMonthDate.getMonth());
-        
-        const weeklyData = weeks.map(w => ({ ...w, total: 0, days: new Array(7).fill(0) }));
-        
-        filteredSales.forEach(s => {
-            const d = window.parseDate(s.DTPED);
-            if (!d || isNaN(d.getTime())) return;
-            const dateOnlyUTC = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-            
-            const wIndex = weeks.findIndex(w => dateOnlyUTC >= w.start && dateOnlyUTC <= w.end);
-            if (wIndex !== -1) {
-                const val = Number(s.VLVENDA) || 0;
-                weeklyData[wIndex].total += val;
-                weeklyData[wIndex].days[dateOnlyUTC.getUTCDay()] += val;
-            }
-        });
-        
-        // History Logic
-        const prevMonth = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth() - 1, 1);
-        const prevMonthSales = [];
-        
-        const isColHistory = allHistoryData instanceof ColumnarDataset;
-        const colHist = isColHistory ? allHistoryData._data : null;
-        const histLen = allHistoryData.length;
-        
-        // Logic for History Filtering
-        let historyClientCodes = null;
-        if (isPromoterMode) {
-             const filteredClients = getHierarchyFilteredClients('weekly', allClientsData);
-            // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
-             historyClientCodes = new Set(); for(let i=0; i<filteredClients.length; i++) historyClientCodes.add(normalizeKey(filteredClients[i]['Código'] || filteredClients[i]['codigo_cliente']));
-        }
+        requestDashboardPage('weekly', 'get_weekly_page_v1', renderWeeklyRpc);
+    }
 
-        const hasSup = selectedWeeklySupervisors.size > 0;
-        const hasVend = selectedWeeklyVendedores.size > 0;
-        const hasSupp = selectedWeeklySuppliers.size > 0;
-
-        for(let i=0; i<histLen; i++) {
-             const dtPed = isColHistory ? colHist['DTPED'][i] : allHistoryData[i].DTPED;
-             let d = window.parseDate(dtPed);
-             
-             if (d && !isNaN(d.getTime()) && d.getUTCMonth() === prevMonth.getMonth() && d.getUTCFullYear() === prevMonth.getFullYear()) {
-                 let keep = true;
-
-                 if (isPromoterMode) {
-                     // Check Client Code
-                     const clientCode = isColHistory ? colHist['CODCLI'][i] : allHistoryData[i].CODCLI;
-                     if (!historyClientCodes.has(normalizeKey(clientCode))) keep = false;
-                     // Check Supplier
-                     if (keep && hasSupp) {
-                         const supp = isColHistory ? colHist['CODFOR'][i] : allHistoryData[i].CODFOR;
-                         if (!selectedWeeklySuppliers.has(String(supp))) keep = false;
-                     }
-                 } else {
-                     // Seller Mode
-                     if (hasSup) {
-                         const supCode = isColHistory ? (colHist['CODSUPERVISOR'] ? colHist['CODSUPERVISOR'][i] : '') : (allHistoryData[i].CODSUPERVISOR || '');
-                         const sup = window.resolveDim('supervisores', supCode);
-                         if (!selectedWeeklySupervisors.has(sup)) keep = false;
-                     }
-                     if (keep && hasVend) {
-                         const codUsur = isColHistory ? colHist['CODUSUR'][i] : allHistoryData[i].CODUSUR;
-                         if (!selectedWeeklyVendedores.has(codUsur)) keep = false;
-                     }
-                     if (keep && hasSupp) {
-                         const supp = isColHistory ? colHist['CODFOR'][i] : allHistoryData[i].CODFOR;
-                         if (!selectedWeeklySuppliers.has(supp)) keep = false;
-                     }
-                 }
-
-                 if (keep) {
-                     prevMonthSales.push(isColHistory ? allHistoryData.get(i) : allHistoryData[i]);
-                 }
-             }
-        }
-        
-        const bestDays = getBestDayPerWeekday(prevMonthSales);
-        renderWeeklyChart(weeklyData, bestDays);
-        
-        const summaryTbody = document.getElementById('weekly-summary-table').querySelector('tbody');
-        if(summaryTbody) {
-            summaryTbody.innerHTML = weeklyData.map(w => `
-                <tr class="border-b border-slate-700/50">
-                    <td class="px-4 py-2 text-slate-300">Semana ${w.id}</td>
-                    <td class="px-4 py-2 text-right font-bold text-white">${w.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
-                </tr>
-            `).join('');
-        }
-
-        // Generate Rankings
-        const sellerStats = new Map();
-        
-        filteredSales.forEach(s => {
-            let groupingCode = s.CODUSUR;
-            let groupingName = null;
-
-            if (isPromoterMode) {
-                 const node = optimizedData.clientHierarchyMap.get(normalizeKey(s.CODCLI));
-                 if (node) {
-                     groupingCode = node.promotor.code;
-                     groupingName = node.promotor.name;
-                 } else {
-                     groupingCode = 'Sem Promotor';
-                 }
-            }
-
-            const val = Number(s.VLVENDA) || 0;
-            const client = s.CODCLI;
-            
-            if (!sellerStats.has(groupingCode)) sellerStats.set(groupingCode, { val: 0, clients: new Set(), name: groupingName });
-            const entry = sellerStats.get(groupingCode);
-            entry.val += val;
-            entry.clients.add(client);
-        });
-        
-        const rankingData = [];
-        sellerStats.forEach((stats, code) => {
-            let name = stats.name;
-            if (!name) {
-                const details = sellerDetailsMap.get(code);
-                name = details ? (details.name || code) : code;
-            }
-            const formatName = (n) => n.split(' ')[0] + (n.split(' ').length > 1 ? ' ' + n.split(' ')[1].charAt(0) + '.' : '');
-            
-            rankingData.push({ 
-                code, 
-                name: typeof getFirstName === 'function' ? getFirstName(name) : formatName(name), 
-                val: stats.val, 
-                pos: stats.clients.size 
-            });
-        });
-
+    function renderWeeklyRpc(payload, filters) {
+        const isPromoterMode = filters.mode === 'promoter';
+        const weeklyData = payload.weeks.map(w => ({ ...w, start: new Date(w.start + 'T00:00:00Z'), end: new Date(w.end + 'T23:59:59Z') }));
+        renderWeeklyChart(weeklyData, payload.best_days);
+        const summaryTbody = document.getElementById('weekly-summary-table')?.querySelector('tbody');
+        if (summaryTbody) summaryTbody.innerHTML = weeklyData.map(w => `<tr class="border-b border-slate-700/50"><td class="px-4 py-2 text-slate-300">Semana ${w.id}</td><td class="px-4 py-2 text-right font-bold text-white">${w.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td></tr>`).join('');
         // Update Titles
         const fatTitle = document.getElementById('weekly-ranking-fat-title');
         const posTitle = document.getElementById('weekly-ranking-pos-title');
@@ -27449,8 +26586,7 @@ const supervisorGroups = new Map();
         if (posTitle) posTitle.textContent = isPromoterMode ? 'Top Positivação (Promotor)' : 'Top Positivação (Vendedor)';
         
         // Render Fat Ranking
-        rankingData.sort((a,b) => b.val - a.val);
-        const topFat = rankingData.slice(0, 10);
+        const topFat = payload.ranking_fat.map(r => ({ ...r, name: getFirstName(r.name) }));
         const fatList = document.getElementById('weekly-ranking-fat');
         if (fatList) {
             fatList.innerHTML = topFat.map((r, i) => `
@@ -27465,8 +26601,7 @@ const supervisorGroups = new Map();
         }
         
         // Render Pos Ranking
-        rankingData.sort((a,b) => b.pos - a.pos);
-        const topPos = rankingData.slice(0, 10);
+        const topPos = payload.ranking_pos.map(r => ({ ...r, name: getFirstName(r.name) }));
         const posList = document.getElementById('weekly-ranking-pos');
         if (posList) {
             posList.innerHTML = topPos.map((r, i) => `
@@ -27515,6 +26650,7 @@ const supervisorGroups = new Map();
             data: { labels, datasets },
             options: {
                 responsive: true,
+                animation: false,
                 maintainAspectRatio: false,
                 scales: {
                     x: {
