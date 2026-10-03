@@ -1554,6 +1554,7 @@
         }
 
         function updateHierarchyDropdown(viewPrefix, level) {
+            if (viewPrefix === 'comparison') { refreshRpcFacetUI('comparison'); return; }
             if (viewPrefix === 'coverage' || viewPrefix === 'weekly') { refreshRpcFacetUI(viewPrefix); return; }
             const state = hierarchyState[viewPrefix];
             const els = {
@@ -1904,19 +1905,9 @@
         function updateCitySupervisorFilter() { cityFilters.updateSupervisor(); }
         function updateCityVendedorFilter() { cityFilters.updateVendedor(); }
 
-        const comparisonFilters = setupViewSupervisorFilters({
-            prefix: 'comparison',
-            get supervisorsSet() { return selectedComparisonSupervisors; },
-            get vendedoresSet() { return selectedComparisonVendedores; },
-            onChangeCallback: () => { handleComparisonFilterChange(); },
-            customCloseLogic: null,
-            supervisorColorClass: 'text-teal-500',
-            vendedorColorClass: 'text-teal-500'
-        });
-
-        function setupComparisonSupervisorFilterHandlers() { comparisonFilters.setup(); }
-        function updateComparisonSupervisorFilter() { comparisonFilters.updateSupervisor(); }
-        function updateComparisonVendedorFilter() { comparisonFilters.updateVendedor(); }
+        function setupComparisonSupervisorFilterHandlers() { setupRpcPageFilters('comparison'); }
+        function updateComparisonSupervisorFilter() { refreshRpcFacetUI('comparison'); }
+        function updateComparisonVendedorFilter() { refreshRpcFacetUI('comparison'); }
 
         const positivacaoFilters = setupViewSupervisorFilters({
             prefix: 'positivacao',
@@ -2036,7 +2027,7 @@
 
 
         function setupHierarchyFilters(viewPrefix, onUpdate) {
-            if (viewPrefix === 'coverage' || viewPrefix === 'weekly') { setupRpcPageFilters(viewPrefix); return; }
+            if (['coverage','weekly','comparison'].includes(viewPrefix)) { setupRpcPageFilters(viewPrefix); return; }
             // Init State
             if (!hierarchyState[viewPrefix]) {
                 hierarchyState[viewPrefix] = { coords: new Set(), cocoords: new Set(), promotors: new Set() };
@@ -3049,7 +3040,6 @@
         let coverageRenderId = 0;
         let cityRenderId = 0;
         let positivacaoRenderId = 0;
-        let comparisonRenderId = 0;
         let goalsRenderId = 0;
         let goalsSvRenderId = 0;
 
@@ -9812,10 +9802,12 @@ const supervisorGroups = new Map();
         // RPC pages: this state stores responses only, never local sales datasets.
         const dashboardRpcState = {
             coverage: { id: 0, timer: null, controller: null, facets: null, facetKey: '', facetTime: 0 },
-            weekly: { id: 0, timer: null, controller: null, facets: null, facetKey: '', facetTime: 0 }
+            weekly: { id: 0, timer: null, controller: null, facets: null, facetKey: '', facetTime: 0 },
+            comparison: { id: 0, timer: null, controller: null, facets: null, facetKey: '', facetTime: 0, data: null }
         };
 
         function dashboardPageFilters(page) {
+            if (page === 'comparison') return comparisonPageFilters();
             const h = hierarchyState[page] || { coords: new Set(), cocoords: new Set(), promotors: new Set() };
             const coverage = page === 'coverage';
             return {
@@ -9838,6 +9830,7 @@ const supervisorGroups = new Map();
         }
 
         function validateDashboardPayload(page, data) {
+            if (page === 'comparison') { validateComparisonPayload(data); return; }
             const numbers = page === 'coverage' ? ['active_clients','active_3m','current_clients','previous_clients','total_boxes','chart_total'] : [];
             const arrays = page === 'coverage' ? ['rows','cities','ranking'] : ['weeks','best_days','ranking_fat','ranking_pos'];
             if (!data || data.schema_version !== 1 || numbers.some(k => !Number.isFinite(data[k])) || arrays.some(k => !Array.isArray(data[k]))) throw new Error('Resposta RPC inválida');
@@ -9859,7 +9852,7 @@ const supervisorGroups = new Map();
             clearTimeout(state.timer);
             state.controller?.abort();
             const filters = dashboardPageFilters(page);
-            const root = document.getElementById(page === 'coverage' ? 'coverage-view' : 'weekly-view');
+            const root = document.getElementById(`${page}-view`);
             if (root) {
                 root.setAttribute('aria-busy','true');
                 root.querySelector('.dashboard-rpc-status')?.remove();
@@ -9869,13 +9862,13 @@ const supervisorGroups = new Map();
                 const timeout = setTimeout(() => controller.abort(),20000);
                 try {
                     // Facets are keyed by their SQL inputs and cached briefly; charts/values always refresh.
-                    const { products, types, date_start, date_end, price_min, price_max, working_days, trend, metric, month, ...facetFilters } = filters;
+                    const facetFilters = page === 'comparison' ? Object.fromEntries(Object.entries(filters).filter(([key]) => !['holidays','tendency'].includes(key))) : (({ products, types, date_start, date_end, price_min, price_max, working_days, trend, metric, month, ...rest }) => rest)(filters);
                     const facetKey = JSON.stringify(facetFilters);
                     const facetsNeeded = !state.facets || state.facetKey !== facetKey || Date.now()-state.facetTime > 60000;
                     const dataRequest = window.supabaseClient.rpc(rpcName,{ p_filters: filters }).abortSignal(controller.signal);
                     // Filter options update independently: a slow/erroring facet response must not hide valid numbers.
                     const facetTask = facetsNeeded
-                        ? window.supabaseClient.rpc('get_dashboard_filters_v1',{ p_page: page,p_filters: facetFilters }).abortSignal(controller.signal)
+                        ? window.supabaseClient.rpc(page === 'comparison' ? 'get_comparison_filters_v2' : 'get_dashboard_filters_v1',page === 'comparison' ? { p_filters: facetFilters } : { p_page: page,p_filters: facetFilters }).abortSignal(controller.signal)
                             .then(response => {
                                 if (id !== state.id) return;
                                 if (response.error) throw response.error;
@@ -9911,19 +9904,20 @@ const supervisorGroups = new Map();
 
         function rpcFilterDefinitions(page) {
             const coverage = page === 'coverage';
+            const comparison = page === 'comparison';
             const h = hierarchyState[page] || (hierarchyState[page] = { coords: new Set(), cocoords: new Set(), promotors: new Set() });
             return [
                 { key:'coords', stem:'coord', get:() => h.coords, cascade:['cocoords','promotors'] },
                 { key:'cocoords', stem:'cocoord', get:() => h.cocoords, cascade:['promotors'] },
                 { key:'promotors', stem:'promotor', get:() => h.promotors },
-                { key:'supervisors', stem:'supervisor', get:() => coverage ? selectedCoverageSupervisors : selectedWeeklySupervisors, cascade:['sellers'] },
-                { key:'sellers', stem:'vendedor', get:() => coverage ? selectedCoverageVendedores : selectedWeeklyVendedores },
-                { key:'suppliers', stem:coverage ? 'supplier' : 'fornecedor', get:() => coverage ? selectedCoverageSuppliers : selectedWeeklySuppliers },
-                ...(coverage ? [
-                    { key:'products',stem:'product',get:() => selectedCoverageProducts },
-                    { key:'types',stem:'tipo-venda',get:() => selectedCoverageTiposVenda }
+                { key:'supervisors', stem:'supervisor', get:() => comparison ? selectedComparisonSupervisors : coverage ? selectedCoverageSupervisors : selectedWeeklySupervisors, cascade:['sellers'] },
+                { key:'sellers', stem:'vendedor', get:() => comparison ? selectedComparisonVendedores : coverage ? selectedCoverageVendedores : selectedWeeklyVendedores },
+                { key:'suppliers', stem:(coverage || comparison) ? 'supplier' : 'fornecedor', get:() => comparison ? selectedComparisonSuppliers : coverage ? selectedCoverageSuppliers : selectedWeeklySuppliers },
+                ...((coverage || comparison) ? [
+                    { key:'products',stem:'product',get:() => comparison ? selectedComparisonProducts : selectedCoverageProducts },
+                    { key:'types',stem:'tipo-venda',get:() => comparison ? selectedComparisonTiposVenda : selectedCoverageTiposVenda }
                 ] : []),
-                { key:'redes',stem:'rede',get:() => coverage ? selectedCoverageRedes : selectedWeeklyRedes,text:page+'-com-rede-btn-text' }
+                { key:'redes',stem:'rede',get:() => comparison ? selectedComparisonRedes : coverage ? selectedCoverageRedes : selectedWeeklyRedes,text:page+'-com-rede-btn-text' }
             ];
         }
 
@@ -9946,7 +9940,14 @@ const supervisorGroups = new Map();
                 if (text) text.textContent = !selected.size ? (def.key === 'redes' ? 'C/Rede' : 'Todos') : selected.size === 1 ? (options.find(o => selected.has(o.code))?.label || Array.from(selected)[0]) : `${selected.size} selecionados`;
             }
             const groups = document.getElementById(`${page}-rede-group-container`);
-            groups?.querySelectorAll('[data-group]').forEach(btn => btn.classList.toggle('active',btn.dataset.group === (page === 'coverage' ? coverageRedeGroupFilter : weeklyRedeGroupFilter)));
+            groups?.querySelectorAll('[data-group]').forEach(btn => btn.classList.toggle('active',btn.dataset.group === (page === 'comparison' ? comparisonRedeGroupFilter : page === 'coverage' ? coverageRedeGroupFilter : weeklyRedeGroupFilter)));
+            if (page === 'comparison') {
+                comparisonFornecedorToggleContainer?.querySelectorAll('[data-fornecedor]').forEach(btn => {
+                    const available=(facets.pastas || []).some(option => option.code===btn.dataset.fornecedor);
+                    btn.disabled=!available && btn.dataset.fornecedor!==currentComparisonFornecedor;
+                    btn.classList.toggle('opacity-50',btn.disabled); btn.classList.toggle('active',btn.dataset.fornecedor===currentComparisonFornecedor);
+                });
+            }
             if (page === 'weekly') {
                 const dropdown = document.getElementById('weekly-month-filter-dropdown');
                 const currentMonth = facets.reference_date?.slice(0,7);
@@ -9958,7 +9959,7 @@ const supervisorGroups = new Map();
         }
 
         function setupRpcPageFilters(page) {
-            const update = page === 'coverage' ? updateCoverageView : updateWeeklyView;
+            const update = page === 'comparison' ? handleComparisonFilterChange : page === 'coverage' ? updateCoverageView : updateWeeklyView;
             for (const def of rpcFilterDefinitions(page)) {
                 const dropdown = document.getElementById(`${page}-${def.stem}-filter-dropdown`);
                 const button = document.getElementById(`${page}-${def.stem}-filter-btn`);
@@ -9988,20 +9989,23 @@ const supervisorGroups = new Map();
                     const button = e.target.closest('[data-group]'); if (!button) return;
                     const value = button.dataset.group;
                     if (page === 'coverage') { coverageRedeGroupFilter=value; if(value!=='com_rede') selectedCoverageRedes=[]; }
+                    else if (page === 'comparison') { comparisonRedeGroupFilter=value; if(value!=='com_rede') selectedComparisonRedes=[]; }
                     else { weeklyRedeGroupFilter=value; if(value!=='com_rede') selectedWeeklyRedes=[]; }
                     const dd = document.getElementById(`${page}-rede-filter-dropdown`);
                     if (value==='com_rede') dd?.classList.toggle('hidden'); else dd?.classList.add('hidden');
                     update();
                 }); group._rpcBound=true;
             }
-            const root = document.getElementById(page==='coverage'?'coverage-view':'weekly-view');
+            const root = document.getElementById(`${page}-view`);
             if (root && !root._rpcOutsideBound) {
                 document.addEventListener('click',e => {
                     if (!root.contains(e.target)) return;
                     root.querySelectorAll('[id$="-filter-dropdown"]').forEach(dd => { if (!dd.parentElement.contains(e.target)) dd.classList.add('hidden'); });
                 }); root._rpcOutsideBound=true;
             }
-            if (page === 'coverage') {
+            if (page === 'comparison') {
+                setupComparisonRpcControls(update);
+            } else if (page === 'coverage') {
                 if (!coverageCityFilter._rpcBound) {
                     const suggestions = () => {
                         const cities=dashboardRpcState.coverage.facets?.cities || [];
@@ -12715,61 +12719,6 @@ const supervisorGroups = new Map();
             return selectedArray;
         }
 
-        function updateComparisonCitySuggestions(dataSource) {
-            const forbidden = new Set(['CIDADE', 'MUNICIPIO', 'CIDADE_CLIENTE', 'NOME DA CIDADE', 'CITY']);
-            const inputValue = comparisonCityFilter.value.toLowerCase();
-
-            if (!inputValue && document.activeElement !== comparisonCityFilter) {
-                comparisonCitySuggestions.classList.add('hidden');
-                return;
-            }
-
-            const uniqueCities = new Set();
-            let count = 0;
-            const LIMIT = 50;
-
-            // Collect up to LIMIT matching cities
-            for (let i = 0; i < dataSource.length; i++) {
-                if (count >= LIMIT) break;
-
-                const item = typeof dataSource.get === 'function' ? dataSource.get(i) : dataSource[i];
-                let city = 'N/A';
-
-                if (item.CIDADE) city = item.CIDADE;
-                else if (item.cidade || item.CIDADE) city = item.cidade || item.CIDADE;
-                else if (item.CODCLI) {
-                    const c = clientMapForKPIs.get(String(item.CODCLI));
-                    if (c) city = c.cidade || c.CIDADE || c['Nome da Cidade'];
-                }
-
-                if (city && city !== 'N/A' && !forbidden.has(city.toUpperCase()) && (!inputValue || city.toLowerCase().includes(inputValue))) {
-                    if (!uniqueCities.has(city)) {
-                        uniqueCities.add(city);
-                        count++;
-                    }
-                }
-            }
-
-            if (count > 0 && document.activeElement === comparisonCityFilter) {
-                // Sort the collected cities to preserve original functionality
-                const sortedCities = Array.from(uniqueCities).sort();
-
-                const suggestionsFragment = document.createDocumentFragment();
-                for (let i = 0; i < sortedCities.length; i++) {
-                    const div = document.createElement('div');
-                    div.className = 'p-2 hover:bg-slate-600 cursor-pointer';
-                    div.textContent = sortedCities[i];
-                    suggestionsFragment.appendChild(div);
-                }
-
-                comparisonCitySuggestions.innerHTML = '';
-                comparisonCitySuggestions.appendChild(suggestionsFragment);
-                comparisonCitySuggestions.classList.remove('hidden');
-            } else {
-                comparisonCitySuggestions.classList.add('hidden');
-            }
-        }
-
         function getMonthWeeks(year, month) {
             const weeks = [];
             // Find the first day of the month
@@ -13542,142 +13491,136 @@ const supervisorGroups = new Map();
             return result;
         };
 
-        function getComparisonSelectionFilters() {
-            const suppliersSet = new Set(selectedComparisonSuppliers);
-            const productsSet = new Set(selectedComparisonProducts);
-            const tiposVendaSet = new Set(selectedComparisonTiposVenda);
-            const redeSet = new Set(selectedComparisonRedes);
-
-            const pasta = currentComparisonFornecedor;
-            const city = comparisonCityFilter.value.trim().toLowerCase();
-            const filial = comparisonFilialFilter.value;
-
-            let clients;
-            if (typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                clients = [];
-                const hasSup = selectedComparisonSupervisors.size > 0;
-                const hasVend = selectedComparisonVendedores.size > 0;
-
-                const source = allClientsData;
-                const len = source.length;
-
-                for(let i=0; i<len; i++) {
-                    const c = source instanceof ColumnarDataset ? source.get(i) : source[i];
-                    // Basic active check (similar to getActiveClientsData but simpler)
-                    const rca1 = String(c.rca1 || '').trim();
-                    const isAmericanas = c.isAmericanas !== undefined ? c.isAmericanas : (c.isAmericanas = (c.razaoSocial || '').toUpperCase().includes('AMERICANAS'));
-
-                    // FIX: Only filter orphans for Admins
-                    if (window.userRole === 'adm' && !isAmericanas && rca1 === '') continue; // Skip strictly inactive
-
-                    let keep = true;
-                    if (hasSup || hasVend) {
-                        const details = sellerDetailsMap.get(rca1);
-                        if (hasSup) {
-                            if (!details || !selectedComparisonSupervisors.has(details.supervisor)) keep = false;
-                        }
-                        if (keep && hasVend) {
-                            if (!selectedComparisonVendedores.has(rca1)) keep = false;
-                        }
-                    }
-
-                    if (keep) clients.push(c);
-                }
-            } else {
-                clients = getHierarchyFilteredClients('comparison', allClientsData);
-            }
-
-            // ⚡ Bolt Optimization: Single-pass loop to avoid .filter() array allocation
-            if (comparisonRedeGroupFilter) {
-                const filteredClients = [];
-                const len = clients.length;
-                for (let i = 0; i < len; i++) {
-                    const c = clients instanceof ColumnarDataset ? clients.get(i) : clients[i];
-                    if (comparisonRedeGroupFilter === 'com_rede') {
-                        if (!c.ramo || c.ramo === 'N/A') continue;
-                        if (redeSet && redeSet.size > 0 && !redeSet.has(c.ramo)) continue;
-                    } else if (comparisonRedeGroupFilter === 'sem_rede') {
-                        if (c.ramo && c.ramo !== 'N/A') continue;
-                    }
-                    filteredClients.push(c);
-                }
-                clients = filteredClients;
-            }
-            const clientCodes = new Set();
-            for (let i = 0; i < clients.length; i++) {
-                const c = clients instanceof ColumnarDataset ? clients.get(i) : clients[i];
-                clientCodes.add(c['Código'] || c['codigo_cliente']);
-            }
-
-            const filters = {
-                filial,
-                pasta,
-                tipoVenda: tiposVendaSet,
-                supplier: suppliersSet,
-                product: productsSet,
-                city,
-                clientCodes
+        function setupComparisonRpcControls(update) {
+            if (comparisonCityFilter._rpcBound) return;
+            const suggestions = () => {
+                const needle=comparisonCityFilter.value.trim().toLowerCase();
+                const cities=dashboardRpcState.comparison.facets?.cities || [];
+                comparisonCitySuggestions.innerHTML=cities.filter(city => city.toLowerCase().includes(needle)).slice(0,50).map(city => `<div class="p-2 cursor-pointer hover:bg-slate-700">${window.escapeHtml(city)}</div>`).join('');
+                comparisonCitySuggestions.classList.remove('hidden');
             };
-
-            return filters;
+            comparisonCityFilter.addEventListener('input',suggestions);
+            comparisonCityFilter.addEventListener('focus',suggestions);
+            comparisonCityFilter.addEventListener('keydown',e => { if(e.key==='Enter') { comparisonCitySuggestions.classList.add('hidden'); update(); } });
+            comparisonCityFilter.addEventListener('blur',() => setTimeout(() => comparisonCitySuggestions.classList.add('hidden'),150));
+            comparisonCitySuggestions.addEventListener('click',e => {
+                const option=e.target.closest('#comparison-city-suggestions > div');
+                if(option) { comparisonCityFilter.value=option.textContent; comparisonCitySuggestions.classList.add('hidden'); update(); }
+            });
+            comparisonFornecedorToggleContainer.addEventListener('click',e => {
+                const button=e.target.closest('[data-fornecedor]'); if(!button || button.disabled) return;
+                currentComparisonFornecedor=currentComparisonFornecedor===button.dataset.fornecedor?'':button.dataset.fornecedor;
+                comparisonFornecedorToggleContainer.querySelectorAll('[data-fornecedor]').forEach(btn => btn.classList.toggle('active',btn.dataset.fornecedor===currentComparisonFornecedor));
+                update();
+            });
+            clearComparisonFiltersBtn.addEventListener('click',resetComparisonFilters);
+            comparisonCityFilter._rpcBound=true;
         }
 
-        function getComparisonFilteredData(options = {}) {
-            const { excludeFilter = null } = options;
-            const filters = getComparisonSelectionFilters();
+        function comparisonPageFilters() {
+            const h = hierarchyState.comparison || { coords: new Set(), cocoords: new Set(), promotors: new Set() };
             return {
-                currentSales: getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters, excludeFilter),
-                historySales: getFilteredDataFromIndices(optimizedData.indices.history, optimizedData.historyById, filters, excludeFilter)
+                mode: adminViewMode === 'seller' ? 'seller' : 'promoter',
+                coords: Array.from(h.coords), cocoords: Array.from(h.cocoords), promotors: Array.from(h.promotors),
+                supervisors: Array.from(selectedComparisonSupervisors), sellers: Array.from(selectedComparisonVendedores),
+                suppliers: selectedComparisonSuppliers.slice(), products: selectedComparisonProducts.slice(), types: selectedComparisonTiposVenda.slice(),
+                filial: comparisonFilialFilter.value || 'ambas', city: comparisonCityFilter.value.trim().toLowerCase(),
+                pasta: currentComparisonFornecedor, rede_group: comparisonRedeGroupFilter, redes: selectedComparisonRedes.slice(),
+                holidays: selectedHolidays.slice(), tendency: useTendencyComparison
             };
         }
 
-
-                
-
-        
-        
         function handleComparisonFilterChange() {
-            markDirty("comparativo");
-            updateAllComparisonFilters();
+            markDirty('comparativo');
             updateComparisonView();
         }
 
-        function updateAllComparisonFilters() {
-            const { currentSales: supplierCurrent, historySales: supplierHistory } = getComparisonFilteredData({ excludeFilter: 'supplier' });
-            const supplierOptionsData = [...supplierCurrent, ...supplierHistory];
-            selectedComparisonSuppliers = updateSupplierFilter(comparisonSupplierFilterDropdown, comparisonSupplierFilterText, selectedComparisonSuppliers, supplierOptionsData, 'comparison');
+        function updateAllComparisonFilters() { refreshRpcFacetUI('comparison'); }
+        function updateComparisonProductFilter() { refreshRpcFacetUI('comparison'); }
 
-            const { currentSales: tvCurrent, historySales: tvHistory } = getComparisonFilteredData({ excludeFilter: 'tipoVenda' });
-            selectedComparisonTiposVenda = updateTipoVendaFilter(comparisonTipoVendaFilterDropdown, comparisonTipoVendaFilterText, selectedComparisonTiposVenda, [...tvCurrent, ...tvHistory]);
-
-            updateComparisonProductFilter();
-
-            const { currentSales: cityCurrent, historySales: cityHistory } = getComparisonFilteredData({ excludeFilter: 'city' });
-            const cityOptionsData = [...cityCurrent, ...cityHistory];
-            updateComparisonCitySuggestions(cityOptionsData);
-
-            const { currentSales: pastaCurrent, historySales: pastaHistory } = getComparisonFilteredData({ excludeFilter: 'pasta' });
-            const pastaOptionsData = [...pastaCurrent, ...pastaHistory];
-            const pepsicoBtn = document.querySelector('#comparison-fornecedor-toggle-container button[data-fornecedor="PEPSICO"]');
-            const multimarcasBtn = document.querySelector('#comparison-fornecedor-toggle-container button[data-fornecedor="MULTIMARCAS"]');
-            const hasPepsico = pastaOptionsData.some(s => s.OBSERVACAOFOR === 'PEPSICO');
-            const hasMultimarcas = pastaOptionsData.some(s => s.OBSERVACAOFOR === 'MULTIMARCAS');
-            pepsicoBtn.disabled = !hasPepsico;
-            multimarcasBtn.disabled = !hasMultimarcas;
-            pepsicoBtn.classList.toggle('opacity-50', !hasPepsico);
-            multimarcasBtn.classList.toggle('opacity-50', !hasMultimarcas);
+        function validateComparisonPayload(data) {
+            if (!data || data.schema_version !== 2 || !data.kpis || !data.charts || !/^\d{4}-\d{2}-\d{2}$/.test(data.reference_date)) throw new Error('Resposta inválida do Comparativo');
+            const keys = ['fat','peso','clients','ticket','mixPepsico','positivacaoSalty','positivacaoFoods','perdas'];
+            for (const source of ['current','history']) if (keys.some(key => !Number.isFinite(data.kpis[source]?.[key]))) throw new Error('Indicador inválido do Comparativo');
+            const c = data.charts;
+            if (!['weekly','monthly','weekly_rows','groups'].every(key => Array.isArray(c[key])) || !Number.isFinite(c.weekly_total)) throw new Error('Tabela inválida do Comparativo');
+            if (!c.daily || !['labels','current','history'].every(key => Array.isArray(c.daily[key])) || c.daily.labels.length !== c.daily.current.length || c.daily.labels.length !== c.daily.history.length || c.daily.current.some(v => !Number.isFinite(v)) || c.daily.history.some(v => v !== null && !Number.isFinite(v))) throw new Error('Série diária inválida');
+            for (const row of c.weekly) if (typeof row.label !== 'string' || !Number.isFinite(row.current) || !Number.isFinite(row.history)) throw new Error('Série semanal inválida');
+            for (const row of c.monthly) if (!/^\d{4}-\d{2}-\d{2}$/.test(row.month_date) || !Number.isFinite(row.fat) || !Number.isFinite(row.clients)) throw new Error('Série mensal inválida');
+            for (const row of c.weekly_rows) if (typeof row.label !== 'string' || !Number.isFinite(row.total)) throw new Error('Resumo semanal inválido');
+            for (const row of c.groups) if (typeof row.name !== 'string' || ['current','history','variation'].some(key => !Number.isFinite(row[key]))) throw new Error('Comparação por grupo inválida');
         }
+
+        function updateComparisonView() {
+            setupRpcPageFilters('comparison');
+            const container = document.getElementById('comparison-kpi-container');
+            if (container) {
+                container.style.minHeight = container.offsetHeight ? `${container.offsetHeight}px` : '320px';
+            }
+            requestDashboardPage('comparison','get_comparison_page_v2',renderComparisonRpc);
+        }
+
+        function renderComparisonRpc(data, filters = comparisonPageFilters()) {
+            dashboardRpcState.comparison.data = data;
+            dashboardRpcState.comparison.referenceDate = data.reference_date;
+            const definitions = [
+                ['Faturamento Total','fat','currency',1], ['Peso Total (Ton)','peso','decimal',1000],
+                ['Clientes Atendidos','clients','integer',1], ['Ticket Médio','ticket','currency',1],
+                ['Mix por PDV (Pepsico)','mixPepsico','mix',1], ['Mix Salty','positivacaoSalty','integer',1],
+                ['Mix Foods','positivacaoFoods','integer',1], ['Perdas','perdas','currency',1]
+            ];
+            renderKpiCards(definitions.map(([title,key,format,divisor]) => ({ title,current:data.kpis.current[key]/divisor,history:data.kpis.history[key]/divisor,format })));
+            renderComparisonRpcCharts(data);
+            const money = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+            const cell = 'px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm';
+            const c = data.charts;
+            const groupTitle=document.getElementById('comparison-group-title');
+            if (groupTitle) groupTitle.textContent=filters.mode==='seller'?'Variação por Supervisor':filters.coords.length?'Variação por Promotor':'Variação por Coordenador';
+            document.getElementById('weeklySummaryTableBody').innerHTML = c.weekly_rows.map(row => `<tr class="hover:bg-slate-700"><td class="${cell}">${window.escapeHtml(row.label)}</td><td class="${cell} text-right">${money(row.total)}</td></tr>`).join('') + `<tr class="font-bold bg-slate-700/50"><td class="${cell}">Total do Mês</td><td class="${cell} text-right">${money(c.weekly_total)}</td></tr>`;
+            document.getElementById('supervisorComparisonTableBody').innerHTML = c.groups.map(row => `<tr class="hover:bg-slate-700"><td class="${cell} truncate max-w-[100px]">${window.escapeHtml(row.name)}</td><td class="${cell} text-right">${money(row.history)}</td><td class="${cell} text-right">${money(row.current)}</td><td class="${cell} text-right ${row.variation>0?'text-green-400':row.variation<0?'text-red-400':'text-slate-400'}">${row.variation.toFixed(2)}%</td></tr>`).join('');
+        }
+
+        function renderComparisonRpcCharts(data = dashboardRpcState.comparison.data) {
+            if (!data) return;
+            const c = data.charts;
+            const monthly = comparisonChartType === 'monthly';
+            weeklyComparisonChartContainer.classList.toggle('hidden',monthly);
+            monthlyComparisonChartContainer.classList.toggle('hidden',!monthly);
+            document.getElementById('comparison-monthly-metric-container')?.classList.toggle('hidden',!monthly);
+            const legacyKey = monthly ? 'monthlyComparisonChart' : 'weeklyComparisonChart';
+            if (charts[legacyKey]) { charts[legacyKey].destroy(); delete charts[legacyKey]; }
+            if (monthly) {
+                const fat = comparisonMonthlyMetric === 'faturamento';
+                comparisonChartTitle.textContent = fat ? 'Comparativo de Faturamento Mensal' : 'Comparativo de Clientes Atendidos Mensal';
+                const labels = c.monthly.map(row => new Date(row.month_date+'T12:00:00Z').toLocaleDateString('pt-BR',{month:'short',year:'2-digit',timeZone:'UTC'}));
+                renderMonthlyComparisonAmChart(labels,c.monthly.map(row => fat ? row.fat : row.clients),fat ? 'Faturamento' : 'Clientes Atendidos',fat ? 0x3b82f6 : 0x10b981);
+            } else if (comparisonChartType === 'weekly') {
+                comparisonChartTitle.textContent = 'Comparativo de Faturamento Semanal';
+                renderWeeklyComparisonAmChart(c.weekly.map(row => row.label),c.weekly.map(row => row.current),c.weekly.map(row => row.history),useTendencyComparison);
+            } else {
+                comparisonChartTitle.textContent = 'Comparativo de Faturamento Diário';
+                renderWeeklyComparisonAmChart(c.daily.labels.map(String),c.daily.current,c.daily.history,false);
+            }
+        }
+
+        function resetComparisonFilters() {
+            selectedComparisonSuppliers=[]; selectedComparisonProducts=[]; selectedComparisonTiposVenda=[]; selectedComparisonRedes=[];
+            selectedComparisonSupervisors.clear(); selectedComparisonVendedores.clear();
+            for (const set of Object.values(hierarchyState.comparison || {})) set.clear();
+            currentComparisonFornecedor='PEPSICO'; comparisonRedeGroupFilter=''; comparisonCityFilter.value=''; comparisonFilialFilter.value='ambas';
+            document.querySelectorAll('input[name="comparison-filial"]').forEach(input => input.checked=input.value==='ambas');
+            const filialText=document.getElementById('comparison-filial-filter-text'); if(filialText) filialText.textContent='Ambas';
+            comparisonFornecedorToggleContainer.querySelectorAll('[data-fornecedor]').forEach(btn => btn.classList.toggle('active',btn.dataset.fornecedor==='PEPSICO'));
+            refreshRpcFacetUI('comparison');
+            handleComparisonFilterChange();
+        }
+
 
         function updateProductFilter(dropdown, filterText, selectedArray, dataSource, filterType = 'comparison', skipRender = false) {
             if (typeof window.updateGenericProductFilter === 'function') {
                 return window.updateGenericProductFilter(dropdown, filterText, selectedArray, dataSource, filterType, skipRender);
             }
             return selectedArray;
-        }
-
-        function updateComparisonProductFilter(skipRender = false) {
-            const { currentSales, historySales } = getComparisonFilteredData({ excludeFilter: 'product' });
-            selectedComparisonProducts = updateProductFilter(comparisonProductFilterDropdown, comparisonProductFilterText, selectedComparisonProducts, [...currentSales, ...historySales], 'comparison', skipRender);
         }
 
         function getActiveStockMap(filial) {
@@ -13694,683 +13637,6 @@ const supervisorGroups = new Map();
             });
             return combinedStock;
         }
-
-
-        let comparisonRpcTimer = null;
-        let comparisonRpcController = null;
-
-        // Etapa 1: os oito cartões vêm da RPC. Gráficos/filtros seguem no fluxo legado.
-        function updateComparisonView() {
-            const currentRenderId = ++comparisonRenderId;
-            clearTimeout(comparisonRpcTimer);
-            if (comparisonRpcController) comparisonRpcController.abort();
-            const container = document.getElementById('comparison-kpi-container');
-            container.setAttribute('aria-busy', 'true');
-            // Preserva os cartões e a altura da grade durante a atualização.
-            container.style.position = 'relative';
-            container.style.opacity = '0.6';
-            container.querySelector('#comparison-rpc-error')?.remove();
-            comparisonRpcTimer = setTimeout(async () => {
-                const controller = new AbortController();
-                comparisonRpcController = controller;
-                const timeout = setTimeout(() => controller.abort(), 20000);
-                try {
-                    const filters = getComparisonSelectionFilters();
-                    setTimeout(() => {
-                        if (currentRenderId === comparisonRenderId) renderComparisonLegacyCharts(currentRenderId);
-                    }, 0);
-                    const { data, error } = await window.supabaseClient.rpc('get_comparison_kpis_v1', {
-                        p_filters: {
-                            client_codes: Array.from(filters.clientCodes, String),
-                            filial: filters.filial || 'ambas', city: filters.city, pasta: filters.pasta,
-                            suppliers: Array.from(filters.supplier), products: Array.from(filters.product),
-                            types: Array.from(filters.tipoVenda), reference_date: lastSaleDate.toISOString().slice(0, 10),
-                            holidays: selectedHolidays.slice(), tendency: useTendencyComparison
-                        }
-                    }).abortSignal(controller.signal);
-                    if (currentRenderId !== comparisonRenderId) return;
-                    if (error) throw error;
-                    if (!data || data.schema_version !== 1 || !data.kpis) throw new Error('Resposta inválida do Comparativo');
-                    const current = data.kpis.current;
-                    const history = data.kpis.history;
-                    const definitions = [
-                        ['Faturamento Total', 'fat', 'currency', 1],
-                        ['Peso Total (Ton)', 'peso', 'decimal', 1000],
-                        ['Clientes Atendidos', 'clients', 'integer', 1],
-                        ['Ticket Médio', 'ticket', 'currency', 1],
-                        ['Mix por PDV (Pepsico)', 'mixPepsico', 'mix', 1],
-                        ['Mix Salty', 'positivacaoSalty', 'integer', 1],
-                        ['Mix Foods', 'positivacaoFoods', 'integer', 1],
-                        ['Perdas', 'perdas', 'currency', 1]
-                    ];
-                    const cards = definitions.map(([title, key, format, divisor]) => {
-                        if (typeof current?.[key] !== 'number' || typeof history?.[key] !== 'number' ||
-                            !Number.isFinite(current[key]) || !Number.isFinite(history[key])) {
-                            throw new Error('Indicador inválido do Comparativo');
-                        }
-                        return { title, current: current[key] / divisor, history: history[key] / divisor, format };
-                    });
-                    renderKpiCards(cards);
-                    // Gráficos iniciam em paralelo, sem esperar pelos indicadores.
-                } catch (error) {
-                    if (currentRenderId !== comparisonRenderId) return;
-                    console.error('[Comparativo RPC] Falha ao carregar indicadores', error.message || error.code);
-                    const alert = document.createElement('div');
-                    alert.id = 'comparison-rpc-error';
-                    alert.className = 'absolute top-0 right-0 z-10 rounded bg-slate-900 px-3 py-2 text-sm text-amber-300';
-                    alert.setAttribute('role', 'alert');
-                    alert.innerHTML = 'Indicadores não atualizados. <button type="button" class="underline ml-2">Tentar novamente</button>';
-                    container.appendChild(alert);
-                    alert.querySelector('button').addEventListener('click', updateComparisonView);
-                } finally {
-                    clearTimeout(timeout);
-                    if (currentRenderId === comparisonRenderId) {
-                        container.setAttribute('aria-busy', 'false');
-                        container.style.opacity = '1';
-                    }
-                    if (comparisonRpcController === controller) comparisonRpcController = null;
-                }
-            }, 150);
-        }
-
-        function renderComparisonLegacyCharts(currentRenderId, rpcKpis = null) {
-            const { currentSales, historySales } = getComparisonFilteredData();
-
-            // Show Loading State on Charts (only if no chart exists)
-            const chartContainers = ['weeklyComparisonChart', 'monthlyComparisonChart'];
-            chartContainers.forEach(id => {
-                if (!charts[id]) {
-                    const el = document.getElementById(id + 'Container');
-                    if(el) el.innerHTML = '<div class="flex h-full items-center justify-center"><svg class="animate-spin h-8 w-8 text-teal-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
-                }
-            });
-
-            const currentYear = lastSaleDate.getUTCFullYear();
-            const currentMonth = lastSaleDate.getUTCMonth();
-            const currentMonthWeeks = getMonthWeeks(currentYear, currentMonth);
-
-            const metrics = {
-                current: { fat: 0, peso: 0, clients: 0, mixPepsico: 0, positivacaoSalty: 0, positivacaoFoods: 0 },
-                history: { fat: 0, peso: 0, avgFat: 0, avgPeso: 0, avgClients: 0, avgMixPepsico: 0, avgPositivacaoSalty: 0, avgPositivacaoFoods: 0 },
-                charts: {
-                    weeklyCurrent: new Array(currentMonthWeeks.length).fill(0),
-                    weeklyHistory: new Array(currentMonthWeeks.length).fill(0),
-                    monthlyData: [],
-                    supervisorData: {}
-                },
-                historicalDayTotals: new Array(7).fill(0), // 0=Sun, 6=Sat
-                currentDayTotals: new Array(7).fill(0), // 0=Sun, 6=Sat
-                overlapSales: []
-            };
-
-            const firstWeekStart = currentMonthWeeks[0].start;
-            const firstOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
-            const hasOverlap = firstWeekStart < firstOfMonth;
-            // Mapas locais apenas para o gráfico mensal de clientes.
-            const currentClients = new Map();
-            const historyMonths = new Map();
-            const monthWeeksCache = new Map();
-
-            // --- Async Pipeline ---
-
-            // 1. Process Current Sales
-            const _isAltMode_8 = isAlternativeMode(selectedComparisonTiposVenda);
-            runAsyncChunked(currentSales, (s) => {
-                if (!_isAltMode_8 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
-                const val = getValueForSale(s, selectedComparisonTiposVenda);
-
-                metrics.current.fat += val;
-                metrics.current.peso += s.TOTPESOLIQ;
-                if (s.CODCLI) currentClients.set(s.CODCLI, (currentClients.get(s.CODCLI) || 0) + val);
-
-                // Dynamic Grouping Key
-                let groupKey = window.resolveDim('supervisores', s.CODSUPERVISOR);
-                if (typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter') {
-                    const node = optimizedData.clientHierarchyMap.get(normalizeKey(s.CODCLI));
-                    if (node) {
-                        const hState = hierarchyState['comparison'];
-                        if (hState && hState.coords && hState.coords.size > 0) {
-                            groupKey = node.promotor.name || node.promotor.code;
-                        } else {
-                            groupKey = node.coord.name || node.coord.code;
-                        }
-                    } else {
-                        groupKey = 'Sem Hierarquia';
-                    }
-                }
-
-                if (groupKey) {
-                    if (!metrics.charts.supervisorData[groupKey]) metrics.charts.supervisorData[groupKey] = { current: 0, history: 0 };
-                    metrics.charts.supervisorData[groupKey].current += val;
-                }
-                const d = parseDate(s.DTPED);
-                if (d) {
-                    const wIdx = currentMonthWeeks.findIndex(w => d >= w.start && d <= w.end);
-                    if (wIdx !== -1) metrics.charts.weeklyCurrent[wIdx] += val;
-                    metrics.currentDayTotals[d.getUTCDay()] += val;
-                }
-            }, () => {
-                if (currentRenderId !== comparisonRenderId) return;
-
-                // 2. Process History Sales
-                const _isAltMode_9 = isAlternativeMode(selectedComparisonTiposVenda);
-                runAsyncChunked(historySales, (s) => {
-                    if (!_isAltMode_9 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
-                    const val = getValueForSale(s, selectedComparisonTiposVenda);
-
-                    metrics.history.fat += val;
-                    metrics.history.peso += s.TOTPESOLIQ;
-
-                    const d = parseDate(s.DTPED);
-                    if (!d) return;
-
-                    const monthKey = `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
-                    if (!historyMonths.has(monthKey)) historyMonths.set(monthKey, { fat: 0, clients: new Map() });
-                    const mData = historyMonths.get(monthKey);
-
-                    mData.fat += val;
-
-                    if (s.CODCLI) {
-                        mData.clients.set(s.CODCLI, (mData.clients.get(s.CODCLI) || 0) + val);
-                    }
-
-                    // Dynamic Grouping Key History
-                    let hGroupKey = window.resolveDim('supervisores', s.CODSUPERVISOR);
-                    if (typeof adminViewMode !== 'undefined' && adminViewMode === 'promoter') {
-                        const node = optimizedData.clientHierarchyMap.get(normalizeKey(s.CODCLI));
-                        if (node) {
-                            const hState = hierarchyState['comparison'];
-                            if (hState && hState.coords && hState.coords.size > 0) {
-                                hGroupKey = node.promotor.name || node.promotor.code;
-                            } else {
-                                hGroupKey = node.coord.name || node.coord.code;
-                            }
-                        } else {
-                            hGroupKey = 'Sem Hierarquia';
-                        }
-                    }
-
-                    if (hGroupKey) {
-                        if (!metrics.charts.supervisorData[hGroupKey]) metrics.charts.supervisorData[hGroupKey] = { current: 0, history: 0 };
-                        metrics.charts.supervisorData[hGroupKey].history += val;
-                    }
-
-                    // Accumulate Day Totals for Day Weight Calculation
-                    metrics.historicalDayTotals[d.getUTCDay()] += val;
-
-                    if (!monthWeeksCache.has(monthKey)) monthWeeksCache.set(monthKey, getMonthWeeks(d.getUTCFullYear(), d.getUTCMonth()));
-                    const weeks = monthWeeksCache.get(monthKey);
-                    const wIdx = weeks.findIndex(w => d >= w.start && d <= w.end);
-                    if (wIdx !== -1 && wIdx < metrics.charts.weeklyHistory.length) {
-                        metrics.charts.weeklyHistory[wIdx] += val;
-                    }
-                    if (hasOverlap && d >= firstWeekStart && d < firstOfMonth) {
-                        metrics.charts.weeklyCurrent[0] += val;
-                        metrics.overlapSales.push(s);
-                    }
-                }, () => {
-                    if (currentRenderId !== comparisonRenderId) return;
-
-                    // 2.1 Finalize History Metrics
-                    metrics.history.avgFat = metrics.history.fat / QUARTERLY_DIVISOR;
-                    metrics.history.avgPeso = metrics.history.peso / QUARTERLY_DIVISOR;
-                    metrics.charts.weeklyHistory = metrics.charts.weeklyHistory.map(v => v / QUARTERLY_DIVISOR);
-                    Object.values(metrics.charts.supervisorData).forEach(d => d.history /= QUARTERLY_DIVISOR);
-
-                    // Calculate Day Weights
-                    let totalHistoryDays = 0;
-                    for (let i = 0; i < metrics.historicalDayTotals.length; i++) {
-                        totalHistoryDays += metrics.historicalDayTotals[i];
-                    }
-                    metrics.dayWeights = metrics.historicalDayTotals.map(v => totalHistoryDays > 0 ? v / totalHistoryDays : 0);
-
-                    const sortedMonths = Array.from(historyMonths.keys()).sort((a, b) => {
-                        const [y1, m1] = a.split('-').map(Number);
-                        const [y2, m2] = b.split('-').map(Number);
-                        return (y1 * 12 + m1) - (y2 * 12 + m2);
-                    }).slice(-3);
-                    let sumClients = 0;
-
-                    sortedMonths.forEach(mKey => {
-                        const mData = historyMonths.get(mKey);
-                        let posClients = 0;
-                        mData.clients.forEach(v => { if(v >= 1) posClients++; });
-                        sumClients += posClients;
-
-                        const [y, m] = mKey.split('-');
-                        const label = new Date(Date.UTC(parseInt(y), parseInt(m), 1)).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit', timeZone: 'UTC' });
-                        metrics.charts.monthlyData.push({ label, fat: mData.fat, clients: posClients });
-                    });
-
-
-
-                    if (rpcKpis) Object.assign(metrics.current, rpcKpis.current);
-                    else metrics.current.clients = Array.from(currentClients.values()).filter(v => v >= 1).length;
-                    if (rpcKpis) Object.assign(metrics.history, {
-                        avgFat: rpcKpis.history.fat, avgPeso: rpcKpis.history.peso,
-                        avgClients: rpcKpis.history.clients, avgMixPepsico: rpcKpis.history.mixPepsico,
-                        avgPositivacaoSalty: rpcKpis.history.positivacaoSalty,
-                        avgPositivacaoFoods: rpcKpis.history.positivacaoFoods, avgPerdas: rpcKpis.history.perdas
-                    });
-                    if (useTendencyComparison) {
-                        const totalDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-                        const passedDays = getPassedWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays, lastSaleDate);
-                        if (totalDays > 0 && passedDays > 0 && passedDays < totalDays) {
-                            const ratio = totalDays / passedDays;
-                            if (!rpcKpis) { metrics.current.fat *= ratio; metrics.current.clients = Math.round(metrics.current.clients * ratio); }
-                            Object.values(metrics.charts.supervisorData).forEach(supData => { supData.current *= ratio; });
-                        }
-                    }
-
-                    // 3. Render Views
-                    const m = metrics;
-                    // Os cartões são renderizados exclusivamente pela RPC, acima.
-
-                    // Weekly Chart Logic with Tendency
-                    let weeklyCurrentData = [...m.charts.weeklyCurrent];
-                    if (useTendencyComparison) {
-                        const today = lastSaleDate;
-                        const currentWeekIndex = currentMonthWeeks.findIndex(w => today >= w.start && today <= w.end);
-                        const totalWeeks = currentMonthWeeks.length;
-                        for (let i = 0; i < totalWeeks; i++) {
-                            if (i === currentWeekIndex) {
-                                const currentWeek = currentMonthWeeks[i];
-                                let workingDaysPassed = 0; let totalWorkingDays = 0;
-                                for (let d = new Date(currentWeek.start); d <= currentWeek.end; d.setUTCDate(d.getUTCDate() + 1)) {
-                                    const dayOfWeek = d.getUTCDay();
-                                    if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(d, selectedHolidays)) {
-                                        totalWorkingDays++;
-                                        if (d <= today) workingDaysPassed++;
-                                    }
-                                }
-                                const salesSoFar = weeklyCurrentData[i];
-                                if (workingDaysPassed > 0 && totalWorkingDays > 0) {
-                                    weeklyCurrentData[i] = (salesSoFar / workingDaysPassed) * totalWorkingDays;
-                                } else {
-                                    weeklyCurrentData[i] = m.charts.weeklyHistory[i] || 0;
-                                }
-                            } else if (i > currentWeekIndex) {
-                                weeklyCurrentData[i] = m.charts.weeklyHistory[i] || 0;
-                            }
-                        }
-                    }
-
-                    // Render Charts logic (Reusing existing drawing code)
-                    if (comparisonChartType === 'weekly') {
-                        monthlyComparisonChartContainer.classList.add('hidden');
-                        weeklyComparisonChartContainer.classList.remove('hidden');
-                        comparisonChartTitle.textContent = 'Comparativo de Faturamento Semanal';
-                        const weekLabels = currentMonthWeeks.map((w, i) => `Semana ${i + 1}`);
-
-                        // Destroy Legacy Chart if exists
-                        if (charts['weeklyComparisonChart']) {
-                            charts['weeklyComparisonChart'].destroy();
-                            delete charts['weeklyComparisonChart'];
-                        }
-
-                        renderWeeklyComparisonAmChart(weekLabels, weeklyCurrentData, m.charts.weeklyHistory, useTendencyComparison);
-                    } else if (comparisonChartType === 'monthly') {
-                        weeklyComparisonChartContainer.classList.add('hidden');
-                        monthlyComparisonChartContainer.classList.remove('hidden');
-                        const metricToggle = document.getElementById('comparison-monthly-metric-container');
-                        if (metricToggle) metricToggle.classList.remove('hidden');
-                        const isFat = comparisonMonthlyMetric === 'faturamento';
-                        comparisonChartTitle.textContent = isFat ? 'Comparativo de Faturamento Mensal' : 'Comparativo de Clientes Atendidos Mensal';
-                        const monthLabels = m.charts.monthlyData.map(d => d.label);
-                        const monthValues = m.charts.monthlyData.map(d => isFat ? d.fat : d.clients);
-                        let currentMonthLabel = 'Mês Atual';
-                        if (currentSales.length > 0) {
-                            const firstSaleDate = parseDate(currentSales[0].DTPED) || new Date();
-                            currentMonthLabel = firstSaleDate.toLocaleString('pt-BR', { month: 'short', year: '2-digit', timeZone: 'UTC' });
-                        }
-                        let currentVal = isFat ? m.current.fat : m.current.clients;
-                        monthLabels.push(currentMonthLabel);
-                        monthValues.push(currentVal);
-                        // Destroy Legacy Chart if exists
-                        if (charts['monthlyComparisonChart']) {
-                            charts['monthlyComparisonChart'].destroy();
-                            delete charts['monthlyComparisonChart'];
-                        }
-
-                        renderMonthlyComparisonAmChart(
-                            monthLabels,
-                            monthValues,
-                            isFat ? 'Faturamento' : 'Clientes Atendidos',
-                            isFat ? 0x3b82f6 : 0x10b981
-                        );
-                    } else if (comparisonChartType === 'daily') {
-                        weeklyComparisonChartContainer.classList.remove('hidden');
-                        monthlyComparisonChartContainer.classList.add('hidden');
-                        comparisonChartTitle.textContent = 'Comparativo de Faturamento Diário';
-
-                        // --- NEW DAILY CHART LOGIC ---
-
-                        // 1. Prepare Current Month Data (Chronological)
-                        const daysInMonth = new Date(Date.UTC(currentYear, currentMonth + 1, 0)).getUTCDate();
-                        const currentDailyTimeline = []; // { dayLabel, value, isWorkingDay, workingDayIndex, dateObj }
-
-                        // We iterate all days to determine the axis
-                        for (let d = 1; d <= daysInMonth; d++) {
-                            const dateObj = new Date(Date.UTC(currentYear, currentMonth, d));
-                            const isWDay = isWorkingDay(dateObj, selectedHolidays);
-
-                            // Check if sales exist for this specific day
-                            // We can check metrics.charts.weeklyCurrent but that's aggregated.
-                            // We need per-day sales. We calculated m.currentDayTotals (aggregated by weekday), not by date.
-                            // Let's re-scan currentSales for daily totals (or we could have done it in the main loop).
-                            // Optimization: Do it in main loop or here? Main loop didn't store by date.
-                            // Since we have currentSales available, let's filter/reduce efficiently or use a map.
-
-                            // Let's build a map for current month sales by Day (1-31)
-                            // Ideally this should be in the main loop, but refactoring that is risky.
-                            // We can do a quick pass here.
-                        }
-
-                        const currentSalesByDay = new Array(daysInMonth + 1).fill(0);
-                        const _isAltMode_10 = isAlternativeMode(selectedComparisonTiposVenda);
-                        currentSales.forEach(s => {
-                            if (!_isAltMode_10 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
-                            const d = parseDate(s.DTPED);
-                            if (d && d.getUTCMonth() === currentMonth && d.getUTCFullYear() === currentYear) {
-                                currentSalesByDay[d.getUTCDate()] += getValueForSale(s, selectedComparisonTiposVenda);
-                            }
-                        });
-
-
-
-                        // 2. Prepare History Averages by Working Day Index
-                        // We need average for 1st WD, 2nd WD, etc.
-                        const historyWorkingDaySums = new Map(); // Index -> Sum
-                        const historyWorkingDayCounts = new Map(); // Index -> Count of Months contributing
-
-                        // Also need M-1 (Previous Month) data specifically for Overflow logic
-                        const prevMonthDate = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
-                        const prevMonthIndex = prevMonthDate.getUTCMonth();
-                        const prevMonthYear = prevMonthDate.getUTCFullYear();
-                        const prevMonthSalesByWDIndex = new Map(); // WDIndex -> Value
-                        let prevMonthMaxWDIndex = 0;
-
-                        // Process History Sales again? Or use the existing loop data?
-                        // Existing loop aggregated to `metrics.history.fat` etc. but not granular enough.
-                        // We need to re-scan historySales.
-
-                        // Scan History
-                        const historySalesByMonthDay = new Map(); // "YYYY-MM-DD" -> Value
-                        const _isAltMode_11 = isAlternativeMode(selectedComparisonTiposVenda);
-                        historySales.forEach(s => {
-                            if (!_isAltMode_11 && s.TIPOVENDA !== '1' && s.TIPOVENDA !== '9') return;
-                            const d = parseDate(s.DTPED);
-                            if (d) {
-                                const key = d.toISOString().split('T')[0];
-                                const val = getValueForSale(s, selectedComparisonTiposVenda);
-                                historySalesByMonthDay.set(key, (historySalesByMonthDay.get(key) || 0) + val);
-                            }
-                        });
-
-
-
-                        // Now iterate months in history (last 3) to map to Working Day Indices
-                        // Identify unique months in history
-                        const uniqueMonths = new Set();
-                        historySalesByMonthDay.forEach((v, k) => uniqueMonths.add(k.substring(0, 7)));
-
-                        uniqueMonths.forEach(mKey => {
-                            const [yStr, mStr] = mKey.split('-');
-                            const y = parseInt(yStr);
-                            const m = parseInt(mStr) - 1; // 0-indexed
-
-                            const isPrevMonth = (y === prevMonthYear && m === prevMonthIndex);
-
-                            const daysInM = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
-                            let wdIndex = 0;
-
-                            for (let d = 1; d <= daysInM; d++) {
-                                const dateObj = new Date(Date.UTC(y, m, d));
-                                if (isWorkingDay(dateObj, selectedHolidays)) {
-                                    wdIndex++;
-                                    const val = historySalesByMonthDay.get(dateObj.toISOString().split('T')[0]) || 0;
-
-                                    historyWorkingDaySums.set(wdIndex, (historyWorkingDaySums.get(wdIndex) || 0) + val);
-                                    historyWorkingDayCounts.set(wdIndex, (historyWorkingDayCounts.get(wdIndex) || 0) + 1);
-
-                                    if (isPrevMonth) {
-                                        prevMonthSalesByWDIndex.set(wdIndex, val);
-                                        prevMonthMaxWDIndex = Math.max(prevMonthMaxWDIndex, wdIndex);
-                                    }
-                                }
-                            }
-                        });
-
-
-
-                        // 3. Construct Axis and Datasets
-                        let currentWDCounter = 0;
-                        const labels = [];
-                        const currentData = [];
-                        const historyData = [];
-
-                        for (let d = 1; d <= daysInMonth; d++) {
-                            const dateObj = new Date(Date.UTC(currentYear, currentMonth, d));
-                            const isWDay = isWorkingDay(dateObj, selectedHolidays);
-                            const val = currentSalesByDay[d];
-                            const hasSales = val > 0;
-
-                            if (isWDay) {
-                                currentWDCounter++;
-                            }
-
-                            // Rule: Show if Working Day OR Has Sales
-                            // Note: "começar no primeiro dia útil". We enforce this by filtering?
-                            // User said: "esse 'diário' irá começar no primeiro dia útil do mês".
-                            // But also "caso tenha venda em algum dia que não seja um dia útil, esse dia deve aparecer".
-                            // If day 1 is Sat (non-working) and has sales, it appears.
-                            // If day 1 is Sat (non-working) and NO sales, it is skipped.
-                            // If day 1 is Mon (working), it appears.
-
-                            // What if Day 1/2 are weekends without sales? They are skipped.
-                            // The chart naturally starts at the first added point.
-
-                            if (isWDay || hasSales) {
-                                labels.push(d.toString());
-                                currentData.push(val);
-
-                                // History Value Logic
-                                if (isWDay) {
-                                    // It is the Nth working day. Get average.
-                                    let avg = 0;
-                                    if (historyWorkingDayCounts.has(currentWDCounter)) {
-                                        avg = historyWorkingDaySums.get(currentWDCounter) / historyWorkingDayCounts.get(currentWDCounter);
-                                    } else {
-                                        // OVERFLOW LOGIC
-                                        // "repetir o valor feito nos últimos dias uteis do mês anterior"
-                                        // Calculate offset from max available in M-1
-                                        // If M-1 had 20 days. We are at 21.
-                                        // We want 19th of M-1? User said: "no caso seria o dia 19º e dia 20º útil." for 2 extra days.
-                                        // It implies using the tail of M-1.
-                                        // Let's assume we map backwards from end.
-
-                                        if (prevMonthMaxWDIndex > 0) {
-                                            const overflowAmount = currentWDCounter - prevMonthMaxWDIndex;
-                                            // If overflow is 1 (21st day, max 20), we want 19th? (Max - 1)
-                                            // If overflow is 2 (22nd day, max 20), we want 20th? (Max)
-                                            // Wait, the example: "o mês atual tem 22... a 'média' para esses dois dias será na verdade o que foi realizado nos últimos dois dias uteis do mês anterior"
-                                            // Days 21 and 22.
-                                            // "últimos dois dias uteis": 19 and 20.
-                                            // So 21 -> 19, 22 -> 20.
-                                            // Formula: targetIndex = PrevMax - (TotalOverflow - CurrentOverflowIndex) ?? No.
-                                            // Let TotalCurrentWD = estimated total? No we are iterating.
-
-                                            // Simpler Interpretation:
-                                            // Just repeat the last few values?
-                                            // Let's look at the mapping:
-                                            // 21 -> 19
-                                            // 22 -> 20
-                                            // It seems we map the overflow window [21, 22] to [19, 20].
-                                            // This is `Index - 2`. Where 2 is the difference?
-                                            // Or is it dynamic based on how many extra days?
-                                            // "se acontecer de o mês atual ter mais dias uteis... iremos repetir o valor feito nos últimos dias uteis"
-
-                                            // Implementation Strategy:
-                                            // We don't know total days yet in the loop. But we know `currentWDCounter`.
-                                            // We assume the overflowing days are contiguous at the end.
-                                            // BUT we are processing day by day.
-                                            // If we are at index 21, and max was 20.
-                                            // We need to look back.
-                                            // Maybe just use `PrevMax - 1` for odd overflow and `PrevMax` for even? No.
-
-                                            // Let's try to map strictly to the *end* of the previous series.
-                                            // But we don't know how many *more* days we will have total.
-                                            // Actually we do: `getWorkingDaysInMonth` for current month.
-                                            const totalCurrentWorkingDays = getWorkingDaysInMonth(currentYear, currentMonth, selectedHolidays);
-                                            const overflowCount = totalCurrentWorkingDays - prevMonthMaxWDIndex;
-
-                                            if (overflowCount > 0) {
-                                                // We are in the overflow zone?
-                                                // Only if currentWDCounter > prevMonthMaxWDIndex.
-                                                // Map index:
-                                                // We want to map range [PrevMax+1 ... TotalCurr] -> [PrevMax - OverflowCount + 1 ... PrevMax]
-                                                // Let's check example:
-                                                // PrevMax=20. TotalCurr=22. Overflow=2.
-                                                // Range [21, 22] -> [19, 20].
-                                                // 21 -> 20 - 2 + (21 - 20) = 18 + 1 = 19. Correct.
-                                                // 22 -> 20 - 2 + (22 - 20) = 18 + 2 = 20. Correct.
-
-                                                const mappedIndex = prevMonthMaxWDIndex - overflowCount + (currentWDCounter - prevMonthMaxWDIndex);
-
-                                                if (mappedIndex > 0) {
-                                                    // Use M-1 value
-                                                    avg = prevMonthSalesByWDIndex.get(mappedIndex) || 0;
-                                                }
-                                            }
-                                        }
-                                    }
-                                    historyData.push(avg);
-                                } else {
-                                    // Non-working day (e.g. Saturday with sales)
-                                    // Average line should not exist or be 0.
-                                    // Setting to null breaks the line in Chart.js/AmCharts usually.
-                                    // If we put 0, it dips.
-                                    // "o gráfico ainda deve trazer essa linha de média trimestral, que será calculada por dia..."
-                                    // I'll put null to imply no goal/average for off-days.
-                                    historyData.push(null);
-                                }
-                            }
-                        }
-
-                        // Destroy Legacy Chart if exists
-                        if (charts['weeklyComparisonChart']) {
-                            charts['weeklyComparisonChart'].destroy();
-                            delete charts['weeklyComparisonChart'];
-                        }
-
-                        renderWeeklyComparisonAmChart(labels, currentData, historyData, false);
-                    }
-
-                    // Daily Chart (Simplified re-calc for now, or could optimize further)
-                    const salesByWeekAndDay = {};
-                    currentMonthWeeks.forEach((w, i) => { salesByWeekAndDay[i + 1] = new Array(7).fill(0); });
-                    currentSales.forEach(s => { const d = parseDate(s.DTPED); if(d) { const wIdx = currentMonthWeeks.findIndex(w => d >= w.start && d <= w.end); if(wIdx !== -1) salesByWeekAndDay[wIdx+1][d.getUTCDay()] += s.VLVENDA; } });
-                    if (m.overlapSales && m.overlapSales.length > 0) { m.overlapSales.forEach(s => { const d = parseDate(s.DTPED); if (d) salesByWeekAndDay[1][d.getUTCDay()] += s.VLVENDA; }); }
-
-                    // --- INICIO DA MODIFICAÇÃO: Tendência no Gráfico Diário ---
-                    if (useTendencyComparison) {
-                        const today = lastSaleDate;
-                        const currentWeekIndex = currentMonthWeeks.findIndex(w => today >= w.start && today <= w.end);
-
-                        // 1. Project Current Week
-                        if (currentWeekIndex !== -1) {
-                            const currentWeek = currentMonthWeeks[currentWeekIndex];
-                            let workingDaysPassed = 0; let totalWorkingDays = 0;
-                            const remainingDaysIndices = [];
-
-                            for (let d = new Date(currentWeek.start); d <= currentWeek.end; d.setUTCDate(d.getUTCDate() + 1)) {
-                                const dayOfWeek = d.getUTCDay();
-                                if (dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(d, selectedHolidays)) {
-                                    totalWorkingDays++;
-                                    if (d <= today) workingDaysPassed++;
-                                    else remainingDaysIndices.push(dayOfWeek);
-                                }
-                            }
-
-                            if (workingDaysPassed > 0 && totalWorkingDays > 0) {
-                                const weekData = salesByWeekAndDay[currentWeekIndex + 1];
-                                let salesSoFar = 0;
-                                for (let k = 0; k < weekData.length; k++) salesSoFar += weekData[k];
-                                const projectedWeekTotal = (salesSoFar / workingDaysPassed) * totalWorkingDays;
-                                const remainder = projectedWeekTotal - salesSoFar;
-
-                                if (remainder > 0 && remainingDaysIndices.length > 0) {
-                                    let totalWeightRemaining = 0;
-                                    const weightsForRemaining = [];
-                                    for (let k = 0; k < remainingDaysIndices.length; k++) {
-                                        const w = m.dayWeights[remainingDaysIndices[k]] || 0;
-                                        weightsForRemaining.push(w);
-                                        totalWeightRemaining += w;
-                                    }
-
-                                    remainingDaysIndices.forEach(dayIndex => {
-                                        const weight = m.dayWeights[dayIndex] || 0;
-                                        // If weights are available, use them. Otherwise distribute evenly.
-                                        const share = totalWeightRemaining > 0 ? (weight / totalWeightRemaining) : (1 / remainingDaysIndices.length);
-                                        weekData[dayIndex] = remainder * share;
-                                    });
-
-
-                                }
-                            }
-                        }
-
-                        // 2. Fill Future Weeks with Historical Average (Distributed by Day Weights)
-                        let totalWeightMonFri = 0;
-                        const weightsMonFri = [];
-                        for (let k = 1; k <= 5; k++) {
-                            const w = m.dayWeights[k] || 0;
-                            weightsMonFri.push(w);
-                            totalWeightMonFri += w;
-                        }
-
-                        for (let i = currentWeekIndex + 1; i < currentMonthWeeks.length; i++) {
-                            const historicalTotal = m.charts.weeklyHistory[i] || 0;
-                            if (historicalTotal > 0) {
-                                const weekData = salesByWeekAndDay[i + 1];
-                                // Fill Mon(1) to Fri(5)
-                                for (let d = 1; d <= 5; d++) {
-                                    const weight = m.dayWeights[d] || 0;
-                                    const share = totalWeightMonFri > 0 ? (weight / totalWeightMonFri) : (1 / 5);
-                                    weekData[d] = historicalTotal * share;
-                                }
-                            }
-                        }
-                    }
-                    // --- FIM DA MODIFICAÇÃO ---
-
-
-                    // Weekly Summary Table (Optimized)
-                    const weeklySummaryTableBody = document.getElementById('weeklySummaryTableBody');
-                    if (weeklySummaryTableBody) {
-                         let grandTotal = 0;
-                         const weekKeys = Object.keys(salesByWeekAndDay).sort((a,b) => parseInt(a) - parseInt(b));
-                         const rowsHTML = weekKeys.map(weekNum => {
-                             let weekTotal = 0;
-                             const vals = Object.values(salesByWeekAndDay[weekNum]);
-                             for (let k = 0; k < vals.length; k++) {
-                                 weekTotal += vals[k];
-                             }
-                             grandTotal += weekTotal;
-                             return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">Semana ${weekNum}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${weekTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`;
-                         }).join('');
-
-                         weeklySummaryTableBody.innerHTML = rowsHTML + `<tr class="font-bold bg-slate-700/50"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm">Total do Mês</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td></tr>`;
-                    }
-
-                    // Supervisor Table
-                    const supervisorTableBody = document.getElementById('supervisorComparisonTableBody');
-                    const supRows = Object.entries(m.charts.supervisorData).map(([sup, data]) => { const variation = data.history > 0 ? ((data.current - data.history) / data.history) * 100 : (data.current > 0 ? 100 : 0); const colorClass = variation > 0 ? 'text-green-400' : variation < 0 ? 'text-red-400' : 'text-slate-400'; return `<tr class="hover:bg-slate-700"><td class="px-2 py-2 md:px-4 md:py-2 text-[10px] md:text-sm truncate max-w-[100px]">${window.escapeHtml(sup)}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.history.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm">${data.current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td><td class="px-2 py-2 md:px-4 md:py-2 text-right text-[10px] md:text-sm ${colorClass}">${variation.toFixed(2)}%</td></tr>`; }).join('');
-                    supervisorTableBody.innerHTML = supRows;
-                }, () => currentRenderId !== comparisonRenderId); // Cancel check
-            }, () => currentRenderId !== comparisonRenderId); // Cancel check
-        }
-
 
 
         function getInnovationsMonthFilteredData(options = {}) {
@@ -16913,10 +16179,17 @@ const supervisorGroups = new Map();
                 }
 
                 updateStatus('Atualizando resumos do painel...', 98);
-                const { data: summaryRefresh, error: summaryRefreshError } = await window.supabaseClient.rpc('refresh_dashboard_summaries_v1');
-                if (summaryRefreshError) throw summaryRefreshError;
-                if (!summaryRefresh || !['current', 'refreshed'].includes(summaryRefresh.status)) {
-                    throw new Error('Os dados foram enviados, mas a atualização dos resumos não foi concluída. Tente novamente.');
+                // Source triggers already queued the scheduled worker. Poll short calls instead
+                // of rebuilding inside a request limited to 8 seconds by the Data API.
+                const summaryDeadline = Date.now() + 180000;
+                while (true) {
+                    const { data: summaryRefresh, error: summaryRefreshError } = await window.supabaseClient.rpc('get_dashboard_summary_status_v1');
+                    if (summaryRefreshError) throw summaryRefreshError;
+                    if (summaryRefresh?.status === 'current') break;
+                    if (summaryRefresh?.status !== 'pending' || Date.now() >= summaryDeadline) {
+                        throw new Error('Os dados foram enviados, mas os resumos ainda não estão prontos. Aguarde e atualize a página.');
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                 }
 
                 updateStatus('Upload Concluído com Sucesso!', 100);
@@ -17769,7 +17042,7 @@ const supervisorGroups = new Map();
                 if (e.target.closest('[data-pedido-id]')) { e.preventDefault(); openModal(e.target.closest('[data-pedido-id]').dataset.pedidoId); }
                 if (e.target.closest('[data-codcli]')) { e.preventDefault(); openClientModal(e.target.closest('[data-codcli]').dataset.codcli); }
                 // Old city suggestions listener removed
-                if (e.target.closest('#comparison-city-suggestions > div')) { if(comparisonCityFilter) comparisonCityFilter.value = e.target.textContent; comparisonCitySuggestions.classList.add('hidden'); updateAllComparisonFilters(); updateComparisonView(); }
+                if (e.target.closest('#comparison-city-suggestions > div')) comparisonCitySuggestions.classList.add('hidden');
                 else if (comparisonCityFilter && !comparisonCityFilter.contains(e.target)) comparisonCitySuggestions.classList.add('hidden');
             });
 
@@ -17794,183 +17067,7 @@ const supervisorGroups = new Map();
 
 
 
-            comparisonTipoVendaFilterBtn.addEventListener('click', () => comparisonTipoVendaFilterDropdown.classList.toggle('hidden'));
-            comparisonTipoVendaFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) {
-                        if (!selectedComparisonTiposVenda.includes(value)) selectedComparisonTiposVenda.push(value);
-                    } else {
-                        selectedComparisonTiposVenda = selectedComparisonTiposVenda.filter(s => s !== value);
-                    }
-                    selectedComparisonTiposVenda = updateTipoVendaFilter(comparisonTipoVendaFilterDropdown, comparisonTipoVendaFilterText, selectedComparisonTiposVenda, [...allSalesData, ...allHistoryData]);
-                    handleComparisonFilterChange();
-                }
-            });
-            comparisonFornecedorToggleContainer.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { const fornecedor = e.target.dataset.fornecedor; if (currentComparisonFornecedor === fornecedor) { currentComparisonFornecedor = ''; e.target.classList.remove('active'); } else { currentComparisonFornecedor = fornecedor; comparisonFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); } handleComparisonFilterChange(); } });
-            comparisonSupplierFilterBtn.addEventListener('click', () => comparisonSupplierFilterDropdown.classList.toggle('hidden'));
-            comparisonSupplierFilterDropdown.addEventListener('change', (e) => { if (e.target.type === 'checkbox' && e.target.dataset.filterType === 'comparison') { const { value, checked } = e.target; if (checked) selectedComparisonSuppliers.push(value); else selectedComparisonSuppliers = selectedComparisonSuppliers.filter(s => s !== value); handleComparisonFilterChange(); } });
-
-            comparisonComRedeBtn.addEventListener('click', () => comparisonRedeFilterDropdown.classList.toggle('hidden'));
-            comparisonRedeGroupContainer.addEventListener('click', (e) => {
-                if(e.target.closest('button')) {
-                    const button = e.target.closest('button');
-                    comparisonRedeGroupFilter = button.dataset.group;
-                    comparisonRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    button.classList.add('active');
-                    if (comparisonRedeGroupFilter !== 'com_rede') {
-                        comparisonRedeFilterDropdown.classList.add('hidden');
-                        selectedComparisonRedes = [];
-                    }
-                    updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
-                    handleComparisonFilterChange();
-                }
-            });
-            comparisonRedeFilterDropdown.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    const { value, checked } = e.target;
-                    if (checked) selectedComparisonRedes.push(value);
-                    else selectedComparisonRedes = selectedComparisonRedes.filter(r => r !== value);
-
-                    comparisonRedeGroupFilter = 'com_rede';
-                    comparisonRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    comparisonComRedeBtn.classList.add('active');
-
-                    selectedComparisonRedes = updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
-                    handleComparisonFilterChange();
-                }
-            });
-
-            const debouncedComparisonCityUpdate = debounce(() => {
-                const { currentSales, historySales } = getComparisonFilteredData({ excludeFilter: 'city' });
-                comparisonCitySuggestions.classList.remove('manual-hide');
-                updateComparisonCitySuggestions([...currentSales, ...historySales]);
-            }, 300);
-
-            comparisonCityFilter.addEventListener('input', (e) => {
-                e.target.value = e.target.value.replace(/[0-9]/g, '');
-                debouncedComparisonCityUpdate();
-            });
-            comparisonCityFilter.addEventListener('focus', () => {
-                const { currentSales, historySales } = getComparisonFilteredData({ excludeFilter: 'city' });
-                comparisonCitySuggestions.classList.remove('manual-hide');
-                updateComparisonCitySuggestions([...currentSales, ...historySales]);
-            });
-            comparisonCityFilter.addEventListener('blur', () => setTimeout(() => comparisonCitySuggestions.classList.add('hidden'), 150));
-            comparisonCityFilter.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    comparisonCitySuggestions.classList.add('hidden', 'manual-hide');
-                    handleComparisonFilterChange();
-                    e.target.blur();
-                }
-            });
-            comparisonCitySuggestions.addEventListener('click', (e) => {
-                if (e.target.tagName === 'DIV') {
-                    comparisonCityFilter.value = e.target.textContent;
-                    comparisonCitySuggestions.classList.add('hidden');
-                    handleComparisonFilterChange();
-                }
-            });
-
-            const resetComparisonFilters = () => {
-                selectedComparisonTiposVenda = [];
-                currentComparisonFornecedor = 'PEPSICO';
-                selectedComparisonSuppliers = [];
-                selectedComparisonProducts = [];
-                comparisonRedeGroupFilter = '';
-                selectedComparisonRedes = [];
-                if (comparisonFilialFilter) comparisonFilialFilter.value = 'ambas'; // Reset Filial State
-
-                selectedComparisonSupervisors.clear();
-                selectedComparisonVendedores.clear();
-
-                if (hierarchyState['comparison']) {
-                    hierarchyState['comparison'].coords.clear();
-                    hierarchyState['comparison'].cocoords.clear();
-                    hierarchyState['comparison'].promotors.clear();
-                }
-
-                // Reset Filial UI
-                const filialInputs = document.querySelectorAll('input[name="comparison-filial"]');
-                filialInputs.forEach(inp => {
-                    if (inp.value === 'ambas') inp.checked = true;
-                    else inp.checked = false;
-                });
-
-
-                const filialText = document.getElementById('comparison-filial-filter-text');
-                if (filialText) filialText.textContent = 'Ambas';
-
-                const supDropdown = document.getElementById('comparison-supervisor-filter-dropdown');
-                if (supDropdown) {
-                    supDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-                    updateFilterButtonText(document.getElementById('comparison-supervisor-filter-text'), selectedComparisonSupervisors, 'Todos');
-                }
-
-                const vendDropdown = document.getElementById('comparison-vendedor-filter-dropdown');
-                if (vendDropdown) {
-                    vendDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-                    updateFilterButtonText(document.getElementById('comparison-vendedor-filter-text'), selectedComparisonVendedores, 'Todos');
-                }
-
-                // Refresh Vendedor Dropdown (options) based on empty supervisor selection
-                if (typeof updateComparisonVendedorFilter === 'function') updateComparisonVendedorFilter();
-
-                // Reset Product Filter UI
-                if (comparisonProductFilterDropdown) {
-                    comparisonProductFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-                    updateFilterButtonText(comparisonProductFilterText, new Set(), 'Todos');
-                }
-
-                // Reset Tipo Venda UI
-                if (comparisonTipoVendaFilterDropdown) {
-                    comparisonTipoVendaFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-                    updateFilterButtonText(comparisonTipoVendaFilterText, new Set(), 'Todos');
-                }
-
-                if (comparisonCityFilter) comparisonCityFilter.value = '';
-
-                if (comparisonTipoVendaFilterDropdown) {
-                    comparisonTipoVendaFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-                    updateTipoVendaFilter(comparisonTipoVendaFilterDropdown, comparisonTipoVendaFilterText, selectedComparisonTiposVenda, [...allSalesData, ...allHistoryData]);
-                }
-
-                // FIX: Ensure Filter Button Text resets to 'Todos'
-                if (document.getElementById('comparison-supervisor-filter-text')) {
-                    document.getElementById('comparison-supervisor-filter-text').textContent = 'Todos';
-                }
-                if (document.getElementById('comparison-vendedor-filter-text')) {
-                    document.getElementById('comparison-vendedor-filter-text').textContent = 'Todos';
-                }
-
-                if (comparisonSupplierFilterDropdown) {
-                    comparisonSupplierFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-                    updateSupplierFilter(comparisonSupplierFilterDropdown, comparisonSupplierFilterText, selectedComparisonSuppliers, [...allSalesData, ...allHistoryData], 'comparison');
-                }
-
-                if (comparisonRedeFilterDropdown) {
-                    comparisonRedeFilterDropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-                }
-
-                if (comparisonRedeGroupContainer) {
-                    comparisonRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                    const defaultBtn = comparisonRedeGroupContainer.querySelector('button[data-group=""]');
-                    if (defaultBtn) defaultBtn.classList.add('active');
-                    updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
-                }
-
-                if (comparisonFornecedorToggleContainer) {
-                    comparisonFornecedorToggleContainer.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active'));
-                    const pepsicoBtn = comparisonFornecedorToggleContainer.querySelector('button[data-fornecedor="PEPSICO"]');
-                    if (pepsicoBtn) pepsicoBtn.classList.add('active');
-                }
-
-                updateComparisonSupervisorFilter();
-                updateComparisonVendedorFilter();
-                handleComparisonFilterChange();
-            };
-
-            clearComparisonFiltersBtn.addEventListener('click', resetComparisonFilters);
+            setupRpcPageFilters('comparison');
 
             const handleProductFilterChange = (e, selectedArray) => {
                  if (e.target.type === 'checkbox') {
@@ -17985,25 +17082,6 @@ const supervisorGroups = new Map();
                 }
                 return false;
             }
-
-            comparisonProductFilterBtn.addEventListener('click', () => {
-                updateComparisonProductFilter();
-                comparisonProductFilterDropdown.classList.toggle('hidden');
-            });
-
-            const debouncedComparisonProductSearch = debounce(updateComparisonProductFilter, 250);
-            comparisonProductFilterDropdown.addEventListener('input', (e) => {
-                if (e.target.id === 'comparison-product-search-input') {
-                    debouncedComparisonProductSearch();
-                }
-            });
-            comparisonProductFilterDropdown.addEventListener('change', (e) => {
-                if(e.target.dataset.filterType === 'comparison' && handleProductFilterChange(e, selectedComparisonProducts)) {
-                    handleComparisonFilterChange();
-                    updateComparisonProductFilter(true); // Skip render to prevent list jumping while selecting
-                }
-            });
-
 
             comparisonTendencyToggle.addEventListener('click', () => {
                 useTendencyComparison = !useTendencyComparison;
@@ -18033,7 +17111,7 @@ const supervisorGroups = new Map();
                     comparisonChartType = 'daily';
                     updateToggleStyles(toggleDailyBtn, toggleWeeklyBtn, toggleMonthlyBtn);
                     document.getElementById('comparison-monthly-metric-container').classList.add('hidden');
-                    updateComparisonView();
+                    renderComparisonRpcCharts();
                 });
 
 
@@ -18043,14 +17121,14 @@ const supervisorGroups = new Map();
                 comparisonChartType = 'weekly';
                 updateToggleStyles(toggleWeeklyBtn, toggleDailyBtn, toggleMonthlyBtn);
                 document.getElementById('comparison-monthly-metric-container').classList.add('hidden');
-                updateComparisonView();
+                renderComparisonRpcCharts();
             });
 
             toggleMonthlyBtn.addEventListener('click', () => {
                 comparisonChartType = 'monthly';
                 updateToggleStyles(toggleMonthlyBtn, toggleDailyBtn, toggleWeeklyBtn);
                 // The toggle visibility is handled inside updateComparisonView based on mode
-                updateComparisonView();
+                renderComparisonRpcCharts();
             });
 
             // Initialize Toggle Styles for Default View (Daily)
@@ -18067,7 +17145,7 @@ const supervisorGroups = new Map();
                     comparisonMonthlyMetric = 'faturamento';
                     toggleMonthlyFatBtn.classList.add('active');
                     toggleMonthlyClientsBtn.classList.remove('active');
-                    handleComparisonFilterChange();
+                    renderComparisonRpcCharts();
                 });
 
 
@@ -18076,7 +17154,7 @@ const supervisorGroups = new Map();
                     comparisonMonthlyMetric = 'clientes';
                     toggleMonthlyClientsBtn.classList.add('active');
                     toggleMonthlyFatBtn.classList.remove('active');
-                    handleComparisonFilterChange();
+                    renderComparisonRpcCharts();
                 });
 
 
@@ -18092,6 +17170,8 @@ const supervisorGroups = new Map();
             }
             if (comparisonHolidayPickerBtn) {
                 comparisonHolidayPickerBtn.addEventListener('click', () => {
+                    const reference=dashboardRpcState.comparison.referenceDate || dashboardRpcState.comparison.facets?.reference_date;
+                    if (reference) { calendarState.year=Number(reference.slice(0,4)); calendarState.month=Number(reference.slice(5,7))-1; }
                     renderCalendar(calendarState.year, calendarState.month);
                     holidayModal.classList.remove('hidden');
                 });
@@ -19439,7 +18519,7 @@ const supervisorGroups = new Map();
 
         updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
         updateRedeFilter(cityRedeFilterDropdown, cityComRedeBtnText, selectedCityRedes, allClientsData);
-        updateRedeFilter(comparisonRedeFilterDropdown, comparisonComRedeBtnText, selectedComparisonRedes, allClientsData);
+        refreshRpcFacetUI('comparison');
 
         // Fix: Pre-filter Suppliers for Meta Realizado (Only PEPSICO)
         metaRealizadoSuppliersSource = [...allSalesData, ...allHistoryData].filter(s => {

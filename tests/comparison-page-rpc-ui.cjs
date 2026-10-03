@@ -1,0 +1,32 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../js/app/app.js'),'utf8');
+// Reuse the DOM/network mock from the coverage test, but exercise real Comparison functions.
+const harness=fs.readFileSync(path.join(__dirname,'coverage-weekly-rpc-ui.cjs'),'utf8');
+const setup=harness.slice(harness.indexOf('const events='),harness.indexOf('vm.createContext(ctx);'));
+const context={fs,vm,assert,path,source,AbortController,Set,Array,Date,Number,JSON,Error};vm.createContext(context);vm.runInContext(setup+'\nthis.ctx=ctx;this.el=el;this.requests=requests;this.timers=timers;this.charts=charts;',context);
+const {ctx,el,requests,timers,charts}=context;const cards=[];
+Object.assign(ctx,{Object,String,selectedComparisonSupervisors:new Set(),selectedComparisonVendedores:new Set(),selectedComparisonSuppliers:[],selectedComparisonProducts:[],selectedComparisonTiposVenda:[],selectedComparisonRedes:[],currentComparisonFornecedor:'PEPSICO',comparisonRedeGroupFilter:'',selectedHolidays:[],useTendencyComparison:false,comparisonChartType:'daily',comparisonMonthlyMetric:'faturamento',charts:{},markDirty(){},renderKpiCards:x=>cards.push(x),renderWeeklyComparisonAmChart:(...x)=>charts.push(x),renderMonthlyComparisonAmChart:(...x)=>charts.push(x)});
+for(const [key,id] of Object.entries({comparisonCityFilter:'comparison-city-filter',comparisonCitySuggestions:'comparison-city-suggestions',comparisonFilialFilter:'comparison-filial-filter',comparisonFornecedorToggleContainer:'comparison-fornecedor-toggle-container',clearComparisonFiltersBtn:'clear-comparison-filters-btn',weeklyComparisonChartContainer:'weeklyComparisonChartContainer',monthlyComparisonChartContainer:'monthlyComparisonChartContainer',comparisonChartTitle:'comparison-chart-title'}))ctx[key]=el(id);
+ctx.comparisonFilialFilter.value='ambas';ctx.document.querySelectorAll=()=>[];
+for(const key of ['allClientsData','allSalesData','allHistoryData','optimizedData','lastSaleDate'])Object.defineProperty(ctx,key,{get(){throw Error('Download local usado: '+key);}});
+vm.createContext(ctx);
+vm.runInContext(source.slice(source.indexOf('        // RPC pages:'),source.indexOf('        function updateAllCoverageFilters()')),ctx);
+vm.runInContext(source.slice(source.indexOf('        function setupComparisonRpcControls('),source.indexOf('        function updateProductFilter(')),ctx);
+const launch=()=>{const [id,t]=[...timers].find(([,t])=>t.delay===150)||[];assert.ok(t);timers.delete(id);return t.fn();};
+const facet={schema_version:1,reference_date:'2026-10-02',suppliers:[],products:[],types:[],sellers:[],supervisors:[],coords:[],cocoords:[],promotors:[],cities:[],redes:[],pastas:[]};
+const payload=n=>({schema_version:2,reference_date:'2026-10-02',kpis:Object.fromEntries(['current','history'].map(k=>[k,Object.fromEntries(['fat','peso','clients','ticket','mixPepsico','positivacaoSalty','positivacaoFoods','perdas'].map(v=>[v,n]))])),charts:{daily:{labels:[1,3],current:[n,2],history:[n,null]},weekly:[{label:'Semana 1',current:n,history:n}],monthly:[{month_date:'2026-10-01',fat:n,clients:1,is_current:true}],weekly_rows:[{label:'Semana 1',total:n}],weekly_total:n,groups:[{name:'<script>grupo</script>',current:n,history:n,variation:0}]}});
+const resolve=(start,data,end=requests.length)=>{for(const r of requests.slice(start,end))r.resolve({data:r.name==='get_comparison_page_v2'?data:facet});};
+(async()=>{
+ ctx.updateComparisonView();ctx.updateComparisonView();assert.equal([...timers.values()].filter(t=>t.delay===150).length,1);assert.equal(el('comparison-kpi-container').innerHTML,'conteúdo anterior');
+ let start=requests.length,first=launch();ctx.selectedComparisonProducts=['p'];ctx.updateComparisonView();assert.ok(requests[start].signal.aborted);let next=requests.length,second=launch();
+ resolve(start,payload(1),next);await first;assert.equal(cards.length,0);resolve(next,payload(2));await second;assert.equal(cards[0].length,8);assert.equal(cards[0][1].current,.002);assert.equal(charts.length,1);
+ assert.ok(!('client_codes' in requests[next].args.p_filters));assert.deepEqual(requests[next].args.p_filters.products,['p']);assert.match(el('supervisorComparisonTableBody').innerHTML,/&lt;script&gt;/);
+ const requestCount=requests.length;for(const type of ['weekly','monthly','daily']){ctx.comparisonChartType=type;ctx.renderComparisonRpcCharts();}assert.equal(charts.length,4);assert.equal(requests.length,requestCount);
+ ctx.selectedComparisonVendedores.add('1001');ctx.hierarchyState.comparison.coords.add('coord');ctx.comparisonCityFilter.value='Cidade';ctx.comparisonFilialFilter.value='05';ctx.updateComparisonView();start=requests.length;const pending=launch();ctx.resetComparisonFilters();assert.ok(requests[start].signal.aborted);next=requests.length;const cleared=launch();resolve(start,payload(3),next);await pending;resolve(next,payload(4));await cleared;
+ const f=requests[next].args.p_filters;assert.equal(f.filial,'ambas');assert.equal(f.city,'');assert.equal(f.sellers.length+f.products.length+f.coords.length,0);
+ ctx.updateComparisonView();start=requests.length;const fail=launch();requests[start].resolve({error:new Error('timeout')});await fail;assert.match(el('comparison-view').status.innerHTML,/Tentar novamente/);const before=cards.length;
+ el('comparison-view').status.button.listeners.click[0]();start=requests.length;const retry=launch();resolve(start,payload(5));await retry;assert.equal(cards.length,before+1);
+ ctx.updateComparisonView();start=requests.length;const invalid=launch();const bad=payload(6);bad.charts.weekly[0].current=null;resolve(start,bad);await invalid;assert.equal(cards.length,before+1);
+ ctx.selectedComparisonSuppliers=['707'];ctx.updateComparisonView();start=requests.length;const independent=launch();requests[start].resolve({data:payload(7)});await new Promise(resolve=>setImmediate(resolve));assert.equal(cards.length,before+2);requests[start+1].resolve({error:new Error('facet timeout')});await independent;
+ console.log('Comparativo: RPC completa, filtros/limpar, debounce/cancelamento, gráficos/tabelas, erro/retry e independência de downloads: OK');
+})().catch(e=>{console.error(e);process.exitCode=1;});

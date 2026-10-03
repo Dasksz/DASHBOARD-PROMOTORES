@@ -1420,8 +1420,10 @@
                     <button id="toggle-monthly-btn" class="comparison-toggle-btn px-3 py-1 text-sm text-slate-400 rounded focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">Mensal</button>
                 </div>
             </div>
-            <!-- Metrics toggles hidden in layout but needed for JS -->
-            <div id="comparison-monthly-metric-container" class="hidden"><button id="toggle-monthly-fat-btn" aria-label="Alternar faturamento mensal" class=" focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"></button><button id="toggle-monthly-clients-btn" aria-label="Alternar clientes mensais" class=" focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"></button></div>
+            <div id="comparison-monthly-metric-container" class="hidden mb-4 space-x-2">
+                <button id="toggle-monthly-fat-btn" aria-label="Alternar faturamento mensal" class="comparison-toggle-btn active px-3 py-2 rounded text-sm text-slate-300 focus-visible:ring-2 focus-visible:ring-[#FF5E00]">Faturamento</button>
+                <button id="toggle-monthly-clients-btn" aria-label="Alternar clientes mensais" class="comparison-toggle-btn px-3 py-2 rounded text-sm text-slate-300 focus-visible:ring-2 focus-visible:ring-[#FF5E00]">Clientes atendidos</button>
+            </div>
             
             <div id="weeklyComparisonChartContainer" class="relative h-96"></div>
             <div id="monthlyComparisonChartContainer" class="relative h-96 hidden"></div>
@@ -1443,7 +1445,7 @@
         </div>
 
         <div class="glass-panel p-2 rounded-2xl border border-slate-800/50 shadow-lg">
-            <h2 class="text-lg font-bold text-white mb-4">Variação por Supervisor</h2>
+            <h2 id="comparison-group-title" class="text-lg font-bold text-white mb-4">Variação por Coordenador</h2>
             <div class="overflow-x-auto custom-scrollbar">
                 <table class="min-w-full text-sm text-left text-slate-300"><tbody id="supervisorComparisonTableBody" class="divide-y divide-slate-800"></tbody></table>
             </div>
