@@ -3504,6 +3504,119 @@
         let currentMetaRealizadoPasta = 'PEPSICO'; // Default
         let currentMetaRealizadoMetric = 'valor'; // 'valor' or 'peso'
 
+        // Monthly context is private to Meta vs Realizado; it never rewrites editable goals.
+        let selectedMetaRealizadoMonth = lastSaleDate.toISOString().slice(0, 7);
+        let metaRealizadoRenderRequest = 0;
+        const metaRealizadoGoalCache = new Map();
+        const metaRealizadoCurrentMonths = new Set();
+        const metaRealizadoAvailableMonths = new Set([selectedMetaRealizadoMonth]);
+
+        function metaRealizadoMonthKey(value) {
+            if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 7);
+            if (typeof value === 'number') return metaRealizadoMonthKey(new Date(value));
+            const text = String(value || '').trim().toLowerCase();
+            let match = text.match(/^(\d{4})-(\d{2})(?:$|[-T ])/);
+            if (match && Number(match[2]) >= 1 && Number(match[2]) <= 12) return `${match[1]}-${match[2]}`;
+            match = text.match(/^(\d{1,2})\/(\d{4})$/);
+            if (match && Number(match[1]) >= 1 && Number(match[1]) <= 12) return `${match[2]}-${match[1].padStart(2, '0')}`;
+            const names = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+            match = text.match(/^([a-zç]+)\s+(?:de\s+)?(\d{4})$/);
+            if (match && names.includes(match[1])) return `${match[2]}-${String(names.indexOf(match[1]) + 1).padStart(2, '0')}`;
+            return null;
+        }
+
+        function getMetaRealizadoPeriodDate() {
+            return new Date(`${selectedMetaRealizadoMonth}-01T00:00:00Z`);
+        }
+
+        function getMetaRealizadoPeriodSource() {
+            const current = metaRealizadoCurrentMonths.has(selectedMetaRealizadoMonth);
+            return {
+                data: current ? allSalesData : allHistoryData,
+                indices: current ? optimizedData.indices.current : optimizedData.indices.history,
+                byId: current ? optimizedData.salesById : optimizedData.historyById
+            };
+        }
+
+        function isMetaRealizadoPeriod(value) {
+            return metaRealizadoMonthKey(value) === selectedMetaRealizadoMonth;
+        }
+
+        function getMetaRealizadoGoalMaps() {
+            const snapshot = metaRealizadoGoalCache.get(selectedMetaRealizadoMonth);
+            if (snapshot) return snapshot;
+            // The current month's live calculated/edited goals retain their existing behavior.
+            if (selectedMetaRealizadoMonth === lastSaleDate.toISOString().slice(0, 7) && selectedMetaRealizadoMonth === new Date().toISOString().slice(0, 7)) {
+                return { clients: globalClientGoals, sellers: goalsSellerTargets, saved: false };
+            }
+            return { clients: new Map(), sellers: new Map(), saved: false };
+        }
+
+        async function loadMetaRealizadoMonthGoals(month) {
+            if (metaRealizadoGoalCache.has(month) || (month === lastSaleDate.toISOString().slice(0, 7) && month === new Date().toISOString().slice(0, 7))) return;
+            const { data, error } = await window.supabaseClient.from('goals_distribution')
+                .select('goals_data').eq('month_key', month).eq('supplier', 'ALL').eq('brand', 'GENERAL').maybeSingle();
+            if (error) throw error;
+            // Never cache an absent current-month snapshot: live goal edits must stay visible.
+            if (!data?.goals_data && month === lastSaleDate.toISOString().slice(0, 7)) return;
+            const gd = data?.goals_data || {};
+            const clients = new Map();
+            for (const [code, categories] of Object.entries(gd.clients || (gd.targets ? {} : gd))) {
+                if (!categories || typeof categories !== 'object' || code === 'seller_targets') continue;
+                const goals = new Map(Object.entries(categories));
+                const virtual = window.SUPPLIER_CODES.VIRTUAL;
+                const leaves = [virtual.TODDYNHO, virtual.TODDY, virtual.QUAKER_KEROCOCO];
+                const generic = goals.get('total_foods') || goals.get('FOODS_ALL') || goals.get('1119');
+                if (generic && !leaves.some(key => (goals.get(key)?.fat || goals.get(key)?.vol))) {
+                    [0.5, 0.3, 0.2].forEach((share, i) => goals.set(leaves[i], { fat: (generic.fat || 0) * share, vol: (generic.vol || 0) * share }));
+                }
+                clients.set(normalizeKey(code), goals);
+            }
+            metaRealizadoGoalCache.set(month, { clients, sellers: new Map(Object.entries(gd.seller_targets || {})), saved: !!data?.goals_data });
+        }
+
+        function populateMetaRealizadoMonthFilter() {
+            const select = document.getElementById('meta-realizado-month-filter');
+            if (!select) return;
+            select.replaceChildren();
+            [...metaRealizadoAvailableMonths].sort().reverse().forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = new Date(`${month}-01T12:00:00Z`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+                select.appendChild(option);
+            });
+            select.value = selectedMetaRealizadoMonth;
+        }
+
+        function setupMetaRealizadoMonthFilter() {
+            for (const [source, current] of [[allSalesData, true], [allHistoryData, false]]) {
+                for (let i = 0; i < source.length; i++) {
+                    const row = source instanceof ColumnarDataset ? source.get(i) : source[i];
+                    const key = metaRealizadoMonthKey(row.DTPED);
+                    if (key) {
+                        metaRealizadoAvailableMonths.add(key);
+                        if (current) metaRealizadoCurrentMonths.add(key);
+                    }
+                }
+            }
+            for (const row of window.embeddedData.nota_perfeita || []) {
+                const key = metaRealizadoMonthKey(row.mes_ano);
+                if (key) metaRealizadoAvailableMonths.add(key);
+            }
+            for (const row of [...(window.embeddedData.metas_pesquisas || []), ...(window.embeddedData.metas_lojaperfeita || [])]) {
+                const key = metaRealizadoMonthKey(`${row.ano}-${String(row.mes).padStart(2, '0')}`);
+                if (key) metaRealizadoAvailableMonths.add(key);
+            }
+            populateMetaRealizadoMonthFilter();
+            document.getElementById('meta-realizado-month-filter')?.addEventListener('change', event => {
+                selectedMetaRealizadoMonth = event.target.value;
+                metaRealizadoClientsTableState.currentPage = 1;
+                markDirty('metaRealizado');
+                updateMetaRealizadoView();
+            });
+        }
+        // End monthly context.
+
         // let innovationsIncludeBonus = true; // REMOVED
         // let innovationsMonthIncludeBonus = true; // REMOVED
 
@@ -5063,6 +5176,9 @@
         }
 
         function getMetaRealizadoFilteredData() {
+            const { clients: periodClientGoals, sellers: periodSellerGoals } = getMetaRealizadoGoalMaps();
+            const periodSource = getMetaRealizadoPeriodSource();
+            const periodDate = getMetaRealizadoPeriodDate();
             // New Hierarchy:
             const suppliersSet = new Set(selectedMetaRealizadoSuppliers);
             const pasta = currentMetaRealizadoPasta;
@@ -5210,7 +5326,7 @@
             }
 
             // Implement Supplier Filter Logic (Virtual IDs for Foods) - Step 7
-            // Goals are derived from `globalClientGoals` and manual overrides.
+            // Goals are derived from `periodClientGoals` and manual overrides.
             // To ensure consistency, both the base client list and the goal calculation must respect all active filters.
 
             // ⚡ Bolt Optimization: Replaced intermediate array allocation from .map() with a direct Set insertion for performance.
@@ -5237,8 +5353,8 @@
 
                 // Goal Keys are now determined at function scope (hoisted)
 
-                if (globalClientGoals.has(codCli)) {
-                    const clientGoals = globalClientGoals.get(codCli);
+                if (periodClientGoals.has(codCli)) {
+                    const clientGoals = periodClientGoals.get(codCli);
                     let clientTotalFatGoal = 0;
                     let clientTotalVolGoal = 0;
                     let hasGoal = false;
@@ -5265,8 +5381,8 @@
                 }
             });
 
-            // Apply Positivation Overrides from goalsSellerTargets (Imported Absolute Values)
-            // Apply Overrides from goalsSellerTargets (Imported Absolute Values for Pos, Fat, Vol)
+            // Apply Positivation Overrides from periodSellerGoals (Imported Absolute Values)
+            // Apply Overrides from periodSellerGoals (Imported Absolute Values for Pos, Fat, Vol)
 
             // Skip applying manual seller goals entirely when looking at specific promotors
             // The goal of a promotor should only be the sum of their assigned clients.
@@ -5274,7 +5390,7 @@
             if (adminViewMode !== 'promotor' && !isHierarchyFiltered) {
 
                 // --- FIX: Ensure all sellers with Manual Targets are present in goalsBySeller ---
-                goalsSellerTargets.forEach((targets, sellerName) => {
+                periodSellerGoals.forEach((targets, sellerName) => {
                     // Determine if strict filters are active
                     const hasFilters = (adminViewMode === 'seller' && (selectedMetaRealizadoVendedores.size > 0 || selectedMetaRealizadoSupervisors.size > 0));
 
@@ -5300,7 +5416,7 @@
             // ---------------------------------------------------------------------------------
 
             goalsBySeller.forEach((goals, sellerName) => {
-                const targets = goalsSellerTargets.get(sellerName);
+                const targets = periodSellerGoals.get(sellerName);
                 if (targets && adminViewMode !== 'promotor' && !isHierarchyFiltered) {
                     // 1. Positivação Overrides
                     let overrideKey = null;
@@ -5405,7 +5521,7 @@
             // 3. Sales Aggregation (By Seller & Week)
             // Structure: Map<SellerName, { totalFat: 0, totalVol: 0, weeksFat: [], weeksVol: [] }>
             const salesBySeller = new Map();
-            const { weeks } = getMonthWeeksDistribution(lastSaleDate); // Use current global date context
+            const { weeks } = getMonthWeeksDistribution(periodDate); // Use current global date context
 
             // Helper to find week index
             const getWeekIndex = (date) => {
@@ -5422,14 +5538,14 @@
             // Iterate Sales
             // Optimized: Use indices if needed, or simple iteration.
             // Filter: Month, Types != 5,11, Pasta, Supervisor/Seller/Supplier
-            const currentMonthIndex = lastSaleDate.getUTCMonth();
-            const currentYear = lastSaleDate.getUTCFullYear();
+            const currentMonthIndex = periodDate.getUTCMonth();
+            const currentYear = periodDate.getUTCFullYear();
 
             // Cache for Positivação Logic (Unique Clients per Seller)
             const sellerClients = new Map(); // Map<SellerName, Set<CodCli>>
 
-            for(let i=0; i<allSalesData.length; i++) {
-                const s = allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i];
+            for(let i=0; i<periodSource.data.length; i++) {
+                const s = periodSource.data instanceof ColumnarDataset ? periodSource.data.get(i) : periodSource.data[i];
 
                 // Date Filter
                 const d = typeof s.DTPED === 'number' ? new Date(s.DTPED) : parseDate(s.DTPED);
@@ -5553,7 +5669,7 @@
 
                 for (const ts of targetSellers) {
                     if (!salesBySeller.has(ts.name)) {
-                        salesBySeller.set(ts.name, { totalFat: 0, totalVol: 0, perdas: 0, weeksFat: [0, 0, 0, 0, 0], weeksVol: [0, 0, 0, 0, 0], totalPos: 0 });
+                        salesBySeller.set(ts.name, { totalFat: 0, totalVol: 0, perdas: 0, weeksFat: new Array(weeks.length).fill(0), weeksVol: new Array(weeks.length).fill(0), totalPos: 0 });
                     }
                     const entry = salesBySeller.get(ts.name);
 
@@ -5566,7 +5682,7 @@
                     entry.totalVol += ts.vol;
                     entry.perdas += ts.perda || 0;
 
-                    if (weekIdx !== -1 && weekIdx < 5) {
+                    if (weekIdx !== -1 && weekIdx < weeks.length) {
                         entry.weeksFat[weekIdx] += ts.fat;
                         entry.weeksVol[weekIdx] += ts.vol;
                     }
@@ -5959,7 +6075,30 @@
 
         
         
-        function updateMetaRealizadoView() {
+        async function updateMetaRealizadoView() {
+            const request = ++metaRealizadoRenderRequest;
+            const month = selectedMetaRealizadoMonth;
+            metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [], month };
+            const status = document.getElementById('meta-realizado-period-status');
+            const results = document.getElementById('meta-realizado-results');
+            if (status) status.textContent = 'Carregando o período selecionado...';
+            if (results) results.classList.add('hidden');
+            try {
+                await loadMetaRealizadoMonthGoals(month);
+            } catch (error) {
+                if (request !== metaRealizadoRenderRequest) return;
+                if (status) status.textContent = 'Não foi possível carregar as metas deste mês. Selecione o mês novamente para tentar.';
+                markDirty('metaRealizado');
+                console.error('Erro ao carregar o período de Meta vs Realizado:', error);
+                return;
+            }
+            if (request !== metaRealizadoRenderRequest || month !== selectedMetaRealizadoMonth) return;
+            const periodDate = getMetaRealizadoPeriodDate();
+            const periodSource = getMetaRealizadoPeriodSource();
+            const monthLabel = periodDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+            const periodGoals = getMetaRealizadoGoalMaps();
+            if (status) status.textContent = monthLabel + (periodGoals.saved ? ' • Metas salvas do mês.' : month === lastSaleDate.toISOString().slice(0, 7) && month === new Date().toISOString().slice(0, 7) ? ' • Metas calculadas/editadas do mês atual.' : ' • Sem metas comerciais salvas para este mês.');
+
             // 1. Get Data
             const { goalsBySeller, salesBySeller, weeks } = getMetaRealizadoFilteredData();
 
@@ -6102,8 +6241,8 @@
             const perdasFiltersMetas = { ...metasFilters, tipoVenda: new Set(['5']) };
             const salesFiltersMetas = { ...metasFilters };
             
-            const rawPerdas = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, perdasFiltersMetas);
-            const rawSales = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, salesFiltersMetas);
+            const rawPerdas = getFilteredDataFromIndices(periodSource.indices, periodSource.byId, perdasFiltersMetas).filter(sale => isMetaRealizadoPeriod(sale.DTPED));
+            const rawSales = getFilteredDataFromIndices(periodSource.indices, periodSource.byId, salesFiltersMetas).filter(sale => isMetaRealizadoPeriod(sale.DTPED));
             
             for(let i=0; i<rawPerdas.length; i++) {
                 const sale = rawPerdas[i];
@@ -6179,6 +6318,7 @@
                 
                 for(let i=0; i<window.embeddedData.nota_perfeita.length; i++) {
                     const row = window.embeddedData.nota_perfeita[i];
+                    if (!isMetaRealizadoPeriod(row.mes_ano)) continue;
                     const normCode = normalizeKey(row.codigo_cliente);
                     
                     let isAllowed = false;
@@ -6357,8 +6497,8 @@
             // Retrieve Goals from Global State
             let totalPesqMeta = 0;
             let totalLpMeta = 0;
-            const currentMonthKey = String(new Date().getMonth() + 1).padStart(2, '0');
-            const currentYearKey = String(new Date().getFullYear());
+            const currentMonthKey = String(periodDate.getUTCMonth() + 1).padStart(2, '0');
+            const currentYearKey = String(periodDate.getUTCFullYear());
 
             // Build the active researcher filter out of the loop so we can reuse it
             let currentActiveResearcherFilter = new Set();
@@ -6479,7 +6619,8 @@
             metaRealizadoDataForExport = {
                 sellers: rowData,
                 clients: clientsData,
-                weeks: weeks
+                weeks: weeks,
+                month: month
             };
 
             metaRealizadoClientsTableState.filteredData = clientsData;
@@ -6492,12 +6633,16 @@
             if (metaRealizadoClientsTableState.totalPages === 0) metaRealizadoClientsTableState.currentPage = 1;
 
             renderMetaRealizadoClientsTable(clientsData, weeks);
+            if (results) results.classList.remove('hidden');
         }
 
         function getMetaRealizadoClientsData(weeks) {
+            const { clients: periodClientGoals } = getMetaRealizadoGoalMaps();
+            const periodSource = getMetaRealizadoPeriodSource();
+            const periodDate = getMetaRealizadoPeriodDate();
             // New Hierarchy Logic
-            const currentMonthIndex = lastSaleDate.getUTCMonth();
-            const currentYear = lastSaleDate.getUTCFullYear();
+            const currentMonthIndex = periodDate.getUTCMonth();
+            const currentYear = periodDate.getUTCFullYear();
             const suppliersSet = new Set(selectedMetaRealizadoSuppliers);
             const pasta = currentMetaRealizadoPasta;
 
@@ -6640,8 +6785,8 @@
                 }
                 const entry = clientMap.get(codCli);
 
-                if (globalClientGoals.has(codCli)) {
-                    const cGoals = globalClientGoals.get(codCli);
+                if (periodClientGoals.has(codCli)) {
+                    const cGoals = periodClientGoals.get(codCli);
                     goalKeys.forEach(k => {
                         if (cGoals.has(k)) entry.goal += (cGoals.get(k).fat || 0);
                     });
@@ -6663,8 +6808,8 @@
                 return -1;
             };
 
-            for(let i=0; i<allSalesData.length; i++) {
-                const s = allSalesData instanceof ColumnarDataset ? allSalesData.get(i) : allSalesData[i];
+            for(let i=0; i<periodSource.data.length; i++) {
+                const s = periodSource.data instanceof ColumnarDataset ? periodSource.data.get(i) : periodSource.data[i];
                 const d = typeof s.DTPED === 'number' ? new Date(s.DTPED) : parseDate(s.DTPED);
 
                 // Basic Filters
@@ -17864,6 +18009,7 @@ const supervisorGroups = new Map();
             });
 
             // --- Meta Vs Realizado Listeners ---
+            setupMetaRealizadoMonthFilter();
             const updateMetaRealizado = () => {
                 markDirty('metaRealizado');
                 updateMetaRealizadoView();
@@ -17979,6 +18125,9 @@ const supervisorGroups = new Map();
 
             // Clear Filters
             document.getElementById('clear-meta-realizado-filters-btn').addEventListener('click', () => {
+                selectedMetaRealizadoMonth = lastSaleDate.toISOString().slice(0, 7);
+                populateMetaRealizadoMonthFilter();
+                metaRealizadoClientsTableState.currentPage = 1;
                 selectedMetaRealizadoSuppliers = [];
                 currentMetaRealizadoPasta = 'PEPSICO'; // Reset to default
 
@@ -18035,7 +18184,7 @@ const supervisorGroups = new Map();
                     const sheets = {};
                     if(metaRealizadoDataForExport && metaRealizadoDataForExport.sellers && metaRealizadoDataForExport.sellers.length) sheets['Vendedores'] = metaRealizadoDataForExport.sellers;
                     if(metaRealizadoDataForExport && metaRealizadoDataForExport.clients && metaRealizadoDataForExport.clients.length) sheets['Clientes'] = metaRealizadoDataForExport.clients;
-                    exportToExcel(sheets, 'Meta_Realizado');
+                    exportToExcel(sheets, 'Meta_Realizado_' + metaRealizadoDataForExport.month);
                 }
             );
 
@@ -19963,7 +20112,7 @@ const supervisorGroups = new Map();
 
             // --- Header ---
             doc.setFontSize(18);
-            doc.text('Painel Meta vs Realizado', 14, 22);
+            doc.text('Painel Meta vs Realizado • ' + metaRealizadoDataForExport.month, 14, 22);
             doc.setFontSize(10);
             doc.setTextColor(100);
             doc.text(`Data de Emissão: ${generationDate}`, 14, 30);
