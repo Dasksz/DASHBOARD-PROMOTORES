@@ -3615,6 +3615,61 @@
                 updateMetaRealizadoView();
             });
         }
+        function getMetaRealizadoResearchScope() {
+            const norm = window.normalizeResearcherCode;
+            const isSeller = adminViewMode === 'seller';
+            const allowed = new Set();
+            const mapSeller = researcher => {
+                const key = norm(researcher);
+                const mapped = lpResearcherMap.get(key)?.sellerCode;
+                if (mapped) return norm(mapped);
+                const raw = String(researcher || '').trim();
+                return optimizedData.rcaNameByCode.has(raw) || sellerDetailsMap.has(raw) ? norm(raw) : null;
+            };
+            if (isSeller) {
+                if (selectedMetaRealizadoVendedores.size) selectedMetaRealizadoVendedores.forEach(code => allowed.add(norm(code)));
+                else if (selectedMetaRealizadoSupervisors.size) {
+                    sellerDetailsMap.forEach((details, code) => {
+                        if (selectedMetaRealizadoSupervisors.has(details.supervisor)) allowed.add(norm(code));
+                    });
+                } else {
+                    optimizedData.rcaNameByCode.forEach((name, code) => allowed.add(norm(code)));
+                    lpResearcherMap.forEach(info => allowed.add(norm(info.sellerCode)));
+                }
+            } else {
+                const state = hierarchyState['meta-realizado'];
+                const addCocoord = (code, target) => optimizedData.promotorsByCocoord?.get(code)?.forEach(p => target.add(norm(p)));
+                const addCoord = (code, target) => optimizedData.cocoordsByCoord?.get(code)?.forEach(cc => addCocoord(cc, target));
+                if (state?.promotors.size) state.promotors.forEach(code => allowed.add(norm(code)));
+                else if (state?.cocoords.size) state.cocoords.forEach(code => addCocoord(code, allowed));
+                else if (state?.coords.size) state.coords.forEach(code => addCoord(code, allowed));
+                else {
+                    optimizedData.promotorMap.forEach((name, code) => allowed.add(norm(code)));
+                    // Historical targets may include promoters no longer in the current hierarchy.
+                    for (const meta of [...(window.embeddedData.metas_pesquisas || []), ...(window.embeddedData.metas_lojaperfeita || [])]) {
+                        const code = norm(meta.promotor_code);
+                        if (!meta.cod_vendedor && /^prom(?:o)?tor\d+$/.test(code) && Number(meta.ano) === getMetaRealizadoPeriodDate().getUTCFullYear() && Number(meta.mes) === getMetaRealizadoPeriodDate().getUTCMonth() + 1) allowed.add(code);
+                    }
+                }
+                if (window.userRole !== 'adm' && ['promotor','coord','cocoord'].includes(userHierarchyContext.role)) {
+                    const own = new Set();
+                    if (userHierarchyContext.role === 'promotor') own.add(norm(userHierarchyContext.promotor));
+                    if (userHierarchyContext.role === 'coord') addCoord(userHierarchyContext.coord, own);
+                    if (userHierarchyContext.role === 'cocoord') addCocoord(userHierarchyContext.cocoord, own);
+                    for (const code of allowed) if (!own.has(code)) allowed.delete(code);
+                }
+            }
+            return {
+                allowsSurvey: row => {
+                    const code = isSeller ? mapSeller(row.pesquisador) : norm(row.pesquisador);
+                    return !!code && allowed.has(code);
+                },
+                allowsGoal: meta => {
+                    const code = isSeller ? (meta.cod_vendedor ? norm(meta.cod_vendedor) : mapSeller(meta.promotor_code)) : norm(meta.promotor_code);
+                    return !!code && allowed.has(code) && (isSeller || !meta.cod_vendedor);
+                }
+            };
+        }
         // End monthly context.
 
         // let innovationsIncludeBonus = true; // REMOVED
@@ -6302,129 +6357,17 @@
             if (elPerdasPerc) elPerdasPerc.textContent = window.escapeHtml(perdasPercent.toFixed(2) + '%');
             
             // Pesquisas and Loja Perfeita KPIs
+            const researchScope = getMetaRealizadoResearchScope();
             let qtdPesquisasReal = 0;
             let qtdLpReal = 0;
             
             if (window.embeddedData && window.embeddedData.nota_perfeita) {
                 const clientScoresMap = new Map();
                 
-                // Identify all existing clients in master DB to distinguish orphans
-                const allExistingCodes = new Set();
-                const lenMaster = allClientsData.length;
-                for(let i=0; i<lenMaster; i++) {
-                    const c = allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i];
-                    allExistingCodes.add(normalizeKey(c['Código'] || c['codigo_cliente']));
-                }
-                
                 for(let i=0; i<window.embeddedData.nota_perfeita.length; i++) {
                     const row = window.embeddedData.nota_perfeita[i];
                     if (!isMetaRealizadoPeriod(row.mes_ano)) continue;
-                    const normCode = normalizeKey(row.codigo_cliente);
-                    
-                    let isAllowed = false;
-                    const hasSup = selectedMetaRealizadoSupervisors.size > 0;
-                    const hasVend = selectedMetaRealizadoVendedores.size > 0;
-                    
-                    let activeResearcherFilter = new Set();
-                    let isHierarchyFiltered = false;
-                    let isSupMode = false;
-
-                    if (adminViewMode === 'seller') {
-                        if (hasVend) {
-                            activeResearcherFilter = selectedMetaRealizadoVendedores;
-                            isHierarchyFiltered = true;
-                        } else if (hasSup) {
-                            isHierarchyFiltered = true;
-                            isSupMode = true;
-                        }
-                    } else if (adminViewMode === 'promoter') {
-                        const hState = hierarchyState['meta-realizado'];
-                        if (hState && (hState.promotors.size > 0 || hState.cocoords.size > 0 || hState.coords.size > 0)) {
-                            isHierarchyFiltered = true;
-                            if (hState.promotors.size > 0) {
-                                hState.promotors.forEach(p => activeResearcherFilter.add(p));
-                            } else if (hState.cocoords.size > 0) {
-                                hState.cocoords.forEach(cc => {
-                                    const children = optimizedData.promotorsByCocoord.get(cc);
-                                    if (children) children.forEach(p => activeResearcherFilter.add(p));
-                                });
-                            } else if (hState.coords.size > 0) {
-                                hState.coords.forEach(c => {
-                                    const cocoords = optimizedData.cocoordsByCoord.get(c);
-                                    if (cocoords) {
-                                        cocoords.forEach(cc => {
-                                            const children = optimizedData.promotorsByCocoord.get(cc);
-                                            if (children) children.forEach(p => activeResearcherFilter.add(p));
-                                        });
-                                    }
-                                });
-                            }
-                        }
-                    }
-
-                    if (isHierarchyFiltered) {
-                        // Focus exclusively on the Researcher, bypassing client base limits
-                        const rawPesquisador = row.pesquisador;
-                        if (rawPesquisador) {
-                            const resKey = window.normalizeResearcherCode(rawPesquisador);
-                            
-                            // Strict Match for Researcher (Pesquisas/Loja Perfeita KPIs ONLY)
-                            // We do a direct check against the selected sellers/promoters to prevent cross-mapping
-                            
-                            if (!isSupMode) {
-                                let directMatch = false;
-                                activeResearcherFilter.forEach(v => {
-                                    if (window.normalizeResearcherCode(v) === resKey) {
-                                        directMatch = true;
-                                    }
-                                });
-                                
-                                if (!directMatch) {
-                                    // Fallback to mapped sellerCode only if it matches exactly what was selected
-                                    const info = lpResearcherMap.get(resKey);
-                                    if (info && info.sellerCode && activeResearcherFilter.has(info.sellerCode)) {
-                                        // Ignore the map for Vendedores filter UNLESS the map's involves_code literally matches the RCA. 
-                                        if (window.normalizeResearcherCode(info.sellerCode) === resKey) {
-                                            directMatch = true;
-                                        }
-                                    }
-                                }
-                                isAllowed = directMatch;
-                                
-                            } else {
-                                // For Supervisors (Seller Mode only), map to find seller, then check supervisor
-                                const info = lpResearcherMap.get(resKey);
-                                let rca = null;
-                                if (info && info.sellerCode) {
-                                    rca = info.sellerCode;
-                                } else {
-                                    const upperResKey = String(rawPesquisador).toUpperCase().trim();
-                                    if (typeof optimizedData !== 'undefined' && optimizedData.promotorMap && optimizedData.promotorMap.has(upperResKey)) {
-                                         rca = upperResKey;
-                                    }
-                                }
-                                
-                                if (!rca) rca = resKey.toUpperCase(); 
-
-                                const sup = sellerDetailsMap.get(rca) ? sellerDetailsMap.get(rca).supervisor : null;
-                                isAllowed = !!(sup && selectedMetaRealizadoSupervisors.has(sup));
-                            }
-                        }
-                    } else {
-                        // Standard behavior based on client base
-                        isAllowed = clientCodes.has(normCode);
-                        if (!isAllowed && !allExistingCodes.has(normCode)) {
-                            let keepOrphan = true;
-                            if (filial !== 'ambas' && filial !== 'desconhecida') {
-                                keepOrphan = false;
-                            }
-                            if (keepOrphan) {
-                                isAllowed = true;
-                            }
-                        }
-                    }
-                    
-                    if (isAllowed) {
+                    if (researchScope.allowsSurvey(row)) {
                         // Resolve fields from involves row
                         // Data from nota_perfeita dataset uses 'nota_media' pre-calculated if available
                         let score = 0;
@@ -6500,80 +6443,11 @@
             const currentMonthKey = String(periodDate.getUTCMonth() + 1).padStart(2, '0');
             const currentYearKey = String(periodDate.getUTCFullYear());
 
-            // Build the active researcher filter out of the loop so we can reuse it
-            let currentActiveResearcherFilter = new Set();
-            const hasSup = selectedMetaRealizadoSupervisors.size > 0;
-            const hasVend = selectedMetaRealizadoVendedores.size > 0;
-
-            if (adminViewMode === 'seller') {
-                if (hasVend) {
-                    currentActiveResearcherFilter = selectedMetaRealizadoVendedores;
-                }
-            } else if (adminViewMode === 'promoter') {
-                const hState = hierarchyState['meta-realizado'];
-                if (hState && (hState.promotors.size > 0 || hState.cocoords.size > 0 || hState.coords.size > 0)) {
-                    if (hState.promotors.size > 0) {
-                        hState.promotors.forEach(p => currentActiveResearcherFilter.add(p));
-                    } else if (hState.cocoords.size > 0) {
-                        hState.cocoords.forEach(cc => {
-                            const children = optimizedData.promotorsByCocoord.get(cc);
-                            if (children) children.forEach(p => currentActiveResearcherFilter.add(p));
-                        });
-                    } else if (hState.coords.size > 0) {
-                        hState.coords.forEach(c => {
-                            const cocoords = optimizedData.cocoordsByCoord.get(c);
-                            if (cocoords) {
-                                cocoords.forEach(cc => {
-                                    const children = optimizedData.promotorsByCocoord.get(cc);
-                                    if (children) children.forEach(p => currentActiveResearcherFilter.add(p));
-                                });
-                            }
-                        });
-                    }
-                }
-            }
-            // Add user's promoter if in promoter mode and no filters are set
-            if (window.userRole !== 'adm' && userHierarchyContext.role === 'promotor' && currentActiveResearcherFilter.size === 0) {
-                currentActiveResearcherFilter.add(userHierarchyContext.promotor);
-            }
-            // For Coordinators/Co-coordinators when they don't have filters, they should see their entire team.
-            // That is covered by `getMetaRealizadoFilteredData()` logic implicitly by filtering data,
-            // but for Goals, we need to manually add all their promoters to the filter if size is 0
-            if (window.userRole !== 'adm' && currentActiveResearcherFilter.size === 0) {
-                 if (userHierarchyContext.role === 'coord') {
-                     const cocoords = optimizedData.cocoordsByCoord.get(userHierarchyContext.coord);
-                     if (cocoords) {
-                         cocoords.forEach(cc => {
-                             const children = optimizedData.promotorsByCocoord.get(cc);
-                             if (children) children.forEach(p => currentActiveResearcherFilter.add(p));
-                         });
-                     }
-                 } else if (userHierarchyContext.role === 'cocoord') {
-                     const children = optimizedData.promotorsByCocoord.get(userHierarchyContext.cocoord);
-                     if (children) children.forEach(p => currentActiveResearcherFilter.add(p));
-                 }
-            }
-
             if (window.embeddedData && window.embeddedData.metas_pesquisas) {
                 for (let i = 0; i < window.embeddedData.metas_pesquisas.length; i++) {
                     const meta = window.embeddedData.metas_pesquisas[i];
                     if (String(meta.mes).padStart(2, '0') === currentMonthKey && String(meta.ano) === currentYearKey) {
-                        const promotorCode = String(meta.promotor_code).toUpperCase().trim();
-                        // Se não houver filtro e for ADM, soma tudo
-                        if (currentActiveResearcherFilter.size === 0 && window.userRole === 'adm') {
-                            totalPesqMeta += (Number(meta.valor_meta) || 0);
-                        } else {
-                            // Se houver filtro, verifica se o promotor está selecionado
-                            let match = false;
-                            currentActiveResearcherFilter.forEach(v => {
-                                if (window.normalizeResearcherCode(v) === window.normalizeResearcherCode(promotorCode)) {
-                                    match = true;
-                                }
-                            });
-                            if (match) {
-                                totalPesqMeta += (Number(meta.valor_meta) || 0);
-                            }
-                        }
+                        if (researchScope.allowsGoal(meta)) totalPesqMeta += (Number(meta.valor_meta) || 0);
                     }
                 }
             }
@@ -6582,22 +6456,7 @@
                 for (let i = 0; i < window.embeddedData.metas_lojaperfeita.length; i++) {
                     const meta = window.embeddedData.metas_lojaperfeita[i];
                     if (String(meta.mes).padStart(2, '0') === currentMonthKey && String(meta.ano) === currentYearKey) {
-                        const promotorCode = String(meta.promotor_code).toUpperCase().trim();
-                        // Se não houver filtro e for ADM, soma tudo
-                        if (currentActiveResearcherFilter.size === 0 && window.userRole === 'adm') {
-                            totalLpMeta += (Number(meta.valor_meta) || 0);
-                        } else {
-                            // Se houver filtro, verifica se o promotor está selecionado
-                            let match = false;
-                            currentActiveResearcherFilter.forEach(v => {
-                                if (window.normalizeResearcherCode(v) === window.normalizeResearcherCode(promotorCode)) {
-                                    match = true;
-                                }
-                            });
-                            if (match) {
-                                totalLpMeta += (Number(meta.valor_meta) || 0);
-                            }
-                        }
+                        if (researchScope.allowsGoal(meta)) totalLpMeta += (Number(meta.valor_meta) || 0);
                     }
                 }
             }
