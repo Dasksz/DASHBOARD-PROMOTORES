@@ -70,9 +70,10 @@ BEGIN
   RAISE EXCEPTION 'Atualização reservada ao administrador' USING ERRCODE='42501';
  END IF;
  IF NOT pg_try_advisory_xact_lock(70261002,1) THEN RETURN jsonb_build_object('status','busy'); END IF;
- SELECT * INTO st FROM dashboard_private.summary_state WHERE id=true FOR UPDATE;
+ SELECT * INTO st FROM dashboard_private.summary_state WHERE id=true;
  IF NOT force_refresh AND NOT st.dirty THEN RETURN jsonb_build_object('status','current','generation',st.generation); END IF;
- -- The state row lock serializes committed source changes with this consistent rebuild.
+ -- Capture the revision without locking the upload trigger's state row.
+ -- New source commits during the rebuild must leave dirty=true for the next generation.
  -- DELETE/INSERT is atomic under MVCC: concurrent readers keep the previous complete generation.
  DELETE FROM dashboard_private.sales_day;
  INSERT INTO dashboard_private.sales_day
@@ -105,7 +106,7 @@ BEGIN
  INSERT INTO dashboard_private.client_assignments SELECT * FROM dashboard_private.assignments_source_v1('{"kind":"admin"}');
  ANALYZE dashboard_private.sales_day; ANALYZE dashboard_private.sales_month; ANALYZE dashboard_private.weekly_day;
  ANALYZE dashboard_private.sales_facets; ANALYZE dashboard_private.sales_calendar; ANALYZE dashboard_private.client_assignments;
- UPDATE dashboard_private.summary_state SET dirty=false,generation=generation+1,refreshed_at=clock_timestamp() WHERE id=true RETURNING
+ UPDATE dashboard_private.summary_state SET dirty=(last_change IS DISTINCT FROM st.last_change),generation=generation+1,refreshed_at=clock_timestamp() WHERE id=true RETURNING
   jsonb_build_object('status','refreshed','generation',generation,'refreshed_at',refreshed_at) INTO result;
  RETURN result;
 END $$;
@@ -873,9 +874,10 @@ BEGIN
   RAISE EXCEPTION 'Atualização reservada ao administrador' USING ERRCODE='42501';
  END IF;
  IF NOT pg_try_advisory_xact_lock(70261002,1) THEN RETURN jsonb_build_object('status','busy'); END IF;
- SELECT * INTO st FROM dashboard_private.summary_state WHERE id=true FOR UPDATE;
+ SELECT * INTO st FROM dashboard_private.summary_state WHERE id=true;
  IF NOT force_refresh AND NOT st.dirty THEN RETURN jsonb_build_object('status','current','generation',st.generation); END IF;
- -- The state row lock serializes committed source changes with this consistent rebuild.
+ -- Capture the revision without locking the upload trigger's state row.
+ -- New source commits during the rebuild must leave dirty=true for the next generation.
  -- DELETE/INSERT is atomic under MVCC: concurrent readers keep the previous complete generation.
  DELETE FROM dashboard_private.sales_day;
  INSERT INTO dashboard_private.sales_day
@@ -927,7 +929,7 @@ BEGIN
  ANALYZE dashboard_private.sales_month_core; ANALYZE dashboard_private.receivables_summary;
  ANALYZE dashboard_private.sales_day; ANALYZE dashboard_private.sales_month; ANALYZE dashboard_private.weekly_day;
  ANALYZE dashboard_private.sales_facets; ANALYZE dashboard_private.sales_calendar; ANALYZE dashboard_private.client_assignments;
- UPDATE dashboard_private.summary_state SET dirty=false,generation=generation+1,refreshed_at=clock_timestamp() WHERE id=true RETURNING
+ UPDATE dashboard_private.summary_state SET dirty=(last_change IS DISTINCT FROM st.last_change),generation=generation+1,refreshed_at=clock_timestamp() WHERE id=true RETURNING
   jsonb_build_object('status','refreshed','generation',generation,'refreshed_at',refreshed_at) INTO result;
  RETURN result;
 END $$;
@@ -1765,9 +1767,10 @@ BEGIN
   RAISE EXCEPTION 'Atualização reservada ao administrador' USING ERRCODE='42501';
  END IF;
  IF NOT pg_try_advisory_xact_lock(70261002,1) THEN RETURN jsonb_build_object('status','busy'); END IF;
- SELECT * INTO st FROM dashboard_private.summary_state WHERE id=true FOR UPDATE;
+ SELECT * INTO st FROM dashboard_private.summary_state WHERE id=true;
  IF NOT force_refresh AND NOT st.dirty THEN RETURN jsonb_build_object('status','current','generation',st.generation); END IF;
- -- The state row lock serializes committed source changes with this consistent rebuild.
+ -- Capture the revision without locking the upload trigger's state row.
+ -- New source commits during the rebuild must leave dirty=true for the next generation.
  -- DELETE/INSERT is atomic under MVCC: concurrent readers keep the previous complete generation.
  DELETE FROM dashboard_private.sales_day;
  INSERT INTO dashboard_private.sales_day
@@ -1819,7 +1822,7 @@ BEGIN
  ANALYZE dashboard_private.sales_month_core; ANALYZE dashboard_private.receivables_summary;
  ANALYZE dashboard_private.sales_day; ANALYZE dashboard_private.sales_month; ANALYZE dashboard_private.weekly_day;
  ANALYZE dashboard_private.sales_facets; ANALYZE dashboard_private.sales_calendar; ANALYZE dashboard_private.client_assignments;
- UPDATE dashboard_private.summary_state SET dirty=false,generation=generation+1,refreshed_at=clock_timestamp() WHERE id=true RETURNING
+ UPDATE dashboard_private.summary_state SET dirty=(last_change IS DISTINCT FROM st.last_change),generation=generation+1,refreshed_at=clock_timestamp() WHERE id=true RETURNING
   jsonb_build_object('status','refreshed','generation',generation,'refreshed_at',refreshed_at) INTO result;
  RETURN result;
 END $$;
