@@ -8,6 +8,10 @@ const FeedVisitas = (() => {
     let currentStartBound = null;
     let currentEndBound = null;
     let initialized = false;
+    let reloadPending = false;
+    let showWithoutPhotos = false;
+    let periodPosts = [];
+    let monthlyPosts = [];
 
     // Navigation State
     let showOnlyFavorites = false;
@@ -54,6 +58,7 @@ const FeedVisitas = (() => {
             return;
         }
 
+        setupFiltersUI();
         // Always reload when opened to ensure fresh data and check errors
         resetFeed();
         loadFeed();
@@ -63,8 +68,6 @@ const FeedVisitas = (() => {
             setupFlatpickr();
         }
 
-        setupFiltersUI();
-        
         // Setup Favorites Buttons Visibility based on user role
         const { isManager } = checkIsManager();
 
@@ -140,45 +143,20 @@ const FeedVisitas = (() => {
                 citySugg.classList.add('hidden');
             }
         });
-        const filialRadios = document.querySelectorAll('input[name="feed-filial"]');
-        filialRadios.forEach(r => {
-            r.addEventListener('change', (e) => {
-                feedCurrentFilialFilter = e.target.value;
-                document.getElementById('feed-filial-filter-text').textContent = e.target.parentElement.textContent.trim();
-                document.getElementById('feed-filial-filter-dropdown').classList.add('hidden');
-                checkClearBtn();
-                loadFeed(true);
-            });
-        });
+        const filialSelect = document.getElementById('feed-filial-filter');
+        if (filialSelect) filialSelect.onchange = () => {
+            feedCurrentFilialFilter = filialSelect.value;
+            checkClearBtn();
+            loadFeed(true);
+        };
+        const promoterSelect = document.getElementById('feed-promotor-filter');
+        if (promoterSelect) promoterSelect.onchange = () => setPromotorFilter(promoterSelect.value);
+        const photosToggle = document.getElementById('feed-show-without-photos');
+        if (photosToggle) photosToggle.onchange = () => {
+            showWithoutPhotos = photosToggle.checked;
+            loadFeed(true);
+        };
 
-        // Setup drop filial toggle
-        const filialBtn = document.getElementById('feed-filial-filter-btn');
-        if(filialBtn) {
-            filialBtn.onclick = (e) => {
-                e.stopPropagation();
-                document.getElementById('feed-filial-filter-dropdown').classList.toggle('hidden');
-                document.getElementById('feed-promotor-filter-dropdown').classList.add('hidden');
-            };
-        }
-        
-        // Setup drop promotor toggle
-        const promBtn = document.getElementById('feed-promotor-filter-btn');
-        if(promBtn) {
-            promBtn.onclick = (e) => {
-                e.stopPropagation();
-                document.getElementById('feed-promotor-filter-dropdown').classList.toggle('hidden');
-                document.getElementById('feed-filial-filter-dropdown').classList.add('hidden');
-            };
-        }
-
-        document.addEventListener('click', (e) => {
-            if(!e.target.closest('#feed-filial-filter-dropdown') && !e.target.closest('#feed-filial-filter-btn')) {
-                document.getElementById('feed-filial-filter-dropdown')?.classList.add('hidden');
-            }
-            if(!e.target.closest('#feed-promotor-filter-dropdown') && !e.target.closest('#feed-promotor-filter-btn')) {
-                document.getElementById('feed-promotor-filter-dropdown')?.classList.add('hidden');
-            }
-        });
     }
 
 
@@ -319,41 +297,102 @@ const FeedVisitas = (() => {
         if(clientInput) clientInput.value = feedCurrentClientFilter;
         if(cityInput) cityInput.value = feedCurrentCityFilter;
 
-        document.getElementById('feed-filial-filter-text').textContent = 'Todas (05 + 08)';
-        document.querySelectorAll('input[name="feed-filial"]').forEach(r => r.checked = (r.value === 'all'));
-
-        document.getElementById('feed-promotor-filter-text').textContent = 'Todos';
+        document.getElementById('feed-filial-filter').value = feedCurrentFilialFilter;
+        document.getElementById('feed-promotor-filter').value = feedCurrentPromotorFilter;
         checkClearBtn();
     }
 
     function populateFiltersDropdowns() {
-        // Promotores from hierarchy or dataset
-        const drop = document.getElementById('feed-promotor-filter-dropdown');
-        if(!drop) return;
-        
-        let promotores = [];
-        if(window.embeddedData && window.embeddedData.hierarchy) {
-            const promotoresSet = new Set();
-            for (let i = 0; i < window.embeddedData.hierarchy.length; i++) {
-                const n = window.embeddedData.hierarchy[i].nome_promotor;
-                if (n) promotoresSet.add(n);
-            }
-            promotores = Array.from(promotoresSet).sort();
+        const select = document.getElementById('feed-promotor-filter');
+        if (!select) return;
+        const names = new Set();
+        for (const h of (window.embeddedData?.hierarchy || [])) {
+            if (h.nome_promotor) names.add(h.nome_promotor.trim());
         }
-
-        let html = `<div class="p-2 hover:bg-slate-700 cursor-pointer rounded text-sm text-slate-300" onclick="window.FeedVisitas.setPromotorFilter('')">Todos</div>`;
-        promotores.forEach(p => {
-            html += `<div class="p-2 hover:bg-slate-700 cursor-pointer rounded text-sm text-slate-300" onclick="window.FeedVisitas.setPromotorFilter('${p.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;")}')">${window.escapeHtml(p)}</div>`;
-        });
-        drop.innerHTML = html;
+        for (const visit of [...monthlyPosts, ...periodPosts]) {
+            const name = promoterName(visit);
+            if (name) names.add(name);
+        }
+        if (feedCurrentPromotorFilter) names.add(feedCurrentPromotorFilter);
+        select.replaceChildren(new Option('Todos', ''));
+        [...names].sort((a,b) => a.localeCompare(b, 'pt-BR')).forEach(name => select.add(new Option(name, name)));
+        select.value = feedCurrentPromotorFilter;
     }
 
     function setPromotorFilter(val) {
         feedCurrentPromotorFilter = val;
-        document.getElementById('feed-promotor-filter-text').textContent = val ? window.escapeHtml(val) : 'Todos';
-        document.getElementById('feed-promotor-filter-dropdown').classList.add('hidden');
         checkClearBtn();
         loadFeed(true);
+    }
+
+    function promoterName(visit) {
+        return String(visit.hierarchy_nome_promotor || visit.profile_promotor_name || visit.promotor_name || '').trim();
+    }
+
+    function photoReferences(answers) {
+        if (typeof answers === 'string') {
+            try { answers = JSON.parse(answers); } catch (_) { return []; }
+        }
+        if (!answers || typeof answers !== 'object') return [];
+        const refs = [];
+        for (const [key,value] of Object.entries(answers)) {
+            if (!key.toLowerCase().includes('foto')) continue;
+            for (const item of (Array.isArray(value) ? value : [value])) {
+                const url = typeof item === 'string' ? item : item?.url;
+                if (typeof url === 'string' && url.trim()) refs.push(url);
+            }
+        }
+        return refs;
+    }
+
+    function matchesFeedFilters(visit, favorites = false) {
+        if (feedCurrentFilialFilter !== 'all' && String(visit.client_filial || '').padStart(2, '0') !== feedCurrentFilialFilter) return false;
+        if (feedCurrentPromotorFilter && promoterName(visit) !== feedCurrentPromotorFilter) return false;
+        if (feedCurrentCityFilter && !String(visit.client_cidade || '').toLowerCase().includes(feedCurrentCityFilter)) return false;
+        const clientText = `${visit.client_nome || ''} ${visit.client_fantasia || ''} ${visit.client_code || visit.id_cliente || ''} ${window.FeedVisitas.clientNamesMap?.get(String(visit.client_code || '').trim())?.cnpj || ''}`.toLowerCase();
+        if (feedCurrentClientFilter && !clientText.includes(feedCurrentClientFilter)) return false;
+        if (favorites && showOnlyFavorites && !(visit.favoritado_por || []).includes(window.userId)) return false;
+        return true;
+    }
+
+    async function readVisits(start, end) {
+        const rows = new Map();
+        for (let offset = 0; ; offset += 500) {
+            const { data, error } = await window.supabaseClient.from('view_visitas_expanded')
+                .select('*').gte('data_visita', start.toISOString()).lte('data_visita', end.toISOString())
+                .order('data_visita', { ascending: false }).order('id', { ascending: false }).range(offset, offset + 499);
+            if (error) throw error;
+            for (const row of (data || [])) rows.set(String(row.id), row);
+            if (!data || data.length < 500) break;
+        }
+        return [...rows.values()];
+    }
+
+    function calculateMonthlyKpis(rows) {
+        const clients = new Set(), photos = new Set();
+        let totalMs = 0, completed = 0;
+        for (const visit of rows) {
+            const code = String(visit.client_code || visit.id_cliente || '').trim();
+            if (code) {
+                clients.add(code);
+                if (photoReferences(visit.respostas).length) photos.add(code);
+            }
+            const start = Date.parse(visit.data_visita), end = Date.parse(visit.checkout_at);
+            if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
+                totalMs += end - start;
+                completed++;
+            }
+        }
+        return { visits: clients.size, photos: photos.size, averageMinutes: completed ? totalMs / completed / 60000 : null };
+    }
+
+    function renderMonthlyKpis() {
+        const stats = calculateMonthlyKpis(monthlyPosts.filter(v => matchesFeedFilters(v)));
+        document.getElementById('feed-kpi-visits').textContent = stats.visits.toLocaleString('pt-BR');
+        document.getElementById('feed-kpi-photos').textContent = stats.photos.toLocaleString('pt-BR');
+        document.getElementById('feed-kpi-duration').textContent = stats.averageMinutes === null ? '—' : `${stats.averageMinutes.toLocaleString('pt-BR', {maximumFractionDigits: 1})} min`;
+        const month = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', month: 'long', year: 'numeric' });
+        document.getElementById('feed-kpi-period').textContent = `Mês atual: ${month} • conforme os filtros de filial, promotor, cliente e cidade`;
     }
 
     function resetFeed() {
@@ -571,6 +610,12 @@ const FeedVisitas = (() => {
         }
     }
 
+    function getCurrentMonthBounds() {
+        const parts = new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit'}).formatToParts(new Date());
+        const year = Number(parts.find(p => p.type === 'year').value), month = Number(parts.find(p => p.type === 'month').value) - 1;
+        return {start: new Date(Date.UTC(year, month, 1, 3)), end: new Date(Date.UTC(year, month + 1, 1, 3) - 1)};
+    }
+
     function getMonthBounds(date) {
         const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1, 0, 0, 0, 0));
         const end = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0, 23, 59, 59, 999));
@@ -615,8 +660,8 @@ const FeedVisitas = (() => {
                                 const end = instance.selectedDates[1];
 
                                 // Ajustar as horas para o período do dia todo (em UTC para bater com BD)
-                                currentStartBound = new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0));
-                                currentEndBound = new Date(Date.UTC(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999));
+                                currentStartBound = new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate(), 3, 0, 0, 0));
+                                currentEndBound = new Date(Date.UTC(end.getFullYear(), end.getMonth(), end.getDate() + 1, 3, 0, 0, 0) - 1);
 
                                 instance.close();
                                 loadFeed(true);
@@ -654,7 +699,7 @@ const FeedVisitas = (() => {
     }
 
     async function loadFeed(skipDateCalc = false) {
-        if (isLoading) return;
+        if (isLoading) { reloadPending = true; return; }
         isLoading = true;
 
         resetFeed();
@@ -666,28 +711,14 @@ const FeedVisitas = (() => {
             console.log("FeedVisitas: Buscando dados iniciais...");
 
             if (!skipDateCalc) {
-                // Determine current month context based on lastSaleDate
-                let contextDate = new Date();
-                if (typeof window.lastSaleDate !== 'undefined' && window.lastSaleDate) {
-                    // Ensure valid date string processing
-                    let cleanDateStr = window.lastSaleDate.replace(' ', 'T');
-                    if (!cleanDateStr.endsWith('Z') && !cleanDateStr.includes('+') && !cleanDateStr.includes('-')) {
-                        cleanDateStr += 'Z';
-                    }
-                    const parsedDate = new Date(cleanDateStr);
-                    if (!isNaN(parsedDate)) {
-                        contextDate = parsedDate;
-                    }
-                }
-
-                const bounds = getMonthBounds(contextDate);
+                const bounds = getCurrentMonthBounds();
                 currentStartBound = bounds.start;
                 currentEndBound = bounds.end;
             }
             
             // Format for display
             if (periodInfo && currentStartBound && currentEndBound) {
-                const fd = (d) => d.getUTCDate().toString().padStart(2, '0') + '/' + (d.getUTCMonth() + 1).toString().padStart(2, '0');
+                const fd = (d) => d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
                 periodInfo.textContent = `Período: ${fd(currentStartBound)} até ${fd(currentEndBound)}`;
 
                 if (showOnlyFavorites) {
@@ -700,6 +731,13 @@ const FeedVisitas = (() => {
                 }
             }
 
+            for (const id of ['feed-kpi-visits', 'feed-kpi-photos', 'feed-kpi-duration']) document.getElementById(id).textContent = '…';
+            const monthBounds = getCurrentMonthBounds();
+            periodPosts = await readVisits(currentStartBound, currentEndBound);
+            monthlyPosts = currentStartBound.getTime() === monthBounds.start.getTime() && currentEndBound.getTime() === monthBounds.end.getTime()
+                ? periodPosts : await readVisits(monthBounds.start, monthBounds.end);
+            populateFiltersDropdowns();
+            renderMonthlyKpis();
             await fetchFeedData();
 
             if (cardsContainer && cardsContainer.children.length === 0) {
@@ -719,10 +757,12 @@ const FeedVisitas = (() => {
 
         } catch (error) {
             console.error('FeedVisitas Erro Fatal:', error);
+            for (const id of ['feed-kpi-visits', 'feed-kpi-photos', 'feed-kpi-duration']) document.getElementById(id).textContent = '—';
             showError(`Falha ao carregar visitas: ${error.message || 'Erro desconhecido'}`);
         } finally {
             if (loadingIndicator) loadingIndicator.classList.add('hidden');
             isLoading = false;
+            if (reloadPending) { reloadPending = false; loadFeed(true); }
         }
     }
 
@@ -746,55 +786,19 @@ const FeedVisitas = (() => {
         const from = currentPage * PAGE_SIZE;
         const to = from + PAGE_SIZE - 1;
 
-        let query = window.supabaseClient
-            .from('view_visitas_expanded')
-            .select('*')
-            .gte('data_visita', currentStartBound.toISOString())
-            .lte('data_visita', currentEndBound.toISOString())
-            .not('respostas', 'is', null)
-            .neq('respostas', '""')
-            .neq('respostas', '{}')
-            .neq('respostas', '[]')
-            .order('data_visita', { ascending: false });
-
-        if (feedCurrentFilialFilter && feedCurrentFilialFilter !== 'all') {
-            query = query.eq('client_filial', feedCurrentFilialFilter);
-        }
-
-        if (feedCurrentPromotorFilter) {
-            query = query.or(`profile_promotor_name.eq."${feedCurrentPromotorFilter}",hierarchy_nome_promotor.eq."${feedCurrentPromotorFilter}"`);
-        }
-
-        if (showOnlyFavorites && window.userId) {
-            query = query.filter('favoritado_por', 'cs', `{${window.userId}}`);
-        }
-
-        query = query.range(from, to);
-
+        const filtered = periodPosts.filter(visit => matchesFeedFilters(visit, true) && (showWithoutPhotos || photoReferences(visit.respostas).length > 0));
+        const data = filtered.slice(from, to + 1);
+        hasMore = to + 1 < filtered.length;
         const { role, hierarchyRole, isPromoter, isAdmin, isCoord, isSup, isManager } = checkIsManager();
         const isSeller = window.userIsSeller || hierarchyRole === 'vendedor' || hierarchyRole === 'seller';
-        // We will filter the results in memory below.
-
-        const { data, error } = await query;
-
-        if (error) {
-            throw error;
-        }
-
-        if (!data || data.length < PAGE_SIZE) {
-            hasMore = false; // No more pages to load
-        }
-
-        if (!data || data.length === 0) {
-            return;
-        }
+        if (!data.length) return;
 
         // Add to global post cache for autocomplete filters
         feedAllPosts = feedAllPosts.concat(data);
 
         // Fetch client names from data_clients
         window.FeedVisitas.clientNamesMap = window.FeedVisitas.clientNamesMap || new Map();
-        window.FeedVisitas.clientNamesMap.clear();
+
         const clientNamesMap = window.FeedVisitas.clientNamesMap;
 
         const uniqueClientCodesSet = new Set();
@@ -846,7 +850,7 @@ const FeedVisitas = (() => {
         data.forEach(visit => {
                 // Extract answers and photos before building the card to check if it should be displayed
                 let fotos = [];
-                let observacoesTexto = '';
+                let observacoesTexto = visit.observacao || '';
                 let respostasObj = null;
                 let respostasCount = 0;
 
@@ -895,7 +899,8 @@ const FeedVisitas = (() => {
                         if (respostasObj.fotos && Array.isArray(respostasObj.fotos)) {
                             respostasObj.fotos.forEach(foto => {
                                 let urlStr = '';
-                                if (foto.url && typeof foto.url === 'string') {
+                                if (typeof foto === 'string') foto = { url: foto };
+                                if (foto && foto.url && typeof foto.url === 'string') {
                                     if (foto.url.startsWith('http')) {
                                         urlStr = foto.url;
                                     } else {
@@ -919,7 +924,7 @@ const FeedVisitas = (() => {
                 // The database query already filters out empty/null respostas,
                 // but this check handles edge cases like '{"is_off_route": true}'
                 // where the DB sends the object but the UI should ignore it.
-                if (fotos.length === 0 && respostasCount === 0) {
+                if (!showWithoutPhotos && fotos.length === 0) {
                     return; // Skip this visit
                 }
 
@@ -973,7 +978,7 @@ const FeedVisitas = (() => {
                 }
 
                 if (feedCurrentFilialFilter && feedCurrentFilialFilter !== 'all') {
-                    if (clientFilial && String(clientFilial) !== String(feedCurrentFilialFilter)) return;
+                    if (clientFilial && String(clientFilial).padStart(2, '0') !== String(feedCurrentFilialFilter)) return;
                 }
 
                 let avatarUrl = visit.profiles ? visit.profiles.avatar_url : null;
@@ -1744,3 +1749,4 @@ const FeedVisitas = (() => {
 
 window.FeedVisitas = FeedVisitas;
 console.log("FeedVisitas Simples (Simplificado) carregado.");
+
