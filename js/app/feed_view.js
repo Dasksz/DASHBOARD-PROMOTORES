@@ -79,6 +79,7 @@ const FeedVisitas = (() => {
 
     
     function setupFiltersUI() {
+        if (initialized) return;
         const toggleBtn = document.getElementById('feed-toggle-filters-btn');
         const panel = document.getElementById('feed-filters-panel');
         const clearBtn = document.getElementById('feed-clear-all-filters-btn');
@@ -353,6 +354,17 @@ const FeedVisitas = (() => {
         if (feedCurrentClientFilter && !clientText.includes(feedCurrentClientFilter)) return false;
         if (favorites && showOnlyFavorites && !(visit.favoritado_por || []).includes(window.userId)) return false;
         return true;
+    }
+
+    async function loadClientDetails(rows) {
+        const codes = [...new Set(rows.map(v => v.client_code).filter(Boolean))];
+        const map = window.FeedVisitas.clientNamesMap;
+        for (let offset = 0; offset < codes.length; offset += 200) {
+            const {data, error} = await window.supabaseClient.from('data_clients')
+                .select('codigo_cliente,nomecliente,cnpj_cpf,endereco,rca1,cidade').in('codigo_cliente', codes.slice(offset, offset + 200));
+            if (error) throw error;
+            for (const c of (data || [])) map.set(String(c.codigo_cliente).trim(), {codigo: c.codigo_cliente, nome: c.nomecliente, cnpj: c.cnpj_cpf, endereco: c.endereco, rca1: c.rca1, cidade: c.cidade});
+        }
     }
 
     async function readVisits(start, end) {
@@ -736,6 +748,7 @@ const FeedVisitas = (() => {
             periodPosts = await readVisits(currentStartBound, currentEndBound);
             monthlyPosts = currentStartBound.getTime() === monthBounds.start.getTime() && currentEndBound.getTime() === monthBounds.end.getTime()
                 ? periodPosts : await readVisits(monthBounds.start, monthBounds.end);
+            await loadClientDetails([...periodPosts, ...monthlyPosts]);
             populateFiltersDropdowns();
             renderMonthlyKpis();
             await fetchFeedData();
