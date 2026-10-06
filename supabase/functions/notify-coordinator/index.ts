@@ -43,23 +43,36 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function validCoordinates(lat, lng) {
+    return lat !== null && lat !== undefined && lat !== '' && lng !== null && lng !== undefined && lng !== '' && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)) && Math.abs(Number(lat)) <= 90 && Math.abs(Number(lng)) <= 180;
+}
+function distanceMeters(a,b) {
+    const rad=n=>n*Math.PI/180,dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng);
+    const h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;
+    return 6371000*2*Math.atan2(Math.sqrt(h),Math.sqrt(Math.max(0,1-h)));
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let claimedGeoVisitId = null;
+  let notificationClient = null;
   try {
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!serviceKey || req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') !== serviceKey) return new Response(JSON.stringify({error:'Unauthorized'}), {status:401,headers:{...corsHeaders,'Content-Type':'application/json'}});
     const payload = await req.json()
-    console.log('Webhook Payload Received:', JSON.stringify(payload)); // Full Raw Payload
+    console.log('Visit notification webhook received');
 
-    const record = payload.record // The new state of the row
+    let record = payload.record // The new state of the row
     const old_record = payload.old_record // The previous state
 
     console.log('Processing Visit ID:', record.id)
     console.log('Status:', record.status)
     console.log('Checkout At:', record.checkout_at)
     console.log('Old Checkout At:', old_record ? old_record.checkout_at : 'N/A')
-    console.log('Answers:', JSON.stringify(record.respostas))
+
 
     // 1. Validation: Only process if status is 'pendente'
     if (record.status !== 'pendente') {
@@ -79,13 +92,12 @@ serve(async (req) => {
       })
     }
 
-    // 3. Validation: Prevent Duplicate Emails (Only send on transition to complete)
-    // If old_record existed and WAS checked out, skip.
+    // 3. Validation: Prevent Duplicate Processing
     if (old_record) {
         const hadCheckout = !!old_record.checkout_at;
 
         if (hadCheckout) {
-             console.log('Skipping: Email already sent (visit was already checked out)')
+             console.log('Skipping: Already processed (visit was already checked out)')
              return new Response(JSON.stringify({ message: 'Skipped: Duplicate event' }), {
                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
              })
@@ -96,32 +108,70 @@ serve(async (req) => {
         console.log('No old_record provided (Insert or fresh state). Proceeding...');
     }
 
-    // 3.5. Validation: Conditional Sending Rule (Off-Route vs Survey)
-    // Rule: Send IF (OffRoute) OR (HasSurvey). Skip otherwise.
-    const answers = record.respostas || {};
-    const isOffRoute = answers.is_off_route === true;
-
-    // Check for actual survey content (exclude system keys)
-    const systemKeys = ['is_off_route', 'foto_url', 'visit_date_ref'];
-    const surveyKeys = Object.keys(answers).filter(k => !systemKeys.includes(k));
-    const hasSurvey = surveyKeys.length > 0;
-
-    console.log(`Validation Check: OffRoute=${isOffRoute}, HasSurvey=${hasSurvey} (${surveyKeys.length} keys)`);
-
-    // Validation removed: allow empty surveys for check-in/check-out notifications
-    /* if (!isOffRoute && !hasSurvey) {
-       console.log('Skipping: In-Route visit without survey answers.');
-       return new Response(JSON.stringify({ message: 'Skipped: No survey for in-route visit' }), {
-         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-       })
-    } */
-
     // Initialize Supabase Client with Service Role Key to bypass RLS
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false } }
     )
+
+    notificationClient = supabase;
+    const {data: storedVisit, error: storedError} = await supabase.from('visitas').select('*').eq('id',record.id).single();
+    if (storedError || !storedVisit) throw new Error('Visit not found');
+    record = storedVisit;
+    let registered = {lat:record.client_latitude,lng:record.client_longitude};
+    if (!validCoordinates(registered.lat,registered.lng)) {
+        const {data: coord,error: coordError} = await supabase.from('data_client_coordinates').select('lat,lng').eq('client_code',record.client_code || record.id_cliente).maybeSingle();
+        if (coordError) throw coordError;
+        if (coord) registered=coord;
+    }
+    const geoPoints = [
+        {label:'Check-in',lat:record.latitude,lng:record.longitude},
+        {label:'Checkout',lat:record.checkout_latitude,lng:record.checkout_longitude},
+        {label:'Cliente',lat:registered.lat,lng:registered.lng}
+    ];
+    const geoDistances = [[0,2],[1,2],[0,1]].map(([i,j]) => {
+        const a=geoPoints[i],b=geoPoints[j];
+        return {label:`${a.label} ↔ ${b.label}`,meters:validCoordinates(a.lat,a.lng) && validCoordinates(b.lat,b.lng) ? distanceMeters(a,b) : null};
+    });
+    const maxDistance = Math.max(0,...geoDistances.map(pair=>pair.meters || 0));
+    const hasGeoAlert = maxDistance > 150;
+
+    // 3.5. Validation & Auto-Approval Rule (In-Route vs Off-Route)
+    const answers = record.respostas || {};
+    const isOffRoute = answers.is_off_route === true;
+
+    console.log(`Validation Check: OffRoute=${isOffRoute}`);
+
+    // If visit is IN-ROUTE (not off-route):
+    // Auto-approve automatically in DB and skip sending email to coordinator.
+    if (!isOffRoute) {
+      console.log(`Visit ID ${record.id} is IN-ROUTE. Auto-approving visit and skipping email...`);
+      const { error: approveError } = await supabase
+        .from('visitas')
+        .update({ status: 'aprovado' })
+        .eq('id', record.id);
+
+      if (approveError) {
+        console.error('Error auto-approving in-route visit:', approveError);
+        return new Response(JSON.stringify({ error: 'Failed to auto-approve in-route visit', details: approveError }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log(`Visit ID ${record.id} successfully auto-approved.`);
+      if (!hasGeoAlert) return new Response(JSON.stringify({ message: 'Auto-approved: In-route visit', visit_id: record.id, status: 'aprovado' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check for actual survey content (exclude system keys)
+    const systemKeys = ['is_off_route', 'foto_url', 'visit_date_ref'];
+    const surveyKeys = Object.keys(answers).filter(k => !systemKeys.includes(k));
+    const hasSurvey = surveyKeys.length > 0;
+
+    console.log(`Off-Route Visit confirmed. HasSurvey=${hasSurvey} (${surveyKeys.length} keys). Proceeding with email...`);
 
     // Start fetching API keys concurrently
     const apiKeysPromise = supabase
@@ -242,10 +292,24 @@ serve(async (req) => {
         console.log(`Resolved Co-Coord Code (Natural): ${coCoordCode}`);
     }
 
+    if (hasGeoAlert) {
+        targetEmail = record.coordenador_email?.trim() || null;
+        promoterName = naturalHierarchy?.nome_promotor || record.promotor_name || promoterName;
+        if (!targetEmail) {
+            const code=naturalHierarchy?.cod_cocoord || record.cod_cocoord;
+            if (code) {
+                const {data: candidates,error: recipientError} = await supabase.from('profiles').select('email').ilike('role',code.trim()).eq('status','aprovado');
+                if (recipientError) throw recipientError;
+                const emails=[...new Set((candidates || []).map(p=>p.email?.trim()).filter(Boolean))];
+                if (emails.length===1) targetEmail=emails[0];
+            }
+        }
+        if (!targetEmail) throw new Error('Coordinator email is missing or ambiguous for this visit');
+    } else {
     // --- RESOLVE COORDINATOR EMAIL ---
     // Now we need the email for the resolved coCoordCode
 
-    if (!targetEmail || coCoordCode) { // If targetEmail already set in record, we might skip, but logic implies we overwrite or robustly find. Original logic checks (!targetEmail || fixedCoCoordCode).
+    if (!targetEmail || coCoordCode) {
       console.log('Resolving Target Email...');
       try {
         // A. Primary: Co-Coordinator Profile
@@ -283,7 +347,6 @@ serve(async (req) => {
         // C. Fallback 2: Admin (ILIKE 'adm' OR 'admin')
         if (!targetEmail) {
            console.log('Fallback 2: Looking for Admin (adm)...');
-           // Parallelize Admin Check if possible, or keep sequential as it's fallback
            let { data: admUser } = await supabase
              .from('profiles')
              .select('email')
@@ -311,8 +374,6 @@ serve(async (req) => {
         // D. Update Record if found
         if (targetEmail) {
            console.log(`Updating visit record with resolved email: ${targetEmail}`);
-           // Fire and forget update to not block email sending? Or wait?
-           // Original waited. We'll wait to ensure consistency.
            const { error: updateError } = await supabase
              .from('visitas')
              .update({ coordenador_email: targetEmail })
@@ -336,8 +397,9 @@ serve(async (req) => {
       })
     }
 
+    }
+
     // 5. Fetch API Key AND From Email from Metadata
-    // Await the promise initiated at the start
     const { data: keyData, error: keyError } = await apiKeysPromise
 
     if (keyError || !keyData) {
@@ -372,12 +434,19 @@ serve(async (req) => {
         SENDER_EMAIL = fromEmailObj ? fromEmailObj.value : 'onboarding@resend.dev';
     }
 
-    // Test Mode Logic: Override recipient if RESEND_TEST_EMAIL is set (applies to both providers for safety)
+    // Test Mode Logic: Override recipient if RESEND_TEST_EMAIL is set
     let originalTargetEmail = null;
     if (testEmailObj && testEmailObj.value) {
         console.log(`TEST MODE ACTIVE: Redirecting email from ${targetEmail} to ${testEmailObj.value}`);
         originalTargetEmail = targetEmail;
         targetEmail = testEmailObj.value;
+    }
+
+    if (hasGeoAlert) {
+        const {error: claimError} = await supabase.from('visit_geo_alerts').insert({visit_id:record.id,recipient:targetEmail,max_distance_m:maxDistance});
+        if (claimError?.code === '23505') return new Response(JSON.stringify({message:'Geographic alert already claimed or sent'}),{headers:{...corsHeaders,'Content-Type':'application/json'}});
+        if (claimError) throw claimError;
+        claimedGeoVisitId=record.id;
     }
 
     // 6. Construct Email (Styled)
@@ -392,25 +461,19 @@ serve(async (req) => {
 
     // Parsing Survey Answers Table
     let answersRows = '';
-    // const answers = record.respostas; // Removed duplicate declaration (already declared above)
     if (answers && typeof answers === 'object' && Object.keys(answers).length > 0) {
         for (const [key, value] of Object.entries(answers)) {
-            // Clean keys if needed (e.g. remove snake_case) or use label map
             const questionLabel = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            // Determine if value needs special formatting (e.g. image URL or Array of Photos)
             let displayValue = String(value);
 
             if (key === 'fotos' && Array.isArray(value)) {
-                // Handle new array of objects format
                 displayValue = value.map(foto => {
                     const tipoLabel = foto.tipo ? foto.tipo.toUpperCase() : 'GERAL';
                     return `<a href="${foto.url}" style="color: #2563eb; text-decoration: underline; margin-right: 8px;">Ver Foto (${tipoLabel})</a>`;
                 }).join('<br>');
             } else if (typeof displayValue === 'string' && displayValue.startsWith('http') && (displayValue.includes('supabase') || displayValue.includes('.png') || displayValue.includes('.jpg'))) {
-                // Legacy support for plain strings
                 displayValue = `<a href="${displayValue}" style="color: #2563eb; text-decoration: underline;">Ver Foto</a>`;
             } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-                // Fallback for other objects just in case
                 displayValue = JSON.stringify(value);
             }
 
@@ -424,12 +487,11 @@ serve(async (req) => {
         answersRows = `
             <tr>
                 <td colspan="2" style="padding: 16px; color: #64748b; text-align: center; font-style: italic; background-color: #f8fafc;">
-                    ${isOffRoute ? "Visita Fora de Rota: Nenhum questionário foi exigido no momento do registro." : "Nenhuma resposta registrada nesta visita."}
+                    Visita Fora de Rota: Nenhum questionário foi exigido no momento do registro.
                 </td>
             </tr>
         `;
     }
-
 
     let surveySection = '';
     let actionsSection = '';
@@ -452,19 +514,23 @@ serve(async (req) => {
             </table>
         </div>
         `;
-
-        actionsSection = `
-        <!-- Actions -->
-        <div style="text-align: center; margin-bottom: 24px;">
-            <p style="color: #475569; font-size: 14px; margin-bottom: 16px;">Clique abaixo para validar esta visita no painel:</p>
-            <div>
-                <a href="${approveUrl}" style="display: block; width: 100%; max-width: 300px; margin: 0 auto 12px auto; box-sizing: border-box; background-color: #22c55e; color: #ffffff; padding: 14px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px;">Aprovar Pesquisa</a>
-                <a href="${rejectUrl}" style="display: block; width: 100%; max-width: 300px; margin: 0 auto; box-sizing: border-box; background-color: #dc2626; color: #ffffff; padding: 14px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px;">Rejeitar Pesquisa</a>
-            </div>
-        </div>
-        `;
     }
 
+    actionsSection = `
+    <!-- Actions -->
+    <div style="text-align: center; margin-bottom: 24px;">
+        <p style="color: #475569; font-size: 14px; margin-bottom: 16px;">Clique abaixo para validar esta visita no painel:</p>
+        <div>
+            <a href="${approveUrl}" style="display: block; width: 100%; max-width: 300px; margin: 0 auto 12px auto; box-sizing: border-box; background-color: #22c55e; color: #ffffff; padding: 14px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px;">Aprovar Pesquisa</a>
+            <a href="${rejectUrl}" style="display: block; width: 100%; max-width: 300px; margin: 0 auto; box-sizing: border-box; background-color: #dc2626; color: #ffffff; padding: 14px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 14px;">Rejeitar Pesquisa</a>
+        </div>
+    </div>
+    `;
+
+    if (hasGeoAlert && !isOffRoute) actionsSection = '';
+    const pointLinks = geoPoints.filter(point=>validCoordinates(point.lat,point.lng)).map(point => `<a href="https://www.google.com/maps?q=${Number(point.lat)},${Number(point.lng)}" style="display:block;margin:8px 0">${point.label}: abrir no mapa</a>`).join('');
+    const geoBanner = hasGeoAlert ? `<div style="background:#fef2f2;border:1px solid #f87171;padding:16px;margin-bottom:20px;color:#991b1b"><strong>ALERTA DE LOCALIZAÇÃO — DISTÂNCIA ACIMA DE 150 METROS</strong>${geoDistances.map(pair=>`<p>${pair.label}: ${pair.meters === null ? 'Localização não registrada' : pair.meters.toFixed(1) + ' m'}${pair.meters !== null && pair.meters > 150 ? ' — acima do limite' : ''}</p>`).join('')}<p>Precisão do GPS: check-in ${record.checkin_accuracy == null ? 'não registrada' : Math.round(record.checkin_accuracy)+' m'}; checkout ${record.checkout_accuracy == null ? 'não registrada' : Math.round(record.checkout_accuracy)+' m'}.</p>${pointLinks}<a href="https://dasksz.github.io/DASHBOARD-PROMOTORES/#feed">Abrir Feed de Visitas</a></div>` : '';
+    const emailSubject = hasGeoAlert ? `Alerta de localização (>150 m): ${clientName}` : `Nova Visita Fora de Rota: ${clientName}`;
     const htmlContent = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
         
@@ -476,23 +542,24 @@ serve(async (req) => {
         </div>
         ` : ''}
 
-        ${isOffRoute ? `
+        ${geoBanner}
         <!-- Off Route Banner -->
+        ${isOffRoute ? `
         <div style="background-color: #fff7ed; border: 1px solid #fdba74; color: #9a3412; padding: 12px; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: 700;">
             ⚠️ VISITA FORA DE ROTA
             <br><span style="font-weight: 400; font-size: 14px;">Esta visita foi realizada fora da data programada.</span>
         </div>
-        ` : ''}
 
+        ` : ''}
         <!-- Header -->
-        <h2 style="color: #0f172a; margin-top: 0; font-size: 20px; font-weight: 700;">Nova Visita para Validação: <span style="color: #2563eb;">${clientName}</span></h2>
+        <h2 style="color: #0f172a; margin-top: 0; font-size: 20px; font-weight: 700;">${hasGeoAlert ? 'Alerta de localização da visita' : 'Nova Visita Fora de Rota para Validação'}: <span style="color: #2563eb;">${clientName}</span></h2>
         <p style="color: #64748b; font-size: 14px; margin-bottom: 24px;">
             <strong>App Promotores</strong> &lt;noreply@app.com&gt; para <a href="#" style="color: #64748b; text-decoration: none;">${targetEmail}</a>
         </p>
 
         <!-- Title -->
-        <h3 style="color: #0f172a; font-size: 18px; font-weight: 700; margin-bottom: 12px;">Relatório de Visita</h3>
-        <p style="color: #475569; font-size: 14px; margin-bottom: 20px;">Uma nova visita foi finalizada ${hasSurvey ? 'e precisa da sua validação.' : 'somente com Check-in e Check-out.'}</p>
+        <h3 style="color: #0f172a; font-size: 18px; font-weight: 700; margin-bottom: 12px;">${hasGeoAlert ? 'Relatório de localização da visita' : 'Relatório de Visita Fora de Rota'}</h3>
+        <p style="color: #475569; font-size: 14px; margin-bottom: 20px;">${hasGeoAlert ? 'Uma visita foi finalizada com distância superior a 150 metros entre os pontos registrados.' : 'Uma nova visita fora de rota foi finalizada e precisa da sua validação.'}</p>
 
         <!-- Summary Card -->
         <div style="background-color: #f8fafc; border-left: 4px solid #2563eb; border-radius: 4px; padding: 20px; margin-bottom: 24px;">
@@ -539,10 +606,8 @@ serve(async (req) => {
       </div>
     `
 
-
     // 7. Send Email via Provider
     if (USE_BREVO) {
-        // --- BREVO (Sendinblue) ---
         console.log(`Sending email via Brevo to: ${targetEmail} from: ${SENDER_EMAIL}`);
         const res = await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
@@ -554,7 +619,7 @@ serve(async (req) => {
           body: JSON.stringify({
             sender: { email: SENDER_EMAIL, name: 'App Promotores' },
             to: [{ email: targetEmail }],
-            subject: `Nova Visita: ${clientName}`,
+            subject: emailSubject,
             htmlContent: htmlContent,
           }),
         })
@@ -563,19 +628,21 @@ serve(async (req) => {
 
         if (!res.ok) {
             console.error('Brevo API Error:', data);
+            if (claimedGeoVisitId) { await supabase.from('visit_geo_alerts').delete().eq('visit_id',claimedGeoVisitId).is('sent_at',null); claimedGeoVisitId=null; }
             return new Response(JSON.stringify({ error: 'Failed to send email via Brevo', details: data }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             })
         }
 
+        if (claimedGeoVisitId) await supabase.from('visit_geo_alerts').update({sent_at:new Date().toISOString(),provider_message_id:data.messageId}).eq('visit_id',claimedGeoVisitId);
+        claimedGeoVisitId=null;
         console.log('Email sent successfully via Brevo:', data.messageId);
         return new Response(JSON.stringify({ success: true, provider: 'brevo', id: data.messageId }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
 
     } else {
-        // --- RESEND ---
         console.log(`Sending email via Resend to: ${targetEmail} from: ${SENDER_EMAIL}`);
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -586,7 +653,7 @@ serve(async (req) => {
           body: JSON.stringify({
             from: SENDER_EMAIL,
             to: targetEmail,
-            subject: `Nova Visita: ${clientName}`,
+            subject: emailSubject,
             html: htmlContent,
           }),
         })
@@ -595,12 +662,15 @@ serve(async (req) => {
 
         if (!res.ok) {
             console.error('Resend API Error:', data);
+            if (claimedGeoVisitId) { await supabase.from('visit_geo_alerts').delete().eq('visit_id',claimedGeoVisitId).is('sent_at',null); claimedGeoVisitId=null; }
             return new Response(JSON.stringify({ error: 'Failed to send email via Resend', details: data }), {
                 status: 500,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             })
         }
 
+        if (claimedGeoVisitId) await supabase.from('visit_geo_alerts').update({sent_at:new Date().toISOString(),provider_message_id:data.id}).eq('visit_id',claimedGeoVisitId);
+        claimedGeoVisitId=null;
         console.log('Email sent successfully via Resend:', data.id);
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -608,6 +678,7 @@ serve(async (req) => {
     }
 
   } catch (error) {
+    if (claimedGeoVisitId && notificationClient) await notificationClient.from('visit_geo_alerts').delete().eq('visit_id',claimedGeoVisitId).is('sent_at',null);
     console.error('Function Error:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
@@ -615,3 +686,4 @@ serve(async (req) => {
     })
   }
 })
+

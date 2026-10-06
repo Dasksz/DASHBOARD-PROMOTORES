@@ -24382,6 +24382,7 @@ const supervisorGroups = new Map();
                 client_code: clientCode, // Text
                 latitude,
                 longitude,
+                checkin_accuracy: pos.coords.accuracy,
                 status: 'pendente',
                 promotor_name: window.userFullName || window.userName || 'Promotor'
             };
@@ -24606,11 +24607,19 @@ const supervisorGroups = new Map();
         btn.disabled = true;
         btn.innerHTML = 'Finalizando...';
 
-        const checkoutTime = new Date().toISOString();
         try {
+            if (!navigator.geolocation) throw new Error('Geolocalização não suportada.');
+            const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: true, timeout: 15000, maximumAge: 0}));
+            const checkoutTime = new Date().toISOString();
+            const checkoutLocation = {
+                checkout_at: checkoutTime,
+                checkout_latitude: position.coords.latitude,
+                checkout_longitude: position.coords.longitude,
+                checkout_accuracy: position.coords.accuracy
+            };
             const { error } = await window.supabaseClient
                 .from('visitas')
-                .update({ checkout_at: checkoutTime })
+                .update(checkoutLocation)
                 .eq('id', visitaAbertaId);
 
             if (error) throw error;
@@ -24622,7 +24631,7 @@ const supervisorGroups = new Map();
                 if (visits) {
                     const visit = visits.find(v => v.id === visitaAbertaId);
                     if (visit) {
-                        visit.checkout_at = checkoutTime;
+                        Object.assign(visit, checkoutLocation);
                     }
                 }
             }
@@ -24634,7 +24643,7 @@ const supervisorGroups = new Map();
             window.showToast('success', 'Visita finalizada!');
         } catch (error) {
             console.error(error);
-            window.showToast('error', 'Erro ao fazer check-out: ' + error.message);
+            window.showToast('error', 'Erro ao fazer check-out: ' + (error.code === 1 ? 'Permita o acesso à localização e tente novamente.' : error.code === 3 ? 'Tempo esgotado ao obter a localização. Tente novamente.' : error.message));
         } finally {
             // Fix: Re-enable button on error and success
             btn.disabled = false;

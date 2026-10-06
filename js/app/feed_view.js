@@ -1340,13 +1340,17 @@ const FeedVisitas = (() => {
                     }
                 }
 
-                // Ensure data is cached for the modal
-                if (clientInfo && !window.FeedVisitas.clientCache) window.FeedVisitas.clientCache = {};
-                if (clientInfo) {
-                    window.FeedVisitas.clientCache[visit.id] = clientInfo;
-                }
+                window.FeedVisitas.clientCache = window.FeedVisitas.clientCache || {};
+                window.FeedVisitas.clientCache[visit.id] = {
+                    ...(clientInfo || {}), nome: clientName, codigo: visit.client_code || visit.id_cliente,
+                    cidade: clientCity, latitude: visit.latitude, longitude: visit.longitude,
+                    checkoutLatitude: visit.checkout_latitude, checkoutLongitude: visit.checkout_longitude,
+                    checkinAt: visit.data_visita || visit.created_at, checkoutAt: visit.checkout_at,
+                    checkinAccuracy: visit.checkin_accuracy, checkoutAccuracy: visit.checkout_accuracy,
+                    registeredLat: visit.client_latitude ?? clientInfo?.registeredLat,
+                    registeredLng: visit.client_longitude ?? clientInfo?.registeredLng
+                };
 
-                
                 let dotsHtml = '';
                 if (fotos.length > 1) {
                     const dotsArray = Array.from({ length: fotos.length }).map((_, i) => 
@@ -1367,6 +1371,7 @@ const FeedVisitas = (() => {
                         ${secondaryInfoHtml}
                     </div>
                     ${fotosHtml}
+                    <button type="button" onclick="window.FeedVisitas.openLocationModal(${visit.id})" class="mx-4 my-3 px-3 py-2 rounded-lg border border-slate-700 text-sm text-slate-300 hover:text-white hover:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500" aria-label="Ver localização da visita">Ver localização no mapa</button>
                     <div class="px-4 pt-3 pb-4 flex flex-col gap-2">
                         <!-- Linha 1: Favorito (Esquerda), Dots (Centro), Status (Direita) -->
                         <div class="flex items-center justify-between w-full h-8">
@@ -1409,204 +1414,67 @@ const FeedVisitas = (() => {
         setupObserver();
     }
 
+    function validCoordinates(lat, lng) {
+        return lat !== null && lat !== undefined && lat !== '' && lng !== null && lng !== undefined && lng !== '' && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)) && Math.abs(Number(lat)) <= 90 && Math.abs(Number(lng)) <= 180;
+    }
+
+    function distanceMeters(a, b) {
+        const rad = n => n * Math.PI / 180;
+        const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+        const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+        return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(Math.max(0, 1 - h)));
+    }
+
     function openLocationModal(visitId) {
-        if (!FeedVisitas.clientCache || !FeedVisitas.clientCache[visitId]) return;
-        
-        const clientInfo = FeedVisitas.clientCache[visitId];
-        
-        // Ensure modal exists in DOM
+        const info = FeedVisitas.clientCache?.[visitId];
+        if (!info) return;
         let modal = document.getElementById('feed-location-modal');
         if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'feed-location-modal';
+            modal = document.createElement('div'); modal.id = 'feed-location-modal';
             modal.className = 'fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm';
-            
-            // Close when clicking outside
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeLocationModal();
-            });
-
+            modal.addEventListener('click', event => { if (event.target === modal) closeLocationModal(); });
             document.body.appendChild(modal);
         }
-
-        const nomeRaw = clientInfo.nome || 'N/A';
-        const codigo = clientInfo.codigo ? String(clientInfo.codigo).trim() : null;
-        const nome = codigo ? `${codigo} - ${nomeRaw}` : nomeRaw;
-        const cidade = clientInfo.cidade ? String(clientInfo.cidade).toUpperCase() : '';
-        const cnpj = clientInfo.cnpj || 'N/A';
-        const endereco = clientInfo.endereco || 'N/A';
-        const lat = clientInfo.latitude;
-        const lng = clientInfo.longitude;
-        const regLat = clientInfo.registeredLat;
-        const regLng = clientInfo.registeredLng;
-
-        const hasVisitCoords = lat != null && lng != null;
-        const hasRegCoords = regLat != null && regLng != null;
-
-        let mapHtml = '';
-        let legendHtml = '';
-
-        if (hasVisitCoords || hasRegCoords) {
-            mapHtml = `<div id="feed-mini-map" class="w-full h-48 rounded-lg mt-4 bg-slate-200 border border-slate-700"></div>`;
-
-            if (hasVisitCoords && hasRegCoords) {
-                legendHtml = `
-                    <div class="mt-3 flex flex-col gap-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-[#FF5E00] shadow-[0_0_8px_rgba(255,94,0,0.8)]"></div>
-                            <span class="text-xs text-slate-300">Local da Visita</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
-                            <span class="text-xs text-slate-300">Local Cadastrado no Cliente</span>
-                        </div>
-                        <div id="feed-distance-info" class="text-xs text-slate-400 mt-1 font-medium hidden">
-                            Distância: <span id="feed-distance-val" class="text-white"></span>
-                        </div>
-                    </div>
-                `;
-            } else if (hasRegCoords) {
-                legendHtml = `
-                    <div class="mt-3 flex items-center gap-2 bg-slate-800/50 p-2 rounded border border-slate-700">
-                        <div class="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
-                        <span class="text-xs text-slate-300">Apenas Local Cadastrado disponível</span>
-                    </div>
-                `;
-            } else if (hasVisitCoords) {
-                legendHtml = `
-                    <div class="mt-3 flex items-center gap-2 bg-slate-800/50 p-2 rounded border border-slate-700">
-                        <div class="w-3 h-3 rounded-full bg-[#FF5E00] shadow-[0_0_8px_rgba(255,94,0,0.8)]"></div>
-                        <span class="text-xs text-slate-300">Apenas Local da Visita disponível</span>
-                    </div>
-                `;
-            }
-        } else {
-            mapHtml = `<div class="w-full p-4 rounded-lg mt-4 bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-400 text-sm">Sem coordenadas geográficas disponíveis.</div>`;
-        }
-
-        modal.innerHTML = `
-            <div class="bg-[#1A1E24] w-full max-w-md rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden animate-fade-in-up flex flex-col max-h-[90vh]">
-                <div class="px-5 py-4 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/20">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-5 h-5 text-[#FF5E00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        <h3 class="text-white font-semibold text-lg">Detalhes do Cliente</h3>
-                    </div>
-                    <button onclick="window.FeedVisitas.closeLocationModal()" class="text-slate-400 hover:text-white transition-colors bg-slate-800/50 hover:bg-slate-700 p-1.5 rounded-full focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" aria-label="Fechar modal de localização">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-                <div class="p-5 overflow-y-auto" style="scrollbar-width: thin; scrollbar-color: #334155 transparent;">
-                    <div class="space-y-3">
-                        <div>
-                            <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider mb-1">Nome</p>
-                            <p class="text-white text-sm font-medium">${window.escapeHtml(nome)}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider mb-1">CNPJ</p>
-                            <p class="text-white text-sm font-medium">${window.escapeHtml(cnpj)}</p>
-                        </div>
-                        <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <p class="text-xs text-slate-400 uppercase font-semibold tracking-wider">Endereço</p>
-                                ${cidade ? `<p class="text-xs text-slate-400 uppercase font-semibold tracking-wider">Cidade</p>` : ''}
-                            </div>
-                            <div class="flex justify-between items-start gap-4">
-                                <p class="text-slate-300 text-sm flex-1">${window.escapeHtml(endereco)}</p>
-                                ${cidade ? `<p class="text-slate-300 text-sm text-right max-w-[50%]">${window.escapeHtml(cidade)}</p>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                    ${mapHtml}
-                    ${legendHtml}
-                </div>
-            </div>
-        `;
-
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-
-        // Initialize Map if coords exist
-        if ((hasVisitCoords || hasRegCoords) && window.L) {
-            // Need a slight delay for DOM to render the container before Leaflet can size it
+        const formatTime = value => value ? new Date(value).toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'}) : 'Não registrado';
+        const points = [
+            {key:'checkin', label:'Check-in', lat:info.latitude, lng:info.longitude, color:'#ff5e00', time:info.checkinAt, accuracy:info.checkinAccuracy},
+            {key:'checkout', label:'Checkout', lat:info.checkoutLatitude, lng:info.checkoutLongitude, color:'#22c55e', time:info.checkoutAt, accuracy:info.checkoutAccuracy},
+            {key:'client', label:'Local do cliente', lat:info.registeredLat, lng:info.registeredLng, color:'#3b82f6'}
+        ].map(point => ({...point, valid:validCoordinates(point.lat,point.lng)}));
+        const pairs = [[0,2],[1,2],[0,1]].map(([i,j]) => {
+            const a=points[i], b=points[j];
+            return {label:`${a.label} ↔ ${b.label}`, distance:a.valid && b.valid ? distanceMeters(a,b) : null};
+        });
+        const locations = points.filter(p => p.valid);
+        const rows = pairs.map(pair => `<div class="flex justify-between gap-3 text-sm ${pair.distance !== null && pair.distance > 150 ? 'text-red-400' : 'text-slate-300'}"><span>${pair.label}</span><strong>${pair.distance === null ? 'Sem coordenadas' : pair.distance.toLocaleString('pt-BR',{maximumFractionDigits:1}) + ' m'}${pair.distance !== null && pair.distance > 150 ? ' • Acima de 150 m' : ''}</strong></div>`).join('');
+        modal.innerHTML = `<div class="bg-[#1A1E24] w-full max-w-xl rounded-2xl border border-slate-700 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <header class="p-4 flex justify-between items-center border-b border-slate-700"><h3 class="text-white font-semibold">Localização da visita</h3><button type="button" onclick="window.FeedVisitas.closeLocationModal()" aria-label="Fechar mapa" class="text-slate-300 px-3 py-1 rounded hover:bg-slate-700">Fechar</button></header>
+            <div class="p-4 overflow-y-auto"><p class="text-white font-semibold">${window.escapeHtml(String(info.codigo || '') + ' - ' + (info.nome || 'Cliente'))}</p><p class="text-sm text-slate-400 mb-3">${window.escapeHtml(info.endereco || '')} ${window.escapeHtml(info.cidade || '')}</p>
+            ${locations.length ? '<div id="feed-mini-map" class="h-64 rounded-lg bg-slate-800"></div>' : '<p class="text-slate-400 p-4">Esta visita não possui coordenadas registradas.</p>'}
+            <div class="mt-4 space-y-2">${points.map(point => `<div class="text-sm text-slate-300"><span style="color:${point.color}">●</span> <strong>${point.label}</strong>${point.time ? ' • ' + formatTime(point.time) : ''}${!point.valid ? ' • Localização não registrada' : ''}${point.valid && point.accuracy != null ? ' • Precisão GPS: ' + Math.round(point.accuracy) + ' m' : ''}</div>`).join('')}</div>
+            <div class="mt-4 space-y-2 border-t border-slate-700 pt-3">${rows}</div>
+            ${!points[1].valid ? '<p class="mt-3 text-xs text-slate-400">Visitas antigas e encerramentos automáticos podem não ter localização de checkout.</p>' : ''}
+            </div></div>`;
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        if (locations.length && window.L) {
             setTimeout(() => {
-                const mapEl = document.getElementById('feed-mini-map');
-                if (mapEl) {
-                    const centerLat = hasVisitCoords ? lat : regLat;
-                    const centerLng = hasVisitCoords ? lng : regLng;
-
-                    const map = window.L.map('feed-mini-map', {
-                        center: [centerLat, centerLng],
-                        zoom: 15,
-                        zoomControl: false,
-                        attributionControl: false
-                    });
-                    
-                    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                        maxZoom: 19
-                    }).addTo(map);
-
-                    const markers = [];
-
-                    if (hasRegCoords) {
-                        const regIcon = window.L.divIcon({
-                            className: 'custom-pin-reg',
-                            html: `<div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>`,
-                            iconSize: [16, 16],
-                            iconAnchor: [8, 8]
-                        });
-                        markers.push(window.L.marker([regLat, regLng], { icon: regIcon }).addTo(map));
-                    }
-
-                    if (hasVisitCoords) {
-                        const visitIcon = window.L.divIcon({
-                            className: 'custom-pin-visit',
-                            html: `<div class="w-4 h-4 bg-[#FF5E00] rounded-full border-2 border-white shadow-[0_0_10px_rgba(255,94,0,0.8)] animate-pulse"></div>`,
-                            iconSize: [16, 16],
-                            iconAnchor: [8, 8]
-                        });
-                        markers.push(window.L.marker([lat, lng], { icon: visitIcon }).addTo(map));
-                    }
-
-                    if (markers.length > 1) {
-                        const group = new window.L.featureGroup(markers);
-                        map.fitBounds(group.getBounds(), { padding: [30, 30], maxZoom: 18 });
-
-                        // Calcular a distância
-                        const p1 = window.L.latLng(lat, lng);
-                        const p2 = window.L.latLng(regLat, regLng);
-                        const distanceInMeters = p1.distanceTo(p2);
-
-                        const distInfo = document.getElementById('feed-distance-info');
-                        const distVal = document.getElementById('feed-distance-val');
-
-                        if (distInfo && distVal) {
-                            distInfo.classList.remove('hidden');
-                            if (distanceInMeters < 1000) {
-                                distVal.textContent = Math.round(distanceInMeters) + ' m';
-                            } else {
-                                distVal.textContent = (distanceInMeters / 1000).toFixed(2).replace('.', ',') + ' km';
-                            }
-
-                            // Se a distância for muito grande, dar um destaque vermelho
-                            if (distanceInMeters > 500) {
-                                distVal.classList.add('text-red-400');
-                                distVal.classList.remove('text-white');
-                            }
-                        }
-                    } else if (markers.length === 1) {
-                        map.setView(markers[0].getLatLng(), 16);
-                    }
-                }
-            }, 100);
+                if (!document.getElementById('feed-mini-map')) return;
+                if (FeedVisitas.locationMap) FeedVisitas.locationMap.remove();
+                const first=locations[0], map=window.L.map('feed-mini-map').setView([Number(first.lat),Number(first.lng)],16);
+                FeedVisitas.locationMap=map;
+                window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap © CARTO'}).addTo(map);
+                const markers=locations.map(point => {
+                    const icon=window.L.divIcon({className:'visit-location-pin',html:`<div style="background:${point.color};width:16px;height:16px;border-radius:50%;border:2px solid white"></div>`,iconSize:[20,20],iconAnchor:[10,10]});
+                    return window.L.marker([Number(point.lat),Number(point.lng)],{icon}).addTo(map).bindPopup(point.label);
+                });
+                if (markers.length>1) map.fitBounds(window.L.featureGroup(markers).getBounds(),{padding:[30,30],maxZoom:17});
+                map.invalidateSize();
+            },100);
         }
     }
 
     function closeLocationModal() {
+        if (FeedVisitas.locationMap) { FeedVisitas.locationMap.remove(); FeedVisitas.locationMap = null; }
         const modal = document.getElementById('feed-location-modal');
         if (modal) {
             modal.classList.add('hidden');
@@ -1762,4 +1630,5 @@ const FeedVisitas = (() => {
 
 window.FeedVisitas = FeedVisitas;
 console.log("FeedVisitas Simples (Simplificado) carregado.");
+
 
