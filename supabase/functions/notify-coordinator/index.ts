@@ -52,6 +52,22 @@ function distanceMeters(a,b) {
     return 6371000*2*Math.atan2(Math.sqrt(h),Math.sqrt(Math.max(0,1-h)));
 }
 
+
+async function isPrivilegedCaller(req) {
+    const bearer = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!bearer || !serviceKey) return false;
+    if (bearer === serviceKey) return true;
+    // Supabase verifies the signed credential. This table is service_role-only,
+    // with no PUBLIC/anon/authenticated grants; limit=0 returns no user data.
+    try {
+        const response = await fetch(Deno.env.get('SUPABASE_URL') + '/rest/v1/visit_geo_alerts?select=visit_id&limit=0', {
+            headers: {apikey: bearer, Authorization: 'Bearer ' + bearer}
+        });
+        return response.status === 200;
+    } catch (_) { return false; }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -61,7 +77,7 @@ serve(async (req) => {
   let notificationClient = null;
   try {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (!serviceKey || req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') !== serviceKey) return new Response(JSON.stringify({error:'Unauthorized'}), {status:401,headers:{...corsHeaders,'Content-Type':'application/json'}});
+    if (!await isPrivilegedCaller(req)) return new Response(JSON.stringify({error:'Unauthorized'}), {status:401,headers:{...corsHeaders,'Content-Type':'application/json'}});
     const payload = await req.json()
     console.log('Visit notification webhook received');
 

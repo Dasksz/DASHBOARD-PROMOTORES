@@ -57,13 +57,29 @@ async function listObjects(client) {
     }
     return objects;
 }
+
+async function isPrivilegedCaller(req) {
+    const bearer = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!bearer || !serviceKey) return false;
+    if (bearer === serviceKey) return true;
+    // Supabase verifies the signed credential. This table is service_role-only,
+    // with no PUBLIC/anon/authenticated grants; limit=0 returns no user data.
+    try {
+        const response = await fetch(Deno.env.get('SUPABASE_URL') + '/rest/v1/visit_geo_alerts?select=visit_id&limit=0', {
+            headers: {apikey: bearer, Authorization: 'Bearer ' + bearer}
+        });
+        return response.status === 200;
+    } catch (_) { return false; }
+}
+
 Deno.serve(async req => {
     const respond = (value, status = 200) => new Response(JSON.stringify(value), {status, headers: {...cors, 'Content-Type': 'application/json'}});
     if (req.method === 'OPTIONS') return new Response('ok', {headers: cors});
     if (req.method !== 'POST') return respond({error: 'POST required'}, 405);
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const bearer = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-    if (!serviceKey || bearer !== serviceKey) return respond({error: 'Unauthorized'}, 401);
+    if (!await isPrivilegedCaller(req)) return respond({error: 'Unauthorized'}, 401);
     try {
         const payload = await req.json().catch(() => ({}));
         const days = payload.days === undefined ? 30 : payload.days;
