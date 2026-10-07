@@ -1397,7 +1397,8 @@ const FeedVisitas = (() => {
 
                         <!-- Linha 2: Data -->
                         <div class="w-full mt-1">
-                            <span class="text-[11px] text-slate-500 font-medium uppercase tracking-wide">${formattedDate}</span>
+                            <div class="text-[11px] text-slate-400 font-medium">Check-in: ${formattedDate}</div>
+                            <div class="text-[11px] text-slate-400 font-medium">Checkout: ${visit.checkout_at && Number.isFinite(Date.parse(visit.checkout_at)) ? new Date(visit.checkout_at).toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'}) : 'Não registrado'}</div>
                         </div>
 
                         ${observacoesTexto && (isManager || isSeller || String(visit.profiles?.role).toUpperCase() === String(window.userRole || '').toUpperCase()) ? `<div class="text-sm text-slate-300 leading-relaxed mt-2"><span class="font-medium text-white">Obs:</span> ${window.escapeHtml(observacoesTexto)}</div>` : ''}
