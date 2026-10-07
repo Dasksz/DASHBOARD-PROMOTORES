@@ -15933,6 +15933,13 @@ const supervisorGroups = new Map();
             };
 
             const performUpsert = async (table, batch, onConflictKey = null) => {
+                // Allocate IDs once so a retry after a committed POST updates the same rows.
+                if (table === 'data_detailed' || table === 'data_history') {
+                    for (const row of batch) {
+                        if (!row.id) row.id = crypto.randomUUID();
+                    }
+                    onConflictKey = 'id';
+                }
                 await retryOperation(async () => {
                     let fetchUrl = `${supabaseUrl}/rest/v1/${table}`;
                     if (onConflictKey) {
