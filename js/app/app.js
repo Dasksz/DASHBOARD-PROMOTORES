@@ -4603,9 +4603,7 @@
                                     targetGoal.vol = fractionVol;
                                 }
                             });
-                            // The target is transferred, so the source must not be counted again.
-                            if (metric === 'fat') goal3297.fat = 0;
-                            else goal3297.vol = 0;
+                            // Preserve the full source target as a reference; replicas are deduplicated in totals.
                         }
                     }
                 });
@@ -7732,6 +7730,16 @@
             return { clientMetrics, globalTotalAvgFat, globalTotalAvgVol };
         }
 
+        function isItaoGoalReplica(clientCode, keys, metric, sourceIsVisible = true) {
+            if (!sourceIsVisible || !['541','544','546'].includes(normalizeKey(String(clientCode)))) return false;
+            const source = globalClientGoals.get(normalizeKey('3297'));
+            const target = globalClientGoals.get(normalizeKey(String(clientCode)));
+            if (!source || !target) return false;
+            const total = keys.reduce((sum,key) => sum + (Number(source.get(key)?.[metric]) || 0), 0);
+            const replica = keys.reduce((sum,key) => sum + (Number(target.get(key)?.[metric]) || 0), 0);
+            return total > 0 && Math.abs(replica - total / 3) < 0.000001;
+        }
+
         function recalculateTotalGoals() {
             // Reset goalsTargets sums
             for (const key in goalsTargets) {
@@ -7741,8 +7749,8 @@
             globalClientGoals.forEach((goalsMap, codCli) => {
                 goalsMap.forEach((val, key) => {
                     if (goalsTargets[key]) {
-                        goalsTargets[key].fat += val.fat;
-                        goalsTargets[key].vol += val.vol;
+                        if (!isItaoGoalReplica(codCli, [key], 'fat')) goalsTargets[key].fat += val.fat;
+                        if (!isItaoGoalReplica(codCli, [key], 'vol')) goalsTargets[key].vol += val.vol;
                     }
                 });
 
@@ -7877,9 +7885,9 @@
                             
                             const targetGoal = targetClientMap.get(key);
                             if (type === 'fat') {
-                                targetGoal.fat += fractionFat;
+                                targetGoal.fat = fractionFat;
                             } else {
-                                targetGoal.vol += fractionVol;
+                                targetGoal.vol = fractionVol;
                             }
                         });
                     }
@@ -8438,6 +8446,10 @@
             // Cache Key for Global Totals
             const cacheKey = currentGoalsSupplier + (currentGoalsBrand ? `_${currentGoalsBrand}` : '');
             const contextKey = cacheKey;
+            const sourceIsVisible = filteredClients.some(c => normalizeKey(String(c['Código'] || c['codigo_cliente'])) === '3297');
+            const keysForTotal = currentGoalsSupplier === 'PEPSICO_ALL' ? window.SUPPLIER_CODES.ALL_GOALS :
+                currentGoalsSupplier === 'ELMA_ALL' ? window.SUPPLIER_CODES.ELMA :
+                currentGoalsSupplier === 'FOODS_ALL' ? window.SUPPLIER_CODES.VIRTUAL_LIST : [cacheKey];
 
             if (!globalGoalsTotalsCache[cacheKey]) {
                  calculateDistributedGoals([], currentGoalsSupplier, currentGoalsBrand, 0, 0);
@@ -8585,7 +8597,8 @@
                 clientMetrics.push(metric);
 
                 // Accumulate totals
-                sumFat += metaFat; sumVol += metaVol;
+                if (!isItaoGoalReplica(codCli, keysForTotal, 'fat', sourceIsVisible)) sumFat += metaFat;
+                if (!isItaoGoalReplica(codCli, keysForTotal, 'vol', sourceIsVisible)) sumVol += metaVol;
                 totalAvgFat += avgFat; totalPrevFat += cPrevFat;
                 totalAvgVol += avgVol; totalPrevVol += cPrevVol;
                 sumActiveMonths += activeMonthsCount; totalPrevClients += isActivePrevMonth;
