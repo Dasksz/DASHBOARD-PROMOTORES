@@ -2115,6 +2115,7 @@
 
         function initializeOptimizedDataStructures() {
             sellerDetailsMap = new Map();
+            window.sellerDetailsMap = sellerDetailsMap;
             supervisorDetailsMap = new Map();
             const sellerLastSaleDateMap = new Map(); // Track latest date per seller
             const clientToCurrentSellerMap = new Map();
@@ -5233,6 +5234,38 @@
             return { weeks, totalWorkingDays };
         }
 
+        function getMetaRealizadoGoalKeys(pasta, suppliersSet) {
+            const codes = window.SUPPLIER_CODES;
+            const allowed = pasta === 'ELMA' ? codes.ELMA : pasta === 'FOODS' ? codes.VIRTUAL_LIST : codes.ALL_GOALS;
+            if (!suppliersSet.size) return [...allowed];
+            const selected = new Set();
+            suppliersSet.forEach(sup => {
+                const keys = String(sup) === codes.FOODS[0] ? codes.VIRTUAL_LIST : [String(sup)];
+                keys.forEach(key => { if (allowed.includes(key)) selected.add(key); });
+            });
+            return [...selected];
+        }
+
+        function matchesMetaRealizadoSupplier(sale, suppliersSet) {
+            if (!suppliersSet.size) return true;
+            const codFor = String(sale.CODFOR);
+            if (suppliersSet.has(codFor)) return true;
+            if (codFor !== window.SUPPLIER_CODES.FOODS[0]) return false;
+            const product = window.resolveDim('produtos', sale.PRODUTO);
+            const desc = normalize((product && typeof product === 'object' && product.descricao) || sale.DESCRICAO || '');
+            const virtual = window.SUPPLIER_CODES.VIRTUAL;
+            return (suppliersSet.has(virtual.TODDYNHO) && desc.includes('TODDYNHO')) ||
+                (suppliersSet.has(virtual.TODDY) && desc.includes('TODDY') && !desc.includes('TODDYNHO')) ||
+                (suppliersSet.has(virtual.QUAKER_KEROCOCO) && (desc.includes('QUAKER') || desc.includes('KEROCOCO')));
+        }
+
+        function formatMetaRealizadoValue(value) {
+            if (currentMetaRealizadoMetric === 'peso') {
+                return (value / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' Ton';
+            }
+            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
         function getMetaRealizadoFilteredData() {
             const { clients: periodClientGoals, sellers: periodSellerGoals } = getMetaRealizadoGoalMaps();
             const periodSource = getMetaRealizadoPeriodSource();
@@ -5318,39 +5351,7 @@
                 }
             }
 
-            // Determine Goal Keys based on Pasta (Moved to top level scope)
-            let goalKeys = [];
-
-            // If Supplier Filter is Active, restricting goals to selected supplier ONLY
-            if (suppliersSet.size > 0) {
-                // Map selections to goal keys
-                suppliersSet.forEach(sup => {
-                    // Filter validation: Ensure they belong to current Pasta
-                    let valid = false;
-                    if (pasta === 'PEPSICO') valid = true;
-                    else if (pasta === 'ELMA') valid = window.SUPPLIER_CODES.ELMA.includes(sup);
-                    else if (pasta === 'FOODS') valid = window.SUPPLIER_CODES.VIRTUAL_LIST.includes(sup) || sup === window.SUPPLIER_CODES.FOODS[0];
-
-                    if (valid) {
-                        if (sup === window.SUPPLIER_CODES.FOODS[0]) {
-                            goalKeys.push(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO, window.SUPPLIER_CODES.VIRTUAL.TODDY, window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO);
-                        } else {
-                            goalKeys.push(sup);
-                        }
-                    }
-                });
-
-
-            } else {
-                // Default Pasta Groups
-                if (pasta === 'PEPSICO') {
-                    goalKeys = window.SUPPLIER_CODES.ALL_GOALS;
-                } else if (pasta === 'ELMA') {
-                    goalKeys = window.SUPPLIER_CODES.ELMA;
-                } else if (pasta === 'FOODS') {
-                    goalKeys = window.SUPPLIER_CODES.VIRTUAL_LIST;
-                }
-            }
+            const goalKeys = getMetaRealizadoGoalKeys(pasta, suppliersSet);
 
             // 1. Clients Filter
             // Apply Hierarchy Logic + "Active" Filter logic
@@ -5541,10 +5542,9 @@
 
                     // 2. Aggregate fallbacks: If individual targets are missing, check for aggregate keys
                     // but ONLY if the current selection matches the aggregate (full pasta or no filter)
-                    const noSupplierFilter = suppliersSet.size === 0;
 
                     // Pepsico / Elma Fallbacks
-                    if (noSupplierFilter || allElmaSelected) {
+                    if (allElmaSelected) {
                         const hasIndividualElmaFat = elmaKeys.some(k => targets[`${k}_FAT`] !== undefined);
                         if (!hasIndividualElmaFat && targets['total_elma_FAT'] !== undefined) {
                             overrideFat += targets['total_elma_FAT'];
@@ -5558,7 +5558,7 @@
                     }
 
                     // Pepsico / Foods Fallbacks
-                    if (noSupplierFilter || allFoodsSelected) {
+                    if (allFoodsSelected) {
                         const hasIndividualFoodsFat = foodsKeys.some(k => targets[`${k}_FAT`] !== undefined);
                         if (!hasIndividualFoodsFat && targets['total_foods_FAT'] !== undefined) {
                             overrideFat += targets['total_foods_FAT'];
@@ -5583,8 +5583,9 @@
 
             // Helper to find week index
             const getWeekIndex = (date) => {
-                const d = typeof date === 'number' ? new Date(date) : parseDate(date);
-                if (!d) return -1;
+                const parsed = typeof date === 'number' ? new Date(date) : parseDate(date);
+                if (!parsed || !Number.isFinite(parsed.getTime())) return -1;
+                const d = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()));
                 // Check against ranges
                 for(let i=0; i<weeks.length; i++) {
                     // Week range is inclusive start, inclusive end
@@ -5654,27 +5655,7 @@
                     continue;
                 }
 
-                // Enhanced Supplier Logic to handle Virtual Foods Categories
-                if (suppliersSet.size > 0) {
-                    let supplierMatch = false;
-                    const codFor = String(s.CODFOR);
-
-                    // 1. Direct Match (Regular Suppliers)
-                    if (suppliersSet.has(codFor)) {
-                        supplierMatch = true;
-                    }
-                    // 2. Virtual Category Logic for 1119 (Foods)
-                    else if (codFor === window.SUPPLIER_CODES.FOODS[0]) {
-                        // Resolve Description
-                        const pObj = window.resolveDim('produtos', s.PRODUTO);
-                        const desc = normalize((typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || ''));
-                        if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.TODDYNHO) && desc.includes('TODDYNHO')) supplierMatch = true;
-                        else if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.TODDY) && desc.includes('TODDY') && !desc.includes('TODDYNHO')) supplierMatch = true;
-                        else if (suppliersSet.has(window.SUPPLIER_CODES.VIRTUAL.QUAKER_KEROCOCO) && (desc.includes('QUAKER') || desc.includes('KEROCOCO'))) supplierMatch = true;
-                    }
-
-                    if (!supplierMatch) continue;
-                }
+                if (!matchesMetaRealizadoSupplier(s, suppliersSet)) continue;
 
                 let origSellerName = window.resolveDim('vendedores', s.CODUSUR);
                 // Fix: Force mapping to the actual configured seller for specific clients to prevent
@@ -5799,8 +5780,8 @@
             // Build Body
             // data is Array of { name, metaTotal, realTotal, weeks: [{meta, real}] }
             const rowsHTML = data.map((row, index) => {
-                const metaTotalStr = row.metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                const realTotalStr = row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const metaTotalStr = formatMetaRealizadoValue(row.metaTotal);
+                const realTotalStr = formatMetaRealizadoValue(row.realTotal);
                 const perdasStr = (row.perdas || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
                 // Achievement Color Logic
@@ -5821,8 +5802,8 @@
                 `;
 
                 row.weekData.forEach(w => {
-                    const wMetaStr = w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    const wRealStr = w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const wMetaStr = formatMetaRealizadoValue(w.meta);
+                    const wRealStr = formatMetaRealizadoValue(w.real);
 
                     const realClass = w.real >= w.meta ? 'text-green-400' : 'text-slate-300';
                     const metaClass = w.isPast ? 'text-red-500' : 'text-slate-400';
@@ -5910,8 +5891,8 @@
                 const realTotal = item.realTotal || 0;
                 const percent = metaTotal > 0 ? (realTotal / metaTotal) * 100 : 0;
 
-                if (metaVal) metaVal.textContent = metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                if (realVal) realVal.textContent = realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                if (metaVal) metaVal.textContent = formatMetaRealizadoValue(metaTotal);
+                if (realVal) realVal.textContent = formatMetaRealizadoValue(realTotal);
                 if (percentBadge) percentBadge.textContent = `${percent.toFixed(1)}%`;
 
                 // Color Logic (Same as List)
@@ -5940,10 +5921,10 @@
                             <div class="flex items-center justify-between py-3 px-4 hover:bg-white/5 transition-colors border-b border-slate-800 last:border-0">
                                 <span class="text-slate-500 font-mono text-xs font-bold w-8">S${i + 1}</span>
                                 <div class="flex items-center gap-3 text-xs">
-                                     <div class="hidden sm:block text-slate-500">Meta: <span class="text-slate-400">${w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
-                                     <div class="sm:hidden text-slate-500"><span class="text-slate-400">${w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+                                     <div class="hidden sm:block text-slate-500">Meta: <span class="text-slate-400">${formatMetaRealizadoValue(w.meta)}</span></div>
+                                     <div class="sm:hidden text-slate-500"><span class="text-slate-400">${formatMetaRealizadoValue(w.meta)}</span></div>
 
-                                     <div class="text-slate-500">Real: <span class="${wColor} font-bold">${w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+                                     <div class="text-slate-500">Real: <span class="${wColor} font-bold">${formatMetaRealizadoValue(w.real)}</span></div>
                                      <span class="${wColor} font-bold min-w-[35px] text-right bg-slate-800/50 px-1.5 py-0.5 rounded">${wPercent.toFixed(0)}%</span>
                                 </div>
                             </div>
@@ -6299,8 +6280,9 @@
             const perdasFiltersMetas = { ...metasFilters, tipoVenda: new Set(['5']) };
             const salesFiltersMetas = { ...metasFilters };
             
-            const rawPerdas = getFilteredDataFromIndices(periodSource.indices, periodSource.byId, perdasFiltersMetas).filter(sale => isMetaRealizadoPeriod(sale.DTPED));
-            const rawSales = getFilteredDataFromIndices(periodSource.indices, periodSource.byId, salesFiltersMetas).filter(sale => isMetaRealizadoPeriod(sale.DTPED));
+            const kpiSuppliers = new Set(selectedMetaRealizadoSuppliers);
+            const rawPerdas = getFilteredDataFromIndices(periodSource.indices, periodSource.byId, perdasFiltersMetas).filter(sale => isMetaRealizadoPeriod(sale.DTPED) && matchesMetaRealizadoSupplier(sale, kpiSuppliers));
+            const rawSales = getFilteredDataFromIndices(periodSource.indices, periodSource.byId, salesFiltersMetas).filter(sale => isMetaRealizadoPeriod(sale.DTPED) && matchesMetaRealizadoSupplier(sale, kpiSuppliers));
             
             for(let i=0; i<rawPerdas.length; i++) {
                 const sale = rawPerdas[i];
@@ -6633,11 +6615,8 @@
             // 2. Aggregate Data per Client
             const clientMap = new Map(); // Map<CodCli, { clientObj, goal: 0, salesTotal: 0, salesWeeks: [] }>
 
-            // Determine Goal Keys based on Pasta (Copy logic)
-            let goalKeys = [];
-            if (pasta === 'PEPSICO') goalKeys = window.SUPPLIER_CODES.ALL_GOALS;
-            else if (pasta === 'ELMA') goalKeys = window.SUPPLIER_CODES.ELMA;
-            else if (pasta === 'FOODS') goalKeys = window.SUPPLIER_CODES.VIRTUAL_LIST;
+            const goalKeys = getMetaRealizadoGoalKeys(pasta, suppliersSet);
+            const isVolume = currentMetaRealizadoMetric === 'peso';
 
             // A. Populate Goals
             clients.forEach(client => {
@@ -6650,7 +6629,7 @@
                 if (periodClientGoals.has(codCli)) {
                     const cGoals = periodClientGoals.get(codCli);
                     goalKeys.forEach(k => {
-                        if (cGoals.has(k)) entry.goal += (cGoals.get(k).fat || 0);
+                        if (cGoals.has(k)) entry.goal += (cGoals.get(k)[isVolume ? 'vol' : 'fat'] || 0);
                     });
 
 
@@ -6662,8 +6641,9 @@
 
             // Helper for week index (Copied from getMetaRealizadoFilteredData scope, need to redefine or reuse)
             const getWeekIndex = (date) => {
-                const d = typeof date === 'number' ? new Date(date) : parseDate(date);
-                if (!d) return -1;
+                const parsed = typeof date === 'number' ? new Date(date) : parseDate(date);
+                if (!parsed || !Number.isFinite(parsed.getTime())) return -1;
+                const d = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()));
                 for(let i=0; i<weeks.length; i++) {
                     if (d >= weeks[i].start && d <= weeks[i].end) return i;
                 }
@@ -6691,14 +6671,15 @@
                 if (pasta === 'ELMA' && !window.SUPPLIER_CODES.ELMA.includes(codFor)) continue;
                 if (pasta === 'FOODS' && codFor !== window.SUPPLIER_CODES.FOODS[0]) continue;
 
-                if (suppliersSet.size > 0 && !suppliersSet.has(s.CODFOR)) continue;
+                if (!matchesMetaRealizadoSupplier(s, suppliersSet)) continue;
 
                 const origCodCli = normalizeKey(String(s.CODCLI));
                 const is3297 = origCodCli === '3297';
                 
                 const targetClientsSales = [];
-                const origValFat = Number(s.VLVENDA) || 0;
-                const origPerda = Number(s.VLBONIFIC) || (String(s.TIPOVENDA) === '5' ? origValFat : 0);
+                const origRevenue = Number(s.VLVENDA) || 0;
+                const origValFat = Number(isVolume ? s.TOTPESOLIQ : s.VLVENDA) || 0;
+                const origPerda = Number(s.VLBONIFIC) || (String(s.TIPOVENDA) === '5' ? origRevenue : 0);
 
                 // FIX: Ensure 3297 sales are divided correctly without being dropped
                 if (is3297) {
@@ -6841,8 +6822,8 @@
                 tableBody.innerHTML = `<tr><td colspan="${6 + (weeks.length * 2)}" class="px-4 py-8 text-center text-slate-500">Nenhum cliente encontrado com os filtros atuais.</td></tr>`;
             } else {
                 const rowsHTML = pageData.map((row, index) => {
-                    const metaTotalStr = row.metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    const realTotalStr = row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const metaTotalStr = formatMetaRealizadoValue(row.metaTotal);
+                    const realTotalStr = formatMetaRealizadoValue(row.realTotal);
                     const perdasStr = (row.perdas || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     
                     const percent = row.metaTotal > 0 ? (row.realTotal / row.metaTotal) * 100 : 0;
@@ -6859,8 +6840,8 @@
                     `;
 
                     row.weekData.forEach(w => {
-                        const wMetaStr = w.meta.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                        const wRealStr = w.real.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                        const wMetaStr = formatMetaRealizadoValue(w.meta);
+                        const wRealStr = formatMetaRealizadoValue(w.real);
                         const realClass = w.real >= w.meta && w.meta > 0 ? 'text-green-400' : 'text-slate-300';
                         const metaClass = w.isPast ? 'text-red-500' : 'text-slate-400';
 
@@ -11815,7 +11796,7 @@ const supervisorGroups = new Map();
                 // Se nenhum filtro restritivo for aplicado, usamos as metas globais importadas (se existirem), evitando erro de fallback pro-rata
                 let isGlobalAdminView = false;
                 if (window.userRole === 'adm' && typeof adminViewMode !== 'undefined' && adminViewMode === 'seller') {
-                    if ((!selectedVendedores || selectedVendedores.size === 0) && (!selectedSupervisors || selectedSupervisors.size === 0)) {
+                    if ((!selectedVendedores || selectedVendedores.size === 0) && (!selectedSupervisors || selectedSupervisors.size === 0) && !clientCodesInRede && !codcli) {
                         isGlobalAdminView = true;
                     }
                 }
@@ -11902,8 +11883,7 @@ const supervisorGroups = new Map();
                         // Mix Salty Proportional Goal -> Now Absolute Sum (same as 'Metas' report tab)
                         if (activeGoalKeys.has('PEPSICO_ALL') || activeGoalKeys.has('ELMA_ALL')) {
                             // Defaults based on logic from calculateGoalsMetrics (50% of Elma base for Salty, 30% for Foods)
-                            const elmaPosBase = window.sellerDetailsMap?.get(rcaCode)?.elmaPos || 0;
-                            const defaultSalty = Math.round(elmaPosBase * 0.50);
+                            const defaultSalty = calculateSellerDefaults(vendorName).mixSalty;
                             const targetVal = getTargetValue(targets, 'mix_salty');
                             let vendorMixSaltyGoal = targetVal !== undefined ? targetVal : defaultSalty;
                             mixSaltyGoal += vendorMixSaltyGoal;
@@ -11911,8 +11891,7 @@ const supervisorGroups = new Map();
 
                         // Mix Foods Proportional Goal -> Now Absolute Sum
                         if (activeGoalKeys.has('PEPSICO_ALL') || activeGoalKeys.has('FOODS_ALL')) {
-                            const elmaPosBase = window.sellerDetailsMap?.get(rcaCode)?.elmaPos || 0;
-                            const defaultFoods = Math.round(elmaPosBase * 0.30);
+                            const defaultFoods = calculateSellerDefaults(vendorName).mixFoods;
                             const targetVal = getTargetValue(targets, 'mix_foods');
                             let vendorMixFoodsGoal = targetVal !== undefined ? targetVal : defaultFoods;
                             mixFoodsGoal += vendorMixFoodsGoal;
@@ -11959,9 +11938,13 @@ const supervisorGroups = new Map();
                         }
 
                         let vendorPosGoal = 0;
+                        let hasExplicitPosGoal = false;
                         if (overrideKey) {
                             const posTargetVal = getTargetValue(targets, overrideKey);
-                            if (posTargetVal !== undefined) vendorPosGoal = posTargetVal;
+                            if (posTargetVal !== undefined) {
+                                vendorPosGoal = posTargetVal;
+                                hasExplicitPosGoal = true;
+                            }
                         }
 
                         // Also Override Fat and Vol if explicit target exists for this seller!
@@ -12003,7 +11986,7 @@ const supervisorGroups = new Map();
                             }
                         }
 
-                        if (vendorPosGoal === 0) {
+                        if (!hasExplicitPosGoal) {
                             // Fallback to sum of individual clients if explicit goal doesn't exist
                             let defaultPosForVendor = 0;
                             goalClients.forEach(c => {
@@ -12057,14 +12040,19 @@ const supervisorGroups = new Map();
                         const produto = String(s.PRODUTO);
                         if (!cMap.has(produto)) {
                             const pObj = window.resolveDim('produtos', produto);
-                            const pDesc = (typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || '');
+                            const pDesc = (pObj && typeof pObj === 'object' && pObj.descricao) ? pObj.descricao : (s.DESCRICAO || '');
                             cMap.set(produto, { val: 0, desc: pDesc, codfor: String(s.CODFOR) });
                         }
                         cMap.get(produto).val += (Number(s.VLVENDA) || 0);
                     }
                 }
 
-                posRealized = dashboardClientsMap.size;
+                posRealized = 0;
+                dashboardClientsMap.forEach(prods => {
+                    let clientRevenue = 0;
+                    prods.forEach(product => { clientRevenue += product.val; });
+                    if (clientRevenue >= 1) posRealized++;
+                });
 
                 dashboardClientsMap.forEach((prods, cli) => {
                     const boughtCatsSalty = new Set();
@@ -12087,9 +12075,9 @@ const supervisorGroups = new Map();
                      let pct = 0;
                      if (goal > 0) {
                          pct = (realized / goal) * 100;
-                     } else if (realized > 0) {
-                         pct = 100;
                      }
+                     // Without a positive target, achievement is undefined, never 100%.
+                     pct = Number.isFinite(pct) ? Math.max(0, pct) : 0;
                      
                      let realizedStr, goalStr;
                      if (label === 'Volume (Ton)') {
@@ -12109,7 +12097,7 @@ const supervisorGroups = new Map();
                          full: 100,
                          columnSettings: { fill: window.am5.color(mColors[idx]) },
                          realizedLabel: realizedStr,
-                         goalLabel: goalStr
+                         goalLabel: goal > 0 ? goalStr : 'Sem meta definida'
                      });
                 };
 
@@ -20082,15 +20070,15 @@ const supervisorGroups = new Map();
             const sellersBody = metaRealizadoDataForExport.sellers.map(row => {
                 const weekCells = [];
                 row.weekData.forEach(w => {
-                    weekCells.push(w.meta.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
-                    weekCells.push(w.real.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+                    weekCells.push(formatMetaRealizadoValue(w.meta));
+                    weekCells.push(formatMetaRealizadoValue(w.real));
                 });
 
 
                 return [
                     getFirstName(row.name),
-                    row.metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-                    row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                    formatMetaRealizadoValue(row.metaTotal),
+                    formatMetaRealizadoValue(row.realTotal),
                     ...weekCells,
                     row.posGoal,
                     row.posRealized
@@ -20138,8 +20126,8 @@ const supervisorGroups = new Map();
             const clientsBody = metaRealizadoDataForExport.clients.map(row => {
                 const weekCells = [];
                 row.weekData.forEach(w => {
-                    weekCells.push(w.meta.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
-                    weekCells.push(w.real.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+                    weekCells.push(formatMetaRealizadoValue(w.meta));
+                    weekCells.push(formatMetaRealizadoValue(w.real));
                 });
 
 
@@ -20148,8 +20136,8 @@ const supervisorGroups = new Map();
                     row.razaoSocial,
                     getFirstName(row.vendedor),
                     row.cidade,
-                    row.metaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-                    row.realTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                    formatMetaRealizadoValue(row.metaTotal),
+                    formatMetaRealizadoValue(row.realTotal),
                     ...weekCells
                 ];
             });
