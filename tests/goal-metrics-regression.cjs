@@ -1,0 +1,34 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
+const source=fs.readFileSync(process.argv[2]||require('path').join(__dirname,'../js/app/app.js'),'utf8');
+function extract(name){const start=source.indexOf('        function '+name+'(');assert(start>=0,name);const end=source.indexOf('\n        function ',start+30);return source.slice(start,end);}
+const codes={ELMA:['707','708','752'],FOODS:['1119'],VIRTUAL:{TODDY:'1119_TODDY',TODDYNHO:'1119_TODDYNHO',QUAKER_KEROCOCO:'1119_QUAKER_KEROCOCO'},VIRTUAL_LIST:['1119_TODDYNHO','1119_TODDY','1119_QUAKER_KEROCOCO']};codes.ALL_GOALS=[...codes.ELMA,...codes.VIRTUAL_LIST];
+const clients=[{codigo_cliente:'10',rca1:'78',nomeCliente:'LOJA',razaoSocial:'LOJA'}];
+const targets={tonelada_elma_VOL:1000,tonelada_foods_VOL:2000,total_elma_FAT:100,total_foods_FAT:200,pepsico_all:20,mix_salty:10,mix_foods:5};
+const goals=new Map([['10',new Map([['707',{fat:100,vol:1000}],['1119_TODDYNHO',{fat:200,vol:2000}],['1119_TODDY',{fat:300,vol:3000}]])]]);
+let sales=[{DTPED:'2026-10-04T15:00:00Z',TIPOVENDA:'1',CODFOR:'1119',PRODUTO:'1',DESCRICAO:'TODDYNHO',CODCLI:'10',CODUSUR:'78',OBSERVACAOFOR:'PEPSICO',VLVENDA:50,TOTPESOLIQ:500}];
+const details=new Map([['78',{name:'VENDEDOR'}]]);
+const ctx={console,Date,Map,Set,ColumnarDataset:class {},window:{userRole:'adm',SUPPLIER_CODES:codes,sellerDetailsMap:details,goalsSellerTargets:new Map([['VENDEDOR',targets]]),globalClientGoals:goals,goalsTargets:{},am5:{color:x=>x},resolveDim:(kind,key)=>kind==='vendedores'?'VENDEDOR':null},sellerDetailsMap:details,allClientsData:clients,optimizedData:{rcaNameByCode:new Map([['78','VENDEDOR']]),clientsMap:new Map([['10',clients[0]]]),rcasBySupervisor:new Map()},hierarchyState:{'meta-realizado':{coords:new Set(),cocoords:new Set(),promotors:new Set()}},adminViewMode:'seller',selectedMetaRealizadoVendedores:new Set(),selectedMetaRealizadoSupervisors:new Set(),selectedMetaRealizadoSuppliers:['1119_TODDYNHO'],currentMetaRealizadoPasta:'FOODS',currentMetaRealizadoMetric:'valor',lastSaleDate:new Date('2026-10-06'),normalizeKey:x=>String(x),normalize:x=>String(x).toUpperCase(),parseDate:x=>new Date(x),isGarbageSeller:()=>false,getHierarchyFilteredClients:(_,x)=>x,getMetaRealizadoGoalMaps:()=>({clients:goals,sellers:new Map([['VENDEDOR',targets]])}),getMetaRealizadoPeriodSource:()=>({data:sales}),getMetaRealizadoPeriodDate:()=>new Date('2026-10-01'),clientMapForKPIs:new Map()};
+vm.createContext(ctx);
+for(const n of ['getMonthWeeksDistribution','getMetaRealizadoGoalKeys','matchesMetaRealizadoSupplier','formatMetaRealizadoValue','getMetaRealizadoFilteredData','getMetaRealizadoClientsData','calculateAdjustedWeeklyGoals'])vm.runInContext(extract(n),ctx);
+const weeks=ctx.getMonthWeeksDistribution(new Date('2026-10-01')).weeks;
+let rows=ctx.getMetaRealizadoClientsData(weeks);
+assert.equal(rows[0].metaTotal,200);assert.equal(rows[0].realTotal,50);assert.equal(rows[0].weekData[0].real,50,'Sunday afternoon included');
+ctx.currentMetaRealizadoMetric='peso';rows=ctx.getMetaRealizadoClientsData(weeks);assert.equal(rows[0].metaTotal,2000);assert.equal(rows[0].realTotal,500);assert.match(ctx.formatMetaRealizadoValue(500),/0,500 Ton/);
+ctx.selectedMetaRealizadoSuppliers=[];
+ctx.currentMetaRealizadoPasta='ELMA';assert.equal(ctx.getMetaRealizadoFilteredData().goalsBySeller.get('VENDEDOR').totalVol,1000);
+ctx.currentMetaRealizadoPasta='FOODS';assert.equal(ctx.getMetaRealizadoFilteredData().goalsBySeller.get('VENDEDOR').totalVol,2000);
+ctx.currentMetaRealizadoPasta='PEPSICO';assert.equal(ctx.getMetaRealizadoFilteredData().goalsBySeller.get('VENDEDOR').totalVol,3000);
+sales[0].DTPED='2026-10-31T23:59:00Z';rows=ctx.getMetaRealizadoClientsData(weeks);assert.equal(rows[0].weekData.at(-1).real,500,'month last day included');
+const weekly=[{start:new Date('2026-10-01'),end:new Date('2026-10-04'),workingDays:2},{start:new Date('2026-10-05'),end:new Date('2026-10-11'),workingDays:5}];
+const planned=ctx.calculateAdjustedWeeklyGoals(700,[100,0],weekly);assert.equal(planned[0],200);assert.equal(planned[1],600);assert.equal(100+planned[1],700,'closed deficit redistributed');
+// Execute the actual home-chart calculation and capture its data before rendering.
+const start=source.indexOf('                // --- NEW METAS CHART LOGIC ---');const end=source.indexOf('                renderMetasRadarChart(metasRadarData);',start)+'                renderMetasRadarChart(metasRadarData);'.length;
+Object.assign(ctx,{selectedSupervisors:new Set(),selectedVendedores:new Set(),selectedMainSuppliers:[],currentFornecedor:'PEPSICO',clientCodesInRede:null,codcli:'',getActiveClientsData:()=>clients,calculateSellerDefaults:()=>({elmaPos:20,mixSalty:10,mixFoods:6}),renderMetasRadarChart:data=>ctx.radar=data,filteredSalesData:[]});
+const home='{\n'+source.slice(start,end)+'\n}';
+vm.runInContext(home,ctx);assert(ctx.radar.every(x=>x.value===0),'zero sales never achieved');
+ctx.filteredSalesData=[{...sales[0],TIPOVENDA:'1',VLVENDA:0}];vm.runInContext(home,ctx);assert.equal(ctx.radar.find(x=>x.category==='Positivação').value,0,'zero-value row not positivated');
+ctx.filteredSalesData=[{...sales[0],TIPOVENDA:'1',VLVENDA:50}];vm.runInContext(home,ctx);assert.equal(ctx.radar.find(x=>x.category==='Positivação').value,5);assert.equal(ctx.radar.find(x=>x.category==='Mix Salty').goalLabel,'10');assert.equal(ctx.radar.find(x=>x.category==='Mix Foods').goalLabel,'5');
+targets.pepsico_all=0;vm.runInContext(home,ctx);const pos=ctx.radar.find(x=>x.category==='Positivação');assert.equal(pos.value,0);assert.equal(pos.goalLabel,'Sem meta definida');
+delete targets.mix_foods;vm.runInContext(home,ctx);assert.equal(ctx.radar.find(x=>x.category==='Mix Foods').goalLabel,'6','calculated default includes business adjustments');
+const homeSales=['CHEETOS','DORITOS','FANDANGOS','RUFFLES','TORCIDA','TODDYNHO','TODDY ACHOCOLATADO','QUAKER','KEROCOCO'].map((desc,i)=>({...sales[0],PRODUTO:String(i),DESCRICAO:desc,VLVENDA:10}));ctx.filteredSalesData=homeSales;vm.runInContext(home,ctx);assert.equal(ctx.radar.find(x=>x.category==='Mix Salty').value,10);assert(Math.abs(ctx.radar.find(x=>x.category==='Mix Foods').value-100/6)<1e-9);
+console.log('PASS: Foods goals and sales share filters; R$/Ton match; pasta volume isolated; Sunday/end-month counted; weekly deficit preserved; home imported targets, zero sales and missing targets handled.');
