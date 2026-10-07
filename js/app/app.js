@@ -8068,6 +8068,11 @@
         }
 
         function exportGoalsCurrentTabXLSX() {
+            const contextKey = currentGoalsSupplier + (currentGoalsBrand ? `_${currentGoalsBrand}` : '');
+            if (goalsTableState.exportContext !== contextKey || goalsTableState.exportRenderId !== goalsRenderId || window.goalsUpdateTimeout) {
+                window.showToast('warning', 'Aguarde a atualização das metas da aba selecionada antes de exportar.');
+                return;
+            }
             const data = goalsTableState.filteredData;
             if (!data || data.length === 0) {
                 window.showToast('warning', 'Sem dados para exportar.');
@@ -8167,7 +8172,7 @@
             let nameParam = '';
             // Simplified name param for now
 
-            const safeFileNameParam = currentGoalsSupplier.replace(/[^a-z0-9]/gi, '_').toUpperCase();
+            const safeFileNameParam = contextKey.replace(/[^a-z0-9]/gi, '_').toUpperCase();
             XLSX.writeFile(wb, `Metas_GV_${safeFileNameParam}${nameParam}.xlsx`);
         }
 
@@ -8398,6 +8403,8 @@
 
             goalsRenderId++;
             const currentRenderId = goalsRenderId;
+            goalsTableState.exportContext = null;
+            goalsTableState.filteredData = [];
 
             // Check if we are in Summary Mode
             if (document.getElementById('goals-summary-content') && !document.getElementById('goals-summary-content').classList.contains('hidden')) {
@@ -8910,6 +8917,8 @@
                 }
 
                 goalsTableState.filteredData = clientMetrics;
+                goalsTableState.exportContext = contextKey;
+                goalsTableState.exportRenderId = currentRenderId;
                 goalsTableState.totalPages = Math.ceil(clientMetrics.length / goalsTableState.itemsPerPage);
                 if (goalsTableState.currentPage > goalsTableState.totalPages && goalsTableState.totalPages > 0) goalsTableState.currentPage = goalsTableState.totalPages;
                 else if (goalsTableState.totalPages === 0) goalsTableState.currentPage = 1;
@@ -9751,7 +9760,10 @@ const supervisorGroups = new Map();
             // Standard pattern: Update filter lists based on selection of others?
             // For now, simpler: Just update the view.
             if (window.goalsUpdateTimeout) clearTimeout(window.goalsUpdateTimeout);
+            goalsRenderId++;
+            goalsTableState.exportContext = null;
             window.goalsUpdateTimeout = setTimeout(() => {
+                window.goalsUpdateTimeout = null;
                 // Update Seller Filter options based on Supervisor
                 // Get all clients matching supervisor filter, extract sellers.
                 // This is slightly different from sales-based filtering.
