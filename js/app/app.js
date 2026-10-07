@@ -458,7 +458,18 @@
                         const newRow = {};
                         Object.keys(row).forEach(k => {
                             if (k !== 'raw' && k !== 'meta' && typeof row[k] !== 'function') {
-                                newRow[k] = row[k];
+                                const value = row[k];
+                                if (typeof value === 'number' && !Number.isFinite(value)) {
+                                    newRow[k] = value === Infinity ? 'Novo' : '';
+                                } else if (value instanceof Set) {
+                                    newRow[k] = [...value].join(', ');
+                                } else if (value instanceof Map) {
+                                    newRow[k] = JSON.stringify(Object.fromEntries(value));
+                                } else if (value && typeof value === 'object') {
+                                    newRow[k] = JSON.stringify(value);
+                                } else {
+                                    newRow[k] = value;
+                                }
                             }
                         });
 
@@ -479,6 +490,36 @@
             }
 
             XLSX.writeFile(wb, `${fileName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        // Invalidate export snapshots before debounced filter handlers run.
+        document.addEventListener('input', invalidateFilteredExports, true);
+        document.addEventListener('change', invalidateFilteredExports, true);
+        function invalidateFilteredExports(event) {
+            const id = event.target.closest?.('[id*="-filter"]')?.id || '';
+            if (id.startsWith('mix-')) {
+                mixRenderId++;
+                mixTableDataForExport = [];
+            } else if (id.startsWith('coverage-')) {
+                dashboardRpcState.coverage.id++;
+                coverageTableDataForExport = [];
+            } else if (id.startsWith('innovations-month-')) {
+                innovationsMonthTableDataForExport = [];
+            } else if (id.startsWith('positivacao-')) {
+                positivacaoRenderId++;
+                positivacaoDataForExport = { active: [], inactive: [] };
+            } else if (id.startsWith('meta-realizado-')) {
+                metaRealizadoRenderRequest++;
+                metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [], month: selectedMetaRealizadoMonth };
+            } else if (id.startsWith('goals-sv-')) {
+                goalsSvRenderId++;
+                currentGoalsSvData = [];
+            } else if (id.startsWith('goals-gv-') && !id.startsWith('goals-gv-codcli-filter')) {
+                goalsRenderId++;
+                goalsTableState.exportContext = null;
+            } else if (id.startsWith('lp-')) {
+                lpState.filteredData = [];
+            }
         }
 
         function setupFab(containerId, pdfHandler, excelHandler) {
@@ -2212,6 +2253,7 @@
                     code: codCli,
                     name: client.nomeCliente || '', // Store original name for sorting
                     nameLower: (client.nomeCliente || '').toLowerCase(),
+                    razaoLower: (client.razaoSocial || '').toLowerCase(),
                     fantasiaLower: (client.fantasia || '').toLowerCase(),
                     cityLower: (client.cidade || '').toLowerCase(),
                     bairroLower: (client.bairro || '').toLowerCase(),
@@ -3197,6 +3239,7 @@
 
         let currentGoalsSupplier = 'PEPSICO_ALL';
         let currentGoalsBrand = null;
+        let selectedGoalsClientCode = '';
         let currentGoalsSvSupplier = window.SUPPLIER_CODES.EXTRUSADOS; // Default window.SUPPLIER_CODES.ELMA[0]
         let currentGoalsSvBrand = null;
         let currentGoalsSvData = [];
@@ -3945,6 +3988,7 @@
         }
 
         function updateMixView() {
+            mixTableDataForExport = [];
             mixRenderId++;
             const currentRenderId = mixRenderId;
 
@@ -4309,6 +4353,10 @@
         }
 
         async function exportMixPDF() {
+            if (!mixTableDataForExport.length) {
+                window.showToast('warning', 'Aguarde a atualização ou selecione filtros com dados para exportar.');
+                return;
+            }
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape');
 
@@ -4614,6 +4662,41 @@
             console.log(`[Goals] Distributed ${newTotalValue} (${metric}) for ${sellerName} / ${categoryId} (Cascade: ${targetCategories.join(',')})`);
         }
 
+        function cacheGoalsWorkbookFormulas(rows) {
+            const done = new Set();
+            const visiting = new Set();
+            const read = address => {
+                const match = /^([A-Z]+)(\d+)$/.exec(address.trim());
+                if (!match) throw new Error('Referência inválida na exportação de metas');
+                let column = 0;
+                for (const letter of match[1]) column = column * 26 + letter.charCodeAt(0) - 64;
+                const cell = rows[Number(match[2]) - 1]?.[column - 1];
+                if (!cell) return 0;
+                if (!cell.f || done.has(address)) return Number(cell.v) || 0;
+                if (visiting.has(address)) throw new Error('Referência circular na exportação de metas');
+                visiting.add(address);
+                cell.v = calculate(cell.f);
+                visiting.delete(address);
+                done.add(address);
+                return cell.v;
+            };
+            const calculate = formula => {
+                const sum = /^SUM\(([A-Z]+)(\d+):\1(\d+)\)$/.exec(formula);
+                if (sum) {
+                    let total = 0;
+                    for (let row = Number(sum[2]); row <= Number(sum[3]); row++) total += read(sum[1] + row);
+                    return total;
+                }
+                const round = /^ROUND\(([A-Z]+\d+)\*0\.9,\s*0\)$/.exec(formula);
+                if (round) return Math.round(read(round[1]) * 0.9);
+                if (formula === '0') return 0;
+                return formula.split('+').reduce((total, address) => total + read(address), 0);
+            };
+            rows.forEach((row, r) => row.forEach((cell, c) => {
+                if (cell.f) read(XLSX.utils.encode_col(c) + (r + 1));
+            }));
+        }
+
         function exportGoalsSvXLSX() {
             if (typeof XLSX === 'undefined') {
                 window.showToast('error', "Erro: Biblioteca XLSX não carregada. Verifique sua conexão com a internet.");
@@ -4621,11 +4704,8 @@
             }
 
             if (!currentGoalsSvData || currentGoalsSvData.length === 0) {
-                try { updateGoalsSvView(); } catch (e) { console.error(e); }
-                if (!currentGoalsSvData || currentGoalsSvData.length === 0) {
-                    window.showToast('warning', "Sem dados para exportar.");
-                    return;
-                }
+                window.showToast('warning', 'Aguarde a atualização ou selecione filtros com dados para exportar.');
+                return;
             }
 
             const wb = XLSX.utils.book_new();
@@ -4821,12 +4901,14 @@
                             rowData.push(createCell(d.metaVol, isEditable ? cellStyle : aggCellStyle, fmtVol));
                             colCellsForSupTotal[col.id].vol.push(`${getColLet(cIdx + 2)}${excelRow}`);
                             colCellsForSupTotal[col.id].avg.push(`${getColLet(cIdx)}${excelRow}`);
+                            colCellsForSupTotal[col.id].avg.push(`${getColLet(cIdx)}${excelRow}`);
 
                         } else if (col.type === 'mix') {
                             rowData.push(createCell(d.avgMix, readOnlyStyle, fmtDec1));
                             rowData.push(createCell(d.metaMix, readOnlyStyle, fmtInt));
                             rowData.push(createCell(d.metaMix, isEditable ? cellStyle : aggCellStyle, fmtInt));
                             colCellsForSupTotal[col.id].mix.push(`${getColLet(cIdx + 2)}${excelRow}`);
+                            colCellsForSupTotal[col.id].avg.push(`${getColLet(cIdx)}${excelRow}`);
                             colCellsForSupTotal[col.id].avg.push(`${getColLet(cIdx)}${excelRow}`);
 
                         } else if (col.type === 'geral') {
@@ -5039,6 +5121,7 @@
             ws_data.push(grandRowData);
 
             // Create Sheet
+            cacheGoalsWorkbookFormulas(ws_data);
             const ws = XLSX.utils.aoa_to_sheet(ws_data);
             ws['!merges'] = merges;
 
@@ -5065,7 +5148,7 @@
         }
 
         function getGoalsFilteredData() {
-            const codCli = goalsGvCodcliFilter.value.trim();
+            const codCli = selectedGoalsClientCode;
 
             // Apply Hierarchy Filter + "Active" Filter logic
             const baseClients = getHierarchyFilteredClients('goals-gv', allClientsData);
@@ -7909,8 +7992,8 @@
             if (hierarchyState['goals-gv'] && (hierarchyState['goals-gv'].coords.size > 0 || hierarchyState['goals-gv'].promotors.size > 0)) {
                  // return 'filtro hierarquia';
             }
-            if (goalsGvCodcliFilter.value) {
-                return `Cliente "${goalsGvCodcliFilter.value}"`;
+            if (selectedGoalsClientCode) {
+                return `Cliente "${selectedGoalsClientCode}"`;
             }
 
             // Default to Tab Name
@@ -7992,6 +8075,11 @@
 
 
         function exportGoalsGvPDF() {
+            const contextKey = currentGoalsSupplier + (currentGoalsBrand ? `_${currentGoalsBrand}` : '');
+            if (goalsTableState.exportContext !== contextKey || goalsTableState.exportRenderId !== goalsRenderId || window.goalsUpdateTimeout) {
+                window.showToast('warning', 'Aguarde a atualização das metas da aba selecionada antes de exportar.');
+                return;
+            }
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape');
             const data = goalsTableState.filteredData;
@@ -8062,7 +8150,7 @@
                 nameParam = sName !== 'Todos' ? '_' + sName : '';
             }
 
-            const safeFileNameParam = currentGoalsSupplier.replace(/[^a-z0-9]/gi, '_').toUpperCase();
+            const safeFileNameParam = contextKey.replace(/[^a-z0-9]/gi, '_').toUpperCase();
             const safeNameParam = nameParam.replace(/[^a-z0-9_]/gi, '_').toLowerCase();
             doc.save(`Metas_GV_${safeFileNameParam}${safeNameParam}.pdf`);
         }
@@ -8607,7 +8695,7 @@
                     if (document.activeElement !== fatInput) {
                         const h = hierarchyState['goals-gv'];
                         const isGlobalGoal = window.userRole === 'adm' && selectedGoalsGvSupervisors.size === 0 && selectedGoalsGvVendedores.size === 0 &&
-                            !goalsGvCodcliFilter.value.trim() && (!h || (h.coords.size === 0 && h.cocoords.size === 0 && h.promotors.size === 0));
+                            !selectedGoalsClientCode && (!h || (h.coords.size === 0 && h.cocoords.size === 0 && h.promotors.size === 0));
                         const importedFat = isGlobalGoal ? window.goalsImportedTotals?.[cacheKey]?.fat : undefined;
                         const displayFat = Number.isFinite(importedFat) ? importedFat : ((sumFat === 0 && totalPrevFat > 0) ? totalPrevFat : sumFat);
                         fatInput.value = displayFat.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -8625,7 +8713,7 @@
                 if (rateio) {
                     const h = hierarchyState['goals-gv'];
                     const globalView = window.userRole === 'adm' && selectedGoalsGvSupervisors.size === 0 && selectedGoalsGvVendedores.size === 0 &&
-                        !goalsGvCodcliFilter.value.trim() && (!h || (h.coords.size === 0 && h.cocoords.size === 0 && h.promotors.size === 0));
+                        !selectedGoalsClientCode && (!h || (h.coords.size === 0 && h.cocoords.size === 0 && h.promotors.size === 0));
                     const importedFat = globalView ? window.goalsImportedTotals?.[cacheKey]?.fat : undefined;
                     const expected = Number.isFinite(importedFat) ? importedFat : sumFat;
                     const gap = expected - sumFat;
@@ -9109,6 +9197,7 @@
         }
 
         function updateGoalsSvView() {
+            currentGoalsSvData = [];
             goalsSvRenderId++;
             const currentRenderId = goalsSvRenderId;
 
@@ -9797,7 +9886,9 @@ const supervisorGroups = new Map();
             if(typeof updateGoalsGvVendedorFilter === 'function') updateGoalsGvVendedorFilter();
 
             const codcli = document.getElementById('goals-gv-codcli-filter');
+            selectedGoalsClientCode = '';
             if(codcli) codcli.value = '';
+            document.getElementById('goals-gv-codcli-filter-suggestions')?.classList.add('hidden');
 
             updateGoalsView();
         }
@@ -10124,6 +10215,7 @@ const supervisorGroups = new Map();
         }
 
         function updateCoverageView() {
+            coverageTableDataForExport = [];
             requestDashboardPage('coverage', 'get_coverage_page_v1', renderCoverageRpc);
         }
 
@@ -13799,6 +13891,7 @@ const supervisorGroups = new Map();
         }
 
         async function updateInnovationsMonthView() {
+            innovationsMonthTableDataForExport = [];
             // Lazy Load Data
             if (!window.innovations) {
                 const container = document.getElementById('innovations-month-kpis');
@@ -14637,6 +14730,10 @@ const supervisorGroups = new Map();
         }
 
         async function exportInnovationsMonthPDF() {
+            if (!innovationsMonthTableDataForExport.length) {
+                window.showToast('warning', 'Aguarde a atualização ou selecione filtros com dados para exportar.');
+                return;
+            }
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape');
 
@@ -14819,6 +14916,10 @@ const supervisorGroups = new Map();
 
 
         async function exportCoveragePDF() {
+            if (!coverageTableDataForExport.length || document.getElementById('coverage-view')?.getAttribute('aria-busy') === 'true') {
+                window.showToast('warning', 'Aguarde a atualização ou selecione filtros com dados para exportar.');
+                return;
+            }
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape');
 
@@ -15169,6 +15270,10 @@ const supervisorGroups = new Map();
         }
 
         function exportClientsPDF(clientList, title, filename, includeFaturamento) {
+            if (!clientList?.length) {
+                window.showToast('warning', 'Aguarde a atualização ou selecione filtros com dados para exportar.');
+                return;
+            }
              if (clientList.length === 0) return;
             const { jsPDF } = window.jspdf; const doc = new jsPDF();
             const coord = document.getElementById('city-coord-filter-text')?.textContent || 'Todos';
@@ -16255,8 +16360,8 @@ const supervisorGroups = new Map();
             updateAllVisuals();
         };
 
-        function searchLocalClients(query) {
-            if (!query || query.length < 3) return [];
+        function searchLocalClients(query, minLength = 3) {
+            if (!query || query.length < minLength) return [];
             const terms = query.toLowerCase().split('%').map(t => t.trim()).filter(t => t.length > 0);
             if (terms.length === 0) return [];
 
@@ -16275,6 +16380,7 @@ const supervisorGroups = new Map();
                     return (
                         (idx.code && idx.code.includes(cleanTerm)) ||
                         (idx.nameLower && idx.nameLower.includes(term)) ||
+                        (idx.razaoLower && idx.razaoLower.includes(term)) ||
                         (idx.fantasiaLower && idx.fantasiaLower.includes(term)) ||
                         (idx.cnpj && idx.cnpj.includes(cleanTerm)) ||
                         (idx.cityLower && idx.cityLower.includes(term)) ||
@@ -16292,7 +16398,7 @@ const supervisorGroups = new Map();
             return results;
         }
 
-        function setupClientTypeahead(inputId, suggestionsId, onSelect) {
+        function setupClientTypeahead(inputId, suggestionsId, onSelect, minLength = 3) {
             const input = document.getElementById(inputId);
             const suggestions = document.getElementById(suggestionsId);
             if (!input || !suggestions) return;
@@ -16301,21 +16407,34 @@ const supervisorGroups = new Map();
 
             input.addEventListener('input', (e) => {
                 const val = e.target.value;
-                if (!val || val.length < 3) {
+                clearTimeout(debounce);
+                if (!val || val.length < minLength) {
                     suggestions.classList.add('hidden');
                     return;
                 }
 
                 clearTimeout(debounce);
                 debounce = setTimeout(() => {
-                    const results = searchLocalClients(val);
+                    const results = searchLocalClients(val, minLength);
                     renderSuggestions(results);
                 }, 300);
             });
 
             // Close on click outside
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    clearTimeout(debounce);
+                    suggestions.classList.add('hidden');
+                } else if (e.key === 'ArrowDown' && !suggestions.classList.contains('hidden')) {
+                    e.preventDefault();
+                    suggestions.querySelector('button')?.focus();
+                } else if (e.key === 'Enter' && minLength === 1) {
+                    e.preventDefault();
+                }
+            });
             document.addEventListener('click', (e) => {
                 if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+                    clearTimeout(debounce);
                     suggestions.classList.add('hidden');
                 }
             });
@@ -16323,13 +16442,19 @@ const supervisorGroups = new Map();
             function renderSuggestions(results) {
                 suggestions.innerHTML = '';
                 if (results.length === 0) {
+                    if (minLength === 1) {
+                        suggestions.textContent = 'Nenhum cliente encontrado. Tente código, nome ou CNPJ.';
+                        suggestions.classList.remove('hidden');
+                        return;
+                    }
                     suggestions.classList.add('hidden');
                     return;
                 }
 
                 results.forEach(c => {
-                    const div = document.createElement('div');
-                    div.className = 'px-4 py-3 border-b border-slate-700 hover:bg-slate-700 cursor-pointer flex justify-between items-center group';
+                    const div = document.createElement('button');
+                    div.type = 'button';
+                    div.className = 'w-full text-left px-4 py-3 border-b border-slate-700 hover:bg-slate-700 focus:bg-slate-700 cursor-pointer flex justify-between items-center group';
 
                     const code = c['Código'] || c['codigo_cliente'];
                     const name = c.fantasia || c.nomeCliente || c.razaoSocial || 'Sem Nome';
@@ -16349,6 +16474,7 @@ const supervisorGroups = new Map();
                         </div>
                     `;
                     div.onclick = () => {
+                        clearTimeout(debounce);
                         input.value = code;
                         suggestions.classList.add('hidden');
                         if (onSelect) onSelect(code);
@@ -16856,6 +16982,7 @@ const supervisorGroups = new Map();
             const goalsGvCodcliFilter = document.getElementById('goals-gv-codcli-filter');
             if (goalsGvCodcliFilter) {
                 setupClientTypeahead('goals-gv-codcli-filter', 'goals-gv-codcli-filter-suggestions', (code) => {
+                    selectedGoalsClientCode = normalizeKey(String(code));
                     handleClientFilterCascade(code, 'goals-gv');
                     if (typeof updateGoalsView === 'function') {
                         goalsTableState.currentPage = 1;
@@ -16863,22 +16990,17 @@ const supervisorGroups = new Map();
                     } else {
                         goalsGvCodcliFilter.dispatchEvent(new Event('input'));
                     }
-                });
+                }, 1);
 
-
-                const updateGoalsClientFilter = () => {
-                    goalsTableState.currentPage = 1;
-                    updateGoalsView();
-                };
-                const debouncedGoalsClientFilter = debounce(updateGoalsClientFilter, 300);
-                goalsGvCodcliFilter.addEventListener('input', debouncedGoalsClientFilter);
-                goalsGvCodcliFilter.addEventListener('search', updateGoalsClientFilter);
-                goalsGvCodcliFilter.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        updateGoalsClientFilter();
+                const clearGoalsClientFilter = () => {
+                    if (!goalsGvCodcliFilter.value.trim() && selectedGoalsClientCode) {
+                        selectedGoalsClientCode = '';
+                        goalsTableState.currentPage = 1;
+                        updateGoalsView();
                     }
-                });
+                };
+                goalsGvCodcliFilter.addEventListener('input', clearGoalsClientFilter);
+                goalsGvCodcliFilter.addEventListener('search', clearGoalsClientFilter);
 
 
                 // Make Goals Lupa Icon Interactive
@@ -16886,12 +17008,7 @@ const supervisorGroups = new Map();
                 if (goalsGvSearchIcon) {
                     goalsGvSearchIcon.addEventListener('click', () => {
                         goalsGvCodcliFilter.focus();
-                        if (typeof updateGoalsView === 'function') {
-                            goalsTableState.currentPage = 1;
-                            updateGoalsView();
-                        } else {
-                            goalsGvCodcliFilter.dispatchEvent(new Event('input'));
-                        }
+                        goalsGvCodcliFilter.dispatchEvent(new Event('input'));
                     });
 
 
@@ -20039,6 +20156,10 @@ const supervisorGroups = new Map();
             });
         }
         async function exportMetaRealizadoPDF() {
+            if (!metaRealizadoDataForExport.sellers.length && !metaRealizadoDataForExport.clients.length) {
+                window.showToast('warning', 'Aguarde a atualização ou selecione filtros com dados para exportar.');
+                return;
+            }
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape');
 
@@ -27506,6 +27627,7 @@ const supervisorGroups = new Map();
         }
 
         function updatePositivacaoView() {
+            positivacaoDataForExport = { active: [], inactive: [] };
             positivacaoRenderId++;
             const currentRenderId = positivacaoRenderId;
 
@@ -28870,6 +28992,10 @@ const supervisorGroups = new Map();
     let lpRenderId = 0;
 
     async function exportLpPDF() {
+    if (!lpState.filteredData?.length) {
+        window.showToast('warning', 'Aguarde a atualização ou selecione filtros com dados para exportar.');
+        return;
+    }
     if (!window.jspdf || !window.jspdf.jsPDF) {
         window.showToast('error', 'Biblioteca jsPDF não carregada.');
         return;
