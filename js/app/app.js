@@ -19081,7 +19081,6 @@ const supervisorGroups = new Map();
                 }
                 // ------------------------------------------------
 
-                if (processedSellers.has(finalSellerName)) continue;
                 processedSellers.add(finalSellerName);
 
                 // Helper to get value with priority: Adjust > Meta
@@ -19138,7 +19137,21 @@ const supervisorGroups = new Map();
 
 
             }
-            return updates;
+            // Multiple lines represent portions of the same seller's target.
+            // Merge before distributing so later rows cannot replace earlier ones.
+            const merged = new Map();
+            for (const update of updates) {
+                const key = JSON.stringify([!!update.global, update.seller, update.category, update.type]);
+                const previous = merged.get(key);
+                if (!previous) merged.set(key, {...update});
+                else {
+                    if (update.global) throw new Error('A planilha possui mais de um total GV para a mesma meta.');
+                    previous.val = update.type === 'rev' ?
+                        (Math.round(previous.val * 100) + Math.round(update.val * 100)) / 100 :
+                        previous.val + update.val;
+                }
+            }
+            return [...merged.values()];
         }
 
         // --- Event Listeners for Import ---
