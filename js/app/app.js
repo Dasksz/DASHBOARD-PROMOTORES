@@ -5089,7 +5089,7 @@
 
                 if (hasVend && !selectedGoalsGvVendedores.has(rca1)) continue;
 
-                if (codCli && String(c['Código']) !== codCli) continue;
+                if (codCli && normalizeKey(String(c['Código'] || c['codigo_cliente'] || '')) !== normalizeKey(codCli)) continue;
 
                 clients.push(c);
             }
@@ -16854,12 +16854,17 @@ const supervisorGroups = new Map();
                 });
 
 
-                goalsGvCodcliFilter.addEventListener('input', (e) => {
-                    if (!e.target.value) {
-                        if (typeof updateGoalsView === 'function') {
-                            goalsTableState.currentPage = 1;
-                            updateGoalsView();
-                        }
+                const updateGoalsClientFilter = () => {
+                    goalsTableState.currentPage = 1;
+                    updateGoalsView();
+                };
+                const debouncedGoalsClientFilter = debounce(updateGoalsClientFilter, 300);
+                goalsGvCodcliFilter.addEventListener('input', debouncedGoalsClientFilter);
+                goalsGvCodcliFilter.addEventListener('search', updateGoalsClientFilter);
+                goalsGvCodcliFilter.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        updateGoalsClientFilter();
                     }
                 });
 
