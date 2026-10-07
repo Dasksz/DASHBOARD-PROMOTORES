@@ -1425,9 +1425,16 @@ const FeedVisitas = (() => {
         return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(Math.max(0, 1 - h)));
     }
 
-    function openLocationModal(visitId) {
+    async function openLocationModal(visitId) {
         const info = FeedVisitas.clientCache?.[visitId];
         if (!info) return;
+        // Read the current checkout when the feed was opened before the visit ended.
+        try {
+            const {data, error} = await window.supabaseClient.from('view_visitas_expanded')
+                .select('checkout_at,checkout_latitude,checkout_longitude,checkout_accuracy').eq('id', visitId).maybeSingle();
+            if (error) throw error;
+            if (data) Object.assign(info, {checkoutAt:data.checkout_at, checkoutLatitude:data.checkout_latitude, checkoutLongitude:data.checkout_longitude, checkoutAccuracy:data.checkout_accuracy});
+        } catch (error) { console.warn('Não foi possível atualizar o checkout da visita:', error); }
         let modal = document.getElementById('feed-location-modal');
         if (!modal) {
             modal = document.createElement('div'); modal.id = 'feed-location-modal';
@@ -1451,7 +1458,7 @@ const FeedVisitas = (() => {
             <header class="p-4 flex justify-between items-center border-b border-slate-700"><h3 class="text-white font-semibold">Localização da visita</h3><button type="button" onclick="window.FeedVisitas.closeLocationModal()" aria-label="Fechar mapa" class="text-slate-300 px-3 py-1 rounded hover:bg-slate-700">Fechar</button></header>
             <div class="p-4 overflow-y-auto"><p class="text-white font-semibold">${window.escapeHtml(String(info.codigo || '') + ' - ' + (info.nome || 'Cliente'))}</p><p class="text-sm text-slate-400 mb-3">${window.escapeHtml(info.endereco || '')} ${window.escapeHtml(info.cidade || '')}</p>
             ${locations.length ? '<div id="feed-mini-map" class="h-64 rounded-lg bg-slate-800"></div>' : '<p class="text-slate-400 p-4">Esta visita não possui coordenadas registradas.</p>'}
-            <div class="mt-4 space-y-2">${points.map(point => `<div class="text-sm text-slate-300"><span style="color:${point.color}">●</span> <strong>${point.label}</strong>${point.time ? ' • ' + formatTime(point.time) : ''}${!point.valid ? ' • Localização não registrada' : ''}${point.valid && point.accuracy != null ? ' • Precisão GPS: ' + Math.round(point.accuracy) + ' m' : ''}</div>`).join('')}</div>
+            <div class="mt-4 space-y-2">${points.map(point => `<div class="text-sm text-slate-300"><span style="color:${point.color}">●</span> <strong>${point.label}</strong>${point.key !== 'client' ? ' • ' + formatTime(point.time) : ''}${!point.valid ? ' • Localização não registrada' : ''}${point.valid && point.accuracy != null ? ' • Precisão GPS: ' + Math.round(point.accuracy) + ' m' : ''}</div>`).join('')}</div>
             <div class="mt-4 space-y-2 border-t border-slate-700 pt-3">${rows}</div>
             ${!points[1].valid ? '<p class="mt-3 text-xs text-slate-400">Visitas antigas e encerramentos automáticos podem não ter localização de checkout.</p>' : ''}
             </div></div>`;
@@ -1462,7 +1469,7 @@ const FeedVisitas = (() => {
                 if (FeedVisitas.locationMap) FeedVisitas.locationMap.remove();
                 const first=locations[0], map=window.L.map('feed-mini-map').setView([Number(first.lat),Number(first.lng)],16);
                 FeedVisitas.locationMap=map;
-                window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap © CARTO'}).addTo(map);
+                window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'}).addTo(map);
                 const markers=locations.map(point => {
                     const icon=window.L.divIcon({className:'visit-location-pin',html:`<div style="background:${point.color};width:16px;height:16px;border-radius:50%;border:2px solid white"></div>`,iconSize:[20,20],iconAnchor:[10,10]});
                     return window.L.marker([Number(point.lat),Number(point.lng)],{icon}).addTo(map).bindPopup(point.label);
