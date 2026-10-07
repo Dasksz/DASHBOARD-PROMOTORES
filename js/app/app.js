@@ -4434,7 +4434,8 @@
                 const payload = {
                     clients: clientsObj,
                     targets: goalsTargets,
-                    seller_targets: sellerTargetsObj
+                    seller_targets: sellerTargetsObj,
+                    imported_totals: window.goalsImportedTotals || {}
                 };
 
                 const { error } = await window.supabaseClient
@@ -4466,10 +4467,11 @@
             // metric: 'fat' or 'vol'
             // categoryId: window.SUPPLIER_CODES.ELMA[0], window.SUPPLIER_CODES.VIRTUAL.TODDY, 'tonelada_elma', etc.
 
-            const sellerCode = optimizedData.rcaCodeByName.get(sellerName);
+            const isCounterGoal = String(sellerName).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase() === 'BALCAO';
+            const sellerCode = isCounterGoal ? '53' : optimizedData.rcaCodeByName.get(sellerName);
             if (!sellerCode) { console.warn(`[Goals] Seller not found: ${sellerName}`); return; }
 
-            const clients = optimizedData.clientsByRca.get(sellerCode) || [];
+            const clients = isCounterGoal ? allClientsData.filter(c => normalizeKey(String(c['Código'] || c['codigo_cliente'])) === '12034') : (optimizedData.clientsByRca.get(sellerCode) || []);
             const activeClients = clients.filter(c => {
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const rca1 = String(c.rca1 || '').trim();
@@ -4566,7 +4568,7 @@
 
             // --- TRAVA CLIENTE 3297 (APLICADA NA IMPORTAÇÃO DE PLANILHA/VENDEDOR) ---
             const client3297 = globalClientGoals.get(normalizeKey('3297'));
-            if (client3297) {
+            if (client3297 && activeClients.some(c => normalizeKey(String(c['Código'] || c['codigo_cliente'])) === '3297')) {
                 const targetClients = ['541', '544', '546'].map(c => normalizeKey(c));
                 
                 targetCategories.forEach(subCat => {
@@ -4601,6 +4603,9 @@
                                     targetGoal.vol = fractionVol;
                                 }
                             });
+                            // The target is transferred, so the source must not be counted again.
+                            if (metric === 'fat') goal3297.fat = 0;
+                            else goal3297.vol = 0;
                         }
                     }
                 });
@@ -8599,7 +8604,11 @@
 
                 if (fatInput) {
                     if (document.activeElement !== fatInput) {
-                        const displayFat = (sumFat === 0 && totalPrevFat > 0) ? totalPrevFat : sumFat;
+                        const h = hierarchyState['goals-gv'];
+                        const isGlobalGoal = window.userRole === 'adm' && selectedGoalsGvSupervisors.size === 0 && selectedGoalsGvVendedores.size === 0 &&
+                            !goalsGvCodcliFilter.value.trim() && (!h || (h.coords.size === 0 && h.cocoords.size === 0 && h.promotors.size === 0));
+                        const importedFat = isGlobalGoal ? window.goalsImportedTotals?.[cacheKey]?.fat : undefined;
+                        const displayFat = Number.isFinite(importedFat) ? importedFat : ((sumFat === 0 && totalPrevFat > 0) ? totalPrevFat : sumFat);
                         fatInput.value = displayFat.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     }
                     fatInput.readOnly = false; fatInput.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -8610,6 +8619,18 @@
                         volInput.value = displayVol.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
                     }
                     volInput.readOnly = false; volInput.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+                const rateio = document.getElementById('goals-distribution-status');
+                if (rateio) {
+                    const h = hierarchyState['goals-gv'];
+                    const globalView = window.userRole === 'adm' && selectedGoalsGvSupervisors.size === 0 && selectedGoalsGvVendedores.size === 0 &&
+                        !goalsGvCodcliFilter.value.trim() && (!h || (h.coords.size === 0 && h.cocoords.size === 0 && h.promotors.size === 0));
+                    const importedFat = globalView ? window.goalsImportedTotals?.[cacheKey]?.fat : undefined;
+                    const expected = Number.isFinite(importedFat) ? importedFat : sumFat;
+                    const gap = expected - sumFat;
+                    rateio.textContent = expected > 0 ? (sumFat / expected * 100).toLocaleString('pt-BR', {maximumFractionDigits:2}) + '% Distribuído' +
+                        (Math.abs(gap) >= 0.01 ? ' • ' + Math.abs(gap).toLocaleString('pt-BR', {style:'currency',currency:'BRL'}) + (gap > 0 ? ' pendentes de rateio' : ' acima da meta') : '') : 'Sem meta distribuída';
+                    rateio.className = 'text-lg font-bold ' + (Math.abs(gap) >= 0.01 ? 'text-amber-400' : 'text-green-400');
                 }
                 if (btnDistributeFat) btnDistributeFat.style.display = '';
                 if (btnDistributeVol) btnDistributeVol.style.display = '';
@@ -17422,6 +17443,7 @@ const supervisorGroups = new Map();
             };
 
             document.addEventListener('goalsCleared', () => {
+                window.goalsImportedTotals = {};
                 updateGoals();
             });
 
@@ -17445,6 +17467,7 @@ const supervisorGroups = new Map();
 
                     if (data && data.goals_data) {
                         const gd = data.goals_data;
+                        window.goalsImportedTotals = gd.imported_totals || {};
                         let clientsData = {};
                         let targetsData = {};
 
@@ -17534,6 +17557,8 @@ const supervisorGroups = new Map();
                                 goalsTargets[key] = targetsData[key];
                             }
                         }
+
+                        for (const [key,target] of Object.entries(window.goalsImportedTotals)) goalsTargets[key] = {...(goalsTargets[key] || {}), ...target};
 
                         if (gd.seller_targets) {
                             goalsSellerTargets.clear();
@@ -18998,8 +19023,23 @@ const supervisorGroups = new Map();
                 // --- ENHANCED FILTER: Ignore Supervisors, Aggregates, and BALCAO ---
                 const upperName = sellerName.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
 
+                if (String(sellerCodeCandidate || '').trim().toUpperCase() === 'GV') {
+                    const categories = ['707','708','752','1119_TODDYNHO','1119_TODDY','1119_QUAKER_KEROCOCO','total_elma','total_foods','pepsico_all','tonelada_elma','tonelada_foods'];
+                    for (const category of categories) for (const [metric,type] of [['FAT','rev'],['VOL','vol']]) {
+                        for (const sub of ['AJUSTE','META']) {
+                            const index = colMap[category + '_' + metric + '_' + sub];
+                            if (index === undefined) continue;
+                            const val = parseImportValue(row[index]);
+                            if (!Number.isFinite(val)) continue;
+                            updates.push({type, seller:'GV — Geral PRIME', category, val, global:true});
+                            break;
+                        }
+                    }
+                    continue;
+                }
+                const isCounterSeller = String(parseImportValue(sellerCodeCandidate)) === '53' && upperName === 'BALCAO';
                 // 1. Explicit Blocklist
-                if (upperName === 'BALCAO' || upperName === 'BALCÃO' ||
+                if ((!isCounterSeller && (upperName === 'BALCAO' || upperName === 'BALCÃO')) ||
                     upperName.includes('TOTAL') || upperName.includes('SUPERVISOR') || upperName.includes('GERAL') ||
                     upperName === 'VENDEDOR' || upperName === 'NOME' || upperName === 'CODIGO' || upperName === 'CÓDIGO') {
                     continue;
@@ -19036,7 +19076,7 @@ const supervisorGroups = new Map();
                 // 2. Dynamic Supervisor Check
                 // If the name is a known Supervisor (key in rcasBySupervisor), ignore it.
                 // Assuming supervisors are not also sellers in this context (or we only want leaf sellers).
-                if (optimizedData.rcasBySupervisor.has(finalSellerName) || optimizedData.rcasBySupervisor.has(finalSellerName.toUpperCase())) {
+                if (!isCounterSeller && (optimizedData.rcasBySupervisor.has(finalSellerName) || optimizedData.rcasBySupervisor.has(finalSellerName.toUpperCase()))) {
                     continue;
                 }
                 // ------------------------------------------------
@@ -19065,7 +19105,7 @@ const supervisorGroups = new Map();
                 const revCats = ['707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO', 'total_elma', 'total_foods', 'pepsico_all'];
                 revCats.forEach(cat => {
                     const val = getPriorityValue(cat, 'FAT');
-                    if (!isNaN(val)) updates.push({ type: 'rev', seller: sellerName, category: cat, val: val });
+                    if (!isNaN(val)) updates.push({ type: 'rev', seller: finalSellerName, category: cat, val: val });
                 });
 
 
@@ -19075,7 +19115,7 @@ const supervisorGroups = new Map();
                 const volCats = ['tonelada_elma', 'tonelada_foods', 'pepsico_all'];
                 volCats.forEach(cat => {
                     const val = getPriorityValue(cat, 'VOL');
-                    if (!isNaN(val)) updates.push({ type: 'vol', seller: sellerName, category: cat, val: val });
+                    if (!isNaN(val)) updates.push({ type: 'vol', seller: finalSellerName, category: cat, val: val });
                 });
 
 
@@ -19084,7 +19124,7 @@ const supervisorGroups = new Map();
                 const posCats = ['pepsico_all', 'total_elma', 'total_foods', '707', '708', '752', '1119_TODDYNHO', '1119_TODDY', '1119_QUAKER_KEROCOCO'];
                 posCats.forEach(cat => {
                     const val = getPriorityValue(cat, 'POS');
-                    if (!isNaN(val)) updates.push({ type: 'pos', seller: sellerName, category: cat, val: Math.round(val) });
+                    if (!isNaN(val)) updates.push({ type: 'pos', seller: finalSellerName, category: cat, val: Math.round(val) });
                 });
 
 
@@ -19093,7 +19133,7 @@ const supervisorGroups = new Map();
                 const mixCats = ['mix_salty', 'mix_foods'];
                 mixCats.forEach(cat => {
                     const val = getPriorityValue(cat, 'MIX');
-                    if (!isNaN(val)) updates.push({ type: 'mix', seller: sellerName, category: cat, val: Math.round(val) });
+                    if (!isNaN(val)) updates.push({ type: 'mix', seller: finalSellerName, category: cat, val: Math.round(val) });
                 });
 
 
@@ -19861,12 +19901,19 @@ const supervisorGroups = new Map();
                     // To guarantee no ghost data from Supervisors or previous states persists, we clear all targets.
                     // Only active sellers (backfilled) and imported sellers will remain.
                     goalsSellerTargets.clear();
+                    window.goalsImportedTotals = {};
                     globalClientGoals.clear();
                     // ------------------------
 
                     // 1. Process Manual Updates (Imported)
                     const importedSellers = new Set();
                     pendingImportUpdates.forEach(u => {
+                        if (u.global) {
+                            const key = ({total_elma:'ELMA_ALL',total_foods:'FOODS_ALL',pepsico_all:'PEPSICO_ALL',tonelada_elma:'ELMA_ALL',tonelada_foods:'FOODS_ALL'})[u.category] || u.category;
+                            const target = window.goalsImportedTotals[key] ||= {};
+                            target[u.type === 'rev' ? 'fat' : 'vol'] = u.val;
+                            return;
+                        }
                         importedSellers.add(u.seller);
                         if (u.type === 'rev') {
                             // Do not distribute aggregated targets to clients, as it overwrites explicit leaf targets
@@ -19897,6 +19944,8 @@ const supervisorGroups = new Map();
                     });
 
 
+
+                    for (const [key,target] of Object.entries(window.goalsImportedTotals)) goalsTargets[key] = {...(goalsTargets[key] || {}), ...target};
 
                     // 2. Backfill Defaults for ALL Active Sellers
                     // Iterate all active sellers to ensure their calculated "Suggestions" are saved if not manually set.
