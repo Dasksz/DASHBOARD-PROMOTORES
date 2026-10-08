@@ -16212,7 +16212,8 @@ const supervisorGroups = new Map();
 
                 // Helper to perform conditional upload
                 const conditionalUpload = async (table, dataPart, hashKey, isCol, pk = 'id', onConflictKey = null, forceClearAndUpload = false) => {
-                    if (dataPart && (isCol ? dataPart.length > 0 : dataPart.length > 0)) {
+                    if (data.importTables && !data.importTables.includes(table)) return;
+                    if (dataPart && dataPart.length > 0) {
                         // Check if table is empty (Force upload if empty)
                         let forceUpload = forceClearAndUpload;
                         if (!forceUpload) {
@@ -16229,8 +16230,8 @@ const supervisorGroups = new Map();
                         }
 
                         // checkHash returns FALSE if match (skip), TRUE if mismatch (upload)
-                        if (forceUpload || checkHash(hashKey, null)) {
-                            await clearTable(table, pk);
+                        if (table.startsWith('dim_') || forceUpload || checkHash(hashKey, null)) {
+                            if (!table.startsWith('dim_')) await clearTable(table, pk);
                             await uploadBatchParallel(table, dataPart, isCol, onConflictKey);
                         } else {
                             updateStatus(`Pulando ${table} (Dados idênticos)...`, 100);
@@ -16319,8 +16320,7 @@ const supervisorGroups = new Map();
                     }
 
                     // Always upload metadata to update hashes and timestamps
-                    await clearTable('data_metadata', 'key');
-                    await uploadBatchParallel('data_metadata', data.metadata, false);
+                    await uploadBatchParallel('data_metadata', data.metadata, false, 'key');
 
                     const lastUpdateText = document.getElementById('last-update-text');
                     if (lastUpdateText) {
@@ -16714,7 +16714,7 @@ const supervisorGroups = new Map();
             
             const generateBtn = document.getElementById('generate-btn');
             if (generateBtn) {
-                generateBtn.addEventListener('click', () => {
+                generateBtn.addEventListener('click', async () => {
                     generateBtn.disabled = true;
                     generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
                     const salesFile = document.getElementById('sales-file-input').files[0];
@@ -16729,7 +16729,7 @@ const supervisorGroups = new Map();
                     const metasPesquisasFile = document.getElementById('metas-pesquisas-input') ? document.getElementById('metas-pesquisas-input').files[0] : null;
                     const metasLojaPerfeitaFile = document.getElementById('metas-lojaperfeita-input') ? document.getElementById('metas-lojaperfeita-input').files[0] : null;
 
-                    if (!salesFile && !historyFile && !hierarchyFile && !notaInvolves1File && !notaInvolves2File && !productsFile && !titulosFile && !innovationsFile && !metasPesquisasFile && !metasLojaPerfeitaFile) {
+                    if (!salesFile && !clientsFile && !historyFile && !hierarchyFile && !notaInvolves1File && !notaInvolves2File && !productsFile && !titulosFile && !innovationsFile && !metasPesquisasFile && !metasLojaPerfeitaFile) {
                         window.showToast('warning', "Pelo menos um arquivo é necessário para iniciar o processamento.");
                         generateBtn.disabled = false;
                         generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -16742,47 +16742,20 @@ const supervisorGroups = new Map();
                     document.getElementById('status-container').classList.remove('hidden');
                     document.getElementById('status-text').textContent = "Processando arquivos...";
 
-                    // Construct Fallback Data from current memory
-                    const fallbackData = {
-                        history: embeddedData.history,
-                        hierarchy: embeddedData.hierarchy,
-                        titulos: embeddedData.titulos,
-                        innovations: embeddedData.innovationsMonth,
-                        products: embeddedData.productDetails,
-                        activeProducts: embeddedData.activeProductCodes
-                    };
-
-                    // Construct Reference Data (CNPJ Map) from current memory
-                    // This allows optional file upload (e.g. just Nota Perfeita) without re-uploading Clients file
-                    const referenceData = { cnpjMap: {} };
-                    if (allClientsData) {
-                        try {
-                            if (allClientsData instanceof ColumnarDataset) {
-                                const data = allClientsData._data;
-                                const len = allClientsData.length;
-                                // Try possible keys
-                                const codes = data['Código'] || data['codigo_cliente'] || data['CODCLI'];
-                                const cnpjs = data['CNPJ/CPF'] || data['cnpj_cpf'] || data['CNPJ'];
-                                
-                                if (codes && cnpjs) {
-                                    for(let i=0; i<len; i++) {
-                                        const cnpj = String(cnpjs[i] || '').replace(/\D/g, '');
-                                        const code = String(codes[i] || '').trim();
-                                        if (cnpj && code) referenceData.cnpjMap[cnpj] = code;
-                                    }
-                                }
-                            } else if (Array.isArray(allClientsData)) {
-                                allClientsData.forEach(c => {
-                                    const cnpj = String(c['CNPJ/CPF'] || c.cnpj_cpf || c.CNPJ || '').replace(/\D/g, '');
-                                    const code = String(c['Código'] || c['codigo_cliente'] || c['CODCLI'] || '').trim();
-                                    if (cnpj && code) referenceData.cnpjMap[cnpj] = code;
-                                });
-
-
-                            }
-                        } catch (e) {
-                            console.warn("Error building reference CNPJ map:", e);
-                        }
+                    const files = { salesFile, clientsFile, productsFile, historyFile, innovationsFile,
+                        hierarchyFile, titulosFile, notaInvolvesFile1: notaInvolves1File,
+                        notaInvolvesFile2: notaInvolves2File, metasPesquisasFile, metasLojaPerfeitaFile };
+                    let references;
+                    try {
+                        document.getElementById('status-text').textContent = 'Consultando referências no banco...';
+                        references = await window.ImportReferences.load(window.supabaseClient, files);
+                    } catch (error) {
+                        window.showToast('error', error.message);
+                        document.getElementById('status-text').textContent = error.message;
+                        generateBtn.disabled = false;
+                        generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        worker.terminate();
+                        return;
                     }
 
                     worker.postMessage({ 
@@ -16797,8 +16770,8 @@ const supervisorGroups = new Map();
                         notaInvolvesFile2: notaInvolves2File,
                         metasPesquisasFile,
                         metasLojaPerfeitaFile,
-                        referenceData: referenceData, // Pass the map
-                        fallbackData: fallbackData // Pass existing data for preservation
+                        databaseReferences: references.context,
+                        importTables: references.importTables
                     });
 
 

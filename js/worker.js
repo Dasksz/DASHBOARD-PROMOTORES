@@ -310,7 +310,7 @@
             return new Promise((resolve, reject) => {
                 if (!file) {
                     // Make specific file types optional
-                    const optionalTypes = ['innovations', 'history', 'hierarchy', 'titulos', 'products', 'metas_pesquisas', 'metas_lojaperfeita', 'nota_perfeita'];
+                    const optionalTypes = ['sales', 'clients', 'innovations', 'history', 'hierarchy', 'titulos', 'products', 'metas_pesquisas', 'metas_lojaperfeita', 'nota_perfeita'];
                     if (optionalTypes.includes(fileType)) {
                          resolve([]);
                          return;
@@ -847,18 +847,20 @@
 
             // Warn if result empty but input wasn't
             if (combined.length > 0 && grouped.size === 0) {
-                 self.postMessage({ type: 'error', message: "Atenção: A planilha 'Loja Perfeita' foi processada, mas nenhum cliente foi identificado. Verifique se a coluna 'CNPJ' existe e se os CNPJs correspondem ao cadastro de clientes." });
+                 throw new Error("A planilha 'Loja Perfeita' não contém clientes identificáveis. Verifique a coluna CNPJ.");
             }
 
             return { data: Array.from(grouped.values()), uniqueCount: uniqueClientsFound.size };
         }
 
         self.onmessage = async (event) => {
-            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolvesFile1, notaInvolvesFile2, metasPesquisasFile, metasLojaPerfeitaFile, referenceData, fallbackData, fallbackDimensions } = event.data;
+            const { salesFile, clientsFile, productsFile, historyFile, innovationsFile, hierarchyFile, titulosFile, notaInvolvesFile1, notaInvolvesFile2, metasPesquisasFile, metasLojaPerfeitaFile, referenceData, databaseReferences = {}, importTables } = event.data;
+            const fallbackDimensions = databaseReferences;
+            const fallbackData = { products: databaseReferences.products, activeProducts: databaseReferences.activeProducts };
 
             try {
                 self.postMessage({ type: 'progress', status: 'Lendo arquivos...', percentage: 10 });
-                const [salesDataRaw, clientsDataRaw, productsDataRaw, historyDataRaw, innovationsDataRaw, hierarchyDataRaw, titulosDataRaw, nota1DataRaw, nota2DataRaw, metasPesquisasRaw, metasLojaPerfeitaRaw] = await Promise.all([
+                let [salesDataRaw, clientsDataRaw, productsDataRaw, historyDataRaw, innovationsDataRaw, hierarchyDataRaw, titulosDataRaw, nota1DataRaw, nota2DataRaw, metasPesquisasRaw, metasLojaPerfeitaRaw] = await Promise.all([
                     readFile(salesFile, 'sales'),
                     readFile(clientsFile, 'clients'),
                     readFile(productsFile, 'products'),
@@ -866,11 +868,14 @@
                     readFile(innovationsFile, 'innovations'),
                     readFile(hierarchyFile, 'hierarchy'),
                     readFile(titulosFile, 'titulos'),
-                    readFile(notaInvolvesFile1, 'nota_perfeita').catch(() => []), // Optional
-                    readFile(notaInvolvesFile2, 'nota_perfeita').catch(() => []),  // Optional
-                    readFile(metasPesquisasFile, 'metas_pesquisas').catch(() => []), // Optional
-                    readFile(metasLojaPerfeitaFile, 'metas_lojaperfeita').catch(() => []) // Optional
+                    readFile(notaInvolvesFile1, 'nota_perfeita'), // Optional
+                    readFile(notaInvolvesFile2, 'nota_perfeita'),  // Optional
+                    readFile(metasPesquisasFile, 'metas_pesquisas'), // Optional
+                    readFile(metasLojaPerfeitaFile, 'metas_lojaperfeita') // Optional
                 ]);
+
+                // Stored sales are read-only context; the upload manifest excludes their tables.
+                if (!salesFile) salesDataRaw = (databaseReferences.sales || []).map(mapDbToCsvHistory);
 
                 // Sanitize metas directly to remove visual 'nome' column to match Supabase schema
                 // Handle different potential casings from Excel
@@ -941,6 +946,9 @@
                         }
                     }
                 };
+
+                hydrateDimensions(salesDataRaw);
+                hydrateDimensions(historyDataRaw);
 
                 // History Fallback
                 let effectiveHistoryDataRaw = historyDataRaw;
@@ -1018,6 +1026,7 @@
 
                 // --- NEW: Collect Sold Product Codes for Filtering ---
                 const soldProductCodes = new Set();
+                (databaseReferences.soldProducts || []).forEach(p => soldProductCodes.add(normalizeKey(p.code)));
                 const collectProducts = (row) => {
                      const p = String(row["PRODUTO"] || "").trim();
                      if (p && p.toUpperCase() !== "PRODUTO" && p.toUpperCase() !== "CÓDIGO") soldProductCodes.add(normalizeKey(p));
@@ -1051,7 +1060,9 @@
                     self.postMessage({ type: 'progress', status: 'Reutilizando cadastro de produtos existente...', percentage: 32 });
                     // Populate from fallback (Object/Map)
                     Object.values(fallbackData.products).forEach(p => {
-                        productDetailsMap.set(p.code, p);
+                        const product = { ...p, dtCadastro: parseDate(p.dtcadastro)?.getTime() ?? p.dtCadastro ?? null };
+                        productDetailsMap.set(normalizeKey(p.code), product);
+                        productMasterMap.set(normalizeKey(p.code), Number(p.qtde_master) || 1);
                     });
                     
                     if (fallbackData.activeProducts) {
@@ -1123,6 +1134,25 @@
                 let sourceClients = clientsDataRaw;
                 if (sourceClients.length === 0 && referenceData && referenceData.cnpjMap) {
                     Object.entries(referenceData.cnpjMap).forEach(([k,v]) => clientCnpjMap.set(k, v));
+                }
+
+                if (!clientsFile) {
+                    (databaseReferences.clients || []).forEach(row => {
+                        const code = normalizeKey(row.codigo_cliente);
+                        if (!code) return;
+                        const client = { ...row, codigo_cliente: code, rcas: [...(row.rcas || [])],
+                            nomeCliente: row.nomecliente, razaoSocial: row.razaosocial,
+                            ultimaCompra: parseDate(row.ultimacompra)?.getTime() ?? null,
+                            dataCadastro: parseDate(row.datacadastro)?.getTime() ?? null,
+                            inscricaoEstadual: row.inscricaoestadual };
+                        clientMap.set(code, client);
+                        const cnpj = String(row.cnpj_cpf || '').replace(/\D/g, '');
+                        if (cnpj) {
+                            clientCnpjMap.set(cnpj, code);
+                            if (cnpj.length <= 11) clientCnpjMap.set(cnpj.padStart(11, '0'), code);
+                            if (cnpj.length <= 14) clientCnpjMap.set(cnpj.padStart(14, '0'), code);
+                        }
+                    });
                 }
 
                 sourceClients.forEach(client => {
@@ -1632,6 +1662,23 @@
                 finalMetadata.push({ key: 'hash_metas_loja_perfeita', value: hashes[16] });
 
 
+                const hashTables = {
+                    hash_detailed: 'data_detailed', hash_history: 'data_history', hash_clients: 'data_clients',
+                    hash_orders: 'data_orders', hash_stock: 'data_stock', hash_active_products: 'data_active_products',
+                    hash_product_details: 'data_product_details', hash_innovations: 'data_innovations',
+                    hash_hierarchy: 'data_hierarchy', hash_titulos: 'data_titulos', hash_nota_perfeita: 'data_nota_perfeita',
+                    hash_dim_vendedores: 'dim_vendedores', hash_dim_supervisores: 'dim_supervisores',
+                    hash_dim_fornecedores: 'dim_fornecedores', hash_dim_produtos: 'dim_produtos',
+                    hash_metas_pesquisas: 'data_metas_pesquisas', hash_metas_loja_perfeita: 'data_metas_loja_perfeita'
+                };
+                const metadata = finalMetadata.filter(m => {
+                    if (!importTables) return true;
+                    if (hashTables[m.key]) return importTables.includes(hashTables[m.key]);
+                    if (m.key === 'last_sale_date' || m.key === 'passed_working_days') return !!salesFile;
+                    if (m.key === 'count_nota_perfeita_clients') return !!(notaInvolvesFile1 || notaInvolvesFile2);
+                    return true;
+                });
+
                 self.postMessage({ type: 'progress', status: 'Pronto!', percentage: 100 });
 
                 self.postMessage({
@@ -1659,7 +1706,8 @@
                         dim_fornecedores: finalDimFornecedores,
                         dim_produtos: finalDimProdutos,
 
-                        metadata: finalMetadata,
+                        metadata,
+                        importTables,
 
                         // Legacy Maps for Frontend (if needed, or logic script handles it)
                         stockMap05: Object.fromEntries(stockMap05),
