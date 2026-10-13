@@ -22525,6 +22525,9 @@ const supervisorGroups = new Map();
              }
              
              document.getElementById('wallet-client-modal').classList.add('hidden');
+             // Rebuild membership indices before applying co-coordinator filters again.
+             initializeOptimizedDataStructures();
+             updateAllVisuals();
              renderWalletTable();
              
          } catch (e) {
