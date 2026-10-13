@@ -10485,7 +10485,7 @@ const supervisorGroups = new Map();
                 totalSkus += skus.size;
             });
 
-            const _isAltMode_3 = isAlternativeMode(selectedTiposVenda)
+            const _isAltMode_3 = isAlternativeMode(selectedTiposVenda);
             data.forEach(item => {
                 if (!_isAltMode_3 && item.TIPOVENDA !== '1' && item.TIPOVENDA !== '9') return;
                 const vlVenda = getValueForSale(item, selectedTiposVenda);
@@ -21714,7 +21714,7 @@ const supervisorGroups = new Map();
             itinerary: document.getElementById('wallet-tab-content-itinerary')
         };
         
-        // InitializeModal Tab History
+        // Initialize Modal Tab History
         modal._tabHistory = [];
         let activeTab = 'general';
 
