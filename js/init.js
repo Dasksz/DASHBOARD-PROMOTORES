@@ -1391,11 +1391,11 @@
 
                         for(let i=0; i<clients.length; i++) {
                             if (walletClientCodes.has(normalizeKey(clientCodesCol[i]))) {
-                                clients.columns.forEach(c => newClientsValues[c].push(clients.values[c][i]));
+                                clients.columns.forEach(c => newClientsValues[c].push(clients.values[c]?.[i] ?? null));
                                 newClientsLen++;
                             }
                         }
-                        filteredClients = { columns: clients.columns, values: newClientsValues, length: newClientsLen };
+                        filteredClients = { columns: [...clients.columns], values: newClientsValues, length: newClientsLen };
 
                         // B. Filter Detailed (Sales) - Union Scope (Wallet + Ghost)
                         const detCodCliCol = detailed.values['CODCLI'] || [];
@@ -1405,11 +1405,11 @@
 
                         for(let i=0; i<detailed.length; i++) {
                             if (allowedCurrentCodes.has(normalizeKey(detCodCliCol[i]))) {
-                                detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c][i]));
+                                detailed.columns.forEach(c => newDetailedValues[c].push(detailed.values[c]?.[i] ?? null));
                                 newDetailedLen++;
                             }
                         }
-                        filteredDetailed = { columns: detailed.columns, values: newDetailedValues, length: newDetailedLen };
+                        filteredDetailed = { columns: [...detailed.columns], values: newDetailedValues, length: newDetailedLen };
 
                         // C. Filter History - Strict Wallet Filter
                         const histCodCliCol = history.values['CODCLI'] || [];
@@ -1419,11 +1419,11 @@
 
                         for(let i=0; i<history.length; i++) {
                             if (allowedHistoryCodes.has(normalizeKey(histCodCliCol[i]))) {
-                                history.columns.forEach(c => newHistoryValues[c].push(history.values[c][i]));
+                                history.columns.forEach(c => newHistoryValues[c].push(history.values[c]?.[i] ?? null));
                                 newHistoryLen++;
                             }
                         }
-                        filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
+                        filteredHistory = { columns: [...history.columns], values: newHistoryValues, length: newHistoryLen };
 
                         // D. Filter Orders - Union Scope
                         filteredOrders = orders.filter(o => allowedCurrentCodes.has(normalizeKey(o.codcli)));
