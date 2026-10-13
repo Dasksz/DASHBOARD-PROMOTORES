@@ -16737,7 +16737,7 @@ const supervisorGroups = new Map();
                     }
 
                     // Initialize Worker
-                    const worker = new Worker('js/worker.js');
+                    const worker = new Worker('js/worker.js?v=20261013-client-headers');
 
                     document.getElementById('status-container').classList.remove('hidden');
                     document.getElementById('status-text').textContent = "Processando arquivos...";
