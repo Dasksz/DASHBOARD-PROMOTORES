@@ -263,17 +263,15 @@
 
             // Fetch Hierarchy First to determine if user is a promoter
             const fetchHierarchy = async () => {
-                let hierarchyData = null;
-                // Try to get hierarchy from cache first if available
-                if (cachedData && cachedData.hierarchy && cachedData.hierarchy.length > 0) {
-                     hierarchyData = cachedData.hierarchy;
-                } else {
-                    addLoadingLabel('Carregando estrutura...');
+                // Current hierarchy determines scope; a cached hierarchy can omit new promoters.
+                addLoadingLabel('Carregando estrutura...');
+                try {
                     const { data, error } = await supabaseClient.from('data_hierarchy').select('*');
-                    if (!error) hierarchyData = data;
+                    if (error) throw error;
+                    return data;
+                } finally {
                     removeLoadingLabel('Carregando estrutura...');
                 }
-                return hierarchyData;
             }
 
             try {
@@ -371,7 +369,8 @@
                     const localHash = cachedData.metadata ? cachedData.metadata.find(m => m.key === hashKey)?.value : null;
 
                     // If no remote hash (legacy data), or hash mismatch, or data missing in cache -> Fetch
-                    if (!cachedData[dataKeyInCache] || (remoteHash && remoteHash !== localHash)) {
+                    const isWalletTable = ['data_clients', 'data_hierarchy', 'data_client_promoters'].includes(tableName);
+                    if (isWalletTable || !cachedData[dataKeyInCache] || !remoteHash || remoteHash !== localHash) {
                         console.log(`[Cache] ${tableName} needs update (Remote: ${remoteHash}, Local: ${localHash})`);
                         tablesToFetch.add(tableName);
                     } else {
@@ -407,9 +406,10 @@
                     console.log(`Cache parcial. Baixando ${tablesToFetch.size} tabelas atualizadas...`);
                     // We don't set useCache=true here because we need to enter the "fetch" block,
                     // but we will intelligently merge cached data inside that block.
-                    staleWhileRevalidate = true;
+                    // Wallet membership must be current before filters and totals are displayed.
+                    staleWhileRevalidate = !['data_clients', 'data_hierarchy', 'data_client_promoters'].some(table => tablesToFetch.has(table));
                 }
-            } else if (!cachedData) {
+            } else if (!cachedData || !metadataRemote) {
                 // Full Fetch required
                 console.log("Cache vazio. Baixando tudo...");
                 ['data_detailed', 'data_history', 'data_clients', 'data_orders', 'data_stock', 'data_active_products', 'data_product_details', 'data_hierarchy', 'data_client_promoters', 'data_nota_perfeita', 'data_metas_pesquisas', 'data_metas_loja_perfeita', 'relacao_rota_involves', 'dim_vendedores', 'dim_supervisores', 'dim_fornecedores', 'dim_produtos', 'config_city_branches'].forEach(t => tablesToFetch.add(t));
