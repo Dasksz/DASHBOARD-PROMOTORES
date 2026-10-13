@@ -112,8 +112,9 @@
     // --- OPTIMIZATION: Lazy Columnar Accessor with Write-Back Support ---
     window.ColumnarDataset = class ColumnarDataset {
         constructor(columnarData) {
-            this.columns = columnarData.columns;
-            this._data = columnarData.values; // Renamed to avoid shadowing values() method
+            // Derived columns belong to this view, not to the cached source dataset.
+            this.columns = [...columnarData.columns];
+            this._data = { ...columnarData.values }; // Keep existing column arrays without sharing the schema.
             this.length = columnarData.length;
             this._overrides = new Map(); // Stores mutations: Map<index, Object>
         }
