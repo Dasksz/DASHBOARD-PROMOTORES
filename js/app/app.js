@@ -1,4 +1,6 @@
 (function() {
+        if (window.primeDashboardAppInitialized) return;
+        window.primeDashboardAppInitialized = true;
         const embeddedData = window.embeddedData;
 
         // --- LOOKUP MAPS ---
@@ -15887,6 +15889,40 @@ const supervisorGroups = new Map();
         }
 
 
+        let dashboardSummaryPending = false;
+        async function acompanharResumoDoUpload() {
+            dashboardSummaryPending = true;
+            const statusContainer = document.getElementById('status-container');
+            const statusText = document.getElementById('status-text');
+            const progressBar = document.getElementById('progress-bar');
+            const generateBtn = document.getElementById('generate-btn');
+            statusContainer.classList.remove('hidden');
+            statusText.textContent = 'Dados enviados. Atualizando resumos do painel...';
+            progressBar.style.width = '98%';
+            try {
+                const ready = await window.PrimeImportIntegrity.waitForSummary(
+                    () => window.supabaseClient.rpc('get_dashboard_summary_status_v1'),
+                    { onPending: elapsed => {
+                        statusText.textContent = `Dados enviados. Recalculando o painel (${Math.floor(elapsed / 1000)}s). Não é necessário reenviar os arquivos.`;
+                    } }
+                );
+                if (ready) {
+                    dashboardSummaryPending = false;
+                    statusText.textContent = 'Upload concluído. Recarregando o painel...';
+                    progressBar.style.width = '100%';
+                    window.showToast('success', 'Dados e resumos atualizados! Recarregando o painel...');
+                    setTimeout(() => window.location.reload(), 1000);
+                    return true;
+                }
+            } catch (error) {
+                console.warn('[Upload] Dados enviados; consulta dos resumos pendente:', error);
+            }
+            statusText.textContent = 'Dados enviados. Recálculo pendente; clique em Acompanhar atualização. Não reenvie os arquivos.';
+            generateBtn.textContent = 'Acompanhar atualização';
+            window.showToast('warning', 'Os dados foram enviados. O recálculo continua em segundo plano; acompanhe a atualização sem reenviar os arquivos.');
+            return false;
+        }
+
         async function enviarDadosParaSupabase(data) {
             const supabaseUrl = document.getElementById('supabase-url').value;
 
@@ -16220,7 +16256,10 @@ const supervisorGroups = new Map();
                 await conditionalUpload('data_detailed', sanitizeColumnarForUpload(data.detailed, forbiddenDimCols), 'hash_detailed', true);
 
                 const hasHistoryFile = document.getElementById('history-file-input').files.length > 0;
-                await conditionalUpload('data_history', sanitizeColumnarForUpload(data.history, forbiddenDimCols), 'hash_history', true, 'id', 'id', hasHistoryFile);
+                if (hasHistoryFile) {
+                    await conditionalUpload('data_history', sanitizeColumnarForUpload(data.history, forbiddenDimCols), 'hash_history', true, 'id', 'id', true);
+                }
+                // Cached history is only a processing reference, never an upload replacement.
 
                 await conditionalUpload('data_orders', data.byOrder, 'hash_orders', false, 'id', 'pedido');
                 await conditionalUpload('data_clients', data.clients, 'hash_clients', true, 'id', 'codigo_cliente');
@@ -16316,24 +16355,7 @@ const supervisorGroups = new Map();
                     }
                 }
 
-                updateStatus('Atualizando resumos do painel...', 98);
-                // Source triggers already queued the scheduled worker. Poll short calls instead
-                // of rebuilding inside a request limited to 8 seconds by the Data API.
-                const summaryDeadline = Date.now() + 180000;
-                while (true) {
-                    const { data: summaryRefresh, error: summaryRefreshError } = await window.supabaseClient.rpc('get_dashboard_summary_status_v1');
-                    if (summaryRefreshError) throw summaryRefreshError;
-                    if (summaryRefresh?.status === 'current') break;
-                    if (summaryRefresh?.status !== 'pending' || Date.now() >= summaryDeadline) {
-                        throw new Error('Os dados foram enviados, mas os resumos ainda não estão prontos. Aguarde e atualize a página.');
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                }
-
-                updateStatus('Upload Concluído com Sucesso!', 100);
-                window.showToast('success', 'Dados enviados com sucesso! Recarregando o painel...');
-                setTimeout(() => window.location.reload(), 1000);
-                setTimeout(() => statusContainer.classList.add('hidden'), 3000);
+                await acompanharResumoDoUpload();
 
             } catch (error) {
                 console.error(error);
@@ -16704,8 +16726,16 @@ const supervisorGroups = new Map();
             const generateBtn = document.getElementById('generate-btn');
             if (generateBtn) {
                 generateBtn.addEventListener('click', () => {
+                    if (generateBtn.disabled) return;
                     generateBtn.disabled = true;
                     generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    if (dashboardSummaryPending) {
+                        acompanharResumoDoUpload().finally(() => {
+                            generateBtn.disabled = false;
+                            generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        });
+                        return;
+                    }
                     const salesFile = document.getElementById('sales-file-input').files[0];
                     const clientsFile = document.getElementById('clients-file-input').files[0];
                     const productsFile = document.getElementById('products-file-input').files[0];

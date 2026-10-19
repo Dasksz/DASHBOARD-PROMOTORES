@@ -138,7 +138,8 @@
     }
 
     async function carregarDadosDoSupabase(supabaseClient) {
-        isAppReady = true;
+        if (window.isDataLoaded || window.primeDashboardLoading) return;
+        window.primeDashboardLoading = true;
         const loader = document.getElementById('loader');
         const loaderText = document.getElementById('loader-text');
         const dashboardView = document.getElementById('main-dashboard');
@@ -1524,6 +1525,8 @@
         } catch (e) {
             console.error(e);
             loaderText.textContent = 'Erro: ' + e.message;
+        } finally {
+            window.primeDashboardLoading = false;
         }
     }
     document.addEventListener('DOMContentLoaded', () => {
@@ -1938,7 +1941,8 @@
 
                     if (!isAppReady) {
                         telaLoading.classList.add('hidden');
-                        carregarDadosDoSupabase(supabaseClient);
+                        await carregarDadosDoSupabase(supabaseClient);
+                        isAppReady = window.isDataLoaded === true;
                     }
                     // If App is Ready, we do nothing - keep dashboard active.
                 } else {

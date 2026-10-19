@@ -42,7 +42,22 @@
             row.id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
         }));
     }
-    const api = { network, contentKey, rowsForUpload, assignStableIds };
+    async function waitForSummary(readStatus, options = {}) {
+        const now = options.now || Date.now;
+        const sleep = options.sleep || (ms => new Promise(resolve => setTimeout(resolve, ms)));
+        const started = now(), timeoutMs = options.timeoutMs ?? 15 * 60 * 1000;
+        while (true) {
+            const response = await readStatus();
+            if (response.error) throw response.error;
+            if (response.data?.status === 'current') return true;
+            if (response.data?.status !== 'pending') throw new Error('Não foi possível confirmar o recálculo.');
+            const elapsed = now() - started;
+            options.onPending?.(elapsed);
+            if (elapsed >= timeoutMs) return false;
+            await sleep(Math.min(options.pollMs ?? 5000, timeoutMs - elapsed));
+        }
+    }
+    const api = { network, contentKey, rowsForUpload, assignStableIds, waitForSummary };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.PrimeImportIntegrity = api;
 })(typeof window !== 'undefined' ? window : typeof self !== 'undefined' ? self : {});
