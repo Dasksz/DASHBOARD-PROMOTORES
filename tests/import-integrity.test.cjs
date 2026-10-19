@@ -56,3 +56,16 @@ test('PDF perfect stores use monthly mean and are independent of row ordering',(
  assert.equal(result.get('05').get('promotor15').lojasPerfeitas.size,0);
  }
 });
+
+test('Loja Perfeita hierarchy filters exclude unknown clients outside the wallet',()=>{
+ const app=fs.readFileSync('js/app/app.js','utf8');
+ const start=app.indexOf('// 3. Filter Data',app.indexOf('const orphansToAdd = new Set()'));
+ const end=app.indexOf('// Merge allowed orphans',start);
+ const run=(selected,role='adm')=>{
+  const context={rawData:[{codigo_cliente:'1',pesquisador:'promotor15'},{codigo_cliente:'missing',pesquisador:'promotor12'}],normalizeKey:String,allowedClientCodes:new Set(['1']),orphansToAdd:new Set(),allExistingCodes:new Set(['1']),isComRede:false,selectedFilial:'all',clientSearch:'',adminViewMode:'promoter',selectedLpResearchers:new Set(),clientMap:new Map([['1',{nomeCliente:'Loja'}]]),hierarchyState:{lp:{coords:new Set(),cocoords:new Set(),promotors:new Set(selected)}},userHierarchyContext:{role}};
+  vm.runInNewContext(app.slice(start,end)+';result=filtered;',context);return context.result;
+ };
+ assert.equal(run([]).length,2);
+ assert.equal(run(['promotor15']).length,1);
+ assert.equal(run([], 'promotor').length,1);
+});

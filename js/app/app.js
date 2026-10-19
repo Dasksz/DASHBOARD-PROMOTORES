@@ -29632,6 +29632,11 @@ const supervisorGroups = new Map();
                 
                 // It's a true orphan (doesn't exist in master DB). Apply active UI filters manually:
                 let keepOrphan = true;
+                // An unknown client has no wallet membership to satisfy a hierarchy selection.
+                const lpHierarchy = hierarchyState.lp;
+                const hasPromoterScope = ['coords', 'cocoords', 'promotors'].some(key => lpHierarchy?.[key]?.size > 0)
+                    || ['coord', 'cocoord', 'promotor'].includes(userHierarchyContext.role);
+                if (adminViewMode !== 'seller' && hasPromoterScope) keepOrphan = false;
                 
                 // 1. Rede
                 if (isComRede) keepOrphan = false; // Orphans have no Rede
