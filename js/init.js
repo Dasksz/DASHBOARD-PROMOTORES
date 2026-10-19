@@ -257,6 +257,8 @@
 
             // 2. Determine Role and Cache Strategy
             let cachedData = await getFromCache('dashboardData');
+            const cacheRevision = '20261019-integrity';
+            if (cachedData?.cacheRevision !== cacheRevision) cachedData = null;
             let useCache = false;
             let hierarchy = null;
             let isPromoter = false;
@@ -599,9 +601,9 @@
             const fetchAll = async (table, columns = null, type = null, format = 'object', pkCol = 'id', filterFunc = null) => {
                 // Config
                 // Keyset Pagination for reliability
-                // Adjusted to 20000 to match Supabase API default limit and ensure pagination loop triggers correctly
-                // Adjusted to 10000 to balance Supabase limits and timeout issues on large CSV pulls
-                const pageSize = 10000;
+                // Stay within the standard API row cap; verify the complete row count.
+                const pageSize = 1000;
+                let expectedCount = null;
 
                 let result = format === 'columnar' ? { columns: [], values: {}, length: 0 } : [];
                 let hasMore = true;
@@ -618,7 +620,7 @@
                     const processNextPage = async () => {
                         const fetchWithRetry = async (attempt = 1) => {
                             try {
-                                let query = supabaseClient.from(table).select(columns || '*').order(pkCol, { ascending: true }).limit(pageSize);
+                                let query = supabaseClient.from(table).select(columns || '*', { count: 'exact' }).order(pkCol, { ascending: true }).limit(pageSize);
                                 if (lastId !== null) {
                                     query.gt(pkCol, lastId);
                                 }
@@ -638,7 +640,7 @@
                                 const response = await Promise.race([promise, timeoutPromise]);
 
                                 if (response.error) throw response.error;
-                                return response.data;
+                                return { data: response.data, count: response.count };
                             } catch (err) {
                                 if (attempt < 4) { // Retry up to 3 times (1+3=4 total attempts)
                                     const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
@@ -651,7 +653,9 @@
                         };
 
                         try {
-                            const data = await fetchWithRetry();
+                            const page = await fetchWithRetry();
+                            const data = page.data;
+                            if (pageIndex === 0 && Number.isFinite(page.count)) expectedCount = page.count;
                             let chunkLength = 0;
                             let newObjects = [];
                             let newColumnar = null;
@@ -738,12 +742,13 @@
                             if (hasMore) {
                                 processNextPage();
                             } else {
+                                if (expectedCount !== null && result.length !== expectedCount) throw new Error(`Carga incompleta de ${table}: ${result.length} de ${expectedCount}.`);
                                 resolve(result);
                             }
 
                         } catch (err) {
                             console.error(`Failed to fetch page ${pageIndex} of ${table}:`, err);
-                            resolve(result); // Return partial result
+                            reject(err); // Never publish a partial page sequence as current data.
                         }
                     };
 
@@ -1050,7 +1055,7 @@
                 config_city_branches = configCityBranchesFetched;
 
                 // Update Cache with Merged Data
-                const dataToCache = {
+                const dataToCache = { cacheRevision,
                         detailed, history, clients, products, activeProds, stock, innovations, metadata, orders, clientCoordinates, hierarchy, clientPromoters, titulos, nota_perfeita, metas_pesquisas, metas_lojaperfeita, relacao_rota_involves, dim_vendedores, dim_supervisores, dim_fornecedores, dim_produtos, config_city_branches
                     };
                     saveToCache('dashboardData', dataToCache).then(() => {

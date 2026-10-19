@@ -14,13 +14,13 @@ async function check(response, succeeds, following = [{ data: { status: 'current
   const context = vm.createContext({
     setTimeout: resolve => resolve(),
     updateStatus: text => events.push(text),
-    window: { supabaseClient: { rpc: name => { assert.equal(name, 'get_dashboard_summary_status_v1'); return resolve ? pending : Promise.resolve(following.shift()); } }, showToast: type => events.push(type) }
+    window: { location: { reload: () => events.push('reload') }, supabaseClient: { rpc: name => { assert.equal(name, 'get_dashboard_summary_status_v1'); return resolve ? pending : Promise.resolve(following.shift()); } }, showToast: type => events.push(type) }
   });
   const run = vm.runInContext(`(async () => { ${snippet} })()`, context);
   assert.deepEqual(events, ['Atualizando resumos do painel...']);
   resolve(response); resolve = null;
-  if (succeeds) { await run; assert.ok(events.includes('success')); }
-  else { await assert.rejects(run); assert.ok(!events.includes('success')); }
+  if (succeeds) { await run; assert.ok(events.includes('success')); assert.ok(events.includes('reload'));  }
+  else { await assert.rejects(run); assert.ok(!events.includes('success')); assert.ok(!events.includes('reload'));  }
 }
 (async () => {
   await check({ data: { status: 'pending' } }, true);

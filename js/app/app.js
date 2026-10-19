@@ -15933,8 +15933,9 @@ const supervisorGroups = new Map();
             };
 
             const performUpsert = async (table, batch, onConflictKey = null) => {
+                await window.PrimeImportIntegrity.assignStableIds(table, batch, crypto);
                 // Allocate IDs once so a retry after a committed POST updates the same rows.
-                if (table === 'data_detailed' || table === 'data_history') {
+                if (['data_detailed', 'data_history', 'data_nota_perfeita'].includes(table)) {
                     for (const row of batch) {
                         if (!row.id) row.id = crypto.randomUUID();
                     }
@@ -16122,7 +16123,8 @@ const supervisorGroups = new Map();
 
             // --- Unified Parallel Uploader ---
             const uploadBatchParallel = async (table, dataObj, isColumnar, onConflictKey = null) => {
-                const totalRows = isColumnar ? dataObj.length : dataObj.length;
+                const uploadRows = window.PrimeImportIntegrity.rowsForUpload(table, dataObj, isColumnar, formatValue);
+                const totalRows = uploadRows.length;
                 if (totalRows === 0) return;
 
                 const totalBatches = Math.ceil(totalRows / BATCH_SIZE);
@@ -16133,33 +16135,7 @@ const supervisorGroups = new Map();
                     const end = Math.min(start + BATCH_SIZE, totalRows);
                     const batch = [];
 
-                    if (isColumnar) {
-                        const columns = dataObj.columns;
-                        const values = dataObj.values;
-                        // Pre-calculate lower keys to avoid repeated toLowerCase()
-                        const colKeys = columns.map(c => c.toLowerCase());
-
-                        for (let j = start; j < end; j++) {
-                            const row = {};
-                            for (let k = 0; k < columns.length; k++) {
-                                const col = columns[k];
-                                const lowerKey = colKeys[k];
-                                row[lowerKey] = formatValue(lowerKey, values[col][j]);
-                            }
-                            batch.push(row);
-                        }
-                    } else {
-                        // Array of Objects
-                        for (let j = start; j < end; j++) {
-                            const item = dataObj[j];
-                            const newItem = {};
-                            for (const key in item) {
-                                const lowerKey = key.toLowerCase();
-                                newItem[lowerKey] = formatValue(lowerKey, item[key]);
-                            }
-                            batch.push(newItem);
-                        }
-                    }
+                    batch.push(...uploadRows.slice(start, end));
 
                     await performUpsert(table, batch, onConflictKey);
                     processedBatches++;
@@ -16199,6 +16175,7 @@ const supervisorGroups = new Map();
                     return true;
                 };
 
+                const committedMetadataKeys = new Set();
                 // Helper to sanitize columnar data (remove specified columns)
                 const sanitizeColumnarForUpload = (data, excludeCols) => {
                     if (!data || !data.columns) return data;
@@ -16232,6 +16209,7 @@ const supervisorGroups = new Map();
                         if (forceUpload || checkHash(hashKey, null)) {
                             await clearTable(table, pk);
                             await uploadBatchParallel(table, dataPart, isCol, onConflictKey);
+                            committedMetadataKeys.add(hashKey);
                         } else {
                             updateStatus(`Pulando ${table} (Dados idênticos)...`, 100);
                         }
@@ -16288,6 +16266,16 @@ const supervisorGroups = new Map();
                 }
 
                 if (data.metadata && data.metadata.length > 0) {
+                    // Preserve metadata for datasets not replaced by this import.
+                    data.metadata = data.metadata.filter(item => !item.key.startsWith('hash_') || committedMetadataKeys.has(item.key));
+                    for (const item of remoteMetadata || []) {
+                        if (item.key.startsWith('hash_') && !committedMetadataKeys.has(item.key)) data.metadata.push(item);
+                    }
+                    if (!committedMetadataKeys.has('hash_nota_perfeita')) {
+                        data.metadata = data.metadata.filter(item => item.key !== 'count_nota_perfeita_clients');
+                        const previous = (remoteMetadata || []).find(item => item.key === 'count_nota_perfeita_clients');
+                        if (previous) data.metadata.push(previous);
+                    }
                     // Update last_update timestamp
                     const now = new Date();
                     const lastUpdateIdx = data.metadata.findIndex(m => m.key === 'last_update');
@@ -16343,7 +16331,8 @@ const supervisorGroups = new Map();
                 }
 
                 updateStatus('Upload Concluído com Sucesso!', 100);
-                window.showToast('success', 'Dados enviados com sucesso!');
+                window.showToast('success', 'Dados enviados com sucesso! Recarregando o painel...');
+                setTimeout(() => window.location.reload(), 1000);
                 setTimeout(() => statusContainer.classList.add('hidden'), 3000);
 
             } catch (error) {
@@ -16737,7 +16726,7 @@ const supervisorGroups = new Map();
                     }
 
                     // Initialize Worker
-                    const worker = new Worker('js/worker.js?v=20261013-client-headers');
+                    const worker = new Worker('js/worker.js?v=20261019-integrity');
 
                     document.getElementById('status-container').classList.remove('hidden');
                     document.getElementById('status-text').textContent = "Processando arquivos...";
@@ -29063,14 +29052,21 @@ const supervisorGroups = new Map();
                     clients: new Set(),
                     lojasPerfeitas: new Set(),
                     totalScores: 0,
-                    auditoriaCount: 0
+                    auditoriaCount: 0,
+                    clientScores: new Map()
                 });
             }
 
             const agent = agentMap.get(agentCode);
             if (row.codigo_cliente) {
                 agent.clients.add(normalizeKey(row.codigo_cliente));
-                if (row.nota_media >= 80) agent.lojasPerfeitas.add(normalizeKey(row.codigo_cliente));
+                const code = normalizeKey(row.codigo_cliente);
+                const stats = agent.clientScores.get(code) || { sum: 0, count: 0 };
+                stats.sum += Number(row.nota_media) || 0;
+                stats.count++;
+                agent.clientScores.set(code, stats);
+                if (stats.sum / stats.count >= 80) agent.lojasPerfeitas.add(code);
+                else agent.lojasPerfeitas.delete(code);
             }
             agent.totalScores += (row.nota_media || 0);
             agent.auditoriaCount++;

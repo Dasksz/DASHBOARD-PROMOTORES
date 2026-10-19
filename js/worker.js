@@ -56,6 +56,7 @@ function readClientWorksheet(worksheet, fileName) {
   return normalizeClientRows(rows, fileName);
 }
 
+        self.importScripts('app/import-integrity.js?v=20261019');
         self.importScripts('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
         self.importScripts('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js');
 
@@ -1230,7 +1231,8 @@ function readClientWorksheet(worksheet, fileName) {
                         cep: String(getVal(client, ['CEP', 'Cep']) || 'N/A'),
                         telefone: String(getVal(client, ['Telefone Comercial', 'Telefone', 'TELEFONE', 'Tel']) || 'N/A'),
                         email: String(getVal(client, ['E-mail', 'Email', 'EMAIL', 'Correo']) || 'N/A'),
-                        ramo: String(getVal(client, ['Descricao', 'Ramo', 'Atividade', 'RAMO_ATIVIDADE']) || 'N/A'),
+                        activity_code: String(getVal(client, ['Ramo', 'Atividade', 'RAMO_ATIVIDADE']) || '').trim() || null,
+                        ramo: self.PrimeImportIntegrity.network(['Rede', 'Nome Rede', 'Descricao', 'Ramo', 'Atividade', 'RAMO_ATIVIDADE'].map(k => getVal(client, [k]))),
                         ultimaCompra: uc ? uc.getTime() : null,
                         dataCadastro: dc ? dc.getTime() : null,
                         bloqueio: String(getVal(client, ['Bloqueio', 'BLOQUEIO', 'Status']) || '').trim().toUpperCase(),
