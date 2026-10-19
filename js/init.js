@@ -258,7 +258,7 @@
 
             // 2. Determine Role and Cache Strategy
             let cachedData = await getFromCache('dashboardData');
-            const cacheRevision = '20261019-integrity';
+            const cacheRevision = '20261019-upload-wait';
             if (cachedData?.cacheRevision !== cacheRevision) cachedData = null;
             let useCache = false;
             let hierarchy = null;
