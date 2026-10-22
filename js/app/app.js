@@ -15271,16 +15271,17 @@ const supervisorGroups = new Map();
             clientModal.classList.remove('hidden');
         }
 
-        function exportClientsPDF(clientList, title, filename, includeFaturamento) {
+        function exportClientsPDF(clientList, title, filename, includeFaturamento, options = {}) {
             if (!clientList?.length) {
                 window.showToast('warning', 'Aguarde a atualização ou selecione filtros com dados para exportar.');
                 return;
             }
              if (clientList.length === 0) return;
             const { jsPDF } = window.jspdf; const doc = new jsPDF();
-            const coord = document.getElementById('city-coord-filter-text')?.textContent || 'Todos';
-            const cocoord = document.getElementById('city-cocoord-filter-text')?.textContent || 'Todos';
-            const promotor = document.getElementById('city-promotor-filter-text')?.textContent || 'Todos';
+            const filterPrefix = options.filterPrefix || 'city';
+            const coord = document.getElementById(`${filterPrefix}-coord-filter-text`)?.textContent || 'Todos';
+            const cocoord = document.getElementById(`${filterPrefix}-cocoord-filter-text`)?.textContent || 'Todos';
+            const promotor = document.getElementById(`${filterPrefix}-promotor-filter-text`)?.textContent || 'Todos';
             const cityInput = document.getElementById('positivacao-city-filter') || document.getElementById('city-city-filter');
             const city = cityInput ? cityInput.value.trim() : '';
             const generationDate = new Date().toLocaleString('pt-BR'); const today = new Date();
@@ -15296,7 +15297,8 @@ const supervisorGroups = new Map();
             const tableColumn = ["Código", "Cliente", "Bairro", "Cidade", "Últ. Compra"];
             if (includeFaturamento) tableColumn.splice(2, 0, "Faturamento");
 
-            clientList.sort((a, b) => {
+            clientList = [...clientList];
+            if (!options.preserveOrder) clientList.sort((a, b) => {
                 if (includeFaturamento) {
                     const valA = a.total || 0;
                     const valB = b.total || 0;
@@ -15319,7 +15321,7 @@ const supervisorGroups = new Map();
 
             clientList.forEach(client => {
                 const fantasia = client.fantasia || client.FANTASIA || client.Fantasia || '';
-                const razao = client.razaoSocial || client.Cliente || client.RAZAOSOCIAL || '';
+                const razao = client.razaoSocial || client.nomeCliente || client.Cliente || client.RAZAOSOCIAL || '';
                 const nome = fantasia || razao;
                 const bairro = client.bairro || client.BAIRRO || client.Bairro || '';
                 const cidade = client.cidade || client.CIDADE || client.Cidade || client['Nome da Cidade'] || '';
@@ -15349,7 +15351,14 @@ const supervisorGroups = new Map();
                 tableRows.push(footerRow);
             }
 
-            doc.autoTable({ head: [tableColumn], body: tableRows, startY: 70, theme: 'grid', styles: { fontSize: 8, cellPadding: 1.5, textColor: [0, 0, 0] }, headStyles: { fillColor: [41, 128, 185], textColor: 255, fontSize: 8, fontStyle: 'bold' }, alternateRowStyles: { fillColor: [240, 248, 255] }, margin: { top: 10 } });
+            let tableStartY = 70;
+            if (options.filterLabel) {
+                doc.setFontSize(9);
+                const filterLines = doc.splitTextToSize(options.filterLabel, 180);
+                doc.text(filterLines, 14, 68);
+                tableStartY = 72 + filterLines.length * 4;
+            }
+            doc.autoTable({ head: [tableColumn], body: tableRows, startY: tableStartY, theme: 'grid', styles: { fontSize: 8, cellPadding: 1.5, textColor: [0, 0, 0] }, headStyles: { fillColor: [41, 128, 185], textColor: 255, fontSize: 8, fontStyle: 'bold' }, alternateRowStyles: { fillColor: [240, 248, 255] }, margin: { top: 10 } });
             const pageCount = doc.internal.getNumberOfPages();
             for(let i = 1; i <= pageCount; i++) { doc.setPage(i); doc.setFontSize(9); doc.setTextColor(10); doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' }); }
 
@@ -17439,7 +17448,7 @@ const supervisorGroups = new Map();
                     newBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         positivacaoFab.classList.remove('active');
-                        exportClientsPDF(positivacaoDataForExport.inactive, 'Relatório de Clientes Inativos (Sem Compra)', 'clientes_inativos', false);
+                        exportClientsPDF(positivacaoDataForExport.inactive, 'Relatório de Clientes Inativos (Sem Compra)', 'clientes_inativos', false, { preserveOrder: true, filterLabel: getPositivacaoLastPurchaseFilterLabel(), filterPrefix: 'positivacao' });
                     });
 
 
@@ -27273,6 +27282,14 @@ const supervisorGroups = new Map();
             setupHierarchyFilters('positivacao', () => handlePositivacaoFilterChange({ excludeFilter: 'hierarchy' }));
             setupPositivacaoSupervisorFilterHandlers();
 
+            ['positivacao-last-purchase-start', 'positivacao-last-purchase-end', 'positivacao-last-purchase-undated'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input && !input._hasListener) {
+                    input.addEventListener('change', () => updatePositivacaoView());
+                    input._hasListener = true;
+                }
+            });
+
             // Supplier Filter (New)
             if (positivacaoSupplierFilterDropdown && !positivacaoSupplierFilterDropdown._hasListener) {
                 if (positivacaoSupplierFilterBtn) {
@@ -27632,6 +27649,12 @@ const supervisorGroups = new Map();
             selectedPositivacaoRedes = [];
             selectedPositivacaoSuppliers = []; // Reset Supplier
             positivacaoRedeGroupFilter = '';
+            ['positivacao-last-purchase-start', 'positivacao-last-purchase-end'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) input.value = '';
+            });
+            const undated = document.getElementById('positivacao-last-purchase-undated');
+            if (undated) undated.checked = false;
             positivacaoCodCliFilter.value = '';
             if (positivacaoCityFilter) positivacaoCityFilter.value = '';
 
@@ -27647,6 +27670,43 @@ const supervisorGroups = new Map();
             updatePositivacaoView();
         }
 
+        function getPositivacaoLastPurchaseFilters() {
+            return {
+                start: document.getElementById('positivacao-last-purchase-start')?.value || '',
+                end: document.getElementById('positivacao-last-purchase-end')?.value || '',
+                includeUndated: !!document.getElementById('positivacao-last-purchase-undated')?.checked
+            };
+        }
+
+        function getPositivacaoLastPurchaseKey(client) {
+            const date = parseDate(client.ultimaCompra || client['Data da Última Compra'] || client.ULTIMACOMPRA);
+            return date && !isNaN(date.getTime()) ? date.toISOString().slice(0, 10) : '';
+        }
+
+        function filterPositivacaoInactiveClients(clients, filters) {
+            const { start, end, includeUndated } = filters;
+            if (start && end && start > end) return [];
+            return clients.filter(client => {
+                const date = getPositivacaoLastPurchaseKey(client);
+                if (!start && !end) return true;
+                if (!date) return includeUndated;
+                return (!start || date >= start) && (!end || date <= end);
+            }).sort((a, b) => {
+                const da = getPositivacaoLastPurchaseKey(a);
+                const db = getPositivacaoLastPurchaseKey(b);
+                // Undated clients are identified separately, never assigned a fictitious purchase date.
+                if (!da || !db) return da ? -1 : db ? 1 : 0;
+                return da.localeCompare(db);
+            });
+        }
+
+        function getPositivacaoLastPurchaseFilterLabel() {
+            const { start, end, includeUndated } = getPositivacaoLastPurchaseFilters();
+            if (!start && !end) return 'Última compra: todas as datas (inclui clientes sem data).';
+            const display = date => date.split('-').reverse().join('/');
+            return `Última compra: ${start ? 'de ' + display(start) : 'sem limite inicial'} ${end ? 'até ' + display(end) : 'sem limite final'}${includeUndated ? '; inclui clientes sem data' : '; somente clientes com data'}.`;
+        }
+
         function updatePositivacaoView() {
             positivacaoDataForExport = { active: [], inactive: [] };
             positivacaoRenderId++;
@@ -27655,6 +27715,10 @@ const supervisorGroups = new Map();
             if (positivacaoActiveDetailTableBody) positivacaoActiveDetailTableBody.innerHTML = getSkeletonRows(7, 5);
             if (positivacaoInactiveDetailTableBody) positivacaoInactiveDetailTableBody.innerHTML = getSkeletonRows(6, 5);
 
+            const lastPurchaseFilters = getPositivacaoLastPurchaseFilters();
+            const invalidRange = !!(lastPurchaseFilters.start && lastPurchaseFilters.end && lastPurchaseFilters.start > lastPurchaseFilters.end);
+            const error = document.getElementById('positivacao-last-purchase-error');
+            if (error) error.classList.toggle('hidden', !invalidRange);
             const { clients, sales } = getPositivacaoFilteredData();
 
             const clientTotals = new Map();
@@ -27704,15 +27768,15 @@ const supervisorGroups = new Map();
                 if (currentRenderId !== positivacaoRenderId) return;
 
                 activeList.sort((a, b) => b.total - a.total);
-                inactiveList.sort((a, b) => (parseDate(b.ultimaCompra) || 0) - (parseDate(a.ultimaCompra) || 0));
+                const filteredInactiveList = filterPositivacaoInactiveClients(inactiveList, lastPurchaseFilters);
 
                 positivacaoDataForExport.active = activeList;
-                positivacaoDataForExport.inactive = inactiveList;
+                positivacaoDataForExport.inactive = filteredInactiveList;
 
                 positivacaoActiveState.data = activeList;
                 positivacaoActiveState.page = 1;
 
-                positivacaoInactiveState.data = inactiveList;
+                positivacaoInactiveState.data = filteredInactiveList;
                 positivacaoInactiveState.page = 1;
 
                 renderPositivacaoActiveTable();
@@ -27915,7 +27979,7 @@ const supervisorGroups = new Map();
             // Update Pagination Controls
             document.getElementById('positivacao-inactive-prev-btn').disabled = page === 1;
             document.getElementById('positivacao-inactive-next-btn').disabled = page >= totalPages;
-            document.getElementById('positivacao-inactive-page-info').textContent = `${start + 1}-${Math.min(end, total)} de ${total}`;
+            document.getElementById('positivacao-inactive-page-info').textContent = `${total ? start + 1 : 0}-${Math.min(end, total)} de ${total}`;
         }
 
         // --- TITULOS VIEW LOGIC ---
