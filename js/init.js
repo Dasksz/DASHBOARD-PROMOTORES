@@ -1531,7 +1531,9 @@
     }
     document.addEventListener('DOMContentLoaded', () => {
         const { createClient } = supabase;
-        const supabaseClient = window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            global: { fetch: window.createDashboardReadFetch(window.fetch.bind(window), () => window.supabaseClient, SUPABASE_URL) }
+        });
 
         // --- REMEMBER ME LOGIC (Pre-fill) ---
         const emailInput = document.getElementById('email');
@@ -2028,7 +2030,7 @@
         });
 
         // Auth State Listener
-        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        supabaseClient.auth.onAuthStateChange((event, session) => {
             if (event === 'PASSWORD_RECOVERY') {
                 const contentWrapper = document.getElementById('content-wrapper');
                 const topNavbar = document.getElementById('top-navbar');
@@ -2051,7 +2053,7 @@
             }
 
             if (session) {
-                verifyUserProfile(session);
+                setTimeout(() => { void verifyUserProfile(session); }, 0);
             } else {
                 const contentWrapper = document.getElementById('content-wrapper');
                 const topNavbar = document.getElementById('top-navbar');
