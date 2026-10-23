@@ -6193,6 +6193,7 @@
         let metaRealizadoClientsTableState = {
             currentPage: 1,
             itemsPerPage: 50,
+            onlyWithoutSales: false,
             filteredData: [],
             totalPages: 1
         };
@@ -6201,6 +6202,12 @@
 
         
         
+        function toggleMetaRealizadoClientsWithoutSales() {
+            metaRealizadoClientsTableState.onlyWithoutSales = !metaRealizadoClientsTableState.onlyWithoutSales;
+            metaRealizadoClientsTableState.currentPage = 1;
+            updateMetaRealizadoView();
+        }
+
         async function updateMetaRealizadoView() {
             const request = ++metaRealizadoRenderRequest;
             const month = selectedMetaRealizadoMonth;
@@ -6545,6 +6552,12 @@
 
             // 4. Clients Table Processing
             const clientsData = getMetaRealizadoClientsData(weeks);
+            const noSalesButton = document.getElementById('meta-realizado-clients-no-sales-btn');
+            if (noSalesButton) {
+                noSalesButton.setAttribute('aria-pressed', String(!!metaRealizadoClientsTableState.onlyWithoutSales));
+                noSalesButton.textContent = metaRealizadoClientsTableState.onlyWithoutSales
+                    ? 'Mostrar todos os clientes' : 'Somente clientes sem venda';
+            }
 
             // 5. Save Data for Export
             metaRealizadoDataForExport = {
@@ -6709,7 +6722,7 @@
             clients.forEach(client => {
                 const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 if (!clientMap.has(codCli)) {
-                    clientMap.set(codCli, { clientObj: client, goal: 0, salesTotal: 0, perdas: 0, salesWeeks: new Array(weeks.length).fill(0) });
+                    clientMap.set(codCli, { clientObj: client, goal: 0, salesTotal: 0, revenueTotal: 0, perdas: 0, salesWeeks: new Array(weeks.length).fill(0) });
                 }
                 const entry = clientMap.get(codCli);
 
@@ -6770,11 +6783,11 @@
 
                 // FIX: Ensure 3297 sales are divided correctly without being dropped
                 if (is3297) {
-                    targetClientsSales.push({ codCli: '541', fat: origValFat / 3, perda: origPerda / 3 });
-                    targetClientsSales.push({ codCli: '544', fat: origValFat / 3, perda: origPerda / 3 });
-                    targetClientsSales.push({ codCli: '546', fat: origValFat / 3, perda: origPerda / 3 });
+                    targetClientsSales.push({ codCli: '541', fat: origValFat / 3, revenue: origRevenue / 3, perda: origPerda / 3 });
+                    targetClientsSales.push({ codCli: '544', fat: origValFat / 3, revenue: origRevenue / 3, perda: origPerda / 3 });
+                    targetClientsSales.push({ codCli: '546', fat: origValFat / 3, revenue: origRevenue / 3, perda: origPerda / 3 });
                 } else {
-                    targetClientsSales.push({ codCli: origCodCli, fat: origValFat, perda: origPerda });
+                    targetClientsSales.push({ codCli: origCodCli, fat: origValFat, revenue: origRevenue, perda: origPerda });
                 }
 
                 for (const targetSale of targetClientsSales) {
@@ -6783,7 +6796,7 @@
 
                     if (!clientMap.has(codCli)) {
                         const clientObj = clientMapForKPIs.get(codCli) || { 'Código': codCli, nomeCliente: 'DESCONHECIDO', cidade: 'N/A', rca1: 'N/A' };
-                        clientMap.set(codCli, { clientObj: clientObj, goal: 0, salesTotal: 0, perdas: 0, salesWeeks: new Array(weeks.length).fill(0) });
+                        clientMap.set(codCli, { clientObj: clientObj, goal: 0, salesTotal: 0, revenueTotal: 0, perdas: 0, salesWeeks: new Array(weeks.length).fill(0) });
                     }
 
                     const entry = clientMap.get(codCli);
@@ -6796,6 +6809,7 @@
                     }
 
                     entry.salesTotal += val;
+                    entry.revenueTotal += targetSale.revenue;
                     entry.perdas = (entry.perdas || 0) + (targetSale.perda || 0);
                     if (weekIdx !== -1) entry.salesWeeks[weekIdx] += val;
                 }
@@ -6805,7 +6819,10 @@
             const results = [];
             clientMap.forEach((data, codCli) => {
                 // Filter out if No Goal AND No Sales (Clean up empty active clients)
-                if (data.goal === 0 && data.salesTotal === 0) return;
+                if (metaRealizadoClientsTableState.onlyWithoutSales) {
+                    // Classify by revenue even when the table displays weight.
+                    if (data.revenueTotal > 0) return;
+                } else if (data.goal === 0 && data.salesTotal === 0) return;
 
                 const adjustedGoals = calculateAdjustedWeeklyGoals(data.goal, data.salesWeeks, weeks);
 

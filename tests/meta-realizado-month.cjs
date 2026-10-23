@@ -6,7 +6,7 @@ const source = fs.readFileSync('js/app/app.js','utf8');
 const section = (start,end) => source.slice(source.indexOf(start),source.indexOf(end,source.indexOf(start)));
 function harness() {
  const elements = new Map();
- const element = id => { if(!elements.has(id)) elements.set(id,{textContent:'',classList:{add(){},remove(){}}}); return elements.get(id); };
+ const element = id => { if(!elements.has(id)) elements.set(id,{textContent:'',setAttribute(){},classList:{add(){},remove(){}}}); return elements.get(id); };
  const client = {'Código':'1',rca1:'10',nomeCliente:'Cliente'};
  const sale = (date,value,type='1') => ({DTPED:Date.parse(date),VLVENDA:value,TOTPESOLIQ:value/10,TIPOVENDA:type,CODCLI:'1',CODUSUR:'10',CODFOR:'707',OBSERVACAOFOR:'PEPSICO'});
  const current = [sale('2026-10-02',200)];
@@ -31,3 +31,21 @@ test('all-promoter KPIs exclude seller routes even when they audit a promoter cl
 test('seller mode resolves route codes to the selected seller and excludes promoter targets',async()=>{const {api,ctx,elements}=harness();ctx.adminViewMode='seller';ctx.selectedMetaRealizadoVendedores.add('10');ctx.sellerDetailsMap.set('10',{name:'RCA10',supervisor:'S1'});ctx.lpResearcherMap.set('ROTA2',{sellerCode:'10'});ctx.window.embeddedData.nota_perfeita.push({codigo_cliente:'2',mes_ano:'setembro de 2026',pesquisador:'ROTA2',nota_media:90});ctx.window.embeddedData.metas_pesquisas.push({mes:9,ano:2026,promotor_code:'ROTA2',cod_vendedor:'10',valor_meta:20});api.select('2026-09');await api.update();assert.equal(elements.get('kpi-metas-pesquisas-real').textContent,'1');assert.equal(elements.get('kpi-metas-pesquisas-meta').textContent,'20');});
 test('implicit promoter login scope applies even with no hierarchy filter selected',async()=>{const {api,ctx,elements}=harness();ctx.hierarchyState['meta-realizado'].promotors.clear();ctx.window.userRole='P1';ctx.userHierarchyContext={role:'promotor',promotor:'P1'};ctx.optimizedData.promotorMap.set('P2','Outro');ctx.window.embeddedData.nota_perfeita.push({codigo_cliente:'2',mes_ano:'setembro de 2026',pesquisador:'P2',nota_media:100});ctx.window.embeddedData.metas_pesquisas.push({mes:9,ano:2026,promotor_code:'P2',valor_meta:999});api.select('2026-09');await api.update();assert.equal(elements.get('kpi-metas-pesquisas-real').textContent,'1');assert.equal(elements.get('kpi-metas-pesquisas-meta').textContent,'10');});
 test('distinct stores and monthly average scores remain the KPI units, not audit row counts',async()=>{const {api,ctx,elements}=harness();ctx.window.embeddedData.nota_perfeita.push({codigo_cliente:'2',cnpj_cpf:'12345678000100',mes_ano:'setembro de 2026',pesquisador:'P1',nota_media:70},{codigo_cliente:'3',cnpj_cpf:'12.345.678/0001-00',mes_ano:'setembro de 2026',pesquisador:'P1',nota_media:90});api.select('2026-09');await api.update();assert.equal(elements.get('kpi-metas-pesquisas-real').textContent,'2');assert.equal(elements.get('kpi-metas-lojaperfeita-real').textContent,'2');});
+
+test('no-sales toggle respects scoped portfolio, includes clients without targets and classifies revenue independently of weight',async()=>{
+ const {api,ctx}=harness(); api.select('2026-09'); await api.load('2026-09');
+ const second={'Código':'2',rca1:'10',nomeCliente:'Sem meta'};
+ ctx.allClientsData.push(second);
+ ctx.getHierarchyFilteredClients=()=>ctx.allClientsData;
+ const weeks=api.filtered().weeks;
+ ctx.metaRealizadoClientsTableState.onlyWithoutSales=true;
+ assert.deepEqual(Array.from(api.clients(weeks),r=>r.codcli),['2']);
+ ctx.currentMetaRealizadoMetric='peso';ctx.allHistoryData[0].TOTPESOLIQ=0;
+ assert.deepEqual(Array.from(api.clients(weeks),r=>r.codcli),['2']);
+ ctx.getHierarchyFilteredClients=()=>[ctx.allClientsData[0]];
+ assert.equal(api.clients(weeks).length,0);
+ ctx.getHierarchyFilteredClients=()=>[second];
+ assert.deepEqual(Array.from(api.clients(weeks),r=>r.codcli),['2']);
+ ctx.metaRealizadoClientsTableState.onlyWithoutSales=false;
+ assert.equal(api.clients(weeks).length,0);
+});
