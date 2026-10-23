@@ -6572,7 +6572,7 @@
             if (gapButton) {
                 gapButton.setAttribute('aria-pressed', String(!!metaRealizadoClientsTableState.largestGapFirst));
                 gapButton.textContent = metaRealizadoClientsTableState.largestGapFirst
-                    ? 'Voltar à classificação normal' : 'Maiores gaps · clientes positivados';
+                    ? 'Voltar à classificação normal' : 'Maiores gaps';
             }
 
             // 5. Save Data for Export
