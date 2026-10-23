@@ -18,7 +18,7 @@ function harness() {
  ctx.window={ColumnarDataset:ctx.ColumnarDataset,SUPPLIER_CODES:suppliers,userRole:'adm',escapeHtml:String,normalizeResearcherCode:String,isActiveClient:()=>true,allClientsData:[client],resolveDim:()=> 'RCA10',embeddedData:{nota_perfeita:[{codigo_cliente:'1',mes_ano:'setembro de 2026',pesquisador:'P1',nota_media:90},{codigo_cliente:'1',mes_ano:'outubro de 2026',pesquisador:'P1',nota_media:20}],metas_pesquisas:[{mes:9,ano:2026,promotor_code:'P1',valor_meta:10},{mes:10,ano:2026,promotor_code:'P1',valor_meta:20}],metas_lojaperfeita:[]}};
  ctx.window.supabaseClient={from:()=>{let month; const q={select:()=>q,eq:(key,value)=>{if(key==='month_key')month=value;return q;},maybeSingle:async()=>{requests.push(month);if(ctx.fail) return {error:Error('offline')}; return {data:month==='2026-09'?{goals_data:{clients:{'1':{'707':{fat:500,vol:50}}},seller_targets:{}}}:null};}};return q;}};
  vm.createContext(ctx);
- vm.runInContext(section('        // Monthly context is private','        // End monthly context.')+section('        function getMonthWeeksDistribution','        function getMetaRealizadoFilteredData')+section('        function getMetaRealizadoFilteredData','        function renderMetaRealizadoTable')+section('        async function updateMetaRealizadoView','        function renderMetaRealizadoClientsTable')+section('        function calculateAdjustedWeeklyGoals','        // --- IMPORT PARSER AND LOGIC ---')+`\nthis.api={key:metaRealizadoMonthKey,select:m=>selectedMetaRealizadoMonth=m,source:getMetaRealizadoPeriodSource,goals:getMetaRealizadoGoalMaps,load:loadMetaRealizadoMonthGoals,filtered:getMetaRealizadoFilteredData,clients:getMetaRealizadoClientsData,update:updateMetaRealizadoView,export:()=>metaRealizadoDataForExport,currentMonths:metaRealizadoCurrentMonths};`,ctx);
+ vm.runInContext(section('        // Monthly context is private','        // End monthly context.')+section('        function getMetaRealizadoSupplierColumns','        function getMetaRealizadoGoalKeys')+section('        function getMonthWeeksDistribution','        function getMetaRealizadoFilteredData')+section('        function getMetaRealizadoFilteredData','        function renderMetaRealizadoTable')+section('        async function updateMetaRealizadoView','        function renderMetaRealizadoClientsTable')+section('        function calculateAdjustedWeeklyGoals','        // --- IMPORT PARSER AND LOGIC ---')+`\nthis.api={key:metaRealizadoMonthKey,select:m=>selectedMetaRealizadoMonth=m,source:getMetaRealizadoPeriodSource,goals:getMetaRealizadoGoalMaps,load:loadMetaRealizadoMonthGoals,filtered:getMetaRealizadoFilteredData,clients:getMetaRealizadoClientsData,update:updateMetaRealizadoView,export:()=>metaRealizadoDataForExport,currentMonths:metaRealizadoCurrentMonths};`,ctx);
  ctx.api.currentMonths.add('2026-10'); return {ctx,api:ctx.api,elements,requests};
 }
 test('month keys include year and parse survey dates without timezone shifts',()=>{const {api}=harness();assert.equal(api.key('setembro de 2026'),'2026-09');assert.equal(api.key('09/2026'),'2026-09');assert.equal(api.key('2026-10-02T00:00:00Z'),'2026-10');assert.equal(api.key('2026-13'),null);assert.equal(api.key(new Date('2025-12-31T23:59:59Z')),'2025-12');});
@@ -75,4 +75,15 @@ test('gap ranking uses absolute shortfall, excludes unpositivated clients and re
  assert.deepEqual(Array.from(api.clients(weeks),r=>r.codcli),['5','1','2','4']);
  ctx.metaRealizadoClientsTableState.largestGapFirst=false;
  assert.deepEqual(Array.from(api.clients(weeks),r=>r.codcli),['3','2','5','1','4']);
+});
+test('client supplier targets use saved month, correct brand codes, Salty subtotal and selected metric/filter',async()=>{
+ const {api,ctx}=harness();api.select('2026-09');await api.load('2026-09');
+ const keys=['707','708','752','1119_TODDYNHO','1119_TODDY','1119_QUAKER_KEROCOCO'];
+ api.goals().clients.set('1',new Map(keys.map((key,i)=>[key,{fat:(i+1)*10,vol:(i+1)*100}])));
+ const weeks=api.filtered().weeks;
+ let row=api.clients(weeks)[0];
+ assert.deepEqual({...row.supplierGoals},{salty:60,extrusados:10,naoExtrusados:20,quakerKerococo:60,toddy:50,toddynho:40,torcida:30});assert.equal(row.metaTotal,210);
+ ctx.currentMetaRealizadoMetric='peso';row=api.clients(weeks)[0];assert.equal(row.supplierGoals.salty,600);assert.equal(row.supplierGoals.quakerKerococo,600);assert.equal(row.metaTotal,2100);
+ ctx.selectedMetaRealizadoSuppliers=['707'];row=api.clients(weeks)[0];assert.equal(row.supplierGoals.salty,100);assert.equal(row.supplierGoals.extrusados,100);assert.equal(row.supplierGoals.torcida,0);assert.equal(row.metaTotal,100);
+ ctx.selectedMetaRealizadoSuppliers=[];ctx.currentMetaRealizadoPasta='FOODS';row=api.clients(weeks)[0];assert.equal(row.supplierGoals.salty,0);assert.equal(row.metaTotal,1500);
 });

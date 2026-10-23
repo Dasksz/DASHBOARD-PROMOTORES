@@ -5334,6 +5334,29 @@
             return { weeks, totalWorkingDays };
         }
 
+        function getMetaRealizadoSupplierColumns() {
+            const codes = window.SUPPLIER_CODES;
+            return [
+                { id: 'salty', label: 'Salty', keys: codes.ELMA },
+                { id: 'extrusados', label: 'Extrusados', keys: [codes.ELMA[0]] },
+                { id: 'naoExtrusados', label: 'Não extrusados', keys: [codes.ELMA[1]] },
+                { id: 'quakerKerococo', label: 'Quaker / Kerococo', keys: [codes.VIRTUAL.QUAKER_KEROCOCO] },
+                { id: 'toddy', label: 'Toddy', keys: [codes.VIRTUAL.TODDY] },
+                { id: 'toddynho', label: 'Toddynho', keys: [codes.VIRTUAL.TODDYNHO] },
+                { id: 'torcida', label: 'Torcida', keys: [codes.ELMA[2]] }
+            ];
+        }
+
+        function getMetaRealizadoClientSupplierGoals(goals, goalKeys, isVolume) {
+            const allowed = new Set(goalKeys);
+            const result = {};
+            getMetaRealizadoSupplierColumns().forEach(column => {
+                result[column.id] = column.keys.reduce((total, key) => total + (allowed.has(key)
+                    ? Number(goals?.get(key)?.[isVolume ? 'vol' : 'fat']) || 0 : 0), 0);
+            });
+            return result;
+        }
+
         function getMetaRealizadoGoalKeys(pasta, suppliersSet) {
             const codes = window.SUPPLIER_CODES;
             const allowed = pasta === 'ELMA' ? codes.ELMA : pasta === 'FOODS' ? codes.VIRTUAL_LIST : codes.ALL_GOALS;
@@ -6011,7 +6034,9 @@
 
                 // Weeks List (Compact)
                 if (weeksBody) {
-                    weeksBody.innerHTML = (item.weekData || []).map((w, i) => {
+                    weeksBody.innerHTML = type === 'client'
+                        ? getMetaRealizadoSupplierColumns().map(column => `<div class="flex items-center justify-between py-3 px-4 border-b border-slate-800 last:border-0"><span class="text-slate-400 text-xs">${escapeHtml(column.label)}</span><span class="text-slate-200 text-xs font-semibold">${formatMetaRealizadoValue(item.supplierGoals?.[column.id] || 0)}</span></div>`).join('')
+                        : (item.weekData || []).map((w, i) => {
                          const wPercent = w.meta > 0 ? (w.real / w.meta) * 100 : 0;
                          let wColor = 'text-green-400';
                          if (wPercent < 100 && w.isPast) wColor = 'text-red-400';
@@ -6887,6 +6912,7 @@
                     cidade: data.clientObj.cidade || 'N/A',
                     vendedor: vendorName,
                     promotor: optimizedData.clientHierarchyMap?.get(codCli)?.promotor?.name || 'Não informado',
+                    supplierGoals: getMetaRealizadoClientSupplierGoals(periodClientGoals.get(codCli), goalKeys, isVolume),
                     metaTotal: data.goal,
                     realTotal: data.salesTotal,
                     revenueTotal: data.revenueTotal,
@@ -6931,7 +6957,8 @@
             if (rowCount) rowCount.textContent = `${totalRows.toLocaleString('pt-BR')} ${totalRows === 1 ? 'linha' : 'linhas'}`;
 
             const showPromotor = !hierarchyState['meta-realizado']?.promotors?.size;
-            const columnCount = 8 + (showPromotor ? 1 : 0) + weeks.length * 2;
+            const supplierColumns = getMetaRealizadoSupplierColumns();
+            const columnCount = 8 + (showPromotor ? 1 : 0) + supplierColumns.length;
 
             // 1. Build Headers (Desktop Columns - Hidden on Mobile)
             let headerHTML = `
@@ -6946,8 +6973,9 @@
                     <th colspan="2" class="px-2 py-1 text-center bg-blue-900/30 text-blue-400 border-r border-slate-700 border-b-0 hidden md:table-cell">GERAL</th>
             `;
 
-            weeks.forEach((week, i) => {
-                headerHTML += `<th colspan="2" class="px-2 py-1 text-center border-r border-slate-700 border-b-0 text-slate-300 hidden md:table-cell">SEMANA ${i + 1}</th>`;
+            supplierColumns.forEach(column => {
+                const title = column.id === 'salty' ? 'Meta Salty: Extrusados + Não extrusados + Torcida' : `Meta ${column.label}`;
+                headerHTML += `<th rowspan="2" title="${escapeHtml(title)}" class="px-3 py-2 text-right border-r border-b border-slate-700 text-slate-300 hidden md:table-cell">${escapeHtml(column.label)}</th>`;
             });
             headerHTML += `</tr><tr>`;
 
@@ -6956,12 +6984,6 @@
                 <th class="px-2 py-2 text-right bg-blue-900/20 text-blue-100 font-bold border-r border-b border-slate-700 text-[10px] hidden md:table-cell">REALIZADO</th>
             `;
 
-            weeks.forEach(() => {
-                headerHTML += `
-                    <th class="px-2 py-2 text-right border-r border-b border-slate-700/50 text-slate-400 text-[10px] hidden md:table-cell">META</th>
-                    <th class="px-2 py-2 text-right border-r border-b border-slate-700 text-white font-bold text-[10px] hidden md:table-cell">REAL.</th>
-                `;
-            });
             headerHTML += `</tr>`;
 
             tableHead.innerHTML = headerHTML;
@@ -6998,19 +7020,9 @@
                         <td class="px-2 py-2 text-right bg-blue-900/10 text-yellow-400 font-bold border-r border-b border-slate-700 text-xs hidden md:table-cell">${realTotalStr}</td>
                     `;
 
-                    row.weekData.forEach(w => {
-                        const wMetaStr = formatMetaRealizadoValue(w.meta);
-                        const wRealStr = formatMetaRealizadoValue(w.real);
-                        const realClass = w.real >= w.meta && w.meta > 0 ? 'text-green-400' : 'text-slate-300';
-                        const metaClass = w.isPast ? 'text-red-500' : 'text-slate-400';
-
-                        desktopCells += `
-                            <td class="px-2 py-3 text-right ${metaClass} text-xs border-r border-b border-slate-700 hidden md:table-cell">${wMetaStr}</td>
-                            <td class="px-2 py-3 text-right ${realClass} text-xs font-medium border-r border-b border-slate-700 hidden md:table-cell">${wRealStr}</td>
-                        `;
+                    supplierColumns.forEach(column => {
+                        desktopCells += `<td class="px-3 py-2 text-right text-slate-300 text-xs border-r border-b border-slate-700 hidden md:table-cell">${formatMetaRealizadoValue(row.supplierGoals?.[column.id] || 0)}</td>`;
                     });
-
-
 
                     // Mobile Content (Compact List) - WRAPPED IN TD
                     const mobileContent = `
@@ -20308,9 +20320,8 @@ const supervisorGroups = new Map();
                 result.Perdas = row.perdas || 0;
                 result.Meta = row.metaTotal;
                 result.Realizado = row.realTotal;
-                row.weekData.forEach((week, i) => {
-                    result[`Semana ${i + 1} Meta`] = week.meta;
-                    result[`Semana ${i + 1} Realizado`] = week.real;
+                getMetaRealizadoSupplierColumns().forEach(column => {
+                    result[`Meta ${column.label}`] = row.supplierGoals?.[column.id] || 0;
                 });
                 return result;
             });
@@ -20425,22 +20436,14 @@ const supervisorGroups = new Map();
                     ...(showPromotor ? [{ content: 'Promotor', rowSpan: 2, styles: { valign: 'middle' } }] : []),
                     { content: 'Cidade', rowSpan: 2, styles: { valign: 'middle' } },
                     { content: 'Geral', colSpan: 2, styles: { halign: 'center' } },
-                    ...weeksHeaders
+                    ...getMetaRealizadoSupplierColumns().map(column => ({ content: column.label, rowSpan: 2, styles: { valign: 'middle' } }))
                 ],
                 [
-                    'Meta', 'Real.',
-                    ...weeksSubHeaders
+                    'Meta', 'Real.'
                 ]
             ];
 
             const clientsBody = metaRealizadoDataForExport.clients.map(row => {
-                const weekCells = [];
-                row.weekData.forEach(w => {
-                    weekCells.push(formatMetaRealizadoValue(w.meta));
-                    weekCells.push(formatMetaRealizadoValue(w.real));
-                });
-
-
                 return [
                     row.codcli,
                     row.razaoSocial,
@@ -20449,7 +20452,7 @@ const supervisorGroups = new Map();
                     row.cidade,
                     formatMetaRealizadoValue(row.metaTotal),
                     formatMetaRealizadoValue(row.realTotal),
-                    ...weekCells
+                    ...getMetaRealizadoSupplierColumns().map(column => formatMetaRealizadoValue(row.supplierGoals?.[column.id] || 0))
                 ];
             });
 
