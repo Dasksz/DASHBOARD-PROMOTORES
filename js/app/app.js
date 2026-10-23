@@ -5357,6 +5357,23 @@
             return result;
         }
 
+        function getMetaRealizadoSaleSupplierKey(sale) {
+            const code = String(sale.CODFOR);
+            if (code !== window.SUPPLIER_CODES.FOODS[0]) return code;
+            const product = window.resolveDim?.('produtos', sale.PRODUTO);
+            const description = normalize((product && typeof product === 'object' && product.descricao) || sale.DESCRICAO || '').replace(/\s+/g, '');
+            const virtual = window.SUPPLIER_CODES.VIRTUAL;
+            if (description.includes('TODDYNHO')) return virtual.TODDYNHO;
+            if (description.includes('TODDY')) return virtual.TODDY;
+            if (description.includes('QUAKER') || description.includes('KEROCOCO')) return virtual.QUAKER_KEROCOCO;
+            return null;
+        }
+
+        function getMetaRealizadoClientSupplierSales(sales) {
+            return Object.fromEntries(getMetaRealizadoSupplierColumns().map(column => [column.id,
+                column.keys.reduce((total, key) => total + (sales[key] || 0), 0)]));
+        }
+
         function getMetaRealizadoGoalKeys(pasta, suppliersSet) {
             const codes = window.SUPPLIER_CODES;
             const allowed = pasta === 'ELMA' ? codes.ELMA : pasta === 'FOODS' ? codes.VIRTUAL_LIST : codes.ALL_GOALS;
@@ -6035,7 +6052,7 @@
                 // Weeks List (Compact)
                 if (weeksBody) {
                     weeksBody.innerHTML = type === 'client'
-                        ? getMetaRealizadoSupplierColumns().map(column => `<div class="flex items-center justify-between py-3 px-4 border-b border-slate-800 last:border-0"><span class="text-slate-400 text-xs">${escapeHtml(column.label)}</span><span class="text-slate-200 text-xs font-semibold">${formatMetaRealizadoValue(item.supplierGoals?.[column.id] || 0)}</span></div>`).join('')
+                        ? getMetaRealizadoSupplierColumns().map(column => `<div class="flex items-center justify-between py-3 px-4 border-b border-slate-800 last:border-0"><span class="text-slate-400 text-xs">${escapeHtml(column.label)}</span><span class="text-slate-200 text-xs font-semibold">Meta: ${formatMetaRealizadoValue(item.supplierGoals?.[column.id] || 0)} · Real: ${formatMetaRealizadoValue(item.supplierSales?.[column.id] || 0)}</span></div>`).join('')
                         : (item.weekData || []).map((w, i) => {
                          const wPercent = w.meta > 0 ? (w.real / w.meta) * 100 : 0;
                          let wColor = 'text-green-400';
@@ -6779,7 +6796,7 @@
             clients.forEach(client => {
                 const codCli = normalizeKey(String(client['Código'] || client['codigo_cliente']));
                 if (!clientMap.has(codCli)) {
-                    clientMap.set(codCli, { clientObj: client, goal: 0, salesTotal: 0, revenueTotal: 0, perdas: 0, salesWeeks: new Array(weeks.length).fill(0) });
+                    clientMap.set(codCli, { clientObj: client, goal: 0, salesTotal: 0, revenueTotal: 0, salesBySupplier: {}, perdas: 0, salesWeeks: new Array(weeks.length).fill(0) });
                 }
                 const entry = clientMap.get(codCli);
 
@@ -6830,6 +6847,7 @@
 
                 if (!matchesMetaRealizadoSupplier(s, suppliersSet)) continue;
 
+                const supplierKey = getMetaRealizadoSaleSupplierKey(s);
                 const origCodCli = normalizeKey(String(s.CODCLI));
                 const is3297 = origCodCli === '3297';
                 
@@ -6853,7 +6871,7 @@
 
                     if (!clientMap.has(codCli)) {
                         const clientObj = clientMapForKPIs.get(codCli) || { 'Código': codCli, nomeCliente: 'DESCONHECIDO', cidade: 'N/A', rca1: 'N/A' };
-                        clientMap.set(codCli, { clientObj: clientObj, goal: 0, salesTotal: 0, revenueTotal: 0, perdas: 0, salesWeeks: new Array(weeks.length).fill(0) });
+                        clientMap.set(codCli, { clientObj: clientObj, goal: 0, salesTotal: 0, revenueTotal: 0, salesBySupplier: {}, perdas: 0, salesWeeks: new Array(weeks.length).fill(0) });
                     }
 
                     const entry = clientMap.get(codCli);
@@ -6865,6 +6883,7 @@
                         continue;
                     }
 
+                    if (supplierKey) entry.salesBySupplier[supplierKey] = (entry.salesBySupplier[supplierKey] || 0) + val;
                     entry.salesTotal += val;
                     entry.revenueTotal += targetSale.revenue;
                     entry.perdas = (entry.perdas || 0) + (targetSale.perda || 0);
@@ -6912,6 +6931,7 @@
                     cidade: data.clientObj.cidade || 'N/A',
                     vendedor: vendorName,
                     promotor: optimizedData.clientHierarchyMap?.get(codCli)?.promotor?.name || 'Não informado',
+                    supplierSales: getMetaRealizadoClientSupplierSales(data.salesBySupplier),
                     supplierGoals: getMetaRealizadoClientSupplierGoals(periodClientGoals.get(codCli), goalKeys, isVolume),
                     metaTotal: data.goal,
                     realTotal: data.salesTotal,
@@ -6958,7 +6978,7 @@
 
             const showPromotor = !hierarchyState['meta-realizado']?.promotors?.size;
             const supplierColumns = getMetaRealizadoSupplierColumns();
-            const columnCount = 8 + (showPromotor ? 1 : 0) + supplierColumns.length;
+            const columnCount = 8 + (showPromotor ? 1 : 0) + supplierColumns.length * 2;
 
             // 1. Build Headers (Desktop Columns - Hidden on Mobile)
             let headerHTML = `
@@ -6975,7 +6995,7 @@
 
             supplierColumns.forEach(column => {
                 const title = column.id === 'salty' ? 'Meta Salty: Extrusados + Não extrusados + Torcida' : `Meta ${column.label}`;
-                headerHTML += `<th rowspan="2" title="${escapeHtml(title)}" class="px-3 py-2 text-right border-r border-b border-slate-700 text-slate-300 hidden md:table-cell">${escapeHtml(column.label)}</th>`;
+                headerHTML += `<th colspan="2" title="${escapeHtml(title)}" class="px-3 py-2 text-right border-r border-b border-slate-700 text-slate-300 hidden md:table-cell">${escapeHtml(column.label)}</th>`;
             });
             headerHTML += `</tr><tr>`;
 
@@ -6984,6 +7004,9 @@
                 <th class="px-2 py-2 text-right bg-blue-900/20 text-blue-100 font-bold border-r border-b border-slate-700 text-[10px] hidden md:table-cell">REALIZADO</th>
             `;
 
+            supplierColumns.forEach(() => {
+                headerHTML += `<th class="px-2 py-2 text-right border-r border-b border-slate-700/50 text-slate-400 text-[10px] hidden md:table-cell">META</th><th class="px-2 py-2 text-right border-r border-b border-slate-700 text-slate-200 text-[10px] hidden md:table-cell">REALIZADO</th>`;
+            });
             headerHTML += `</tr>`;
 
             tableHead.innerHTML = headerHTML;
@@ -7021,7 +7044,10 @@
                     `;
 
                     supplierColumns.forEach(column => {
-                        desktopCells += `<td class="px-3 py-2 text-right text-slate-300 text-xs border-r border-b border-slate-700 hidden md:table-cell">${formatMetaRealizadoValue(row.supplierGoals?.[column.id] || 0)}</td>`;
+                        const goal = row.supplierGoals?.[column.id] || 0;
+                        const actual = row.supplierSales?.[column.id] || 0;
+                        const actualColor = goal > 0 && actual >= goal ? 'text-green-400' : 'text-slate-200';
+                        desktopCells += `<td class="px-3 py-2 text-right text-slate-400 text-xs border-r border-b border-slate-700/50 hidden md:table-cell">${formatMetaRealizadoValue(goal)}</td><td class="px-3 py-2 text-right ${actualColor} font-semibold text-xs border-r border-b border-slate-700 hidden md:table-cell">${formatMetaRealizadoValue(actual)}</td>`;
                     });
 
                     // Mobile Content (Compact List) - WRAPPED IN TD
@@ -20322,6 +20348,7 @@ const supervisorGroups = new Map();
                 result.Realizado = row.realTotal;
                 getMetaRealizadoSupplierColumns().forEach(column => {
                     result[`Meta ${column.label}`] = row.supplierGoals?.[column.id] || 0;
+                    result[`Realizado ${column.label}`] = row.supplierSales?.[column.id] || 0;
                 });
                 return result;
             });
@@ -20436,10 +20463,10 @@ const supervisorGroups = new Map();
                     ...(showPromotor ? [{ content: 'Promotor', rowSpan: 2, styles: { valign: 'middle' } }] : []),
                     { content: 'Cidade', rowSpan: 2, styles: { valign: 'middle' } },
                     { content: 'Geral', colSpan: 2, styles: { halign: 'center' } },
-                    ...getMetaRealizadoSupplierColumns().map(column => ({ content: column.label, rowSpan: 2, styles: { valign: 'middle' } }))
+                    ...getMetaRealizadoSupplierColumns().map(column => ({ content: column.label, colSpan: 2, styles: { halign: 'center' } }))
                 ],
                 [
-                    'Meta', 'Real.'
+                    'Meta', 'Real.', ...getMetaRealizadoSupplierColumns().flatMap(() => ['Meta', 'Real.'])
                 ]
             ];
 
@@ -20452,7 +20479,7 @@ const supervisorGroups = new Map();
                     row.cidade,
                     formatMetaRealizadoValue(row.metaTotal),
                     formatMetaRealizadoValue(row.realTotal),
-                    ...getMetaRealizadoSupplierColumns().map(column => formatMetaRealizadoValue(row.supplierGoals?.[column.id] || 0))
+                    ...getMetaRealizadoSupplierColumns().flatMap(column => [formatMetaRealizadoValue(row.supplierGoals?.[column.id] || 0), formatMetaRealizadoValue(row.supplierSales?.[column.id] || 0)])
                 ];
             });
 
@@ -20461,14 +20488,14 @@ const supervisorGroups = new Map();
                 body: clientsBody,
                 startY: metaRealizadoDataForExport.clientMode ? 49 : 25,
                 theme: 'grid',
-                styles: { fontSize: 6, cellPadding: 1, textColor: [0, 0, 0], halign: 'right' },
+                styles: { fontSize: 5.5, cellPadding: 0.8, textColor: [0, 0, 0], halign: 'right' },
                 headStyles: { fillColor: [22, 30, 61], textColor: 255, fontStyle: 'bold' },
                 columnStyles: {
-                    0: { halign: 'center', cellWidth: 15 },
-                    1: { halign: 'left', cellWidth: 40 },
-                    2: { halign: 'left', cellWidth: 20 },
-                    3: { halign: 'left', cellWidth: 20 },
-                    ...(showPromotor ? { 4: { halign: 'left', cellWidth: 20 } } : {})
+                    0: { halign: 'center', cellWidth: 11 },
+                    1: { halign: 'left', cellWidth: 30 },
+                    2: { halign: 'left', cellWidth: 17 },
+                    3: { halign: 'left', cellWidth: 17 },
+                    ...(showPromotor ? { 4: { halign: 'left', cellWidth: 17 } } : {})
                 },
                 didParseCell: function(cell) {
                     if (cell.section === 'body' && highlightedClientRows.has(cell.row.index)) {
