@@ -7012,7 +7012,7 @@
                     const highlightGap = metaRealizadoClientsTableState.largestGapFirst
                         && startIndex + index < 10 && row.metaTotal > row.realTotal;
                     const rowStyle = highlightGap
-                        ? 'background-color:rgba(127,29,29,0.28);box-shadow:inset 3px 0 0 #f87171;' : '';
+                        ? `background-color:rgba(127,29,29,${rowNumber % 2 === 0 ? '0.26' : '0.28'}) !important;box-shadow:inset 3px 0 0 #f87171;` : '';
                     return `<tr style="${rowStyle}" class="hover:bg-slate-700/30 transition-colors">${mobileContent}${desktopCells}</tr>`;
                 }).join('');
                 tableBody.innerHTML = rowsHTML;
