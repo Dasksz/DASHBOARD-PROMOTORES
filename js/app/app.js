@@ -5374,6 +5374,16 @@
                 column.keys.reduce((total, key) => total + (sales[key] || 0), 0)]));
         }
 
+        function getMetaRealizadoSaltyGap(row) {
+            return (Number(row.supplierGoals?.salty) || 0) - (Number(row.supplierSales?.salty) || 0);
+        }
+
+        function compareMetaRealizadoSaltyGaps(a, b) {
+            return getMetaRealizadoSaltyGap(b) - getMetaRealizadoSaltyGap(a)
+                || (Number(b.supplierGoals?.salty) || 0) - (Number(a.supplierGoals?.salty) || 0)
+                || String(a.codcli).localeCompare(String(b.codcli));
+        }
+
         function getMetaRealizadoGoalKeys(pasta, suppliersSet) {
             const codes = window.SUPPLIER_CODES;
             const allowed = pasta === 'ELMA' ? codes.ELMA : pasta === 'FOODS' ? codes.VIRTUAL_LIST : codes.ALL_GOALS;
@@ -6968,9 +6978,8 @@
             // Sort: High Potential? High Sales?
             // Default: Meta Descending, then Sales Descending
             if (metaRealizadoClientsTableState.largestGapFirst) {
-                // Ascending realized-minus-target: largest shortfall first.
-                results.sort((a, b) => (a.realTotal - a.metaTotal) - (b.realTotal - b.metaTotal)
-                    || b.metaTotal - a.metaTotal || String(a.codcli).localeCompare(String(b.codcli)));
+                // Rank only the Salty shortfall; keep the existing positivated-client scope.
+                results.sort(compareMetaRealizadoSaltyGaps);
             } else {
                 results.sort((a, b) => b.metaTotal - a.metaTotal || b.realTotal - a.realTotal);
             }
@@ -7088,7 +7097,7 @@
                     `;
 
                     const highlightGap = metaRealizadoClientsTableState.largestGapFirst
-                        && startIndex + index < 10 && row.metaTotal > row.realTotal;
+                        && startIndex + index < 10 && getMetaRealizadoSaltyGap(row) > 0;
                     const rowStyle = highlightGap
                         ? `background-color:rgba(127,29,29,${rowNumber % 2 === 0 ? '0.26' : '0.28'}) !important;box-shadow:inset 3px 0 0 #f87171;` : '';
                     return `<tr style="${rowStyle}" class="hover:bg-slate-700/30 transition-colors">${mobileContent}${desktopCells}</tr>`;
@@ -20322,13 +20331,12 @@ const supervisorGroups = new Map();
                 clients = clients.filter(row => (row.revenueTotal ?? row.realTotal) <= 0);
             } else if (snapshot.largestGapFirst) {
                 clients = clients.filter(row => (row.revenueTotal ?? row.realTotal) > 0);
-                clients.sort((a, b) => (a.realTotal - a.metaTotal) - (b.realTotal - b.metaTotal)
-                    || b.metaTotal - a.metaTotal || String(a.codcli).localeCompare(String(b.codcli)));
+                clients.sort(compareMetaRealizadoSaltyGaps);
             }
             return { ...snapshot, clients, sellers: clientMode ? [] : snapshot.sellers,
                 clientMode, clientModeLabel: snapshot.onlyWithoutSales
                     ? 'Somente clientes sem venda' : snapshot.largestGapFirst
-                        ? 'Maiores gaps - clientes positivados' : 'Detalhamento por Cliente' };
+                        ? 'Maiores gaps Salty - clientes positivados' : 'Detalhamento por Cliente' };
         }
 
         function exportMetaRealizadoExcel() {
@@ -20364,7 +20372,7 @@ const supervisorGroups = new Map();
 
         function getMetaRealizadoHighlightedClientRows(snapshot) {
             return snapshot.largestGapFirst
-                ? snapshot.clients.slice(0, 10).flatMap((row, index) => row.metaTotal > row.realTotal ? [index] : [])
+                ? snapshot.clients.slice(0, 10).flatMap((row, index) => getMetaRealizadoSaltyGap(row) > 0 ? [index] : [])
                 : [];
         }
 
