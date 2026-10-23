@@ -6889,6 +6889,9 @@
             const totalRows = metaRealizadoClientsTableState.filteredData.length;
             if (rowCount) rowCount.textContent = `${totalRows.toLocaleString('pt-BR')} ${totalRows === 1 ? 'linha' : 'linhas'}`;
 
+            const showPromotor = !hierarchyState['meta-realizado']?.promotors?.size;
+            const columnCount = 8 + (showPromotor ? 1 : 0) + weeks.length * 2;
+
             // 1. Build Headers (Desktop Columns - Hidden on Mobile)
             let headerHTML = `
                 <tr>
@@ -6896,6 +6899,7 @@
                     <th rowspan="2" class="px-2 py-2 text-center glass-panel-heavy border-r border-b border-slate-700 w-16 hidden md:table-cell">CÓD</th>
                     <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 min-w-[200px] hidden md:table-cell">CLIENTE</th>
                     <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 w-32 hidden md:table-cell">VENDEDOR</th>
+                    ${showPromotor ? '<th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 w-32 hidden md:table-cell">PROMOTOR</th>' : ''}
                     <th rowspan="2" class="px-3 py-2 text-left glass-panel-heavy border-r border-b border-slate-700 w-32 hidden md:table-cell">CIDADE</th>
                     <th rowspan="2" class="px-2 py-1 text-center bg-red-900/30 text-red-400 border-r border-b border-slate-700 w-24 hidden md:table-cell text-xs">PERDAS</th>
                     <th colspan="2" class="px-2 py-1 text-center bg-blue-900/30 text-blue-400 border-r border-slate-700 border-b-0 hidden md:table-cell">GERAL</th>
@@ -6928,10 +6932,12 @@
 
             // 3. Build Body
             if (pageData.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="${8 + (weeks.length * 2)}" class="px-4 py-8 text-center text-slate-500">Nenhum cliente encontrado com os filtros atuais.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="${columnCount}" class="px-4 py-8 text-center text-slate-500">Nenhum cliente encontrado com os filtros atuais.</td></tr>`;
             } else {
                 const rowsHTML = pageData.map((row, index) => {
                     const rowNumber = startIndex + index + 1;
+                    const promotorNode = optimizedData.clientHierarchyMap?.get(normalizeKey(String(row.codcli)));
+                    const promotorName = promotorNode?.promotor?.name || 'Não informado';
                     const metaTotalStr = formatMetaRealizadoValue(row.metaTotal);
                     const realTotalStr = formatMetaRealizadoValue(row.realTotal);
                     const perdasStr = (row.perdas || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -6944,6 +6950,7 @@
                         <td class="px-2 py-2 text-center text-slate-400 text-xs border-r border-b border-slate-700 hidden md:table-cell">${row.codcli}</td>
                         <td class="px-3 py-2 text-xs font-medium text-slate-200 border-r border-b border-slate-700 truncate hidden md:table-cell" title="${escapeHtml(row.razaoSocial)}">${escapeHtml(row.razaoSocial)}</td>
                         <td class="px-3 py-2 text-xs text-slate-400 border-r border-b border-slate-700 truncate hidden md:table-cell">${escapeHtml(getFirstName(row.vendedor))}</td>
+                        ${showPromotor ? `<td class="px-3 py-2 text-xs text-slate-400 border-r border-b border-slate-700 hidden md:table-cell">${escapeHtml(promotorName)}</td>` : ''}
                         <td class="px-3 py-2 text-xs text-slate-400 border-r border-b border-slate-700 truncate hidden md:table-cell">${escapeHtml(row.cidade)}</td>
                         <td class="px-2 py-2 text-right bg-red-900/10 text-red-400 font-bold border-r border-b border-slate-700 text-xs hidden md:table-cell">${perdasStr}</td>
                         <td class="px-2 py-2 text-right bg-blue-900/10 text-teal-400 border-r border-b border-slate-700/50 text-xs hidden md:table-cell" title="Meta Contratual Mensal">${metaTotalStr}</td>
@@ -6966,8 +6973,9 @@
 
                     // Mobile Content (Compact List) - WRAPPED IN TD
                     const mobileContent = `
-                        <td class="md:hidden w-full py-3 pr-2 border-b border-slate-800" colspan="20" onclick="openMetaRealizadoDetailsModal(${index}, 'client')">
+                        <td class="md:hidden w-full py-3 pr-2 border-b border-slate-800" colspan="${columnCount}" onclick="openMetaRealizadoDetailsModal(${index}, 'client')">
                             <div class="font-bold text-sm text-slate-200 mb-1 truncate max-w-full"><span class="text-slate-500 font-normal mr-2">${rowNumber}.</span>${row.codcli} - ${escapeHtml((row.razaoSocial || '').length > 21 ? (row.razaoSocial || '').slice(0, 21) + '...' : (row.razaoSocial || ''))}</div>
+                            ${showPromotor ? `<div class="text-xs text-slate-400 mb-1">Promotor: ${escapeHtml(promotorName)}</div>` : ''}
                             <div class="flex justify-between items-center text-xs mb-1">
                                 <div class="text-slate-400">Perdas: <span class="text-red-400 font-medium">${perdasStr}</span></div>
                             </div>
