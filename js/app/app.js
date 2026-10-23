@@ -6258,6 +6258,28 @@
 
         
         
+        function changeMetaRealizadoClientPage(direction) {
+            if (direction !== -1 && direction !== 1) return;
+            const snapshot = getMetaRealizadoExportSnapshot();
+            if (!snapshot) return;
+            const state = metaRealizadoClientsTableState;
+            state.totalPages = Math.ceil(state.filteredData.length / state.itemsPerPage);
+            const page = Math.max(1, Math.min(Math.max(1, state.totalPages), state.currentPage + direction));
+            if (page === state.currentPage) return;
+            state.currentPage = page;
+            renderMetaRealizadoClientsTable(state.filteredData, snapshot.weeks);
+        }
+
+        // Bind paging independently of the unrelated filter/export setup below.
+        document.getElementById('meta-realizado-clients-prev-page-btn')?.addEventListener('click', event => {
+            event.preventDefault();
+            changeMetaRealizadoClientPage(-1);
+        });
+        document.getElementById('meta-realizado-clients-next-page-btn')?.addEventListener('click', event => {
+            event.preventDefault();
+            changeMetaRealizadoClientPage(1);
+        });
+
         window.toggleMetaRealizadoClientsWithoutSales = function() {
             metaRealizadoClientsTableState.onlyWithoutSales = !metaRealizadoClientsTableState.onlyWithoutSales;
             if (metaRealizadoClientsTableState.onlyWithoutSales) metaRealizadoClientsTableState.largestGapFirst = false;
@@ -18344,25 +18366,11 @@ const supervisorGroups = new Map();
                 if (!metaRealizadoSupplierFilterBtn.contains(e.target) && !metaRealizadoSupplierFilterDropdown.contains(e.target)) metaRealizadoSupplierFilterDropdown.classList.add('hidden');
             });
 
-            // Pagination Listeners for Meta Realizado Clients Table
-            document.getElementById('meta-realizado-clients-prev-page-btn').addEventListener('click', () => {
-                if (metaRealizadoClientsTableState.currentPage > 1) {
-                    metaRealizadoClientsTableState.currentPage--;
-                    updateMetaRealizadoView();
-                }
-            });
-
             setupFab('meta-realizado-fab-container',
                 exportMetaRealizadoPDF,
                 exportMetaRealizadoExcel
             );
 
-            document.getElementById('meta-realizado-clients-next-page-btn').addEventListener('click', () => {
-                if (metaRealizadoClientsTableState.currentPage < metaRealizadoClientsTableState.totalPages) {
-                    metaRealizadoClientsTableState.currentPage++;
-                    updateMetaRealizadoView();
-                }
-            });
 
 
             const updateMix = () => {
