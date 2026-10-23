@@ -3148,6 +3148,8 @@
         let selectedWeeklySuppliers = new Set();
         let selectedPositivacaoSupervisors = new Set();
         let selectedPositivacaoVendedores = new Set();
+        let selectedPositivacaoCities = new Set();
+        let positivacaoCityOptionsKey = '';
         let selectedCoverageSupervisors = new Set();
         let selectedCoverageVendedores = new Set();
         let selectedCitySupervisors = new Set();
@@ -15283,7 +15285,9 @@ const supervisorGroups = new Map();
             const cocoord = document.getElementById(`${filterPrefix}-cocoord-filter-text`)?.textContent || 'Todos';
             const promotor = document.getElementById(`${filterPrefix}-promotor-filter-text`)?.textContent || 'Todos';
             const cityInput = document.getElementById('positivacao-city-filter') || document.getElementById('city-city-filter');
-            const city = cityInput ? cityInput.value.trim() : '';
+            const city = options.filterPrefix === 'positivacao'
+                ? [...selectedPositivacaoCities].join(', ')
+                : (cityInput ? cityInput.value.trim() : '');
             const generationDate = new Date().toLocaleString('pt-BR'); const today = new Date();
             const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toLocaleDateString('pt-BR');
             const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toLocaleDateString('pt-BR');
@@ -15292,8 +15296,10 @@ const supervisorGroups = new Map();
             doc.text(`Coordenador: ${coord}`, 14, 38);
             doc.text(`Co-Coordenador: ${cocoord}`, 14, 44);
             doc.text(`Promotor: ${promotor}`, 14, 50);
-            doc.text(`Cidade: ${city || 'Todas'}`, 14, 56);
-            doc.text(`Data de Emissão: ${generationDate}`, 14, 62);
+            const cityLines = doc.splitTextToSize(`Cidade: ${city || 'Todas'}`, 180);
+            doc.text(cityLines, 14, 56);
+            const cityExtraHeight = Math.max(0, cityLines.length - 1) * 5;
+            doc.text(`Data de Emissão: ${generationDate}`, 14, 62 + cityExtraHeight);
             const tableColumn = ["Código", "Cliente", "Bairro", "Cidade", "Últ. Compra"];
             if (includeFaturamento) tableColumn.splice(2, 0, "Faturamento");
 
@@ -15351,12 +15357,12 @@ const supervisorGroups = new Map();
                 tableRows.push(footerRow);
             }
 
-            let tableStartY = 70;
+            let tableStartY = 70 + cityExtraHeight;
             if (options.filterLabel) {
                 doc.setFontSize(9);
                 const filterLines = doc.splitTextToSize(options.filterLabel, 180);
-                doc.text(filterLines, 14, 68);
-                tableStartY = 72 + filterLines.length * 4;
+                doc.text(filterLines, 14, 68 + cityExtraHeight);
+                tableStartY = 72 + cityExtraHeight + filterLines.length * 4;
             }
             doc.autoTable({ head: [tableColumn], body: tableRows, startY: tableStartY, theme: 'grid', styles: { fontSize: 8, cellPadding: 1.5, textColor: [0, 0, 0] }, headStyles: { fillColor: [41, 128, 185], textColor: 255, fontSize: 8, fontStyle: 'bold' }, alternateRowStyles: { fillColor: [240, 248, 255] }, margin: { top: 10 } });
             const pageCount = doc.internal.getNumberOfPages();
@@ -17436,7 +17442,7 @@ const supervisorGroups = new Map();
                     newBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         positivacaoFab.classList.remove('active');
-                        exportClientsPDF(positivacaoDataForExport.active, 'Relatório de Clientes Ativos no Mês', 'clientes_ativos', true);
+                        exportClientsPDF(positivacaoDataForExport.active, 'Relatório de Clientes Ativos no Mês', 'clientes_ativos', true, { filterPrefix: 'positivacao' });
                     });
 
 
@@ -27378,79 +27384,7 @@ const supervisorGroups = new Map();
                 positivacaoCodCliFilter._hasListener = true;
             }
 
-            // City Filter
-            if (positivacaoCityFilter && !positivacaoCityFilter._hasListener) {
-                const updateSuggestions = debounce(() => {
-                    const val = positivacaoCityFilter.value.trim().toLowerCase();
-                    if (val.length < 1) {
-                        positivacaoCitySuggestions.classList.add('hidden');
-                        return;
-                    }
-
-                    const { clients } = getPositivacaoFilteredData({ excludeFilter: 'city' });
-                    const uniqueCities = new Set();
-                    clients.forEach(c => {
-                        if (c.cidade && c.cidade !== 'N/A') uniqueCities.add(c.cidade);
-                    });
-
-
-
-                    // ⚡ Bolt Optimization: Avoid Array.from().filter() intermediate allocations
-                    const matches = [];
-                    for (const c of uniqueCities) {
-                        if (c.toLowerCase().includes(val)) matches.push(c);
-                    }
-                    matches.sort();
-
-                    if (matches.length > 0) {
-                        positivacaoCitySuggestions.innerHTML = matches.slice(0, 10).map(c => {
-                            const safeC = c.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-                            return `<div class="p-2 hover:bg-slate-700 cursor-pointer text-sm text-slate-300" data-val="${safeC}">${safeC}</div>`;
-                        }).join('');
-                        positivacaoCitySuggestions.classList.remove('hidden');
-                    } else {
-                        positivacaoCitySuggestions.classList.add('hidden');
-                    }
-                }, 300);
-
-                positivacaoCityFilter.addEventListener('input', (e) => {
-                    updateSuggestions();
-                    if (!e.target.value) handlePositivacaoFilterChange();
-                });
-
-
-
-                positivacaoCityFilter.addEventListener('focus', () => {
-                    if (positivacaoCityFilter.value.trim().length >= 1) {
-                         positivacaoCitySuggestions.classList.remove('hidden');
-                    }
-                });
-
-
-
-                // Delegation for suggestions click
-                positivacaoCitySuggestions.addEventListener('click', (e) => {
-                    const item = e.target.closest('div');
-                    if (item && item.dataset.val) {
-                        positivacaoCityFilter.value = item.dataset.val;
-                        positivacaoCitySuggestions.classList.add('hidden');
-                        handlePositivacaoFilterChange();
-                    }
-                });
-
-
-
-                // Close suggestions on click outside
-                document.addEventListener('click', (e) => {
-                    if (!positivacaoCityFilter.contains(e.target) && !positivacaoCitySuggestions.contains(e.target)) {
-                        positivacaoCitySuggestions.classList.add('hidden');
-                    }
-                });
-
-
-
-                positivacaoCityFilter._hasListener = true;
-            }
+            setupPositivacaoCityFilter();
 
             if (clearPositivacaoFiltersBtn && !clearPositivacaoFiltersBtn._hasListener) {
                 clearPositivacaoFiltersBtn.addEventListener('click', resetPositivacaoFilters);
@@ -27504,6 +27438,78 @@ const supervisorGroups = new Map();
             updatePositivacaoView();
         }
 
+        function positivacaoCityKey(city) {
+            return String(city || '').trim().toLocaleUpperCase('pt-BR');
+        }
+
+        function getPositivacaoCityOptions(clients) {
+            const cities = new Map();
+            clients.forEach(client => {
+                const label = String(client.cidade || '').trim();
+                const key = positivacaoCityKey(label);
+                if (key && key !== 'N/A' && !cities.has(key)) cities.set(key, label);
+            });
+            return [...cities].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR'));
+        }
+
+        function updatePositivacaoCityFilter() {
+            const dropdown = document.getElementById('positivacao-city-suggestions');
+            const label = document.getElementById('positivacao-city-filter-text');
+            if (!dropdown || !label) return;
+            // Exclude this city's selection so choosing one never hides the other valid cities.
+            const { clients } = getPositivacaoFilteredData({ excludeFilter: 'city' });
+            const cities = getPositivacaoCityOptions(clients);
+            const optionsKey = JSON.stringify(cities.map(([key]) => key));
+            if (optionsKey !== positivacaoCityOptionsKey) {
+                positivacaoCityOptionsKey = optionsKey;
+                if (positivacaoCityFilter) positivacaoCityFilter.value = '';
+            }
+            const valid = new Set(cities.map(([key]) => key));
+            selectedPositivacaoCities = new Set([...selectedPositivacaoCities].filter(key => valid.has(key)));
+            const chosen = cities.filter(([key]) => selectedPositivacaoCities.has(key)).map(([, name]) => name);
+            label.textContent = chosen.length ? chosen.join(', ') : 'Todas';
+            label.title = label.textContent;
+            const query = positivacaoCityKey(positivacaoCityFilter?.value);
+            const matches = cities.filter(([, name]) => positivacaoCityKey(name).includes(query));
+            dropdown.innerHTML = '<button type="button" data-clear-cities class="w-full text-left p-2 text-sm text-orange-400 hover:bg-slate-700 rounded">Todas as cidades</button>' + matches.map(([key, name]) =>
+                `<label class="flex items-center gap-2 p-2 text-sm text-slate-300 hover:bg-slate-700 rounded cursor-pointer"><input type="checkbox" value="${window.escapeHtml(key)}" ${selectedPositivacaoCities.has(key) ? 'checked' : ''} class="accent-orange-500"><span>${window.escapeHtml(name)}</span></label>`
+            ).join('') + (matches.length ? '' : '<p class="p-2 text-xs text-slate-400">Nenhuma cidade disponível para esta seleção.</p>');
+        }
+
+        function setupPositivacaoCityFilter() {
+            const button = document.getElementById('positivacao-city-filter-btn');
+            const panel = document.getElementById('positivacao-city-dropdown');
+            const list = document.getElementById('positivacao-city-suggestions');
+            if (!button || !panel || !list || button._hasListener) return;
+            const close = () => { panel.classList.add('hidden'); button.setAttribute('aria-expanded', 'false'); };
+            button.addEventListener('click', () => {
+                const opening = panel.classList.contains('hidden');
+                panel.classList.toggle('hidden', !opening);
+                button.setAttribute('aria-expanded', String(opening));
+                if (opening) { updatePositivacaoCityFilter(); positivacaoCityFilter?.focus(); }
+            });
+            positivacaoCityFilter?.addEventListener('input', updatePositivacaoCityFilter);
+            list.addEventListener('change', event => {
+                if (event.target.type !== 'checkbox') return;
+                if (event.target.checked) selectedPositivacaoCities.add(event.target.value);
+                else selectedPositivacaoCities.delete(event.target.value);
+                handlePositivacaoFilterChange();
+            });
+            list.addEventListener('click', event => {
+                if (event.target.closest('[data-clear-cities]')) {
+                    selectedPositivacaoCities.clear();
+                    handlePositivacaoFilterChange();
+                }
+            });
+            document.addEventListener('click', event => {
+                if (!button.contains(event.target) && !panel.contains(event.target)) close();
+            });
+            panel.addEventListener('keydown', event => {
+                if (event.key === 'Escape') { close(); button.focus(); }
+            });
+            button._hasListener = true;
+        }
+
         function getPositivacaoFilteredData(options = {}) {
             const { excludeFilter = null } = options;
 
@@ -27548,14 +27554,14 @@ const supervisorGroups = new Map();
             const isSemRede = positivacaoRedeGroupFilter === 'sem_rede';
             const redeSet = (isComRede && selectedPositivacaoRedes.length > 0) ? new Set(selectedPositivacaoRedes) : null;
             const clientFilter = positivacaoCodCliFilter.value.trim().toLowerCase();
-            const cityFilter = positivacaoCityFilter.value.trim().toLowerCase();
+            const cityFilter = selectedPositivacaoCities;
 
-            if (positivacaoRedeGroupFilter || clientFilter || cityFilter) {
+            if (positivacaoRedeGroupFilter || clientFilter || cityFilter.size) {
                  const temp = [];
                  const len = clients.length;
                  const checkRede = excludeFilter !== 'rede';
                  const checkClient = excludeFilter !== 'client' && !!clientFilter;
-                 const checkCity = excludeFilter !== 'city' && !!cityFilter;
+                 const checkCity = excludeFilter !== 'city' && cityFilter.size > 0;
 
                  for(let i=0; i<len; i++) {
                      const c = clients[i];
@@ -27568,8 +27574,8 @@ const supervisorGroups = new Map();
                         }
                      }
                      if (checkCity) {
-                         const cCity = (c.cidade || '').toLowerCase();
-                         if (!cCity.includes(cityFilter)) continue;
+                         const cCity = positivacaoCityKey(c.cidade);
+                         if (!cityFilter.has(cCity)) continue;
                      }
                      if (checkClient) {
                         const code = String(c['Código'] || c['codigo_cliente']).toLowerCase();
@@ -27605,6 +27611,7 @@ const supervisorGroups = new Map();
 
         function updateAllPositivacaoFilters(options = {}) {
             const { skipFilter = null } = options;
+            updatePositivacaoCityFilter();
 
             // Populate Supplier Filter (if not skipping or if initializing)
             if (skipFilter !== 'supplier') {
@@ -27622,6 +27629,7 @@ const supervisorGroups = new Map();
         }
 
         function handlePositivacaoFilterChange(options = {}) {
+            positivacaoDataForExport = { active: [], inactive: [] };
             if (window.positivacaoUpdateTimeout) clearTimeout(window.positivacaoUpdateTimeout);
             window.positivacaoUpdateTimeout = setTimeout(() => {
                 updateAllPositivacaoFilters(options);
@@ -27656,7 +27664,10 @@ const supervisorGroups = new Map();
             const undated = document.getElementById('positivacao-last-purchase-undated');
             if (undated) undated.checked = false;
             positivacaoCodCliFilter.value = '';
+            selectedPositivacaoCities.clear();
             if (positivacaoCityFilter) positivacaoCityFilter.value = '';
+            document.getElementById('positivacao-city-dropdown')?.classList.add('hidden');
+            document.getElementById('positivacao-city-filter-btn')?.setAttribute('aria-expanded', 'false');
 
             if (positivacaoRedeGroupContainer) {
                 positivacaoRedeGroupContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));

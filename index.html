@@ -1019,11 +1019,16 @@
                             </div>
                         </div>
 
-                        <!-- City -->
+                        <!-- Cities in the selected seller's current client portfolio -->
                         <div class="relative">
-                            <label class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
-                            <input type="search" id="positivacao-city-filter" autocomplete="new-password" class="w-full glass-input border border-slate-700 p-2.5 rounded-lg text-white text-sm focus:ring-2 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" aria-label="Buscar" placeholder="Buscar...">
-                            <div id="positivacao-city-suggestions" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar p-2"></div>
+                            <label for="positivacao-city-filter-btn" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidades</label>
+                            <button id="positivacao-city-filter-btn" type="button" aria-expanded="false" aria-controls="positivacao-city-dropdown" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 text-left flex justify-between items-center focus:ring-2 focus:ring-[#FF5E00]">
+                                <span id="positivacao-city-filter-text" class="truncate">Todas</span><span aria-hidden="true">▾</span>
+                            </button>
+                            <div id="positivacao-city-dropdown" class="hidden absolute z-30 w-full mt-1 glass-panel rounded-xl shadow-2xl p-2">
+                                <input type="search" id="positivacao-city-filter" autocomplete="off" aria-label="Buscar nas cidades disponíveis" placeholder="Buscar cidade..." class="w-full glass-input border border-slate-700 p-2 rounded-lg text-white text-sm mb-2">
+                                <div id="positivacao-city-suggestions" class="max-h-60 overflow-y-auto custom-scrollbar"></div>
+                            </div>
                         </div>
 
                         <!-- Clear -->

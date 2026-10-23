@@ -22,7 +22,7 @@ const ctx = {
   splitTextToSize(value) { return [value]; } setPage() {}
   autoTable(options) { pdfRows = options.body; } save(name) { pdfName = name; }
  } } },
- hierarchyState: {}, positivacaoRenderId: 0, positivacaoDataForExport: {},
+ selectedPositivacaoCities: new Set(), hierarchyState: {}, positivacaoRenderId: 0, positivacaoDataForExport: {},
  positivacaoActiveState: { page: 3, limit: 50 }, positivacaoInactiveState: { page: 3, limit: 50 },
  positivacaoActiveDetailTableBody: null, positivacaoInactiveDetailTableBody: null,
  getSkeletonRows: () => '', renderPositivacaoActiveTable() {}, renderPositivacaoInactiveTable() {},
