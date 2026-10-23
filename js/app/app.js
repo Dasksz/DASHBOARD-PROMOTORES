@@ -6594,6 +6594,7 @@
                 clients: clientsData,
                 showPromotor: !hierarchyState['meta-realizado']?.promotors?.size,
                 largestGapFirst: !!metaRealizadoClientsTableState.largestGapFirst,
+                onlyWithoutSales: !!metaRealizadoClientsTableState.onlyWithoutSales,
                 weeks: weeks,
                 month: month
             };
@@ -6888,6 +6889,7 @@
                     promotor: optimizedData.clientHierarchyMap?.get(codCli)?.promotor?.name || 'Não informado',
                     metaTotal: data.goal,
                     realTotal: data.salesTotal,
+                    revenueTotal: data.revenueTotal,
                     perdas: data.perdas || 0,
                     weekData: weekData
                 });
@@ -18314,13 +18316,7 @@ const supervisorGroups = new Map();
 
             setupFab('meta-realizado-fab-container',
                 exportMetaRealizadoPDF,
-                () => {
-                    // Prepare data for Meta Realizado
-                    const sheets = {};
-                    if(metaRealizadoDataForExport && metaRealizadoDataForExport.sellers && metaRealizadoDataForExport.sellers.length) sheets['Vendedores'] = metaRealizadoDataForExport.sellers;
-                    if(metaRealizadoDataForExport && metaRealizadoDataForExport.clients && metaRealizadoDataForExport.clients.length) sheets['Clientes'] = getMetaRealizadoClientExportRows(metaRealizadoDataForExport);
-                    exportToExcel(sheets, 'Meta_Realizado_' + metaRealizadoDataForExport.month, { Clientes: getMetaRealizadoHighlightedClientRows(metaRealizadoDataForExport) });
-                }
+                exportMetaRealizadoExcel
             );
 
             document.getElementById('meta-realizado-clients-next-page-btn').addEventListener('click', () => {
@@ -20263,6 +20259,46 @@ const supervisorGroups = new Map();
                 }
             });
         }
+        function getMetaRealizadoExportSnapshot() {
+            const snapshot = metaRealizadoDataForExport;
+            const state = metaRealizadoClientsTableState;
+            // Reject pending or outdated snapshots instead of exporting a previous view.
+            if (snapshot.month !== selectedMetaRealizadoMonth
+                || snapshot.clients !== state.filteredData
+                || !!snapshot.onlyWithoutSales !== !!state.onlyWithoutSales
+                || !!snapshot.largestGapFirst !== !!state.largestGapFirst) {
+                window.showToast('warning', 'Aguarde a atualização da tabela antes de exportar.');
+                return null;
+            }
+            const clientMode = !!snapshot.onlyWithoutSales || !!snapshot.largestGapFirst;
+            let clients = state.filteredData.slice();
+            if (snapshot.onlyWithoutSales) {
+                clients = clients.filter(row => (row.revenueTotal ?? row.realTotal) <= 0);
+            } else if (snapshot.largestGapFirst) {
+                clients = clients.filter(row => (row.revenueTotal ?? row.realTotal) > 0);
+                clients.sort((a, b) => (a.realTotal - a.metaTotal) - (b.realTotal - b.metaTotal)
+                    || b.metaTotal - a.metaTotal || String(a.codcli).localeCompare(String(b.codcli)));
+            }
+            return { ...snapshot, clients, sellers: clientMode ? [] : snapshot.sellers,
+                clientMode, clientModeLabel: snapshot.onlyWithoutSales
+                    ? 'Somente clientes sem venda' : snapshot.largestGapFirst
+                        ? 'Maiores gaps - clientes positivados' : 'Detalhamento por Cliente' };
+        }
+
+        function exportMetaRealizadoExcel() {
+            const snapshot = getMetaRealizadoExportSnapshot();
+            if (!snapshot) return;
+            if (!snapshot.clients.length && !snapshot.sellers.length) {
+                window.showToast('warning', 'Nenhum cliente encontrado com os filtros atuais.');
+                return;
+            }
+            const sheets = {};
+            if (snapshot.sellers.length) sheets.Vendedores = snapshot.sellers;
+            if (snapshot.clients.length) sheets.Clientes = getMetaRealizadoClientExportRows(snapshot);
+            exportToExcel(sheets, 'Meta_Realizado_' + snapshot.month,
+                { Clientes: getMetaRealizadoHighlightedClientRows(snapshot) });
+        }
+
         function getMetaRealizadoClientExportRows(snapshot) {
             return snapshot.clients.map((row, index) => {
                 const result = { 'Nº': index + 1, 'Cód': row.codcli, 'Cliente': row.razaoSocial,
@@ -20287,6 +20323,8 @@ const supervisorGroups = new Map();
         }
 
         async function exportMetaRealizadoPDF() {
+            const metaRealizadoDataForExport = getMetaRealizadoExportSnapshot();
+            if (!metaRealizadoDataForExport) return;
             if (!metaRealizadoDataForExport.sellers.length && !metaRealizadoDataForExport.clients.length) {
                 window.showToast('warning', 'Aguarde a atualização ou selecione filtros com dados para exportar.');
                 return;
@@ -20354,7 +20392,7 @@ const supervisorGroups = new Map();
                 ];
             });
 
-            doc.autoTable({
+            if (!metaRealizadoDataForExport.clientMode) doc.autoTable({
                 head: sellersHead,
                 body: sellersBody,
                 startY: 45,
@@ -20373,9 +20411,9 @@ const supervisorGroups = new Map();
             });
 
             // --- Table 2: Clients Detail ---
-            doc.addPage();
+            if (!metaRealizadoDataForExport.clientMode) doc.addPage();
             doc.setFontSize(14);
-            doc.text('Detalhamento por Cliente', 14, 20);
+            doc.text(metaRealizadoDataForExport.clientModeLabel, 14, metaRealizadoDataForExport.clientMode ? 44 : 20);
 
             const showPromotor = !!metaRealizadoDataForExport.showPromotor;
             const highlightedClientRows = new Set(getMetaRealizadoHighlightedClientRows(metaRealizadoDataForExport));
@@ -20418,7 +20456,7 @@ const supervisorGroups = new Map();
             doc.autoTable({
                 head: clientsHead,
                 body: clientsBody,
-                startY: 25,
+                startY: metaRealizadoDataForExport.clientMode ? 49 : 25,
                 theme: 'grid',
                 styles: { fontSize: 6, cellPadding: 1, textColor: [0, 0, 0], halign: 'right' },
                 headStyles: { fillColor: [22, 30, 61], textColor: 255, fontStyle: 'bold' },
