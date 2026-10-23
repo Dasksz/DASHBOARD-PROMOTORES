@@ -49,3 +49,17 @@ test('no-sales toggle respects scoped portfolio, includes clients without target
  ctx.metaRealizadoClientsTableState.onlyWithoutSales=false;
  assert.equal(api.clients(weeks).length,0);
 });
+
+test('inline no-sales button handler is exposed outside the app closure and toggles back',()=>{
+ const start=source.indexOf('        window.toggleMetaRealizadoClientsWithoutSales = function()');
+ assert.ok(start>=0);
+ const handler=source.slice(start,source.indexOf('        async function updateMetaRealizadoView()',start));
+ const context={window:{},state:{currentPage:4,onlyWithoutSales:false},updates:0};
+ vm.createContext(context);
+ vm.runInContext('(function(){const metaRealizadoClientsTableState=state;function updateMetaRealizadoView(){updates++;}'+handler+'})();',context);
+ assert.equal(typeof context.window.toggleMetaRealizadoClientsWithoutSales,'function');
+ context.window.toggleMetaRealizadoClientsWithoutSales();
+ assert.equal(context.state.onlyWithoutSales,true);assert.equal(context.state.currentPage,1);
+ context.window.toggleMetaRealizadoClientsWithoutSales();
+ assert.equal(context.state.onlyWithoutSales,false);assert.equal(context.updates,2);
+});

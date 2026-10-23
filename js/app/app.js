@@ -6202,7 +6202,7 @@
 
         
         
-        function toggleMetaRealizadoClientsWithoutSales() {
+        window.toggleMetaRealizadoClientsWithoutSales = function() {
             metaRealizadoClientsTableState.onlyWithoutSales = !metaRealizadoClientsTableState.onlyWithoutSales;
             metaRealizadoClientsTableState.currentPage = 1;
             updateMetaRealizadoView();
