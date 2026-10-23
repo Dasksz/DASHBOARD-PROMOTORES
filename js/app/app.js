@@ -445,7 +445,7 @@
         };
 
         // --- EXPORT HELPERS ---
-        function exportToExcel(sheets, fileName) {
+        function exportToExcel(sheets, fileName, highlightedRowsBySheet = {}) {
             if (typeof XLSX === 'undefined') {
                 alert('Biblioteca XLSX não carregada.');
                 return;
@@ -481,6 +481,19 @@
 
 
                     const ws = XLSX.utils.json_to_sheet(cleanData);
+                    const highlightedRows = highlightedRowsBySheet[name] || [];
+                    if (highlightedRows.length && ws['!ref']) {
+                        const range = XLSX.utils.decode_range(ws['!ref']);
+                        highlightedRows.forEach(index => {
+                            for (let column = range.s.c; column <= range.e.c; column++) {
+                                const address = XLSX.utils.encode_cell({ r: index + 1, c: column });
+                                if (!ws[address]) ws[address] = { t: 's', v: '' };
+                                ws[address].s = { ...(ws[address].s || {}),
+                                    fill: { patternType: 'solid', fgColor: { rgb: index % 2 ? 'F8D7DA' : 'F5CDD1' } },
+                                    font: { ...(ws[address].s?.font || {}), color: { rgb: '7F1D1D' } } };
+                            }
+                        });
+                    }
                     XLSX.utils.book_append_sheet(wb, ws, name.substring(0, 31)); // Sheet names max 31 chars
                     hasData = true;
                 }
@@ -6579,6 +6592,8 @@
             metaRealizadoDataForExport = {
                 sellers: rowData,
                 clients: clientsData,
+                showPromotor: !hierarchyState['meta-realizado']?.promotors?.size,
+                largestGapFirst: !!metaRealizadoClientsTableState.largestGapFirst,
                 weeks: weeks,
                 month: month
             };
@@ -6870,6 +6885,7 @@
                     razaoSocial: nomeExibicao,
                     cidade: data.clientObj.cidade || 'N/A',
                     vendedor: vendorName,
+                    promotor: optimizedData.clientHierarchyMap?.get(codCli)?.promotor?.name || 'Não informado',
                     metaTotal: data.goal,
                     realTotal: data.salesTotal,
                     perdas: data.perdas || 0,
@@ -18302,8 +18318,8 @@ const supervisorGroups = new Map();
                     // Prepare data for Meta Realizado
                     const sheets = {};
                     if(metaRealizadoDataForExport && metaRealizadoDataForExport.sellers && metaRealizadoDataForExport.sellers.length) sheets['Vendedores'] = metaRealizadoDataForExport.sellers;
-                    if(metaRealizadoDataForExport && metaRealizadoDataForExport.clients && metaRealizadoDataForExport.clients.length) sheets['Clientes'] = metaRealizadoDataForExport.clients;
-                    exportToExcel(sheets, 'Meta_Realizado_' + metaRealizadoDataForExport.month);
+                    if(metaRealizadoDataForExport && metaRealizadoDataForExport.clients && metaRealizadoDataForExport.clients.length) sheets['Clientes'] = getMetaRealizadoClientExportRows(metaRealizadoDataForExport);
+                    exportToExcel(sheets, 'Meta_Realizado_' + metaRealizadoDataForExport.month, { Clientes: getMetaRealizadoHighlightedClientRows(metaRealizadoDataForExport) });
                 }
             );
 
@@ -20247,6 +20263,29 @@ const supervisorGroups = new Map();
                 }
             });
         }
+        function getMetaRealizadoClientExportRows(snapshot) {
+            return snapshot.clients.map((row, index) => {
+                const result = { 'Nº': index + 1, 'Cód': row.codcli, 'Cliente': row.razaoSocial,
+                    'Vendedor': row.vendedor };
+                if (snapshot.showPromotor) result.Promotor = row.promotor || 'Não informado';
+                result.Cidade = row.cidade;
+                result.Perdas = row.perdas || 0;
+                result.Meta = row.metaTotal;
+                result.Realizado = row.realTotal;
+                row.weekData.forEach((week, i) => {
+                    result[`Semana ${i + 1} Meta`] = week.meta;
+                    result[`Semana ${i + 1} Realizado`] = week.real;
+                });
+                return result;
+            });
+        }
+
+        function getMetaRealizadoHighlightedClientRows(snapshot) {
+            return snapshot.largestGapFirst
+                ? snapshot.clients.slice(0, 10).flatMap((row, index) => row.metaTotal > row.realTotal ? [index] : [])
+                : [];
+        }
+
         async function exportMetaRealizadoPDF() {
             if (!metaRealizadoDataForExport.sellers.length && !metaRealizadoDataForExport.clients.length) {
                 window.showToast('warning', 'Aguarde a atualização ou selecione filtros com dados para exportar.');
@@ -20338,11 +20377,14 @@ const supervisorGroups = new Map();
             doc.setFontSize(14);
             doc.text('Detalhamento por Cliente', 14, 20);
 
+            const showPromotor = !!metaRealizadoDataForExport.showPromotor;
+            const highlightedClientRows = new Set(getMetaRealizadoHighlightedClientRows(metaRealizadoDataForExport));
             const clientsHead = [
                 [
                     { content: 'Cód', rowSpan: 2, styles: { valign: 'middle' } },
                     { content: 'Cliente', rowSpan: 2, styles: { valign: 'middle' } },
                     { content: 'Vendedor', rowSpan: 2, styles: { valign: 'middle' } },
+                    ...(showPromotor ? [{ content: 'Promotor', rowSpan: 2, styles: { valign: 'middle' } }] : []),
                     { content: 'Cidade', rowSpan: 2, styles: { valign: 'middle' } },
                     { content: 'Geral', colSpan: 2, styles: { halign: 'center' } },
                     ...weeksHeaders
@@ -20365,6 +20407,7 @@ const supervisorGroups = new Map();
                     row.codcli,
                     row.razaoSocial,
                     getFirstName(row.vendedor),
+                    ...(showPromotor ? [row.promotor || 'Não informado'] : []),
                     row.cidade,
                     formatMetaRealizadoValue(row.metaTotal),
                     formatMetaRealizadoValue(row.realTotal),
@@ -20384,6 +20427,13 @@ const supervisorGroups = new Map();
                     1: { halign: 'left', cellWidth: 40 },
                     2: { halign: 'left', cellWidth: 20 },
                     3: { halign: 'left', cellWidth: 20 },
+                    ...(showPromotor ? { 4: { halign: 'left', cellWidth: 20 } } : {})
+                },
+                didParseCell: function(cell) {
+                    if (cell.section === 'body' && highlightedClientRows.has(cell.row.index)) {
+                        cell.cell.styles.fillColor = cell.row.index % 2 ? [248, 215, 218] : [245, 205, 209];
+                        cell.cell.styles.textColor = [127, 29, 29];
+                    }
                 }
             });
 
