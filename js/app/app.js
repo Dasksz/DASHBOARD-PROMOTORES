@@ -3569,6 +3569,8 @@
         let selectedMetaRealizadoMonth = lastSaleDate.toISOString().slice(0, 7);
         let metaRealizadoRenderRequest = 0;
         const metaRealizadoGoalCache = new Map();
+        let metaRealizadoGoalsReady = Promise.resolve();
+        let metaRealizadoGoalsReload = null;
         const metaRealizadoCurrentMonths = new Set();
         const metaRealizadoAvailableMonths = new Set([selectedMetaRealizadoMonth]);
 
@@ -3614,7 +3616,20 @@
         }
 
         async function loadMetaRealizadoMonthGoals(month) {
-            if (metaRealizadoGoalCache.has(month) || (month === lastSaleDate.toISOString().slice(0, 7) && month === new Date().toISOString().slice(0, 7))) return;
+            const liveMonth = month === lastSaleDate.toISOString().slice(0, 7) && month === new Date().toISOString().slice(0, 7);
+            if (liveMonth) {
+                // Do not render provisional history-based targets while saved targets are still loading.
+                try {
+                    await metaRealizadoGoalsReady;
+                } catch (error) {
+                    if (!metaRealizadoGoalsReload) throw error;
+                    metaRealizadoGoalsReady = metaRealizadoGoalsReload();
+                    metaRealizadoGoalsReady.catch(() => {});
+                    await metaRealizadoGoalsReady;
+                }
+                return;
+            }
+            if (metaRealizadoGoalCache.has(month)) return;
             const { data, error } = await window.supabaseClient.from('goals_distribution')
                 .select('goals_data').eq('month_key', month).eq('supplier', 'ALL').eq('brand', 'GENERAL').maybeSingle();
             if (error) throw error;
@@ -17784,7 +17799,7 @@ const supervisorGroups = new Map();
 
                     if (error) {
                         console.error('Erro ao carregar metas:', error);
-                        return;
+                        throw error;
                     }
 
                     if (data && data.goals_data) {
@@ -17898,11 +17913,15 @@ const supervisorGroups = new Map();
                     }
                 } catch (err) {
                     console.error('Exceção ao carregar metas:', err);
+                    throw err;
                 }
             }
 
             // Trigger Load
-            loadGoalsFromSupabase();
+            metaRealizadoGoalsReload = loadGoalsFromSupabase;
+            metaRealizadoGoalsReady = loadGoalsFromSupabase();
+            // The panel awaits this same promise; handle startup rejection until it is opened.
+            metaRealizadoGoalsReady.catch(() => {});
 
             // Sub-tabs Switching
             const goalsSubTabsContainer = document.getElementById('goals-sub-tabs-container');
