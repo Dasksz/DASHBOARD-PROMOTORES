@@ -63,3 +63,16 @@ test('inline no-sales button handler is exposed outside the app closure and togg
  context.window.toggleMetaRealizadoClientsWithoutSales();
  assert.equal(context.state.onlyWithoutSales,false);assert.equal(context.updates,2);
 });
+test('gap ranking uses absolute shortfall, excludes unpositivated clients and restores normal order',async()=>{
+ const {ctx,api}=harness();api.select('2026-09');await api.load('2026-09');
+ const goals=api.goals().clients;
+ for(const [code,target,revenue] of [['2',1000,900],['3',2000,0],['4',100,150],['5',900,200]]){
+  ctx.allClientsData.push({'Código':code,rca1:'10',nomeCliente:code});goals.set(code,new Map([['707',{fat:target,vol:target}]]));
+  ctx.allHistoryData.push({DTPED:Date.parse('2026-09-02'),VLVENDA:revenue,TOTPESOLIQ:revenue,TIPOVENDA:'1',CODCLI:code,CODUSUR:'10',CODFOR:'707',OBSERVACAOFOR:'PEPSICO'});
+ }
+ ctx.getHierarchyFilteredClients=()=>ctx.allClientsData;
+ const weeks=api.filtered().weeks;ctx.metaRealizadoClientsTableState.largestGapFirst=true;
+ assert.deepEqual(Array.from(api.clients(weeks),r=>r.codcli),['5','1','2','4']);
+ ctx.metaRealizadoClientsTableState.largestGapFirst=false;
+ assert.deepEqual(Array.from(api.clients(weeks),r=>r.codcli),['3','2','5','1','4']);
+});

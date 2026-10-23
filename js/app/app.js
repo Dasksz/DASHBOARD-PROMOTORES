@@ -6194,6 +6194,7 @@
             currentPage: 1,
             itemsPerPage: 50,
             onlyWithoutSales: false,
+            largestGapFirst: false,
             filteredData: [],
             totalPages: 1
         };
@@ -6204,6 +6205,14 @@
         
         window.toggleMetaRealizadoClientsWithoutSales = function() {
             metaRealizadoClientsTableState.onlyWithoutSales = !metaRealizadoClientsTableState.onlyWithoutSales;
+            if (metaRealizadoClientsTableState.onlyWithoutSales) metaRealizadoClientsTableState.largestGapFirst = false;
+            metaRealizadoClientsTableState.currentPage = 1;
+            updateMetaRealizadoView();
+        }
+
+        window.toggleMetaRealizadoClientsGap = function() {
+            metaRealizadoClientsTableState.largestGapFirst = !metaRealizadoClientsTableState.largestGapFirst;
+            if (metaRealizadoClientsTableState.largestGapFirst) metaRealizadoClientsTableState.onlyWithoutSales = false;
             metaRealizadoClientsTableState.currentPage = 1;
             updateMetaRealizadoView();
         }
@@ -6559,6 +6568,13 @@
                     ? 'Mostrar todos os clientes' : 'Somente clientes sem venda';
             }
 
+            const gapButton = document.getElementById('meta-realizado-clients-gap-btn');
+            if (gapButton) {
+                gapButton.setAttribute('aria-pressed', String(!!metaRealizadoClientsTableState.largestGapFirst));
+                gapButton.textContent = metaRealizadoClientsTableState.largestGapFirst
+                    ? 'Voltar à classificação normal' : 'Maiores gaps · clientes positivados';
+            }
+
             // 5. Save Data for Export
             metaRealizadoDataForExport = {
                 sellers: rowData,
@@ -6819,6 +6835,7 @@
             const results = [];
             clientMap.forEach((data, codCli) => {
                 // Filter out if No Goal AND No Sales (Clean up empty active clients)
+                if (metaRealizadoClientsTableState.largestGapFirst && data.revenueTotal <= 0) return;
                 if (metaRealizadoClientsTableState.onlyWithoutSales) {
                     // Classify by revenue even when the table displays weight.
                     if (data.revenueTotal > 0) return;
@@ -6864,7 +6881,13 @@
 
             // Sort: High Potential? High Sales?
             // Default: Meta Descending, then Sales Descending
-            results.sort((a, b) => b.metaTotal - a.metaTotal || b.realTotal - a.realTotal);
+            if (metaRealizadoClientsTableState.largestGapFirst) {
+                // Ascending realized-minus-target: largest shortfall first.
+                results.sort((a, b) => (a.realTotal - a.metaTotal) - (b.realTotal - b.metaTotal)
+                    || b.metaTotal - a.metaTotal || String(a.codcli).localeCompare(String(b.codcli)));
+            } else {
+                results.sort((a, b) => b.metaTotal - a.metaTotal || b.realTotal - a.realTotal);
+            }
 
             return results;
         }
@@ -6986,7 +7009,11 @@
                         </td>
                     `;
 
-                    return `<tr class="hover:bg-slate-700/30 transition-colors">${mobileContent}${desktopCells}</tr>`;
+                    const highlightGap = metaRealizadoClientsTableState.largestGapFirst
+                        && startIndex + index < 10 && row.metaTotal > row.realTotal;
+                    const rowStyle = highlightGap
+                        ? 'background-color:rgba(127,29,29,0.28);box-shadow:inset 3px 0 0 #f87171;' : '';
+                    return `<tr style="${rowStyle}" class="hover:bg-slate-700/30 transition-colors">${mobileContent}${desktopCells}</tr>`;
                 }).join('');
                 tableBody.innerHTML = rowsHTML;
             }
