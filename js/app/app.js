@@ -11353,7 +11353,39 @@ const supervisorGroups = new Map();
 
 
 
-        function updateAllVisuals() {
+        function overviewRpcFilters() {
+            const h = hierarchyState.main;
+            return { mode: adminViewMode === 'seller' ? 'seller' : 'promoter',
+                coords: [...h.coords], cocoords: [...h.cocoords], promotors: [...h.promotors],
+                supervisors: [...selectedSupervisors], sellers: [...selectedVendedores],
+                suppliers: selectedMainSuppliers.slice(), types: selectedTiposVenda.slice(),
+                pasta: currentFornecedor || '', position: posicaoFilter.value || '',
+                client: codcliFilter.value.trim(), rede_group: mainRedeGroupFilter || '', redes: selectedMainRedes.slice() };
+        }
+
+        let overviewRpcController;
+        async function updateAllVisuals() {
+            if (!overviewRpcController) {
+                overviewRpcController = window.PrimeOverviewRPC.createController(window.supabaseClient, {
+                    onPending(pending) {
+                        const root = document.getElementById('main-dashboard');
+                        root?.setAttribute('aria-busy', String(pending));
+                        if (pending) root?.querySelector('.overview-rpc-status')?.remove();
+                        [totalVendasEl,totalPesoEl,kpiSkuPdVEl,kpiPositivacaoEl,kpiPositivacaoPercentEl].forEach(el => { if (el) el.textContent = pending ? 'Carregando…' : el.textContent; });
+                    },
+                    onError() {
+                        const root = document.getElementById('main-dashboard');
+                        const notice = document.createElement('p');
+                        notice.className = 'overview-rpc-status text-sm text-amber-300 p-3';
+                        notice.setAttribute('role','alert');
+                        notice.textContent = 'Não foi possível carregar os indicadores. Atualize a página para tentar novamente.';
+                        root?.prepend(notice);
+                        [totalVendasEl,totalPesoEl,kpiSkuPdVEl,kpiPositivacaoEl,kpiPositivacaoPercentEl].forEach(el => { if (el) el.textContent = '—'; });
+                    }
+                });
+            }
+            const overviewSummary = await overviewRpcController.load(overviewRpcFilters());
+            if (!overviewSummary) return;
             const posicao = posicaoFilter.value;
             const codcli = codcliFilter.value.trim();
 
@@ -11570,7 +11602,7 @@ const supervisorGroups = new Map();
 
             const isFiltered = isHierarchyFiltered || !!codcli || !!currentFornecedor || !!mainRedeGroupFilter || selectedMainSuppliers.length > 0 || !!posicao || selectedTiposVenda.length > 0;
 
-            const summary = calculateSummaryFromData(filteredSalesData, isFiltered, clientBaseForCoverage);
+            const summary = overviewSummary;
 
             totalVendasEl.textContent = summary.totalFaturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             totalPesoEl.textContent = `${(summary.totalPeso / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`;
