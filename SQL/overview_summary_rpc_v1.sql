@@ -1,4 +1,4 @@
--- Branch-only proposal: phase 1 of Visão Geral. Do not apply before review.
+-- Phase 1 of Visão Geral. Installed after explicit release authorization on 2026-10-26.
 -- Requires the existing dashboard_private scope_v1/clients_v1/assignments_v1 helpers.
 -- Does not change source data, RLS, existing functions, or summary refresh jobs.
 CREATE OR REPLACE FUNCTION public.get_overview_summary_v1(p_filters jsonb DEFAULT '{}'::jsonb)

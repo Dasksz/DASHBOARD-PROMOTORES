@@ -1,6 +1,6 @@
 # Visão Geral em RPC — etapa 1
 
-Branch de revisão: `feat/overview-rpc`. A migração ainda não foi aplicada em produção e a branch não deve ser mesclada antes da homologação.
+Implementação iniciada na branch `feat/overview-rpc`. Após autorização explícita do usuário em 26/10/2026, a nova RPC foi instalada em produção e a primeira etapa foi liberada para publicação na main.
 
 ## O que muda
 
@@ -49,12 +49,20 @@ O teste SQL usa PGlite (PostgreSQL embarcado), instala a nova função apenas em
 
 Também testa RLS/acesso anônimo, perfil não aprovado, falsificação de escopo, respostas fora de ordem e erros de RPC. Não substitui a comparação ponta a ponta com a sessão e a base reais de cada perfil em homologação.
 
-## Homologação antes de mesclar
+## Roteiro de homologação das próximas etapas
 
 1. Usar um projeto Supabase de homologação com dados representativos e os helpers existentes de carteira/hierarquia. Não apontar esta branch para o projeto de produção para instalar SQL.
 2. Aplicar apenas `SQL/overview_summary_rpc_v1.sql` nesse projeto e usar os perfis de teste aprovados.
 3. Comparar os quatro KPIs e os totais de hierarquia com a versão atual, inclusive com filtros combinados e carteiras vazias; verificar o plano e tempo de resposta sob RLS.
 4. Testar o carregamento, falha/repetição, mudança rápida de filtros e saída/retorno à Visão Geral no navegador.
-5. Só depois de aprovada a etapa, planejar instalação e publicação. A aplicação da SQL e o merge não foram executados por esta alteração.
+5. Só depois de aprovada a etapa, planejar instalação e publicação. A primeira etapa foi autorizada separadamente para produção; este roteiro continua aplicável às próximas etapas.
 
 Próximas etapas: RPC para os gráficos/metas restantes, pedidos paginados e opções de filtros; depois remover a dependência das bases locais na Visão Geral.
+
+## Validação da publicação de 26/10/2026
+
+Além das 2.500 combinações locais, foram executadas consultas independentes na base real sob o papel `authenticated`: sem filtros, dois fornecedores, bonificação, tipos mistos, posição F e pasta Pepsico. Faturamento, peso, tamanho da carteira, clientes positivados, percentual e SKU/PDV coincidiram nos seis cenários. Nenhuma linha de dados comerciais foi criada ou alterada para esses testes.
+
+O teste local adicional insere, altera e exclui uma venda e comprova que a RPC reflete a alteração na consulta seguinte, sem refresh de cache. O endpoint lê diretamente as fontes; o navegador atualiza ao realizar uma nova consulta ou recarregar a página. Esta etapa não implementa atualização automática em tempo real.
+
+Para reverter a interface à versão anterior desta etapa, usar o commit `d7556c243db62cc44d8f73ef23431d11b173ab27` como referência e reverter o commit de publicação preservando alterações posteriores. A função nova pode permanecer sem uso; não é necessário apagar funções ou dados existentes.
