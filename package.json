@@ -2,6 +2,6 @@
   "name": "prime-dashboard-promotores-regression-tests",
   "private": true,
   "version": "1.0.0",
-  "scripts": { "test:overview": "node --test tests/overview-rpc.test.cjs tests/overview-summary-sql.test.mjs" },
+  "scripts": { "test:overview": "node --test tests/overview-rpc.test.cjs tests/overview-filters-rpc.test.cjs tests/overview-summary-sql.test.mjs" },
   "devDependencies": { "@electric-sql/pglite": "0.5.11" }
 }
