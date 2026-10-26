@@ -1525,91 +1525,11 @@
             }
         }
 
-        function updateVendedorFilterDropdown() {
-            // Note: In Promoter Mode, Vendedores logic is strictly tied to hierarchy ('getHierarchyFilteredClients')
-            // This differs slightly from standard 'updateGenericVendedorFilter' helper which only relies on 'supervisorsSet'.
-            // Because of this custom hierarchy logic dependency, it remains separate here to avoid regressions in Promoter Mode.
-            const dropdown = document.getElementById('vendedor-filter-dropdown');
-            const text = document.getElementById('vendedor-filter-text');
-            if (!dropdown) return;
-
-            let clients;
-            if (adminViewMode === 'promoter') {
-                clients = getHierarchyFilteredClients('main', allClientsData);
-            } else {
-                if (selectedSupervisors.size > 0) {
-                    clients = [];
-                    const len = allClientsData.length;
-                    for (let i = 0; i < len; i++) {
-                        const c = allClientsData instanceof ColumnarDataset ? allClientsData.get(i) : allClientsData[i];
-                        const rca1 = String(c.rca1 || '');
-                        const details = sellerDetailsMap.get(rca1);
-                        if (details && details.supervisor && selectedSupervisors.has(details.supervisor)) {
-                            clients.push(c);
-                        }
-                    }
-                } else {
-                    clients = allClientsData;
-                }
-            }
-
-            const validRcas = new Set();
-            const len = clients.length;
-            for (let i = 0; i < len; i++) {
-                const c = clients instanceof ColumnarDataset ? clients.get(i) : clients[i];
-                const rca1 = String(c.rca1 || '').trim();
-                if (rca1 && rca1 !== '0' && rca1 !== 'N/A') {
-                    validRcas.add(rca1);
-                }
-            }
-
-            let options = [];
-            validRcas.forEach(rca => {
-                const details = sellerDetailsMap.get(rca);
-                const name = details ? (details.name || rca) : rca;
-                options.push({ value: rca, label: name });
-            });
-            options.sort((a, b) => a.label.localeCompare(b.label));
-
-            let html = `
-                <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer border-b border-slate-700/50 mb-1">
-                    <span class="text-xs text-orange-400 font-bold uppercase tracking-wider">Selecionar Todos</span>
-                    <input type="checkbox" value="ALL" class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
-                </label>
-            `;
-            
-            options.forEach(opt => {
-                const checked = selectedVendedores.has(opt.value) ? 'checked' : '';
-                html += `
-                    <label class="flex items-center justify-between p-2 hover:bg-slate-700 rounded cursor-pointer group">
-                        <span class="text-xs text-slate-300 group-hover:text-white transition-colors truncate mr-2">${window.escapeHtml(opt.label)}</span>
-                        <input type="checkbox" value="${window.escapeHtml(opt.value)}" ${checked} class="form-checkbox h-4 w-4 text-[#FF5E00] bg-slate-700 border-slate-600 rounded focus:ring-[#FF5E00] focus:ring-offset-slate-800 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
-                    </label>
-                `;
-            });
-            dropdown.innerHTML = html;
-
-            if (typeof updateFilterButtonText === 'function') {
-                updateFilterButtonText(text, selectedVendedores, 'Todos');
-            }
-        }
-
-        function updateSupervisorFilterDropdown() {
-            if (typeof window.updateGenericSupervisorFilter === 'function') {
-                window.updateGenericSupervisorFilter(
-                    'main-supervisor-filter-dropdown',
-                    'main-supervisor-filter-text',
-                    selectedSupervisors,
-                    sellerDetailsMap,
-                    updateFilterButtonText,
-                    'Todos',
-                    'text-[#FF5E00]',
-                    (d) => d.supervisor && d.supervisor !== '0' && d.supervisor !== 'N/A'
-                );
-            }
-        }
+        function updateVendedorFilterDropdown() { renderOverviewFacets(); }
+        function updateSupervisorFilterDropdown() { renderOverviewFacets(); }
 
         function updateHierarchyDropdown(viewPrefix, level) {
+            if (viewPrefix === 'main') { renderOverviewFacets(); return; }
             if (viewPrefix === 'comparison') { refreshRpcFacetUI('comparison'); return; }
             if (viewPrefix === 'coverage' || viewPrefix === 'weekly') { refreshRpcFacetUI(viewPrefix); return; }
             const state = hierarchyState[viewPrefix];
@@ -11364,7 +11284,30 @@ const supervisorGroups = new Map();
         }
 
         let overviewRpcController;
+        let overviewFacetRequest, overviewFacets = null, overviewPreviousFacets = {}, overviewVisualSequence = 0, overviewClientSearchCancel;
+        let overviewSupplierContext = {client:'',pasta:''}, overviewPruneSuppliers = false;
+        function overviewFacetDefinitions() {
+            const h = hierarchyState.main;
+            if (!h) return [];
+            return [
+                ...['coord','cocoord','promotor'].map((key,i) => ({key:key+'s',selected:h[key+'s'],dropdown:`main-${key}-filter-dropdown`,text:`main-${key}-filter-text`,label:['Coordenador','Co-Coord','Promotor'][i]})),
+                {key:'supervisors',selected:selectedSupervisors,dropdown:'main-supervisor-filter-dropdown',text:'main-supervisor-filter-text',label:'Todos'},
+                {key:'sellers',selected:selectedVendedores,dropdown:'vendedor-filter-dropdown',text:'vendedor-filter-text',label:'Todos'},
+                {key:'suppliers',selected:selectedMainSuppliers,dropdown:'fornecedor-filter-dropdown',text:'fornecedor-filter-text',label:'Todos Fornecedores'},
+                {key:'types',selected:selectedTiposVenda,dropdown:tipoVendaFilterDropdown.id,text:tipoVendaFilterText.id,label:'Todos os Tipos'},
+                {key:'redes',selected:selectedMainRedes,dropdown:mainRedeFilterDropdown.id,text:mainComRedeBtnText.id,label:'C/Rede'}
+            ];
+        }
+        function renderOverviewFacets() {
+            if (overviewFacets) window.PrimeOverviewFiltersRPC.render(document,overviewFacetDefinitions(),overviewFacets,overviewPreviousFacets);
+        }
+        async function loadOverviewFacets(filters) {
+            if (!overviewFacetRequest) overviewFacetRequest = window.PrimeOverviewFiltersRPC.createRequest(window.supabaseClient,'get_overview_filters_v1','p_filters',window.PrimeOverviewFiltersRPC.validateFacets);
+            return overviewFacetRequest.load({...filters,supplier_client:overviewSupplierContext.client,supplier_pasta:overviewSupplierContext.pasta});
+        }
+
         async function updateAllVisuals() {
+            const visualId = ++overviewVisualSequence;
             if (!overviewRpcController) {
                 overviewRpcController = window.PrimeOverviewRPC.createController(window.supabaseClient, {
                     onPending(pending) {
@@ -11384,7 +11327,34 @@ const supervisorGroups = new Map();
                     }
                 });
             }
-            const overviewSummary = await overviewRpcController.load(overviewRpcFilters());
+            const filters = overviewRpcFilters();
+            const root = document.getElementById('main-dashboard');
+            root?.querySelector('.overview-filters-error')?.remove();
+            const results = await Promise.allSettled([overviewRpcController.load(filters),loadOverviewFacets(filters)]);
+            if (visualId !== overviewVisualSequence) return;
+            const overviewSummary = results[0].status === 'fulfilled' ? results[0].value : null;
+            if (results[1].status === 'rejected' || !results[1].value) {
+                const notice = document.createElement('p'); notice.className='overview-filters-error text-sm text-amber-300 p-3'; notice.setAttribute('role','alert');
+                notice.textContent='Não foi possível atualizar as opções dos filtros. Suas seleções foram mantidas. Tente novamente ou atualize a página.';
+                root?.prepend(notice);
+            } else {
+                const nextFacets = results[1].value;
+                // Legacy client cascade leaves the previous supplier list when the client has no rows.
+                if (overviewSupplierContext.client && !nextFacets.client_has_sales && overviewFacets) nextFacets.suppliers = overviewFacets.suppliers;
+                overviewPreviousFacets = overviewFacets || {};
+                overviewFacets = nextFacets;
+                if (overviewPruneSuppliers) {
+                    overviewPruneSuppliers = false;
+                    const valid = new Set(nextFacets.suppliers.map(o => o.code));
+                    const kept = selectedMainSuppliers.filter(code => valid.has(code));
+                    if (kept.length !== selectedMainSuppliers.length) {
+                        selectedMainSuppliers = kept;
+                        renderOverviewFacets();
+                        return updateAllVisuals();
+                    }
+                }
+                renderOverviewFacets();
+            }
             if (!overviewSummary) return;
             const posicao = posicaoFilter.value;
             const codcli = codcliFilter.value.trim();
@@ -12427,6 +12397,7 @@ const supervisorGroups = new Map();
 
 
         function updateTipoVendaFilter(dropdown, filterText, selectedArray, dataSource, skipRender = false) {
+            if (dropdown === tipoVendaFilterDropdown) { renderOverviewFacets(); return selectedArray; }
             if (typeof window.updateGenericTipoVendaFilter === 'function') {
                 return window.updateGenericTipoVendaFilter(dropdown, filterText, selectedArray, dataSource, skipRender);
             }
@@ -12434,6 +12405,7 @@ const supervisorGroups = new Map();
         }
 
         function updateRedeFilter(dropdown, buttonTextElement, selectedArray, dataSource, baseText = 'C/Rede') {
+            if (dropdown === mainRedeFilterDropdown) { renderOverviewFacets(); return selectedArray; }
             if (typeof window.updateGenericRedeFilter === 'function') {
                 return window.updateGenericRedeFilter(dropdown, buttonTextElement, selectedArray, dataSource, baseText);
             }
@@ -12441,6 +12413,8 @@ const supervisorGroups = new Map();
         }
 
         function resetMainFilters() {
+            overviewSupplierContext = {client:'',pasta:''}; overviewPruneSuppliers = false;
+            overviewClientSearchCancel?.();
             selectedMainSuppliers = [];
             selectedTiposVenda = [];
             selectedMainRedes = [];
@@ -12449,7 +12423,7 @@ const supervisorGroups = new Map();
             const codcliFilter = document.getElementById('codcli-filter');
             if (codcliFilter) codcliFilter.value = '';
 
-            selectedMainSuppliers = updateSupplierFilter(document.getElementById('fornecedor-filter-dropdown'), document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, [...allSalesData, ...allHistoryData], 'main');
+            selectedMainSuppliers = updateSupplierFilter(document.getElementById('fornecedor-filter-dropdown'), document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, [], 'main');
             updateTipoVendaFilter(tipoVendaFilterDropdown, tipoVendaFilterText, selectedTiposVenda, allSalesData);
             updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
 
@@ -13040,6 +13014,7 @@ const supervisorGroups = new Map();
 
 
         function updateSupplierFilter(dropdown, filterText, selectedArray, dataSource, filterType = 'comparison', skipRender = false) {
+            if (filterType === 'main') { renderOverviewFacets(); return selectedArray; }
             if (typeof window.updateGenericSupplierFilter === 'function') {
                 return window.updateGenericSupplierFilter(dropdown, filterText, selectedArray, dataSource, filterType, skipRender);
             }
@@ -16625,6 +16600,16 @@ const supervisorGroups = new Map();
         }
 
         function setupClientTypeahead(inputId, suggestionsId, onSelect, minLength = 3) {
+            if (inputId === 'codcli-filter') {
+                overviewClientSearchCancel = window.PrimeOverviewFiltersRPC.setupClientSearch(document,window.supabaseClient,inputId,suggestionsId,row => {
+                    if (['adm','coord','cocoord'].includes(userHierarchyContext.role)) { overviewSupplierContext = {client:row.code,pasta:''}; overviewPruneSuppliers = false; }
+                    if (row.promotor && ['adm','coord','cocoord'].includes(userHierarchyContext.role)) {
+                        hierarchyState.main.promotors.clear(); hierarchyState.main.promotors.add(row.promotor);
+                    }
+                    onSelect?.(row.code);
+                });
+                return;
+            }
             const input = document.getElementById(inputId);
             const suggestions = document.getElementById(suggestionsId);
             if (!input || !suggestions) return;
@@ -16714,6 +16699,7 @@ const supervisorGroups = new Map();
         }
 
         function handleClientFilterCascade(clientCode, viewPrefix) {
+            if (viewPrefix === 'main') return; // Main selection comes from the scoped search RPC.
             if (!clientCode) return;
 
             // Apply only for Co-Coord and up
@@ -17107,11 +17093,8 @@ const supervisorGroups = new Map();
                         if (checked) selectedMainSuppliers.push(value);
                         else selectedMainSuppliers = selectedMainSuppliers.filter(s => s !== value);
 
-                        let supplierDataSource = [...allSalesData, ...allHistoryData];
-                        if (currentFornecedor) {
-                            supplierDataSource = supplierDataSource.filter(s => s.OBSERVACAOFOR === currentFornecedor);
-                        }
-                        selectedMainSuppliers = updateSupplierFilter(fornecedorFilterDropdown, document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, supplierDataSource, 'main');
+                        overviewSupplierContext = {client:'',pasta:currentFornecedor}; overviewPruneSuppliers = true;
+                        renderOverviewFacets();
 
                         updateDashboard();
                     }
@@ -17445,13 +17428,8 @@ const supervisorGroups = new Map();
                     const fornecedor = btn.dataset.fornecedor;
                     if (currentFornecedor === fornecedor) { currentFornecedor = ''; btn.classList.remove('active'); } else { currentFornecedor = fornecedor; fornecedorToggleContainerEl.querySelectorAll('.fornecedor-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
 
-                    // Update Supplier Filter Options
-                    let supplierDataSource = [...allSalesData, ...allHistoryData];
-                    if (currentFornecedor) {
-                        supplierDataSource = supplierDataSource.filter(s => s.OBSERVACAOFOR === currentFornecedor);
-                    }
-                    selectedMainSuppliers = updateSupplierFilter(fornecedorFilterDropdown, document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, supplierDataSource, 'main');
-
+                    overviewSupplierContext = {client:'',pasta:currentFornecedor}; overviewPruneSuppliers = true;
+                    renderOverviewFacets();
 
                     updateDashboard();
                 });
@@ -18892,7 +18870,7 @@ const supervisorGroups = new Map();
         setupMetaRealizadoSupervisorFilterHandlers();
 
         // Initialize Other Filters
-        selectedMainSuppliers = updateSupplierFilter(document.getElementById('fornecedor-filter-dropdown'), document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, [...allSalesData, ...allHistoryData], 'main');
+        selectedMainSuppliers = updateSupplierFilter(document.getElementById('fornecedor-filter-dropdown'), document.getElementById('fornecedor-filter-text'), selectedMainSuppliers, [], 'main');
         updateTipoVendaFilter(tipoVendaFilterDropdown, tipoVendaFilterText, selectedTiposVenda, allSalesData);
 
         updateRedeFilter(mainRedeFilterDropdown, mainComRedeBtnText, selectedMainRedes, allClientsData);
