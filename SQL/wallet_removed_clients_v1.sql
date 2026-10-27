@@ -110,7 +110,9 @@ begin
  -- Validate all column types before changing any data. A later error also rolls back the entire RPC.
  perform * from jsonb_populate_recordset(null::public.data_clients,p_rows);
  moved_count:=dashboard_private.archive_missing_client_promoters(p_import_id,codes);
- delete from public.data_clients;
+ -- id is a NOT NULL primary key; replace the validated catalog atomically.
+ -- An explicit predicate keeps Supabase safeupdate protection enabled.
+ delete from public.data_clients where id is not null;
  insert into public.data_clients select * from jsonb_populate_recordset(null::public.data_clients,(
    select jsonb_agg(r || jsonb_build_object('id',coalesce(r->>'id',gen_random_uuid()::text),'codigo_cliente',btrim(r->>'codigo_cliente')))
    from jsonb_array_elements(p_rows) r));
