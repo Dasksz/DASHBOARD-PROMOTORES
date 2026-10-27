@@ -15835,6 +15835,7 @@ const supervisorGroups = new Map();
                         break;
                     case 'wallet':
                         showViewElement(document.getElementById('wallet-view'));
+                        window.PrimeWalletReview?.refresh();
                         if (viewState.wallet.dirty || !viewState.wallet.rendered) {
                             if (typeof renderWalletView === 'function') renderWalletView();
                             viewState.wallet.rendered = true;
@@ -16419,8 +16420,22 @@ const supervisorGroups = new Map();
 
                         // checkHash returns FALSE if match (skip), TRUE if mismatch (upload)
                         if (forceUpload || checkHash(hashKey, null)) {
-                            await clearTable(table, pk);
-                            await uploadBatchParallel(table, dataPart, isCol, onConflictKey);
+                            if (table === 'data_clients') {
+                                const rows = window.PrimeImportIntegrity.rowsForUpload(table, dataPart, isCol, formatValue);
+                                const importId = crypto.randomUUID();
+                                const catalogHash = data.metadata.find(item => item.key === hashKey)?.value || null;
+                                updateStatus('Atualizando cadastro 302 e conferindo carteiras...', 50);
+                                await retryOperation(async () => {
+                                    const { data: result, error } = await window.supabaseClient.rpc('replace_client_catalog_v1', {
+                                        p_rows: rows, p_import_id: importId, p_hash: catalogHash
+                                    });
+                                    if (error) throw error;
+                                    if (result.archived_count) updateStatus(result.archived_count + ' clientes separados para revisão da carteira.', 100);
+                                });
+                            } else {
+                                await clearTable(table, pk);
+                                await uploadBatchParallel(table, dataPart, isCol, onConflictKey);
+                            }
                             committedMetadataKeys.add(hashKey);
                         } else {
                             updateStatus(`Pulando ${table} (Dados idênticos)...`, 100);
@@ -16438,7 +16453,10 @@ const supervisorGroups = new Map();
                 // Cached history is only a processing reference, never an upload replacement.
 
                 await conditionalUpload('data_orders', data.byOrder, 'hash_orders', false, 'id', 'pedido');
-                await conditionalUpload('data_clients', data.clients, 'hash_clients', true, 'id', 'codigo_cliente');
+                // Cached client data is a processing reference, never a catalog replacement.
+                if (document.getElementById('clients-file-input').files.length > 0) {
+                    await conditionalUpload('data_clients', data.clients, 'hash_clients', true, 'id', 'codigo_cliente');
+                }
                 await conditionalUpload('data_stock', data.stock, 'hash_stock', false);
                 await conditionalUpload('data_innovations', data.innovations, 'hash_innovations', false);
                 await conditionalUpload('data_product_details', data.product_details, 'hash_product_details', false, 'code');
@@ -21294,6 +21312,7 @@ const supervisorGroups = new Map();
     function initWalletView() {
         if (isWalletInitialized) return;
         isWalletInitialized = true;
+        window.PrimeWalletReview?.init();
         
         const role = (window.userRole || '').trim().toUpperCase();
         
@@ -21540,6 +21559,7 @@ const supervisorGroups = new Map();
     
     window.selectWalletPromoter = async function(code, name) {
         walletState.selectedPromoter = code;
+        window.PrimeWalletReview?.setPromoter(code);
         const txt = document.getElementById('wallet-promoter-select-text');
         const btn = document.getElementById('wallet-promoter-select-btn');
         

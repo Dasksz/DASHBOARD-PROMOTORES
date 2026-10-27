@@ -1960,3 +1960,31 @@ span.flatpickr-weekday {
     #main-dashboard #top-products-variation-table td::before { display: none; }
     #main-dashboard #top-products-variation-table > div { max-height: 320px; }
 }
+#user-menu-btn { position: relative; }
+.wallet-review-badge, .wallet-review-menu-badge {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 20px;
+    padding: 2px 5px; border-radius: 99px; background: #ef4444; color: #fff;
+    font-size: 11px; line-height: 16px; font-weight: 700;
+}
+.wallet-review-badge { position: absolute; top: -2px; right: -4px; border: 2px solid #111827; }
+.wallet-review-badge.hidden, .wallet-review-menu-badge.hidden { display: none; }
+.wallet-review-section { border: 1px solid #78451f; background: #21160e; padding: 16px; border-radius: 16px; margin-bottom: 32px; }
+.wallet-review-section > summary { cursor: pointer; font-size: 14px; font-weight: 700; color: #fdba74; min-height: 32px; }
+.wallet-review-section > summary .wallet-review-menu-badge { margin-left: 8px; }
+.wallet-review-intro, #wallet-review-message { color: #cbd5e1; font-size: 13px; margin: 12px 0; line-height: 1.6; }
+.wallet-review-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 13px; }
+.wallet-review-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin: 16px 0; }
+.wallet-review-card { padding: 16px; border: 1px solid #334155; background: #101827; border-radius: 12px; min-width: 0; overflow-wrap: anywhere; }
+.wallet-review-card h3 { color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.wallet-review-card p { color: #cbd5e1; font-size: 12px; line-height: 1.6; margin: 6px 0; }
+.wallet-review-card .wallet-review-status { color: #fdba74; }
+.wallet-review-note { display: block; font-size: 12px; margin-top: 12px; color: #94a3b8; }
+.wallet-review-note input { display: block; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid #475569; border-radius: 8px; background: #0f172a; color: #fff; }
+.wallet-review-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.wallet-review-actions button, .wallet-review-toolbar button { padding: 10px 12px; background: #334155; color: #fff; border-radius: 8px; font-size: 12px; min-height: 40px; }
+.wallet-review-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.wallet-review-section button:focus-visible, .wallet-review-section summary:focus-visible { outline: 2px solid #ff5e00; outline-offset: 3px; }
+@media (max-width: 767px) {
+    .wallet-review-list { grid-template-columns: minmax(0,1fr); }
+    .wallet-review-section, .wallet-review-card { padding: 12px; }
+}
