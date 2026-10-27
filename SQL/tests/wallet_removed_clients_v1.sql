@@ -1,3 +1,4 @@
+-- Compatible with safeupdate sessions: all replacement/test UPDATE and DELETE statements use predicates.
 -- Run inside a transaction and roll it back. Uses synthetic clients, never visits or outbound notifications.
 select set_config('request.jwt.claim.sub',(select id::text from public.profiles where role='adm' and status='aprovado' limit 1),true);
 select set_config('request.jwt.claim.role','authenticated',true);
@@ -10,7 +11,7 @@ select gen_random_uuid(),auth.uid()::text,
 insert into public.data_clients(codigo_cliente,nomecliente) values('__wallet_keep__','Cliente mantido'),('__wallet_removed__','Cliente removido teste'),('__wallet_confirm__','Cliente retirado teste');
 insert into public.data_client_promoters(client_code,promoter_code,itinerary_frequency,itinerary_ref_date,itinerary_days)
 values('__wallet_removed__','promotor2','weekly','2026-10-26','1,3,5'),('__wallet_confirm__','promotor2','weekly','2026-10-26','2,4');
-update wallet_test_state set payload=(select jsonb_agg(to_jsonb(c)) from public.data_clients c where c.codigo_cliente not in ('__wallet_removed__','__wallet_confirm__'));
+update wallet_test_state set payload=(select jsonb_agg(to_jsonb(c)) from public.data_clients c where c.codigo_cliente not in ('__wallet_removed__','__wallet_confirm__')) where import_id is not null;
 do $$ declare result jsonb; s record; before_count integer; before_archive integer; duplicate_id uuid:=gen_random_uuid(); begin
  select * into s from wallet_test_state;
  result:=public.replace_client_catalog_v1(s.payload,s.import_id,'wallet-test');
@@ -30,7 +31,7 @@ do $$ declare result jsonb; s record; before_count integer; before_archive integ
  if before_count<>(select count(*) from public.data_clients) then raise exception 'TEST FAILED: unsuccessful import damaged catalog'; end if;
  if before_archive<>(select count(*) from public.data_client_promoters_removed) then raise exception 'TEST FAILED: failed import archived active wallets'; end if;
 end $$;
-update wallet_test_state set archive_id=(select id from public.data_client_promoters_removed where client_code='__wallet_removed__'),confirm_id=(select id from public.data_client_promoters_removed where client_code='__wallet_confirm__');
+update wallet_test_state set archive_id=(select id from public.data_client_promoters_removed where client_code='__wallet_removed__'),confirm_id=(select id from public.data_client_promoters_removed where client_code='__wallet_confirm__') where import_id is not null;
 insert into public.data_client_promoters_removed(import_id,client_code,promoter_code,hierarchy_snapshot)
  values(gen_random_uuid(),'__other_team__','__other_promoter__','{"cod_cocoord":"__other_manager__"}');
 do $$ begin
