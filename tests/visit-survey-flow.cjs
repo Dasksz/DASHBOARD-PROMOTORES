@@ -36,7 +36,7 @@ function section(start, end) { return source.slice(source.indexOf(start), source
       function resetRackMultiSelect(value='') {document.getElementById('tipo_rack_hidden').value=value;}
       function resetCustomFileInput() {for(const k of ['geral','antes','depois'])window.visitaFotosState.fotos[k]=[];}
       // Evaluate the actual application functions with this controlled backend.
-      const code = survey + '\nvisitaAbertaId=42;clienteEmVisitaId="999999";\n' + compress + input + open + checkout + checkin + submit;
+      const code = survey + '\nvisitaAbertaId=42;clienteEmVisitaId="999999";\n' + compress + input + open + checkout + checkin + submit + '\nasync function handleCheckInLocation() { await abrirPesquisa(); }\n';
       return await eval('(async()=>{'+code+`
         check(!hasVisitSurvey({is_off_route:true}), 'route metadata is not a survey');
         check(hasVisitSurvey(answers), 'all survey answers recognized');
@@ -106,6 +106,6 @@ function section(start, end) { return source.slice(source.indexOf(start), source
     assert.ok(html.includes('geral: 4,') && html.includes('Geral (até 4)') && html.includes('(0/4)'));
     assert.ok(!html.includes('Fotos compactadas automaticamente'));
     assert.ok(!html.includes('Obrigatório 1 foto'));
-    assert.ok(source.includes('await abrirPesquisa();\n\n        }, (err)'));
+    assert.ok(source.includes('await handleCheckInLocation(clientCode, pos);\n\n        }, (err)'));
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});

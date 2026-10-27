@@ -24898,7 +24898,7 @@ const supervisorGroups = new Map();
             // REFRESH UI (Keep Modal Open, Update State)
             if (isRoteiroMode) renderRoteiroView();
             openActionModal(currentActionClientCode, currentActionClientName);
-            await abrirPesquisa();
+            await handleCheckInLocation(clientCode, pos);
 
         }, (err) => {
             console.error(err);
@@ -24915,151 +24915,132 @@ const supervisorGroups = new Map();
     let currentGeoLat = null;
     let currentGeoLng = null;
 
-    function openGeoUpdateModal() {
-        // Keep Action Modal open in background
+    let geoUpdateContext = null;
+
+    function isValidClientLocation(location) {
+        return location && location.lat != null && location.lng != null
+            && Number.isFinite(Number(location.lat)) && Number.isFinite(Number(location.lng))
+            && Math.abs(Number(location.lat)) <= 90 && Math.abs(Number(location.lng)) <= 180;
+    }
+
+    function checkInDistanceMeters(latitude, longitude, location) {
+        const radians = degrees => degrees * Math.PI / 180;
+        const lat1 = radians(latitude), lat2 = radians(Number(location.lat));
+        const a = Math.sin((lat2 - lat1) / 2) ** 2
+            + Math.cos(lat1) * Math.cos(lat2) * Math.sin(radians(Number(location.lng) - longitude) / 2) ** 2;
+        return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
+    }
+
+    async function handleCheckInLocation(clientCode, position) {
+        try {
+            const code = String(clientCode);
+            const key = normalizeKey(code);
+            const { latitude, longitude } = position.coords;
+            const readLocation = () => window.supabaseClient.from('data_client_coordinates')
+                .select('lat, lng, address').eq('client_code', code).maybeSingle();
+            let result = await readLocation();
+            if (result.error) throw result.error;
+            if (!result.data) {
+                // Do not overwrite a location another promoter registered concurrently.
+                result = await window.supabaseClient.from('data_client_coordinates').upsert({
+                    client_code: code, lat: latitude, lng: longitude, updated_at: new Date().toISOString()
+                }, { onConflict: 'client_code', ignoreDuplicates: true }).select('lat, lng, address').maybeSingle();
+                if (result.error) throw result.error;
+                if (!result.data) result = await readLocation();
+                if (result.error) throw result.error;
+            }
+            if (!isValidClientLocation(result.data)) throw new Error('A localização do cliente não pôde ser confirmada. Abra Localização para conferir.');
+            clientCoordinatesMap.set(key, result.data);
+            const distance = checkInDistanceMeters(latitude, longitude, result.data);
+            if (distance > 100) {
+                await openGeoUpdateModal({ clientCode: code, position, existingCoord: result.data, distance, afterCheckIn: true });
+            } else {
+                await abrirPesquisa();
+            }
+        } catch (error) {
+            window.showToast('error', 'Check-in registrado, mas não foi possível conferir a localização: ' + error.message);
+        }
+    }
+
+    async function finishGeoUpdate() {
+        const context = geoUpdateContext;
+        geoUpdateContext = null;
+        document.getElementById('modal-geo-update').classList.add('hidden');
+        if (context?.afterCheckIn && context.visitId === visitaAbertaId) await abrirPesquisa();
+    }
+
+    async function openGeoUpdateModal(options = {}) {
         const modal = document.getElementById('modal-geo-update');
         const loading = document.getElementById('geo-update-loading');
-
+        const confirm = document.getElementById('btn-confirm-geo-update');
+        const decline = document.getElementById('btn-decline-geo-update');
+        const context = { ...options, clientCode: String(options.clientCode || currentActionClientCode || ''), visitId: visitaAbertaId };
+        geoUpdateContext = context;
+        currentGeoLat = null; currentGeoLng = null;
+        confirm.disabled = true;
+        confirm.textContent = options.afterCheckIn ? 'Sim, atualizar localização' : 'Confirmar Atualização';
+        decline.classList.toggle('hidden', !options.afterCheckIn);
+        decline.onclick = () => finishGeoUpdate();
+        document.getElementById('geo-update-description').textContent = options.afterCheckIn
+            ? 'O check-in foi feito a aproximadamente ' + Math.round(options.distance) + ' metros do local cadastrado, fora do raio de 100 metros. Deseja atualizar a localização do cliente para o ponto deste check-in?'
+            : 'Verifique se o pino está na posição correta do estabelecimento.';
         modal.classList.remove('hidden');
         loading.classList.remove('hidden');
-
-        if (!navigator.geolocation) {
-            window.showToast('error', "Geolocalização não suportada.");
-            modal.classList.add('hidden');
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition((pos) => {
-            const { latitude, longitude } = pos.coords;
-            currentGeoLat = latitude;
-            currentGeoLng = longitude;
-
+        confirm.onclick = async () => {
+            if (geoUpdateContext !== context || !Number.isFinite(currentGeoLat) || !Number.isFinite(currentGeoLng) || !context.clientCode) return;
+            confirm.disabled = true; decline.disabled = true; context.saving = true;
+            const latitude = currentGeoLat, longitude = currentGeoLng;
+            try {
+                const { error } = await window.supabaseClient.from('data_client_coordinates').upsert({
+                    client_code: context.clientCode, lat: latitude, lng: longitude, updated_at: new Date().toISOString()
+                }).select('client_code').single();
+                if (error) throw error;
+                clientCoordinatesMap.set(normalizeKey(context.clientCode), { lat: latitude, lng: longitude });
+                window.showToast('success', 'Localização atualizada com sucesso!');
+                context.saving = false;
+                await finishGeoUpdate();
+            } catch (error) {
+                window.showToast('error', 'Erro ao salvar a localização: ' + error.message);
+            } finally {
+                context.saving = false; confirm.disabled = false; decline.disabled = false;
+            }
+        };
+        try {
+            const position = options.position || await new Promise((resolve, reject) => {
+                if (!navigator.geolocation) return reject(new Error('Geolocalização não suportada.'));
+                navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+            });
+            if (geoUpdateContext !== context) return;
+            const { latitude, longitude } = position.coords;
+            currentGeoLat = latitude; currentGeoLng = longitude;
+            confirm.disabled = false;
             loading.classList.add('hidden');
-
             if (!geoUpdateMap) {
                 geoUpdateMap = L.map('geo-update-map').setView([latitude, longitude], 16);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap'
-                }).addTo(geoUpdateMap);
-            } else {
-                geoUpdateMap.invalidateSize(); // Fix render issues in modal
-            }
-
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(geoUpdateMap);
+            } else geoUpdateMap.invalidateSize();
             if (geoUpdateMarker) geoUpdateMap.removeLayer(geoUpdateMarker);
             if (geoUpdateFixedMarker) geoUpdateMap.removeLayer(geoUpdateFixedMarker);
-
-            // Draggable Marker (Current Location)
-            geoUpdateMarker = L.marker([latitude, longitude], { draggable: true }).addTo(geoUpdateMap);
-            geoUpdateMarker.bindPopup("Localização Atual (Arraste para ajustar)");
-
-            // Fixed Marker (Existing Location)
-            let existingCoord = null;
-            if (currentActionClientCode) {
-                const existingKey = window.normalizeKey(currentActionClientCode);
-                existingCoord = clientCoordinatesMap.get(existingKey);
-            }
-
-            if (existingCoord) {
-                // Orange Icon for Fixed Marker
+            geoUpdateMarker = L.marker([latitude, longitude], { draggable: !options.afterCheckIn }).addTo(geoUpdateMap);
+            geoUpdateMarker.bindPopup(options.afterCheckIn ? 'Local do check-in' : 'Localização Atual (Arraste para ajustar)');
+            const existing = options.existingCoord || clientCoordinatesMap.get(normalizeKey(context.clientCode));
+            if (isValidClientLocation(existing)) {
                 const orangeIcon = new L.Icon({
                     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
                     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                    shadowSize: [41, 41]
+                    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
                 });
-
-
-
-                geoUpdateFixedMarker = L.marker([existingCoord.lat, existingCoord.lng], { 
-                    draggable: false, 
-                    title: "Localização Cadastrada",
-                    icon: orangeIcon
-                }).addTo(geoUpdateMap);
-                
-                geoUpdateFixedMarker.bindPopup("Localização Cadastrada");
-
-                // Fit Bounds to include both
-                const bounds = L.latLngBounds([
-                    [latitude, longitude],
-                    [existingCoord.lat, existingCoord.lng]
-                ]);
-                geoUpdateMap.fitBounds(bounds, { padding: [50, 50] });
-            } else {
-                // Default View
-                geoUpdateMap.setView([latitude, longitude], 16);
-            }
-
-            // Allow manual refinement
-            geoUpdateMarker.on('dragend', function(e) {
-                const pos = e.target.getLatLng();
-                currentGeoLat = pos.lat;
-                currentGeoLng = pos.lng;
+                geoUpdateFixedMarker = L.marker([existing.lat, existing.lng], { draggable: false, icon: orangeIcon }).addTo(geoUpdateMap);
+                geoUpdateFixedMarker.bindPopup('Localização Cadastrada');
+                geoUpdateMap.fitBounds(L.latLngBounds([[latitude, longitude], [existing.lat, existing.lng]]), { padding: [50, 50] });
+            } else geoUpdateMap.setView([latitude, longitude], 16);
+            if (!options.afterCheckIn) geoUpdateMarker.on('dragend', event => {
+                const point = event.target.getLatLng(); currentGeoLat = point.lat; currentGeoLng = point.lng;
             });
-
-        }, (err) => {
-            console.error(err);
-            window.showToast('error', "Erro ao obter localização.");
-            modal.classList.add('hidden');
-        }, { enableHighAccuracy: true });
-
-        // Bind Confirm Button
-        const confirmBtn = document.getElementById('btn-confirm-geo-update');
-        // Clean listeners
-        const newBtn = confirmBtn.cloneNode(true);
-        confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
-
-        newBtn.addEventListener('click', async () => {
-            if (!currentGeoLat || !currentGeoLng || !currentActionClientCode) return;
-
-            const oldText = newBtn.innerHTML;
-            newBtn.disabled = true;
-            newBtn.innerHTML = 'Salvando...';
-
-            try {
-                const { error } = await window.supabaseClient
-                    .from('data_client_coordinates')
-                    .upsert({
-                        client_code: currentActionClientCode,
-                        lat: currentGeoLat,
-                        lng: currentGeoLng,
-                        updated_at: new Date().toISOString()
-                    });
-
-
-
-                if (error) throw error;
-
-                // Update Local Cache
-                clientCoordinatesMap.set(String(currentActionClientCode), {
-                    lat: currentGeoLat,
-                    lng: currentGeoLng,
-                    address: 'Atualizado Manualmente'
-                });
-
-
-
-                // Update Visuals if needed (e.g. City Map if open)
-                if (heatLayer) {
-                    if (leafletMap && leafletMap.hasLayer(heatLayer)) {
-                        heatLayer.addLatLng([currentGeoLat, currentGeoLng, 1]);
-                    } else {
-                        if (!heatLayer._latlngs) heatLayer._latlngs = [];
-                        heatLayer._latlngs.push([currentGeoLat, currentGeoLng, 1]);
-                    }
-                }
-
-                window.showToast('success', 'Geolocalização atualizada com sucesso!');
-                modal.classList.add('hidden');
-            } catch (e) {
-                console.error(e);
-                window.showToast('error', 'Erro ao salvar: ' + e.message);
-            } finally {
-                newBtn.disabled = false;
-                newBtn.innerHTML = oldText;
-            }
-        });
+        } catch (error) {
+            loading.classList.add('hidden');
+            window.showToast('error', 'Não foi possível exibir a localização: ' + error.message);
+        }
     }
 
     async function fazerCheckOut() {
@@ -26282,7 +26263,7 @@ const supervisorGroups = new Map();
     }
 
     window.closeGeoModal = function() {
-        document.getElementById('modal-geo-update').classList.add('hidden');
+        if (!geoUpdateContext?.saving) return finishGeoUpdate();
     }
 
     window.openMixMobileModal = function(codCli) {

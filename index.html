@@ -3999,11 +3999,12 @@
             </div>
         </div>
         <div class="p-4 glass-panel border-t border-slate-800">
-            <p class="text-xs text-slate-400 mb-4 text-center">Verifique se o pino está na posição correta do estabelecimento.</p>
+            <p id="geo-update-description" class="text-xs text-slate-400 mb-4 text-center">Verifique se o pino está na posição correta do estabelecimento.</p>
             <button id="btn-confirm-geo-update" class="w-full py-3 px-4 bg-[#FF5E00] hover:bg-[#CC4A00] text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 Confirmar Atualização
             </button>
+            <button type="button" id="btn-decline-geo-update" class="hidden w-full mt-3 py-3 px-4 border border-slate-600 text-slate-300 rounded-xl hover:bg-slate-800">Não, manter localização</button>
         </div>
     </div>
 </div>
