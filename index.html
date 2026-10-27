@@ -615,6 +615,9 @@
                 </div>
             </div>
 
+            <details id="dashboard-filters" class="dashboard-disclosure">
+                <summary class="dashboard-disclosure-link">Filtros <span aria-hidden="true">⌄</span></summary>
+                <div class="dashboard-disclosure-content">
             <div class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div id="fornecedor-toggle-container" class="w-full sm:w-auto bg-glass p-1 rounded-lg flex justify-center sm:justify-start gap-1 border border-slate-700/50">
                     <button data-fornecedor="PEPSICO" class="fornecedor-btn py-2 px-6 rounded-md transition-all text-sm focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">PEPSICO</button>
@@ -623,7 +626,7 @@
             </div>
 
             <!-- Filters -->
-            <div class="filter-wrapper-sentinel">
+            <div class="dashboard-filter-wrapper">
             <div id="main-filters" class="sticky-filters mb-8 p-6 glass-filter-box rounded-2xl shadow-lg border border-slate-800/50">
                 <div class="flex flex-wrap gap-4 items-end">
                     <!-- Rede Filter -->
@@ -731,10 +734,13 @@
             </div>
             </div>
 
+                </div>
+            </details>
+
             <main id="app-container">
                 <div id="chartView">
                     <!-- Main Menu Buttons -->
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div id="dashboard-shortcuts" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                         <button aria-label="Acessar painel de Clientes" onclick="renderView('clientes')" class="glass-panel hover:bg-white/5 text-white font-bold py-6 px-6 rounded-xl transition-all flex flex-col items-center gap-3 group focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                             <div class="p-4 rounded-full bg-[#FF5E00]/10 group-hover:bg-[#CC4A00]/20 transition-colors">
                                 <svg class="w-8 h-8 text-[#FF5E00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
@@ -763,13 +769,15 @@
 
 
                     <!-- Secondary Charts -->
-                    <div class="flex flex-col gap-8">
+                    <div id="dashboard-charts" class="flex flex-col gap-8">
                         <!-- Top Row: Performance (Full Width) -->
                         <div class="w-full glass-panel p-4 rounded-2xl border border-slate-800/50 shadow-lg">
                             <h2 id="sales-by-person-title" class="text-lg font-bold text-white mb-4 text-center">Performance por Supervisor</h2>
                             <div id="salesByPersonChartContainer" class="relative h-40"></div>
                         </div>
 
+                        <details id="dashboard-categories" class="dashboard-disclosure">
+                            <summary class="dashboard-disclosure-link">Metas x Realizado por categorias <span aria-hidden="true">⌄</span></summary>
                         <!-- Bottom Row: Share & Metas (Side-by-side) -->
                         <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
                             <div class="w-full glass-panel p-4 rounded-2xl border border-slate-800/50 shadow-lg flex flex-col">
@@ -781,10 +789,11 @@
                                 <div id="metasChartContainer" class="relative h-[450px]"></div>
                             </div>
                         </div>
+                        </details>
                     </div>
 
                     <!-- Products Table (Variation) -->
-                    <div class="mt-8 glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg">
+                    <div id="dashboard-top-products" class="mt-8 glass-panel p-6 rounded-2xl border border-slate-800/50 shadow-lg">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-xl font-bold text-white">Top Produtos</h2>
                             <div class="glass-panel p-1 rounded-lg flex border border-slate-700">
@@ -4737,6 +4746,7 @@
 <script src="js/app/utils.js?v=20261027-itao-indicators" defer></script>
 <script src="js/app/import-integrity.js?v=20261019-upload-wait" defer></script>
 <script src="js/request-resilience.js?v=20261022" defer></script>
+<script src="js/home-layout.js" defer></script>
 <script src="js/init.js?v=20261027-itao-indicators" defer></script>
 <script>
     function toggleMetaSection(contentId, chevronId) {

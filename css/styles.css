@@ -1891,3 +1891,72 @@ span.flatpickr-weekday {
 .flatpickr-months .flatpickr-next-month:hover svg {
     fill: #FF5E00 !important;
 }
+/* Home disclosures are intentionally independent of floating filters. */
+#main-dashboard .dashboard-disclosure { margin: 0 0 24px; min-width: 0; }
+#main-dashboard .dashboard-disclosure-link {
+    display: flex; align-items: center; gap: 8px; width: fit-content;
+    min-height: 44px; cursor: pointer; list-style: none;
+    color: #cbd5e1; font-size: 13px; font-weight: 600;
+}
+#main-dashboard .dashboard-disclosure-link::-webkit-details-marker { display: none; }
+#main-dashboard .dashboard-disclosure-link:hover { color: #ff8a47; }
+#main-dashboard .dashboard-disclosure-link:focus-visible { outline: 2px solid #ff5e00; outline-offset: 4px; border-radius: 4px; }
+#main-dashboard .dashboard-disclosure[open] > summary > span { transform: rotate(180deg); }
+#main-dashboard .dashboard-disclosure-content { padding-top: 8px; }
+#main-dashboard #main-filters { margin: 0; border-radius: 16px; }
+#main-dashboard #dashboard-categories > .grid { margin-top: 12px; }
+@media (max-width: 767px) {
+    #main-dashboard > .container { padding: 16px; }
+    #main-dashboard #banner-container {
+        height: 156px; padding-top: 0; background-size: auto 100%;
+        background-position: right center; background-color: #40200e;
+        border-radius: 18px; margin-bottom: 24px;
+    }
+    #main-dashboard #banner-container::before {
+        content: ''; position: absolute; inset: 0;
+        background: linear-gradient(90deg, rgba(21,12,6,.88), rgba(21,12,6,.55) 48%, rgba(21,12,6,0) 78%);
+    }
+    #main-dashboard #banner-container .content-overlay {
+        height: 100%; max-width: 72%; padding: 14px 16px;
+        background: none;
+    }
+    #main-dashboard #banner-container .user-greeting {
+        font-size: 1.4rem !important; line-height: 1.15; overflow-wrap: anywhere;
+        display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+    }
+    #main-dashboard #banner-container .brand-tag { font-size: 9px !important; padding: 3px 8px !important; margin-bottom: 8px !important; }
+    #main-dashboard #banner-container .sub-text { font-size: 11px !important; margin-top: 6px; }
+    #main-dashboard #banner-container .meta-info { font-size: 9px; margin-top: 8px; flex-wrap: wrap; }
+    #main-dashboard #dashboard-kpi-container { margin-bottom: 8px; }
+    #main-dashboard .dashboard-disclosure { margin-bottom: 16px; }
+    #main-dashboard #main-filters { padding: 14px; }
+    #main-dashboard #main-filters > .flex { gap: 12px; }
+    #main-dashboard #main-filters > .flex > div { min-width: 0; flex-basis: 100%; }
+    #main-dashboard #fornecedor-toggle-container button { flex: 1; padding: 10px 12px; font-size: 12px; }
+    #main-dashboard #dashboard-shortcuts { gap: 10px; margin-bottom: 20px; }
+    #main-dashboard #dashboard-shortcuts > button { flex-direction: row; justify-content: flex-start; padding: 12px; gap: 10px; min-height: 60px; border-radius: 12px; }
+    #main-dashboard #dashboard-shortcuts > button > div { padding: 8px; border-radius: 10px; flex-shrink: 0; }
+    #main-dashboard #dashboard-shortcuts svg { width: 20px; height: 20px; }
+    #main-dashboard #dashboard-shortcuts span { font-size: 11px; letter-spacing: .02em; }
+    #main-dashboard #dashboard-charts { gap: 12px; }
+    #main-dashboard #sales-by-person-title { font-size: 14px; margin-bottom: 12px; }
+    #main-dashboard #salesByPersonChartContainer { height: 120px; }
+    #main-dashboard #dashboard-categories > .grid { gap: 12px; }
+    #main-dashboard #dashboard-categories h2 { font-size: 14px; margin-bottom: 14px; }
+    #main-dashboard #faturamentoPorFornecedorChartContainer,
+    #main-dashboard #metasChartContainer { height: 300px; }
+    #main-dashboard #dashboard-top-products { padding: 14px; margin-top: 16px; }
+    #main-dashboard #dashboard-top-products > .flex { margin-bottom: 12px; gap: 8px; }
+    #main-dashboard #dashboard-top-products h2 { font-size: 15px; }
+    #main-dashboard #dashboard-top-products .metric-btn { padding: 8px 10px; font-size: 11px; }
+    #main-dashboard #top-products-variation-table table { display: table; table-layout: fixed; }
+    #main-dashboard #top-products-variation-table tbody { display: table-row-group; }
+    #main-dashboard #top-products-variation-table tbody > tr {
+        display: table-row; margin: 0; border-radius: 0; background: transparent; box-shadow: none;
+    }
+    #main-dashboard #top-products-variation-table td:not(.hidden) {
+        display: table-cell; padding: 10px 8px; min-height: 0; text-align: left;
+    }
+    #main-dashboard #top-products-variation-table td::before { display: none; }
+    #main-dashboard #top-products-variation-table > div { max-height: 320px; }
+}
