@@ -258,7 +258,7 @@
 
             // 2. Determine Role and Cache Strategy
             let cachedData = await getFromCache('dashboardData');
-            const cacheRevision = '20261027-itao-allocation';
+            const cacheRevision = '20261027-itao-indicators';
             if (cachedData?.cacheRevision !== cacheRevision) cachedData = null;
             let useCache = false;
             let hierarchy = null;
@@ -1211,6 +1211,16 @@
             }
             if (lastSale === 0) lastSale = Date.now();
 
+            detailed = window.allocateItaoDataset(detailed, clients);
+            history = window.allocateItaoDataset(history, clients);
+            // Orders use the same attribution as item sales (including pending orders).
+            const orderColumns = Array.from(new Set((orders || []).flatMap(row => Object.keys(row))));
+            if (orderColumns.length) {
+                const orderData = {columns: orderColumns, values: Object.fromEntries(orderColumns.map(col => [col, orders.map(row => row[col])])), length: orders.length};
+                const allocatedOrders = window.allocateItaoDataset(orderData, clients);
+                orders = Array.from({length: allocatedOrders.length}, (_, i) => Object.fromEntries(orderColumns.map(col => [col, allocatedOrders.values[col][i]])));
+            }
+
             // --- FILTERING LOGIC ---
             // If user is not 'adm', filter data based on hierarchy
             const role = window.userRole;
@@ -1437,7 +1447,7 @@
                         filteredHistory = { columns: history.columns, values: newHistoryValues, length: newHistoryLen };
 
                         // D. Filter Orders - Union Scope
-                        filteredOrders = orders.filter(o => allowedCurrentCodes.has(normalizeKey(o.codcli)));
+                        filteredOrders = orders.filter(o => allowedCurrentCodes.has(normalizeKey(o.CODCLI || o.codcli)));
 
                     } else {
                         console.warn(`[Access Control] Role '${role}' not found in hierarchy, supervisor list, or seller list. Showing empty view.`);
@@ -1456,27 +1466,7 @@
                 }
             }
 
-            // Keep allocation inputs separate from every ordinary dashboard dataset.
-            const allocationTargets = new Set(['541', '544', '546']);
-            const visibleClientCodes = filteredClients.values['CODIGO_CLIENTE'] || filteredClients.values['Código'] || [];
-            const needsItaoAllocation = visibleClientCodes.some(code => allocationTargets.has(normalizeKey(code)));
-            const allocationSource = dataset => {
-                const values = {}; dataset.columns.forEach(col => values[col] = []);
-                let length = 0;
-                if (needsItaoAllocation) {
-                    const codes = dataset.values['CODCLI'] || [];
-                    for (let i = 0; i < dataset.length; i++) {
-                        if (normalizeKey(codes[i]) !== '3297') continue;
-                        dataset.columns.forEach(col => values[col].push(dataset.values[col][i]));
-                        length++;
-                    }
-                }
-                return { columns: dataset.columns, values, length };
-            };
-            const metaRealizadoAllocation = { current: allocationSource(detailed), history: allocationSource(history) };
-
             const embeddedData = {
-                metaRealizadoAllocation,
                 detailed: filteredDetailed,
                 history: filteredHistory,
                 clients: filteredClients,

@@ -1340,3 +1340,38 @@ window.formatCnpjCpf = function(value) {
     }
     return null;
 };
+
+// Attribute the centralized Itao sale once, before any dashboard indices are built.
+// Imported rows and seller ownership stay unchanged in storage.
+window.allocateItaoDataset = function(dataset, clientData) {
+    const codes = clientData.values['CODIGO_CLIENTE'] || clientData.values['Código'] || [];
+    const targets = ['541', '544', '546'].filter(code => codes.some(c => String(c).trim() === code));
+    const codeColumn = dataset.values.CODCLI ? 'CODCLI' : 'codcli';
+    if (!targets.length || !(dataset.values[codeColumn] || []).some(c => String(c).trim() === '3297')) return dataset;
+    const additive = new Set(['VLVENDA','VLBONIFIC','TOTPESOLIQ','QTVENDA','QTVENDA_EMBALAGEM_MASTER']);
+    const values = Object.fromEntries(dataset.columns.map(col => [col, []]));
+    let length = 0;
+    const clientIndex = new Map(codes.map((code, i) => [String(code).trim(), i]));
+    for (let i = 0; i < dataset.length; i++) {
+        const source = String(dataset.values[codeColumn][i]).trim() === '3297';
+        for (const target of source ? targets : [null]) {
+            for (const col of dataset.columns) {
+                let value = dataset.values[col][i];
+                if (source) {
+                    if (col.toUpperCase() === 'CODCLI') value = target;
+                    else if (col.toUpperCase() === 'ID') value = String(value) + ':itao:' + target;
+                    else if (additive.has(col.toUpperCase()) && value != null) {
+                        const third = Number(value) / 3;
+                        value = target === '546' ? Number(value) - 2 * third : third;
+                    } else {
+                        const field = {CLIENTE_NOME:'NOMECLIENTE',CIDADE:'CIDADE',BAIRRO:'BAIRRO'}[col.toUpperCase()];
+                        if (field) value = clientData.values[field]?.[clientIndex.get(target)] ?? value;
+                    }
+                }
+                values[col].push(value);
+            }
+            length++;
+        }
+    }
+    return {columns:dataset.columns, values, length};
+};

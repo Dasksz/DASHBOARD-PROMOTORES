@@ -122,8 +122,12 @@ function itaoHarness(codes=['546']) {
  ctx.optimizedData.rcaNameByCode.set('53','BALCAO');
  const rows=[{CODCLI:'3297',CODFOR:'707',CODUSUR:'78',DTPED:Date.parse('2026-10-26'),VLVENDA:320.04,TOTPESOLIQ:30,TIPOVENDA:'1'},{CODCLI:'3297',CODFOR:'708',CODUSUR:'78',DTPED:Date.parse('2026-10-26'),VLVENDA:1120.82,TOTPESOLIQ:60,TIPOVENDA:'1'},{CODCLI:'3297',CODFOR:'1119',CODUSUR:'78',DTPED:Date.parse('2026-10-26'),VLVENDA:4033.05,TOTPESOLIQ:90,TIPOVENDA:'1'}];
  const columns=Object.keys(rows[0]);
- ctx.window.embeddedData.metaRealizadoAllocation={current:{columns,values:Object.fromEntries(columns.map(k=>[k,rows.map(s=>s[k])])),length:rows.length}};
- ctx.window.embeddedData.dim_fornecedores=['707','708','1119'].map(c=>({codigo:c,nome:'PEPSICO',pasta:'PEPSICO'}));
+ const utils=fs.readFileSync('js/app/utils.js','utf8');
+ vm.runInContext(utils.slice(utils.indexOf('window.allocateItaoDataset = function')),ctx);
+ const clientColumns=['CODIGO_CLIENTE','NOMECLIENTE'];
+ const allocated=ctx.window.allocateItaoDataset({columns,values:Object.fromEntries(columns.map(k=>[k,rows.map(s=>s[k])])),length:rows.length},{columns:clientColumns,values:{CODIGO_CLIENTE:codes,NOMECLIENTE:codes.map(c=>'ITAO '+c)},length:codes.length});
+ const dimensionRows=Array.from({length:allocated.length},(_,i)=>({...Object.fromEntries(columns.map(k=>[k,allocated.values[k][i]])),OBSERVACAOFOR:'PEPSICO'}));
+ ctx.allSalesData.push(...dimensionRows);
  return {...h,rows};
 }
 test('Itao source reaches both tables as one third per visible store without changing ordinary sales',()=>{
@@ -132,7 +136,7 @@ test('Itao source reaches both tables as one third per visible store without cha
   assert.equal(clients.length,codes.length);
   for(const row of clients) assert.ok(Math.abs(row.realTotal-5473.91/3)<1e-8);
   assert.ok(Math.abs(result.salesBySeller.get('BALCAO').totalFat-5473.91*codes.length/3)<1e-8);
-  assert.equal(ctx.allSalesData.length,0);
+  assert.equal(ctx.allSalesData.length,3*codes.length);
   ctx.metaRealizadoClientsTableState.onlyWithoutSales=true;
   assert.equal(api.clients(result.weeks).length,0);
  }
@@ -143,7 +147,7 @@ test('Itao allocation retains supplier, metric and month filters, and does not d
  let result=api.filtered();assert.ok(Math.abs(api.clients(result.weeks)[0].realTotal-320.04/3)<1e-8);
  ctx.currentMetaRealizadoMetric='peso';assert.equal(api.clients(result.weeks)[0].realTotal,10);
  ctx.currentMetaRealizadoMetric='valor';ctx.selectedMetaRealizadoSuppliers.length=0;
- ctx.allSalesData.push(...rows.map(row=>({...row,OBSERVACAOFOR:'PEPSICO'})));
+ // Admin dataset is already allocated; re-running must be idempotent.
  result=api.filtered();assert.ok(Math.abs(result.salesBySeller.get('BALCAO').totalFat-5473.91/3)<1e-8);
  api.select('2026-09');result=api.filtered();assert.equal(result.salesBySeller.has('BALCAO'),false);
 });

@@ -3601,23 +3601,6 @@
             };
         }
 
-        function getMetaRealizadoTableSource() {
-            const source = getMetaRealizadoPeriodSource();
-            const key = metaRealizadoCurrentMonths.has(selectedMetaRealizadoMonth) ? 'current' : 'history';
-            const extra = window.embeddedData?.metaRealizadoAllocation?.[key];
-            if (!extra?.length) return source;
-            const data = Array.from({ length: source.data.length }, (_, i) => source.data instanceof ColumnarDataset ? source.data.get(i) : source.data[i]);
-            // Admins and seller scopes may already have the raw source. Never count it twice.
-            if (data.some(row => normalizeKey(String(row.CODCLI)) === '3297')) return source;
-            const supplemental = new ColumnarDataset(extra);
-            for (let i = 0; i < supplemental.length; i++) {
-                const row = supplemental.get(i);
-                const supplier = (window.embeddedData.dim_fornecedores || []).find(item => String(item.codigo) === String(row.CODFOR));
-                data.push({ ...row, FORNECEDOR: supplier?.nome || row.FORNECEDOR, OBSERVACAOFOR: supplier?.pasta || row.OBSERVACAOFOR });
-            }
-            return { ...source, data };
-        }
-
         function isMetaRealizadoPeriod(value) {
             return metaRealizadoMonthKey(value) === selectedMetaRealizadoMonth;
         }
@@ -5450,7 +5433,7 @@
 
         function getMetaRealizadoFilteredData() {
             const { clients: periodClientGoals, sellers: periodSellerGoals } = getMetaRealizadoGoalMaps();
-            const periodSource = getMetaRealizadoTableSource();
+            const periodSource = getMetaRealizadoPeriodSource();
             const periodDate = getMetaRealizadoPeriodDate();
             // New Hierarchy:
             const suppliersSet = new Set(selectedMetaRealizadoSuppliers);
@@ -6720,7 +6703,7 @@
 
         function getMetaRealizadoClientsData(weeks) {
             const { clients: periodClientGoals } = getMetaRealizadoGoalMaps();
-            const periodSource = getMetaRealizadoTableSource();
+            const periodSource = getMetaRealizadoPeriodSource();
             const periodDate = getMetaRealizadoPeriodDate();
             // New Hierarchy Logic
             const currentMonthIndex = periodDate.getUTCMonth();
