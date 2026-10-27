@@ -20991,56 +20991,39 @@ const supervisorGroups = new Map();
     let selectedRackOptions = new Set();
 
 
-    function compressImage(file, maxWidth = 1920, maxHeight = 1080, quality = 0.8) {
-        return new Promise((resolve) => {
-            if (!file.type.startsWith('image/')) {
-                resolve(file);
-                return;
+    // Compress once, before preview/upload. Never fall back to sending the original.
+    async function compressImage(file) {
+        if (!file || !file.type.startsWith('image/')) throw new Error('Selecione uma imagem válida.');
+        const url = URL.createObjectURL(file);
+        try {
+            const img = await new Promise((resolve, reject) => {
+                const image = new Image();
+                image.onload = () => resolve(image);
+                image.onerror = () => reject(new Error('Não foi possível abrir a foto. Use uma imagem JPG, PNG ou WebP.'));
+                image.src = url;
+            });
+            let scale = Math.min(1, 1280 / Math.max(img.width, img.height));
+            const canvas = document.createElement('canvas');
+            let quality = 0.76;
+            let blob;
+            for (let attempt = 0; attempt < 9; attempt++) {
+                canvas.width = Math.max(1, Math.round(img.width * scale));
+                canvas.height = Math.max(1, Math.round(img.height * scale));
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+                if (!blob) throw new Error('Não foi possível compactar a foto. Tente outra imagem.');
+                if (blob.size <= 180 * 1024) break;
+                if (quality > 0.50) quality -= 0.10;
+                else scale *= 0.80;
             }
-
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = event => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > maxWidth) {
-                            height = Math.round((height *= maxWidth / width));
-                            width = maxWidth;
-                        }
-                    } else {
-                        if (height > maxHeight) {
-                            width = Math.round((width *= maxHeight / height));
-                            height = maxHeight;
-                        }
-                    }
-
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    canvas.toBlob((blob) => {
-                        if (!blob) {
-                            resolve(file);
-                            return;
-                        }
-                        const compressedFile = new File([blob], file.name, {
-                            type: 'image/jpeg',
-                            lastModified: Date.now()
-                        });
-                        resolve(compressedFile);
-                    }, 'image/jpeg', quality);
-                };
-                img.onerror = () => resolve(file);
-            };
-            reader.onerror = () => resolve(file);
-        });
+            if (blob.size > 250 * 1024) throw new Error('A foto não pôde ser reduzida para 250 KB. Tente outra imagem.');
+            return new File([blob], 'visita.jpg', { type: 'image/jpeg', lastModified: Date.now() });
+        } finally {
+            URL.revokeObjectURL(url);
+        }
     }
 
     function initCustomFileInput() {
@@ -21112,7 +21095,8 @@ const supervisorGroups = new Map();
                 });
 
 
-                count.textContent = `(${state.fotos[type].length}/${state.max[type]})`;
+                const savedCount = savedVisitPhotos.filter(photo => photo.tipo === type || (type === 'geral' && !photo.tipo)).length;
+                count.textContent = `(${state.fotos[type].length + savedCount}/${state.max[type]})`;
             };
 
             if (type === 'geral') window.updateGeralPreview = updatePreview;
@@ -21127,23 +21111,36 @@ const supervisorGroups = new Map();
                 count.textContent = '(Comprimindo...)';
 
                 const files = Array.from(e.target.files);
+                const photoSequence = surveyLoadSequence;
+                pendingVisitPhotoJobs++;
                 let added = 0;
                 for (const rawFile of files) {
-                    if (state.fotos[type].length >= state.max[type]) break;
+                    const savedCount = savedVisitPhotos.filter(photo => photo.tipo === type || (type === 'geral' && !photo.tipo)).length;
+                    if (state.fotos[type].length + savedCount >= state.max[type]) {
+                        window.showToast('warning', 'Limite de ' + state.max[type] + ' fotos para ' + type + '.');
+                        break;
+                    }
 
-                    let file = rawFile;
-                    if (file.type.startsWith('image/')) {
-                         file = await compressImage(file, 1920, 1920, 0.8);
+                    let file;
+                    try {
+                        file = await compressImage(rawFile);
+                    } catch (error) {
+                        window.showToast('error', error.message);
+                        continue;
                     }
 
                     if (file.size > 5 * 1024 * 1024) {
                         if (window.showToast) window.showToast('error', `A imagem ${window.escapeHtml(file.name)} ainda excede o limite de 5MB após compressão.`);
                         continue;
                     }
+                    if (photoSequence !== surveyLoadSequence) break;
+                    if (state.fotos[type].length + savedCount >= state.max[type]) break;
                     state.fotos[type].push(file);
                     added++;
                 }
 
+                pendingVisitPhotoJobs--;
+                if (photoSequence !== surveyLoadSequence) return;
                 if (added > 0) {
                     updatePreview();
                 } else {
@@ -21161,6 +21158,13 @@ const supervisorGroups = new Map();
     }
 
     function resetCustomFileInput() {
+        if (window.visitaFotosState) {
+            for (const type of ['geral', 'antes', 'depois']) window.visitaFotosState.fotos[type] = [];
+            document.getElementById('foto-tipo-geral')?.click();
+            window.updateGeralPreview?.();
+            window.updateAntesPreview?.();
+            window.updateDepoisPreview?.();
+        }
         const inputGallery = document.getElementById('visita-foto-input');
         const inputCamera = document.getElementById('visita-foto-input-camera');
         const trigger = document.getElementById('visita-foto-trigger');
@@ -23498,7 +23502,7 @@ const supervisorGroups = new Map();
 
 
                 const hasVisit = !!todaysVisit;
-                const hasSurvey = hasVisit && todaysVisit.respostas;
+                const hasSurvey = hasVisit && hasVisitSurvey(todaysVisit.respostas);
                 const visitedThisMonth = clientVisits.length > 0;
 
                 if (hasVisit) visitedCount++;
@@ -24633,6 +24637,15 @@ const supervisorGroups = new Map();
     }
 
     // --- VISITAS LOGIC ---
+    const VISIT_SURVEY_FIELDS = ['tem_secao', 'tem_checkout', 'tem_correlatos_bebidas', 'tem_correlatos_molho', 'tem_correlatos_biscoito', 'tem_ilha', 'tem_ponto_extra'];
+    function hasVisitSurvey(answers) {
+        return !!answers && ['Excelente', 'Boa', 'Bagunçada', 'Critica'].includes(answers.estado_gondola)
+            && VISIT_SURVEY_FIELDS.every(key => ['Sim', 'Nao'].includes(answers[key]));
+    }
+    const uploadedVisitPhotos = new WeakMap();
+    let savedVisitPhotos = [];
+    let surveyLoadSequence = 0;
+    let pendingVisitPhotoJobs = 0;
     let visitaAbertaId = null;
     let clienteEmVisitaId = null; // Storing Client Code (text) to match our usage
     let currentActionClientCode = null; // For the modal context
@@ -24884,7 +24897,8 @@ const supervisorGroups = new Map();
 
             // REFRESH UI (Keep Modal Open, Update State)
             if (isRoteiroMode) renderRoteiroView();
-            openActionModal(currentActionClientCode, currentActionClientName); // Re-open/Refresh
+            openActionModal(currentActionClientCode, currentActionClientName);
+            await abrirPesquisa();
 
         }, (err) => {
             console.error(err);
@@ -25057,6 +25071,19 @@ const supervisorGroups = new Map();
         btn.innerHTML = 'Finalizando...';
 
         try {
+            const { data: visit, error: surveyError } = await window.supabaseClient.from('visitas')
+                .select('respostas, observacao').eq('id', visitaAbertaId).single();
+            if (surveyError) throw surveyError;
+            if (!hasVisitSurvey(visit?.respostas)) {
+                window.showToast('warning', 'Salve a pesquisa desta visita antes de fazer o checkout.');
+                await abrirPesquisa();
+                return;
+            }
+            if ((visit.observacao || '').trim() && !(visit.respostas.fotos || []).some(photo => photo.url)) {
+                window.showToast('warning', 'Anexe pelo menos uma foto para finalizar a pesquisa com observações.');
+                await abrirPesquisa();
+                return;
+            }
             if (!navigator.geolocation) throw new Error('Geolocalização não suportada.');
             const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: true, timeout: 15000, maximumAge: 0}));
             const checkoutTime = new Date().toISOString();
@@ -25101,48 +25128,72 @@ const supervisorGroups = new Map();
     }
 
     async function abrirPesquisa() {
-        // Keep Action Modal open in background
+        if (!visitaAbertaId) return;
+        const sequence = ++surveyLoadSequence;
+        const visitId = visitaAbertaId;
+        const clientCode = clienteEmVisitaId;
         const modal = document.getElementById('modal-relatorio');
         const form = document.getElementById('form-visita');
-        document.getElementById('visita-atual-id').value = visitaAbertaId;
-
-        // Reset form or load previous?
-        // Plan says "Carregamos os dados da última visita".
-        // Logic: Fetch LAST visit answers for THIS client.
-
+        const submit = form.querySelector('button[type="submit"]');
+        const notice = document.getElementById('visita-prefill-notice');
         form.reset();
+        document.getElementById('visita-atual-id').value = visitId;
+        savedVisitPhotos = [];
         resetRackMultiSelect();
         resetCustomFileInput();
-
-        // Fetch last answers
-        if (clienteEmVisitaId) {
-             const { data } = await window.supabaseClient
-                .from('visitas')
-                .select('respostas')
-                .eq('client_code', clienteEmVisitaId) // Use client_code
-                .not('respostas', 'is', null)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-             if (data && data.respostas) {
-                 Object.keys(data.respostas).forEach(key => {
-                     if (key === 'tipo_rack') {
-                         resetRackMultiSelect(data.respostas[key]);
-                     } else {
-                         const field = form.elements[key];
-                         if (field) {
-                             if (field instanceof RadioNodeList) field.value = data.respostas[key];
-                             else field.value = data.respostas[key];
-                         }
-                     }
-                 });
-
-
-             }
-        }
-
+        document.getElementById('visita-fotos-salvas').replaceChildren();
+        notice.textContent = 'Carregando pesquisa do cliente...';
+        submit.disabled = true;
         modal.classList.remove('hidden');
+        try {
+            const current = await window.supabaseClient.from('visitas')
+                .select('respostas, observacao').eq('id', visitId).single();
+            if (current.error) throw current.error;
+            let source = current.data;
+            const currentHasSurvey = hasVisitSurvey(source?.respostas);
+            if (!currentHasSurvey && clientCode) {
+                const previous = await window.supabaseClient.from('visitas')
+                    .select('respostas, observacao').eq('client_code', clientCode)
+                    .in('respostas->>estado_gondola', ['Excelente', 'Boa', 'Bagunçada', 'Critica'])
+                    .neq('id', visitId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+                if (previous.error) throw previous.error;
+                source = previous.data;
+            }
+            if (sequence !== surveyLoadSequence || visitaAbertaId !== visitId) return;
+            if (source?.respostas) {
+                for (const key of ['estado_gondola', ...VISIT_SURVEY_FIELDS]) {
+                    const field = form.elements.namedItem(key);
+                    if (field && typeof source.respostas[key] === 'string') field.value = source.respostas[key];
+                }
+                resetRackMultiSelect(source.respostas.tipo_rack || '');
+                form.elements.namedItem('observacoes').value = source.observacao || '';
+            }
+            if (currentHasSurvey) {
+                savedVisitPhotos = (current.data.respostas.fotos || []).filter(photo => photo && typeof photo.url === 'string');
+                const previews = document.getElementById('visita-fotos-salvas');
+                for (const photo of savedVisitPhotos) {
+                    if (!photo.url.startsWith('https://dldsocponbjthqxhmttj.supabase.co/storage/v1/object/public/visitas-images/')) continue;
+                    const image = document.createElement('img');
+                    image.src = photo.url;
+                    image.alt = 'Foto já salva nesta visita: ' + (photo.tipo || 'geral');
+                    image.className = 'w-20 h-20 object-cover rounded-lg';
+                    previews.appendChild(image);
+                }
+                window.updateGeralPreview?.(); window.updateAntesPreview?.(); window.updateDepoisPreview?.();
+            }
+            notice.textContent = currentHasSurvey ? 'Pesquisa desta visita carregada.'
+                : source ? 'Dados da última pesquisa carregados. Confira e salve a pesquisa desta visita.'
+                : 'Preencha e salve a pesquisa desta visita antes do checkout.';
+        } catch (error) {
+            if (sequence === surveyLoadSequence) {
+                notice.textContent = 'Não foi possível carregar a pesquisa anterior. Feche e abra a pesquisa para tentar novamente.';
+                window.showToast('error', 'Erro ao carregar pesquisa: ' + error.message);
+            }
+            return;
+        } finally {
+            if (sequence === surveyLoadSequence) submit.disabled = !notice.textContent.startsWith('Pesquisa desta')
+                && !notice.textContent.startsWith('Dados da última') && !notice.textContent.startsWith('Preencha');
+        }
     }
 
     // --- Navigation Helpers ---
@@ -26306,32 +26357,17 @@ const supervisorGroups = new Map();
         formVisita.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // Validação de fotos obrigatórias
-            let isValidFotos = false;
-
-            if (window.visitaFotosState) {
-                const isModoAntesDepois = window.visitaFotosState.modo === 'antes-depois';
-                if (isModoAntesDepois) {
-                    const hasAntes = window.visitaFotosState.fotos.antes && window.visitaFotosState.fotos.antes.length > 0;
-                    const hasDepois = window.visitaFotosState.fotos.depois && window.visitaFotosState.fotos.depois.length > 0;
-                    if (hasAntes && hasDepois) {
-                        isValidFotos = true;
-                    }
-                } else {
-                    const hasGeral = window.visitaFotosState.fotos.geral && window.visitaFotosState.fotos.geral.length > 0;
-                    if (hasGeral) {
-                        isValidFotos = true;
-                    }
-                }
+            if (pendingVisitPhotoJobs > 0) {
+                window.showToast('warning', 'Aguarde a compactação das fotos antes de salvar.');
+                return;
             }
-
-            if (!isValidFotos) {
-                if (window.showToast) {
-                    window.showToast('error', 'É obrigatório adicionar pelo menos uma foto para enviar a pesquisa');
-                } else {
-                    alert('É obrigatório adicionar pelo menos uma foto para enviar a pesquisa');
-                }
-                return; // Interrompe o envio e mantém o modal aberto
+            const observation = (e.target.elements.namedItem('observacoes').value || '').trim();
+            const state = window.visitaFotosState;
+            const types = state?.modo === 'antes-depois' ? ['antes', 'depois'] : ['geral'];
+            const selectedPhotoCount = types.reduce((sum, type) => sum + (state?.fotos[type]?.length || 0), 0);
+            if (observation && selectedPhotoCount + savedVisitPhotos.length === 0) {
+                window.showToast('error', 'Anexe pelo menos uma foto para finalizar a pesquisa com observações.');
+                return;
             }
 
             const btn = e.target.querySelector('button[type="submit"]');
@@ -26346,67 +26382,19 @@ const supervisorGroups = new Map();
             delete respostas.visita_id;
 
             // Extract observation
-            const obs = respostas.observacoes;
+            const obs = (respostas.observacoes || '').trim();
             delete respostas.observacoes; // Store obs separately in column
 
             // Handle Múltiplas Fotos (Antes/Depois ou Geral)
-            const fotosArray = [];
+            const fotosArray = [...savedVisitPhotos];
             
-            // Helper to compress image file using HTML5 Canvas before upload
-            const compressImage = async (file, maxWidth = 1200, maxHeight = 1200, quality = 0.75) => {
-                if (!file || !file.type.startsWith('image/')) return file;
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            let width = img.width;
-                            let height = img.height;
-
-                            if (width > maxWidth || height > maxHeight) {
-                                if (width / height > maxWidth / maxHeight) {
-                                    height = Math.round((height * maxWidth) / width);
-                                    width = maxWidth;
-                                } else {
-                                    width = Math.round((width * maxHeight) / height);
-                                    height = maxHeight;
-                                }
-                            }
-
-                            const canvas = document.createElement('canvas');
-                            canvas.width = width;
-                            canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-
-                            canvas.toBlob(
-                                (blob) => {
-                                    if (blob) {
-                                        const compressedFile = new File([blob], file.name || 'image.jpg', {
-                                            type: 'image/jpeg',
-                                            lastModified: Date.now()
-                                        });
-                                        resolve(compressedFile);
-                                    } else {
-                                        resolve(file);
-                                    }
-                                },
-                                'image/jpeg',
-                                quality
-                            );
-                        };
-                        img.onerror = () => resolve(file);
-                        img.src = e.target.result;
-                    };
-                    reader.onerror = () => resolve(file);
-                    reader.readAsDataURL(file);
-                });
-            };
-
             // Helper to upload a single file
             const uploadFile = async (rawFile, prefix) => {
                 if (!rawFile || rawFile.size === 0) return null;
-                const file = await compressImage(rawFile);
+                const previous = uploadedVisitPhotos.get(rawFile);
+                if (previous?.visitId === visitId && previous.prefix === prefix) return previous.url;
+                const file = rawFile;
+                if (file.size > 250 * 1024 || file.type !== 'image/jpeg') return null;
                 const fileName = `${visitId}_${prefix}_${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
                 try {
                     const { data, error: uploadError } = await window.supabaseClient
@@ -26419,7 +26407,9 @@ const supervisorGroups = new Map();
                             .storage
                             .from('visitas-images')
                             .getPublicUrl(fileName);
-                        return publicUrlData ? publicUrlData.publicUrl : null;
+                        const url = publicUrlData?.publicUrl || null;
+                        if (url) uploadedVisitPhotos.set(rawFile, { visitId, prefix, url });
+                        return url;
                     }
                 } catch (e) {
                     console.error('Upload error:', e);
@@ -26450,9 +26440,12 @@ const supervisorGroups = new Map();
                 }
             }
 
-            if (fotosArray.length > 0) {
-                respostas.fotos = fotosArray; // Append array of urls
+            if (fotosArray.length !== savedVisitPhotos.length + selectedPhotoCount) {
+                window.showToast('error', 'Não foi possível enviar todas as fotos. Tente novamente antes de salvar.');
+                btn.disabled = false; btn.innerHTML = oldHtml;
+                return;
             }
+            respostas.fotos = fotosArray;
 
             // Cleanup legacy field if it somehow got in
             delete respostas.foto_gondola;
@@ -26461,12 +26454,13 @@ const supervisorGroups = new Map();
 
             try {
                 // Fetch existing respostas to preserve 'is_off_route' and other metadata
-                const { data: existingVisit } = await window.supabaseClient
+                const { data: existingVisit, error: existingError } = await window.supabaseClient
                     .from('visitas')
                     .select('respostas')
                     .eq('id', visitId)
                     .single();
 
+                if (existingError) throw existingError;
                 let finalRespostas = respostas;
                 if (existingVisit && existingVisit.respostas && typeof existingVisit.respostas === 'object') {
                     finalRespostas = { ...existingVisit.respostas, ...respostas };
@@ -26478,7 +26472,7 @@ const supervisorGroups = new Map();
                         respostas: finalRespostas,
                         observacao: obs
                     })
-                    .eq('id', visitId);
+                    .eq('id', visitId).select('id').single();
 
                 if (error) throw error;
 
@@ -26487,7 +26481,7 @@ const supervisorGroups = new Map();
                     const normalizedCode = normalizeKey(clienteEmVisitaId);
                     const visits = myMonthVisits.get(normalizedCode);
                     if (visits) {
-                        const visit = visits.find(v => v.id === visitId);
+                        const visit = visits.find(v => String(v.id) === String(visitId));
                         if (visit) {
                             visit.respostas = finalRespostas;
                         }

@@ -3685,7 +3685,7 @@
             <input type="hidden" id="visita-atual-id" name="visita_id">
             <p class="text-xs text-blue-400 bg-blue-900/20 p-3 rounded-lg flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                Carregamos os dados da última visita.
+                <span id="visita-prefill-notice">Preencha e salve a pesquisa desta visita antes do checkout.</span>
             </p>
 
             <div class="space-y-2">
@@ -3828,8 +3828,9 @@
 
                         <!-- FOTOS DA VISITA (MULTIPLE UPLOAD) -->
             <div class="space-y-4 pt-4 border-t border-slate-800">
-                <h4 class="text-sm font-bold text-slate-400 uppercase">Fotos da Visita (Obrigatório 1 foto)</h4>
+                <h4 class="text-sm font-bold text-slate-400 uppercase">Fotos da Visita</h4>
                 
+                <div id="visita-fotos-salvas" class="flex flex-wrap gap-2" aria-label="Fotos já salvas nesta visita"></div>
                 <!-- Tipo de Foto Toggle -->
                 <div class="flex bg-slate-800 rounded-lg p-1 gap-1 border border-slate-700">
                     <button type="button" id="foto-tipo-geral" class="flex-1 py-2 text-sm font-bold text-white bg-[#FF5E00] rounded-md transition-all shadow-md focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">Geral (até 10)</button>
@@ -3856,7 +3857,7 @@
                         <div class="flex items-center justify-between mb-2">
                             <label class="text-sm font-medium text-red-400 flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                Antes <span id="count-antes" class="text-slate-400 text-xs ml-1">(0/5)</span>
+                                Antes <span id="count-antes" class="text-slate-400 text-xs ml-1">(0/2)</span>
                             </label>
                             <button type="button" onclick="document.getElementById('input-foto-antes').click()" class="text-xs bg-red-900/30 hover:bg-red-900/50 text-red-300 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                                 Add Foto
@@ -3871,7 +3872,7 @@
                         <div class="flex items-center justify-between mb-2">
                             <label class="text-sm font-medium text-green-400 flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                Depois <span id="count-depois" class="text-slate-400 text-xs ml-1">(0/5)</span>
+                                Depois <span id="count-depois" class="text-slate-400 text-xs ml-1">(0/2)</span>
                             </label>
                             <button type="button" onclick="document.getElementById('input-foto-depois').click()" class="text-xs bg-green-900/30 hover:bg-green-900/50 text-green-300 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                                 Add Foto
@@ -3883,12 +3884,13 @@
                 </div>
                 
                 <!-- Helper text for limits -->
-                <p class="text-xs text-slate-500 mt-2"><svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Tamanho máximo por foto: 5MB. As fotos são obrigatórias.</p>
+                <p class="text-xs text-slate-500 mt-2"><svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Fotos compactadas automaticamente: até 1280 px e 250 KB por foto. Antes/depois: até 2 fotos de cada.</p>
             </div>
 
             <div class="space-y-2">
-                <label class="block text-sm font-bold text-slate-300">Observações:</label>
-                <textarea name="observacoes" rows="3" class="w-full glass-input border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" placeholder="Alguma observação importante?" aria-label="Observações"></textarea>
+                <label for="visita-observacoes" class="block text-sm font-bold text-slate-300">Observações:</label>
+                <p id="visita-observacoes-ajuda" class="text-xs text-slate-400">Se houver observações, anexe pelo menos uma foto para finalizar a pesquisa.</p>
+                <textarea id="visita-observacoes" aria-describedby="visita-observacoes-ajuda" name="observacoes" rows="3" class="w-full glass-input border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-[#FF5E00] focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" placeholder="Alguma observação importante?" aria-label="Observações"></textarea>
             </div>
 
             <button type="submit" class="w-full bg-[#FF5E00] hover:bg-[#CC4A00] text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
@@ -4851,8 +4853,8 @@
         },
         max: {
             geral: 10,
-            antes: 5,
-            depois: 5
+            antes: 2,
+            depois: 2
         }
     };
 </script>
