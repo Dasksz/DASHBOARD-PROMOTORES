@@ -18,7 +18,7 @@ function section(start, end) { return source.slice(source.indexOf(start), source
       let previous = {respostas:{...answers, fotos:[{url:'old-photo',tipo:'geral'}]}, observacao:'Observação anterior'};
       let updateCount=0, uploads=0, uploadFails=false;
       window.showToast = (_, message) => window.lastToast = message;
-      window.visitaFotosState = {modo:'geral',fotos:{geral:[],antes:[],depois:[]},max:{geral:10,antes:2,depois:2}};
+      window.visitaFotosState = {modo:'geral',fotos:{geral:[],antes:[],depois:[]},max:{geral:4,antes:2,depois:2}};
       window.supabaseClient = {from() {
         let byId=false, pendingUpdate;
         const q={select(){return q;},eq(key){if(key==='id')byId=true;return q;},in(){return q;},neq(){return q;},order(){return q;},limit(){return q;},
@@ -77,6 +77,8 @@ function section(start, end) { return source.slice(source.indexOf(start), source
         form.requestSubmit();await new Promise(r=>setTimeout(r,20));
         check(updateCount===savedUpdates+1 && uploads===2, 'editing saved survey does not reupload evidence');
         initCustomFileInput();
+        await document.getElementById('input-foto-geral').onchange({target:{files:[photo,photo,photo,photo,photo],value:''}});
+        check(window.visitaFotosState.fotos.geral.length + savedVisitPhotos.length===4, 'general photos stop at four including saved evidence');
         window.visitaFotosState.modo='antes-depois';
         await document.getElementById('input-foto-antes').onchange({target:{files:[photo,photo,photo],value:''}});
         await document.getElementById('input-foto-depois').onchange({target:{files:[photo,photo,photo],value:''}});
@@ -98,9 +100,11 @@ function section(start, end) { return source.slice(source.indexOf(start), source
       checkin:section('    async function fazerCheckIn(clientCode)', '    // --- GEO UPDATE LOGIC ---'),
       submit:section('    // Bind Form Submit','    function renderWeeklyComparisonAmChart(')
     });
-    assert.equal(result.assertions.length,20);
+    assert.equal(result.assertions.length,21);
     console.log(JSON.stringify(result,null,2));
     assert.match(html,/antes: 2,\s+depois: 2/);
+    assert.ok(html.includes('geral: 4,') && html.includes('Geral (até 4)') && html.includes('(0/4)'));
+    assert.ok(!html.includes('Fotos compactadas automaticamente'));
     assert.ok(!html.includes('Obrigatório 1 foto'));
     assert.ok(source.includes('await abrirPesquisa();\n\n        }, (err)'));
   } finally { await browser.close(); }

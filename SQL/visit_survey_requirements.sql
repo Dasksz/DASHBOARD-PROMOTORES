@@ -20,6 +20,7 @@ declare
   photo_type text;
   photo_count integer;
   old_count integer;
+  photo_limit integer;
 begin
   if tg_op = 'INSERT' then
     checking_out := new.checkout_at is not null;
@@ -41,12 +42,13 @@ begin
     ) then
       raise exception 'Anexe pelo menos uma foto para finalizar a pesquisa com observações.' using errcode = '23514';
     end if;
-    foreach photo_type in array array['antes','depois'] loop
+    foreach photo_type in array array['geral','antes','depois'] loop
+      photo_limit := case when photo_type = 'geral' then 4 else 2 end;
       select count(*) into photo_count from jsonb_array_elements(photos) p where p->>'tipo' = photo_type;
       select count(*) into old_count from jsonb_array_elements(old_photos) p where p->>'tipo' = photo_type;
       -- Preserve already saved historical photos, without allowing extra attachments.
-      if photo_count > greatest(2, old_count) then
-        raise exception 'Limite de 2 fotos para %.', photo_type using errcode = '23514';
+      if photo_count > greatest(photo_limit, old_count) then
+        raise exception 'Limite de % fotos para %.', photo_limit, photo_type using errcode = '23514';
       end if;
     end loop;
   end if;
