@@ -13,7 +13,7 @@ function harness() {
  const history = [sale('2026-09-02',100),sale('2026-08-02',900),sale('2026-09-03',5,'5')];
  const suppliers = {ELMA:['707','708','752'],FOODS:['1119'],VIRTUAL:{TODDYNHO:'1119_TODDYNHO',TODDY:'1119_TODDY',QUAKER_KEROCOCO:'1119_QUAKER_KEROCOCO'},VIRTUAL_LIST:['1119_TODDYNHO','1119_TODDY','1119_QUAKER_KEROCOCO'],ALL_GOALS:['707','708','752','1119_TODDYNHO','1119_TODDY','1119_QUAKER_KEROCOCO']};
  const requests = [];
- const ctx = {Date,Map,Set,console:{error(){}},ColumnarDataset:class {},lastSaleDate:new Date('2026-10-02'),allSalesData:current,allHistoryData:history,allClientsData:[client],normalizeKey:String,normalize:s=>String(s).toUpperCase(),parseDate:d=>new Date(d),globalClientGoals:new Map([['1',new Map([['707',{fat:999,vol:99}]])]]),goalsSellerTargets:new Map(),selectedMetaRealizadoSuppliers:[],selectedMetaRealizadoSupervisors:new Set(),selectedMetaRealizadoVendedores:new Set(),currentMetaRealizadoPasta:'PEPSICO',currentMetaRealizadoMetric:'valor',adminViewMode:'promoter',hierarchyState:{'meta-realizado':{coords:new Set(),cocoords:new Set(),promotors:new Set(['P1'])}},sellerDetailsMap:new Map(),getHierarchyFilteredClients:()=>[client],isGarbageSeller:()=>false,clientMapForKPIs:new Map([['1',client]]),clientRamoMap:new Map(),lpResearcherMap:new Map(),userHierarchyContext:{role:'adm'},metaRealizadoClientsTableState:{currentPage:1,itemsPerPage:20},metaRealizadoDataForExport:{},markDirty(){},document:{getElementById:element},getFilteredDataFromIndices:(indices,byId,filters)=>(indices===ctx.optimizedData.indices.current?current:history).filter(s=>!filters.tipoVenda||filters.tipoVenda.has(s.TIPOVENDA)),renderMetaRealizadoTable(){},renderMetaRealizadoChart(){},renderMetaRealizadoPosChart(){},renderMetaRealizadoClientsTable(){}};
+ const ctx = {Date,Map,Set,console:{error(){}},ColumnarDataset:class {constructor(d){this.d=d;this.length=d.length;}get(i){return Object.fromEntries(this.d.columns.map(c=>[c,this.d.values[c][i]]));}},lastSaleDate:new Date('2026-10-02'),allSalesData:current,allHistoryData:history,allClientsData:[client],normalizeKey:String,normalize:s=>String(s).toUpperCase(),parseDate:d=>new Date(d),globalClientGoals:new Map([['1',new Map([['707',{fat:999,vol:99}]])]]),goalsSellerTargets:new Map(),selectedMetaRealizadoSuppliers:[],selectedMetaRealizadoSupervisors:new Set(),selectedMetaRealizadoVendedores:new Set(),currentMetaRealizadoPasta:'PEPSICO',currentMetaRealizadoMetric:'valor',adminViewMode:'promoter',hierarchyState:{'meta-realizado':{coords:new Set(),cocoords:new Set(),promotors:new Set(['P1'])}},sellerDetailsMap:new Map(),getHierarchyFilteredClients:()=>[client],isGarbageSeller:()=>false,clientMapForKPIs:new Map([['1',client]]),clientRamoMap:new Map(),lpResearcherMap:new Map(),userHierarchyContext:{role:'adm'},metaRealizadoClientsTableState:{currentPage:1,itemsPerPage:20},metaRealizadoDataForExport:{},markDirty(){},document:{getElementById:element},getFilteredDataFromIndices:(indices,byId,filters)=>(indices===ctx.optimizedData.indices.current?current:history).filter(s=>!filters.tipoVenda||filters.tipoVenda.has(s.TIPOVENDA)),renderMetaRealizadoTable(){},renderMetaRealizadoChart(){},renderMetaRealizadoPosChart(){},renderMetaRealizadoClientsTable(){}};
  ctx.optimizedData={indices:{current:{},history:{}},salesById:new Map(),historyById:new Map(),rcaNameByCode:new Map([['10','RCA10']]),clientsMap:new Map([['1',client]]),promotorMap:new Map([['P1','RCA10']])};
  ctx.window={ColumnarDataset:ctx.ColumnarDataset,SUPPLIER_CODES:suppliers,userRole:'adm',escapeHtml:String,normalizeResearcherCode:String,isActiveClient:()=>true,allClientsData:[client],resolveDim:()=> 'RCA10',embeddedData:{nota_perfeita:[{codigo_cliente:'1',mes_ano:'setembro de 2026',pesquisador:'P1',nota_media:90},{codigo_cliente:'1',mes_ano:'outubro de 2026',pesquisador:'P1',nota_media:20}],metas_pesquisas:[{mes:9,ano:2026,promotor_code:'P1',valor_meta:10},{mes:10,ano:2026,promotor_code:'P1',valor_meta:20}],metas_lojaperfeita:[]}};
  ctx.window.supabaseClient={from:()=>{let month; const q={select:()=>q,eq:(key,value)=>{if(key==='month_key')month=value;return q;},maybeSingle:async()=>{requests.push(month);if(ctx.fail) return {error:Error('offline')}; return {data:month==='2026-09'?{goals_data:{clients:{'1':{'707':{fat:500,vol:50}}},seller_targets:{}}}:null};}};return q;}};
@@ -112,4 +112,54 @@ test('failed saved-goal load cannot silently show provisional targets and suppor
 });
 test('switching months during initial goal load cannot publish the old month count',async()=>{
  const {api}=harness();api.select('2026-10');let finish;api.pendingGoals(new Promise(resolve=>{finish=resolve}));const old=api.update();api.select('2026-09');await api.update();finish();await old;assert.equal(api.export().month,'2026-09');assert.equal(api.export().clients[0].metaTotal,500);
+});
+
+function itaoHarness(codes=['546']) {
+ const h=harness(),{ctx,api}=h;
+ api.select('2026-10');ctx.allSalesData.length=0;
+ const clients=codes.map(code=>({'Código':code,rca1:'53',nomeCliente:'ITAO '+code}));
+ ctx.allClientsData=clients;ctx.getHierarchyFilteredClients=()=>clients;
+ ctx.optimizedData.rcaNameByCode.set('53','BALCAO');
+ const rows=[{CODCLI:'3297',CODFOR:'707',CODUSUR:'78',DTPED:Date.parse('2026-10-26'),VLVENDA:320.04,TOTPESOLIQ:30,TIPOVENDA:'1'},{CODCLI:'3297',CODFOR:'708',CODUSUR:'78',DTPED:Date.parse('2026-10-26'),VLVENDA:1120.82,TOTPESOLIQ:60,TIPOVENDA:'1'},{CODCLI:'3297',CODFOR:'1119',CODUSUR:'78',DTPED:Date.parse('2026-10-26'),VLVENDA:4033.05,TOTPESOLIQ:90,TIPOVENDA:'1'}];
+ const columns=Object.keys(rows[0]);
+ ctx.window.embeddedData.metaRealizadoAllocation={current:{columns,values:Object.fromEntries(columns.map(k=>[k,rows.map(s=>s[k])])),length:rows.length}};
+ ctx.window.embeddedData.dim_fornecedores=['707','708','1119'].map(c=>({codigo:c,nome:'PEPSICO',pasta:'PEPSICO'}));
+ return {...h,rows};
+}
+test('Itao source reaches both tables as one third per visible store without changing ordinary sales',()=>{
+ for(const codes of [['546'],['541','544'],['541','544','546']]) {
+  const {api,ctx}=itaoHarness(codes),result=api.filtered(),clients=api.clients(result.weeks);
+  assert.equal(clients.length,codes.length);
+  for(const row of clients) assert.ok(Math.abs(row.realTotal-5473.91/3)<1e-8);
+  assert.ok(Math.abs(result.salesBySeller.get('BALCAO').totalFat-5473.91*codes.length/3)<1e-8);
+  assert.equal(ctx.allSalesData.length,0);
+  ctx.metaRealizadoClientsTableState.onlyWithoutSales=true;
+  assert.equal(api.clients(result.weeks).length,0);
+ }
+});
+test('Itao allocation retains supplier, metric and month filters, and does not duplicate admin source',()=>{
+ const {api,ctx,rows}=itaoHarness();
+ ctx.selectedMetaRealizadoSuppliers.push('707');
+ let result=api.filtered();assert.ok(Math.abs(api.clients(result.weeks)[0].realTotal-320.04/3)<1e-8);
+ ctx.currentMetaRealizadoMetric='peso';assert.equal(api.clients(result.weeks)[0].realTotal,10);
+ ctx.currentMetaRealizadoMetric='valor';ctx.selectedMetaRealizadoSuppliers.length=0;
+ ctx.allSalesData.push(...rows.map(row=>({...row,OBSERVACAOFOR:'PEPSICO'})));
+ result=api.filtered();assert.ok(Math.abs(result.salesBySeller.get('BALCAO').totalFat-5473.91/3)<1e-8);
+ api.select('2026-09');result=api.filtered();assert.equal(result.salesBySeller.has('BALCAO'),false);
+});
+test('Itao source never creates sales for a portfolio without an allocation recipient',()=>{
+ const {api}=itaoHarness(['999']);const result=api.filtered();assert.equal(result.salesBySeller.size,0);assert.equal(api.clients(result.weeks).length,0);
+});
+test('targeted loading adds only the allocation source and leaves client portfolio query unchanged',()=>{
+ const init=fs.readFileSync('js/init.js','utf8');
+ const start=init.indexOf('                const applyClientFilter = (q) => {');
+ const end=init.indexOf('                // Helper to decide source',start);
+ const code=init.slice(start,end)+';this.apply=applyClientFilter;this.clients=applyClientTableFilter;';
+ for(const wallet of [[],['546'],['541','544','546'],['999'],['3297','546']]) {
+  const context={isAdm:false,scopedClientCodes:new Set(wallet),scopedSellerCodes:null};vm.createContext(context);vm.runInContext(code,context);
+  const query={in:(key,values)=>({key,values}),eq:(key,value)=>({key,value})};
+  const sales=context.apply(query),clients=context.clients(query);
+  if(wallet.length) {assert.deepEqual(Array.from(clients.values),wallet);assert.equal(sales.values.filter(c=>c==='3297').length,wallet.some(c=>['3297','541','544','546'].includes(c))?1:0);}
+  else assert.equal(sales.key,'id');
+ }
 });

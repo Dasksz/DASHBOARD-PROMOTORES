@@ -258,7 +258,7 @@
 
             // 2. Determine Role and Cache Strategy
             let cachedData = await getFromCache('dashboardData');
-            const cacheRevision = '20261019-upload-wait';
+            const cacheRevision = '20261027-itao-allocation';
             if (cachedData?.cacheRevision !== cacheRevision) cachedData = null;
             let useCache = false;
             let hierarchy = null;
@@ -911,6 +911,11 @@
                     if (scopedClientCodes !== null) {
                         if (scopedClientCodes.size === 0) return q.eq('id', '00000000-0000-0000-0000-000000000000');
                         const codesArray = Array.from(scopedClientCodes);
+                        // Sales source for the existing three-way Itao allocation only.
+                        // This does not add 3297 to the user's client portfolio.
+                        if (['541', '544', '546'].some(code => scopedClientCodes.has(code)) && !scopedClientCodes.has('3297')) {
+                            codesArray.push('3297');
+                        }
                         return q.in('codcli', codesArray);
                     }
                     if (scopedSellerCodes !== null && scopedSellerCodes.size > 0) {
@@ -1451,7 +1456,27 @@
                 }
             }
 
+            // Keep allocation inputs separate from every ordinary dashboard dataset.
+            const allocationTargets = new Set(['541', '544', '546']);
+            const visibleClientCodes = filteredClients.values['CODIGO_CLIENTE'] || filteredClients.values['Código'] || [];
+            const needsItaoAllocation = visibleClientCodes.some(code => allocationTargets.has(normalizeKey(code)));
+            const allocationSource = dataset => {
+                const values = {}; dataset.columns.forEach(col => values[col] = []);
+                let length = 0;
+                if (needsItaoAllocation) {
+                    const codes = dataset.values['CODCLI'] || [];
+                    for (let i = 0; i < dataset.length; i++) {
+                        if (normalizeKey(codes[i]) !== '3297') continue;
+                        dataset.columns.forEach(col => values[col].push(dataset.values[col][i]));
+                        length++;
+                    }
+                }
+                return { columns: dataset.columns, values, length };
+            };
+            const metaRealizadoAllocation = { current: allocationSource(detailed), history: allocationSource(history) };
+
             const embeddedData = {
+                metaRealizadoAllocation,
                 detailed: filteredDetailed,
                 history: filteredHistory,
                 clients: filteredClients,
