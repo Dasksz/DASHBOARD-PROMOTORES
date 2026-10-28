@@ -16459,15 +16459,28 @@ const supervisorGroups = new Map();
                 }
                 await conditionalUpload('data_stock', data.stock, 'hash_stock', false);
                 await conditionalUpload('data_innovations', data.innovations, 'hash_innovations', false);
-                await conditionalUpload('data_product_details', data.product_details, 'hash_product_details', false, 'code');
-                await conditionalUpload('data_active_products', data.active_products, 'hash_active_products', false, 'code');
+                // Do not rebuild the catalog from cached products or sales when no master file was selected.
+                if (document.getElementById('products-file-input').files.length > 0) {
+                    const productRows = window.PrimeImportIntegrity.rowsForUpload('data_product_details', data.product_details, false, formatValue);
+                    const productImportId = crypto.randomUUID();
+                    const productHashKeys = ['hash_product_details', 'hash_active_products', 'hash_dim_produtos'];
+                    const productHashes = Object.fromEntries(data.metadata.filter(m => productHashKeys.includes(m.key)).map(m => [m.key,m.value]));
+                    updateStatus('Substituindo cadastro de produtos pela planilha completa...', 50);
+                    await retryOperation(async () => {
+                        const { error } = await window.supabaseClient.rpc('replace_product_catalog_v1', {
+                            p_rows: productRows, p_import_id: productImportId, p_hashes: productHashes
+                        });
+                        if (error) throw error;
+                    });
+                    productHashKeys.forEach(key => committedMetadataKeys.add(key));
+                }
                 await conditionalUpload('data_hierarchy', data.hierarchy, 'hash_hierarchy', false);
 
                 // --- DIMENSION TABLES UPLOAD ---
                 await conditionalUpload('dim_vendedores', data.dim_vendedores, 'hash_dim_vendedores', false, 'codigo');
                 await conditionalUpload('dim_supervisores', data.dim_supervisores, 'hash_dim_supervisores', false, 'codigo');
                 await conditionalUpload('dim_fornecedores', data.dim_fornecedores, 'hash_dim_fornecedores', false, 'codigo');
-                await conditionalUpload('dim_produtos', data.dim_produtos, 'hash_dim_produtos', false, 'codigo');
+                // Product dimensions were committed with the authoritative product catalog above.
                 // -------------------------------
 
                 // Make Titulos Optional: Only upload if data is present
@@ -16950,7 +16963,7 @@ const supervisorGroups = new Map();
                     }
 
                     // Initialize Worker
-                    const worker = new Worker('js/worker.js?v=20261019-integrity');
+                    const worker = new Worker('js/worker.js?v=20261028-product-catalog');
 
                     document.getElementById('status-container').classList.remove('hidden');
                     document.getElementById('status-text').textContent = "Processando arquivos...";

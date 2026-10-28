@@ -1105,6 +1105,18 @@ function readClientWorksheet(worksheet, fileName) {
                     return undefined;
                 };
 
+                // The uploaded master file is the complete catalog, independent of sales/stock.
+                const catalogCodes = new Set();
+                if (productsFile) {
+                    if (!productsDataRaw.length) throw new Error('Planilha de produtos vazia. Cadastro atual preservado.');
+                    for (const product of productsDataRaw) {
+                        const code = normalizeClientIdentifier(product['Código'], 'código do produto', productsFile.name);
+                        if (!code || !String(product['Descrição'] || '').trim()) throw new Error('Cada produto precisa de código e descrição na planilha.');
+                        if (catalogCodes.has(code)) throw new Error('Código de produto duplicado na planilha: ' + code);
+                        catalogCodes.add(code);
+                    }
+                }
+
                 // Products Fallback
                 if (productsDataRaw.length === 0 && fallbackData && fallbackData.products) {
                     self.postMessage({ type: 'progress', status: 'Reutilizando cadastro de produtos existente...', percentage: 32 });
@@ -1135,7 +1147,7 @@ function readClientWorksheet(worksheet, fileName) {
                         if (!rawCode) return;
                         
                         const productCode = normalizeKey(rawCode) || rawCode;
-                        if (!soldProductCodes.has(productCode)) return;
+                        // Unsold products from the master file also belong to the catalog.
                         activeProductCodesFromCadastro.add(productCode);
                         
                         const valMaster = getVal(prod, masterQtyKeys);
@@ -1476,8 +1488,8 @@ function readClientWorksheet(worksheet, fileName) {
                 const columnarClients = toColumnar(Array.from(clientMap.values()));
 
                 // --- RESTORED LOGIC FOR UPLOAD ARRAYS ---
-                const finalProductDetailsData = Array.from(productDetailsMap.values());
-                const finalActiveProductsData = Array.from(activeProductCodesFromCadastro).map(code => ({ code: code }));
+                const finalProductDetailsData = Array.from(productDetailsMap.values()).filter(p => !productsFile || catalogCodes.has(p.code));
+                const finalActiveProductsData = finalProductDetailsData.map(product => ({ code: product.code }));
 
                 const finalStockData = [];
                 // Reconstruct stock array from Maps (05 and 08)
@@ -1642,7 +1654,7 @@ function readClientWorksheet(worksheet, fileName) {
 
                 // 4. DIM_PRODUTOS
                 // Use productDetailsMap which is already robust (Master + Stock + Sales)
-                const finalDimProdutos = Array.from(productDetailsMap.values()).map(p => ({
+                const finalDimProdutos = finalProductDetailsData.map(p => ({
                     codigo: p.code,
                     descricao: p.descricao,
                     codfor: p.codfor,
