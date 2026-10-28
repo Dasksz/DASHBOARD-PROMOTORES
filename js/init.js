@@ -258,7 +258,7 @@
 
             // 2. Determine Role and Cache Strategy
             let cachedData = await getFromCache('dashboardData');
-            const cacheRevision = '20261027-itao-indicators';
+            const cacheRevision = '20261028-support-items';
             if (cachedData?.cacheRevision !== cacheRevision) cachedData = null;
             let useCache = false;
             let hierarchy = null;
@@ -1523,6 +1523,7 @@
                     }
                 });
             }
+            window.PrimeCatalogVisibility.apply(embeddedData);
             window.embeddedData = embeddedData;
             window.isDataLoaded = true;
 
