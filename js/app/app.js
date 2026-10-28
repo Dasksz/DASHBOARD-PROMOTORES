@@ -24847,7 +24847,7 @@ const supervisorGroups = new Map();
         btn.disabled = true;
         btn.innerHTML = '...';
 
-        navigator.geolocation.getCurrentPosition(async (pos) => {
+        window.PrimeLocation.getCurrentPosition().then(async (pos) => {
             const { latitude, longitude } = pos.coords;
             const { data: { user } } = await window.supabaseClient.auth.getUser();
 
@@ -24920,12 +24920,12 @@ const supervisorGroups = new Map();
             openActionModal(currentActionClientCode, currentActionClientName);
             await handleCheckInLocation(clientCode, pos);
 
-        }, (err) => {
+        }).catch((err) => {
             console.error(err);
-            window.showToast('error', 'Erro ao obter localização. Permita o acesso e tente novamente.');
+            window.showToast('error', [1,2,3].includes(Number(err.code)) ? window.PrimeLocation.message(err) : 'Não foi possível iniciar a visita: ' + (err.message || 'Tente novamente.'));
             btn.disabled = false;
             btn.innerHTML = oldHtml;
-        }, { enableHighAccuracy: true, timeout: 10000 });
+        });
     }
 
     // --- GEO UPDATE LOGIC ---
@@ -24978,7 +24978,8 @@ const supervisorGroups = new Map();
                 await abrirPesquisa();
             }
         } catch (error) {
-            window.showToast('error', 'Check-in registrado, mas não foi possível conferir a localização: ' + error.message);
+            window.showToast('warning', 'Check-in registrado. Não foi possível conferir o cadastro da localização; você pode continuar a pesquisa.');
+            await abrirPesquisa();
         }
     }
 
@@ -24986,19 +24987,29 @@ const supervisorGroups = new Map();
         const context = geoUpdateContext;
         geoUpdateContext = null;
         document.getElementById('modal-geo-update').classList.add('hidden');
-        if (context?.afterCheckIn && context.visitId === visitaAbertaId) await abrirPesquisa();
+        if (context && (context.afterCheckIn || context.continueSurvey) && context.visitId === visitaAbertaId) {
+            // Preserve an already open survey, including observations and selected photos.
+            if (document.getElementById('modal-relatorio').classList.contains('hidden')) await abrirPesquisa();
+        }
     }
 
     async function openGeoUpdateModal(options = {}) {
+        if (geoUpdateContext?.loading || geoUpdateContext?.saving) return;
         const modal = document.getElementById('modal-geo-update');
         const loading = document.getElementById('geo-update-loading');
+        const errorPanel = document.getElementById('geo-update-error');
+        const retry = document.getElementById('btn-retry-geo-update');
+        errorPanel.classList.add('hidden');
+        retry.classList.add('hidden');
         const confirm = document.getElementById('btn-confirm-geo-update');
         const decline = document.getElementById('btn-decline-geo-update');
         const context = { ...options, clientCode: String(options.clientCode || currentActionClientCode || ''), visitId: visitaAbertaId };
+        context.loading = true;
         geoUpdateContext = context;
         currentGeoLat = null; currentGeoLng = null;
         confirm.disabled = true;
         confirm.textContent = options.afterCheckIn ? 'Sim, atualizar localização' : 'Confirmar Atualização';
+        decline.textContent = 'Não, manter localização';
         decline.classList.toggle('hidden', !options.afterCheckIn);
         decline.onclick = () => finishGeoUpdate();
         document.getElementById('geo-update-description').textContent = options.afterCheckIn
@@ -25026,10 +25037,7 @@ const supervisorGroups = new Map();
             }
         };
         try {
-            const position = options.position || await new Promise((resolve, reject) => {
-                if (!navigator.geolocation) return reject(new Error('Geolocalização não suportada.'));
-                navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-            });
+            const position = options.position || await window.PrimeLocation.getCurrentPosition();
             if (geoUpdateContext !== context) return;
             const { latitude, longitude } = position.coords;
             currentGeoLat = latitude; currentGeoLng = longitude;
@@ -25058,13 +25066,29 @@ const supervisorGroups = new Map();
                 const point = event.target.getLatLng(); currentGeoLat = point.lat; currentGeoLng = point.lng;
             });
         } catch (error) {
+            if (geoUpdateContext !== context) return;
             loading.classList.add('hidden');
-            window.showToast('error', 'Não foi possível exibir a localização: ' + error.message);
+            errorPanel.textContent = Number.isFinite(currentGeoLat)
+                ? 'Não foi possível carregar o mapa. A posição foi obtida; você pode confirmar a atualização ou continuar sem alterar o cadastro.'
+                : window.PrimeLocation.message(error);
+            errorPanel.classList.remove('hidden');
+            confirm.disabled = !Number.isFinite(currentGeoLat) || !Number.isFinite(currentGeoLng);
+            retry.classList.remove('hidden');
+            retry.onclick = () => { geoUpdateContext = null; return openGeoUpdateModal(options); };
+            if (visitaAbertaId === context.visitId && visitaAbertaId) {
+                context.continueSurvey = true;
+                decline.textContent = 'Continuar para pesquisa';
+                decline.classList.remove('hidden');
+            }
+        } finally {
+            context.loading = false;
         }
     }
 
     async function fazerCheckOut() {
-        if (!visitaAbertaId) return;
+        if (!visitaAbertaId || fazerCheckOut.pending) return;
+        fazerCheckOut.pending = true;
+        const visitId = visitaAbertaId;
 
         const btn = document.getElementById('btn-acao-checkout');
         const oldHtml = btn.innerHTML;
@@ -25085,19 +25109,34 @@ const supervisorGroups = new Map();
                 await abrirPesquisa();
                 return;
             }
-            if (!navigator.geolocation) throw new Error('Geolocalização não suportada.');
-            const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: true, timeout: 15000, maximumAge: 0}));
+            let position = null, locationFailure = null;
+            try { position = await window.PrimeLocation.getCurrentPosition(); }
+            catch (error) {
+                locationFailure = error;
+                if (!window.confirm('O celular não conseguiu informar a localização. Deseja finalizar a visita sem a localização do checkout? A falha ficará registrada nesta visita.')) return;
+            }
+            if (visitaAbertaId !== visitId) return;
             const checkoutTime = new Date().toISOString();
             const checkoutLocation = {
                 checkout_at: checkoutTime,
-                checkout_latitude: position.coords.latitude,
-                checkout_longitude: position.coords.longitude,
-                checkout_accuracy: position.coords.accuracy
+                checkout_latitude: position?.coords.latitude ?? null,
+                checkout_longitude: position?.coords.longitude ?? null,
+                checkout_accuracy: position?.coords.accuracy ?? null
             };
+            if (locationFailure) {
+                const { data: latest, error: latestError } = await window.supabaseClient.from('visitas')
+                    .select('respostas, observacao').eq('id', visitId).single();
+                if (latestError) throw latestError;
+                if (!hasVisitSurvey(latest?.respostas)) throw new Error('Salve a pesquisa desta visita antes de finalizar.');
+                checkoutLocation.respostas = { ...latest.respostas, checkout_location: {
+                    status: 'unavailable', reason: window.PrimeLocation.reason(locationFailure), confirmed_by_promoter: true,
+                    attempted_at: checkoutTime, diagnostics: locationFailure.attempts || [{ code: locationFailure.code, device_message: locationFailure.device_message || '' }]
+                } };
+            }
             const { error } = await window.supabaseClient
                 .from('visitas')
                 .update(checkoutLocation)
-                .eq('id', visitaAbertaId);
+                .eq('id', visitId).is('checkout_at', null).select('id').single();
 
             if (error) throw error;
 
@@ -25117,11 +25156,12 @@ const supervisorGroups = new Map();
             clienteEmVisitaId = null;
             document.getElementById('modal-acoes-visita').classList.add('hidden');
             renderRoteiroView();
-            window.showToast('success', 'Visita finalizada!');
+            window.showToast('success', locationFailure ? 'Visita finalizada. A falha de localização ficou registrada.' : 'Visita finalizada!');
         } catch (error) {
             console.error(error);
             window.showToast('error', 'Erro ao fazer check-out: ' + (error.code === 1 ? 'Permita o acesso à localização e tente novamente.' : error.code === 3 ? 'Tempo esgotado ao obter a localização. Tente novamente.' : error.message));
         } finally {
+            fazerCheckOut.pending = false;
             // Fix: Re-enable button on error and success
             btn.disabled = false;
             btn.innerHTML = oldHtml;

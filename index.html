@@ -4023,8 +4023,10 @@
             </div>
         </div>
         <div class="p-4 glass-panel border-t border-slate-800">
+            <p id="geo-update-error" role="alert" class="hidden text-xs text-amber-200 bg-amber-950/40 border border-amber-700/50 rounded-lg p-3 mb-3"></p>
+            <button type="button" id="btn-retry-geo-update" class="hidden w-full py-3 px-4 mb-3 border border-slate-600 text-white rounded-xl">Tentar localização novamente</button>
             <p id="geo-update-description" class="text-xs text-slate-400 mb-4 text-center">Verifique se o pino está na posição correta do estabelecimento.</p>
-            <button id="btn-confirm-geo-update" class="w-full py-3 px-4 bg-[#FF5E00] hover:bg-[#CC4A00] text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+            <button id="btn-confirm-geo-update" class="w-full py-3 px-4 bg-[#FF5E00] hover:bg-[#CC4A00] text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 Confirmar Atualização
             </button>
@@ -4761,6 +4763,7 @@
 <script src="js/app/utils.js?v=20261027-itao-indicators" defer></script>
 <script src="js/app/import-integrity.js?v=20261019-upload-wait" defer></script>
 <script src="js/request-resilience.js?v=20261022" defer></script>
+<script src="js/app/location-service.js?v=20261028" defer></script>
 <script src="js/app/wallet-review.js" defer></script>
 <script src="js/home-layout.js" defer></script>
 <script src="js/init.js?v=20261027-itao-indicators" defer></script>

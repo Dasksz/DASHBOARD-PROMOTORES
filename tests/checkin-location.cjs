@@ -8,7 +8,7 @@ function setup(location, concurrentLocation) {
   const chain=()=>{let payload,options; const q={select(){return q;},eq(){return q;},upsert(p,o){payload=p;options=o;return q;},
     maybeSingle:async()=>{if(readError)return {error:{message:'read failed'}};if(payload){writes.push(payload);if(concurrentLocation){stored=concurrentLocation;return {data:null};}stored={lat:payload.lat,lng:payload.lng};}return {data:stored};},
     single:async()=>{if(writeError)return {error:{message:'write failed'}};writes.push(payload);stored={lat:payload.lat,lng:payload.lng};return {data:{client_code:payload.client_code}};}};return q;};
-  const c={console,Math,Number,Date,String,Error,Promise,document:{getElementById:element},window:{showToast(){},supabaseClient:{from:chain}},
+  const c={console,Math,Number,Date,String,Error,Promise,document:{getElementById:element},window:{showToast(){},supabaseClient:{from:chain},PrimeLocation:{getCurrentPosition:()=>new Promise((resolve,reject)=>c.navigator.geolocation.getCurrentPosition(resolve,reject)),message:()=> 'Localização indisponível.'}},
     normalizeKey:String,clientCoordinatesMap:new Map([['999999',{lat:50,lng:50}]]),visitaAbertaId:42,currentActionClientCode:'999999',
     abrirPesquisa:async()=>{surveys++;},navigator:{geolocation:{getCurrentPosition:resolve=>resolve({coords:{latitude:0,longitude:0}})}},
     L:{map:()=>map,tileLayer:()=>({addTo(){}}),Icon:function(){},latLngBounds:x=>x,marker:(position,options)=>{markers.push({position,options});return {addTo(){return this;},bindPopup(){},on(){}};}}};

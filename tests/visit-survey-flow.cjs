@@ -9,8 +9,9 @@ function section(start, end) { return source.slice(source.indexOf(start), source
   const browser = await chromium.launch({channel:'msedge', headless:true});
   try {
     const page = await browser.newPage();
-    await page.setContent(html.slice(html.indexOf('<div id="modal-relatorio"'), html.indexOf('<!-- MODAL DE ACOES DA VISITA')) + '<button id="btn-acao-checkout"></button><button id="btn-acao-checkin"></button><div id="modal-acoes-visita"></div>');
-    const result = await page.evaluate(async ({compress, survey, open, checkout, submit, input, checkin}) => {
+    await page.setContent(html.slice(html.indexOf('<div id="modal-relatorio"'), html.indexOf('<!-- MODAL DE ACOES DA VISITA')) + html.slice(html.indexOf('<div id="modal-geo-update"'),html.indexOf('<!-- Modals (Hidden) -->')) + '<button id="btn-acao-checkout"></button><button id="btn-acao-checkin"></button><div id="modal-acoes-visita"></div>');
+    await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,'../js/app/location-service.js'),'utf8')});
+    const result = await page.evaluate(async ({compress, survey, open, checkout, submit, input, checkin, geo}) => {
       const assertions = [];
       function check(value, name) { if (!value) throw Error(name); assertions.push(name); }
       const answers = {estado_gondola:'Boa',tipo_rack:'Nenhum',tem_secao:'Sim',tem_checkout:'Nao',tem_correlatos_bebidas:'Nao',tem_correlatos_molho:'Nao',tem_correlatos_biscoito:'Nao',tem_ilha:'Nao',tem_ponto_extra:'Nao'};
@@ -21,7 +22,7 @@ function section(start, end) { return source.slice(source.indexOf(start), source
       window.visitaFotosState = {modo:'geral',fotos:{geral:[],antes:[],depois:[]},max:{geral:4,antes:2,depois:2}};
       window.supabaseClient = {from() {
         let byId=false, pendingUpdate;
-        const q={select(){return q;},eq(key){if(key==='id')byId=true;return q;},in(){return q;},neq(){return q;},order(){return q;},limit(){return q;},
+        const q={select(){return q;},eq(key){if(key==='id')byId=true;return q;},is(){return q;},in(){return q;},neq(){return q;},order(){return q;},limit(){return q;},
           single:async()=>({data:current,error:null}),maybeSingle:async()=>({data:previous,error:null}),
           insert(value){current={...value,id:43};return q;},update(value){pendingUpdate=value;return q;},then(resolve){if(pendingUpdate){updateCount++;current={...current,...pendingUpdate};}return Promise.resolve({data:current,error:null}).then(resolve);}};
         // PostgREST single returns the updated row too.
@@ -31,12 +32,13 @@ function section(start, end) { return source.slice(source.indexOf(start), source
       let currentActionClientCode = null, currentActionClientName = 'Teste';
       let isRoteiroMode = false;
       let myMonthVisits = new Map();
+      const clientCoordinatesMap = new Map();
       function renderRoteiroView() {}
       function openActionModal() {}
       function resetRackMultiSelect(value='') {document.getElementById('tipo_rack_hidden').value=value;}
       function resetCustomFileInput() {for(const k of ['geral','antes','depois'])window.visitaFotosState.fotos[k]=[];}
       // Evaluate the actual application functions with this controlled backend.
-      const code = survey + '\nvisitaAbertaId=42;clienteEmVisitaId="999999";\n' + compress + input + open + checkout + checkin + submit + '\nasync function handleCheckInLocation() { await abrirPesquisa(); }\n';
+      const code = survey + '\nvisitaAbertaId=42;clienteEmVisitaId="999999";\n' + compress + input + open + checkout + checkin + geo + submit + '\nasync function handleCheckInLocation() { await abrirPesquisa(); }\n';
       return await eval('(async()=>{'+code+`
         check(!hasVisitSurvey({is_off_route:true}), 'route metadata is not a survey');
         check(hasVisitSurvey(answers), 'all survey answers recognized');
@@ -89,6 +91,27 @@ function section(start, end) { return source.slice(source.indexOf(start), source
         document.getElementById('modal-relatorio').classList.add('hidden');
         currentActionClientCode='999999';await fazerCheckIn('999999');await new Promise(r=>setTimeout(r,20));
         check(visitaAbertaId===43 && !document.getElementById('modal-relatorio').classList.contains('hidden'), 'successful check-in opens survey automatically');
+        let gpsCalls=0;
+        Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition(ok,bad){gpsCalls++;bad({code:2,message:'Failed to request location updates: com.google.android.gms.common.api.ApiException: 19: DeadObjectException: null'});}}});
+        form.elements.namedItem('observacoes').value='Rascunho preservado';
+        await Promise.all([openGeoUpdateModal(),openGeoUpdateModal()]);
+        check(gpsCalls===2, 'repeated location clicks share two bounded GPS attempts');
+        check(document.getElementById('btn-confirm-geo-update').disabled && !document.getElementById('btn-retry-geo-update').classList.contains('hidden'), 'failed GPS offers retry and disables coordinate update');
+        check(!document.getElementById('geo-update-error').textContent.includes('com.google'), 'technical Android errors are translated in the modal');
+        await document.getElementById('btn-decline-geo-update').onclick();
+        check(form.elements.namedItem('observacoes').value==='Rascunho preservado' && document.getElementById('modal-geo-update').classList.contains('hidden'), 'continuing to survey preserves the draft and closes failed map');
+        form.elements.namedItem('observacoes').value='';
+        window.visitaFotosState.fotos.geral=[];
+        const beforeGpsSurvey=updateCount, beforeGpsCalls=gpsCalls;
+        form.requestSubmit();await new Promise(r=>setTimeout(r,20));
+        check(updateCount===beforeGpsSurvey+1 && gpsCalls===beforeGpsCalls, 'survey can be saved while Android location is unavailable');
+        window.confirm=()=>false;
+        const beforeFailedCheckout=updateCount;await fazerCheckOut();
+        check(updateCount===beforeFailedCheckout && visitaAbertaId===43, 'canceling checkout without GPS keeps the visit open');
+        window.confirm=()=>true;await fazerCheckOut();
+        check(updateCount===beforeFailedCheckout+1 && visitaAbertaId===null, 'confirmed checkout finishes after persistent GPS failure');
+        check(current.checkout_latitude===null && current.checkout_longitude===null && current.respostas.checkout_location.status==='unavailable', 'GPS exception records null coordinates and an explicit failure status');
+        check(current.respostas.checkout_location.diagnostics.length===2 && current.respostas.checkout_location.diagnostics[0].device_message.includes('DeadObjectException'), 'both Android service failures are retained for diagnosis');
         return {assertions,compressedBytes:photo.size,dimensions:[bitmap.width,bitmap.height]};
       })()`);
     }, {
@@ -98,14 +121,15 @@ function section(start, end) { return source.slice(source.indexOf(start), source
       open:section('    async function abrirPesquisa()', '    // --- Navigation Helpers ---'),
       checkout:section('    async function fazerCheckOut()', '    async function abrirPesquisa()'),
       checkin:section('    async function fazerCheckIn(clientCode)', '    // --- GEO UPDATE LOGIC ---'),
+      geo:section('    // --- GEO UPDATE LOGIC ---','    async function fazerCheckOut()'),
       submit:section('    // Bind Form Submit','    function renderWeeklyComparisonAmChart(')
     });
-    assert.equal(result.assertions.length,21);
+    assert.equal(result.assertions.length,30);
     console.log(JSON.stringify(result,null,2));
     assert.match(html,/antes: 2,\s+depois: 2/);
     assert.ok(html.includes('geral: 4,') && html.includes('Geral (até 4)') && html.includes('(0/4)'));
     assert.ok(!html.includes('Fotos compactadas automaticamente'));
     assert.ok(!html.includes('Obrigatório 1 foto'));
-    assert.ok(source.includes('await handleCheckInLocation(clientCode, pos);\n\n        }, (err)'));
+    assert.ok(source.includes('await handleCheckInLocation(clientCode, pos);\n\n        }).catch((err)'));
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});
