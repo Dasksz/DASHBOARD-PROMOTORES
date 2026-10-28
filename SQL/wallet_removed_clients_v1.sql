@@ -1,3 +1,12 @@
+-- Explicit administrative exceptions for synthetic/test clients absent from the 302 file.
+create table if not exists dashboard_private.preserved_catalog_clients (
+ client_code text primary key, description text not null, created_at timestamptz not null default now()
+);
+alter table dashboard_private.preserved_catalog_clients enable row level security;
+create policy preserved_catalog_admin on dashboard_private.preserved_catalog_clients to authenticated
+ using ((select public.is_admin())) with check ((select public.is_admin()));
+grant select,insert,update,delete on dashboard_private.preserved_catalog_clients to authenticated;
+
 -- A catalog replacement and its wallet reconciliation commit as one transaction.
 create table if not exists public.data_client_promoters_removed (
  id uuid primary key default gen_random_uuid(),
@@ -107,6 +116,12 @@ begin
    if receipt.input_digest<>digest then raise exception 'Identificador de importação reutilizado com outro conteúdo.' using errcode='22023'; end if;
    return jsonb_build_object('clients_count',receipt.clients_count,'archived_count',receipt.archived_count,'replayed',true);
  end if;
+ -- Keep explicitly registered test clients; incoming sheet data wins if the code is present.
+ p_rows:=p_rows || coalesce((select jsonb_agg(to_jsonb(c)) from public.data_clients c
+   join dashboard_private.preserved_catalog_clients kept on kept.client_code=c.codigo_cliente
+   where not(c.codigo_cliente=any(codes))),'[]'::jsonb);
+ select array_agg(btrim(r->>'codigo_cliente')) into codes from jsonb_array_elements(p_rows) r;
+ row_count:=cardinality(codes);
  -- Validate all column types before changing any data. A later error also rolls back the entire RPC.
  perform * from jsonb_populate_recordset(null::public.data_clients,p_rows);
  moved_count:=dashboard_private.archive_missing_client_promoters(p_import_id,codes);
