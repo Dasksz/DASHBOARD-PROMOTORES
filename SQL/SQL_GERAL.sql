@@ -1043,12 +1043,10 @@ EXECUTE FUNCTION public.normalize_cidade();
 -- Ensure pg_cron extension is enabled
 CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
 
--- Auto-checkout unclosed visits at midnight
-SELECT cron.schedule('auto-checkout-midnight', '0 0 * * *', $$
-    UPDATE visitas
-    SET checkout_at = current_timestamp
-    WHERE checkout_at IS NULL
-$$);
+-- Apply visit_checkout_recovery_v1.sql to install the audited routine first.
+-- pg_cron uses GMT: 03:00 UTC is midnight in America/Sao_Paulo.
+SELECT cron.schedule('auto-checkout-midnight', '0 3 * * *',
+    'SELECT dashboard_private.auto_checkout_overdue_visits_v1()');
 
 
 -- ==========================================

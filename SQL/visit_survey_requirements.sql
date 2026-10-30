@@ -1,4 +1,5 @@
 -- Require a saved survey for each checkout; a route flag alone is not a survey.
+-- Apply visit_checkout_recovery_v1.sql afterwards for audited midnight/admin exceptions.
 create or replace function dashboard_private.has_visit_survey(answers jsonb)
 returns boolean language sql immutable set search_path = '' as $$
   select coalesce(
