@@ -5424,6 +5424,21 @@
                 (suppliersSet.has(virtual.QUAKER_KEROCOCO) && (desc.includes('QUAKER') || desc.includes('KEROCOCO')));
         }
 
+        // Loss index: Salty only on both sides, independently of the visible metric.
+        function matchesMetaRealizadoLossScope(sale) {
+            if (!window.SUPPLIER_CODES.ELMA.includes(normalizeKey(sale.CODFOR))) return false;
+            const code = normalizeKey(sale.CODCLI);
+            // 3297 is attributed only to the selected Itao recipient portfolios below.
+            if (code === '3297') return true;
+            const client = optimizedData.clientsMap.get(code) || {};
+            const ramo = String(clientRamoMap.get(code) || client.ramo || client.RAMO || '').toUpperCase();
+            const identity = [client.razaoSocial, client.razaosocial, client.RAZAOSOCIAL,
+                client.nomeCliente, client.nomecliente, client.Cliente, client.CLIENTE,
+                sale.CLIENTE, sale.CLIENTE_NOME, sale.cliente_nome].filter(Boolean).join(' ').toUpperCase();
+            return !client.isAmericanas && !ramo.includes('AMERICANAS') &&
+                !identity.includes('AMERICANAS') && !ramo.includes('BH');
+        }
+
         function formatMetaRealizadoValue(value) {
             if (currentMetaRealizadoMetric === 'peso') {
                 return (value / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' Ton';
@@ -6486,8 +6501,8 @@
             const salesFiltersMetas = { ...metasFilters };
             
             const kpiSuppliers = new Set(selectedMetaRealizadoSuppliers);
-            const rawPerdas = getFilteredDataFromIndices(periodSource.indices, periodSource.byId, perdasFiltersMetas).filter(sale => isMetaRealizadoPeriod(sale.DTPED) && matchesMetaRealizadoSupplier(sale, kpiSuppliers));
-            const rawSales = getFilteredDataFromIndices(periodSource.indices, periodSource.byId, salesFiltersMetas).filter(sale => isMetaRealizadoPeriod(sale.DTPED) && matchesMetaRealizadoSupplier(sale, kpiSuppliers));
+            const rawPerdas = getFilteredDataFromIndices(periodSource.indices, periodSource.byId, perdasFiltersMetas).filter(sale => isMetaRealizadoPeriod(sale.DTPED) && matchesMetaRealizadoSupplier(sale, kpiSuppliers) && matchesMetaRealizadoLossScope(sale));
+            const rawSales = getFilteredDataFromIndices(periodSource.indices, periodSource.byId, salesFiltersMetas).filter(sale => isMetaRealizadoPeriod(sale.DTPED) && matchesMetaRealizadoSupplier(sale, kpiSuppliers) && matchesMetaRealizadoLossScope(sale));
             
             for(let i=0; i<rawPerdas.length; i++) {
                 const sale = rawPerdas[i];

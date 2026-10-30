@@ -25,6 +25,43 @@ test('month keys include year and parse survey dates without timezone shifts',()
 test('historical month uses its saved targets and history sales, retaining client and promoter scope',async()=>{const {api,ctx,requests}=harness();api.select('2026-09');await api.load('2026-09');const data=api.filtered();assert.equal(data.goalsBySeller.get('RCA10').totalFat,500);assert.equal(data.salesBySeller.get('RCA10').totalFat,100);assert.equal(data.salesBySeller.get('RCA10').perdas,5);assert.equal(api.clients(data.weeks)[0].realTotal,100);assert.equal(api.clients(data.weeks)[0].metaTotal,500);assert.equal(ctx.globalClientGoals.get('1').get('707').fat,999);assert.deepEqual(requests,['2026-09']);});
 test('absent historical goals never reuse another month targets',async()=>{const {api}=harness();api.select('2026-08');await api.load('2026-08');assert.equal(api.goals().clients.size,0);assert.equal(api.filtered().salesBySeller.get('RCA10').totalFat,900);});
 test('charts, client rows, losses, research KPIs, goals and exports use the same month',async()=>{const {api,elements}=harness();api.select('2026-09');await api.update();assert.equal(elements.get('kpi-metas-pesquisas-real').textContent,'1');assert.equal(elements.get('kpi-metas-pesquisas-meta').textContent,'10');assert.equal(elements.get('kpi-metas-lojaperfeita-real').textContent,'1');assert.equal(api.export().month,'2026-09');assert.equal(api.export().sellers[0].realTotal,100);assert.equal(api.export().clients[0].realTotal,100);assert.match(elements.get('meta-realizado-period-status').textContent,/Metas salvas/);});
+
+test('loss index includes only Salty in numerator and denominator, while revenue tables retain Foods',async()=>{
+ const {api,ctx,elements}=harness();ctx.allSalesData.length=0;
+ const sale=(supplier,value,type='1',loss=0)=>({DTPED:Date.parse('2026-10-15'),CODCLI:'1',CODUSUR:'10',CODFOR:supplier,TIPOVENDA:type,VLVENDA:value,VLBONIFIC:loss,TOTPESOLIQ:0,OBSERVACAOFOR:'PEPSICO'});
+ ctx.allSalesData.push(sale('707',1000),sale('708',2000),sale('752',1000),sale('707',0,'5',40),sale('1119',100000),sale('1119',0,'5',500),sale('707',99999,'11'));
+ await api.update();assert.match(elements.get('kpi-metas-perda-real').textContent,/40,00/);assert.equal(elements.get('kpi-metas-perda-percent').textContent,'1.00%');assert.equal(api.export().clients[0].revenueTotal,104000);
+ ctx.currentMetaRealizadoMetric='peso';await api.update();assert.equal(elements.get('kpi-metas-perda-percent').textContent,'1.00%');
+ ctx.selectedMetaRealizadoSuppliers=['1119'];await api.update();assert.equal(elements.get('kpi-metas-perda-percent').textContent,'0.00%');assert.match(elements.get('kpi-metas-perda-real').textContent,/0,00/);
+ ctx.selectedMetaRealizadoSuppliers=['707'];await api.update();assert.equal(elements.get('kpi-metas-perda-percent').textContent,'4.00%');
+});
+
+test('Americanas is excluded from losses and revenue even if its network field is blank',async()=>{
+ const {api,ctx,elements}=harness();ctx.allSalesData[0].VLVENDA=1000;
+ for(const [code,client] of [['2',{razaoSocial:'AMERICANAS S.A.',ramo:''}],['3',{isAmericanas:true}],['4',{ramo:'LOJAS AMERICANAS'}],['5',{ramo:'BH'}]]){
+  ctx.optimizedData.clientsMap.set(code,client);
+  for(const [type,value,loss] of [['1',100000,0],['5',0,500]])ctx.allSalesData.push({...ctx.allSalesData[0],CODCLI:code,TIPOVENDA:type,VLVENDA:value,VLBONIFIC:loss});
+ }
+ ctx.allSalesData.push({...ctx.allSalesData[0],TIPOVENDA:'5',VLVENDA:0,VLBONIFIC:10});
+ await api.update();assert.equal(elements.get('kpi-metas-perda-percent').textContent,'1.00%');assert.match(elements.get('kpi-metas-perda-real').textContent,/10,00/);
+});
+
+test('Laiane October loss regression: Salty 1017.89 / 39199.061 is 2.60%, not the Foods-diluted 2.47%',async()=>{
+ const {api,ctx,elements}=harness();ctx.allSalesData.length=0;
+ for(const [supplier,revenue,loss] of [['707',17141.12,415.06],['708',20234.501,520.48],['752',1823.44,82.35],['1119',2060.30,0]]){
+  const base={DTPED:Date.parse('2026-10-29'),CODCLI:'1',CODUSUR:'10',CODFOR:supplier,TOTPESOLIQ:0,OBSERVACAOFOR:'PEPSICO'};
+  ctx.allSalesData.push({...base,TIPOVENDA:'1',VLVENDA:revenue},{...base,TIPOVENDA:'5',VLVENDA:0,VLBONIFIC:loss});
+ }
+ await api.update();assert.match(elements.get('kpi-metas-perda-real').textContent,/1\.017,89/);assert.equal(elements.get('kpi-metas-perda-percent').textContent,'2.60%');
+});
+
+test('Salty loss index preserves partial Itao allocations and excludes source-only portfolios',async()=>{
+ const {api,ctx,elements}=harness();const target=ctx.allClientsData[0];target['Código']='541';ctx.allSalesData.length=0;
+ const base={DTPED:Date.parse('2026-10-15'),CODCLI:'3297',CODUSUR:'78',CODFOR:'707',TOTPESOLIQ:0,OBSERVACAOFOR:'PEPSICO'};
+ ctx.allSalesData.push({...base,TIPOVENDA:'1',VLVENDA:300},{...base,TIPOVENDA:'5',VLVENDA:0,VLBONIFIC:30},{...base,CODFOR:'1119',TIPOVENDA:'1',VLVENDA:900});
+ await api.update();assert.match(elements.get('kpi-metas-perda-real').textContent,/10,00/);assert.equal(elements.get('kpi-metas-perda-percent').textContent,'10.00%');
+ target['Código']='999';await api.update();assert.match(elements.get('kpi-metas-perda-real').textContent,/0,00/);assert.equal(elements.get('kpi-metas-perda-percent').textContent,'0.00%');
+});
 test('load failure does not render or export stale data for the newly selected month',async()=>{const {api,ctx,elements}=harness();ctx.fail=true;api.select('2026-09');await api.update();assert.match(elements.get('meta-realizado-period-status').textContent,/Não foi possível/);assert.equal(api.export().sellers.length,0);});
 test('a slow previous month response cannot replace the latest selected month',async()=>{const {api,ctx}=harness();let finishSeptember;ctx.window.supabaseClient={from:()=>{let month;const q={select:()=>q,eq:(key,value)=>{if(key==='month_key')month=value;return q;},maybeSingle:()=>month==='2026-09'?new Promise(resolve=>{finishSeptember=resolve;}):Promise.resolve({data:null})};return q;}};api.select('2026-09');const old=api.update();api.select('2026-08');await api.update();finishSeptember({data:{goals_data:{clients:{'1':{'707':{fat:500,vol:50}}}}}});await old;assert.equal(api.export().month,'2026-08');assert.equal(api.export().sellers[0].realTotal,900);});
 test('all-promoter KPIs exclude seller routes even when they audit a promoter client',async()=>{const {api,ctx,elements}=harness();ctx.hierarchyState['meta-realizado'].promotors.clear();ctx.window.embeddedData.nota_perfeita.push({codigo_cliente:'2',mes_ano:'setembro de 2026',pesquisador:'ROTA2',nota_media:100});ctx.lpResearcherMap.set('ROTA2',{sellerCode:'10'});ctx.window.embeddedData.metas_pesquisas.push({mes:9,ano:2026,promotor_code:'ROTA2',cod_vendedor:'10',valor_meta:999});api.select('2026-09');await api.update();assert.equal(elements.get('kpi-metas-pesquisas-real').textContent,'1');assert.equal(elements.get('kpi-metas-lojaperfeita-real').textContent,'1');assert.equal(elements.get('kpi-metas-pesquisas-meta').textContent,'10');});
