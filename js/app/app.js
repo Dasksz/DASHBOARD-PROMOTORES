@@ -5430,7 +5430,7 @@
             const code = normalizeKey(sale.CODCLI);
             // 3297 is attributed only to the selected Itao recipient portfolios below.
             if (code === '3297') return true;
-            const client = optimizedData.clientsMap.get(code) || {};
+            const client = clientMapForKPIs.get(code) || {};
             const ramo = String(clientRamoMap.get(code) || client.ramo || client.RAMO || '').toUpperCase();
             const identity = [client.razaoSocial, client.razaosocial, client.RAZAOSOCIAL,
                 client.nomeCliente, client.nomecliente, client.Cliente, client.CLIENTE,

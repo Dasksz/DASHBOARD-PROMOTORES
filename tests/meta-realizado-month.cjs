@@ -39,7 +39,7 @@ test('loss index includes only Salty in numerator and denominator, while revenue
 test('Americanas is excluded from losses and revenue even if its network field is blank',async()=>{
  const {api,ctx,elements}=harness();ctx.allSalesData[0].VLVENDA=1000;
  for(const [code,client] of [['2',{razaoSocial:'AMERICANAS S.A.',ramo:''}],['3',{isAmericanas:true}],['4',{ramo:'LOJAS AMERICANAS'}],['5',{ramo:'BH'}]]){
-  ctx.optimizedData.clientsMap.set(code,client);
+  ctx.clientMapForKPIs.set(code,client);
   for(const [type,value,loss] of [['1',100000,0],['5',0,500]])ctx.allSalesData.push({...ctx.allSalesData[0],CODCLI:code,TIPOVENDA:type,VLVENDA:value,VLBONIFIC:loss});
  }
  ctx.allSalesData.push({...ctx.allSalesData[0],TIPOVENDA:'5',VLVENDA:0,VLBONIFIC:10});
@@ -203,4 +203,16 @@ test('targeted loading adds only the allocation source and leaves client portfol
   if(wallet.length) {assert.deepEqual(Array.from(clients.values),wallet);assert.equal(sales.values.filter(c=>c==='3297').length,wallet.some(c=>['3297','541','544','546'].includes(c))?1:0);}
   else assert.equal(sales.key,'id');
  }
+});
+
+
+test('loss KPI uses the actual client index when optimizedData has no clientsMap',async()=>{
+ const {api,ctx,elements}=harness();delete ctx.optimizedData.clientsMap;
+ const americanas={'Código':'2',razaoSocial:'AMERICANAS S.A.',ramo:''};
+ ctx.clientMapForKPIs.set('2',americanas);
+ ctx.allSalesData.push({...ctx.allSalesData[0],CODCLI:'1',TIPOVENDA:'5',VLVENDA:0,VLBONIFIC:2});
+ ctx.allSalesData.push({...ctx.allSalesData[0],CODCLI:'2',TIPOVENDA:'1',VLVENDA:100000});
+ ctx.allSalesData.push({...ctx.allSalesData[0],CODCLI:'2',TIPOVENDA:'5',VLVENDA:0,VLBONIFIC:500});
+ await api.update();assert.equal(elements.get('kpi-metas-perda-percent').textContent,'1.00%');
+ assert.match(elements.get('kpi-metas-perda-real').textContent,/2,00/);
 });
