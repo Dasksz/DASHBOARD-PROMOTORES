@@ -258,8 +258,20 @@
 
             // 2. Determine Role and Cache Strategy
             let cachedData = await getFromCache('dashboardData');
-            const cacheRevision = '20261028-support-items';
+            const cacheRevision = '20261103-columnar-cache-validation';
             if (cachedData?.cacheRevision !== cacheRevision) cachedData = null;
+            // Reject incomplete IndexedDB datasets instead of crashing when a column is indexed.
+            const validColumnar = (table, required) => table && Array.isArray(table.columns) && table.values &&
+                Number.isInteger(table.length) && table.length >= 0 &&
+                table.columns.every(col => Array.isArray(table.values[col]) && table.values[col].length === table.length) &&
+                required.every(col => Array.isArray(table.values[col]));
+            if (cachedData && (!validColumnar(cachedData.detailed, ['CODCLI', 'VLVENDA']) ||
+                !validColumnar(cachedData.history, ['CODCLI', 'VLVENDA']) ||
+                !validColumnar(cachedData.clients, []) ||
+                !validColumnar(cachedData.stock, ['PRODUCT_CODE', 'FILIAL', 'STOCK_QTY']))) {
+                console.warn('[Init] Invalid columnar cache detected; fetching fresh data.');
+                cachedData = null;
+            }
             let useCache = false;
             let hierarchy = null;
             let isPromoter = false;
@@ -1188,13 +1200,17 @@
                 const pCodes = stock.values['PRODUCT_CODE'];
                 const filials = stock.values['FILIAL'];
                 const qtys = stock.values['STOCK_QTY'];
-                const len = stock.length;
-                for(let i = 0; i < len; i++) {
-                    const code = pCodes[i];
-                    const fil = filials[i];
-                    const qty = qtys[i];
-                    if (fil === '05') stockMap05[code] = qty;
-                    if (fil === '08') stockMap08[code] = qty;
+                if (Array.isArray(pCodes) && Array.isArray(filials) && Array.isArray(qtys)) {
+                    const len = Math.min(stock.length, pCodes.length, filials.length, qtys.length);
+                    for (let i = 0; i < len; i++) {
+                        const code = pCodes[i];
+                        const fil = filials[i];
+                        const qty = qtys[i];
+                        if (fil === '05') stockMap05[code] = qty;
+                        if (fil === '08') stockMap08[code] = qty;
+                    }
+                } else {
+                    console.error('[Init] Invalid stock columnar data; omitting stock indicators, not sales.', {columns: stock.columns});
                 }
             }
 
