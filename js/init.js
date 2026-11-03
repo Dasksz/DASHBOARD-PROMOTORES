@@ -611,11 +611,27 @@
                 return columnar;
             };
 
+            // Bound concurrent API calls to avoid overloading Supabase during a cold-cache sync.
+            const MAX_PARALLEL_READS = 5;
+            let activeReads = 0;
+            const pendingReads = [];
+            const withReadSlot = async (task) => {
+                if (activeReads >= MAX_PARALLEL_READS) await new Promise(resolve => pendingReads.push(resolve));
+                activeReads++;
+                try { return await task(); }
+                finally {
+                    activeReads--;
+                    const next = pendingReads.shift();
+                    if (next) next();
+                }
+            };
+
             const fetchAll = async (table, columns = null, type = null, format = 'object', pkCol = 'id', filterFunc = null) => {
                 // Config
                 // Keyset Pagination for reliability
                 // Stay within the standard API row cap; verify the complete row count.
-                const pageSize = 1000;
+                // Smaller batches for the large sales tables; other lookups keep the API page cap.
+                const pageSize = ['data_history', 'data_detailed'].includes(table) ? 500 : 1000;
                 let expectedCount = null;
 
                 let result = format === 'columnar' ? { columns: [], values: {}, length: 0 } : [];
@@ -633,31 +649,36 @@
                     const processNextPage = async () => {
                         const fetchWithRetry = async (attempt = 1) => {
                             try {
-                                let query = supabaseClient.from(table).select(columns || '*', { count: 'exact' }).order(pkCol, { ascending: true }).limit(pageSize);
-                                if (lastId !== null) {
-                                    query.gt(pkCol, lastId);
-                                }
-
-                                // Apply optional Supabase filter function (e.g., .in())
-                                if (filterFunc) {
-                                    query = filterFunc(query);
-                                }
-
-                                const promise = columns ? query.csv() : query;
-
-                                // Timeout wrapper (20 seconds)
-                                const timeoutPromise = new Promise((_, reject) =>
-                                    setTimeout(() => reject(new Error('Request timed out')), 30000)
-                                );
-
-                                const response = await Promise.race([promise, timeoutPromise]);
-
-                                if (response.error) throw response.error;
-                                return { data: response.data, count: response.count };
+                                return await withReadSlot(async () => {
+                                    const controller = new AbortController();
+                                    const timeoutMs = ['data_history', 'data_detailed'].includes(table) ? 60000 : 45000;
+                                    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+                                    try {
+                                        // An exact count on every page re-scans the whole table and causes timeouts.
+                                        // Count only on the first page, retaining the final completeness check.
+                                        const countOptions = pageIndex === 0 ? { count: 'exact' } : {};
+                                        let query = supabaseClient.from(table)
+                                            .select(columns || '*', countOptions)
+                                            .order(pkCol, { ascending: true })
+                                            .limit(pageSize)
+                                            .abortSignal(controller.signal);
+                                        if (lastId !== null) query = query.gt(pkCol, lastId);
+                                        if (filterFunc) query = filterFunc(query);
+                                        const response = await (columns ? query.csv() : query);
+                                        if (controller.signal.aborted) throw new Error(`Request timed out: ${table}, page ${pageIndex + 1} (${timeoutMs / 1000}s)`);
+                                        if (response.error) throw response.error;
+                                        return { data: response.data, count: response.count };
+                                    } catch (error) {
+                                        if (controller.signal.aborted) throw new Error(`Request timed out: ${table}, page ${pageIndex + 1} (${timeoutMs / 1000}s)`);
+                                        throw error;
+                                    } finally {
+                                        clearTimeout(timeout);
+                                    }
+                                });
                             } catch (err) {
                                 if (attempt < 4) { // Retry up to 3 times (1+3=4 total attempts)
                                     const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
-                                    console.warn(`Retrying page ${pageIndex} of ${table} (Attempt ${attempt})... Error: ${err.message}`);
+                                    console.warn(`Retrying page ${pageIndex + 1} of ${table} (Attempt ${attempt})... Error: ${err.message}`);
                                     await new Promise(r => setTimeout(r, delay));
                                     return fetchWithRetry(attempt + 1);
                                 }
@@ -761,7 +782,7 @@
 
                         } catch (err) {
                             console.error(`Failed to fetch page ${pageIndex} of ${table}:`, err);
-                            reject(err); // Never publish a partial page sequence as current data.
+                            reject(new Error(`Falha ao carregar ${table} (página ${pageIndex + 1}): ${err.message}`)); // Never publish a partial page sequence as current data.
                         }
                     };
 
