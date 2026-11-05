@@ -1669,6 +1669,7 @@
         }
 
         // Reset Password Form Logic
+        let isRecoveringPassword = false;
         const formReset = document.getElementById('resetForm');
         if (formReset) {
             formReset.addEventListener('submit', async (e) => {
@@ -1698,6 +1699,8 @@
                     if (error) {
                         window.handleSupabaseError(error);
                     } else {
+                        isRecoveringPassword = false;
+                        formReset.reset();
                         window.showToast('success', 'Senha atualizada com sucesso!');
                         // Trigger standard flow since they're implicitly logged in after update
                         const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1720,47 +1723,26 @@
         if (formForgot) {
             formForgot.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const email = document.getElementById('forgot-email').value;
+                const email = document.getElementById('forgot-email').value.trim();
                 
                 const btn = formForgot.querySelector('button[type="submit"]');
                 const oldText = btn.textContent;
                 btn.disabled = true; btn.textContent = 'Enviando...';
 
-                // Security Check: Verify if user exists and is approved before sending email
+                // Recovery must work while signed out. Supabase handles account lookup
+                // without exposing profiles or revealing whether an email is registered.
                 try {
-                    const { data: profile, error: profileError } = await supabaseClient
-                        .from('profiles')
-                        .select('status')
-                        .eq('email', email)
-                        .maybeSingle();
-
-                    if (profileError) {
-                        console.error('Erro ao verificar perfil:', profileError);
-                        // Fail safe: don't reveal error details, just generic message
-                        window.showToast('error', 'Não foi possível verificar o e-mail. Tente novamente mais tarde.');
-                        btn.disabled = false; btn.textContent = oldText;
-                        return;
-                    }
-
-                    if (!profile || profile.status !== 'aprovado') {
-                        // User not found or not approved
-                        window.showToast('error', 'E-mail não encontrado ou cadastro pendente de aprovação.');
-                        btn.disabled = false; btn.textContent = oldText;
-                        return;
-                    }
-
-                    // User exists and is approved, proceed with reset
                     const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-                        redirectTo: window.location.origin,
+                        redirectTo: window.location.origin + window.location.pathname,
                     });
 
                     if (error) {
                         window.handleSupabaseError(error);
                     } else {
-                        window.showToast('success', 'Verifique seu e-mail para o link de redefinição de senha.');
+                        window.showToast('success', 'Se este e-mail estiver cadastrado, você receberá um link para redefinir sua senha.');
                         // Switch back to login view
-                        if (loginFormForgot) loginFormForgot.classList.add('hidden');
-                        if (loginFormSignin) loginFormSignin.classList.remove('hidden');
+                        if (viewForgot) viewForgot.classList.add('hidden');
+                        if (viewLogin) viewLogin.classList.remove('hidden');
                     }
 
                 } catch (err) {
@@ -1940,6 +1922,7 @@
         let isAppReady = false;
 
         async function verifyUserProfile(session) {
+            if (isRecoveringPassword) return;
             if (window.isDataLoaded) {
                 const telaLoading = document.getElementById('tela-loading');
                 const telaLogin = document.getElementById('tela-login');
@@ -2085,11 +2068,14 @@
         // Auth State Listener
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if (event === 'PASSWORD_RECOVERY') {
+                isRecoveringPassword = true;
                 const contentWrapper = document.getElementById('content-wrapper');
                 const topNavbar = document.getElementById('top-navbar');
 
                 if (contentWrapper) contentWrapper.classList.add('hidden');
                 if (topNavbar) topNavbar.classList.add('hidden');
+                if (telaLoading) telaLoading.classList.add('hidden');
+                if (telaPendente) telaPendente.classList.add('hidden');
                 if (telaLogin) telaLogin.classList.remove('hidden');
 
                 const viewLogin = document.getElementById('view-login');

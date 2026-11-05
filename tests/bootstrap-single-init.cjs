@@ -4,7 +4,7 @@ test('concurrent auth notifications await one dashboard load',async()=>{
  const start=init.indexOf('        let isCheckingProfile = false;');const end=init.indexOf('// Visibility Change Listener',start);assert.ok(start>0&&end>start);
  let loads=0,release;const window={};const element={classList:{add(){},remove(){}},textContent:''};
  const context=vm.createContext({window,document:{getElementById:()=>element},console,Promise,setTimeout:()=>0,telaLogin:element,telaPendente:element,telaLoading:element,supabaseClient:{from:()=>({select:()=>({eq:()=>({single:async()=>({data:{status:'aprovado',role:'adm',name:'Admin'}})})})})},carregarDadosDoSupabase:()=>{loads++;return new Promise(r=>release=()=>{window.isDataLoaded=true;r();});}});
- vm.runInContext(init.slice(start,end),context);
+ vm.runInContext('let isRecoveringPassword = false;\n'+init.slice(start,end),context);
  const session={user:{id:'admin',user_metadata:{},email:'a'}};
  context.session=session;const first=vm.runInContext('verifyUserProfile(session)',context);await new Promise(r=>setImmediate(r));
  assert.equal(loads,1);await vm.runInContext('verifyUserProfile(session)',context);assert.equal(loads,1);release();await first;await vm.runInContext('verifyUserProfile(session)',context);assert.equal(loads,1);
