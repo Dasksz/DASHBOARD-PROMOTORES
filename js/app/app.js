@@ -5590,6 +5590,12 @@
                 // Filtering "Garbage" Sellers to fix Total Positivação (1965 vs 1977)
                 if (isGarbageSeller(rcaName)) return;
 
+                // Keep the filtered portfolio visible even without goals or sales this month.
+                // These clients have already passed the access and hierarchy filters above.
+                if (!goalsBySeller.has(rcaName)) {
+                    goalsBySeller.set(rcaName, { totalFat: 0, totalVol: 0, totalPos: 0 });
+                }
+
                 // Goal Keys are now determined at function scope (hoisted)
 
                 if (periodClientGoals.has(codCli)) {
