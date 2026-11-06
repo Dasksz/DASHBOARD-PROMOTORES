@@ -4178,7 +4178,7 @@
 
                 if (mixKpiMode === 'atendidos') {
                     baseClientCount = getPositiveClientsWithNewLogic(sales);
-                    if (kpiTitleEl) kpiTitleEl.textContent = 'POSIIVADOS';
+                    if (kpiTitleEl) kpiTitleEl.textContent = 'POSITIVADOS';
                 } else {
                     baseClientCount = clients.length;
                     if (kpiTitleEl) kpiTitleEl.textContent = 'BASE';
