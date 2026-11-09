@@ -3592,6 +3592,19 @@
             return new Date(`${selectedMetaRealizadoMonth}-01T00:00:00Z`);
         }
 
+        let metaRealizadoSalesMonthsPromise = null;
+        async function loadMetaRealizadoSalesMonths() {
+            if (!metaRealizadoSalesMonthsPromise) {
+                metaRealizadoSalesMonthsPromise = (async () => {
+                    const { data, error } = await window.supabaseClient.rpc('get_meta_realizado_sales_months_v1');
+                    if (error) throw error;
+                    if (!Array.isArray(data) || data.some(month => !/^\d{4}-(0[1-9]|1[0-2])$/.test(month))) throw Error('Períodos de vendas inválidos');
+                    return new Set(data);
+                })().catch(error => { metaRealizadoSalesMonthsPromise = null; throw error; });
+            }
+            return metaRealizadoSalesMonthsPromise;
+        }
+
         function getMetaRealizadoPeriodSource() {
             const current = metaRealizadoCurrentMonths.has(selectedMetaRealizadoMonth);
             return {
@@ -6349,10 +6362,17 @@
             if (status) status.textContent = 'Carregando o período selecionado...';
             if (results) results.classList.add('hidden');
             try {
-                await loadMetaRealizadoMonthGoals(month);
+                const [, salesMonths] = await Promise.all([loadMetaRealizadoMonthGoals(month), loadMetaRealizadoSalesMonths()]);
+                if (request !== metaRealizadoRenderRequest || month !== selectedMetaRealizadoMonth) return;
+                if (!salesMonths.has(month)) {
+                    metaRealizadoDataForExport = { sellers: [], clients: [], weeks: [], month, unavailable: true };
+                    const monthLabel = getMetaRealizadoPeriodDate().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+                    if (status) status.textContent = `Não há base de vendas de ${monthLabel} carregada no mês atual nem no histórico. Confira o trimestre importado e envie o arquivo que contenha esse mês. Os resultados e as exportações ficam indisponíveis até a carga correta.`;
+                    return;
+                }
             } catch (error) {
                 if (request !== metaRealizadoRenderRequest) return;
-                if (status) status.textContent = 'Não foi possível carregar as metas deste mês. Selecione o mês novamente para tentar.';
+                if (status) status.textContent = 'Não foi possível carregar os dados deste mês. Selecione o mês novamente para tentar.';
                 markDirty('metaRealizado');
                 console.error('Erro ao carregar o período de Meta vs Realizado:', error);
                 return;
@@ -20387,6 +20407,10 @@ const supervisorGroups = new Map();
         }
         function getMetaRealizadoExportSnapshot() {
             const snapshot = metaRealizadoDataForExport;
+            if (snapshot.unavailable) {
+                window.showToast('warning', 'O mês selecionado não possui base de vendas carregada. Confira o histórico importado.');
+                return null;
+            }
             const state = metaRealizadoClientsTableState;
             // Reject pending or outdated snapshots instead of exporting a previous view.
             if (snapshot.month !== selectedMetaRealizadoMonth
