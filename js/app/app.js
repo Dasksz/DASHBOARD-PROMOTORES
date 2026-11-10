@@ -3319,6 +3319,27 @@
             });
         }
 
+        // Resolve calculated month defaults without mutating saved goals or losing explicit zero.
+        function getClientGoalMetric(clientGoals, key, metric = 'fat') {
+            if (!clientGoals) return 0;
+            if (clientGoals.has(key)) {
+                const value = Number(clientGoals.get(key)?.[metric] ?? 0);
+                return Number.isFinite(value) ? value : 0;
+            }
+            const groups = {
+                PEPSICO_ALL: ['ELMA_ALL', 'FOODS_ALL'],
+                ELMA_ALL: window.SUPPLIER_CODES.ELMA,
+                FOODS_ALL: window.SUPPLIER_CODES.VIRTUAL_LIST
+            };
+            const children = groups[key];
+            if (!children) return 0;
+            if (key === 'FOODS_ALL' && !children.some(child => clientGoals.has(child))) {
+                const legacy = ['total_foods', '1119'].find(child => clientGoals.has(child));
+                if (legacy) return getClientGoalMetric(clientGoals, legacy, metric);
+            }
+            return children.reduce((sum, child) => sum + getClientGoalMetric(clientGoals, child, metric), 0);
+        }
+
         function calculateGoalsMetrics() {
             if (quarterMonths.length === 0) identifyQuarterMonths();
 
@@ -11811,8 +11832,8 @@ const supervisorGroups = new Map();
                                     }
                                 }
                                 
-                                if (!usedManual && clientGoals && clientGoals.has(key)) {
-                                    const val = (currentProductMetric === 'peso') ? (clientGoals.get(key).vol || 0) : (clientGoals.get(key).fat || 0);
+                                if (!usedManual && clientGoals) {
+                                    const val = getClientGoalMetric(clientGoals, key, currentProductMetric === 'peso' ? 'vol' : 'fat');
                                     entry.total += val;
                                 }
                             });
@@ -11831,10 +11852,7 @@ const supervisorGroups = new Map();
                                 const clientGoals = window.globalClientGoals.get(codCli);
                                 if (clientGoals) {
                                     activeGoalKeys.forEach(key => {
-                                        if (clientGoals.has(key)) {
-                                            const val = (currentProductMetric === 'peso') ? (clientGoals.get(key).vol || 0) : (clientGoals.get(key).fat || 0);
-                                            totalGoal += val;
-                                        }
+                                        totalGoal += getClientGoalMetric(clientGoals, key, currentProductMetric === 'peso' ? 'vol' : 'fat');
                                     });
 
 
@@ -12089,11 +12107,9 @@ const supervisorGroups = new Map();
                         const cGoals = window.globalClientGoals.get(codCli);
                         if (cGoals) {
                             activeGoalKeys.forEach(key => {
-                                if (cGoals.has(key)) {
-                                    fatGoal += (cGoals.get(key).fat || 0);
-                                    volGoal += (cGoals.get(key).vol || 0);
-                                    // Removed posGoal accumulation from here, as it will be calculated proportionally below.
-                                }
+                                fatGoal += getClientGoalMetric(cGoals, key, 'fat');
+                                volGoal += getClientGoalMetric(cGoals, key, 'vol');
+                                // Positivation targets are calculated proportionally below.
                             });
                         }
                     });
@@ -26878,18 +26894,14 @@ const supervisorGroups = new Map();
         // Clear previous content
         container.innerHTML = '';
 
-        let percent = 0;
-        if (goal > 0) {
-            percent = (value / goal) * 100;
-        } else if (value > 0) {
-            percent = 100;
-        }
-
+        const safeGoal = Number(goal);
+        const hasGoal = Number.isFinite(safeGoal) && safeGoal > 0;
+        const percent = hasGoal ? (value / safeGoal) * 100 : 0;
         const clampedPercent = Math.min(Math.max(percent, 0), 100);
-        const displayPercentage = Math.round(percent);
+        const displayPercentage = hasGoal ? Math.round(percent) + '%' : 'Sem meta';
 
         const formattedValue = value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 2, minimumFractionDigits: 2});
-        const formattedGoal = goal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 2, minimumFractionDigits: 2});
+        const formattedGoal = (Number.isFinite(safeGoal) ? safeGoal : 0).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 2, minimumFractionDigits: 2});
 
         const html = `
             <div class="flex flex-col justify-center w-full h-full px-2 md:px-6 py-2">
@@ -26923,8 +26935,8 @@ const supervisorGroups = new Map();
 
                         <!-- Center: Percentage -->
                         <div class="flex flex-col items-center">
-                             <span class="text-xl md:text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_10px_rgba(251,146,60,0.8)]">
-                                ${displayPercentage}%
+                             <span class="${hasGoal ? 'text-xl md:text-5xl' : 'text-sm md:text-xl'} font-black tracking-tighter text-white drop-shadow-[0_0_10px_rgba(251,146,60,0.8)]">
+                                ${displayPercentage}
                             </span>
                         </div>
 
