@@ -11832,8 +11832,8 @@ const supervisorGroups = new Map();
                                     }
                                 }
                                 
-                                if (!usedManual && clientGoals) {
-                                    const val = getClientGoalMetric(clientGoals, key, currentProductMetric === 'peso' ? 'vol' : 'fat');
+                                if (!usedManual && clientGoals && clientGoals.has(key)) {
+                                    const val = (currentProductMetric === 'peso') ? (clientGoals.get(key).vol || 0) : (clientGoals.get(key).fat || 0);
                                     entry.total += val;
                                 }
                             });
@@ -11852,7 +11852,10 @@ const supervisorGroups = new Map();
                                 const clientGoals = window.globalClientGoals.get(codCli);
                                 if (clientGoals) {
                                     activeGoalKeys.forEach(key => {
-                                        totalGoal += getClientGoalMetric(clientGoals, key, currentProductMetric === 'peso' ? 'vol' : 'fat');
+                                        if (clientGoals.has(key)) {
+                                            const val = (currentProductMetric === 'peso') ? (clientGoals.get(key).vol || 0) : (clientGoals.get(key).fat || 0);
+                                            totalGoal += val;
+                                        }
                                     });
 
 
