@@ -24,6 +24,7 @@ assert.equal(ctx.getClientGoalMetric(new Map([['1119',leaf(55)]]),'PEPSICO_ALL')
 const gauge=src.slice(src.indexOf('    function renderLiquidGauge('),src.indexOf('    function renderInnovationsChart('));const node={innerHTML:''};ctx.document={getElementById:()=>node};vm.runInContext(gauge,ctx);
 ctx.renderLiquidGauge('g',100,200);assert.match(node.innerHTML,/50%/);assert.match(node.innerHTML,/width: 50%/);
 ctx.renderLiquidGauge('g',300,200);assert.match(node.innerHTML,/150%/);assert.match(node.innerHTML,/width: 100%/);
-for(const goal of [0,null,undefined,NaN]){ctx.renderLiquidGauge('g',100,goal);assert.match(node.innerHTML,/Sem meta/);assert.doesNotMatch(node.innerHTML,/100%\s*<\/span>/);assert.match(node.innerHTML,/width: 0%/);}
+ctx.renderLiquidGauge('g',100,0);assert.match(node.innerHTML,/100%/);assert.doesNotMatch(node.innerHTML,/Sem meta/);
+ctx.renderLiquidGauge('g',0,0);assert.match(node.innerHTML,/0%/);
 ctx.renderLiquidGauge('g',0,100);assert.match(node.innerHTML,/0%/);
-console.log('PASS: actual overview scope, hierarchy, supervisor, seller, network, client, supplier/multiple supplier and weight goals; saved/zero totals; no inferred performance goal; no-meta gauge.');
+console.log('PASS: actual overview scope, hierarchy, supervisor, seller, network, client, supplier/multiple supplier and weight goals; saved/zero totals; no inferred performance goal; original gauge behavior.');

@@ -26897,14 +26897,18 @@ const supervisorGroups = new Map();
         // Clear previous content
         container.innerHTML = '';
 
-        const safeGoal = Number(goal);
-        const hasGoal = Number.isFinite(safeGoal) && safeGoal > 0;
-        const percent = hasGoal ? (value / safeGoal) * 100 : 0;
+        let percent = 0;
+        if (goal > 0) {
+            percent = (value / goal) * 100;
+        } else if (value > 0) {
+            percent = 100;
+        }
+
         const clampedPercent = Math.min(Math.max(percent, 0), 100);
-        const displayPercentage = hasGoal ? Math.round(percent) + '%' : 'Sem meta';
+        const displayPercentage = Math.round(percent);
 
         const formattedValue = value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 2, minimumFractionDigits: 2});
-        const formattedGoal = (Number.isFinite(safeGoal) ? safeGoal : 0).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 2, minimumFractionDigits: 2});
+        const formattedGoal = goal.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL', maximumFractionDigits: 2, minimumFractionDigits: 2});
 
         const html = `
             <div class="flex flex-col justify-center w-full h-full px-2 md:px-6 py-2">
@@ -26938,8 +26942,8 @@ const supervisorGroups = new Map();
 
                         <!-- Center: Percentage -->
                         <div class="flex flex-col items-center">
-                             <span class="${hasGoal ? 'text-xl md:text-5xl' : 'text-sm md:text-xl'} font-black tracking-tighter text-white drop-shadow-[0_0_10px_rgba(251,146,60,0.8)]">
-                                ${displayPercentage}
+                             <span class="text-xl md:text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_10px_rgba(251,146,60,0.8)]">
+                                ${displayPercentage}%
                             </span>
                         </div>
 
