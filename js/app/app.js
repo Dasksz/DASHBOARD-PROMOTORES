@@ -19441,9 +19441,11 @@ const supervisorGroups = new Map();
                     }
                     continue;
                 }
-                const isCounterSeller = String(parseImportValue(sellerCodeCandidate)) === '53' && upperName === 'BALCAO';
+                // The flash uses BALCAO (BH FEIRA) for the same RCA 53 portfolio.
+                const isBalcaoName = /^BALCAO(?:\s*\(BH(?:\s+[^()]*)?\))?$/.test(upperName);
+                const isCounterSeller = /^0*53$/.test(String(sellerCodeCandidate || '').trim()) && isBalcaoName;
                 // 1. Explicit Blocklist
-                if ((!isCounterSeller && (upperName === 'BALCAO' || upperName === 'BALCÃO')) ||
+                if ((!isCounterSeller && isBalcaoName) ||
                     upperName.includes('TOTAL') || upperName.includes('SUPERVISOR') || upperName.includes('GERAL') ||
                     upperName === 'VENDEDOR' || upperName === 'NOME' || upperName === 'CODIGO' || upperName === 'CÓDIGO') {
                     continue;
@@ -19475,7 +19477,7 @@ const supervisorGroups = new Map();
                     }
                 }
 
-                const finalSellerName = canonicalName || sellerName;
+                const finalSellerName = isCounterSeller ? 'BALCAO' : (canonicalName || sellerName);
 
                 // 2. Dynamic Supervisor Check
                 // If the name is a known Supervisor (key in rcasBySupervisor), ignore it.
