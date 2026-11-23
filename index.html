@@ -378,6 +378,11 @@
 
                 <!-- Hidden Container for Optional Files -->
                 <div id="optional-uploads-container" class="col-span-1 md:col-span-2 hidden pl-2 border-l-2 border-slate-700/50 mt-2 transition-all duration-300">
+                    <div class="mt-4">
+                        <label for="pdv-file-input" class="block text-sm text-slate-300">Pontos de Venda (Opcional)</label>
+                        <input type="file" id="pdv-file-input" accept=".xlsx,.xls" class="block text-sm text-slate-300">
+                    </div>
+
                     <div class="group mb-2">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Cadastro de Produtos</label>
                         <input type="file" id="products-file-input" aria-label="Upload de Produtos" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#FF5E00] file:text-white hover:file:bg-[#CC4A00] transition-all cursor-pointer glass-input rounded-lg border border-slate-700 focus-visible:ring-2 focus-visible:ring-[#FF5E00] focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900" accept=".csv, .xls, .xlsx"/>
@@ -3334,6 +3339,11 @@
             </div>
         </div>
 
+        <details id="lp-pdv-panel" class="glass-panel rounded-xl border border-slate-800 p-4 mb-5">
+            <summary class="cursor-pointer text-white font-bold">Pontos de venda sem pesquisa <span id="lp-pdv-count" class="text-orange-400"></span></summary>
+            <p id="lp-pdv-status" role="status" class="text-slate-400 text-sm my-3"></p>
+            <ul id="lp-pdv-results" class="max-h-96 overflow-auto text-slate-200 text-sm"></ul>
+        </details>
         <!-- KPIs -->
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 mb-8">
             <div class="kpi-card kpi-glow-yellow p-6">
@@ -4760,6 +4770,7 @@
 
 <div id="toast-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 w-80 sm:w-96 pointer-events-none"></div>
 
+<script src="js/app/pdv-coverage.js?v=1" defer></script>
 <script src="js/app/utils.js?v=20261027-itao-indicators" defer></script>
 <script src="js/app/import-integrity.js?v=20261019-upload-wait" defer></script>
 <script src="js/request-resilience.js?v=20261022" defer></script>

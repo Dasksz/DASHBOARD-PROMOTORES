@@ -16992,7 +16992,7 @@ const supervisorGroups = new Map();
             
             const generateBtn = document.getElementById('generate-btn');
             if (generateBtn) {
-                generateBtn.addEventListener('click', () => {
+                generateBtn.addEventListener('click', async () => {
                     if (generateBtn.disabled) return;
                     generateBtn.disabled = true;
                     generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -17015,7 +17015,28 @@ const supervisorGroups = new Map();
                     const metasPesquisasFile = document.getElementById('metas-pesquisas-input') ? document.getElementById('metas-pesquisas-input').files[0] : null;
                     const metasLojaPerfeitaFile = document.getElementById('metas-lojaperfeita-input') ? document.getElementById('metas-lojaperfeita-input').files[0] : null;
 
-                    if (!salesFile && !historyFile && !hierarchyFile && !notaInvolves1File && !notaInvolves2File && !productsFile && !titulosFile && !innovationsFile && !metasPesquisasFile && !metasLojaPerfeitaFile) {
+                    const pdvInput = document.getElementById('pdv-file-input');
+                    const pdvFile = pdvInput?.files[0];
+                    const otherFiles = [salesFile, clientsFile, historyFile, hierarchyFile, notaInvolves1File, notaInvolves2File,
+                        productsFile, titulosFile, innovationsFile, metasPesquisasFile, metasLojaPerfeitaFile].some(Boolean);
+                    if (pdvFile) {
+                        try {
+                            const cnpjs = await window.PdvCoverage.read(pdvFile, window.XLSX);
+                            const {error} = await window.supabaseClient.rpc('save_loja_perfeita_pdv', {p_cnpjs:cnpjs});
+                            if (error) throw error;
+                            pdvInput.value = '';
+                            window.showToast('success', `Pontos de Venda: ${cnpjs.length} CNPJs elegíveis salvos.`);
+                        } catch (error) {
+                            window.showToast('error', error.message || 'Falha ao salvar Pontos de Venda.');
+                        } finally {
+                            generateBtn.disabled = false;
+                            generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                        // Save the standalone dataset independently of sales/notes imports.
+                        if (otherFiles && !pdvInput.value) generateBtn.click();
+                        return;
+                    }
+                    if (!otherFiles) {
                         window.showToast('warning', "Pelo menos um arquivo é necessário para iniciar o processamento.");
                         generateBtn.disabled = false;
                         generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -29929,19 +29950,49 @@ const supervisorGroups = new Map();
         updateLpView();
     }
 
+    async function renderLpPendingPdvs(clients, request) {
+        const panel = document.getElementById('lp-pdv-panel');
+        if (!panel) return;
+        if (!panel._pdvBound) {
+            panel.addEventListener('toggle', () => { if (panel.open) updateLpView(); });
+            panel._pdvBound = true;
+        }
+        if (!panel.open) return;
+        const status = document.getElementById('lp-pdv-status');
+        const count = document.getElementById('lp-pdv-count');
+        const results = document.getElementById('lp-pdv-results');
+        status.textContent = 'Consultando pontos de venda…';
+        count.textContent = '';
+        results.replaceChildren();
+        const period = new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'America/Bahia'}).format(new Date());
+        try {
+            const {data,error} = await window.supabaseClient.rpc('get_loja_perfeita_pdv', {p_period:period});
+            if (request !== lpRenderId) return;
+            if (error) throw error;
+            if (!data) { status.textContent = 'Aguardando a primeira carga de Pontos de Venda.'; return; }
+            const rows = [...new Set(data.pending.map(normalizeKey))].map(code => [code,clients.get(code)])
+                .filter(([,client]) => client).sort((a,b) => String(a[1].nomeCliente || a[0]).localeCompare(String(b[1].nomeCliente || b[0]),'pt-BR'));
+            count.textContent = `(${rows.length})`;
+            status.textContent = `${period} · ${rows.length ? 'PDVs sem pesquisa no recorte' : 'Nenhum PDV sem pesquisa no recorte'}`
+                + (window.userRole === 'adm' && data.unmatched ? ` · ${data.unmatched} CNPJs sem vínculo único no cadastro` : '')
+                + (selectedLpResearchers.size ? ' · Conta a pesquisa de qualquer pesquisador' : '');
+            for (const [code, client] of rows) {
+                const li = document.createElement('li');
+                li.className = 'border-b border-slate-800 px-2 py-2';
+                li.textContent = [code,client.nomeCliente || client.fantasia || client.razaoSocial,client.cidade].filter(Boolean).join(' · ');
+                results.appendChild(li);
+            }
+        } catch {
+            if (request === lpRenderId) status.textContent = 'Não foi possível consultar os pontos de venda. Feche e reabra a lista para tentar novamente.';
+        }
+    }
+
     function updateLpView() {
         lpRenderId++;
         const currentId = lpRenderId;
 
         // 1. Get Data
-        const rawData = embeddedData.nota_perfeita;
-        if (!rawData || !rawData.length) {
-            // Empty state
-            renderLpKPIs(0, 0, 0, 0);
-            lpState.filteredData = [];
-            renderLpTable();
-            return;
-        }
+        const rawData = embeddedData.nota_perfeita || [];
 
         // 2. Filter Clients Base (Hierarchy + Rede)
         let allowedClients;
@@ -30033,6 +30084,8 @@ const supervisorGroups = new Map();
             allowedClientCodes.add(code);
             clientMap.set(code, c);
         }
+
+        void renderLpPendingPdvs(clientMap, currentId);
 
         // Identify all existing clients in master DB to distinguish orphans
         const allExistingCodes = new Set();
