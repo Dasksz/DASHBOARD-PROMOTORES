@@ -29963,6 +29963,9 @@ const supervisorGroups = new Map();
         const results = document.getElementById('lp-pdv-results');
         const cityFilter = document.getElementById('lp-pdv-city-filter');
         const citySelect = document.getElementById('lp-pdv-city');
+        const exportButton = document.getElementById('lp-pdv-export');
+        exportButton.disabled = true;
+        exportButton.onclick = null;
         cityFilter.hidden = true;
         status.textContent = 'Consultando pontos de venda…';
         count.textContent = '';
@@ -29997,6 +30000,31 @@ const supervisorGroups = new Map();
                 status.textContent = `${period} · ${visibleRows.length ? 'PDVs sem pesquisa no recorte' : 'Nenhum PDV sem pesquisa no recorte'}`
                     + (window.userRole === 'adm' && data.unmatched ? ` · ${data.unmatched} CNPJs sem vínculo único no cadastro` : '')
                     + (selectedLpResearchers.size ? ' · Conta a pesquisa de qualquer pesquisador' : '');
+                exportButton.disabled = visibleRows.length === 0;
+                exportButton.onclick = () => {
+                    if (request !== lpRenderId || !visibleRows.length) return;
+                    try {
+                        const doc = new window.jspdf.jsPDF();
+                        const selectedLabel = citySelect.selectedOptions[0]?.textContent || 'Todas as cidades';
+                        doc.setFontSize(16);
+                        doc.text('Pontos de venda sem pesquisa', 14, 18);
+                        doc.setFontSize(10);
+                        const subtitle = doc.splitTextToSize(`${period} | ${selectedLabel} | ${visibleRows.length} PDVs`, 182);
+                        doc.text(subtitle, 14, 25);
+                        doc.autoTable({
+                            startY: 25 + subtitle.length * 5,
+                            head: [['Código', 'Ponto de venda', 'Cidade']],
+                            body: visibleRows.map(([code, client]) => [
+                                code, client.nomeCliente || client.fantasia || client.razaoSocial || '', cityLabel(client)
+                            ]),
+                            headStyles: { fillColor: [194, 72, 0] }
+                        });
+                        doc.save('Pontos_de_venda_sem_pesquisa.pdf');
+                    } catch (error) {
+                        console.error('Erro ao exportar PDVs sem pesquisa:', error);
+                        window.showToast('error', 'Não foi possível gerar o PDF dos pontos de venda.');
+                    }
+                };
                 const fragment = document.createDocumentFragment();
                 for (const [code, client] of visibleRows) {
                     const li = document.createElement('li');
