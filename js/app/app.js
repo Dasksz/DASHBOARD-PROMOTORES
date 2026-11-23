@@ -3115,6 +3115,7 @@
         let comparisonMonthlyMetric = 'faturamento';
         let activeClientsForExport = [];
         let positivacaoDataForExport = { active: [], inactive: [] };
+        let positivacaoPeriods;
         let positivacaoActiveState = { page: 1, limit: 80, data: [] };
         let positivacaoInactiveState = { page: 1, limit: 80, data: [] };
         let selectedMainCoords = [];
@@ -13629,7 +13630,7 @@ const supervisorGroups = new Map();
 
         const getFilteredDataFromIndices = (indices, dataset, filters, excludeFilter = null) => {
             const isExcluded = (f) => excludeFilter === f || (Array.isArray(excludeFilter) && excludeFilter.includes(f));
-            const setsToIntersect = [];
+            const setsToIntersect = filters.saleIds ? [filters.saleIds] : [];
             let hasFilter = false;
 
             // Helper to get item
@@ -15509,9 +15510,14 @@ const supervisorGroups = new Map();
             const city = options.filterPrefix === 'positivacao'
                 ? [...selectedPositivacaoCities].join(', ')
                 : (cityInput ? cityInput.value.trim() : '');
-            const generationDate = new Date().toLocaleString('pt-BR'); const today = new Date();
-            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toLocaleDateString('pt-BR');
-            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toLocaleDateString('pt-BR');
+            const generationDate = new Date().toLocaleString('pt-BR');
+            const today = new Date();
+            const [year, month] = options.periodMonth
+                ? options.periodMonth.split('-').map(Number)
+                : [today.getFullYear(), today.getMonth() + 1];
+            const formatPeriodDay = day => day.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+            const firstDay = formatPeriodDay(new Date(Date.UTC(year, month - 1, 1)));
+            const lastDay = formatPeriodDay(new Date(Date.UTC(year, month, 0)));
             doc.setFontSize(18); doc.text(title, 14, 22); doc.setFontSize(11); doc.setTextColor(10);
             doc.text(`Período de Análise: ${firstDay} a ${lastDay}`, 14, 32);
             doc.text(`Coordenador: ${coord}`, 14, 38);
@@ -15603,7 +15609,7 @@ const supervisorGroups = new Map();
                 fileNameParam = city;
             }
             const safeFileNameParam = fileNameParam.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            doc.save(`${filename}_${safeFileNameParam}_${new Date().toISOString().slice(0,10)}.pdf`);
+            doc.save(`${filename}_${safeFileNameParam}_${options.periodMonth || new Date().toISOString().slice(0, 10)}.pdf`);
         }
 
         function renderCalendar(year, month) {
@@ -17715,7 +17721,10 @@ const supervisorGroups = new Map();
                     newBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         positivacaoFab.classList.remove('active');
-                        exportClientsPDF(positivacaoDataForExport.active, 'Relatório de Clientes Ativos no Mês', 'clientes_ativos', true, { filterPrefix: 'positivacao' });
+                        exportClientsPDF(positivacaoDataForExport.active, 'Relatório de Clientes Ativos no Mês', 'clientes_ativos', true, {
+                            filterPrefix: 'positivacao',
+                            periodMonth: positivacaoDataForExport.month
+                        });
                     });
 
 
@@ -17727,7 +17736,12 @@ const supervisorGroups = new Map();
                     newBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         positivacaoFab.classList.remove('active');
-                        exportClientsPDF(positivacaoDataForExport.inactive, 'Relatório de Clientes Inativos (Sem Compra)', 'clientes_inativos', false, { preserveOrder: true, filterLabel: getPositivacaoLastPurchaseFilterLabel(), filterPrefix: 'positivacao' });
+                        exportClientsPDF(positivacaoDataForExport.inactive, 'Relatório de Clientes Inativos (Sem Compra)', 'clientes_inativos', false, {
+                            preserveOrder: true,
+                            filterLabel: getPositivacaoLastPurchaseFilterLabel(),
+                            filterPrefix: 'positivacao',
+                            periodMonth: positivacaoDataForExport.month
+                        });
                     });
 
 
@@ -17739,10 +17753,16 @@ const supervisorGroups = new Map();
                     newBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         positivacaoFab.classList.remove('active');
+                        const { active, inactive, month } = positivacaoDataForExport;
+                        if (!month || (!active.length && !inactive.length)) {
+                            window.showToast('warning', 'Aguarde a atualização ou selecione filtros com dados para exportar.');
+                            return;
+                        }
                         const sheets = {};
-                        if(positivacaoDataForExport.active && positivacaoDataForExport.active.length) sheets['Ativos'] = positivacaoDataForExport.active;
-                        if(positivacaoDataForExport.inactive && positivacaoDataForExport.inactive.length) sheets['Inativos'] = positivacaoDataForExport.inactive;
-                        exportToExcel(sheets, 'Positivacao_Clientes');
+                        const addMonth = client => ({ 'Mês de referência': month, ...client });
+                        if (active.length) sheets.Ativos = active.map(addMonth);
+                        if (inactive.length) sheets.Inativos = inactive.map(addMonth);
+                        exportToExcel(sheets, `Positivacao_Clientes_${month}`);
                     });
 
 
@@ -27631,7 +27651,53 @@ const supervisorGroups = new Map();
 
         
         
+        function getPositivacaoPeriods() {
+            if (positivacaoPeriods) return positivacaoPeriods;
+
+            const periods = new Map();
+            for (const source of ['history', 'current']) {
+                const idsByMonth = new Map();
+                const dataset = source === 'current' ? optimizedData.salesById : optimizedData.historyById;
+                const dates = dataset._data?.DTPED || dataset._data?.dtped;
+                const monthByDate = new Map();
+                for (let id = 0; id < dataset.length; id++) {
+                    const date = dates ? dates[id] : dataset.get(id).DTPED;
+                    if (!monthByDate.has(date)) {
+                        monthByDate.set(date, metaRealizadoMonthKey(date) || metaRealizadoMonthKey(parseDate(date)));
+                    }
+                    const month = monthByDate.get(date);
+                    if (!month) continue;
+                    if (!idsByMonth.has(month)) idsByMonth.set(month, new Set());
+                    idsByMonth.get(month).add(id);
+                }
+                // A carga detalhada tem prioridade quando as duas fontes incluem o mesmo mês.
+                for (const [month, saleIds] of idsByMonth) {
+                    periods.set(month, { indices: optimizedData.indices[source], dataset, saleIds });
+                }
+            }
+            positivacaoPeriods = new Map([...periods].sort(([a], [b]) => b.localeCompare(a)));
+            return positivacaoPeriods;
+        }
+
+        function getPositivacaoMonth() {
+            return document.getElementById('positivacao-month-filter')?.value || getPositivacaoPeriods().keys().next().value || '';
+        }
+
+        function setupPositivacaoMonthFilter() {
+            const select = document.getElementById('positivacao-month-filter');
+            if (!select || select.dataset.ready) return;
+
+            const months = [...getPositivacaoPeriods().keys()];
+            const monthFormatter = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+            select.replaceChildren(...months.map(month => new Option(monthFormatter.format(new Date(`${month}-01T00:00:00Z`)), month)));
+            if (!months.length) select.add(new Option('Nenhum mês disponível', ''));
+            select.disabled = !months.length;
+            select.addEventListener('change', () => handlePositivacaoFilterChange());
+            select.dataset.ready = 'true';
+        }
+
         function renderPositivacaoView() {
+            setupPositivacaoMonthFilter();
             setupHierarchyFilters('positivacao', () => handlePositivacaoFilterChange({ excludeFilter: 'hierarchy' }));
             setupPositivacaoSupervisorFilterHandlers();
 
@@ -27804,7 +27870,7 @@ const supervisorGroups = new Map();
             const label = document.getElementById('positivacao-city-filter-text');
             if (!dropdown || !label) return;
             // Exclude this city's selection so choosing one never hides the other valid cities.
-            const { clients } = getPositivacaoFilteredData({ excludeFilter: 'city' });
+            const { clients } = getPositivacaoFilteredData({ excludeFilter: 'city', includeSales: false });
             const cities = getPositivacaoCityOptions(clients);
             const optionsKey = JSON.stringify(cities.map(([key]) => key));
             if (optionsKey !== positivacaoCityOptionsKey) {
@@ -27858,7 +27924,7 @@ const supervisorGroups = new Map();
         }
 
         function getPositivacaoFilteredData(options = {}) {
-            const { excludeFilter = null } = options;
+            const { excludeFilter = null, includeSales = true, month = getPositivacaoMonth() } = options;
 
             // 1. Base Clients (Hierarchy vs Seller)
             let clients;
@@ -27938,20 +28004,18 @@ const supervisorGroups = new Map();
                  clients = temp;
             }
 
-            // Get matching sales
-            const clientCodes = new Set();
-            for(let i=0; i<clients.length; i++) clientCodes.add(clients[i]['Código']);
+            const period = includeSales && getPositivacaoPeriods().get(month);
+            if (!period) return { clients, sales: [] };
 
-            const filters = {
-                clientCodes: clientCodes
-            };
+            const clientCodes = new Set(clients.map(client => normalizeKey(client['Código'] || client.codigo_cliente)));
+            const filters = { clientCodes, saleIds: period.saleIds };
 
             // Add Supplier Filter
             if (selectedPositivacaoSuppliers && selectedPositivacaoSuppliers.length > 0) {
                 filters.supplier = new Set(selectedPositivacaoSuppliers);
             }
 
-            const sales = getFilteredDataFromIndices(optimizedData.indices.current, optimizedData.salesById, filters);
+            const sales = getFilteredDataFromIndices(period.indices, period.dataset, filters);
 
             return { clients, sales };
         }
@@ -27968,7 +28032,7 @@ const supervisorGroups = new Map();
             }
 
             if (skipFilter !== 'rede') {
-                 const { clients } = getPositivacaoFilteredData({ excludeFilter: 'rede' });
+                 const { clients } = getPositivacaoFilteredData({ excludeFilter: 'rede', includeSales: false });
                  if (positivacaoRedeGroupFilter === 'com_rede') {
                      selectedPositivacaoRedes = updateRedeFilter(positivacaoRedeFilterDropdown, positivacaoComRedeBtnText, selectedPositivacaoRedes, clients);
                  }
@@ -27976,6 +28040,7 @@ const supervisorGroups = new Map();
         }
 
         function handlePositivacaoFilterChange(options = {}) {
+            positivacaoRenderId++;
             positivacaoDataForExport = { active: [], inactive: [] };
             if (window.positivacaoUpdateTimeout) clearTimeout(window.positivacaoUpdateTimeout);
             window.positivacaoUpdateTimeout = setTimeout(() => {
@@ -27985,6 +28050,8 @@ const supervisorGroups = new Map();
         }
 
         function resetPositivacaoFilters() {
+            const monthSelect = document.getElementById('positivacao-month-filter');
+            if (monthSelect) monthSelect.selectedIndex = 0;
 
             if (hierarchyState['positivacao']) {
                 hierarchyState['positivacao'].coords.clear();
@@ -28065,6 +28132,27 @@ const supervisorGroups = new Map();
             return `Última compra: ${start ? 'de ' + display(start) : 'sem limite inicial'} ${end ? 'até ' + display(end) : 'sem limite final'}${includeUndated ? '; inclui clientes sem data' : '; somente clientes com data'}.`;
         }
 
+        function getPositivacaoClientAtMonth(client, month) {
+            let lastPurchase = getPositivacaoLastPurchaseKey(client);
+            if (lastPurchase && lastPurchase.slice(0, 7) <= month) return client;
+
+            lastPurchase = '';
+            const code = normalizeKey(client['Código'] || client.codigo_cliente);
+            for (const [indices, dataset] of [
+                [optimizedData.indices.history, optimizedData.historyById],
+                [optimizedData.indices.current, optimizedData.salesById]
+            ]) {
+                for (const id of indices.byClient.get(code) || []) {
+                    const sale = dataset.get(id);
+                    if (!(Number(sale.VLVENDA) > 0)) continue;
+                    const date = parseDate(sale.DTPED);
+                    const key = date && !Number.isNaN(date.getTime()) ? date.toISOString().slice(0, 10) : '';
+                    if (key > lastPurchase && key.slice(0, 7) <= month) lastPurchase = key;
+                }
+            }
+            return { ...client, ultimaCompra: lastPurchase, 'Data da Última Compra': lastPurchase, ULTIMACOMPRA: lastPurchase };
+        }
+
         function updatePositivacaoView() {
             positivacaoDataForExport = { active: [], inactive: [] };
             positivacaoRenderId++;
@@ -28077,7 +28165,9 @@ const supervisorGroups = new Map();
             const invalidRange = !!(lastPurchaseFilters.start && lastPurchaseFilters.end && lastPurchaseFilters.start > lastPurchaseFilters.end);
             const error = document.getElementById('positivacao-last-purchase-error');
             if (error) error.classList.toggle('hidden', !invalidRange);
-            const { clients, sales } = getPositivacaoFilteredData();
+            const month = getPositivacaoMonth();
+            const isHistorical = month && month !== lastSaleDate.toISOString().slice(0, 7);
+            const { clients, sales } = getPositivacaoFilteredData({ month });
 
             const clientTotals = new Map();
             const clientDetails = new Map();
@@ -28097,13 +28187,14 @@ const supervisorGroups = new Map();
             const activeList = [];
             const inactiveList = [];
 
-            runAsyncChunked(clients, (c) => {
+            runAsyncChunked(clients, client => {
+                const registrationMonth = metaRealizadoMonthKey(parseDate(client.dataCadastro));
+                if (isHistorical && registrationMonth && registrationMonth > month) return;
+
+                const c = isHistorical ? getPositivacaoClientAtMonth(client, month) : client;
                 const cod = String(c['Código'] || c['codigo_cliente']);
                 const total = clientTotals.get(cod) || 0;
-
-                const registrationDate = parseDate(c.dataCadastro);
-                const now = lastSaleDate;
-                const isNew = registrationDate && registrationDate.getUTCMonth() === now.getUTCMonth() && registrationDate.getUTCFullYear() === now.getUTCFullYear();
+                const isNew = !!registrationMonth && registrationMonth === month;
 
                 if (total >= 1) {
                     const det = clientDetails.get(cod) || { pepsico: 0, multimarcas: 0 };
@@ -28118,9 +28209,11 @@ const supervisorGroups = new Map();
 
 
                 } else {
-                    c.isReturn = (total < 0);
-                    c.isNewForInactiveLabel = isNew && !parseDate(c.ultimaCompra);
-                    inactiveList.push(c);
+                    inactiveList.push({
+                        ...c,
+                        isReturn: total < 0,
+                        isNewForInactiveLabel: isNew && !parseDate(c.ultimaCompra)
+                    });
                 }
             }, () => {
                 if (currentRenderId !== positivacaoRenderId) return;
@@ -28128,8 +28221,7 @@ const supervisorGroups = new Map();
                 activeList.sort((a, b) => b.total - a.total);
                 const filteredInactiveList = filterPositivacaoInactiveClients(inactiveList, lastPurchaseFilters);
 
-                positivacaoDataForExport.active = activeList;
-                positivacaoDataForExport.inactive = filteredInactiveList;
+                positivacaoDataForExport = { active: activeList, inactive: filteredInactiveList, month };
 
                 positivacaoActiveState.data = activeList;
                 positivacaoActiveState.page = 1;
