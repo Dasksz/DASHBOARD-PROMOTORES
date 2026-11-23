@@ -842,6 +842,7 @@
 
                 let scopedClientCodes = null; // Set of normalized client codes or null (if ADM)
                 let scopedSellerCodes = null; // Set of seller/RCA codes or null
+                const scopedOrderSellerNames = new Set();
 
                 if (!isAdm) {
                     console.log("[Init] Resolving scoped portfolio for role '" + role + "' before heavy fetches...");
@@ -932,17 +933,41 @@
                             console.log("[Init] Role '" + role + "' matched " + walletClients.size + " direct clients in client_promoters.");
                             scopedClientCodes = walletClients;
                         } else {
-                            console.warn("[Init] Role '" + role + "' did not match specific hierarchy bounds. Proceeding with seller code.");
-                            scopedSellerCodes = new Set([normRole]);
+                            console.warn("[Init] Role '" + role + "' did not match the hierarchy or seller dimensions.");
+                            scopedClientCodes = walletClients;
+                        }
+                    }
+
+                    if (scopedSellerCodes?.size) {
+                        // Orders store the seller name. Only use names that identify a single seller code.
+                        const sellersByName = new Map();
+                        for (const seller of preDimVend) {
+                            const name = String(seller.nome || '').trim();
+                            const code = String(seller.codigo || seller.codusur || '').trim().toLowerCase();
+                            if (!name || !code) continue;
+
+                            const key = name.toLowerCase();
+                            if (!sellersByName.has(key)) sellersByName.set(key, new Set());
+                            sellersByName.get(key).add(code);
+                        }
+
+                        for (const seller of preDimVend) {
+                            const name = String(seller.nome || '').trim();
+                            const code = String(seller.codigo || seller.codusur || '').trim().toLowerCase();
+                            if (scopedSellerCodes.has(code) && sellersByName.get(name.toLowerCase())?.size === 1) {
+                                scopedOrderSellerNames.add(name);
+                            }
                         }
                     }
                 }
+
+                const noRows = q => q.eq('id', '00000000-0000-0000-0000-000000000000');
 
                 // Filter Functions for Supabase Queries
                 const applyClientFilter = (q) => {
                     if (isAdm) return q;
                     if (scopedClientCodes !== null) {
-                        if (scopedClientCodes.size === 0) return q.eq('id', '00000000-0000-0000-0000-000000000000');
+                        if (scopedClientCodes.size === 0) return noRows(q);
                         const codesArray = Array.from(scopedClientCodes);
                         // Sales source for the existing three-way Itao allocation only.
                         // This does not add 3297 to the user's client portfolio.
@@ -951,31 +976,31 @@
                         }
                         return q.in('codcli', codesArray);
                     }
-                    if (scopedSellerCodes !== null && scopedSellerCodes.size > 0) {
-                        const sellersArray = Array.from(scopedSellerCodes);
-                        if (sellersArray.length === 1) {
-                            return q.eq('codusur', sellersArray[0]);
-                        }
-                        return q.in('codusur', sellersArray);
-                    }
-                    return q;
+                    const sellersArray = Array.from(scopedSellerCodes || []);
+                    if (sellersArray.length === 0) return noRows(q);
+                    if (sellersArray.length === 1) return q.eq('codusur', sellersArray[0]);
+                    return q.in('codusur', sellersArray);
+                };
+
+                const applyOrderFilter = (q) => {
+                    if (isAdm || scopedClientCodes !== null) return applyClientFilter(q);
+                    const names = Array.from(scopedOrderSellerNames);
+                    if (names.length === 0) return noRows(q);
+                    if (names.length === 1) return q.eq('nome', names[0]);
+                    return q.in('nome', names);
                 };
 
                 const applyClientTableFilter = (q) => {
                     if (isAdm) return q;
                     if (scopedClientCodes !== null) {
-                        if (scopedClientCodes.size === 0) return q.eq('id', '00000000-0000-0000-0000-000000000000');
+                        if (scopedClientCodes.size === 0) return noRows(q);
                         const codesArray = Array.from(scopedClientCodes);
                         return q.in('codigo_cliente', codesArray);
                     }
-                    if (scopedSellerCodes !== null && scopedSellerCodes.size > 0) {
-                        const sellersArray = Array.from(scopedSellerCodes);
-                        if (sellersArray.length === 1) {
-                            return q.eq('rca1', sellersArray[0]);
-                        }
-                        return q.in('rca1', sellersArray);
-                    }
-                    return q;
+                    const sellersArray = Array.from(scopedSellerCodes || []);
+                    if (sellersArray.length === 0) return noRows(q);
+                    if (sellersArray.length === 1) return q.eq('rca1', sellersArray[0]);
+                    return q.in('rca1', sellersArray);
                 };
 
                 // Helper to decide source (Cache vs Fetch)
@@ -1050,7 +1075,7 @@
                     getOrFetch('data_active_products', null, null, 'object', 'code', null, 'activeProds', 'Verificando mix ativo...'),
                     getOrFetch('data_stock', colsStock, 'stock', 'columnar', 'id', null, 'stock', 'Sincronizando estoque...'),
                     fetchWithLabel('data_metadata', null, null, 'object', 'key', null, 'Verificando metadados...'), // Always fetch metadata fresh
-                    getOrFetch('data_orders', colsOrders, 'orders', 'object', 'id', applyClientFilter, 'orders', 'Verificando pedidos...'),
+                    getOrFetch('data_orders', colsOrders, 'orders', 'object', 'id', applyOrderFilter, 'orders', 'Verificando pedidos...'),
                     fetchWithLabel('data_client_coordinates', null, null, 'object', 'client_code', null, 'Atualizando geolocalização...'),
                     getOrFetch('data_hierarchy', null, null, 'object', 'id', null, 'hierarchy', 'Carregando hierarquia...'),
                     getOrFetch('data_client_promoters', null, null, 'object', 'client_code', null, 'clientPromoters', 'Sincronizando roteiros...'),
