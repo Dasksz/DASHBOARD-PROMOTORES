@@ -29961,6 +29961,9 @@ const supervisorGroups = new Map();
         const status = document.getElementById('lp-pdv-status');
         const count = document.getElementById('lp-pdv-count');
         const results = document.getElementById('lp-pdv-results');
+        const cityFilter = document.getElementById('lp-pdv-city-filter');
+        const citySelect = document.getElementById('lp-pdv-city');
+        cityFilter.hidden = true;
         status.textContent = 'Consultando pontos de venda…';
         count.textContent = '';
         results.replaceChildren();
@@ -29972,16 +29975,39 @@ const supervisorGroups = new Map();
             if (!data) { status.textContent = 'Aguardando a primeira carga de Pontos de Venda.'; return; }
             const rows = [...new Set(data.pending.map(normalizeKey))].map(code => [code,clients.get(code)])
                 .filter(([,client]) => client).sort((a,b) => String(a[1].nomeCliente || a[0]).localeCompare(String(b[1].nomeCliente || b[0]),'pt-BR'));
-            count.textContent = `(${rows.length})`;
-            status.textContent = `${period} · ${rows.length ? 'PDVs sem pesquisa no recorte' : 'Nenhum PDV sem pesquisa no recorte'}`
-                + (window.userRole === 'adm' && data.unmatched ? ` · ${data.unmatched} CNPJs sem vínculo único no cadastro` : '')
-                + (selectedLpResearchers.size ? ' · Conta a pesquisa de qualquer pesquisador' : '');
-            for (const [code, client] of rows) {
-                const li = document.createElement('li');
-                li.className = 'border-b border-slate-800 px-2 py-2';
-                li.textContent = [code,client.nomeCliente || client.fantasia || client.razaoSocial,client.cidade].filter(Boolean).join(' · ');
-                results.appendChild(li);
+            const cityLabel = client => String(client.cidade || '').trim();
+            const cityKey = client => cityLabel(client).normalize('NFD').replace(/\p{M}/gu, '').toLocaleUpperCase('pt-BR');
+            const cities = new Map();
+            for (const [, client] of rows) {
+                const key = cityKey(client);
+                if (key && !cities.has(key)) cities.set(key, cityLabel(client));
             }
+            const previousCity = citySelect.value;
+            citySelect.replaceChildren(new Option('Todas as cidades', ''));
+            for (const [key, label] of [...cities].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR'))) {
+                citySelect.add(new Option(label, key));
+            }
+            citySelect.value = cities.has(previousCity) ? previousCity : '';
+            cityFilter.hidden = cities.size === 0;
+
+            const renderRows = () => {
+                const selectedCity = citySelect.value;
+                const visibleRows = selectedCity ? rows.filter(([, client]) => cityKey(client) === selectedCity) : rows;
+                count.textContent = `(${visibleRows.length})`;
+                status.textContent = `${period} · ${visibleRows.length ? 'PDVs sem pesquisa no recorte' : 'Nenhum PDV sem pesquisa no recorte'}`
+                    + (window.userRole === 'adm' && data.unmatched ? ` · ${data.unmatched} CNPJs sem vínculo único no cadastro` : '')
+                    + (selectedLpResearchers.size ? ' · Conta a pesquisa de qualquer pesquisador' : '');
+                const fragment = document.createDocumentFragment();
+                for (const [code, client] of visibleRows) {
+                    const li = document.createElement('li');
+                    li.className = 'border-b border-slate-800 px-2 py-2';
+                    li.textContent = [code,client.nomeCliente || client.fantasia || client.razaoSocial,client.cidade].filter(Boolean).join(' · ');
+                    fragment.appendChild(li);
+                }
+                results.replaceChildren(fragment);
+            };
+            citySelect.onchange = renderRows;
+            renderRows();
         } catch {
             if (request === lpRenderId) status.textContent = 'Não foi possível consultar os pontos de venda. Feche e reabra a lista para tentar novamente.';
         }

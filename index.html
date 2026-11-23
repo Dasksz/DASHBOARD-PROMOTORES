@@ -3341,6 +3341,12 @@
 
         <details id="lp-pdv-panel" class="glass-panel rounded-xl border border-slate-800 p-4 mb-5">
             <summary class="cursor-pointer text-white font-bold">Pontos de venda sem pesquisa <span id="lp-pdv-count" class="text-orange-400"></span></summary>
+            <div id="lp-pdv-city-filter" class="mt-4 w-full sm:max-w-xs" hidden>
+                <label for="lp-pdv-city" class="block mb-2 text-xs font-bold text-slate-500 uppercase">Cidade</label>
+                <select id="lp-pdv-city" class="w-full glass-panel text-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-[#FF5E00]">
+                    <option value="">Todas as cidades</option>
+                </select>
+            </div>
             <p id="lp-pdv-status" role="status" class="text-slate-400 text-sm my-3"></p>
             <ul id="lp-pdv-results" class="max-h-96 overflow-auto text-slate-200 text-sm"></ul>
         </details>
