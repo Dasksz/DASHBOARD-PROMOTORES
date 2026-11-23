@@ -29998,7 +29998,6 @@ const supervisorGroups = new Map();
                 const visibleRows = selectedCity ? rows.filter(([, client]) => cityKey(client) === selectedCity) : rows;
                 count.textContent = `(${visibleRows.length})`;
                 status.textContent = `${period} · ${visibleRows.length ? 'PDVs sem pesquisa no recorte' : 'Nenhum PDV sem pesquisa no recorte'}`
-                    + (window.userRole === 'adm' && data.unmatched ? ` · ${data.unmatched} CNPJs sem vínculo único no cadastro` : '')
                     + (selectedLpResearchers.size ? ' · Conta a pesquisa de qualquer pesquisador' : '');
                 exportButton.disabled = visibleRows.length === 0;
                 exportButton.onclick = () => {
