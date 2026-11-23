@@ -5428,6 +5428,12 @@
             return (Number(row.supplierGoals?.salty) || 0) - (Number(row.supplierSales?.salty) || 0);
         }
 
+        function isMetaRealizadoRetailGapClient(client) {
+            if (client.isAmericanas || normalizeKey(client.rca1) === '1001') return false;
+            return ![client.razaoSocial, client.nomeCliente, client.fantasia, client.FANTASIA, client['Nome Fantasia']]
+                .some(name => String(name || '').toUpperCase().includes('AMERICANAS'));
+        }
+
         function compareMetaRealizadoSaltyGaps(a, b) {
             return getMetaRealizadoSaltyGap(b) - getMetaRealizadoSaltyGap(a)
                 || (Number(b.supplierGoals?.salty) || 0) - (Number(a.supplierGoals?.salty) || 0)
@@ -7005,7 +7011,8 @@
             const results = [];
             clientMap.forEach((data, codCli) => {
                 // Filter out if No Goal AND No Sales (Clean up empty active clients)
-                if (metaRealizadoClientsTableState.largestGapFirst && data.revenueTotal <= 0) return;
+                if (metaRealizadoClientsTableState.largestGapFirst
+                    && (data.revenueTotal <= 0 || !isMetaRealizadoRetailGapClient(data.clientObj))) return;
                 if (metaRealizadoClientsTableState.onlyWithoutSales) {
                     // Classify by revenue even when the table displays weight.
                     if (data.revenueTotal > 0) return;
