@@ -30102,19 +30102,33 @@ const supervisorGroups = new Map();
                 exportButton.onclick = () => {
                     if (request !== lpRenderId || !visibleRows.length) return;
                     try {
-                        const doc = new window.jspdf.jsPDF();
+                        const doc = new window.jspdf.jsPDF({ orientation: 'landscape' });
                         const selectedLabel = citySelect.selectedOptions[0]?.textContent || 'Todas as cidades';
                         doc.setFontSize(16);
                         doc.text('Pontos de venda sem pesquisa', 14, 18);
                         doc.setFontSize(10);
-                        const subtitle = doc.splitTextToSize(`${period} | ${selectedLabel} | ${visibleRows.length} PDVs`, 182);
+                        const subtitle = doc.splitTextToSize(`${period} | ${selectedLabel} | ${visibleRows.length} PDVs`, doc.internal.pageSize.getWidth() - 28);
                         doc.text(subtitle, 14, 25);
                         doc.autoTable({
                             startY: 25 + subtitle.length * 5,
-                            head: [['Código', 'Ponto de venda', 'Cidade']],
-                            body: visibleRows.map(([code, client]) => [
-                                code, client.nomeCliente || client.fantasia || client.razaoSocial || '', cityLabel(client)
-                            ]),
+                            head: [['Código', 'Ponto de venda', 'Fantasia', 'Cidade', 'Bairro', 'Endereço']],
+                            body: visibleRows.map(([code, client]) => {
+                                const fantasy = client.fantasia || '';
+                                const neighborhood = client.Bairro || client.bairro || '';
+                                const street = client['Endereço Comercial'] || client.endereco || client.ENDERECO || '';
+                                const number = client.numero || client.NUMERO || '';
+                                const address = street && street !== 'N/A'
+                                    ? [street, number === 'N/A' ? '' : number].filter(Boolean).join(', ')
+                                    : '';
+                                return [
+                                    code,
+                                    client.nomeCliente || fantasy || client.razaoSocial || '',
+                                    fantasy === 'N/A' ? '' : fantasy,
+                                    cityLabel(client),
+                                    neighborhood === 'N/A' ? '' : neighborhood,
+                                    address
+                                ];
+                            }),
                             headStyles: { fillColor: [194, 72, 0] }
                         });
                         doc.save('Pontos_de_venda_sem_pesquisa.pdf');
