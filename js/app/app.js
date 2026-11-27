@@ -30106,8 +30106,10 @@ const supervisorGroups = new Map();
                     const onlyCoordinators = (currentHierarchy?.coords?.size || 0) > 0
                         && !(currentHierarchy?.cocoords?.size || 0)
                         && !(currentHierarchy?.promotors?.size || 0);
+                    const onlyCoCoordinators = (currentHierarchy?.cocoords?.size || 0) > 0
+                        && !(currentHierarchy?.promotors?.size || 0);
                     const zipBySeller = adminViewMode === 'seller' && onlySupervisors;
-                    const zipByPromoter = adminViewMode !== 'seller' && onlyCoordinators;
+                    const zipByPromoter = adminViewMode !== 'seller' && (onlyCoordinators || onlyCoCoordinators);
                     const selectedLabel = citySelect.selectedOptions[0]?.textContent || 'Todas as cidades';
                     const safeName = value => String(value || '').trim().normalize('NFD')
                         .replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '_')
@@ -30178,9 +30180,11 @@ const supervisorGroups = new Map();
                             const archive = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
                             const scopeNames = zipBySeller
                                 ? [...selectedLpSupervisors].map(code => firstName(code))
-                                : [...currentHierarchy.coords].map(code => firstName(optimizedData.coordMap.get(code) || code));
+                                : onlyCoCoordinators
+                                    ? [...currentHierarchy.cocoords].map(code => firstName(optimizedData.cocoordMap.get(code) || code))
+                                    : [...currentHierarchy.coords].map(code => firstName(optimizedData.coordMap.get(code) || code));
                             const archiveName = 'Pontos_de_venda_sem_pesquisa_' +
-                                (zipBySeller ? 'Supervisores' : 'Coordenadores') +
+                                (zipBySeller ? 'Supervisores' : onlyCoCoordinators ? 'CoCoordenadores' : 'Coordenadores') +
                                 (scopeNames.filter(Boolean).length ? '_' + scopeNames.filter(Boolean).join('_') : '') + '.zip';
                             const url = URL.createObjectURL(archive);
                             const anchor = document.createElement('a');
