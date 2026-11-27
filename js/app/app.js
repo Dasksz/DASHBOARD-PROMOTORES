@@ -30131,7 +30131,17 @@ const supervisorGroups = new Map();
                             }),
                             headStyles: { fillColor: [194, 72, 0] }
                         });
-                        doc.save('Pontos_de_venda_sem_pesquisa.pdf');
+                        // Append the first name(s) of the Loja Perfeita seller or coordinator filters.
+                        // With neither filter selected, keep the original PDF filename.
+                        const selectedPdvPeople = selectedLpVendedores.size
+                            ? [...selectedLpVendedores].map(code => window.resolveDim('vendedores', code))
+                            : [...(hierarchyState.lp?.coords || [])].map(code => optimizedData.coordMap.get(code) || code);
+                        const fileNameSuffix = [...new Set(selectedPdvPeople.map(name =>
+                            String(name || '').trim().split(/\s+/)[0]
+                                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                                .replace(/[^a-zA-Z0-9_-]/g, '')
+                        ).filter(Boolean))].join('_');
+                        doc.save('Pontos_de_venda_sem_pesquisa' + (fileNameSuffix ? '_' + fileNameSuffix : '') + '.pdf');
                     } catch (error) {
                         console.error('Erro ao exportar PDVs sem pesquisa:', error);
                         window.showToast('error', 'Não foi possível gerar o PDF dos pontos de venda.');
