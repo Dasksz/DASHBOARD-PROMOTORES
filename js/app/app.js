@@ -30099,20 +30099,35 @@ const supervisorGroups = new Map();
                 status.textContent = `${period} · ${visibleRows.length ? 'PDVs sem pesquisa no recorte' : 'Nenhum PDV sem pesquisa no recorte'}`
                     + (selectedLpResearchers.size ? ' · Conta a pesquisa de qualquer pesquisador' : '');
                 exportButton.disabled = visibleRows.length === 0;
-                exportButton.onclick = () => {
+                exportButton.onclick = async () => {
                     if (request !== lpRenderId || !visibleRows.length) return;
-                    try {
+                    const currentHierarchy = hierarchyState.lp;
+                    const onlySupervisors = selectedLpSupervisors.size > 0 && selectedLpVendedores.size === 0;
+                    const onlyCoordinators = (currentHierarchy?.coords?.size || 0) > 0
+                        && !(currentHierarchy?.cocoords?.size || 0)
+                        && !(currentHierarchy?.promotors?.size || 0);
+                    const zipBySeller = adminViewMode === 'seller' && onlySupervisors;
+                    const zipByPromoter = adminViewMode !== 'seller' && onlyCoordinators;
+                    const selectedLabel = citySelect.selectedOptions[0]?.textContent || 'Todas as cidades';
+                    const safeName = value => String(value || '').trim().normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '_')
+                        .replace(/^_+|_+$/g, '');
+                    const firstName = value => safeName(String(value || '').trim().split(/\s+/)[0]);
+
+                    const createPdf = (pdvs, personName = '') => {
                         const doc = new window.jspdf.jsPDF({ orientation: 'landscape' });
-                        const selectedLabel = citySelect.selectedOptions[0]?.textContent || 'Todas as cidades';
                         doc.setFontSize(16);
                         doc.text('Pontos de venda sem pesquisa', 14, 18);
                         doc.setFontSize(10);
-                        const subtitle = doc.splitTextToSize(`${period} | ${selectedLabel} | ${visibleRows.length} PDVs`, doc.internal.pageSize.getWidth() - 28);
+                        const subtitle = doc.splitTextToSize(
+                            [period, selectedLabel, personName, pdvs.length + ' PDVs'].filter(Boolean).join(' | '),
+                            doc.internal.pageSize.getWidth() - 28
+                        );
                         doc.text(subtitle, 14, 25);
                         doc.autoTable({
                             startY: 25 + subtitle.length * 5,
                             head: [['Código', 'Ponto de venda', 'Fantasia', 'Cidade', 'Bairro', 'Endereço']],
-                            body: visibleRows.map(([code, client]) => {
+                            body: pdvs.map(([code, client]) => {
                                 const fantasy = client.fantasia || '';
                                 const neighborhood = client.Bairro || client.bairro || '';
                                 const street = client['Endereço Comercial'] || client.endereco || client.ENDERECO || '';
@@ -30121,30 +30136,74 @@ const supervisorGroups = new Map();
                                     ? [street, number === 'N/A' ? '' : number].filter(Boolean).join(', ')
                                     : '';
                                 return [
-                                    code,
-                                    client.nomeCliente || fantasy || client.razaoSocial || '',
-                                    fantasy === 'N/A' ? '' : fantasy,
-                                    cityLabel(client),
-                                    neighborhood === 'N/A' ? '' : neighborhood,
-                                    address
+                                    code, client.nomeCliente || fantasy || client.razaoSocial || '',
+                                    fantasy === 'N/A' ? '' : fantasy, cityLabel(client),
+                                    neighborhood === 'N/A' ? '' : neighborhood, address
                                 ];
                             }),
                             headStyles: { fillColor: [194, 72, 0] }
                         });
-                        // Append the first name(s) of the Loja Perfeita seller or coordinator filters.
-                        // With neither filter selected, keep the original PDF filename.
-                        const selectedPdvPeople = selectedLpVendedores.size
-                            ? [...selectedLpVendedores].map(code => window.resolveDim('vendedores', code))
-                            : [...(hierarchyState.lp?.coords || [])].map(code => optimizedData.coordMap.get(code) || code);
-                        const fileNameSuffix = [...new Set(selectedPdvPeople.map(name =>
-                            String(name || '').trim().split(/\s+/)[0]
-                                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                                .replace(/[^a-zA-Z0-9_-]/g, '')
-                        ).filter(Boolean))].join('_');
-                        doc.save('Pontos_de_venda_sem_pesquisa' + (fileNameSuffix ? '_' + fileNameSuffix : '') + '.pdf');
+                        return doc;
+                    };
+
+                    exportButton.disabled = true;
+                    try {
+                        if (zipBySeller || zipByPromoter) {
+                            if (!window.JSZip) throw new Error('Biblioteca ZIP não carregada.');
+                            const groups = new Map();
+                            for (const [code, client] of visibleRows) {
+                                let key, name;
+                                if (zipBySeller) {
+                                    key = String(client.rca1 || '').trim();
+                                    name = sellerDetailsMap.get(key)?.name || window.resolveDim('vendedores', key);
+                                } else {
+                                    const node = optimizedData.clientHierarchyMap.get(code);
+                                    key = node?.promotor?.code || '';
+                                    name = node?.promotor?.name || optimizedData.promotorMap.get(key);
+                                }
+                                if (!key) { key = 'SEM_RESPONSAVEL'; name = 'Sem responsavel identificado'; }
+                                if (!groups.has(key)) groups.set(key, { name: String(name || key), rows: [] });
+                                groups.get(key).rows.push([code, client]);
+                            }
+                            if (!groups.size) throw new Error('Nenhum PDV disponível para exportação.');
+                            const zip = new window.JSZip();
+                            const usedNames = new Set();
+                            for (const [code, group] of groups) {
+                                const base = 'Pontos_de_venda_sem_pesquisa_' + (firstName(group.name) || 'Sem_nome');
+                                let filename = base + '.pdf';
+                                if (usedNames.has(filename)) filename = base + '_' + safeName(code) + '.pdf';
+                                usedNames.add(filename);
+                                zip.file(filename, createPdf(group.rows, group.name).output('blob'));
+                            }
+                            const archive = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+                            const scopeNames = zipBySeller
+                                ? [...selectedLpSupervisors].map(code => firstName(code))
+                                : [...currentHierarchy.coords].map(code => firstName(optimizedData.coordMap.get(code) || code));
+                            const archiveName = 'Pontos_de_venda_sem_pesquisa_' +
+                                (zipBySeller ? 'Supervisores' : 'Coordenadores') +
+                                (scopeNames.filter(Boolean).length ? '_' + scopeNames.filter(Boolean).join('_') : '') + '.zip';
+                            const url = URL.createObjectURL(archive);
+                            const anchor = document.createElement('a');
+                            anchor.href = url;
+                            anchor.download = archiveName;
+                            document.body.appendChild(anchor);
+                            anchor.click();
+                            anchor.remove();
+                            setTimeout(() => URL.revokeObjectURL(url), 60000);
+                        } else {
+                            const selectedPeople = selectedLpVendedores.size
+                                ? [...selectedLpVendedores].map(code => sellerDetailsMap.get(code)?.name || window.resolveDim('vendedores', code))
+                                : [...(currentHierarchy?.promotors || [])].map(code => optimizedData.promotorMap.get(code) || code);
+                            const coordinatorNames = selectedPeople.length ? [] :
+                                [...(currentHierarchy?.coords || [])].map(code => optimizedData.coordMap.get(code) || code);
+                            const suffix = [...new Set([...selectedPeople, ...coordinatorNames].map(firstName).filter(Boolean))].join('_');
+                            createPdf(visibleRows).save('Pontos_de_venda_sem_pesquisa' + (suffix ? '_' + suffix : '') + '.pdf');
+                        }
                     } catch (error) {
                         console.error('Erro ao exportar PDVs sem pesquisa:', error);
-                        window.showToast('error', 'Não foi possível gerar o PDF dos pontos de venda.');
+                        window.showToast('error', 'Não foi possível gerar a exportação dos pontos de venda: ' + error.message);
+                    } finally {
+                        if (request === lpRenderId) exportButton.disabled = visibleRows.length === 0;
                     }
                 };
                 const fragment = document.createDocumentFragment();
